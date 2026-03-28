@@ -50,6 +50,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </a>{" "}
               or call 03000 616161.
             </p>
+            <div className="flex gap-4 mt-4 text-dusk">
+              <a href="/privacy" className="underline hover:text-cream">Privacy Policy</a>
+              <a href="/terms" className="underline hover:text-cream">Terms of Service</a>
+              <a href="/pricing" className="underline hover:text-cream">Pricing</a>
+              <a href="mailto:hello@caregist.co.uk" className="underline hover:text-cream">Contact</a>
+            </div>
           </div>
         </footer>
       </body>
