@@ -36,8 +36,6 @@ INPUT_FAILED_IDS = "failed_ids.txt"
 
 OUTPUT_DIRECTORY_CSV = "directory_providers.csv"
 OUTPUT_DIRECTORY_JSON = "directory_providers.json"
-OUTPUT_DIRECTORY_SQL = "directory_providers.sql"
-OUTPUT_IMPORT_SQL = "import_to_db.sql"
 
 
 def is_blank(value: Any) -> bool:
@@ -273,134 +271,6 @@ def meta_description(
     )
 
 
-def sql_literal(value: Any, numeric: bool = False) -> str:
-    if value is None:
-        return "NULL"
-    if numeric:
-        return str(value)
-    text = str(value).replace("'", "''")
-    return f"'{text}'"
-
-
-def write_import_sql(path: Path) -> None:
-    sql = """-- import_to_db.sql
--- This file contains both PostgreSQL and MySQL table definitions.
--- Run only the section for your target database.
-
-/* ========================
-   PostgreSQL DDL
-   ======================== */
-CREATE TABLE IF NOT EXISTS care_providers (
-  id VARCHAR(20) PRIMARY KEY,
-  provider_id VARCHAR(20),
-  name VARCHAR(255) NOT NULL,
-  slug VARCHAR(300) UNIQUE,
-  type VARCHAR(100),
-  status VARCHAR(20),
-  registration_date DATE,
-  address_line1 VARCHAR(255),
-  address_line2 VARCHAR(255),
-  town VARCHAR(100),
-  county VARCHAR(100),
-  postcode VARCHAR(10),
-  region VARCHAR(100),
-  local_authority VARCHAR(100),
-  country VARCHAR(50) DEFAULT 'England',
-  latitude DECIMAL(10,7),
-  longitude DECIMAL(10,7),
-  phone VARCHAR(20),
-  website VARCHAR(500),
-  email VARCHAR(255),
-  overall_rating VARCHAR(50),
-  rating_safe VARCHAR(50),
-  rating_effective VARCHAR(50),
-  rating_caring VARCHAR(50),
-  rating_responsive VARCHAR(50),
-  rating_well_led VARCHAR(50),
-  last_inspection_date DATE,
-  inspection_report_url VARCHAR(500),
-  service_types TEXT,
-  specialisms TEXT,
-  regulated_activities TEXT,
-  number_of_beds INT,
-  ownership_type VARCHAR(50),
-  quality_score INT,
-  quality_tier VARCHAR(20),
-  meta_title VARCHAR(300),
-  meta_description VARCHAR(500),
-  geocode_source VARCHAR(20),
-  last_updated TIMESTAMP,
-  data_source VARCHAR(50),
-  data_attribution VARCHAR(200)
-);
-
-CREATE INDEX IF NOT EXISTS idx_postcode ON care_providers (postcode);
-CREATE INDEX IF NOT EXISTS idx_region ON care_providers (region);
-CREATE INDEX IF NOT EXISTS idx_local_authority ON care_providers (local_authority);
-CREATE INDEX IF NOT EXISTS idx_overall_rating ON care_providers (overall_rating);
-CREATE INDEX IF NOT EXISTS idx_quality_tier ON care_providers (quality_tier);
-CREATE INDEX IF NOT EXISTS idx_status ON care_providers (status);
-CREATE INDEX IF NOT EXISTS idx_slug ON care_providers (slug);
-CREATE INDEX IF NOT EXISTS idx_search ON care_providers
-USING GIN (to_tsvector('english', coalesce(name,'') || ' ' || coalesce(town,'') || ' ' || coalesce(county,'') || ' ' || coalesce(service_types,'') || ' ' || coalesce(specialisms,'')));
-
-/* ========================
-   MySQL DDL
-   ======================== */
-CREATE TABLE IF NOT EXISTS care_providers (
-  id VARCHAR(20) PRIMARY KEY,
-  provider_id VARCHAR(20),
-  name VARCHAR(255) NOT NULL,
-  slug VARCHAR(300) UNIQUE,
-  type VARCHAR(100),
-  status VARCHAR(20),
-  registration_date DATE,
-  address_line1 VARCHAR(255),
-  address_line2 VARCHAR(255),
-  town VARCHAR(100),
-  county VARCHAR(100),
-  postcode VARCHAR(10),
-  region VARCHAR(100),
-  local_authority VARCHAR(100),
-  country VARCHAR(50) DEFAULT 'England',
-  latitude DECIMAL(10,7),
-  longitude DECIMAL(10,7),
-  phone VARCHAR(20),
-  website VARCHAR(500),
-  email VARCHAR(255),
-  overall_rating VARCHAR(50),
-  rating_safe VARCHAR(50),
-  rating_effective VARCHAR(50),
-  rating_caring VARCHAR(50),
-  rating_responsive VARCHAR(50),
-  rating_well_led VARCHAR(50),
-  last_inspection_date DATE,
-  inspection_report_url VARCHAR(500),
-  service_types TEXT,
-  specialisms TEXT,
-  regulated_activities TEXT,
-  number_of_beds INT,
-  ownership_type VARCHAR(50),
-  quality_score INT,
-  quality_tier VARCHAR(20),
-  meta_title VARCHAR(300),
-  meta_description VARCHAR(500),
-  geocode_source VARCHAR(20),
-  last_updated DATETIME,
-  data_source VARCHAR(50),
-  data_attribution VARCHAR(200),
-  INDEX idx_postcode (postcode),
-  INDEX idx_region (region),
-  INDEX idx_local_authority (local_authority),
-  INDEX idx_overall_rating (overall_rating),
-  INDEX idx_quality_tier (quality_tier),
-  INDEX idx_status (status),
-  INDEX idx_slug (slug),
-  FULLTEXT INDEX idx_search (name, town, county, service_types, specialisms)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-"""
-    path.write_text(sql, encoding="utf-8")
-
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Prepare directory-ready outputs from cleaned CQC data")
@@ -409,8 +279,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--failed-ids", default=INPUT_FAILED_IDS, help="Failed IDs text file")
     parser.add_argument("--output-csv", default=OUTPUT_DIRECTORY_CSV, help="Output directory CSV")
     parser.add_argument("--output-json", default=OUTPUT_DIRECTORY_JSON, help="Output directory JSON")
-    parser.add_argument("--output-sql", default=OUTPUT_DIRECTORY_SQL, help="Output SQL inserts file")
-    parser.add_argument("--import-sql", default=OUTPUT_IMPORT_SQL, help="Output DB import DDL file")
     parser.add_argument("--enable-geocode", action="store_true", help="Geocode missing coordinates via postcodes.io")
     parser.add_argument("--geocode-sleep", type=float, default=0.1, help="Sleep seconds between geocode calls")
     return parser.parse_args()
@@ -425,8 +293,6 @@ def main() -> int:
 
     output_csv = Path(args.output_csv).resolve()
     output_json = Path(args.output_json).resolve()
-    output_sql = Path(args.output_sql).resolve()
-    import_sql = Path(args.import_sql).resolve()
 
     if not input_path.exists():
         print(f"Input file not found: {input_path}")
@@ -587,58 +453,6 @@ def main() -> int:
     with output_json.open("w", encoding="utf-8") as fh:
         json.dump(output_rows, fh, indent=2, ensure_ascii=True)
 
-    with output_sql.open("w", encoding="utf-8") as fh:
-        fh.write("-- directory_providers.sql\n")
-        fh.write("-- Generated INSERT statements for PostgreSQL/MySQL\n\n")
-        cols = ", ".join(fieldnames)
-        for row in output_rows:
-            values = [
-                sql_literal(row["id"]),
-                sql_literal(row["provider_id"]),
-                sql_literal(row["name"]),
-                sql_literal(row["slug"]),
-                sql_literal(row["type"]),
-                sql_literal(row["status"]),
-                sql_literal(row["registration_date"]),
-                sql_literal(row["address_line1"]),
-                sql_literal(row["address_line2"]),
-                sql_literal(row["town"]),
-                sql_literal(row["county"]),
-                sql_literal(row["postcode"]),
-                sql_literal(row["region"]),
-                sql_literal(row["local_authority"]),
-                sql_literal(row["country"]),
-                sql_literal(row["latitude"], numeric=row["latitude"] is not None),
-                sql_literal(row["longitude"], numeric=row["longitude"] is not None),
-                sql_literal(row["phone"]),
-                sql_literal(row["website"]),
-                sql_literal(row["email"]),
-                sql_literal(row["overall_rating"]),
-                sql_literal(row["rating_safe"]),
-                sql_literal(row["rating_effective"]),
-                sql_literal(row["rating_caring"]),
-                sql_literal(row["rating_responsive"]),
-                sql_literal(row["rating_well_led"]),
-                sql_literal(row["last_inspection_date"]),
-                sql_literal(row["inspection_report_url"]),
-                sql_literal(row["service_types"]),
-                sql_literal(row["specialisms"]),
-                sql_literal(row["regulated_activities"]),
-                sql_literal(row["number_of_beds"], numeric=row["number_of_beds"] is not None),
-                sql_literal(row["ownership_type"]),
-                sql_literal(row["quality_score"], numeric=row["quality_score"] is not None),
-                sql_literal(row["quality_tier"]),
-                sql_literal(row["meta_title"]),
-                sql_literal(row["meta_description"]),
-                sql_literal(row["geocode_source"]),
-                sql_literal(row["last_updated"]),
-                sql_literal(row["data_source"]),
-                sql_literal(row["data_attribution"]),
-            ]
-            fh.write(f"INSERT INTO care_providers ({cols}) VALUES ({', '.join(values)});\n")
-
-    write_import_sql(import_sql)
-
     total_extracted = count_csv_rows(raw_path)
     active_count = len(output_rows)
     failed_count = count_lines(failed_ids_path)
@@ -656,7 +470,7 @@ def main() -> int:
     print("║                                                  ║")
     print("║ Output: directory_providers.csv                  ║")
     print("║ Output: directory_providers.json                 ║")
-    print("║ Output: directory_providers.sql                  ║")
+    print("║ DB schema: db/init.sql                           ║")
     print("║ Report: quality_summary.txt                      ║")
     print("╚══════════════════════════════════════════════════╝")
 

@@ -33,6 +33,14 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+.pytest_cache/
+
+# Frontend
+frontend/node_modules/
+frontend/.next/
+
+# Docker
+pgdata/
 
 # Temporary
 .tmp/
