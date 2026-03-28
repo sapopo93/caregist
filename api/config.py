@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     stripe_price_pro: str = ""
     app_url: str = "http://localhost:3000"
 
-    model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
+    model_config = {"env_file": ".env", "env_file_encoding": "utf-8", "extra": "ignore"}
 
     def validate_production(self) -> None:
         if self.api_master_key == "change_me_in_production":

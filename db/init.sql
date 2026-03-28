@@ -150,3 +150,75 @@ ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS user_id INT REFERENCES users(id);
 INSERT INTO api_keys (key, name, email, tier, rate_limit)
 VALUES ('dev_key_change_me_in_production', 'Development Key', 'dev@caregist.co.uk', 'free', 100)
 ON CONFLICT (key) DO NOTHING;
+
+-- ============================================================
+-- Phase 3: Growth tables (provider claims, reviews, enquiries)
+-- ============================================================
+
+-- New columns on care_providers for growth features
+ALTER TABLE care_providers ADD COLUMN IF NOT EXISTS is_claimed BOOLEAN DEFAULT false;
+ALTER TABLE care_providers ADD COLUMN IF NOT EXISTS claimed_at TIMESTAMP;
+ALTER TABLE care_providers ADD COLUMN IF NOT EXISTS review_count INT DEFAULT 0;
+ALTER TABLE care_providers ADD COLUMN IF NOT EXISTS avg_review_rating DECIMAL(2,1);
+ALTER TABLE care_providers ADD COLUMN IF NOT EXISTS enquiry_count INT DEFAULT 0;
+
+-- Provider claims — growth flywheel: providers claim → invest → attract clients
+CREATE TABLE IF NOT EXISTS provider_claims (
+  id SERIAL PRIMARY KEY,
+  provider_id VARCHAR(20) NOT NULL REFERENCES care_providers(id),
+  status VARCHAR(20) NOT NULL DEFAULT 'pending',
+  claimant_name VARCHAR(255) NOT NULL,
+  claimant_email VARCHAR(255) NOT NULL,
+  claimant_phone VARCHAR(20),
+  claimant_role VARCHAR(100),
+  organisation_name VARCHAR(255),
+  proof_of_association TEXT,
+  admin_notes TEXT,
+  created_at TIMESTAMP DEFAULT NOW(),
+  reviewed_at TIMESTAMP,
+  reviewed_by VARCHAR(255)
+);
+
+CREATE INDEX IF NOT EXISTS idx_claims_provider ON provider_claims (provider_id);
+CREATE INDEX IF NOT EXISTS idx_claims_status ON provider_claims (status);
+CREATE INDEX IF NOT EXISTS idx_claims_email ON provider_claims (claimant_email);
+
+-- Reviews — user-generated content layer
+CREATE TABLE IF NOT EXISTS reviews (
+  id SERIAL PRIMARY KEY,
+  provider_id VARCHAR(20) NOT NULL REFERENCES care_providers(id),
+  status VARCHAR(20) NOT NULL DEFAULT 'pending',
+  rating SMALLINT NOT NULL CHECK (rating >= 1 AND rating <= 5),
+  title VARCHAR(200) NOT NULL,
+  body TEXT NOT NULL,
+  reviewer_name VARCHAR(100) NOT NULL,
+  reviewer_email VARCHAR(255) NOT NULL,
+  relationship VARCHAR(50),
+  visit_date DATE,
+  admin_notes TEXT,
+  created_at TIMESTAMP DEFAULT NOW(),
+  moderated_at TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_reviews_provider ON reviews (provider_id);
+CREATE INDEX IF NOT EXISTS idx_reviews_status ON reviews (status);
+CREATE INDEX IF NOT EXISTS idx_reviews_rating ON reviews (rating);
+
+-- Enquiries — lead-gen monetisation engine
+CREATE TABLE IF NOT EXISTS enquiries (
+  id SERIAL PRIMARY KEY,
+  provider_id VARCHAR(20) NOT NULL REFERENCES care_providers(id),
+  status VARCHAR(20) NOT NULL DEFAULT 'new',
+  enquirer_name VARCHAR(255) NOT NULL,
+  enquirer_email VARCHAR(255) NOT NULL,
+  enquirer_phone VARCHAR(20),
+  relationship VARCHAR(50),
+  care_type VARCHAR(100),
+  urgency VARCHAR(20) DEFAULT 'exploring',
+  message TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW(),
+  read_at TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_enquiries_provider ON enquiries (provider_id);
+CREATE INDEX IF NOT EXISTS idx_enquiries_status ON enquiries (status);

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import Link from "next/link";
+import CompareBar from "@/components/CompareBar";
 
 export const metadata: Metadata = {
   title: "CareGist — UK Care Provider Directory",
@@ -25,6 +26,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </Link>
             <nav className="flex gap-6 text-sm items-center">
               <Link href="/search" className="hover:text-amber transition-colors">Search</Link>
+              <Link href="/compare" className="hover:text-amber transition-colors">Compare</Link>
               <Link href="/pricing" className="hover:text-amber transition-colors">Pricing</Link>
               <Link href="/dashboard" className="hover:text-amber transition-colors">Dashboard</Link>
               <Link href="/signup" className="px-4 py-1.5 bg-clay rounded-lg hover:bg-amber transition-colors">Sign Up</Link>
@@ -33,6 +35,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </header>
 
         <main className="flex-1">{children}</main>
+
+        <CompareBar />
 
         <footer className="bg-charcoal text-stone px-6 py-8 text-sm">
           <div className="max-w-6xl mx-auto">

@@ -3,7 +3,8 @@
 SEARCH_SELECT = """
 SELECT id, provider_id, name, slug, type, status, town, county, postcode,
        region, overall_rating, service_types, specialisms, number_of_beds,
-       quality_score, quality_tier, latitude, longitude, phone
+       quality_score, quality_tier, latitude, longitude, phone,
+       is_claimed, review_count, avg_review_rating
 FROM care_providers
 """
 
@@ -92,4 +93,8 @@ FROM care_providers
 WHERE overall_rating IS NOT NULL AND overall_rating != ''
 GROUP BY overall_rating
 ORDER BY provider_count DESC
+"""
+
+COMPARE_QUERY = """
+SELECT * FROM care_providers WHERE slug = ANY($1::text[])
 """

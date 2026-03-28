@@ -3,7 +3,7 @@ FROM python:3.12-slim
 WORKDIR /app
 
 # Install API dependencies
-RUN pip install --no-cache-dir fastapi uvicorn[standard] asyncpg pydantic-settings stripe
+RUN pip install --no-cache-dir fastapi uvicorn[standard] asyncpg pydantic-settings stripe email-validator
 
 COPY api/ api/
 

@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from api.config import settings
 from api.database import close_pool, init_pool
-from api.routers import auth, billing, health, providers, regions
+from api.routers import admin, auth, billing, claims, enquiries, health, providers, regions, reviews
 
 
 @asynccontextmanager
@@ -38,6 +38,10 @@ app.add_middleware(
 app.include_router(health.router)
 app.include_router(auth.router)
 app.include_router(billing.router)
+app.include_router(claims.router)
+app.include_router(reviews.router)
+app.include_router(enquiries.router)
+app.include_router(admin.router)
 app.include_router(providers.router)
 app.include_router(regions.router)
 

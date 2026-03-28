@@ -51,3 +51,11 @@ export async function getRegions() {
 export async function getServiceTypes() {
   return apiFetch("/api/v1/service-types");
 }
+
+export async function getProviderReviews(slug: string, page = "1") {
+  return apiFetch(`/api/v1/providers/${slug}/reviews`, { page });
+}
+
+export async function getCompareProviders(slugs: string[]) {
+  return apiFetch("/api/v1/providers/compare", { slugs: slugs.join(",") });
+}

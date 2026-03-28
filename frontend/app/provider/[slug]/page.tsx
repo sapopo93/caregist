@@ -1,5 +1,10 @@
-import { getProvider } from "@/lib/api";
+import { getProvider, getProviderReviews } from "@/lib/api";
 import RatingBadge from "@/components/RatingBadge";
+import VerifiedBadge from "@/components/VerifiedBadge";
+import ReviewsSection from "@/components/ReviewsSection";
+import EnquiryForm from "@/components/EnquiryForm";
+import ClaimModal from "@/components/ClaimModal";
+import CompareButton from "@/components/CompareButton";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 
@@ -44,6 +49,17 @@ export default async function ProviderPage({ params }: { params: Promise<{ slug:
 
   if (!provider) notFound();
 
+  // Fetch reviews (non-blocking — page still renders if this fails)
+  let reviews: any[] = [];
+  let reviewSummary = { count: 0, avg_rating: null as number | null };
+  try {
+    const reviewRes = await getProviderReviews(slug);
+    reviews = reviewRes.data || [];
+    reviewSummary = reviewRes.summary || reviewSummary;
+  } catch {
+    // Reviews failing shouldn't break the page
+  }
+
   const location = [provider.address_line1, provider.address_line2, provider.town, provider.county, provider.postcode]
     .filter(Boolean)
     .join(", ");
@@ -56,11 +72,22 @@ export default async function ProviderPage({ params }: { params: Promise<{ slug:
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-start justify-between gap-4 mb-3">
-          <h1 className="text-3xl font-bold truncate">{provider.name}</h1>
-          <RatingBadge rating={provider.overall_rating} />
+          <div className="flex items-center gap-3 flex-wrap">
+            <h1 className="text-3xl font-bold">{provider.name}</h1>
+            {provider.is_claimed && <VerifiedBadge size="md" />}
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <CompareButton slug={slug} name={provider.name} />
+            <RatingBadge rating={provider.overall_rating} />
+          </div>
         </div>
         <p className="text-dusk">{provider.type}</p>
         <p className="text-dusk">{location}</p>
+        {provider.review_count > 0 && provider.avg_review_rating && (
+          <p className="text-sm text-clay mt-1">
+            {provider.avg_review_rating} stars from {provider.review_count} review{provider.review_count !== 1 ? "s" : ""}
+          </p>
+        )}
       </div>
 
       {/* Key Question Ratings */}
@@ -151,6 +178,12 @@ export default async function ProviderPage({ params }: { params: Promise<{ slug:
         </div>
       )}
 
+      {/* Enquiry Form — the money section */}
+      <EnquiryForm slug={slug} providerName={provider.name} />
+
+      {/* Reviews */}
+      <ReviewsSection slug={slug} reviews={reviews} summary={reviewSummary} providerName={provider.name} />
+
       {/* CQC Link */}
       {provider.inspection_report_url && (
         <div className="text-center py-6">
@@ -162,6 +195,13 @@ export default async function ProviderPage({ params }: { params: Promise<{ slug:
           >
             View full CQC inspection report
           </a>
+        </div>
+      )}
+
+      {/* Claim listing */}
+      {!provider.is_claimed && (
+        <div className="text-center py-4">
+          <ClaimModal slug={slug} providerName={provider.name} />
         </div>
       )}
 

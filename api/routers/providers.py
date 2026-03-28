@@ -14,6 +14,7 @@ from api.config import settings
 from api.database import get_connection
 from api.middleware.auth import validate_api_key
 from api.queries.providers import (
+    COMPARE_QUERY,
     DEFAULT_SORT,
     DETAIL_BY_SLUG,
     NEARBY_COUNT,
@@ -108,6 +109,29 @@ async def export_providers_csv(
         media_type="text/csv",
         headers={"Content-Disposition": "attachment; filename=caregist_export.csv"},
     )
+
+
+@router.get("/compare")
+async def compare_providers(
+    slugs: str = Query(..., description="Comma-separated provider slugs (max 3)", max_length=1000),
+    _auth: dict = Depends(validate_api_key),
+) -> dict:
+    """Compare up to 3 providers side-by-side."""
+    slug_list = [s.strip() for s in slugs.split(",") if s.strip()][:3]
+    if not slug_list:
+        raise HTTPException(status_code=400, detail="Provide at least one provider slug.")
+
+    try:
+        async with get_connection() as conn:
+            rows = await conn.fetch(COMPARE_QUERY, slug_list)
+    except Exception as exc:
+        logger.error("Compare query failed: %s", exc)
+        raise HTTPException(status_code=503, detail="Database query failed.")
+
+    if not rows:
+        raise HTTPException(status_code=404, detail="No matching providers found.")
+
+    return {"data": [_row_to_dict(r) for r in rows]}
 
 
 @router.get("/{slug}")
