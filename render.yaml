@@ -1,10 +1,11 @@
 services:
   - type: web
     name: caregist-api
-    runtime: docker
-    dockerfilePath: ./Dockerfile
+    runtime: python
     region: frankfurt
     plan: free
+    buildCommand: pip install fastapi uvicorn[standard] asyncpg pydantic-settings stripe email-validator
+    startCommand: uvicorn api.main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: DATABASE_URL
         sync: false
@@ -21,7 +22,9 @@ services:
       - key: STRIPE_PRICE_BUSINESS
         value: price_1TFw3p4mijLHzRRkTuNDsac0
       - key: CORS_ORIGINS
-        value: https://caregist.co.uk,https://www.caregist.co.uk
+        value: https://caregist.co.uk,https://www.caregist.co.uk,http://localhost:3000
       - key: APP_URL
         value: https://caregist.co.uk
+      - key: PYTHON_VERSION
+        value: "3.12.0"
     healthCheckPath: /api/v1/health
