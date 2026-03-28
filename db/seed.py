@@ -107,9 +107,7 @@ def seed(database_url: str, csv_path: Path, truncate: bool = False) -> int:
             UPDATE care_providers
             SET geom = ST_SetSRID(ST_MakePoint(longitude::float, latitude::float), 4326)
             WHERE latitude IS NOT NULL
-              AND longitude IS NOT NULL
-              AND latitude != ''
-              AND longitude != '';
+              AND longitude IS NOT NULL;
         """)
         geo_count = cur.rowcount
 
