@@ -1,0 +1,7 @@
+requests==2.31.0
+pandas==2.1.0
+numpy==1.26.0
+tqdm==4.66.0
+python-slugify==8.0.1
+phonenumbers==8.13.0
+validators==0.22.0
