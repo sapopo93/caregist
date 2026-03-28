@@ -39,6 +39,12 @@ services:
       DATABASE_URL: postgresql://caregist:${DB_PASSWORD:-caregist_dev}@db:5432/caregist
       API_MASTER_KEY: ${API_MASTER_KEY:-dev_key_change_me}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      STRIPE_PRICE_STARTER: ${STRIPE_PRICE_STARTER:-}
+      STRIPE_PRICE_PRO: ${STRIPE_PRICE_PRO:-}
+      STRIPE_PRICE_BUSINESS: ${STRIPE_PRICE_BUSINESS:-}
+      APP_URL: ${APP_URL:-http://localhost:3000}
     ports:
       - "8000:8000"
 
