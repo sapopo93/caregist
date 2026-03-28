@@ -9,12 +9,13 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from api.config import settings
 from api.database import close_pool, init_pool
-from api.routers import health, providers, regions
+from api.routers import auth, billing, health, providers, regions
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_pool()
+    billing.init_stripe()
     yield
     await close_pool()
 
@@ -30,11 +31,13 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins.split(","),
-    allow_methods=["GET"],
+    allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
 
 app.include_router(health.router)
+app.include_router(auth.router)
+app.include_router(billing.router)
 app.include_router(providers.router)
 app.include_router(regions.router)
 

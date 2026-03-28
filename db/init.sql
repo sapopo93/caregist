@@ -114,6 +114,38 @@ CREATE TRIGGER care_providers_updated_at
   FOR EACH ROW
   EXECUTE FUNCTION update_timestamp();
 
+-- Users table
+CREATE TABLE IF NOT EXISTS users (
+  id SERIAL PRIMARY KEY,
+  email VARCHAR(255) UNIQUE NOT NULL,
+  name VARCHAR(255),
+  password_hash VARCHAR(255) NOT NULL,
+  stripe_customer_id VARCHAR(100),
+  is_verified BOOLEAN DEFAULT false,
+  verification_token VARCHAR(100),
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_users_email ON users (email);
+CREATE INDEX IF NOT EXISTS idx_users_stripe ON users (stripe_customer_id);
+
+-- Subscriptions table
+CREATE TABLE IF NOT EXISTS subscriptions (
+  id SERIAL PRIMARY KEY,
+  user_id INT REFERENCES users(id),
+  stripe_subscription_id VARCHAR(100) UNIQUE,
+  stripe_price_id VARCHAR(100),
+  tier VARCHAR(20) NOT NULL DEFAULT 'free',
+  status VARCHAR(20) NOT NULL DEFAULT 'active',
+  current_period_end TIMESTAMP,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Link api_keys to users
+ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS user_id INT REFERENCES users(id);
+
 -- Insert a default dev API key
 INSERT INTO api_keys (key, name, email, tier, rate_limit)
 VALUES ('dev_key_change_me_in_production', 'Development Key', 'dev@caregist.co.uk', 'free', 100)

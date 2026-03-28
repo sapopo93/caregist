@@ -16,6 +16,11 @@ class Settings(BaseSettings):
     max_page_size: int = 100
     cors_origins: str = "http://localhost:3000"
     query_timeout_ms: int = 10000
+    stripe_secret_key: str = ""
+    stripe_webhook_secret: str = ""
+    stripe_price_starter: str = ""
+    stripe_price_pro: str = ""
+    app_url: str = "http://localhost:3000"
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 

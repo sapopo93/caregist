@@ -23,8 +23,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <Link href="/" className="text-2xl font-bold" style={{ fontFamily: "Playfair Display" }}>
               <span className="text-amber">C</span>are<span className="text-amber">G</span>ist
             </Link>
-            <nav className="flex gap-6 text-sm">
+            <nav className="flex gap-6 text-sm items-center">
               <Link href="/search" className="hover:text-amber transition-colors">Search</Link>
+              <Link href="/pricing" className="hover:text-amber transition-colors">Pricing</Link>
+              <Link href="/dashboard" className="hover:text-amber transition-colors">Dashboard</Link>
+              <Link href="/signup" className="px-4 py-1.5 bg-clay rounded-lg hover:bg-amber transition-colors">Sign Up</Link>
             </nav>
           </div>
         </header>
