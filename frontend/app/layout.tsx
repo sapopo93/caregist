@@ -55,6 +55,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <a href="/terms" className="underline hover:text-cream">Terms of Service</a>
               <a href="/acceptable-use" className="underline hover:text-cream">Acceptable Use</a>
               <a href="/review-policy" className="underline hover:text-cream">Review Policy</a>
+              <a href="/cookies" className="underline hover:text-cream">Cookies</a>
               <a href="/pricing" className="underline hover:text-cream">Pricing</a>
               <a href="mailto:hello@caregist.co.uk" className="underline hover:text-cream">Contact</a>
             </div>
