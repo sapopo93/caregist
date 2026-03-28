@@ -16,8 +16,8 @@ export default function PrivacyPage() {
         <section>
           <h2 className="text-xl font-bold text-bark mt-8 mb-3">1. Who we are</h2>
           <p>
-            CareGist is a trading name of [Your Company Name], registered in England and Wales
-            (company number [XXXXXXXX]), with registered address at [Your Address].
+            CareGist is a trading name of H-Kay Limited, registered in England and Wales
+            (company number 10417923), with registered address at C/O Bilberry Accountants Ltd, Castle Court, 41 London Road, Reigate, England, RH2 9RJ.
           </p>
           <p>
             We are the data controller for the personal data described in this policy.

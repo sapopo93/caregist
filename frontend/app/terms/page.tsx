@@ -17,8 +17,8 @@ export default function TermsPage() {
           <h2 className="text-xl font-bold text-bark mt-8 mb-3">1. About CareGist</h2>
           <p>
             CareGist provides a directory of care providers registered with the Care Quality Commission (CQC)
-            in England, accessible via website and API. CareGist is operated by [Your Company Name],
-            registered in England and Wales (company number [XXXXXXXX]).
+            in England, accessible via website and API. CareGist is operated by H-Kay Limited,
+            registered in England and Wales (company number 10417923).
           </p>
           <p>
             By using CareGist, you agree to these terms. If you do not agree, do not use the service.
