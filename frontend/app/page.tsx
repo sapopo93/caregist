@@ -39,16 +39,16 @@ export default function HomePage() {
         <h2 className="text-2xl font-bold mb-6">Browse by service type</h2>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           {[
-            { name: "Care Homes", count: "10,309", query: "Residential Homes" },
-            { name: "Nursing Homes", count: "4,386", query: "Nursing Homes" },
-            { name: "Home Care", count: "14,240", query: "Homecare Agencies" },
-            { name: "GP Surgeries", count: "9,367", query: "Doctors/Gps" },
-            { name: "Dental Practices", count: "12,004", query: "Dentist" },
-            { name: "Supported Living", count: "4,727", query: "Supported Living" },
+            { name: "Care Homes", count: "10,309", slug: "care-homes" },
+            { name: "Nursing Homes", count: "4,386", slug: "nursing-homes" },
+            { name: "Home Care", count: "14,240", slug: "home-care" },
+            { name: "GP Surgeries", count: "9,367", slug: "gp-surgeries" },
+            { name: "Dental Practices", count: "12,004", slug: "dental" },
+            { name: "Supported Living", count: "4,727", slug: "supported-living" },
           ].map((type) => (
             <a
               key={type.name}
-              href={`/search?service_type=${encodeURIComponent(type.query)}`}
+              href={`/services/${type.slug}`}
               className="bg-cream border border-stone rounded-lg p-4 hover:border-clay transition-colors"
             >
               <div className="font-semibold text-bark">{type.name}</div>
