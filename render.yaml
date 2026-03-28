@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: caregist-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    region: frankfurt
+    plan: free
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: API_MASTER_KEY
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: STRIPE_PRICE_STARTER
+        value: price_1TFvyt4mijLHzRRkyouYDBqo
+      - key: STRIPE_PRICE_PRO
+        value: price_1TFw1h4mijLHzRRkiGDF4P8X
+      - key: STRIPE_PRICE_BUSINESS
+        value: price_1TFw3p4mijLHzRRkTuNDsac0
+      - key: CORS_ORIGINS
+        value: https://caregist.co.uk,https://www.caregist.co.uk
+      - key: APP_URL
+        value: https://caregist.co.uk
+    healthCheckPath: /api/v1/health

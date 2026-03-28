@@ -1,9 +1,5 @@
 {
   "framework": "nextjs",
   "buildCommand": "npm run build",
-  "outputDirectory": ".next",
-  "env": {
-    "API_URL": "@api_url",
-    "API_KEY": "@api_key"
-  }
+  "outputDirectory": ".next"
 }
