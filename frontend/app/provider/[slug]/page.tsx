@@ -1,6 +1,7 @@
 import { getProvider } from "@/lib/api";
 import RatingBadge from "@/components/RatingBadge";
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 
 const ratingDimensions = [
   { key: "rating_safe", label: "Safe" },
@@ -10,6 +11,20 @@ const ratingDimensions = [
   { key: "rating_well_led", label: "Well-led" },
 ];
 
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  try {
+    const res = await getProvider(slug);
+    const p = res.data;
+    return {
+      title: p.meta_title || `${p.name} | CareGist`,
+      description: p.meta_description || `${p.name} - CQC rated ${p.overall_rating} care provider.`,
+    };
+  } catch {
+    return { title: "Provider Not Found | CareGist" };
+  }
+}
+
 export default async function ProviderPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
 
@@ -17,8 +32,14 @@ export default async function ProviderPage({ params }: { params: Promise<{ slug:
   try {
     const res = await getProvider(slug);
     provider = res.data;
-  } catch {
-    notFound();
+  } catch (e: any) {
+    if (e?.status === 404) notFound();
+    return (
+      <div className="max-w-4xl mx-auto px-6 py-12 text-center">
+        <h1 className="text-2xl font-bold text-bark mb-4">Something went wrong</h1>
+        <p className="text-dusk">We couldn&apos;t load this provider. Please try again later.</p>
+      </div>
+    );
   }
 
   if (!provider) notFound();
@@ -27,15 +48,15 @@ export default async function ProviderPage({ params }: { params: Promise<{ slug:
     .filter(Boolean)
     .join(", ");
 
-  const services = provider.service_types?.split("|") || [];
-  const specs = provider.specialisms?.split("|") || [];
+  const services = provider.service_types?.split("|").filter(Boolean) || [];
+  const specs = provider.specialisms?.split("|").filter(Boolean) || [];
 
   return (
     <div className="max-w-4xl mx-auto px-6 py-8">
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-start justify-between gap-4 mb-3">
-          <h1 className="text-3xl font-bold">{provider.name}</h1>
+          <h1 className="text-3xl font-bold truncate">{provider.name}</h1>
           <RatingBadge rating={provider.overall_rating} />
         </div>
         <p className="text-dusk">{provider.type}</p>
@@ -71,18 +92,30 @@ export default async function ProviderPage({ params }: { params: Promise<{ slug:
           {provider.website && (
             <p className="mb-1">
               <span className="text-dusk">Website:</span>{" "}
-              <a href={provider.website} target="_blank" rel="noopener noreferrer" className="text-clay underline">
+              <a href={provider.website} target="_blank" rel="noopener noreferrer" className="text-clay underline truncate inline-block max-w-xs">
                 {provider.website.replace(/^https?:\/\//, "").slice(0, 40)}
               </a>
             </p>
           )}
           {provider.email && <p className="mb-1"><span className="text-dusk">Email:</span> {provider.email}</p>}
+          {provider.latitude && provider.longitude && (
+            <p className="mt-3">
+              <a
+                href={`https://www.google.com/maps/search/?api=1&query=${provider.latitude},${provider.longitude}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-clay underline text-sm"
+              >
+                View on Google Maps
+              </a>
+            </p>
+          )}
         </div>
 
         {/* Key Info */}
         <div className="bg-cream border border-stone rounded-lg p-6">
           <h2 className="text-xl font-bold mb-3">Details</h2>
-          {provider.number_of_beds && <p className="mb-1"><span className="text-dusk">Beds:</span> {provider.number_of_beds}</p>}
+          {provider.number_of_beds > 0 && <p className="mb-1"><span className="text-dusk">Beds:</span> {provider.number_of_beds}</p>}
           {provider.region && <p className="mb-1"><span className="text-dusk">Region:</span> {provider.region}</p>}
           {provider.local_authority && <p className="mb-1"><span className="text-dusk">Local Authority:</span> {provider.local_authority}</p>}
           {provider.registration_date && <p className="mb-1"><span className="text-dusk">Registered:</span> {provider.registration_date}</p>}

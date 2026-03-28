@@ -97,6 +97,23 @@ CREATE TABLE IF NOT EXISTS pipeline_runs (
   error_message TEXT
 );
 
+-- Set timezone to UTC
+SET timezone = 'UTC';
+
+-- Auto-update updated_at on row change
+CREATE OR REPLACE FUNCTION update_timestamp()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER care_providers_updated_at
+  BEFORE UPDATE ON care_providers
+  FOR EACH ROW
+  EXECUTE FUNCTION update_timestamp();
+
 -- Insert a default dev API key
 INSERT INTO api_keys (key, name, email, tier, rate_limit)
 VALUES ('dev_key_change_me_in_production', 'Development Key', 'dev@caregist.co.uk', 'free', 100)

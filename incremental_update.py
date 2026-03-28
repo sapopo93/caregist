@@ -210,20 +210,35 @@ def clean_location(data: dict[str, Any]) -> dict[str, Any] | None:
     }
 
 
+ALLOWED_COLUMNS = frozenset({
+    "id", "provider_id", "name", "type", "status", "registration_date",
+    "address_line1", "address_line2", "town", "county", "postcode",
+    "region", "local_authority", "latitude", "longitude", "phone", "website",
+    "overall_rating", "rating_safe", "rating_effective", "rating_caring",
+    "rating_responsive", "rating_well_led", "last_inspection_date",
+    "service_types", "specialisms", "number_of_beds", "ownership_type",
+})
+
+
 def upsert_provider(cur, record: dict[str, Any]) -> str:
     """Upsert a single provider record. Returns 'inserted', 'updated', or 'skipped'."""
-    cur.execute("SELECT id FROM care_providers WHERE id = %s", (record["id"],))
+    # Whitelist columns to prevent SQL injection via dict keys
+    safe_record = {k: v for k, v in record.items() if k in ALLOWED_COLUMNS}
+    if "id" not in safe_record:
+        return "skipped"
+
+    cur.execute("SELECT id FROM care_providers WHERE id = %s", (safe_record["id"],))
     exists = cur.fetchone()
 
-    cols = list(record.keys())
-    vals = [record[c] for c in cols]
+    cols = list(safe_record.keys())
+    vals = [safe_record[c] for c in cols]
     now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
 
     if exists:
         set_clause = ", ".join(f"{c} = %s" for c in cols)
         cur.execute(
             f"UPDATE care_providers SET {set_clause}, updated_at = %s WHERE id = %s",
-            vals + [now, record["id"]],
+            vals + [now, safe_record["id"]],
         )
         return "updated"
     else:

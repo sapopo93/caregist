@@ -1,5 +1,6 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-const API_KEY = process.env.NEXT_PUBLIC_API_KEY || "dev_key_change_me";
+// Server-side only — no NEXT_PUBLIC_ prefix, key stays on server
+const API_BASE = process.env.API_URL || "http://localhost:8000";
+const API_KEY = process.env.API_KEY || "dev_key_change_me";
 
 async function apiFetch(path: string, params?: Record<string, string>) {
   const url = new URL(`${API_BASE}${path}`);
@@ -12,7 +13,11 @@ async function apiFetch(path: string, params?: Record<string, string>) {
     headers: { "X-API-Key": API_KEY },
     next: { revalidate: 3600 },
   });
-  if (!res.ok) throw new Error(`API error: ${res.status}`);
+  if (!res.ok) {
+    const error = new Error(`API error: ${res.status}`);
+    (error as any).status = res.status;
+    throw error;
+  }
   return res.json();
 }
 
@@ -21,6 +26,7 @@ export async function searchProviders(params: {
   region?: string;
   rating?: string;
   type?: string;
+  service_type?: string;
   page?: string;
 }) {
   return apiFetch("/api/v1/providers/search", params);

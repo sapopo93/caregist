@@ -30,7 +30,7 @@ export default function ProviderCard({ provider }: { provider: Provider }) {
         {services && <p className="text-dusk text-sm mb-2">{services}</p>}
         <div className="flex gap-3 text-sm text-dusk">
           {provider.phone && <span>{provider.phone}</span>}
-          {provider.number_of_beds && <span>{provider.number_of_beds} beds</span>}
+          {provider.number_of_beds > 0 && <span>{provider.number_of_beds} beds</span>}
           <span className="ml-auto text-xs bg-parchment px-2 py-0.5 rounded">{provider.quality_tier}</span>
         </div>
       </div>

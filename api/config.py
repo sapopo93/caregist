@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import sys
+
 from pydantic_settings import BaseSettings
 
 
@@ -12,9 +14,15 @@ class Settings(BaseSettings):
     api_master_key: str = "change_me_in_production"
     default_page_size: int = 20
     max_page_size: int = 100
-    cors_origins: str = "*"
+    cors_origins: str = "http://localhost:3000"
+    query_timeout_ms: int = 10000
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 
+    def validate_production(self) -> None:
+        if self.api_master_key == "change_me_in_production":
+            print("WARNING: API_MASTER_KEY is set to default. Set a secure value in .env", file=sys.stderr)
+
 
 settings = Settings()
+settings.validate_production()
