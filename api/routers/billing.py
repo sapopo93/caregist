@@ -14,11 +14,7 @@ from api.database import get_connection
 logger = logging.getLogger("caregist.billing")
 router = APIRouter(prefix="/api/v1/billing", tags=["billing"])
 
-TIER_LIMITS = {
-    "free": 100,
-    "starter": 1000,
-    "pro": 5000,
-}
+from api.config import get_tier_config
 
 PRICE_TO_TIER = {}  # Populated at startup from settings
 
@@ -33,6 +29,8 @@ def init_stripe():
         PRICE_TO_TIER[settings.stripe_price_starter] = "starter"
     if settings.stripe_price_pro:
         PRICE_TO_TIER[settings.stripe_price_pro] = "pro"
+    if settings.stripe_price_business:
+        PRICE_TO_TIER[settings.stripe_price_business] = "business"
 
 
 class CheckoutRequest(BaseModel):
@@ -49,6 +47,7 @@ async def create_checkout(req: CheckoutRequest) -> dict:
     price_map = {
         "starter": settings.stripe_price_starter,
         "pro": settings.stripe_price_pro,
+        "business": settings.stripe_price_business,
     }
     price_id = price_map.get(req.tier)
     if not price_id:
@@ -127,7 +126,7 @@ async def _handle_checkout_completed(session: dict) -> None:
         logger.error("Checkout completed without user_id in metadata")
         return
 
-    rate_limit = TIER_LIMITS.get(tier, TIER_LIMITS["starter"])
+    rate_limit = get_tier_config(tier)["rate"]
 
     async with get_connection() as conn:
         # Update subscription
@@ -164,7 +163,7 @@ async def _handle_subscription_updated(subscription: dict) -> None:
         price_id = items[0].get("price", {}).get("id")
 
     tier = PRICE_TO_TIER.get(price_id, "starter") if price_id else "starter"
-    rate_limit = TIER_LIMITS.get(tier, TIER_LIMITS["starter"])
+    rate_limit = get_tier_config(tier)["rate"]
 
     async with get_connection() as conn:
         sub_row = await conn.fetchrow(
@@ -198,7 +197,7 @@ async def _handle_subscription_deleted(subscription: dict) -> None:
             )
             await conn.execute(
                 "UPDATE api_keys SET tier = 'free', rate_limit = $1 WHERE user_id = $2 AND is_active = true",
-                TIER_LIMITS["free"], sub_row["user_id"],
+                get_tier_config("free")["rate"], sub_row["user_id"],
             )
 
     logger.info("Subscription %s canceled, user downgraded to free", sub_id)

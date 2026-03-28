@@ -15,11 +15,7 @@ from api.database import get_connection
 logger = logging.getLogger("caregist.auth")
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
 
-TIER_LIMITS = {
-    "free": 100,
-    "starter": 1000,
-    "pro": 5000,
-}
+from api.config import TIERS, get_tier_config
 
 
 def _hash_password(password: str) -> str:
@@ -67,7 +63,7 @@ async def register(req: RegisterRequest) -> dict:
         await conn.execute(
             """INSERT INTO api_keys (key, name, email, tier, rate_limit, is_active, user_id)
                VALUES ($1, $2, $3, 'free', $4, true, $5)""",
-            api_key, req.name, req.email, TIER_LIMITS["free"], user["id"],
+            api_key, req.name, req.email, get_tier_config("free")["rate"], user["id"],
         )
 
         # Create free subscription record
@@ -81,7 +77,7 @@ async def register(req: RegisterRequest) -> dict:
         "user": {"id": user["id"], "email": user["email"], "name": user["name"]},
         "api_key": api_key,
         "tier": "free",
-        "rate_limit": TIER_LIMITS["free"],
+        "rate_limit": get_tier_config("free")["rate"],
         "message": "Registration successful. Your API key is ready to use.",
     }
 
@@ -136,7 +132,7 @@ async def rotate_key(req: LoginRequest) -> dict:
             user["id"],
         )
         tier = current["tier"] if current else "free"
-        rate_limit = current["rate_limit"] if current else TIER_LIMITS["free"]
+        rate_limit = current["rate_limit"] if current else get_tier_config("free")["rate"]
 
         # Deactivate old keys
         await conn.execute(
