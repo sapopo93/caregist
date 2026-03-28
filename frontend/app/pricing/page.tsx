@@ -7,8 +7,8 @@ const plans = [
     period: "forever",
     best: "Families & evaluation",
     features: [
-      "30 searches per day",
-      "200 per month",
+      "150 searches per day",
+      "4,500 per month",
       "Basic provider info (name, rating, town)",
       "5 results per page",
     ],
