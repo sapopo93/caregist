@@ -80,7 +80,7 @@ def seed(database_url: str, csv_path: Path, truncate: bool = False) -> int:
 
     try:
         if truncate:
-            cur.execute("TRUNCATE TABLE care_providers RESTART IDENTITY;")
+            cur.execute("TRUNCATE TABLE care_providers, provider_claims, reviews, enquiries RESTART IDENTITY CASCADE;")
             print("Truncated care_providers table")
 
         # Build tab-separated data for COPY
