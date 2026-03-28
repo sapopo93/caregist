@@ -2,23 +2,42 @@
 const API_BASE = process.env.API_URL || "http://localhost:8000";
 const API_KEY = process.env.API_KEY || "dev_key_change_me";
 
-async function apiFetch(path: string, params?: Record<string, string>) {
+// Warn loudly if env vars are missing (visible in Vercel function logs)
+if (!process.env.API_URL) {
+  console.warn("[caregist] API_URL env var is not set — falling back to localhost:8000");
+}
+if (!process.env.API_KEY) {
+  console.warn("[caregist] API_KEY env var is not set — using default dev key");
+}
+
+async function apiFetch(path: string, params?: Record<string, string | undefined>) {
   const url = new URL(`${API_BASE}${path}`);
   if (params) {
     Object.entries(params).forEach(([k, v]) => {
-      if (v) url.searchParams.set(k, v);
+      if (v !== undefined && v !== "") url.searchParams.set(k, v);
     });
   }
-  const res = await fetch(url.toString(), {
-    headers: { "X-API-Key": API_KEY },
-    next: { revalidate: 3600 },
-  });
-  if (!res.ok) {
-    const error = new Error(`API error: ${res.status}`);
-    (error as any).status = res.status;
-    throw error;
+
+  // 10-second timeout — keeps us well inside Vercel's 30s function limit
+  // even when Render free tier is cold-starting
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 10_000);
+
+  try {
+    const res = await fetch(url.toString(), {
+      headers: { "X-API-Key": API_KEY },
+      next: { revalidate: 3600 },
+      signal: controller.signal,
+    });
+    if (!res.ok) {
+      const error = new Error(`API error: ${res.status}`);
+      (error as any).status = res.status;
+      throw error;
+    }
+    return res.json();
+  } finally {
+    clearTimeout(timer);
   }
-  return res.json();
 }
 
 export async function searchProviders(params: {
@@ -28,6 +47,9 @@ export async function searchProviders(params: {
   type?: string;
   service_type?: string;
   page?: string;
+  sort?: string;
+  postcode?: string;
+  [key: string]: string | undefined;
 }) {
   return apiFetch("/api/v1/providers/search", params);
 }
