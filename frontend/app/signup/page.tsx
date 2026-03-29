@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
-export default function SignupPage() {
+function SignupForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const plan = searchParams.get("plan") || "free";
@@ -122,5 +122,13 @@ export default function SignupPage() {
         Already have an account? <Link href="/login" className="text-clay underline">Log in</Link>
       </p>
     </div>
+  );
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense fallback={<div className="max-w-md mx-auto px-6 py-16 text-center">Loading...</div>}>
+      <SignupForm />
+    </Suspense>
   );
 }
