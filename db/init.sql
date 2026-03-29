@@ -146,11 +146,6 @@ CREATE TABLE IF NOT EXISTS subscriptions (
 -- Link api_keys to users
 ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS user_id INT REFERENCES users(id);
 
--- Insert a default dev API key
-INSERT INTO api_keys (key, name, email, tier, rate_limit)
-VALUES ('dev_key_change_me_in_production', 'Development Key', 'dev@caregist.co.uk', 'free', 100)
-ON CONFLICT (key) DO NOTHING;
-
 -- ============================================================
 -- Phase 3: Growth tables (provider claims, reviews, enquiries)
 -- ============================================================
@@ -222,3 +217,31 @@ CREATE TABLE IF NOT EXISTS enquiries (
 
 CREATE INDEX IF NOT EXISTS idx_enquiries_provider ON enquiries (provider_id);
 CREATE INDEX IF NOT EXISTS idx_enquiries_status ON enquiries (status);
+
+-- Indexes for query performance
+CREATE INDEX IF NOT EXISTS idx_api_keys_user_id ON api_keys (user_id);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_user_id ON subscriptions (user_id);
+
+-- Password reset tokens table
+CREATE TABLE IF NOT EXISTS password_reset_tokens (
+  id SERIAL PRIMARY KEY,
+  token VARCHAR(10) NOT NULL,
+  email VARCHAR(255) NOT NULL,
+  expires_at TIMESTAMPTZ NOT NULL,
+  used BOOLEAN NOT NULL DEFAULT false,
+  attempts INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_reset_tokens_email ON password_reset_tokens (email, used);
+
+-- Updated_at triggers for users and subscriptions
+CREATE TRIGGER users_updated_at
+  BEFORE UPDATE ON users
+  FOR EACH ROW
+  EXECUTE FUNCTION update_timestamp();
+
+CREATE TRIGGER subscriptions_updated_at
+  BEFORE UPDATE ON subscriptions
+  FOR EACH ROW
+  EXECUTE FUNCTION update_timestamp();

@@ -21,6 +21,29 @@ _daily_counts: dict[str, dict[str, int]] = defaultdict(dict)
 _monthly_counts: dict[str, dict[str, int]] = defaultdict(dict)
 
 
+_request_count = 0
+_CLEANUP_INTERVAL = 1000
+
+
+def _cleanup_stale():
+    """Remove entries for past days/months to prevent memory leak."""
+    global _request_count
+    _request_count += 1
+    if _request_count < _CLEANUP_INTERVAL:
+        return
+    _request_count = 0
+    today = _today()
+    month = _this_month()
+    for key in list(_daily_counts.keys()):
+        _daily_counts[key] = {d: c for d, c in _daily_counts[key].items() if d == today}
+        if not _daily_counts[key]:
+            del _daily_counts[key]
+    for key in list(_monthly_counts.keys()):
+        _monthly_counts[key] = {m: c for m, c in _monthly_counts[key].items() if m == month}
+        if not _monthly_counts[key]:
+            del _monthly_counts[key]
+
+
 def _today() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
@@ -31,6 +54,7 @@ def _this_month() -> str:
 
 def check_rate_limit(api_key: str, tier: str) -> dict[str, int]:
     """Check all rate limits. Raise 429 if exceeded. Returns remaining counts."""
+    _cleanup_stale()
     config = get_tier_config(tier)
     now = time.monotonic()
     today = _today()

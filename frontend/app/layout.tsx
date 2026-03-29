@@ -2,11 +2,19 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Link from "next/link";
 import CompareBar from "@/components/CompareBar";
+import AuthNav from "@/components/AuthNav";
 
 export const metadata: Metadata = {
   title: "CareGist — UK Care Provider Directory",
   description:
     "Find and compare CQC-rated care homes, GP surgeries, dental practices, and home care agencies across England. Powered by Care Quality Commission data.",
+  openGraph: {
+    title: "CareGist — UK Care Provider Directory",
+    description: "Find and compare CQC-rated care homes, GP surgeries, dental practices, and home care agencies across England.",
+    siteName: "CareGist",
+    type: "website",
+    locale: "en_GB",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -19,18 +27,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className="min-h-screen flex flex-col">
-        <header className="bg-bark text-cream px-6 py-4">
+        <header className="bg-bark text-cream px-6 py-4 relative">
           <div className="max-w-6xl mx-auto flex items-center justify-between">
             <Link href="/" className="text-2xl font-bold" style={{ fontFamily: "Playfair Display" }}>
               <span className="text-amber">C</span>are<span className="text-amber">G</span>ist
             </Link>
-            <nav className="flex gap-6 text-sm items-center">
-              <Link href="/search" className="hover:text-amber transition-colors">Search</Link>
-              <Link href="/compare" className="hover:text-amber transition-colors">Compare</Link>
-              <Link href="/pricing" className="hover:text-amber transition-colors">Pricing</Link>
-              <Link href="/dashboard" className="hover:text-amber transition-colors">Dashboard</Link>
-              <Link href="/signup" className="px-4 py-1.5 bg-clay rounded-lg hover:bg-amber transition-colors">Sign Up</Link>
-            </nav>
+            <AuthNav />
           </div>
         </header>
 
@@ -51,12 +53,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               or call 03000 616161.
             </p>
             <div className="flex flex-wrap gap-4 mt-4 text-dusk">
-              <a href="/privacy" className="underline hover:text-cream">Privacy Policy</a>
-              <a href="/terms" className="underline hover:text-cream">Terms of Service</a>
-              <a href="/acceptable-use" className="underline hover:text-cream">Acceptable Use</a>
-              <a href="/review-policy" className="underline hover:text-cream">Review Policy</a>
-              <a href="/cookies" className="underline hover:text-cream">Cookies</a>
-              <a href="/pricing" className="underline hover:text-cream">Pricing</a>
+              <Link href="/privacy" className="underline hover:text-cream">Privacy Policy</Link>
+              <Link href="/terms" className="underline hover:text-cream">Terms of Service</Link>
+              <Link href="/acceptable-use" className="underline hover:text-cream">Acceptable Use</Link>
+              <Link href="/review-policy" className="underline hover:text-cream">Review Policy</Link>
+              <Link href="/cookies" className="underline hover:text-cream">Cookies</Link>
+              <Link href="/pricing" className="underline hover:text-cream">Pricing</Link>
               <a href="mailto:hello@caregist.co.uk" className="underline hover:text-cream">Contact</a>
             </div>
           </div>

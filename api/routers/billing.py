@@ -5,8 +5,10 @@ from __future__ import annotations
 import logging
 
 import stripe
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, EmailStr
+
+from api.middleware.auth import validate_api_key
 
 from api.config import settings
 from api.database import get_connection
@@ -39,7 +41,7 @@ class CheckoutRequest(BaseModel):
 
 
 @router.post("/checkout")
-async def create_checkout(req: CheckoutRequest) -> dict:
+async def create_checkout(req: CheckoutRequest, _auth: dict = Depends(validate_api_key)) -> dict:
     """Create a Stripe Checkout session for upgrading."""
     if not settings.stripe_secret_key:
         raise HTTPException(status_code=503, detail="Billing not configured.")
@@ -91,6 +93,9 @@ async def stripe_webhook(request: Request) -> dict:
 
     payload = await request.body()
     sig = request.headers.get("stripe-signature", "")
+
+    if not settings.stripe_webhook_secret:
+        raise HTTPException(status_code=503, detail="Webhook not configured.")
 
     try:
         event = stripe.Webhook.construct_event(

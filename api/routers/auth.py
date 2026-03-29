@@ -8,14 +8,18 @@ import secrets
 from datetime import datetime, timedelta, timezone
 
 import bcrypt
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, EmailStr, Field
+
+from api.middleware.ip_rate_limit import check_ip_rate_limit
 
 from api.config import settings, get_tier_config
 from api.database import get_connection
 
 logger = logging.getLogger("caregist.auth")
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
+
+_DUMMY_HASH = bcrypt.hashpw(b"dummy", bcrypt.gensalt()).decode()
 
 
 def _hash_password(password: str) -> str:
@@ -46,8 +50,8 @@ async def _rehash_if_legacy(user_id: int, password: str, stored: str) -> None:
 
 class RegisterRequest(BaseModel):
     email: EmailStr
-    name: str
-    password: str
+    name: str = Field(..., max_length=255)
+    password: str = Field(..., min_length=8)
 
 
 class LoginRequest(BaseModel):
@@ -56,7 +60,7 @@ class LoginRequest(BaseModel):
 
 
 @router.post("/register")
-async def register(req: RegisterRequest) -> dict:
+async def register(req: RegisterRequest, _ip=Depends(check_ip_rate_limit)) -> dict:
     """Register a new user and generate a free-tier API key."""
     async with get_connection() as conn:
         existing = await conn.fetchrow("SELECT id FROM users WHERE email = $1", req.email)
@@ -97,7 +101,7 @@ async def register(req: RegisterRequest) -> dict:
 
 
 @router.post("/login")
-async def login(req: LoginRequest) -> dict:
+async def login(req: LoginRequest, _ip=Depends(check_ip_rate_limit)) -> dict:
     """Login and retrieve API key."""
     async with get_connection() as conn:
         user = await conn.fetchrow(
@@ -105,7 +109,10 @@ async def login(req: LoginRequest) -> dict:
             req.email,
         )
 
-    if not user or not _verify_password(req.password, user["password_hash"]):
+    if not user:
+        bcrypt.checkpw(req.password.encode(), _DUMMY_HASH.encode())
+        raise HTTPException(status_code=401, detail="Invalid email or password.")
+    if not _verify_password(req.password, user["password_hash"]):
         raise HTTPException(status_code=401, detail="Invalid email or password.")
 
     # Upgrade legacy SHA-256 hash to bcrypt on successful login
@@ -129,7 +136,7 @@ async def login(req: LoginRequest) -> dict:
 
 
 @router.post("/rotate-key")
-async def rotate_key(req: LoginRequest) -> dict:
+async def rotate_key(req: LoginRequest, _ip=Depends(check_ip_rate_limit)) -> dict:
     """Generate a new API key (invalidates old one)."""
     async with get_connection() as conn:
         user = await conn.fetchrow(
@@ -184,13 +191,22 @@ MAX_RESET_ATTEMPTS = 5
 
 
 @router.post("/forgot-password")
-async def forgot_password(req: ForgotPasswordRequest) -> dict:
+async def forgot_password(req: ForgotPasswordRequest, _ip=Depends(check_ip_rate_limit)) -> dict:
     """Generate a 6-digit reset code and email it via Resend."""
     # Always return success to avoid email enumeration
     async with get_connection() as conn:
         user = await conn.fetchrow("SELECT id FROM users WHERE email = $1", req.email)
 
     if not user:
+        return {"message": "If that email is registered, a reset code has been sent."}
+
+    async with get_connection() as conn:
+        recent_count = await conn.fetchval(
+            """SELECT COUNT(*) FROM password_reset_tokens
+               WHERE email = $1 AND created_at > NOW() - INTERVAL '1 hour'""",
+            req.email,
+        )
+    if recent_count and recent_count >= 3:
         return {"message": "If that email is registered, a reset code has been sent."}
 
     code = f"{secrets.randbelow(1_000_000):06d}"
@@ -210,7 +226,7 @@ async def forgot_password(req: ForgotPasswordRequest) -> dict:
 
 
 @router.post("/reset-password")
-async def reset_password(req: ResetPasswordRequest) -> dict:
+async def reset_password(req: ResetPasswordRequest, _ip=Depends(check_ip_rate_limit)) -> dict:
     """Validate reset code and update password."""
     async with get_connection() as conn:
         # Check for too many failed attempts in the last 15 minutes
@@ -261,7 +277,7 @@ async def reset_password(req: ResetPasswordRequest) -> dict:
 async def _send_reset_email(email: str, code: str) -> None:
     """Send password reset code via Resend. Fails silently."""
     if not settings.resend_api_key:
-        logger.warning("RESEND_API_KEY not set — skipping password reset email for %s", email)
+        logger.warning("RESEND_API_KEY not set — skipping password reset email")
         return
 
     import httpx
@@ -290,3 +306,48 @@ async def _send_reset_email(email: str, code: str) -> None:
                 logger.error("Resend API error %s: %s", resp.status_code, resp.text)
     except Exception as exc:
         logger.error("Failed to send reset email: %s", exc)
+
+
+class DeleteAccountRequest(BaseModel):
+    email: EmailStr
+    password: str
+
+
+@router.delete("/delete-account")
+async def delete_account(req: DeleteAccountRequest) -> dict:
+    """Delete user account and anonymize associated data (GDPR right to erasure)."""
+    async with get_connection() as conn:
+        user = await conn.fetchrow(
+            "SELECT id, password_hash FROM users WHERE email = $1",
+            req.email,
+        )
+
+    if not user or not _verify_password(req.password, user["password_hash"]):
+        raise HTTPException(status_code=401, detail="Invalid email or password.")
+
+    async with get_connection() as conn:
+        async with conn.transaction():
+            user_id = user["id"]
+            # Anonymize enquiries
+            await conn.execute(
+                "UPDATE enquiries SET enquirer_name = '[deleted]', enquirer_email = '[deleted]', enquirer_phone = NULL, message = '[deleted]' WHERE provider_id IN (SELECT id FROM care_providers) AND enquirer_email = $1",
+                req.email,
+            )
+            # Anonymize reviews
+            await conn.execute(
+                "UPDATE reviews SET reviewer_name = '[deleted]', reviewer_email = '[deleted]' WHERE reviewer_email = $1",
+                req.email,
+            )
+            # Anonymize claims
+            await conn.execute(
+                "UPDATE provider_claims SET claimant_name = '[deleted]', claimant_email = '[deleted]', claimant_phone = NULL WHERE claimant_email = $1",
+                req.email,
+            )
+            # Delete API keys, subscriptions, then user (cascade should handle but be explicit)
+            await conn.execute("DELETE FROM api_keys WHERE user_id = $1", user_id)
+            await conn.execute("DELETE FROM subscriptions WHERE user_id = $1", user_id)
+            await conn.execute("DELETE FROM password_reset_tokens WHERE email = $1", req.email)
+            await conn.execute("DELETE FROM users WHERE id = $1", user_id)
+
+    logger.info("Account deleted for user_id=%s", user["id"])
+    return {"message": "Your account has been permanently deleted."}

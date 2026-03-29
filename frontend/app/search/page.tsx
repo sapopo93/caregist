@@ -3,8 +3,10 @@ import ProviderCard from "@/components/ProviderCard";
 import FilterSidebar from "@/components/FilterSidebar";
 import MapToggle from "@/components/MapToggle";
 import ExportCSVButton from "@/components/ExportCSVButton";
+import MobileFilterToggle from "@/components/MobileFilterToggle";
 import { searchProviders } from "@/lib/api";
 import { Suspense } from "react";
+import Link from "next/link";
 
 export default async function SearchPage({
   searchParams,
@@ -48,6 +50,10 @@ export default async function SearchPage({
       <div className="mb-8">
         <SearchBar defaultValue={query} />
       </div>
+
+      <Suspense fallback={null}>
+        <MobileFilterToggle />
+      </Suspense>
 
       <div className="flex gap-8">
         {/* Filter Sidebar */}
@@ -129,17 +135,24 @@ export default async function SearchPage({
                   p === "..." ? (
                     <span key={`gap-${i}`} className="px-2 py-2 text-dusk">...</span>
                   ) : (
-                    <a
-                      key={p}
-                      href={`/search?${new URLSearchParams({ ...params, page: String(p) } as Record<string, string>).toString()}`}
-                      className={`px-3 py-2 rounded ${
-                        p === results.meta.page
-                          ? "bg-clay text-white"
-                          : "bg-cream border border-stone text-dusk hover:border-clay"
-                      }`}
-                    >
-                      {p}
-                    </a>
+                    (() => {
+                      const cleanParams = Object.fromEntries(
+                        Object.entries({ ...params, page: String(p) }).filter(([, v]) => v !== undefined && v !== "")
+                      ) as Record<string, string>;
+                      return (
+                        <Link
+                          key={p}
+                          href={`/search?${new URLSearchParams(cleanParams).toString()}`}
+                          className={`px-3 py-2 rounded ${
+                            p === results.meta.page
+                              ? "bg-clay text-white"
+                              : "bg-cream border border-stone text-dusk hover:border-clay"
+                          }`}
+                        >
+                          {p}
+                        </Link>
+                      );
+                    })()
                   )
                 )}
             </div>

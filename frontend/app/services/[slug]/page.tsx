@@ -43,10 +43,15 @@ export default async function ServiceTypePage({
   const displayName = DISPLAY_NAMES[slug] || slug;
 
   let results = { data: [], meta: { total: 0, page: 1, per_page: 20, pages: 0 } };
+  let error = false;
+  let warmingUp = false;
+
   try {
     results = await searchProviders({ service_type: serviceType, page: page || "1" });
-  } catch (e) {
+  } catch (e: any) {
     console.error("Service type search failed:", e);
+    if (e?.message === "warming_up") warmingUp = true;
+    error = true;
   }
 
   return (
@@ -58,13 +63,32 @@ export default async function ServiceTypePage({
         <SearchBar />
       </div>
 
+      {warmingUp && (
+        <>
+          <meta httpEquiv="refresh" content="30" />
+          <div className="bg-cream border border-amber rounded-lg p-6 mb-6 text-center">
+            <p className="text-bark font-semibold">The server is waking up</p>
+            <p className="text-dusk text-sm mt-1">
+              This takes about 30 seconds on first load. Refreshing the page in a moment...
+            </p>
+          </div>
+        </>
+      )}
+
+      {error && !warmingUp && (
+        <div className="bg-cream border border-alert rounded-lg p-6 mb-6 text-center">
+          <p className="text-bark font-semibold">Search is temporarily unavailable</p>
+          <p className="text-dusk text-sm mt-1">Please try again in a moment.</p>
+        </div>
+      )}
+
       <div className="grid gap-4">
         {results.data.map((provider: any) => (
           <ProviderCard key={provider.id} provider={provider} />
         ))}
       </div>
 
-      {results.data.length === 0 && (
+      {!error && results.data.length === 0 && (
         <p className="text-center text-dusk py-12">No providers found for this service type.</p>
       )}
     </div>

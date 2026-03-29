@@ -1,4 +1,5 @@
 import SearchBar from "@/components/SearchBar";
+import Link from "next/link";
 
 export default function HomePage() {
   return (
@@ -46,14 +47,14 @@ export default function HomePage() {
             { name: "Dental Practices", count: "12,004", slug: "dental" },
             { name: "Supported Living", count: "4,727", slug: "supported-living" },
           ].map((type) => (
-            <a
+            <Link
               key={type.name}
               href={`/services/${type.slug}`}
               className="bg-cream border border-stone rounded-lg p-4 hover:border-clay transition-colors"
             >
               <div className="font-semibold text-bark">{type.name}</div>
               <div className="text-sm text-dusk">{type.count} providers</div>
-            </a>
+            </Link>
           ))}
         </div>
       </section>

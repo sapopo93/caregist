@@ -87,7 +87,7 @@ async def list_claims(
 
 class ClaimAction(BaseModel):
     status: str = Field(..., pattern="^(approved|rejected)$")
-    admin_notes: str | None = None
+    admin_notes: str | None = Field(None, max_length=2000)
 
 
 @router.patch("/claims/{claim_id}")
@@ -148,7 +148,7 @@ async def list_reviews_admin(
 
 class ReviewAction(BaseModel):
     status: str = Field(..., pattern="^(approved|rejected)$")
-    admin_notes: str | None = None
+    admin_notes: str | None = Field(None, max_length=2000)
 
 
 @router.patch("/reviews/{review_id}")

@@ -18,13 +18,10 @@ async def health_check() -> JSONResponse:
     """Health check — verifies database connectivity."""
     try:
         async with get_connection() as conn:
-            row = await conn.fetchrow("SELECT COUNT(*) as total FROM care_providers")
+            await conn.fetchrow("SELECT 1")
         return JSONResponse(
             status_code=200,
-            content={
-                "status": "healthy",
-                "providers_count": row["total"] if row else 0,
-            },
+            content={"status": "healthy"},
         )
     except Exception as exc:
         logger.error("Health check failed: %s", exc)

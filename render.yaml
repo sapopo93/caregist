@@ -4,7 +4,7 @@ services:
     runtime: python
     region: frankfurt
     plan: free
-    buildCommand: pip install fastapi uvicorn[standard] asyncpg pydantic-settings stripe email-validator httpx bcrypt passlib[bcrypt]
+    buildCommand: pip install -r requirements-api.txt
     startCommand: uvicorn api.main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: DATABASE_URL

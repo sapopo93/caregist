@@ -19,11 +19,11 @@ async def init_pool() -> None:
     global _pool
     _pool = await asyncpg.create_pool(
         settings.database_url,
-        min_size=5,
-        max_size=20,
+        min_size=1,
+        max_size=5,
         command_timeout=settings.query_timeout_ms / 1000,
     )
-    logger.info("Database pool initialized (min=5, max=20)")
+    logger.info("Database pool initialized (min=1, max=5)")
 
     # Ensure password_reset_tokens table exists
     async with _pool.acquire() as conn:

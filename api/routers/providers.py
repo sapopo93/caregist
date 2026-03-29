@@ -111,7 +111,7 @@ async def export_providers_csv(
 
     try:
         async with get_connection() as conn:
-            rows = await conn.fetch(SEARCH_EXPORT + f" LIMIT {row_limit}", q, region, rating, type, service_type, postcode)
+            rows = await conn.fetch(SEARCH_EXPORT + " LIMIT $7", q, region, rating, type, service_type, postcode, row_limit)
     except Exception as exc:
         logger.error("Export query failed: %s", exc)
         raise HTTPException(status_code=503, detail="Export failed.")

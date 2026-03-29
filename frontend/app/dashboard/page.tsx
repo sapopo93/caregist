@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import DeleteAccountButton from "@/components/DeleteAccountButton";
 
 export default function DashboardPage() {
   const [user, setUser] = useState<any>(null);
@@ -91,6 +92,15 @@ export default function DashboardPage() {
           <a href="/api/v1/docs" className="text-clay underline">API Documentation</a>
           <Link href="/search" className="text-clay underline">Browse Directory</Link>
         </div>
+      </div>
+
+      {/* Delete Account */}
+      <div className="mt-8 border border-red-200 rounded-lg p-6">
+        <h2 className="text-xl font-bold text-red-600 mb-2">Danger Zone</h2>
+        <p className="text-dusk text-sm mb-4">
+          Permanently delete your account and all associated data. This action cannot be undone.
+        </p>
+        <DeleteAccountButton />
       </div>
     </div>
   );

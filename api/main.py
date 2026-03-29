@@ -31,9 +31,22 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins.split(","),
-    allow_methods=["GET", "POST"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PATCH", "DELETE"],
+    allow_headers=["X-API-Key", "Content-Type", "Accept"],
 )
+
+import logging
+
+from fastapi.responses import JSONResponse
+
+_logger = logging.getLogger("caregist.app")
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request, exc):
+    _logger.error("Unhandled exception: %s", exc, exc_info=True)
+    return JSONResponse(status_code=500, content={"detail": "Internal server error."})
+
 
 app.include_router(health.router)
 app.include_router(auth.router)
