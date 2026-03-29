@@ -4,23 +4,18 @@ from __future__ import annotations
 
 import hashlib
 import logging
-import random
 import secrets
 from datetime import datetime, timedelta, timezone
-from typing import Any
 
 import bcrypt
-import httpx
-from fastapi import APIRouter, HTTPException, Request
-from pydantic import BaseModel, EmailStr
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel, EmailStr, Field
 
-from api.config import settings
+from api.config import settings, get_tier_config
 from api.database import get_connection
 
 logger = logging.getLogger("caregist.auth")
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
-
-from api.config import TIERS, get_tier_config
 
 
 def _hash_password(password: str) -> str:
@@ -70,28 +65,27 @@ async def register(req: RegisterRequest) -> dict:
 
         password_hash = _hash_password(req.password)
         verification_token = secrets.token_urlsafe(32)
-
-        user = await conn.fetchrow(
-            """INSERT INTO users (email, name, password_hash, verification_token, is_verified)
-               VALUES ($1, $2, $3, $4, true)
-               RETURNING id, email, name""",
-            req.email, req.name, password_hash, verification_token,
-        )
-
-        # Generate API key
         api_key = f"cg_{secrets.token_urlsafe(32)}"
-        await conn.execute(
-            """INSERT INTO api_keys (key, name, email, tier, rate_limit, is_active, user_id)
-               VALUES ($1, $2, $3, 'free', $4, true, $5)""",
-            api_key, req.name, req.email, get_tier_config("free")["rate"], user["id"],
-        )
 
-        # Create free subscription record
-        await conn.execute(
-            """INSERT INTO subscriptions (user_id, tier, status)
-               VALUES ($1, 'free', 'active')""",
-            user["id"],
-        )
+        async with conn.transaction():
+            user = await conn.fetchrow(
+                """INSERT INTO users (email, name, password_hash, verification_token, is_verified)
+                   VALUES ($1, $2, $3, $4, true)
+                   RETURNING id, email, name""",
+                req.email, req.name, password_hash, verification_token,
+            )
+
+            await conn.execute(
+                """INSERT INTO api_keys (key, name, email, tier, rate_limit, is_active, user_id)
+                   VALUES ($1, $2, $3, 'free', $4, true, $5)""",
+                api_key, req.name, req.email, get_tier_config("free")["rate"], user["id"],
+            )
+
+            await conn.execute(
+                """INSERT INTO subscriptions (user_id, tier, status)
+                   VALUES ($1, 'free', 'active')""",
+                user["id"],
+            )
 
     return {
         "user": {"id": user["id"], "email": user["email"], "name": user["name"]},
@@ -183,7 +177,10 @@ class ForgotPasswordRequest(BaseModel):
 class ResetPasswordRequest(BaseModel):
     email: EmailStr
     token: str
-    new_password: str
+    new_password: str = Field(..., min_length=8)
+
+
+MAX_RESET_ATTEMPTS = 5
 
 
 @router.post("/forgot-password")
@@ -196,7 +193,7 @@ async def forgot_password(req: ForgotPasswordRequest) -> dict:
     if not user:
         return {"message": "If that email is registered, a reset code has been sent."}
 
-    code = f"{random.randint(0, 999999):06d}"
+    code = f"{secrets.randbelow(1_000_000):06d}"
     expires_at = datetime.now(timezone.utc) + timedelta(minutes=15)
 
     async with get_connection() as conn:
@@ -216,30 +213,47 @@ async def forgot_password(req: ForgotPasswordRequest) -> dict:
 async def reset_password(req: ResetPasswordRequest) -> dict:
     """Validate reset code and update password."""
     async with get_connection() as conn:
+        # Check for too many failed attempts in the last 15 minutes
+        attempt_count = await conn.fetchval(
+            """SELECT COUNT(*) FROM password_reset_tokens
+               WHERE email = $1 AND used = false AND attempts >= $2
+               AND expires_at > NOW()""",
+            req.email, MAX_RESET_ATTEMPTS,
+        )
+        if attempt_count and attempt_count > 0:
+            raise HTTPException(status_code=429, detail="Too many attempts. Request a new code.")
+
         token_row = await conn.fetchrow(
-            """SELECT id, expires_at, used FROM password_reset_tokens
+            """SELECT id, expires_at, used, attempts FROM password_reset_tokens
                WHERE email = $1 AND token = $2
                ORDER BY created_at DESC LIMIT 1""",
             req.email, req.token,
         )
 
-        if not token_row:
-            raise HTTPException(status_code=400, detail="Invalid or expired reset code.")
-        if token_row["used"]:
-            raise HTTPException(status_code=400, detail="This reset code has already been used.")
-        if token_row["expires_at"] < datetime.now(timezone.utc):
+        if not token_row or token_row["used"] or token_row["expires_at"] < datetime.now(timezone.utc):
+            # Increment attempt counter on the most recent token for this email
+            await conn.execute(
+                """UPDATE password_reset_tokens SET attempts = attempts + 1
+                   WHERE id = (
+                       SELECT id FROM password_reset_tokens
+                       WHERE email = $1 AND used = false
+                       ORDER BY created_at DESC LIMIT 1
+                   )""",
+                req.email,
+            )
             raise HTTPException(status_code=400, detail="Invalid or expired reset code.")
 
         new_hash = _hash_password(req.new_password)
 
-        await conn.execute(
-            "UPDATE users SET password_hash = $1 WHERE email = $2",
-            new_hash, req.email,
-        )
-        await conn.execute(
-            "UPDATE password_reset_tokens SET used = true WHERE id = $1",
-            token_row["id"],
-        )
+        async with conn.transaction():
+            await conn.execute(
+                "UPDATE users SET password_hash = $1 WHERE email = $2",
+                new_hash, req.email,
+            )
+            await conn.execute(
+                "UPDATE password_reset_tokens SET used = true WHERE id = $1",
+                token_row["id"],
+            )
 
     return {"message": "Password has been reset. You can now log in."}
 
@@ -247,8 +261,10 @@ async def reset_password(req: ResetPasswordRequest) -> dict:
 async def _send_reset_email(email: str, code: str) -> None:
     """Send password reset code via Resend. Fails silently."""
     if not settings.resend_api_key:
-        logger.warning("RESEND_API_KEY not set — skipping password reset email (code: %s)", code)
+        logger.warning("RESEND_API_KEY not set — skipping password reset email for %s", email)
         return
+
+    import httpx
 
     from_email = settings.enquiry_from_email or "noreply@caregist.co.uk"
     body = (

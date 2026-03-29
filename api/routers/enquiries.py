@@ -4,14 +4,12 @@ from __future__ import annotations
 
 import logging
 
-import httpx
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, EmailStr, Field
 
 from api.config import settings
 from api.database import get_connection
 from api.middleware.auth import validate_api_key
-from api.queries.claims import PROVIDER_ID_BY_SLUG
 from api.queries.enquiries import INSERT_ENQUIRY, UPDATE_PROVIDER_ENQUIRY_COUNT
 
 logger = logging.getLogger("caregist.enquiries")
@@ -41,11 +39,16 @@ async def submit_enquiry(
     if req.urgency and req.urgency not in VALID_URGENCIES:
         raise HTTPException(status_code=422, detail=f"Invalid urgency. Choose from: {', '.join(VALID_URGENCIES)}")
 
+    provider_name = slug  # fallback
     try:
         async with get_connection() as conn:
-            provider = await conn.fetchrow(PROVIDER_ID_BY_SLUG, slug)
+            provider = await conn.fetchrow(
+                "SELECT id, name, is_claimed FROM care_providers WHERE slug = $1", slug,
+            )
             if not provider:
                 raise HTTPException(status_code=404, detail=f"Provider not found: {slug}")
+
+            provider_name = provider["name"] or slug
 
             row = await conn.fetchrow(
                 INSERT_ENQUIRY,
@@ -67,7 +70,7 @@ async def submit_enquiry(
         raise HTTPException(status_code=503, detail="Failed to submit enquiry.")
 
     # Send confirmation email (best-effort, never crashes the request)
-    await _send_enquiry_confirmation(req.enquirer_name, req.enquirer_email, slug)
+    await _send_enquiry_confirmation(req.enquirer_name, req.enquirer_email, provider_name)
 
     return {
         "data": dict(row),
@@ -90,6 +93,8 @@ async def _send_enquiry_confirmation(name: str, email: str, provider_name: str) 
         f"If you have any questions in the meantime, just reply to this email.\n\n"
         f"Best wishes,\nThe CareGist Team"
     )
+
+    import httpx
 
     try:
         async with httpx.AsyncClient() as client:

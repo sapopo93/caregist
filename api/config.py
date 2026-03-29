@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     stripe_price_starter: str = ""
     stripe_price_pro: str = ""
     stripe_price_business: str = ""
+    default_page_size: int = 20
     app_url: str = "http://localhost:3000"
     resend_api_key: str = ""
     enquiry_from_email: str = ""
@@ -27,6 +28,12 @@ class Settings(BaseSettings):
 
     def validate_production(self) -> None:
         if self.api_master_key == "change_me_in_production":
+            # On Render (or any host that sets DATABASE_URL externally), this is production
+            if self.database_url != "postgresql://caregist:caregist_dev@localhost:5432/caregist":
+                raise RuntimeError(
+                    "FATAL: API_MASTER_KEY is still the default value. "
+                    "Set a secure API_MASTER_KEY environment variable before starting in production."
+                )
             print("WARNING: API_MASTER_KEY is set to default. Set a secure value in .env", file=sys.stderr)
 
 
