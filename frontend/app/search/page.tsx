@@ -1,0 +1,164 @@
+import SearchBar from "@/components/SearchBar";
+import ProviderCard from "@/components/ProviderCard";
+import FilterSidebar from "@/components/FilterSidebar";
+import MapToggle from "@/components/MapToggle";
+import ExportCSVButton from "@/components/ExportCSVButton";
+import MobileFilterToggle from "@/components/MobileFilterToggle";
+import { searchProviders } from "@/lib/api";
+import { Suspense } from "react";
+import Link from "next/link";
+
+export default async function SearchPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | undefined>>;
+}) {
+  const params = await searchParams;
+  const query = params.q || "";
+  const page = params.page || "1";
+  const sort = params.sort || "relevance";
+
+  let results = { data: [], meta: { total: 0, page: 1, per_page: 20, pages: 0 } };
+  let error = false;
+  let warmingUp = false;
+
+  const hasQuery = !!(query || params.region || params.rating || params.service_type);
+
+  if (hasQuery) {
+    try {
+      results = await searchProviders({ ...params, page, sort });
+    } catch (e: any) {
+      console.error("Search failed:", e);
+      if (e?.message === "warming_up") {
+        warmingUp = true;
+      }
+      error = true;
+    }
+  }
+
+  // Build export URL
+  const exportParams = new URLSearchParams();
+  if (params.q) exportParams.set("q", params.q);
+  if (params.region) exportParams.set("region", params.region);
+  if (params.rating) exportParams.set("rating", params.rating);
+  if (params.type) exportParams.set("type", params.type);
+  if (params.service_type) exportParams.set("service_type", params.service_type);
+  if (params.postcode) exportParams.set("postcode", params.postcode);
+
+  return (
+    <div className="max-w-6xl mx-auto px-6 py-8">
+      <div className="mb-8">
+        <SearchBar defaultValue={query} />
+      </div>
+
+      <Suspense fallback={null}>
+        <MobileFilterToggle />
+      </Suspense>
+
+      <div className="flex gap-8">
+        {/* Filter Sidebar */}
+        <div className="hidden md:block w-56 flex-shrink-0">
+          <Suspense fallback={<div className="h-64 bg-cream rounded-lg animate-pulse" />}>
+            <FilterSidebar />
+          </Suspense>
+        </div>
+
+        {/* Results */}
+        <div className="flex-1 min-w-0">
+          {warmingUp && (
+            <>
+              <meta httpEquiv="refresh" content="30" />
+              <div className="bg-cream border border-amber rounded-lg p-6 mb-6 text-center">
+                <p className="text-bark font-semibold">The server is waking up</p>
+                <p className="text-dusk text-sm mt-1">
+                  This takes about 30 seconds on first load. Refreshing the page in a moment...
+                </p>
+              </div>
+            </>
+          )}
+
+          {error && !warmingUp && (
+            <div className="bg-cream border border-alert rounded-lg p-6 mb-6 text-center">
+              <p className="text-bark font-semibold">Search is temporarily unavailable</p>
+              <p className="text-dusk text-sm mt-1">Please try again in a moment.</p>
+            </div>
+          )}
+
+          {!error && results.meta.total > 0 && (
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-sm text-dusk">
+                {results.meta.total.toLocaleString()} providers found
+                {query && <> for &ldquo;{query}&rdquo;</>}
+                {" "} (page {results.meta.page} of {results.meta.pages})
+              </p>
+              {results.meta.total > 0 && (
+                <ExportCSVButton exportUrl={`/api/v1/providers/export.csv?${exportParams.toString()}`} />
+              )}
+            </div>
+          )}
+
+          {results.data.length > 0 && <MapToggle providers={results.data} />}
+
+          <div className="grid gap-4">
+            {results.data.map((provider: any) => (
+              <ProviderCard key={provider.id} provider={provider} />
+            ))}
+          </div>
+
+          {!error && results.data.length === 0 && hasQuery && (
+            <div className="text-center py-12 text-dusk">
+              <p className="text-lg">No providers found.</p>
+              <p className="text-sm mt-2">Try a different search term or broaden your filters.</p>
+            </div>
+          )}
+
+          {!error && !hasQuery && (
+            <div className="text-center py-12 text-dusk">
+              <p className="text-lg">Enter a search term or select filters to find providers.</p>
+            </div>
+          )}
+
+          {/* Pagination */}
+          {results.meta.pages > 1 && (
+            <div className="flex justify-center gap-2 mt-8">
+              {Array.from({ length: results.meta.pages }, (_, i) => i + 1)
+                .filter((p) => {
+                  const current = results.meta.page;
+                  return p <= 3 || p > results.meta.pages - 3 || Math.abs(p - current) <= 2;
+                })
+                .reduce<(number | "...")[]>((acc, p, i, arr) => {
+                  if (i > 0 && p - (arr[i - 1] as number) > 1) acc.push("...");
+                  acc.push(p);
+                  return acc;
+                }, [])
+                .map((p, i) =>
+                  p === "..." ? (
+                    <span key={`gap-${i}`} className="px-2 py-2 text-dusk">...</span>
+                  ) : (
+                    (() => {
+                      const cleanParams = Object.fromEntries(
+                        Object.entries({ ...params, page: String(p) }).filter(([, v]) => v !== undefined && v !== "")
+                      ) as Record<string, string>;
+                      return (
+                        <Link
+                          key={p}
+                          href={`/search?${new URLSearchParams(cleanParams).toString()}`}
+                          className={`px-3 py-2 rounded ${
+                            p === results.meta.page
+                              ? "bg-clay text-white"
+                              : "bg-cream border border-stone text-dusk hover:border-clay"
+                          }`}
+                        >
+                          {p}
+                        </Link>
+                      );
+                    })()
+                  )
+                )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

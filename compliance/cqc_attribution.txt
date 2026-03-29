@@ -1,0 +1,22 @@
+CQC Data Attribution Notice
+===========================
+
+The care provider information displayed on CareGist is sourced from the
+Care Quality Commission (CQC), the independent regulator of health and
+social care in England.
+
+CareGist is NOT an official CQC service. We present CQC data in a more
+searchable and comparable format to help families and professionals find
+care providers.
+
+For official inspection reports and the most up-to-date information,
+always visit: https://www.cqc.org.uk
+
+Data freshness: CareGist refreshes its data regularly, but there may be
+a delay between CQC publishing updated information and it appearing here.
+Always check the "last updated" date on each provider listing.
+
+If you have concerns about the quality of care at any provider, contact
+CQC directly:
+  - Website: https://www.cqc.org.uk/contact-us
+  - Phone: 03000 616161
