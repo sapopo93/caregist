@@ -4,7 +4,7 @@ services:
     runtime: python
     region: frankfurt
     plan: free
-    buildCommand: pip install fastapi uvicorn[standard] asyncpg pydantic-settings stripe email-validator
+    buildCommand: pip install fastapi uvicorn[standard] asyncpg pydantic-settings stripe email-validator httpx bcrypt passlib[bcrypt]
     startCommand: uvicorn api.main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: DATABASE_URL
@@ -21,6 +21,10 @@ services:
         value: price_1TFw1h4mijLHzRRkiGDF4P8X
       - key: STRIPE_PRICE_BUSINESS
         value: price_1TFw3p4mijLHzRRkTuNDsac0
+      - key: RESEND_API_KEY
+        sync: false
+      - key: ENQUIRY_FROM_EMAIL
+        sync: false
       - key: CORS_ORIGINS
         value: https://caregist.co.uk,https://www.caregist.co.uk,http://localhost:3000
       - key: APP_URL

@@ -4,12 +4,17 @@ from __future__ import annotations
 
 import hashlib
 import logging
+import random
 import secrets
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
+import bcrypt
+import httpx
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, EmailStr
 
+from api.config import settings
 from api.database import get_connection
 
 logger = logging.getLogger("caregist.auth")
@@ -19,14 +24,29 @@ from api.config import TIERS, get_tier_config
 
 
 def _hash_password(password: str) -> str:
-    salt = secrets.token_hex(16)
-    hashed = hashlib.sha256(f"{salt}:{password}".encode()).hexdigest()
-    return f"{salt}:{hashed}"
+    return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
 
 
 def _verify_password(password: str, stored: str) -> bool:
-    salt, hashed = stored.split(":", 1)
-    return hashlib.sha256(f"{salt}:{password}".encode()).hexdigest() == hashed
+    # bcrypt hashes start with $2b$
+    if stored.startswith("$2b$"):
+        return bcrypt.checkpw(password.encode(), stored.encode())
+    # Legacy SHA-256 fallback: "salt:hash" format
+    if ":" in stored:
+        salt, hashed = stored.split(":", 1)
+        return hashlib.sha256(f"{salt}:{password}".encode()).hexdigest() == hashed
+    return False
+
+
+async def _rehash_if_legacy(user_id: int, password: str, stored: str) -> None:
+    """Re-hash a legacy SHA-256 password to bcrypt on successful login."""
+    if not stored.startswith("$2b$"):
+        new_hash = _hash_password(password)
+        async with get_connection() as conn:
+            await conn.execute(
+                "UPDATE users SET password_hash = $1 WHERE id = $2",
+                new_hash, user_id,
+            )
 
 
 class RegisterRequest(BaseModel):
@@ -94,6 +114,9 @@ async def login(req: LoginRequest) -> dict:
     if not user or not _verify_password(req.password, user["password_hash"]):
         raise HTTPException(status_code=401, detail="Invalid email or password.")
 
+    # Upgrade legacy SHA-256 hash to bcrypt on successful login
+    await _rehash_if_legacy(user["id"], req.password, user["password_hash"])
+
     async with get_connection() as conn:
         key_row = await conn.fetchrow(
             "SELECT key, tier, rate_limit FROM api_keys WHERE user_id = $1 AND is_active = true ORDER BY created_at DESC LIMIT 1",
@@ -148,3 +171,106 @@ async def rotate_key(req: LoginRequest) -> dict:
         )
 
     return {"api_key": new_key, "tier": tier, "rate_limit": rate_limit}
+
+
+# --- Password reset ---
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+class ResetPasswordRequest(BaseModel):
+    email: EmailStr
+    token: str
+    new_password: str
+
+
+@router.post("/forgot-password")
+async def forgot_password(req: ForgotPasswordRequest) -> dict:
+    """Generate a 6-digit reset code and email it via Resend."""
+    # Always return success to avoid email enumeration
+    async with get_connection() as conn:
+        user = await conn.fetchrow("SELECT id FROM users WHERE email = $1", req.email)
+
+    if not user:
+        return {"message": "If that email is registered, a reset code has been sent."}
+
+    code = f"{random.randint(0, 999999):06d}"
+    expires_at = datetime.now(timezone.utc) + timedelta(minutes=15)
+
+    async with get_connection() as conn:
+        await conn.execute(
+            """INSERT INTO password_reset_tokens (token, email, expires_at)
+               VALUES ($1, $2, $3)""",
+            code, req.email, expires_at,
+        )
+
+    # Send email (best-effort)
+    await _send_reset_email(req.email, code)
+
+    return {"message": "If that email is registered, a reset code has been sent."}
+
+
+@router.post("/reset-password")
+async def reset_password(req: ResetPasswordRequest) -> dict:
+    """Validate reset code and update password."""
+    async with get_connection() as conn:
+        token_row = await conn.fetchrow(
+            """SELECT id, expires_at, used FROM password_reset_tokens
+               WHERE email = $1 AND token = $2
+               ORDER BY created_at DESC LIMIT 1""",
+            req.email, req.token,
+        )
+
+        if not token_row:
+            raise HTTPException(status_code=400, detail="Invalid or expired reset code.")
+        if token_row["used"]:
+            raise HTTPException(status_code=400, detail="This reset code has already been used.")
+        if token_row["expires_at"] < datetime.now(timezone.utc):
+            raise HTTPException(status_code=400, detail="Invalid or expired reset code.")
+
+        new_hash = _hash_password(req.new_password)
+
+        await conn.execute(
+            "UPDATE users SET password_hash = $1 WHERE email = $2",
+            new_hash, req.email,
+        )
+        await conn.execute(
+            "UPDATE password_reset_tokens SET used = true WHERE id = $1",
+            token_row["id"],
+        )
+
+    return {"message": "Password has been reset. You can now log in."}
+
+
+async def _send_reset_email(email: str, code: str) -> None:
+    """Send password reset code via Resend. Fails silently."""
+    if not settings.resend_api_key:
+        logger.warning("RESEND_API_KEY not set — skipping password reset email (code: %s)", code)
+        return
+
+    from_email = settings.enquiry_from_email or "noreply@caregist.co.uk"
+    body = (
+        f"Your CareGist password reset code is: {code}\n\n"
+        f"This code expires in 15 minutes. If you didn't request this, ignore this email.\n\n"
+        f"— The CareGist Team"
+    )
+
+    try:
+        async with httpx.AsyncClient() as client:
+            resp = await client.post(
+                "https://api.resend.com/emails",
+                headers={"Authorization": f"Bearer {settings.resend_api_key}"},
+                json={
+                    "from": from_email,
+                    "to": [email],
+                    "subject": "Your CareGist password reset code",
+                    "text": body,
+                },
+                timeout=10,
+            )
+            if resp.status_code >= 400:
+                logger.error("Resend API error %s: %s", resp.status_code, resp.text)
+    except Exception as exc:
+        logger.error("Failed to send reset email: %s", exc)

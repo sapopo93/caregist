@@ -25,6 +25,19 @@ async def init_pool() -> None:
     )
     logger.info("Database pool initialized (min=5, max=20)")
 
+    # Ensure password_reset_tokens table exists
+    async with _pool.acquire() as conn:
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS password_reset_tokens (
+                id SERIAL PRIMARY KEY,
+                token VARCHAR(10) NOT NULL,
+                email VARCHAR(255) NOT NULL,
+                expires_at TIMESTAMPTZ NOT NULL,
+                used BOOLEAN NOT NULL DEFAULT false,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+            )
+        """)
+
 
 async def close_pool() -> None:
     global _pool

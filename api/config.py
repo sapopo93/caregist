@@ -20,6 +20,8 @@ class Settings(BaseSettings):
     stripe_price_pro: str = ""
     stripe_price_business: str = ""
     app_url: str = "http://localhost:3000"
+    resend_api_key: str = ""
+    enquiry_from_email: str = ""
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8", "extra": "ignore"}
 

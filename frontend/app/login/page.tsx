@@ -1,10 +1,20 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
-export default function LoginPage() {
+function ResetBanner() {
+  const searchParams = useSearchParams();
+  if (searchParams.get("reset") !== "success") return null;
+  return (
+    <div className="bg-cream border border-green-500 rounded-lg p-3 mb-4 text-sm text-green-700">
+      Password reset successful. You can now log in with your new password.
+    </div>
+  );
+}
+
+function LoginForm() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -46,6 +56,10 @@ export default function LoginPage() {
     <div className="max-w-md mx-auto px-6 py-16">
       <h1 className="text-3xl font-bold text-center mb-8">Log in</h1>
 
+      <Suspense>
+        <ResetBanner />
+      </Suspense>
+
       {error && (
         <div className="bg-cream border border-alert rounded-lg p-3 mb-4 text-sm text-alert">
           {error}
@@ -74,6 +88,9 @@ export default function LoginPage() {
             onChange={(e) => setPassword(e.target.value)}
             className="w-full px-4 py-3 rounded-lg border border-stone bg-cream focus:ring-2 focus:ring-clay focus:outline-none"
           />
+          <div className="text-right mt-1">
+            <Link href="/forgot-password" className="text-sm text-clay underline">Forgot password?</Link>
+          </div>
         </div>
         <button
           type="submit"
@@ -89,4 +106,8 @@ export default function LoginPage() {
       </p>
     </div>
   );
+}
+
+export default function LoginPage() {
+  return <LoginForm />;
 }

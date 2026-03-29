@@ -35,6 +35,13 @@ async function apiFetch(path: string, params?: Record<string, string | undefined
       throw error;
     }
     return res.json();
+  } catch (err) {
+    if (err instanceof DOMException && err.name === "AbortError") {
+      const warmup = new Error("warming_up");
+      (warmup as any).status = 503;
+      throw warmup;
+    }
+    throw err;
   } finally {
     clearTimeout(timer);
   }

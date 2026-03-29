@@ -2,6 +2,7 @@ import SearchBar from "@/components/SearchBar";
 import ProviderCard from "@/components/ProviderCard";
 import FilterSidebar from "@/components/FilterSidebar";
 import MapToggle from "@/components/MapToggle";
+import ExportCSVButton from "@/components/ExportCSVButton";
 import { searchProviders } from "@/lib/api";
 import { Suspense } from "react";
 
@@ -17,14 +18,18 @@ export default async function SearchPage({
 
   let results = { data: [], meta: { total: 0, page: 1, per_page: 20, pages: 0 } };
   let error = false;
+  let warmingUp = false;
 
   const hasQuery = !!(query || params.region || params.rating || params.service_type);
 
   if (hasQuery) {
     try {
       results = await searchProviders({ ...params, page, sort });
-    } catch (e) {
+    } catch (e: any) {
       console.error("Search failed:", e);
+      if (e?.message === "warming_up") {
+        warmingUp = true;
+      }
       error = true;
     }
   }
@@ -54,7 +59,19 @@ export default async function SearchPage({
 
         {/* Results */}
         <div className="flex-1 min-w-0">
-          {error && (
+          {warmingUp && (
+            <>
+              <meta httpEquiv="refresh" content="30" />
+              <div className="bg-cream border border-amber rounded-lg p-6 mb-6 text-center">
+                <p className="text-bark font-semibold">The server is waking up</p>
+                <p className="text-dusk text-sm mt-1">
+                  This takes about 30 seconds on first load. Refreshing the page in a moment...
+                </p>
+              </div>
+            </>
+          )}
+
+          {error && !warmingUp && (
             <div className="bg-cream border border-alert rounded-lg p-6 mb-6 text-center">
               <p className="text-bark font-semibold">Search is temporarily unavailable</p>
               <p className="text-dusk text-sm mt-1">Please try again in a moment.</p>
@@ -69,12 +86,7 @@ export default async function SearchPage({
                 {" "} (page {results.meta.page} of {results.meta.pages})
               </p>
               {results.meta.total > 0 && (
-                <a
-                  href={`/api/v1/providers/export.csv?${exportParams.toString()}`}
-                  className="text-sm text-clay underline hover:text-bark"
-                >
-                  Export CSV
-                </a>
+                <ExportCSVButton exportUrl={`/api/v1/providers/export.csv?${exportParams.toString()}`} />
               )}
             </div>
           )}

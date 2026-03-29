@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import logging
 
+import httpx
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, EmailStr, Field
 
+from api.config import settings
 from api.database import get_connection
 from api.middleware.auth import validate_api_key
 from api.queries.claims import PROVIDER_ID_BY_SLUG
@@ -64,7 +66,45 @@ async def submit_enquiry(
         logger.error("Enquiry submission failed for %s: %s", slug, exc)
         raise HTTPException(status_code=503, detail="Failed to submit enquiry.")
 
+    # Send confirmation email (best-effort, never crashes the request)
+    await _send_enquiry_confirmation(req.enquirer_name, req.enquirer_email, slug)
+
     return {
         "data": dict(row),
         "message": "Your enquiry has been sent. The provider will be in touch soon.",
     }
+
+
+async def _send_enquiry_confirmation(name: str, email: str, provider_name: str) -> None:
+    """Send a confirmation email via Resend. Fails silently."""
+    if not settings.resend_api_key:
+        logger.warning("RESEND_API_KEY not set — skipping enquiry confirmation email")
+        return
+
+    from_email = settings.enquiry_from_email or "noreply@caregist.co.uk"
+    subject = f"Your enquiry about {provider_name} has been received"
+    body = (
+        f"Hi {name},\n\n"
+        f"Thank you for your enquiry about {provider_name}. "
+        f"We've passed your details on and they'll be in touch soon.\n\n"
+        f"If you have any questions in the meantime, just reply to this email.\n\n"
+        f"Best wishes,\nThe CareGist Team"
+    )
+
+    try:
+        async with httpx.AsyncClient() as client:
+            resp = await client.post(
+                "https://api.resend.com/emails",
+                headers={"Authorization": f"Bearer {settings.resend_api_key}"},
+                json={
+                    "from": from_email,
+                    "to": [email],
+                    "subject": subject,
+                    "text": body,
+                },
+                timeout=10,
+            )
+            if resp.status_code >= 400:
+                logger.error("Resend API error %s: %s", resp.status_code, resp.text)
+    except Exception as exc:
+        logger.error("Failed to send enquiry confirmation email: %s", exc)
