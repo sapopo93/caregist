@@ -1,0 +1,27 @@
+Data Completeness Tiers — Explanation
+=====================================
+
+CareGist assigns a "data completeness" tier to each provider listing.
+This measures how much information is available in our records — it is
+NOT a quality rating or inspection outcome.
+
+  COMPLETE (score 85-100): All key fields populated — name, address,
+    phone, website, coordinates, CQC rating, service types, specialisms,
+    inspection dates, and more.
+
+  GOOD (score 60-84): Most key fields populated. Some secondary fields
+    like website, specialisms, or bed count may be missing.
+
+  PARTIAL (score 40-59): Core fields present (name, postcode, rating)
+    but several important fields are missing.
+
+  SPARSE (score below 40): Minimal data available. Only basic
+    identification fields are populated.
+
+These tiers are completely separate from CQC inspection ratings
+(Outstanding, Good, Requires Improvement, Inadequate). A provider with
+a "SPARSE" data completeness tier may still have an "Outstanding" CQC
+rating — it simply means we have limited data about them in our records.
+
+For official CQC inspection ratings, always check:
+https://www.cqc.org.uk
