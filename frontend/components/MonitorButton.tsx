@@ -1,0 +1,86 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import LoginPromptModal from "@/components/LoginPromptModal";
+
+export default function MonitorButton({ slug }: { slug: string }) {
+  const [monitoring, setMonitoring] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [showLogin, setShowLogin] = useState(false);
+  const [checked, setChecked] = useState(false);
+
+  useEffect(() => {
+    const apiKey = localStorage.getItem("caregist_api_key");
+    if (!apiKey) {
+      setChecked(true);
+      return;
+    }
+    fetch(`/api/v1/providers/${encodeURIComponent(slug)}/monitor-status`, {
+      headers: { "X-API-Key": apiKey },
+    })
+      .then((r) => r.json())
+      .then((data) => setMonitoring(!!data.monitoring))
+      .catch(() => {})
+      .finally(() => setChecked(true));
+  }, [slug]);
+
+  async function handleToggle() {
+    const apiKey = localStorage.getItem("caregist_api_key");
+    if (!apiKey) {
+      setShowLogin(true);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      if (monitoring) {
+        await fetch(`/api/v1/providers/${encodeURIComponent(slug)}/monitor`, {
+          method: "DELETE",
+          headers: { "X-API-Key": apiKey },
+        });
+        setMonitoring(false);
+      } else {
+        const res = await fetch(`/api/v1/providers/${encodeURIComponent(slug)}/monitor`, {
+          method: "POST",
+          headers: { "X-API-Key": apiKey, "Content-Type": "application/json" },
+          body: "{}",
+        });
+        if (res.status === 403) {
+          const data = await res.json().catch(() => ({}));
+          alert(data.detail || "Monitor limit reached. Upgrade for more.");
+          return;
+        }
+        if (res.ok) setMonitoring(true);
+      }
+    } catch {
+      // silently fail
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (!checked) return null;
+
+  return (
+    <>
+      <button
+        onClick={handleToggle}
+        disabled={loading}
+        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+          monitoring
+            ? "bg-moss/15 text-moss border border-moss/30"
+            : "bg-clay text-white hover:bg-bark"
+        } disabled:opacity-50`}
+      >
+        {loading ? "..." : monitoring ? "Monitoring \u2713" : "Monitor"}
+      </button>
+
+      {showLogin && (
+        <LoginPromptModal
+          action="monitor this provider"
+          onClose={() => setShowLogin(false)}
+        />
+      )}
+    </>
+  );
+}

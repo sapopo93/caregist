@@ -1,4 +1,6 @@
 import SearchBar from "@/components/SearchBar";
+import EmailCaptureStrip from "@/components/EmailCaptureStrip";
+import TrustSignal from "@/components/TrustSignal";
 import Link from "next/link";
 
 export default function HomePage() {
@@ -33,6 +35,12 @@ export default function HomePage() {
             </div>
           ))}
         </div>
+      </section>
+
+      {/* Email Capture */}
+      <section className="max-w-6xl mx-auto px-6">
+        <EmailCaptureStrip source="homepage" />
+        <TrustSignal />
       </section>
 
       {/* Browse by Service Type */}

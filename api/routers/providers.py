@@ -10,16 +10,22 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from fastapi.responses import StreamingResponse
 
-from api.config import filter_fields, get_tier_config, settings
+from api.config import BASIC_CSV_FIELDS, filter_fields, get_tier_config, settings
 from api.database import get_connection
 from api.middleware.auth import validate_api_key
 from api.middleware.rate_limit import add_rate_limit_headers
 from api.queries.providers import (
+    CHECK_MONITOR,
     COMPARE_QUERY,
+    COUNT_USER_MONITORS,
     DEFAULT_SORT,
+    DELETE_MONITOR,
     DETAIL_BY_SLUG,
+    INSERT_MONITOR,
     NEARBY_COUNT,
     NEARBY_QUERY,
+    PROVIDER_ID_FROM_SLUG,
+    RATING_HISTORY_QUERY,
     SEARCH_COUNT,
     SEARCH_EXPORT,
     SORT_OPTIONS,
@@ -104,14 +110,16 @@ async def export_providers_csv(
     config = get_tier_config(tier)
     add_rate_limit_headers(response, tier, _auth["remaining"])
 
-    if config["export"] == 0:
-        raise HTTPException(status_code=403, detail="CSV export requires Starter tier or above. Upgrade at /pricing")
-
     row_limit = config["export"]
+    if row_limit == 0:
+        raise HTTPException(status_code=403, detail="CSV export requires an account. Sign up free at /signup")
+
+    is_basic = tier == "free"
 
     try:
         async with get_connection() as conn:
             rows = await conn.fetch(SEARCH_EXPORT + " LIMIT $7", q, region, rating, type, service_type, postcode, row_limit)
+            count_row = await conn.fetchrow(SEARCH_COUNT, q, region, rating, type, service_type, postcode)
     except Exception as exc:
         logger.error("Export query failed: %s", exc)
         raise HTTPException(status_code=503, detail="Export failed.")
@@ -119,13 +127,27 @@ async def export_providers_csv(
     if not rows:
         raise HTTPException(status_code=404, detail="No results to export.")
 
+    total = count_row["total"] if count_row else len(rows)
+
     buf = io.StringIO()
-    data = [filter_fields(_row_to_dict(r), tier) for r in rows]
-    fieldnames = [k for k in data[0].keys() if data[0][k] is not None]
+    if is_basic:
+        fieldnames = BASIC_CSV_FIELDS
+        data = [{k: _row_to_dict(r).get(k) for k in fieldnames} for r in rows]
+    else:
+        data = [filter_fields(_row_to_dict(r), tier) for r in rows]
+        fieldnames = [k for k in data[0].keys() if data[0][k] is not None]
+
     writer = csv.DictWriter(buf, fieldnames=fieldnames, extrasaction="ignore")
     writer.writeheader()
     for row in data:
         writer.writerow({k: v for k, v in row.items() if v is not None})
+
+    # Log analytics
+    try:
+        from api.utils.analytics import log_event
+        await log_event("csv_download", "search", meta={"tier": tier, "rows": len(data), "total": total})
+    except Exception:
+        pass
 
     buf.seek(0)
     return StreamingResponse(
@@ -219,3 +241,112 @@ async def nearby_providers(
     total = count_row["total"] if count_row else 0
     data = [filter_fields(_row_to_dict(r), tier) for r in rows]
     return _paginated_response(data, total, page, per_page, tier)
+
+
+# --- Monitor endpoints ---
+
+
+async def _resolve_provider_id(slug: str) -> str:
+    """Resolve a slug to a provider ID, raising 404 if not found."""
+    async with get_connection() as conn:
+        row = await conn.fetchrow(PROVIDER_ID_FROM_SLUG, slug)
+    if not row:
+        raise HTTPException(status_code=404, detail=f"Provider not found: {slug}")
+    return row["id"]
+
+
+@router.post("/{slug}/monitor", status_code=201)
+async def create_monitor(
+    slug: str,
+    _auth: dict = Depends(validate_api_key),
+) -> dict:
+    """Monitor a provider for rating changes."""
+    tier = _auth["tier"]
+    config = get_tier_config(tier)
+    max_monitors = config.get("monitors", 2)
+
+    async with get_connection() as conn:
+        key_row = await conn.fetchrow(
+            "SELECT user_id FROM api_keys WHERE name = $1 AND is_active = true",
+            _auth.get("name", ""),
+        )
+    if not key_row or not key_row["user_id"]:
+        raise HTTPException(status_code=401, detail="User account required.")
+    user_id = key_row["user_id"]
+
+    provider_id = await _resolve_provider_id(slug)
+
+    async with get_connection() as conn:
+        count_row = await conn.fetchrow(COUNT_USER_MONITORS, user_id)
+        if count_row and count_row["total"] >= max_monitors:
+            raise HTTPException(
+                status_code=403,
+                detail=f"Monitor limit reached ({max_monitors}). Upgrade for more monitors.",
+            )
+        row = await conn.fetchrow(INSERT_MONITOR, user_id, provider_id)
+
+    try:
+        from api.utils.analytics import log_event
+        await log_event("monitor_created", "provider", user_id=user_id, provider_id=provider_id)
+    except Exception:
+        pass
+
+    return {"monitoring": True, "new": row is not None}
+
+
+@router.delete("/{slug}/monitor")
+async def remove_monitor(
+    slug: str,
+    _auth: dict = Depends(validate_api_key),
+) -> dict:
+    """Stop monitoring a provider."""
+    async with get_connection() as conn:
+        key_row = await conn.fetchrow(
+            "SELECT user_id FROM api_keys WHERE name = $1 AND is_active = true",
+            _auth.get("name", ""),
+        )
+    if not key_row or not key_row["user_id"]:
+        raise HTTPException(status_code=401, detail="User account required.")
+
+    provider_id = await _resolve_provider_id(slug)
+
+    async with get_connection() as conn:
+        await conn.execute(DELETE_MONITOR, key_row["user_id"], provider_id)
+
+    return {"monitoring": False}
+
+
+@router.get("/{slug}/monitor-status")
+async def monitor_status(
+    slug: str,
+    _auth: dict = Depends(validate_api_key),
+) -> dict:
+    """Check if the current user is monitoring a provider."""
+    async with get_connection() as conn:
+        key_row = await conn.fetchrow(
+            "SELECT user_id FROM api_keys WHERE name = $1 AND is_active = true",
+            _auth.get("name", ""),
+        )
+    if not key_row or not key_row["user_id"]:
+        return {"monitoring": False}
+
+    provider_id = await _resolve_provider_id(slug)
+
+    async with get_connection() as conn:
+        row = await conn.fetchrow(CHECK_MONITOR, key_row["user_id"], provider_id)
+
+    return {"monitoring": row is not None}
+
+
+@router.get("/{slug}/rating-history")
+async def rating_history(
+    slug: str,
+    _auth: dict = Depends(validate_api_key),
+) -> dict:
+    """Get the rating history for a provider."""
+    provider_id = await _resolve_provider_id(slug)
+
+    async with get_connection() as conn:
+        rows = await conn.fetch(RATING_HISTORY_QUERY, provider_id)
+
+    return {"data": [dict(r) for r in rows]}

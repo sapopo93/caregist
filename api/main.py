@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from api.config import settings
 from api.database import close_pool, init_pool
-from api.routers import admin, auth, billing, claims, enquiries, health, providers, regions, reviews
+from api.routers import admin, api_applications, auth, billing, city_pages, claims, comparisons, enquiries, health, providers, public_tools, region_stats, regions, reviews, subscribe
 
 
 @asynccontextmanager
@@ -57,6 +57,12 @@ app.include_router(enquiries.router)
 app.include_router(admin.router)
 app.include_router(providers.router)
 app.include_router(regions.router)
+app.include_router(subscribe.router)
+app.include_router(comparisons.router)
+app.include_router(api_applications.router)
+app.include_router(public_tools.router)
+app.include_router(region_stats.router)
+app.include_router(city_pages.router)
 
 
 if __name__ == "__main__":

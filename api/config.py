@@ -50,12 +50,15 @@ settings.validate_production()
 # Pro:      2,000/day × 30 = 60,000/month (cap at 50,000 — team hits it in week 3)
 # Business: 10,000/day × 30 = 300,000/month (cap at 250,000)
 TIERS = {
-    "free":     {"rate": 5,    "daily": 150,    "monthly": 4500,     "page_size": 5,   "fields": "basic",    "nearby": False, "export": 0,     "compare": 0,  "webhooks": False},
-    "starter":  {"rate": 30,   "daily": 500,    "monthly": 10000,    "page_size": 20,  "fields": "standard", "nearby": True,  "export": 500,   "compare": 3,  "webhooks": False},
-    "pro":      {"rate": 60,   "daily": 2000,   "monthly": 50000,    "page_size": 50,  "fields": "standard", "nearby": True,  "export": 5000,  "compare": 5,  "webhooks": False},
-    "business": {"rate": 200,  "daily": 10000,  "monthly": 250000,   "page_size": 100, "fields": "full",     "nearby": True,  "export": 10000, "compare": 10, "webhooks": True},
-    "admin":    {"rate": 99999,"daily": 9999999,"monthly": 99999999, "page_size": 100, "fields": "full",     "nearby": True,  "export": 99999, "compare": 99, "webhooks": True},
+    "free":     {"rate": 5,    "daily": 150,    "monthly": 4500,     "page_size": 5,   "fields": "basic",    "nearby": False, "export": 100,   "compare": 0,  "webhooks": False, "monitors": 2},
+    "starter":  {"rate": 30,   "daily": 500,    "monthly": 10000,    "page_size": 20,  "fields": "standard", "nearby": True,  "export": 500,   "compare": 3,  "webhooks": False, "monitors": 25},
+    "pro":      {"rate": 60,   "daily": 2000,   "monthly": 50000,    "page_size": 50,  "fields": "standard", "nearby": True,  "export": 5000,  "compare": 5,  "webhooks": False, "monitors": 100},
+    "business": {"rate": 200,  "daily": 10000,  "monthly": 250000,   "page_size": 100, "fields": "full",     "nearby": True,  "export": 10000, "compare": 10, "webhooks": True,  "monitors": 500},
+    "admin":    {"rate": 99999,"daily": 9999999,"monthly": 99999999, "page_size": 100, "fields": "full",     "nearby": True,  "export": 99999, "compare": 99, "webhooks": True,  "monitors": 99999},
 }
+
+# Fields included in the free-tier basic CSV export
+BASIC_CSV_FIELDS = ["name", "town", "postcode", "overall_rating", "type", "last_inspection_date"]
 
 BASIC_FIELDS = [
     "id", "name", "slug", "type", "status", "town", "postcode",

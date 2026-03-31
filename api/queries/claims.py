@@ -7,9 +7,16 @@ SELECT id, is_claimed FROM care_providers WHERE slug = $1
 INSERT_CLAIM = """
 INSERT INTO provider_claims
   (provider_id, claimant_name, claimant_email, claimant_phone,
-   claimant_role, organisation_name, proof_of_association)
-VALUES ($1, $2, $3, $4, $5, $6, $7)
-RETURNING id, provider_id, status, claimant_name, claimant_email, created_at
+   claimant_role, organisation_name, proof_of_association, fast_track, submitted_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
+RETURNING id, provider_id, status, claimant_name, claimant_email, fast_track, created_at
+"""
+
+GET_CLAIM_STATUS = """
+SELECT id, status, fast_track, created_at, submitted_at, reviewed_at
+FROM provider_claims
+WHERE claimant_email = $1 AND provider_id = $2
+ORDER BY created_at DESC LIMIT 1
 """
 
 HAS_PENDING_CLAIM = """

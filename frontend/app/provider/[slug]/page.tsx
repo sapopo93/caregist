@@ -3,8 +3,13 @@ import RatingBadge from "@/components/RatingBadge";
 import VerifiedBadge from "@/components/VerifiedBadge";
 import ReviewsSection from "@/components/ReviewsSection";
 import EnquiryForm from "@/components/EnquiryForm";
-import ClaimModal from "@/components/ClaimModal";
 import CompareButton from "@/components/CompareButton";
+import AeoBlock from "@/components/AeoBlock";
+import ProviderJsonLd from "@/components/ProviderJsonLd";
+import MonitorButton from "@/components/MonitorButton";
+import RatingTimeline from "@/components/RatingTimeline";
+import TrustSignal from "@/components/TrustSignal";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 
@@ -21,9 +26,11 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   try {
     const res = await getProvider(slug);
     const p = res.data;
+    const aeoText = `${p.name} is a CQC-registered ${(p.type || "care provider").toLowerCase()} based in ${p.town || "England"}. Their current rating is ${p.overall_rating || "Not Yet Inspected"}.`;
     return {
-      title: p.meta_title || `${p.name} | CareGist`,
-      description: p.meta_description || `${p.name} - CQC rated ${p.overall_rating} care provider.`,
+      title: `${p.name} — CQC Rating & Inspection | CareGist`,
+      description: p.meta_description || aeoText,
+      alternates: { canonical: `https://caregist.co.uk/provider/${slug}` },
     };
   } catch {
     return { title: "Provider Not Found | CareGist" };
@@ -67,8 +74,41 @@ export default async function ProviderPage({ params }: { params: Promise<{ slug:
   const services = provider.service_types?.split("|").filter(Boolean) || [];
   const specs = provider.specialisms?.split("|").filter(Boolean) || [];
 
+  const daysSinceInspection = provider.last_inspection_date
+    ? Math.floor((Date.now() - new Date(provider.last_inspection_date).getTime()) / 86400000)
+    : null;
+
   return (
+    <div>
+      <ProviderJsonLd
+        name={provider.name}
+        type={provider.type}
+        address={provider.address_line1}
+        town={provider.town}
+        postcode={provider.postcode}
+        region={provider.region}
+        phone={provider.phone}
+        website={provider.website}
+        rating={provider.overall_rating}
+        latitude={provider.latitude}
+        longitude={provider.longitude}
+        slug={slug}
+      />
+      <AeoBlock
+        name={provider.name}
+        type={provider.type}
+        town={provider.town}
+        rating={provider.overall_rating}
+        inspectionDate={provider.last_inspection_date}
+      />
     <div className="max-w-4xl mx-auto px-6 py-8">
+      {/* Freshness warning */}
+      {daysSinceInspection !== null && daysSinceInspection > 730 && (
+        <div className="bg-amber/10 border border-amber rounded-lg p-4 mb-6 text-sm text-charcoal">
+          This provider has not been inspected in over {Math.floor(daysSinceInspection / 365)} years. The rating shown may not reflect current performance.
+        </div>
+      )}
+
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-start justify-between gap-4 mb-3">
@@ -77,12 +117,19 @@ export default async function ProviderPage({ params }: { params: Promise<{ slug:
             {provider.is_claimed && <VerifiedBadge size="md" />}
           </div>
           <div className="flex items-center gap-2 shrink-0">
+            <MonitorButton slug={slug} />
             <CompareButton slug={slug} name={provider.name} />
             <RatingBadge rating={provider.overall_rating} />
           </div>
         </div>
         <p className="text-dusk">{provider.type}</p>
         <p className="text-dusk">{location}</p>
+        {provider.last_inspection_date && (
+          <p className="text-sm text-dusk mt-1">
+            Last inspected: {new Date(provider.last_inspection_date).toLocaleDateString("en-GB")}
+            {daysSinceInspection !== null && <> ({daysSinceInspection} days ago)</>}
+          </p>
+        )}
         {provider.review_count > 0 && provider.avg_review_rating && (
           <p className="text-sm text-clay mt-1">
             {provider.avg_review_rating} stars from {provider.review_count} review{provider.review_count !== 1 ? "s" : ""}
@@ -104,6 +151,9 @@ export default async function ProviderPage({ params }: { params: Promise<{ slug:
           </div>
         </div>
       )}
+
+      {/* Rating History */}
+      <RatingTimeline slug={slug} />
 
       {/* Details Grid */}
       <div className="grid md:grid-cols-2 gap-6 mb-6">
@@ -201,15 +251,19 @@ export default async function ProviderPage({ params }: { params: Promise<{ slug:
       {/* Claim listing */}
       {!provider.is_claimed && (
         <div className="text-center py-4">
-          <ClaimModal slug={slug} providerName={provider.name} />
+          <Link href={`/claim/${slug}`} className="text-sm text-dusk hover:text-clay underline">
+            Are you the provider? Claim this listing
+          </Link>
         </div>
       )}
 
-      {/* Attribution */}
+      {/* Attribution & Trust */}
       <div className="text-center text-sm text-dusk py-4 border-t border-stone mt-6">
         <p>{provider.data_attribution}</p>
         <p className="mt-1">Data completeness: {provider.quality_tier} ({provider.quality_score}/100)</p>
+        <TrustSignal />
       </div>
+    </div>
     </div>
   );
 }

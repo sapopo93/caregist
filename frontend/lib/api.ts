@@ -88,3 +88,27 @@ export async function getProviderReviews(slug: string, page = "1") {
 export async function getCompareProviders(slugs: string[]) {
   return apiFetch("/api/v1/providers/compare", { slugs: slugs.join(",") });
 }
+
+export async function getRatingHistory(slug: string) {
+  return apiFetch(`/api/v1/providers/${slug}/rating-history`);
+}
+
+export async function getComparisonByToken(token: string) {
+  return apiFetch(`/api/v1/comparisons/${token}`);
+}
+
+export async function getRegionStats(laSlug: string) {
+  return apiFetch(`/api/v1/regions/${laSlug}/stats`);
+}
+
+export async function getLocalAuthorities() {
+  return apiFetch("/api/v1/regions/local-authorities");
+}
+
+export async function getCityProviders(citySlug: string, params?: Record<string, string | undefined>) {
+  return apiFetch(`/api/v1/cities/${citySlug}/providers`, params);
+}
+
+export async function getTopCities() {
+  return apiFetch("/api/v1/cities");
+}

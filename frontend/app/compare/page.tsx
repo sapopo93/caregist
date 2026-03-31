@@ -1,6 +1,7 @@
-import { getCompareProviders } from "@/lib/api";
+import { getCompareProviders, getComparisonByToken } from "@/lib/api";
 import RatingBadge from "@/components/RatingBadge";
 import VerifiedBadge from "@/components/VerifiedBadge";
+import ComparisonActions from "@/components/ComparisonActions";
 import Link from "next/link";
 import type { Metadata } from "next";
 
@@ -20,10 +21,21 @@ const ratingDimensions = [
 export default async function ComparePage({
   searchParams,
 }: {
-  searchParams: Promise<{ providers?: string }>;
+  searchParams: Promise<{ providers?: string; token?: string }>;
 }) {
   const params = await searchParams;
-  const slugs = params.providers?.split(",").filter(Boolean).slice(0, 3) || [];
+
+  let slugs = params.providers?.split(",").filter(Boolean).slice(0, 3) || [];
+
+  // Support shared comparison links via token
+  if (!slugs.length && params.token) {
+    try {
+      const tokenRes = await getComparisonByToken(params.token);
+      slugs = tokenRes.data?.slug_list || [];
+    } catch {
+      // fall through to the "select providers" prompt
+    }
+  }
 
   if (slugs.length < 2) {
     return (
@@ -70,7 +82,10 @@ export default async function ComparePage({
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-8">
-      <h1 className="text-2xl font-bold mb-6">Compare Providers</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold">Compare Providers</h1>
+        <ComparisonActions slugs={slugs} />
+      </div>
 
       {/* Provider names header */}
       <div className={`grid ${colClass} gap-4 mb-6`}>

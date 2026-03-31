@@ -23,6 +23,7 @@ export async function submitClaim(
     claimant_role: string;
     organisation_name?: string;
     proof_of_association: string;
+    fast_track?: boolean;
   },
 ) {
   return apiPost(`/api/v1/providers/${encodeURIComponent(slug)}/claim`, claim);
@@ -56,4 +57,26 @@ export async function submitEnquiry(
   },
 ) {
   return apiPost(`/api/v1/providers/${encodeURIComponent(slug)}/enquire`, enquiry);
+}
+
+export async function submitSubscribe(email: string, source: string, postcode?: string) {
+  return apiPost("/api/v1/subscribe", { email, source, postcode: postcode || null });
+}
+
+export async function toggleMonitor(slug: string) {
+  return apiPost(`/api/v1/providers/${encodeURIComponent(slug)}/monitor`, {});
+}
+
+export async function saveComparison(slugs: string[]) {
+  return apiPost("/api/v1/comparisons", { slug_list: slugs });
+}
+
+export async function submitApiApplication(data: {
+  company_name: string;
+  contact_name: string;
+  contact_email: string;
+  use_case: string;
+  expected_volume?: string;
+}) {
+  return apiPost("/api/v1/api-applications", data);
 }

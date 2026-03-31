@@ -98,3 +98,38 @@ ORDER BY provider_count DESC
 COMPARE_QUERY = """
 SELECT * FROM care_providers WHERE slug = ANY($1::text[])
 """
+
+# --- Monitor queries ---
+
+INSERT_MONITOR = """
+INSERT INTO provider_monitors (user_id, provider_id)
+VALUES ($1, $2)
+ON CONFLICT (user_id, provider_id) DO NOTHING
+RETURNING id
+"""
+
+DELETE_MONITOR = """
+DELETE FROM provider_monitors WHERE user_id = $1 AND provider_id = $2
+"""
+
+CHECK_MONITOR = """
+SELECT id FROM provider_monitors WHERE user_id = $1 AND provider_id = $2
+"""
+
+COUNT_USER_MONITORS = """
+SELECT COUNT(*) as total FROM provider_monitors WHERE user_id = $1
+"""
+
+PROVIDER_ID_FROM_SLUG = """
+SELECT id FROM care_providers WHERE slug = $1
+"""
+
+# --- Rating history queries ---
+
+RATING_HISTORY_QUERY = """
+SELECT overall_rating, inspection_date, report_url, recorded_at
+FROM provider_rating_history
+WHERE provider_id = $1
+ORDER BY inspection_date DESC
+LIMIT 20
+"""
