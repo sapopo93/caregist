@@ -2,8 +2,9 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-# Install API dependencies
-RUN pip install --no-cache-dir fastapi uvicorn[standard] asyncpg pydantic-settings stripe email-validator
+# Install API dependencies from requirements file
+COPY requirements-api.txt .
+RUN pip install --no-cache-dir -r requirements-api.txt
 
 COPY api/ api/
 
