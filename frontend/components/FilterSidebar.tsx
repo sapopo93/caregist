@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 
 const REGIONS = [
   "South East", "London", "North West", "East", "West Midlands",
@@ -11,7 +12,7 @@ const RATINGS = [
   "Outstanding", "Good", "Requires Improvement", "Inadequate", "Not Yet Inspected",
 ];
 
-const SERVICE_TYPES = [
+const FALLBACK_SERVICE_TYPES = [
   "Homecare Agencies", "Residential Homes", "Nursing Homes",
   "Doctors/Gps", "Dentist", "Supported Living",
 ];
@@ -29,6 +30,19 @@ const SORT_OPTIONS = [
 export default function FilterSidebar() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [serviceTypes, setServiceTypes] = useState<string[]>(FALLBACK_SERVICE_TYPES);
+
+  useEffect(() => {
+    fetch("/api/v1/service-types", {
+      headers: { "X-API-Key": localStorage.getItem("caregist_api_key") || "" },
+    })
+      .then((r) => (r.ok ? r.json() : { data: [] }))
+      .then((d) => {
+        const types = (d.data || []).map((t: any) => t.service_type).filter(Boolean);
+        if (types.length > 0) setServiceTypes(types);
+      })
+      .catch(() => {});
+  }, []);
 
   const currentRegion = searchParams.get("region") || "";
   const currentRating = searchParams.get("rating") || "";
@@ -108,7 +122,7 @@ export default function FilterSidebar() {
           className="w-full px-3 py-2 rounded-lg border border-stone bg-cream text-charcoal text-sm"
         >
           <option value="">All types</option>
-          {SERVICE_TYPES.map((s) => <option key={s} value={s}>{s}</option>)}
+          {serviceTypes.map((s) => <option key={s} value={s}>{s}</option>)}
         </select>
       </div>
 

@@ -1,7 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import Link from "next/link";
 
 const REGIONS = [
   "South East", "London", "North West", "East", "West Midlands",
@@ -12,10 +13,8 @@ const RATINGS = [
   "Outstanding", "Good", "Requires Improvement", "Inadequate", "Not Yet Inspected",
 ];
 
-const SERVICE_TYPES = [
-  "Homecare Agencies", "Residential Homes", "Nursing Homes",
-  "Doctors/Gps", "Dentist", "Supported Living",
-];
+// UK postcode pattern
+const POSTCODE_RE = /^[A-Z]{1,2}\d[A-Z\d]?\s*\d?[A-Z]{0,2}$/i;
 
 export default function SearchBar({
   defaultValue = "",
@@ -38,7 +37,29 @@ export default function SearchBar({
   const [rating, setRating] = useState(defaultRating);
   const [serviceType, setServiceType] = useState(defaultServiceType);
   const [postcode, setPostcode] = useState(defaultPostcode);
+  const [serviceTypes, setServiceTypes] = useState<string[]>([]);
+  const [postcodeDetected, setPostcodeDetected] = useState(false);
   const router = useRouter();
+
+  // Load service types dynamically from API
+  useEffect(() => {
+    fetch("/api/v1/service-types", {
+      headers: { "X-API-Key": localStorage.getItem("caregist_api_key") || "" },
+    })
+      .then((r) => (r.ok ? r.json() : { data: [] }))
+      .then((d) => {
+        const types = (d.data || []).map((t: any) => t.service_type).filter(Boolean);
+        if (types.length > 0) setServiceTypes(types);
+      })
+      .catch(() => {});
+  }, []);
+
+  // Detect postcode in main query
+  useEffect(() => {
+    setPostcodeDetected(POSTCODE_RE.test(query.trim()));
+  }, [query]);
+
+  const filterCount = [region, rating, serviceType, postcode].filter(Boolean).length;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,6 +74,11 @@ export default function SearchBar({
     const qs = params.toString();
     router.push(qs ? `/search?${qs}` : "/search");
   };
+
+  // Fallback service types if API call fails
+  const displayTypes = serviceTypes.length > 0
+    ? serviceTypes
+    : ["Homecare Agencies", "Residential Homes", "Nursing Homes", "Doctors/Gps", "Dentist", "Supported Living"];
 
   return (
     <form onSubmit={handleSubmit} className="w-full max-w-2xl">
@@ -76,6 +102,19 @@ export default function SearchBar({
         </button>
       </div>
 
+      {/* Postcode detection hint */}
+      {postcodeDetected && (
+        <div className="mt-2 bg-amber/10 border border-amber/30 rounded-lg px-3 py-2 text-xs text-charcoal flex items-center gap-2">
+          <span>Looks like a postcode.</span>
+          <Link
+            href={`/find-care?postcode=${encodeURIComponent(query.trim())}&radius_miles=5`}
+            className="text-clay underline font-medium"
+          >
+            Find care near {query.trim().toUpperCase()} instead?
+          </Link>
+        </div>
+      )}
+
       {/* Toggle */}
       <div className="mt-2 flex items-center gap-2">
         <button
@@ -87,8 +126,13 @@ export default function SearchBar({
             &#9654;
           </span>
           {advanced ? "Simple search" : "Advanced search"}
+          {filterCount > 0 && (
+            <span className="ml-1 bg-clay text-white text-[10px] font-bold w-4 h-4 rounded-full inline-flex items-center justify-center">
+              {filterCount}
+            </span>
+          )}
         </button>
-        {advanced && (region || rating || serviceType || postcode) && (
+        {advanced && filterCount > 0 && (
           <button
             type="button"
             onClick={() => { setRegion(""); setRating(""); setServiceType(""); setPostcode(""); }}
@@ -135,7 +179,7 @@ export default function SearchBar({
               className="w-full px-3 py-2 rounded-lg border border-stone bg-cream text-charcoal text-sm"
             >
               <option value="">All types</option>
-              {SERVICE_TYPES.map((s) => <option key={s} value={s}>{s}</option>)}
+              {displayTypes.map((s) => <option key={s} value={s}>{s}</option>)}
             </select>
           </div>
           <div>

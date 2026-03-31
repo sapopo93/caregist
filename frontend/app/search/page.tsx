@@ -112,9 +112,30 @@ export default async function SearchPage({
           </div>
 
           {!error && results.data.length === 0 && hasQuery && (
-            <div className="text-center py-12 text-dusk">
-              <p className="text-lg">No providers found.</p>
-              <p className="text-sm mt-2">Try a different search term or broaden your filters.</p>
+            <div className="text-center py-12">
+              <p className="text-lg text-bark font-semibold mb-3">No providers found</p>
+              {query && (
+                <p className="text-sm text-dusk mb-4">
+                  Your search for &ldquo;{query}&rdquo; didn&apos;t match any providers.
+                </p>
+              )}
+              <div className="bg-cream border border-stone rounded-lg p-6 max-w-md mx-auto text-left">
+                <p className="text-sm font-medium text-bark mb-3">Try:</p>
+                <ul className="space-y-2 text-sm text-dusk">
+                  <li>Searching by <strong>town name</strong> (e.g. &ldquo;Birmingham&rdquo;)</li>
+                  <li>Searching by <strong>postcode</strong> (e.g. &ldquo;BH1&rdquo;)</li>
+                  <li>Searching by <strong>service type</strong> (e.g. &ldquo;nursing homes&rdquo;)</li>
+                  <li>Removing filters in Advanced Search</li>
+                </ul>
+                <div className="flex gap-3 mt-4">
+                  <Link href="/find-care" className="text-xs text-clay underline">
+                    Use Radius Finder
+                  </Link>
+                  <Link href="/region/london" className="text-xs text-clay underline">
+                    Browse by region
+                  </Link>
+                </div>
+              </div>
             </div>
           )}
 

@@ -15,21 +15,26 @@ from api.database import get_connection
 from api.middleware.auth import validate_api_key
 from api.middleware.rate_limit import add_rate_limit_headers
 from api.queries.providers import (
+    CQC_ID_LOOKUP,
     CHECK_MONITOR,
     COMPARE_QUERY,
     COUNT_USER_MONITORS,
     DEFAULT_SORT,
     DELETE_MONITOR,
     DETAIL_BY_SLUG,
+    FACET_RATINGS,
+    FACET_REGIONS,
+    FACET_TYPES,
     INSERT_MONITOR,
     NEARBY_COUNT,
     NEARBY_QUERY,
     PROVIDER_ID_FROM_SLUG,
     RATING_HISTORY_QUERY,
-    SEARCH_COUNT,
     SEARCH_EXPORT,
     SORT_OPTIONS,
+    build_count_query,
     build_search_query,
+    classify_query,
 )
 
 logger = logging.getLogger("caregist.api")
@@ -67,31 +72,90 @@ async def search_providers(
     sort: str = Query(DEFAULT_SORT),
     page: int = Query(1, ge=1),
     per_page: int | None = Query(None, ge=1),
+    facets: bool = Query(False),
     _auth: dict = Depends(validate_api_key),
 ) -> dict:
-    """Search care providers. Field visibility depends on your tier."""
+    """Search care providers. Handles postcodes, CQC IDs, and free text.
+
+    Smart query classification:
+    - UK postcodes (e.g. BH1 1AA) → postcode prefix search
+    - CQC IDs (e.g. 1-2881562896) → direct ID lookup
+    - Everything else → full-text search with ts_rank relevance
+    """
     tier = _auth["tier"]
     config = get_tier_config(tier)
     add_rate_limit_headers(response, tier, _auth["remaining"])
 
-    # Enforce page size limit per tier
     max_page = config["page_size"]
     per_page = min(per_page or max_page, max_page)
     offset = (page - 1) * per_page
 
-    query_sql = build_search_query(sort)
+    query_type = classify_query(q)
 
     try:
         async with get_connection() as conn:
+            # CQC ID direct lookup
+            if query_type == "cqc_id":
+                rows = await conn.fetch(CQC_ID_LOOKUP, q.strip())
+                total = len(rows)
+                data = [filter_fields(_row_to_dict(r), tier) for r in rows]
+                resp = _paginated_response(data, total, 1, per_page, tier)
+                resp["meta"]["query_type"] = "cqc_id"
+                return resp
+
+            # Postcode search — route to ILIKE prefix match
+            if query_type == "postcode":
+                # Strip spaces and use as postcode filter, clear q for FTS
+                pc = q.strip().upper().replace(" ", "")
+                # Insert a space before the last 3 chars for standard format matching
+                if len(pc) > 3:
+                    pc_prefix = pc[:-3]
+                else:
+                    pc_prefix = pc
+
+                query_sql = build_search_query(sort, has_text_query=False, is_postcode=True)
+                count_sql = build_count_query(is_postcode=True)
+                rows = await conn.fetch(query_sql, pc_prefix, region, rating, type, service_type, postcode, per_page, offset)
+                count_row = await conn.fetchrow(count_sql, pc_prefix, region, rating, type, service_type, postcode)
+                total = count_row["total"] if count_row else 0
+                data = [filter_fields(_row_to_dict(r), tier) for r in rows]
+                resp = _paginated_response(data, total, page, per_page, tier)
+                resp["meta"]["query_type"] = "postcode"
+                resp["meta"]["postcode_prefix"] = pc_prefix
+                return resp
+
+            # Standard FTS search
+            has_text = query_type == "text"
+            query_sql = build_search_query(sort, has_text_query=has_text)
+            count_sql = build_count_query()
             rows = await conn.fetch(query_sql, q, region, rating, type, service_type, postcode, per_page, offset)
-            count_row = await conn.fetchrow(SEARCH_COUNT, q, region, rating, type, service_type, postcode)
+            count_row = await conn.fetchrow(count_sql, q, region, rating, type, service_type, postcode)
+
     except Exception as exc:
         logger.error("Search query failed: %s", exc)
         raise HTTPException(status_code=503, detail="Database query failed.")
 
     total = count_row["total"] if count_row else 0
     data = [filter_fields(_row_to_dict(r), tier) for r in rows]
-    return _paginated_response(data, total, page, per_page, tier)
+    resp = _paginated_response(data, total, page, per_page, tier)
+    resp["meta"]["query_type"] = query_type
+
+    # Faceted counts (optional — requested via ?facets=true)
+    if facets:
+        try:
+            async with get_connection() as conn:
+                rating_rows = await conn.fetch(FACET_RATINGS, q, region, rating, type, service_type, postcode)
+                region_rows = await conn.fetch(FACET_REGIONS, q, region, rating, type, service_type, postcode)
+                type_rows = await conn.fetch(FACET_TYPES, q, region, rating, type, service_type, postcode)
+            resp["facets"] = {
+                "ratings": {r["overall_rating"]: r["count"] for r in rating_rows},
+                "regions": {r["region"]: r["count"] for r in region_rows},
+                "service_types": {r["service_type"]: r["count"] for r in type_rows},
+            }
+        except Exception as exc:
+            logger.warning("Facet query failed: %s", exc)
+
+    return resp
 
 
 @router.get("/export.csv")
@@ -119,7 +183,7 @@ async def export_providers_csv(
     try:
         async with get_connection() as conn:
             rows = await conn.fetch(SEARCH_EXPORT + " LIMIT $7", q, region, rating, type, service_type, postcode, row_limit)
-            count_row = await conn.fetchrow(SEARCH_COUNT, q, region, rating, type, service_type, postcode)
+            count_row = await conn.fetchrow(build_count_query(), q, region, rating, type, service_type, postcode)
     except Exception as exc:
         logger.error("Export query failed: %s", exc)
         raise HTTPException(status_code=503, detail="Export failed.")
