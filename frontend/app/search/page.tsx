@@ -48,7 +48,13 @@ export default async function SearchPage({
   return (
     <div className="max-w-6xl mx-auto px-6 py-8">
       <div className="mb-8">
-        <SearchBar defaultValue={query} />
+        <SearchBar
+          defaultValue={query}
+          defaultRegion={params.region || ""}
+          defaultRating={params.rating || ""}
+          defaultServiceType={params.service_type || ""}
+          defaultPostcode={params.postcode || ""}
+        />
       </div>
 
       <Suspense fallback={null}>
