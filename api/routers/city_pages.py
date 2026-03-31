@@ -7,7 +7,7 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from api.database import get_connection
-from api.middleware.auth import validate_api_key
+from api.middleware.ip_rate_limit import check_public_rate_limit
 from api.queries.city_pages import (
     CITY_NAME_FROM_SLUG,
     COUNT_BY_CITY,
@@ -27,7 +27,7 @@ async def city_providers(
     type: str | None = Query(None),
     page: int = Query(1, ge=1),
     per_page: int = Query(20, ge=1, le=50),
-    _auth: dict = Depends(validate_api_key),
+    _ip=Depends(check_public_rate_limit),
 ) -> dict:
     """Get providers in a city, optionally filtered by rating."""
     offset = (page - 1) * per_page
@@ -61,7 +61,7 @@ async def city_providers(
 
 @router.get("")
 async def list_top_cities(
-    _auth: dict = Depends(validate_api_key),
+    _ip=Depends(check_public_rate_limit),
 ) -> dict:
     """List top 500 cities by provider count."""
     async with get_connection() as conn:

@@ -142,10 +142,30 @@ async def export_providers_csv(
     for row in data:
         writer.writerow({k: v for k, v in row.items() if v is not None})
 
-    # Log analytics
+    # Log analytics + schedule follow-up email
     try:
         from api.utils.analytics import log_event
-        await log_event("csv_download", "search", meta={"tier": tier, "rows": len(data), "total": total})
+        from api.utils.email_queue import queue_email
+        from datetime import datetime, timedelta, timezone
+        await log_event("csv_download", "search", meta={"tier": tier, "rows": len(data), "total": total, "crm_state": "data_intent_user"})
+        # Get user email for follow-up
+        try:
+            async with get_connection() as conn:
+                urow = await conn.fetchrow(
+                    "SELECT u.email FROM api_keys ak JOIN users u ON u.id = ak.user_id WHERE ak.name = $1",
+                    _auth.get("name", ""),
+                )
+            if urow and urow["email"]:
+                await queue_email(
+                    urow["email"],
+                    "Your CareGist export is ready — want alerts?",
+                    "<p>You recently exported a provider list from CareGist.</p>"
+                    "<p>Want to be notified when any of these providers change their CQC rating?</p>"
+                    "<p><a href='https://caregist.co.uk/pricing'>Set up monitoring alerts →</a></p>",
+                    send_after=datetime.now(timezone.utc) + timedelta(hours=24),
+                )
+        except Exception:
+            pass
     except Exception:
         pass
 
@@ -287,7 +307,7 @@ async def create_monitor(
 
     try:
         from api.utils.analytics import log_event
-        await log_event("monitor_created", "provider", user_id=user_id, provider_id=provider_id)
+        await log_event("monitor_created", "provider", user_id=user_id, provider_id=provider_id, meta={"crm_state": "watchlist_user"})
     except Exception:
         pass
 

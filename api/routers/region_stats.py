@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from api.database import get_connection
 from api.middleware.auth import validate_api_key
+from api.middleware.ip_rate_limit import check_public_rate_limit
 from api.queries.region_stats import (
     ALL_LOCAL_AUTHORITIES,
     LA_NAME_FROM_SLUG,
@@ -24,7 +25,7 @@ router = APIRouter(prefix="/api/v1/regions", tags=["regions"])
 @router.get("/{la_slug}/stats")
 async def region_stats(
     la_slug: str,
-    _auth: dict = Depends(validate_api_key),
+    _ip=Depends(check_public_rate_limit),
 ) -> dict:
     """Get stats for a local authority by slug."""
     async with get_connection() as conn:
@@ -60,7 +61,7 @@ async def region_stats(
 
 @router.get("/local-authorities")
 async def list_local_authorities(
-    _auth: dict = Depends(validate_api_key),
+    _ip=Depends(check_public_rate_limit),
 ) -> dict:
     """List all local authorities with provider counts."""
     async with get_connection() as conn:

@@ -7,6 +7,7 @@ export default function ComparisonActions({ slugs }: { slugs: string[] }) {
   const [showLogin, setShowLogin] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [shareToken, setShareToken] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState("");
 
@@ -30,7 +31,11 @@ export default function ComparisonActions({ slugs }: { slugs: string[] }) {
         setError(data.detail || "Limit reached. Upgrade for more.");
         return;
       }
-      if (res.ok) setSaved(true);
+      if (res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setSaved(true);
+        if (data.data?.share_token) setShareToken(data.data.share_token);
+      }
     } catch {
       setError("Failed to save. Please try again.");
     } finally {
@@ -39,7 +44,9 @@ export default function ComparisonActions({ slugs }: { slugs: string[] }) {
   }
 
   function handleShare() {
-    const url = `${window.location.origin}/compare?providers=${slugs.join(",")}`;
+    const url = shareToken
+      ? `${window.location.origin}/compare?token=${shareToken}`
+      : `${window.location.origin}/compare?providers=${slugs.join(",")}`;
     navigator.clipboard.writeText(url).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);

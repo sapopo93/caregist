@@ -49,6 +49,38 @@ async def global_exception_handler(request, exc):
 
 
 app.include_router(health.router)
+
+
+# Process email queue on a background schedule triggered by health checks
+import asyncio
+
+_email_task_running = False
+
+
+@app.middleware("http")
+async def email_queue_middleware(request, call_next):
+    global _email_task_running
+    response = await call_next(request)
+    # Piggyback on health check to drain the email queue
+    if request.url.path == "/api/v1/health" and not _email_task_running:
+        _email_task_running = True
+        try:
+            from api.utils.email_queue import process_email_queue
+            asyncio.create_task(_process_emails())
+        except Exception:
+            _email_task_running = False
+    return response
+
+
+async def _process_emails():
+    global _email_task_running
+    try:
+        from api.utils.email_queue import process_email_queue
+        await process_email_queue(batch_size=20)
+    except Exception as exc:
+        _logger.warning("Email queue processing error: %s", exc)
+    finally:
+        _email_task_running = False
 app.include_router(auth.router)
 app.include_router(billing.router)
 app.include_router(claims.router)

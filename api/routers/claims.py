@@ -67,6 +67,45 @@ async def submit_claim(
         logger.error("Claim submission failed for %s: %s", slug, exc)
         raise HTTPException(status_code=503, detail="Failed to submit claim.")
 
+    # Queue claim email sequence
+    try:
+        from api.utils.analytics import log_event
+        from api.utils.email_queue import queue_email
+        from datetime import datetime, timedelta, timezone
+        await log_event("claim_submitted", "provider", email=req.claimant_email, provider_id=provider["id"], meta={"crm_state": "provider_acquisition_lead"})
+        now = datetime.now(timezone.utc)
+        provider_name = slug.replace("-", " ").title()
+        await queue_email(
+            req.claimant_email,
+            f"Claim received for {provider_name}",
+            f"<p>Hi {req.claimant_name},</p>"
+            f"<p>We've received your claim for <strong>{provider_name}</strong> on CareGist. "
+            f"We'll review it within {'24 hours (fast-track)' if req.fast_track else '24–48 hours'}.</p>"
+            f"<p>— The CareGist Team</p>",
+        )
+        # Day 3: benchmark report prompt
+        await queue_email(
+            req.claimant_email,
+            f"{provider_name} vs local average — your benchmark report",
+            f"<p>Hi {req.claimant_name},</p>"
+            f"<p>Your claim for {provider_name} is being reviewed. In the meantime, "
+            f"see how your provider compares to the local average:</p>"
+            f"<p><a href='https://caregist.co.uk/provider/{slug}'>View provider profile →</a></p>",
+            send_after=now + timedelta(days=3),
+        )
+        # Day 7: upgrade prompt
+        await queue_email(
+            req.claimant_email,
+            "Unlock visibility analytics for your listing",
+            f"<p>Hi {req.claimant_name},</p>"
+            f"<p>Upgrade to Provider Pro (£89/mo) to unlock visibility analytics, "
+            f"competitor benchmarking, and enhanced search placement for {provider_name}.</p>"
+            f"<p><a href='https://caregist.co.uk/pricing'>See Provider Pro plans →</a></p>",
+            send_after=now + timedelta(days=7),
+        )
+    except Exception:
+        pass
+
     return {
         "data": dict(row),
         "message": "Claim submitted successfully. We'll review it within 2 business days.",

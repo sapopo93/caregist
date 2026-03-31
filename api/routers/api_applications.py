@@ -49,7 +49,7 @@ async def submit_api_application(
         "api_application",
         "api_landing",
         email=req.contact_email,
-        meta={"company": req.company_name, "volume": req.expected_volume},
+        meta={"company": req.company_name, "volume": req.expected_volume, "crm_state": "enterprise_data_prospect"},
     )
 
     await queue_email(

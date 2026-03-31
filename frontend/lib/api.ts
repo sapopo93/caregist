@@ -97,18 +97,42 @@ export async function getComparisonByToken(token: string) {
   return apiFetch(`/api/v1/comparisons/${token}`);
 }
 
+// Region stats and city endpoints are public (no auth needed)
+const PUBLIC_API = process.env.NEXT_PUBLIC_API_URL || API_BASE;
+
+async function publicFetch(path: string, params?: Record<string, string | undefined>) {
+  const url = new URL(`${PUBLIC_API}${path}`);
+  if (params) {
+    Object.entries(params).forEach(([k, v]) => {
+      if (v !== undefined && v !== "") url.searchParams.set(k, v);
+    });
+  }
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 10_000);
+  try {
+    const res = await fetch(url.toString(), {
+      next: { revalidate: 3600 },
+      signal: controller.signal,
+    });
+    if (!res.ok) throw new Error(`API error: ${res.status}`);
+    return res.json();
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export async function getRegionStats(laSlug: string) {
-  return apiFetch(`/api/v1/regions/${laSlug}/stats`);
+  return publicFetch(`/api/v1/regions/${laSlug}/stats`);
 }
 
 export async function getLocalAuthorities() {
-  return apiFetch("/api/v1/regions/local-authorities");
+  return publicFetch("/api/v1/regions/local-authorities");
 }
 
 export async function getCityProviders(citySlug: string, params?: Record<string, string | undefined>) {
-  return apiFetch(`/api/v1/cities/${citySlug}/providers`, params);
+  return publicFetch(`/api/v1/cities/${citySlug}/providers`, params);
 }
 
 export async function getTopCities() {
-  return apiFetch("/api/v1/cities");
+  return publicFetch("/api/v1/cities");
 }

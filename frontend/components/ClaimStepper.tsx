@@ -197,9 +197,12 @@ export default function ClaimStepper({
           {!fastTrack && (
             <p className="text-sm text-dusk">
               Need it faster?{" "}
-              <span className="text-clay font-medium">
-                Fast-track for \u00A349 — reviewed within 24 hours.
-              </span>
+              <a
+                href={`/signup?plan=fast-track&redirect=/claim/${slug}`}
+                className="text-clay font-medium underline hover:text-bark"
+              >
+                Fast-track for \u00A349 — reviewed within 24 hours
+              </a>
             </p>
           )}
           <a

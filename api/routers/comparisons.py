@@ -64,7 +64,24 @@ async def save_comparison(
 
     try:
         from api.utils.analytics import log_event
+        from api.utils.email_queue import queue_email
+        from datetime import datetime, timedelta, timezone
         await log_event("comparison_saved", "compare", user_id=user_id, meta={"slugs": req.slug_list})
+        # Schedule follow-up email
+        try:
+            async with get_connection() as conn:
+                urow = await conn.fetchrow("SELECT email FROM users WHERE id = $1", user_id)
+            if urow and urow["email"]:
+                await queue_email(
+                    urow["email"],
+                    "Your comparison is saved — get rating alerts?",
+                    "<p>Your provider comparison is saved on CareGist.</p>"
+                    "<p>Want to be notified if any of these providers change their CQC rating?</p>"
+                    "<p><a href='https://caregist.co.uk/pricing'>Set up monitoring alerts →</a></p>",
+                    send_after=datetime.now(timezone.utc) + timedelta(hours=24),
+                )
+        except Exception:
+            pass
     except Exception:
         pass
 

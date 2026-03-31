@@ -49,19 +49,65 @@ async def subscribe(
         "email_subscribe",
         req.source,
         email=req.email,
-        meta={"postcode": req.postcode, "new": is_new},
+        meta={"postcode": req.postcode, "new": is_new, "crm_state": "newsletter_lead"},
     )
 
     if is_new:
-        await queue_email(
-            req.email,
-            "Welcome to CareGist",
-            "<p>Thanks for subscribing to CareGist. You'll receive weekly CQC rating changes.</p>"
-            "<p>Data sourced from the CQC public register, refreshed weekly.</p>"
-            "<p style='color:#8a6a4a;font-size:12px'>Unsubscribe anytime by replying to this email.</p>",
-        )
+        from datetime import datetime, timedelta, timezone
+
+        now = datetime.now(timezone.utc)
+
+        if req.source == "radius_finder":
+            await queue_email(
+                req.email,
+                "Your care provider search results — CareGist",
+                "<p>Thanks for using the CareGist Radius Finder.</p>"
+                "<p>Your search results are available on the site. Data sourced from the CQC public register.</p>"
+                "<p style='color:#8a6a4a;font-size:12px'>Unsubscribe anytime by replying to this email.</p>",
+            )
+            # Day 3: monitor upsell
+            await queue_email(
+                req.email,
+                "Ratings change — want to be notified?",
+                "<p>Care provider ratings can change after inspections. "
+                "Want to be notified when providers near you change rating?</p>"
+                "<p><a href='https://caregist.co.uk/pricing'>Set up monitoring alerts →</a></p>",
+                send_after=now + timedelta(days=3),
+            )
+            # Day 7: area movers
+            await queue_email(
+                req.email,
+                "Weekly area movers — CQC rating changes near you",
+                "<p>Get a weekly digest of CQC rating changes in your area.</p>"
+                "<p><a href='https://caregist.co.uk/find-care'>Search again →</a></p>"
+                "<p><a href='https://caregist.co.uk/pricing'>Upgrade for instant alerts →</a></p>",
+                send_after=now + timedelta(days=7),
+            )
+        else:
+            await queue_email(
+                req.email,
+                "Welcome to CareGist",
+                "<p>Thanks for subscribing to CareGist. You'll receive weekly CQC rating changes.</p>"
+                "<p>Data sourced from the CQC public register, refreshed weekly.</p>"
+                "<p style='color:#8a6a4a;font-size:12px'>Unsubscribe anytime by replying to this email.</p>",
+            )
 
     return {"success": True, "existing": not is_new}
+
+
+class TrackRequest(BaseModel):
+    slug: str = Field(..., max_length=300)
+    event: str = Field("provider_profile_view", max_length=50)
+
+
+@router.post("/track/profile-view")
+async def track_profile_view(
+    req: TrackRequest,
+    _ip=Depends(check_public_rate_limit),
+) -> dict:
+    """Track a provider profile view. Public, no auth."""
+    await log_event("provider_profile_view", "provider", provider_id=req.slug)
+    return {"tracked": True}
 
 
 @router.get("/last-sync")

@@ -79,8 +79,23 @@ export default async function RegionPage({
   const totalProviders = stats?.total_providers || results.meta.total;
   const pctGood = stats?.pct_good_or_outstanding;
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name: `CQC care providers in ${displayName}`,
+    numberOfItems: totalProviders,
+    ...(stats?.top_providers?.length && {
+      itemListElement: stats.top_providers.map((p: any, i: number) => ({
+        "@type": "ListItem",
+        position: i + 1,
+        item: { "@type": "LocalBusiness", name: p.name, url: `https://caregist.co.uk/provider/${p.slug}` },
+      })),
+    }),
+  };
+
   return (
     <div className="max-w-6xl mx-auto px-6 py-8">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       {/* AEO Block */}
       <section className="bg-parchment border-b border-stone rounded-t-lg px-6 py-4 text-sm text-charcoal leading-relaxed mb-6">
         <p>

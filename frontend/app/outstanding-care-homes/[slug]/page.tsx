@@ -1,5 +1,17 @@
 import CityRatingPage from "@/components/CityRatingPage";
+import { getTopCities } from "@/lib/api";
 import type { Metadata } from "next";
+
+export const revalidate = 86400; // ISR: regenerate daily
+
+export async function generateStaticParams() {
+  try {
+    const res = await getTopCities();
+    return (res.data || []).slice(0, 500).map((c: any) => ({ slug: c.slug }));
+  } catch {
+    return [];
+  }
+}
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
