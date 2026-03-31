@@ -43,6 +43,21 @@ export default function HomePage() {
         <TrustSignal />
       </section>
 
+      {/* Find Care CTA */}
+      <section className="max-w-6xl mx-auto px-6 py-8">
+        <Link
+          href="/find-care"
+          className="block bg-bark text-cream rounded-xl p-6 hover:bg-charcoal transition-colors text-center"
+        >
+          <h2 className="text-xl font-bold mb-1" style={{ fontFamily: "Playfair Display", color: "var(--color-amber)" }}>
+            Find care near you
+          </h2>
+          <p className="text-stone text-sm">
+            Enter your postcode to see all CQC-rated providers within your chosen radius.
+          </p>
+        </Link>
+      </section>
+
       {/* Browse by Service Type */}
       <section className="max-w-6xl mx-auto px-6 py-12">
         <h2 className="text-2xl font-bold mb-6">Browse by service type</h2>
