@@ -57,23 +57,22 @@ export default async function RegionPage({
       error = true;
     }
   } else {
-    // Try as local authority
+    // Try as local authority — fetch stats and providers independently
+    // so a stats failure doesn't block provider results
     try {
       const statsRes = await getRegionStats(slug);
       stats = statsRes.data;
       displayName = stats.local_authority || displayName;
-      // Also fetch paginated providers
-      results = await searchProviders({ q: stats.local_authority, page: page || "1" });
+    } catch {
+      // Stats unavailable — page still works without rich sections
+    }
+
+    const searchTerm = stats?.local_authority || displayName;
+    try {
+      results = await searchProviders({ q: searchTerm, page: page || "1" });
     } catch (e: any) {
       if (e?.message === "warming_up") warmingUp = true;
       error = true;
-      // Fallback: try searching by slug as-is
-      try {
-        results = await searchProviders({ q: displayName, page: page || "1" });
-        error = false;
-      } catch {
-        error = true;
-      }
     }
   }
 

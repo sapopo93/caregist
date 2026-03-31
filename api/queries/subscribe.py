@@ -8,9 +8,8 @@ RETURNING id, email, source, created_at
 """
 
 GET_LAST_SYNC_DATE = """
-SELECT completed_at
-FROM pipeline_runs
-WHERE status = 'completed' AND completed_at IS NOT NULL
-ORDER BY completed_at DESC
-LIMIT 1
+SELECT COALESCE(
+  (SELECT completed_at FROM pipeline_runs WHERE status = 'completed' AND completed_at IS NOT NULL ORDER BY completed_at DESC LIMIT 1),
+  (SELECT MAX(updated_at) FROM care_providers)
+) AS completed_at
 """
