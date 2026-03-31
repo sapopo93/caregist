@@ -62,3 +62,169 @@ export interface User {
   email: string;
   name: string;
 }
+
+// ── Growth OS Config Types ──
+
+export type GateKey = 'none' | 'email' | 'login' | 'paid' | 'manual';
+export type ActionType = 'trial' | 'subscribe' | 'download' | 'save' | 'monitor' | 'apply' | 'claim';
+export type Priority = 'now' | 'phase-2';
+export type PageStatus = 'exists' | 'build';
+
+export interface BuyerSegment {
+  label: string;
+  color: string;
+  value: number;
+}
+
+export interface Gate {
+  label: string;
+  color: string;
+}
+
+export interface PricingVariant {
+  name: string;
+  price: string;
+  features: string;
+}
+
+export interface PricingTier {
+  tier: string;
+  forWho: string;
+  color: string;
+  price: string;
+  priceNote: string;
+  variants?: PricingVariant[];
+  includes: string[];
+  limit: string;
+  pricingLogic: string;
+}
+
+export interface AddOn {
+  name: string;
+  price: string;
+  note: string;
+}
+
+export interface LaunchPrice {
+  tier: string;
+  price: string;
+  color: string;
+}
+
+export interface RevenueControl {
+  tier: string;
+  color: string;
+  trigger: string;
+  upgradeMoment: string;
+  paywallMessage: string;
+  targetConversion: string;
+  targetARPU: string;
+  primarySurface: string;
+}
+
+export interface UnitEconomic {
+  surface: string;
+  color: string;
+  userType: string;
+  acquisitionCost: string;
+  conversionToPaid: string;
+  strategicValue: string;
+  expectedPayback: string;
+}
+
+export interface DefensibilityPoint {
+  point: string;
+  detail: string;
+  color: string;
+}
+
+export interface SegmentStrategy {
+  role: string;
+  audience: string;
+  insight: string;
+  color: string;
+}
+
+export interface SeoPageFamily {
+  family: string;
+  urlPattern: string;
+  estimatedPages: string;
+  color: string;
+  primaryKeywords: string[];
+  structuredData: string;
+  aeoBlock: string;
+  freshnessSignal: string;
+  distributionValue: string;
+  conversionRole: string;
+}
+
+export interface AeoRule {
+  rule: string;
+  detail: string;
+  applies: string;
+  color: string;
+}
+
+export interface FlywheelSide {
+  side: string;
+  color: string;
+  desc: string;
+  pages: string[];
+}
+
+export interface CrmEvent {
+  event: string;
+  state: string;
+  color: string;
+}
+
+export interface ExecutionScore {
+  revenueImpact: number;
+  buildComplexity: number;
+  paybackSpeed: number;
+  strategicCompounding: number;
+}
+
+export interface ClaimFlow {
+  verification: string;
+  claimantRoles: string;
+  approvalSLA: string;
+  freeTier: string;
+  paidTier: string;
+  postClaim: string;
+  crmRecord: string;
+}
+
+export interface ToolSpec {
+  inputs: string;
+  outputs: string;
+  freeLimit: string;
+  aeoAngle: string;
+  viralMechanic: string;
+  distributionNote: string;
+}
+
+export interface PageSpec {
+  id: number;
+  status: PageStatus;
+  priority: Priority;
+  page: string;
+  url: string;
+  audience: string;
+  buyerRank: number;
+  jobToBeDone: string;
+  currentGap: string;
+  primaryCTA: string;
+  actionType: ActionType;
+  gate: GateKey;
+  capturedAsset: string;
+  revenuePath: string;
+  upgradeTrigger: string;
+  successMetric: string;
+  followUpAutomation: string;
+  trustLayer: string;
+  crmOutcome: string;
+  executionScore: ExecutionScore;
+  claimFlow?: ClaimFlow;
+  toolSpec?: ToolSpec;
+}
