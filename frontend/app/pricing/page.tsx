@@ -121,21 +121,32 @@ export default function PricingPage() {
       </div>
 
       {/* Add-ons */}
-      <div className="bg-bark rounded-xl p-6 mt-10">
-        <p className="text-amber font-mono text-xs uppercase tracking-wider mb-4">Add-ons</p>
+      <div className="bg-bark rounded-xl p-6 mt-10 opacity-80">
+        <div className="flex items-center gap-3 mb-4">
+          <p className="text-amber font-mono text-xs uppercase tracking-wider">Add-ons</p>
+          <span className="font-mono text-[10px] bg-amber/20 text-amber px-2 py-0.5 rounded">
+            Coming soon
+          </span>
+        </div>
         <div className="space-y-3">
           {ADD_ONS.map((a) => (
             <div key={a.name} className="flex justify-between items-start gap-4">
               <div>
-                <p className="font-mono text-sm font-semibold text-cream">{a.name}</p>
-                <p className="font-mono text-xs text-white/35">{a.note}</p>
+                <p className="font-mono text-sm font-semibold text-cream/60">{a.name}</p>
+                <p className="font-mono text-xs text-white/25">{a.note}</p>
               </div>
-              <span className="font-mono text-sm text-amber font-bold whitespace-nowrap">
+              <span className="font-mono text-sm text-amber/60 font-bold whitespace-nowrap">
                 {a.price}
               </span>
             </div>
           ))}
         </div>
+        <p className="font-mono text-xs text-white/30 mt-4 pt-3 border-t border-white/10">
+          These add-ons are coming soon. Register interest at{" "}
+          <a href="mailto:hello@caregist.co.uk" className="text-amber/60 underline">
+            hello@caregist.co.uk
+          </a>
+        </p>
       </div>
 
       {/* Footer */}
