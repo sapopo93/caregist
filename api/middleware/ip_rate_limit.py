@@ -14,6 +14,15 @@ _MAX_PER_MINUTE = 5
 _MAX_PUBLIC_PER_MINUTE = 30
 
 
+def _get_client_ip(request: Request) -> str:
+    """Extract real client IP, respecting X-Forwarded-For behind reverse proxies."""
+    forwarded = request.headers.get("x-forwarded-for")
+    if forwarded:
+        # First IP in the chain is the original client
+        return forwarded.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
+
+
 def _cleanup():
     global _request_count
     _request_count += 1
@@ -30,7 +39,7 @@ def _cleanup():
 async def check_ip_rate_limit(request: Request) -> None:
     """FastAPI dependency: rate limit by client IP. 5 req/min."""
     _cleanup()
-    ip = request.client.host if request.client else "unknown"
+    ip = _get_client_ip(request)
     now = time.monotonic()
     window_start = now - 60
 
@@ -52,7 +61,7 @@ _public_ip_requests: dict[str, list[float]] = defaultdict(list)
 async def check_public_rate_limit(request: Request) -> None:
     """Looser rate limit for public non-auth endpoints. 30 req/min."""
     _cleanup()
-    ip = request.client.host if request.client else "unknown"
+    ip = _get_client_ip(request)
     now = time.monotonic()
     window_start = now - 60
 

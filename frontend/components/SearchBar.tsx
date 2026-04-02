@@ -43,9 +43,7 @@ export default function SearchBar({
 
   // Load service types dynamically from API
   useEffect(() => {
-    fetch("/api/v1/service-types", {
-      headers: { "X-API-Key": localStorage.getItem("caregist_api_key") || "" },
-    })
+    fetch("/api/v1/service-types")
       .then((r) => (r.ok ? r.json() : { data: [] }))
       .then((d) => {
         const types = (d.data || []).map((t: any) => t.service_type).filter(Boolean);

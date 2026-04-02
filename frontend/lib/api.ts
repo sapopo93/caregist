@@ -74,11 +74,11 @@ export async function getNearby(lat: number, lon: number, radiusKm = 10) {
 }
 
 export async function getRegions() {
-  return apiFetch("/api/v1/regions");
+  return publicFetch("/api/v1/regions");
 }
 
 export async function getServiceTypes() {
-  return apiFetch("/api/v1/service-types");
+  return publicFetch("/api/v1/service-types");
 }
 
 export async function getProviderReviews(slug: string, page = "1") {

@@ -33,9 +33,7 @@ export default function FilterSidebar() {
   const [serviceTypes, setServiceTypes] = useState<string[]>(FALLBACK_SERVICE_TYPES);
 
   useEffect(() => {
-    fetch("/api/v1/service-types", {
-      headers: { "X-API-Key": localStorage.getItem("caregist_api_key") || "" },
-    })
+    fetch("/api/v1/service-types")
       .then((r) => (r.ok ? r.json() : { data: [] }))
       .then((d) => {
         const types = (d.data || []).map((t: any) => t.service_type).filter(Boolean);
