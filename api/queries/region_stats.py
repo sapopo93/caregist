@@ -10,7 +10,7 @@ GROUP BY overall_rating
 TOP_PROVIDERS_BY_LA = """
 SELECT name, slug, overall_rating, type, quality_score, last_inspection_date
 FROM care_providers
-WHERE local_authority = $1 AND status = 'Active'
+WHERE local_authority = $1 AND UPPER(status) = 'ACTIVE'
 ORDER BY quality_score DESC NULLS LAST
 LIMIT 5
 """

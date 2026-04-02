@@ -41,7 +41,7 @@ FROM care_providers
 
 # Main search WHERE clause — supports multi-value filters via comma separation
 SEARCH_WHERE = f"""
-WHERE status = 'Active'
+WHERE UPPER(status) = 'ACTIVE'
   AND ($1::text IS NULL OR {_TSVECTOR} @@ plainto_tsquery('english', $1))
   AND ($2::text IS NULL OR region = ANY(string_to_array($2, ',')))
   AND ($3::text IS NULL OR overall_rating = ANY(string_to_array($3, ',')))
@@ -52,7 +52,7 @@ WHERE status = 'Active'
 
 # Postcode-specific WHERE — used when query looks like a UK postcode
 SEARCH_WHERE_POSTCODE = """
-WHERE status = 'Active'
+WHERE UPPER(status) = 'ACTIVE'
   AND postcode ILIKE $1 || '%'
   AND ($2::text IS NULL OR region = ANY(string_to_array($2, ',')))
   AND ($3::text IS NULL OR overall_rating = ANY(string_to_array($3, ',')))
@@ -63,7 +63,7 @@ WHERE status = 'Active'
 
 # CQC ID direct lookup
 CQC_ID_LOOKUP = """
-SELECT * FROM care_providers WHERE (id = $1 OR provider_id = $1) AND status = 'Active'
+SELECT * FROM care_providers WHERE (id = $1 OR provider_id = $1) AND UPPER(status) = 'ACTIVE'
 """
 
 # Whitelisted sort options to prevent SQL injection
@@ -161,7 +161,7 @@ SELECT id, provider_id, name, slug, type, status, town, county, postcode,
        ST_Distance(geom::geography, ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography) / 1000.0 AS distance_km
 FROM care_providers
 WHERE geom IS NOT NULL
-  AND status = 'Active'
+  AND UPPER(status) = 'ACTIVE'
   AND ST_DWithin(geom::geography, ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography, $3 * 1000)
   AND ($4::text IS NULL OR type = $4)
   AND ($5::text IS NULL OR overall_rating = $5)
@@ -173,7 +173,7 @@ NEARBY_COUNT = """
 SELECT COUNT(*) as total
 FROM care_providers
 WHERE geom IS NOT NULL
-  AND status = 'Active'
+  AND UPPER(status) = 'ACTIVE'
   AND ST_DWithin(geom::geography, ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography, $3 * 1000)
   AND ($4::text IS NULL OR type = $4)
   AND ($5::text IS NULL OR overall_rating = $5)
@@ -182,7 +182,7 @@ WHERE geom IS NOT NULL
 REGIONS_QUERY = """
 SELECT region, COUNT(*) as provider_count
 FROM care_providers
-WHERE region IS NOT NULL AND region != '' AND status = 'Active'
+WHERE region IS NOT NULL AND region != '' AND UPPER(status) = 'ACTIVE'
 GROUP BY region
 ORDER BY provider_count DESC
 """
@@ -190,7 +190,7 @@ ORDER BY provider_count DESC
 SERVICE_TYPES_QUERY = """
 SELECT unnest(string_to_array(service_types, '|')) as service_type, COUNT(*) as provider_count
 FROM care_providers
-WHERE service_types IS NOT NULL AND service_types != '' AND status = 'Active'
+WHERE service_types IS NOT NULL AND service_types != '' AND UPPER(status) = 'ACTIVE'
 GROUP BY service_type
 ORDER BY provider_count DESC
 """
@@ -198,13 +198,13 @@ ORDER BY provider_count DESC
 RATINGS_QUERY = """
 SELECT overall_rating, COUNT(*) as provider_count
 FROM care_providers
-WHERE overall_rating IS NOT NULL AND overall_rating != '' AND status = 'Active'
+WHERE overall_rating IS NOT NULL AND overall_rating != '' AND UPPER(status) = 'ACTIVE'
 GROUP BY overall_rating
 ORDER BY provider_count DESC
 """
 
 COMPARE_QUERY = """
-SELECT * FROM care_providers WHERE slug = ANY($1::text[]) AND status = 'Active'
+SELECT * FROM care_providers WHERE slug = ANY($1::text[]) AND UPPER(status) = 'ACTIVE'
 """
 
 # --- Monitor queries ---

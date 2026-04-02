@@ -2,7 +2,7 @@
 
 DASHBOARD_STATS = """
 SELECT
-  (SELECT COUNT(*) FROM care_providers WHERE status = 'Active') AS total_providers,
+  (SELECT COUNT(*) FROM care_providers WHERE UPPER(status) = 'ACTIVE') AS total_providers,
   (SELECT COUNT(*) FROM care_providers WHERE is_claimed = true) AS claimed_providers,
   (SELECT COUNT(*) FROM provider_claims WHERE status = 'pending') AS pending_claims,
   (SELECT COUNT(*) FROM reviews WHERE status = 'pending') AS pending_reviews,
