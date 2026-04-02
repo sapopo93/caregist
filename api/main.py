@@ -4,12 +4,26 @@ from __future__ import annotations
 
 from contextlib import asynccontextmanager
 
+import sentry_sdk
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from api.config import settings
 from api.database import close_pool, init_pool
+from api.logging_config import setup_logging
+
+# Structured JSON logs in production, human-readable locally
+setup_logging(json_output="localhost" not in settings.database_url)
 from api.routers import admin, api_applications, auth, billing, city_pages, claims, comparisons, enquiries, health, providers, public_tools, region_stats, regions, reviews, subscribe
+
+if settings.sentry_dsn:
+    sentry_sdk.init(
+        dsn=settings.sentry_dsn,
+        traces_sample_rate=0.1,
+        profiles_sample_rate=0.1,
+        environment="production" if "localhost" not in settings.database_url else "development",
+        release=f"caregist-api@1.0.0",
+    )
 
 
 @asynccontextmanager
@@ -45,6 +59,7 @@ _logger = logging.getLogger("caregist.app")
 @app.exception_handler(Exception)
 async def global_exception_handler(request, exc):
     _logger.error("Unhandled exception: %s", exc, exc_info=True)
+    sentry_sdk.capture_exception(exc)
     return JSONResponse(status_code=500, content={"detail": "Internal server error."})
 
 

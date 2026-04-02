@@ -8,6 +8,7 @@
     "start": "next start"
   },
   "dependencies": {
+    "@sentry/nextjs": "^9.47.1",
     "@tailwindcss/typography": "^0.5.19",
     "@types/leaflet": "^1.9.21",
     "leaflet": "^1.9.4",

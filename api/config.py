@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     app_url: str = "http://localhost:3000"
     resend_api_key: str = ""
     enquiry_from_email: str = ""
+    sentry_dsn: str = ""
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8", "extra": "ignore"}
 

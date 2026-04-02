@@ -45,6 +45,7 @@ services:
       STRIPE_PRICE_PRO: ${STRIPE_PRICE_PRO:-}
       STRIPE_PRICE_BUSINESS: ${STRIPE_PRICE_BUSINESS:-}
       APP_URL: ${APP_URL:-http://localhost:3000}
+      SENTRY_DSN: ${SENTRY_DSN:-}
     ports:
       - "8000:8000"
 
