@@ -34,12 +34,17 @@ async def lifespan(app: FastAPI):
     await close_pool()
 
 
+_is_local = "localhost" in settings.database_url
+
 app = FastAPI(
     title="CareGist API",
     description="UK care provider directory powered by CQC data. "
     "55,818 providers with ratings, inspections, and quality scoring.",
     version="1.0.0",
     lifespan=lifespan,
+    docs_url="/docs" if _is_local else None,
+    redoc_url="/redoc" if _is_local else None,
+    openapi_url="/openapi.json" if _is_local else None,
 )
 
 app.add_middleware(

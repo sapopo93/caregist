@@ -82,6 +82,12 @@ async def search_providers(
     - CQC IDs (e.g. 1-2881562896) → direct ID lookup
     - Everything else → full-text search with ts_rank relevance
     """
+    # Sanitize null bytes that crash the database
+    if q and "\x00" in q:
+        q = q.replace("\x00", "")
+        if not q.strip():
+            q = None
+
     tier = _auth["tier"]
     config = get_tier_config(tier)
     add_rate_limit_headers(response, tier, _auth["remaining"])
@@ -178,6 +184,16 @@ async def export_providers_csv(
     if row_limit == 0:
         raise HTTPException(status_code=403, detail="CSV export requires an account. Sign up free at /signup")
 
+    # Require at least one filter to prevent bulk scraping
+    if not any([q, region, rating, type, service_type, postcode]):
+        raise HTTPException(status_code=400, detail="Provide at least one filter (q, region, rating, type, service_type, or postcode).")
+
+    # Sanitize null bytes
+    if q and "\x00" in q:
+        q = q.replace("\x00", "")
+        if not q.strip():
+            q = None
+
     is_basic = tier == "free"
 
     try:
@@ -270,24 +286,6 @@ async def compare_providers(
         raise HTTPException(status_code=404, detail="No matching providers found.")
 
     return {"data": [filter_fields(_row_to_dict(r), tier) for r in rows]}
-
-
-@router.get("/{slug}")
-async def get_provider(response: Response, slug: str, _auth: dict = Depends(validate_api_key)) -> dict:
-    """Get a single provider by slug. Field visibility depends on tier."""
-    tier = _auth["tier"]
-    add_rate_limit_headers(response, tier, _auth["remaining"])
-
-    try:
-        async with get_connection() as conn:
-            row = await conn.fetchrow(DETAIL_BY_SLUG, slug)
-    except Exception as exc:
-        logger.error("Detail query failed for %s: %s", slug, exc)
-        raise HTTPException(status_code=503, detail="Database query failed.")
-
-    if not row:
-        raise HTTPException(status_code=404, detail=f"Provider not found: {slug}")
-    return {"data": filter_fields(_row_to_dict(row), tier)}
 
 
 @router.get("/nearby/search")
@@ -434,3 +432,22 @@ async def rating_history(
         rows = await conn.fetch(RATING_HISTORY_QUERY, provider_id)
 
     return {"data": [dict(r) for r in rows]}
+
+
+# /{slug} must be last — it catches any path segment as a slug
+@router.get("/{slug}")
+async def get_provider(response: Response, slug: str, _auth: dict = Depends(validate_api_key)) -> dict:
+    """Get a single provider by slug. Field visibility depends on tier."""
+    tier = _auth["tier"]
+    add_rate_limit_headers(response, tier, _auth["remaining"])
+
+    try:
+        async with get_connection() as conn:
+            row = await conn.fetchrow(DETAIL_BY_SLUG, slug)
+    except Exception as exc:
+        logger.error("Detail query failed for %s: %s", slug, exc)
+        raise HTTPException(status_code=503, detail="Database query failed.")
+
+    if not row:
+        raise HTTPException(status_code=404, detail=f"Provider not found: {slug}")
+    return {"data": filter_fields(_row_to_dict(row), tier)}
