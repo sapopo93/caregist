@@ -1,10 +1,11 @@
+import Link from "next/link";
 import ApiApplicationForm from "@/components/ApiApplicationForm";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "CareGist API — CQC Provider Data for Developers",
   description:
-    "Programmatic access to 55,818 CQC-registered care providers. Search, filter, and export UK care data via REST API. Updated weekly.",
+    "Programmatic access to 55,818 CQC-registered care providers. Search, filter, and export UK care data via REST API. Updated daily.",
   alternates: { canonical: "https://caregist.co.uk/api" },
 };
 
@@ -34,14 +35,14 @@ const CAPABILITIES = [
   { title: "Geographic Radius", desc: "Find providers within a radius of any UK postcode." },
   { title: "Full Provider Data", desc: "Ratings, coordinates, contact details, inspection history." },
   { title: "Bulk Export", desc: "CSV and JSON exports with enriched fields." },
-  { title: "Rating Webhooks", desc: "Get notified when providers change rating (Enterprise)." },
+  { title: "Rating Webhooks", desc: "Get notified when providers change rating (Business tier)." },
   { title: "Daily Refresh", desc: "Data synced from CQC public register daily at 3am." },
 ];
 
 const TIERS = [
-  { name: "Standard", price: "\u00A3499 + VAT/mo", features: "Core search/filter endpoints, fair-use cap" },
-  { name: "Pro", price: "\u00A31,250 + VAT/mo", features: "Higher rate limits, bulk endpoints, SLA" },
-  { name: "Enterprise", price: "from \u00A33,500 + VAT/mo", features: "Custom terms, webhooks, named support, onboarding" },
+  { name: "Starter", price: "\u00A339 + VAT/mo", features: "30 req/sec, nearby search, compare, 500-row export" },
+  { name: "Pro", price: "\u00A389 + VAT/mo", features: "60 req/sec, bulk export, 100 monitors, alerts" },
+  { name: "Business", price: "\u00A3249 + VAT/mo", features: "200 req/sec, full fields, webhooks, 10K req/day" },
 ];
 
 export default function ApiLandingPage() {
@@ -51,7 +52,7 @@ export default function ApiLandingPage() {
       <section className="bg-parchment border-b border-stone px-6 py-4 rounded-t-lg text-sm text-charcoal leading-relaxed mb-8">
         <p>
           CareGist provides programmatic access to 55,818 CQC-registered care providers across
-          England via a REST API. Data is cleaned, normalised, and refreshed weekly from the CQC
+          England via a REST API. Data is cleaned, normalised, and refreshed daily from the CQC
           public register.
         </p>
       </section>
@@ -91,6 +92,9 @@ export default function ApiLandingPage() {
             </div>
           ))}
         </div>
+        <p className="text-sm text-dusk mt-4 text-center">
+          <Link href="/pricing" className="text-clay underline">See full pricing details</Link>
+        </p>
       </div>
 
       {/* Application Form */}
