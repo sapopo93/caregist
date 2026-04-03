@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { PRICING_LADDER, ADD_ONS, LAUNCH_PRICING } from "@/lib/caregist-config";
+import PricingCTA from "@/components/PricingCTA";
 
 export default function PricingPage() {
   return (
@@ -104,12 +105,7 @@ export default function PricingPage() {
 
             {/* CTA */}
             <div className="flex flex-col sm:flex-row sm:items-center gap-4 pt-4 border-t border-stone">
-              <Link
-                href={i === 0 ? "/signup" : `/signup?plan=${tier.tier.toLowerCase().replace(/\s+/g, "-")}`}
-                className="inline-block text-center py-2.5 px-6 rounded-lg font-medium text-sm transition-colors border border-clay text-clay hover:bg-clay hover:text-white"
-              >
-                {i === 0 ? "Get Started Free" : "Get Started"}
-              </Link>
+              <PricingCTA tier={tier.tier} isFreeTier={i === 0} />
               <p className="font-mono text-xs text-dusk">{tier.pricingLogic}</p>
             </div>
           </div>

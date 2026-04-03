@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
@@ -14,6 +14,14 @@ function SignupForm() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Redirect logged-in users to pricing (for upgrades) or dashboard
+  useEffect(() => {
+    const stored = localStorage.getItem("caregist_user");
+    if (stored) {
+      router.replace(plan !== "free" ? `/pricing` : "/dashboard");
+    }
+  }, [plan, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

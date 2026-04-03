@@ -53,7 +53,7 @@ async def create_checkout(req: CheckoutRequest, _auth: dict = Depends(validate_a
     }
     price_id = price_map.get(req.tier)
     if not price_id:
-        raise HTTPException(status_code=400, detail=f"Invalid tier: {req.tier}. Choose 'starter' or 'pro'.")
+        raise HTTPException(status_code=400, detail=f"Invalid tier: {req.tier}. Choose 'starter', 'pro', or 'business'.")
 
     # Find or create Stripe customer
     async with get_connection() as conn:
@@ -61,6 +61,18 @@ async def create_checkout(req: CheckoutRequest, _auth: dict = Depends(validate_a
 
     if not user:
         raise HTTPException(status_code=404, detail="User not found. Register first.")
+
+    # Prevent double-charge: reject if user already has an active paid subscription
+    async with get_connection() as conn:
+        existing_sub = await conn.fetchrow(
+            "SELECT tier, status FROM subscriptions WHERE user_id = $1 AND status = 'active' AND tier != 'free' ORDER BY created_at DESC LIMIT 1",
+            user["id"],
+        )
+    if existing_sub:
+        raise HTTPException(
+            status_code=409,
+            detail=f"You already have an active {existing_sub['tier']} subscription. Cancel it first to change plans.",
+        )
 
     customer_id = user["stripe_customer_id"]
     if not customer_id:

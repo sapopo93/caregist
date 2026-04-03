@@ -88,6 +88,10 @@ async def search_providers(
         if not q.strip():
             q = None
 
+    # Validate sort parameter
+    if sort not in SORT_OPTIONS:
+        raise HTTPException(status_code=400, detail=f"Invalid sort. Choose from: {', '.join(SORT_OPTIONS.keys())}")
+
     tier = _auth["tier"]
     config = get_tier_config(tier)
     add_rate_limit_headers(response, tier, _auth["remaining"])
