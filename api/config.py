@@ -59,21 +59,27 @@ TIERS = {
 }
 
 # Fields included in the free-tier basic CSV export
-BASIC_CSV_FIELDS = ["name", "town", "postcode", "region", "phone", "overall_rating", "type", "service_types", "last_inspection_date"]
+# Deliberately richer than CQC's own CSV (which omits ratings entirely)
+BASIC_CSV_FIELDS = [
+    "name", "town", "county", "postcode", "region", "local_authority",
+    "phone", "website", "overall_rating", "type", "service_types",
+    "specialisms", "number_of_beds", "quality_score", "quality_tier",
+    "last_inspection_date", "inspection_report_url",
+]
 
 BASIC_FIELDS = [
-    "id", "name", "slug", "type", "status", "town", "postcode",
-    "region", "overall_rating", "service_types", "quality_tier",
-    "phone", "last_inspection_date",
+    "id", "name", "slug", "type", "status", "town", "county", "postcode",
+    "region", "local_authority", "overall_rating", "service_types",
+    "specialisms", "number_of_beds", "quality_score", "quality_tier",
+    "phone", "website", "last_inspection_date", "inspection_report_url",
 ]
 
 STANDARD_FIELDS = BASIC_FIELDS + [
-    "phone", "email", "website", "latitude", "longitude", "county",
-    "local_authority", "specialisms", "regulated_activities",
-    "number_of_beds", "ownership_type", "quality_score",
+    "email", "latitude", "longitude",
+    "regulated_activities", "ownership_type",
     "rating_safe", "rating_effective", "rating_caring",
-    "rating_responsive", "rating_well_led", "last_inspection_date",
-    "inspection_report_url", "is_claimed", "review_count", "avg_review_rating",
+    "rating_responsive", "rating_well_led",
+    "is_claimed", "review_count", "avg_review_rating",
 ]
 
 FULL_FIELDS = STANDARD_FIELDS + [
