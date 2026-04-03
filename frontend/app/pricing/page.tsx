@@ -17,7 +17,7 @@ export default function PricingPage() {
         <p className="text-amber font-mono text-xs uppercase tracking-wider mb-4">
           Launch pricing — start here
         </p>
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {LAUNCH_PRICING.map((t) => (
             <div key={t.tier} className="flex flex-col">
               <span className="font-mono text-sm font-bold" style={{ color: t.color }}>
@@ -105,14 +105,10 @@ export default function PricingPage() {
             {/* CTA */}
             <div className="flex flex-col sm:flex-row sm:items-center gap-4 pt-4 border-t border-stone">
               <Link
-                href={i === 0 ? "/signup" : i === PRICING_LADDER.length - 1 ? "/api" : `/signup?plan=${tier.tier.toLowerCase().replace(/\s+/g, "-")}`}
+                href={i === 0 ? "/signup" : `/signup?plan=${tier.tier.toLowerCase().replace(/\s+/g, "-")}`}
                 className="inline-block text-center py-2.5 px-6 rounded-lg font-medium text-sm transition-colors border border-clay text-clay hover:bg-clay hover:text-white"
               >
-                {i === 0
-                  ? "Get Started Free"
-                  : i === PRICING_LADDER.length - 1
-                    ? "Apply for API Access"
-                    : "Start Free Trial"}
+                {i === 0 ? "Get Started Free" : "Get Started"}
               </Link>
               <p className="font-mono text-xs text-dusk">{tier.pricingLogic}</p>
             </div>
