@@ -1,5 +1,7 @@
 import SearchBar from "@/components/SearchBar";
 import ProviderCard from "@/components/ProviderCard";
+import ExportCSVButton from "@/components/ExportCSVButton";
+import PrintButton from "@/components/PrintButton";
 import RatingDistributionBar from "@/components/RatingDistributionBar";
 import EmailCaptureStrip from "@/components/EmailCaptureStrip";
 import TrustSignal from "@/components/TrustSignal";
@@ -105,7 +107,13 @@ export default async function RegionPage({
       </section>
 
       <h1 className="text-3xl font-bold mb-2">CQC care providers in {displayName}</h1>
-      <p className="text-dusk mb-6">{totalProviders.toLocaleString()} providers</p>
+      <div className="flex items-center justify-between mb-6">
+        <p className="text-dusk">{totalProviders.toLocaleString()} providers</p>
+        <div className="flex gap-3 items-center print:hidden">
+          <ExportCSVButton exportUrl={`/api/v1/providers/export.csv?${isRegion ? `region=${encodeURIComponent(REGION_MAP[slug])}` : `q=${encodeURIComponent(displayName)}`}`} />
+          <PrintButton />
+        </div>
+      </div>
 
       {/* Rating Distribution */}
       {stats?.rating_distribution && Object.keys(stats.rating_distribution).length > 0 && (

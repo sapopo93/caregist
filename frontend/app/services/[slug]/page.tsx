@@ -1,5 +1,8 @@
 import SearchBar from "@/components/SearchBar";
 import ProviderCard from "@/components/ProviderCard";
+import ExportCSVButton from "@/components/ExportCSVButton";
+import PrintButton from "@/components/PrintButton";
+import Link from "next/link";
 import { searchProviders } from "@/lib/api";
 import type { Metadata } from "next";
 
@@ -57,7 +60,14 @@ export default async function ServiceTypePage({
   return (
     <div className="max-w-6xl mx-auto px-6 py-8">
       <h1 className="text-3xl font-bold mb-2">{displayName} in England</h1>
-      <p className="text-dusk mb-6">{results.meta.total.toLocaleString()} providers</p>
+
+      <div className="flex items-center justify-between mb-6">
+        <p className="text-dusk">{results.meta.total.toLocaleString()} providers (page {results.meta.page} of {results.meta.pages})</p>
+        <div className="flex gap-3 items-center print:hidden">
+          <ExportCSVButton exportUrl={`/api/v1/providers/export.csv?service_type=${encodeURIComponent(serviceType)}`} />
+          <PrintButton />
+        </div>
+      </div>
 
       <div className="mb-6">
         <SearchBar />
@@ -90,6 +100,25 @@ export default async function ServiceTypePage({
 
       {!error && results.data.length === 0 && (
         <p className="text-center text-dusk py-12">No providers found for this service type.</p>
+      )}
+
+      {results.meta.pages > 1 && (
+        <div className="flex justify-center gap-2 mt-8">
+          {Array.from({ length: Math.min(results.meta.pages, 10) }, (_, i) => i + 1).map((p) => (
+            <Link
+              key={p}
+              href={`/services/${slug}?page=${p}`}
+              className={`px-3 py-2 rounded ${
+                p === results.meta.page
+                  ? "bg-clay text-white"
+                  : "bg-cream border border-stone text-dusk hover:border-clay"
+              }`}
+            >
+              {p}
+            </Link>
+          ))}
+          {results.meta.pages > 10 && <span className="px-2 py-2 text-dusk">...</span>}
+        </div>
       )}
     </div>
   );

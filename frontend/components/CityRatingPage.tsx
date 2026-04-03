@@ -1,4 +1,6 @@
 import ProviderCard from "@/components/ProviderCard";
+import ExportCSVButton from "@/components/ExportCSVButton";
+import PrintButton from "@/components/PrintButton";
 import RatingDistributionBar from "@/components/RatingDistributionBar";
 import EmailCaptureStrip from "@/components/EmailCaptureStrip";
 import TrustSignal from "@/components/TrustSignal";
@@ -75,7 +77,13 @@ export default async function CityRatingPage({
       </section>
 
       <h1 className="text-3xl font-bold mb-2">{h1}</h1>
-      <p className="text-dusk mb-6">{total.toLocaleString()} providers</p>
+      <div className="flex items-center justify-between mb-6">
+        <p className="text-dusk">{total.toLocaleString()} providers</p>
+        <div className="flex gap-3 items-center print:hidden">
+          <ExportCSVButton exportUrl={`/api/v1/providers/export.csv?q=${encodeURIComponent(city)}${ratingFilter ? `&rating=${encodeURIComponent(ratingFilter)}` : ""}`} />
+          <PrintButton />
+        </div>
+      </div>
 
       {/* Rating Distribution */}
       {Object.keys(distribution).length > 0 && (

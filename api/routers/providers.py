@@ -201,9 +201,10 @@ async def export_providers_csv(
     if row_limit == 0:
         raise HTTPException(status_code=403, detail="CSV export requires an account. Sign up free at /signup")
 
-    # Require at least one filter to prevent bulk scraping
-    if not any([q, region, rating, type, service_type, postcode]):
-        raise HTTPException(status_code=400, detail="Provide at least one filter (q, region, rating, type, service_type, or postcode).")
+    # Require at least one filter for free/starter to prevent bulk scraping
+    # Pro and above can download unfiltered (within their row limit)
+    if tier in ("free", "starter") and not any([q, region, rating, type, service_type, postcode]):
+        raise HTTPException(status_code=400, detail="Provide at least one filter (q, region, rating, type, service_type, or postcode). Upgrade to Pro for unfiltered export.")
 
     # Sanitize null bytes
     if q and "\x00" in q:

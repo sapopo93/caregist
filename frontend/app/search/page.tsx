@@ -3,6 +3,7 @@ import ProviderCard from "@/components/ProviderCard";
 import FilterSidebar from "@/components/FilterSidebar";
 import MapToggle from "@/components/MapToggle";
 import ExportCSVButton from "@/components/ExportCSVButton";
+import PrintButton from "@/components/PrintButton";
 import MobileFilterToggle from "@/components/MobileFilterToggle";
 import { searchProviders } from "@/lib/api";
 import { Suspense } from "react";
@@ -97,9 +98,10 @@ export default async function SearchPage({
                 {query && <> for &ldquo;{query}&rdquo;</>}
                 {" "} (page {results.meta.page} of {results.meta.pages})
               </p>
-              {results.meta.total > 0 && (
+              <div className="flex gap-3 items-center print:hidden">
                 <ExportCSVButton exportUrl={`/api/v1/providers/export.csv?${exportParams.toString()}`} />
-              )}
+                <PrintButton />
+              </div>
             </div>
           )}
 
