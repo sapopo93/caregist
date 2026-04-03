@@ -59,7 +59,7 @@ TIERS = {
 }
 
 # Fields included in the free-tier basic CSV export
-BASIC_CSV_FIELDS = ["name", "town", "postcode", "overall_rating", "type", "last_inspection_date"]
+BASIC_CSV_FIELDS = ["name", "town", "postcode", "region", "phone", "overall_rating", "type", "service_types", "last_inspection_date"]
 
 BASIC_FIELDS = [
     "id", "name", "slug", "type", "status", "town", "postcode",

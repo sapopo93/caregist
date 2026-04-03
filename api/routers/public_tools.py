@@ -59,7 +59,7 @@ async def radius_search(
     radius_miles: float = Query(5, ge=0.5, le=50),
     type: str | None = Query(None),
     rating: str | None = Query(None),
-    limit: int = Query(50, ge=1, le=50),
+    limit: int = Query(200, ge=1, le=200),
     _ip=Depends(check_public_rate_limit),
 ) -> dict:
     """Search providers near a UK postcode. Public, no auth required."""
@@ -81,12 +81,23 @@ async def radius_search(
         meta={"postcode": postcode, "radius": radius_miles, "type": type, "rating": rating, "total": total},
     )
 
+    TYPE_LABELS = {
+        "Social Care Org": "Care Home",
+        "Primary Medical Services": "GP Surgery",
+        "Primary Dental Care": "Dental Practice",
+        "Independent Ambulance": "Ambulance Service",
+        "Independent Healthcare Org": "Private Healthcare",
+        "NHS Healthcare Organisation": "NHS Service",
+    }
+
     data = []
     for r in rows:
         d = dict(r)
         for k, v in d.items():
             if hasattr(v, "as_tuple"):
                 d[k] = round(float(v), 2)
+        if "type" in d and d["type"] in TYPE_LABELS:
+            d["type"] = TYPE_LABELS[d["type"]]
         data.append(d)
 
     return {

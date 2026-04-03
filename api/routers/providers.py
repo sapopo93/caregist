@@ -40,12 +40,25 @@ from api.queries.providers import (
 logger = logging.getLogger("caregist.api")
 router = APIRouter(prefix="/api/v1/providers", tags=["providers"])
 
+# Human-readable labels for raw CQC type values
+TYPE_LABELS = {
+    "Social Care Org": "Care Home",
+    "Primary Medical Services": "GP Surgery",
+    "Primary Dental Care": "Dental Practice",
+    "Independent Ambulance": "Ambulance Service",
+    "Independent Healthcare Org": "Private Healthcare",
+    "NHS Healthcare Organisation": "NHS Service",
+}
+
 
 def _row_to_dict(row) -> dict[str, Any]:
     d = dict(row)
     for k, v in d.items():
         if hasattr(v, "as_tuple"):
             d[k] = float(v)
+    # Map raw CQC type to human-readable label
+    if "type" in d and d["type"] in TYPE_LABELS:
+        d["type"] = TYPE_LABELS[d["type"]]
     return d
 
 
