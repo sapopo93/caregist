@@ -157,7 +157,7 @@ export default function PricingPage() {
       </div>
 
       <div className="text-center mt-6 text-xs text-dusk">
-        All prices exclude VAT. CQC data attribution included. Data refreshed weekly. Cancel
+        All prices exclude VAT. CQC data attribution included. Data refreshed daily. Cancel
         anytime.
       </div>
     </div>
