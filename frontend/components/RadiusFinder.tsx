@@ -16,6 +16,15 @@ interface Result {
   service_types: string;
 }
 
+const TYPE_LABELS: Record<string, string> = {
+  "Social Care Org": "Care Home",
+  "Primary Medical Services": "GP Surgery",
+  "Primary Dental Care": "Dental Practice",
+  "Independent Ambulance": "Ambulance Service",
+  "Independent Healthcare Org": "Private Healthcare",
+  "NHS Healthcare Organisation": "NHS Service",
+};
+
 const RADII = [1, 5, 10, 20];
 const RATINGS = ["All", "Outstanding", "Good"];
 const TYPES = [
@@ -177,7 +186,7 @@ export default function RadiusFinder() {
                   <div>
                     <h3 className="font-semibold text-bark">{r.name}</h3>
                     <p className="text-xs text-dusk mt-0.5">
-                      {r.town} · {r.distance_miles} miles · {r.type}
+                      {r.town} · {Number(r.distance_miles).toFixed(2)} miles · {TYPE_LABELS[r.type] || r.type}
                     </p>
                     {r.last_inspection_date && (
                       <p className="text-xs text-dusk mt-0.5">
@@ -205,6 +214,7 @@ export default function RadiusFinder() {
                   source="radius_finder"
                   heading=""
                   subheading=""
+                  onSuccess={() => setEmailGated(false)}
                 />
               </div>
               <button

@@ -6,10 +6,12 @@ export default function EmailCaptureStrip({
   source = "homepage",
   heading = "Get weekly CQC rating changes \u2014 free.",
   subheading = "No spam. Unsubscribe anytime.",
+  onSuccess,
 }: {
   source?: string;
   heading?: string;
   subheading?: string;
+  onSuccess?: () => void;
 }) {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
@@ -32,6 +34,7 @@ export default function EmailCaptureStrip({
         throw new Error(data.detail || "Something went wrong");
       }
       setStatus("success");
+      onSuccess?.();
     } catch (err: any) {
       setErrorMsg(err.message || "Something went wrong. Please try again.");
       setStatus("error");
