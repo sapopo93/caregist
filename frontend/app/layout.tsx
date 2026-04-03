@@ -3,6 +3,7 @@ import "./globals.css";
 import Link from "next/link";
 import CompareBar from "@/components/CompareBar";
 import AuthNav from "@/components/AuthNav";
+import CookieConsent from "@/components/CookieConsent";
 
 export const metadata: Metadata = {
   title: "CareGist — UK Care Provider Directory",
@@ -39,6 +40,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <main className="flex-1">{children}</main>
 
         <CompareBar />
+        <CookieConsent />
 
         <footer className="bg-charcoal text-stone px-6 py-8 text-sm">
           <div className="max-w-6xl mx-auto">
