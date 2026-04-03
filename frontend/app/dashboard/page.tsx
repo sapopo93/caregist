@@ -2,13 +2,23 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import DeleteAccountButton from "@/components/DeleteAccountButton";
 
 export default function DashboardPage() {
+  const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [apiKey, setApiKey] = useState("");
   const [tier, setTier] = useState("free");
   const [copied, setCopied] = useState(false);
+
+  const handleLogout = () => {
+    localStorage.removeItem("caregist_api_key");
+    localStorage.removeItem("caregist_user");
+    localStorage.removeItem("caregist_tier");
+    window.dispatchEvent(new Event("caregist_auth_change"));
+    router.push("/");
+  };
 
   useEffect(() => {
     const stored = localStorage.getItem("caregist_user");
@@ -45,7 +55,15 @@ export default function DashboardPage() {
 
   return (
     <div className="max-w-3xl mx-auto px-6 py-12">
-      <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
+      <div className="flex items-center justify-between mb-2">
+        <h1 className="text-3xl font-bold">Dashboard</h1>
+        <button
+          onClick={handleLogout}
+          className="px-4 py-2 text-sm text-dusk border border-stone rounded-lg hover:bg-cream transition-colors"
+        >
+          Log Out
+        </button>
+      </div>
       <p className="text-dusk mb-8">Welcome back, {user.name}.</p>
 
       {/* API Key */}

@@ -38,6 +38,7 @@ function SignupForm() {
       localStorage.setItem("caregist_api_key", data.api_key);
       localStorage.setItem("caregist_user", JSON.stringify(data.user));
       localStorage.setItem("caregist_tier", data.tier);
+      window.dispatchEvent(new Event("caregist_auth_change"));
 
       // If paid plan, redirect to checkout
       if (plan !== "free") {

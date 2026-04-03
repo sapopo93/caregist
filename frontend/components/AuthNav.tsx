@@ -19,13 +19,18 @@ export default function AuthNav() {
       setUser(s ? JSON.parse(s) : null);
     };
     window.addEventListener("storage", sync);
-    return () => window.removeEventListener("storage", sync);
+    window.addEventListener("caregist_auth_change", sync);
+    return () => {
+      window.removeEventListener("storage", sync);
+      window.removeEventListener("caregist_auth_change", sync);
+    };
   }, []);
 
   const handleLogout = () => {
     localStorage.removeItem("caregist_api_key");
     localStorage.removeItem("caregist_user");
     localStorage.removeItem("caregist_tier");
+    window.dispatchEvent(new Event("caregist_auth_change"));
     setUser(null);
     setMenuOpen(false);
     router.push("/");
