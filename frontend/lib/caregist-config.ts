@@ -85,7 +85,7 @@ export const PRICING_LADDER: PricingTier[] = [
     ],
     limit: "No webhooks \u00B7 standard fields",
     pricingLogic:
-      "Intentionally below carehome.co.uk Enhanced (\u00A382.50/mo) while being intelligence-led. Easy yes for care consultants and managers.",
+      "Priced below comparable directory listings while being intelligence-led. Easy yes for care consultants and managers.",
   },
   {
     tier: "Pro",
@@ -103,7 +103,7 @@ export const PRICING_LADDER: PricingTier[] = [
     ],
     limit: "No webhooks \u00B7 standard fields",
     pricingLogic:
-      "Just above carehome.co.uk Enhanced (\u00A382.50) and below Platinum (\u00A3165) \u2014 selling benchmarking + intelligence, not listing uplift.",
+      "Competitively priced against traditional directory listings \u2014 selling benchmarking + intelligence, not listing uplift.",
   },
   {
     tier: "Business",
@@ -286,7 +286,7 @@ export const SEO_ENGINE: SeoPageFamily[] = [
     structuredData: "ItemList + LocalBusiness",
     aeoBlock: "Open with: \u2018There are [N] Outstanding-rated care homes in [city] as of [date]. The following providers hold this rating:\u2019 \u2014 then the list. AI citation-ready format.",
     freshnessSignal: "Show \u2018[N] providers \u00B7 CQC data \u00B7 Updated [date]\u2019 in the page header. Each provider card shows inspection date.",
-    distributionValue: "Rating \u00D7 city matrix. ~500 cities \u00D7 4 ratings = 2,000+ pages. Highest-volume family for consumer search intent. Directly competes with carehome.co.uk.",
+    distributionValue: "Rating \u00D7 city matrix. ~500 cities \u00D7 4 ratings = 2,000+ pages. Highest-volume family for consumer search intent. Directly competes with traditional care directories.",
     conversionRole: "SEO entry \u2192 browse providers \u2192 provider profile monitor or claim listing \u2192 B2B or Pro Alerts.",
   },
   {
@@ -557,7 +557,7 @@ export const PAGE_SPECS: PageSpec[] = [
     audience: "Families and carers searching for local care options",
     buyerRank: 1,
     jobToBeDone: "Enter a postcode and instantly see all CQC-rated care providers within a chosen radius, filtered by rating and service type.",
-    currentGap: "The highest-volume consumer search intent in this space (\u2018care homes near me\u2019, \u2018find care home postcode\u2019) has no dedicated free-tool surface. Families are going to CQC.org.uk, Lottie, or carehome.co.uk instead.",
+    currentGap: "The highest-volume consumer search intent in this space (\u2018care homes near me\u2019, \u2018find care home postcode\u2019) has no dedicated free-tool surface. Families are going to CQC.org.uk or traditional directories instead.",
     primaryCTA: "Email me this list as a PDF report",
     actionType: "subscribe",
     gate: "email",

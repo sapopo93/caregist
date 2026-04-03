@@ -28,7 +28,7 @@ export default function PricingPage() {
           ))}
         </div>
         <p className="font-mono text-xs text-dusk mt-4 pt-4 border-t border-white/10">
-          Benchmark: carehome.co.uk Enhanced £82.50 + VAT/mo · Platinum £165 + VAT/mo per location
+          Benchmark: comparable directory listings range £80–£165 + VAT/mo per location
         </p>
       </div>
 
