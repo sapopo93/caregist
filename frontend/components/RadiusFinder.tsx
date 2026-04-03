@@ -26,21 +26,26 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 const RADII = [1, 5, 10, 20];
-const RATINGS = ["All", "Outstanding", "Good"];
-const TYPES = [
+const RATINGS = ["All", "Outstanding", "Good", "Requires Improvement"];
+const SERVICE_TYPES = [
   { label: "All", value: "" },
-  { label: "Care homes", value: "Social Care Org" },
-  { label: "Home care", value: "Social Care Org" },
-  { label: "Nursing", value: "Social Care Org" },
-  { label: "GP", value: "Primary Medical Services" },
-  { label: "Dental", value: "Primary Dental Care" },
+  { label: "Care Homes", value: "Residential Homes" },
+  { label: "Home Care", value: "Homecare Agencies" },
+  { label: "Nursing Homes", value: "Nursing Homes" },
+  { label: "Supported Living", value: "Supported Living" },
+  { label: "GP Surgeries", value: "Doctors/Gps" },
+  { label: "Dental", value: "Dentist" },
+  { label: "Hospitals", value: "Hospital" },
+  { label: "Hospice", value: "Hospice" },
+  { label: "Community Healthcare", value: "Community Services - Healthcare" },
+  { label: "Mental Health", value: "Community Services - Mental Health" },
 ];
 
 export default function RadiusFinder() {
   const [postcode, setPostcode] = useState("");
   const [radius, setRadius] = useState(5);
   const [rating, setRating] = useState("All");
-  const [type, setType] = useState("");
+  const [serviceType, setServiceType] = useState("");
   const [results, setResults] = useState<Result[]>([]);
   const [total, setTotal] = useState(0);
   const [searching, setSearching] = useState(false);
@@ -62,7 +67,7 @@ export default function RadiusFinder() {
       limit: "200",
     });
     if (rating !== "All") params.set("rating", rating);
-    if (type) params.set("type", type);
+    if (serviceType) params.set("service_type", serviceType);
 
     try {
       const res = await fetch(`/api/v1/tools/radius-search?${params}`);
@@ -76,7 +81,8 @@ export default function RadiusFinder() {
       setSearched(true);
       setEmailGated(true);
     } catch (err: any) {
-      setError(err.message || "Search failed. Please try again.");
+      const msg = typeof err?.message === "string" ? err.message : "Search failed. Please try again.";
+      setError(msg);
     } finally {
       setSearching(false);
     }
@@ -138,11 +144,11 @@ export default function RadiusFinder() {
           <div>
             <label className="block text-sm font-medium text-bark mb-1">Service type</label>
             <select
-              value={type}
-              onChange={(e) => setType(e.target.value)}
+              value={serviceType}
+              onChange={(e) => setServiceType(e.target.value)}
               className="w-full px-4 py-2.5 rounded-lg border border-stone bg-white text-sm"
             >
-              {TYPES.map((t) => (
+              {SERVICE_TYPES.map((t) => (
                 <option key={t.label} value={t.value}>{t.label}</option>
               ))}
             </select>

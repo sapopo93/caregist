@@ -5,7 +5,7 @@ export default function TrustSignal({ date }: { date?: string }) {
 
   return (
     <p className="text-xs text-dusk text-center mt-2">
-      Data sourced from CQC public register · Updated weekly · Last synced: {display}
+      Data sourced from CQC public register · Updated daily · Last synced: {display}
     </p>
   );
 }

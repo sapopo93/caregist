@@ -9,8 +9,9 @@ WHERE geom IS NOT NULL
   AND ST_DWithin(geom::geography, ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography, $3 * 1609.34)
   AND ($4::text IS NULL OR type = $4)
   AND ($5::text IS NULL OR overall_rating = $5)
+  AND ($6::text IS NULL OR service_types ILIKE '%' || $6 || '%')
 ORDER BY distance_miles ASC
-LIMIT $6
+LIMIT $7
 """
 
 NEARBY_PUBLIC_COUNT = """
@@ -20,6 +21,7 @@ WHERE geom IS NOT NULL
   AND ST_DWithin(geom::geography, ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography, $3 * 1609.34)
   AND ($4::text IS NULL OR type = $4)
   AND ($5::text IS NULL OR overall_rating = $5)
+  AND ($6::text IS NULL OR service_types ILIKE '%' || $6 || '%')
 """
 
 GET_CACHED_POSTCODE = """

@@ -59,6 +59,7 @@ async def radius_search(
     radius_miles: float = Query(5, ge=0.5, le=50),
     type: str | None = Query(None),
     rating: str | None = Query(None),
+    service_type: str | None = Query(None),
     limit: int = Query(200, ge=1, le=200),
     _ip=Depends(check_public_rate_limit),
 ) -> dict:
@@ -67,8 +68,8 @@ async def radius_search(
 
     try:
         async with get_connection() as conn:
-            rows = await conn.fetch(NEARBY_PUBLIC_QUERY, lon, lat, radius_miles, type, rating, limit)
-            count_row = await conn.fetchrow(NEARBY_PUBLIC_COUNT, lon, lat, radius_miles, type, rating)
+            rows = await conn.fetch(NEARBY_PUBLIC_QUERY, lon, lat, radius_miles, type, rating, service_type, limit)
+            count_row = await conn.fetchrow(NEARBY_PUBLIC_COUNT, lon, lat, radius_miles, type, rating, service_type)
     except Exception as exc:
         logger.error("Radius search failed: %s", exc)
         raise HTTPException(status_code=503, detail="Search failed.")
