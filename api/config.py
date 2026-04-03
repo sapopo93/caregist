@@ -64,6 +64,7 @@ BASIC_CSV_FIELDS = ["name", "town", "postcode", "region", "phone", "overall_rati
 BASIC_FIELDS = [
     "id", "name", "slug", "type", "status", "town", "postcode",
     "region", "overall_rating", "service_types", "quality_tier",
+    "phone", "last_inspection_date",
 ]
 
 STANDARD_FIELDS = BASIC_FIELDS + [
