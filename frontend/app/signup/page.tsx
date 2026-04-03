@@ -43,7 +43,7 @@ function SignupForm() {
       if (plan !== "free") {
         const checkoutRes = await fetch("/api/v1/billing/checkout", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", "X-API-Key": data.api_key },
           body: JSON.stringify({ email, tier: plan }),
         });
         const checkoutData = await checkoutRes.json();
