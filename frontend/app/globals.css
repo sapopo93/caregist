@@ -27,3 +27,11 @@
     color: var(--color-bark);
   }
 }
+
+@media print {
+  header, footer, nav, form, .print\\:hidden { display: none !important; }
+  body { background: white; color: black; font-size: 11pt; }
+  a { color: black; text-decoration: none; }
+  .bg-cream, .bg-bark, .bg-charcoal { background: white !important; }
+  .border-stone, .border-clay { border-color: #ccc !important; }
+}

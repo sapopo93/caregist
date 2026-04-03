@@ -171,9 +171,37 @@ export default function RadiusFinder() {
 
       {visibleResults.length > 0 && (
         <>
-          <p className="text-sm text-dusk mb-4">
-            Showing {visibleResults.length} of {total} providers within {radius} miles of {postcode.toUpperCase()}.
-          </p>
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-sm text-dusk">
+              Showing {visibleResults.length} of {total} providers within {radius} miles of {postcode.toUpperCase()}.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  const header = "Name,Town,Postcode,Distance (miles),Type,Rating,Last Inspected\n";
+                  const rows = (emailGated ? visibleResults : results).map((r) =>
+                    `"${r.name}","${r.town}","${r.postcode}","${Number(r.distance_miles).toFixed(2)}","${TYPE_LABELS[r.type] || r.type}","${r.overall_rating || ""}","${r.last_inspection_date || ""}"`
+                  ).join("\n");
+                  const blob = new Blob([header + rows], { type: "text/csv" });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement("a");
+                  a.href = url;
+                  a.download = `caregist_${postcode.replace(/\s/g, "")}_${radius}mi.csv`;
+                  a.click();
+                  URL.revokeObjectURL(url);
+                }}
+                className="px-4 py-2 text-sm font-medium bg-clay text-white rounded-lg hover:bg-bark transition-colors print:hidden"
+              >
+                Export CSV
+              </button>
+              <button
+                onClick={() => window.print()}
+                className="px-4 py-2 text-sm font-medium border border-clay text-clay rounded-lg hover:bg-clay hover:text-white transition-colors print:hidden"
+              >
+                Print
+              </button>
+            </div>
+          </div>
 
           <div className="grid gap-4 mb-6">
             {visibleResults.map((r) => (
