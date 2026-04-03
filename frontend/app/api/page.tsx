@@ -9,15 +9,24 @@ export const metadata: Metadata = {
 };
 
 const SAMPLE_JSON = `{
-  "id": "1-123456789",
-  "name": "Sunrise Care Home",
-  "type": "care-home",
-  "rating": "Good",
-  "inspection_date": "2024-03-15",
-  "postcode": "BH1 1AA",
-  "region": "South East",
-  "coordinates": { "lat": 50.7192, "lng": -1.8808 },
-  "contact": { "phone": "01202 000000", "website": "https://example.com" }
+  "data": [{
+    "id": "1-123456789",
+    "name": "Sunrise Care Home",
+    "slug": "sunrise-care-home-bournemouth",
+    "type": "Social Care Org",
+    "status": "ACTIVE",
+    "overall_rating": "Good",
+    "town": "Bournemouth",
+    "postcode": "BH1 1AA",
+    "region": "South West",
+    "service_types": "Care home service with nursing",
+    "quality_score": 82,
+    "quality_tier": "GOOD",
+    "latitude": 50.7192,
+    "longitude": -1.8808,
+    "phone": "01202 000000"
+  }],
+  "meta": { "total": 1, "page": 1, "per_page": 20, "pages": 1 }
 }`;
 
 const CAPABILITIES = [
@@ -26,13 +35,13 @@ const CAPABILITIES = [
   { title: "Full Provider Data", desc: "Ratings, coordinates, contact details, inspection history." },
   { title: "Bulk Export", desc: "CSV and JSON exports with enriched fields." },
   { title: "Rating Webhooks", desc: "Get notified when providers change rating (Enterprise)." },
-  { title: "Weekly Refresh", desc: "Data synced from CQC public register every week." },
+  { title: "Daily Refresh", desc: "Data synced from CQC public register daily at 3am." },
 ];
 
 const TIERS = [
-  { name: "Standard", price: "\u00A3499/mo", features: "1k req/min, core endpoints, fair-use cap" },
-  { name: "Pro", price: "\u00A31,250/mo", features: "10k req/min, bulk endpoints, SLA" },
-  { name: "Enterprise", price: "from \u00A33,500/mo", features: "Custom terms, webhooks, named support" },
+  { name: "Standard", price: "\u00A3499 + VAT/mo", features: "Core search/filter endpoints, fair-use cap" },
+  { name: "Pro", price: "\u00A31,250 + VAT/mo", features: "Higher rate limits, bulk endpoints, SLA" },
+  { name: "Enterprise", price: "from \u00A33,500 + VAT/mo", features: "Custom terms, webhooks, named support, onboarding" },
 ];
 
 export default function ApiLandingPage() {
@@ -95,7 +104,7 @@ export default function ApiLandingPage() {
 
       {/* Trust */}
       <p className="text-center text-xs text-dusk mt-8">
-        Data sourced from CQC public register · Updated weekly · All plans include SLA
+        Data sourced from CQC public register · Updated daily · All plans include SLA
       </p>
     </div>
   );

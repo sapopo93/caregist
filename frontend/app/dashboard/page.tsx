@@ -46,9 +46,10 @@ export default function DashboardPage() {
   }
 
   const tierInfo: Record<string, { limit: string; features: string }> = {
-    free: { limit: "100 req/min", features: "Basic search + provider details" },
-    starter: { limit: "1,000 req/min", features: "Full search + CSV export + nearby" },
-    pro: { limit: "5,000 req/min", features: "Everything + webhooks + bulk export" },
+    free: { limit: "5 req/sec · 150/day", features: "Basic search + provider details" },
+    starter: { limit: "30 req/sec · 500/day", features: "Search + CSV export + nearby + compare" },
+    pro: { limit: "60 req/sec · 2,000/day", features: "Full search + bulk export + monitors" },
+    business: { limit: "200 req/sec · 10,000/day", features: "Everything + webhooks + full field access" },
   };
 
   const info = tierInfo[tier] || tierInfo.free;
