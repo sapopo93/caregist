@@ -19,7 +19,7 @@ export default function FindCarePage() {
           alt="Care home garden"
           className="w-full h-full object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-bark/60 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-bark/30 to-transparent" />
       </div>
 
       {/* AEO block */}

@@ -98,7 +98,7 @@ export default function HomePage() {
             href="/find-care"
             className="block bg-bark text-cream rounded-xl overflow-hidden hover:bg-charcoal transition-colors relative"
           >
-            <div className="absolute inset-0 opacity-15" style={{
+            <div className="absolute inset-0 opacity-10" style={{
               backgroundImage: "url('https://images.unsplash.com/photo-1582719471384-894fbb16e074?w=600&q=30&auto=format')",
               backgroundSize: "cover", backgroundPosition: "center"
             }} />
@@ -115,7 +115,7 @@ export default function HomePage() {
             href="/groups"
             className="block bg-bark text-cream rounded-xl overflow-hidden hover:bg-charcoal transition-colors relative"
           >
-            <div className="absolute inset-0 opacity-15" style={{
+            <div className="absolute inset-0 opacity-10" style={{
               backgroundImage: "url('https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=600&q=30&auto=format')",
               backgroundSize: "cover", backgroundPosition: "center"
             }} />

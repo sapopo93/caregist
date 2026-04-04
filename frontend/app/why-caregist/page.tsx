@@ -38,7 +38,7 @@ export default function WhyCareGistPage() {
           alt="Elderly person holding hands with carer"
           className="w-full h-full object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-parchment/80 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-parchment/40 to-transparent" />
       </div>
 
       {/* Hero */}
