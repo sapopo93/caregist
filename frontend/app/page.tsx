@@ -82,6 +82,32 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Browse by Region */}
+      <section className="max-w-6xl mx-auto px-6 pb-12">
+        <h2 className="text-2xl font-bold mb-6">Browse by region</h2>
+        <div className="grid grid-cols-3 md:grid-cols-5 gap-3">
+          {[
+            { name: "London", slug: "london" },
+            { name: "South East", slug: "south-east" },
+            { name: "North West", slug: "north-west" },
+            { name: "East", slug: "east" },
+            { name: "West Midlands", slug: "west-midlands" },
+            { name: "South West", slug: "south-west" },
+            { name: "Yorkshire", slug: "yorkshire-humberside" },
+            { name: "East Midlands", slug: "east-midlands" },
+            { name: "North East", slug: "north-east" },
+          ].map((r) => (
+            <Link
+              key={r.slug}
+              href={`/region/${r.slug}`}
+              className="bg-cream border border-stone rounded-lg p-3 text-center hover:border-clay transition-colors text-sm font-medium text-bark"
+            >
+              {r.name}
+            </Link>
+          ))}
+        </div>
+      </section>
+
       {/* CQC Attribution */}
       <section className="max-w-6xl mx-auto px-6 py-8 text-center text-sm text-dusk">
         <p>

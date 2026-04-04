@@ -22,6 +22,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <head>
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <link
           href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Lora:ital,wght@0,400;0,500;1,400&family=DM+Sans:wght@300;400;500;600&display=swap"
           rel="stylesheet"
@@ -63,6 +64,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Link href="/pricing" className="underline hover:text-cream">Pricing</Link>
               <Link href="/api" className="underline hover:text-cream">API</Link>
               <Link href="/find-care" className="underline hover:text-cream">Find Care</Link>
+              <Link href="/groups" className="underline hover:text-cream">Care Groups</Link>
+              <Link href="/why-caregist" className="underline hover:text-cream">Why CareGist</Link>
               <a href="mailto:hello@caregist.co.uk" className="underline hover:text-cream">Contact</a>
             </div>
           </div>

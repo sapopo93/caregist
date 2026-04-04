@@ -17,6 +17,19 @@ const FALLBACK_SERVICE_TYPES = [
   "Doctors/Gps", "Dentist", "Supported Living",
 ];
 
+const SERVICE_TYPE_LABELS: Record<string, string> = {
+  "Homecare Agencies": "Home Care",
+  "Residential Homes": "Care Homes",
+  "Nursing Homes": "Nursing Homes",
+  "Doctors/Gps": "GP Surgeries",
+  "Dentist": "Dental Practices",
+  "Supported Living": "Supported Living",
+  "Community Services - Healthcare": "Community Healthcare",
+  "Hospitals - Mental Health/Capacity": "Mental Health",
+  "Hospital": "Hospitals",
+  "Hospice": "Hospices",
+};
+
 const SORT_OPTIONS = [
   { value: "relevance", label: "Relevance" },
   { value: "name", label: "Name (A-Z)" },
@@ -120,7 +133,7 @@ export default function FilterSidebar() {
           className="w-full px-3 py-2 rounded-lg border border-stone bg-cream text-charcoal text-sm"
         >
           <option value="">All types</option>
-          {serviceTypes.map((s) => <option key={s} value={s}>{s}</option>)}
+          {serviceTypes.map((s) => <option key={s} value={s}>{SERVICE_TYPE_LABELS[s] || s}</option>)}
         </select>
       </div>
 

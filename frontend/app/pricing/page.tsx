@@ -106,7 +106,6 @@ export default function PricingPage() {
             {/* CTA */}
             <div className="flex flex-col sm:flex-row sm:items-center gap-4 pt-4 border-t border-stone">
               <PricingCTA tier={tier.tier} isFreeTier={i === 0} />
-              <p className="font-mono text-xs text-dusk">{tier.pricingLogic}</p>
             </div>
           </div>
         ))}

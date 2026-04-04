@@ -143,6 +143,18 @@ export default async function ProviderPage({ params }: { params: Promise<{ slug:
         )}
       </div>
 
+      {/* Quick Actions */}
+      <div className="flex gap-3 mb-6 print:hidden">
+        <a href="#enquiry" className="px-5 py-2 bg-clay text-white rounded-lg text-sm font-medium hover:bg-bark transition-colors">
+          Contact this provider
+        </a>
+        {!provider.is_claimed && (
+          <a href={`/claim/${slug}`} className="px-5 py-2 border border-clay text-clay rounded-lg text-sm font-medium hover:bg-clay hover:text-white transition-colors">
+            Claim this listing
+          </a>
+        )}
+      </div>
+
       {/* Enhanced Profile — paid content from claimed providers */}
       {provider.profile_description && (
         <div className="bg-cream border border-stone rounded-lg p-6 mb-6">
