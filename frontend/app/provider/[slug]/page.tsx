@@ -139,6 +139,27 @@ export default async function ProviderPage({ params }: { params: Promise<{ slug:
         )}
       </div>
 
+      {/* Inspection Summary */}
+      {provider.inspection_summary && (
+        <div className="bg-parchment border border-stone rounded-lg p-6 mb-6">
+          <h2 className="text-xl font-bold mb-3">Inspection Summary</h2>
+          <p className="text-sm text-charcoal leading-relaxed">{provider.inspection_summary}</p>
+          {provider.inspection_report_url && (
+            <a
+              href={provider.inspection_report_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block mt-3 text-sm text-clay underline hover:text-bark"
+            >
+              Read full CQC inspection report
+            </a>
+          )}
+          <p className="text-xs text-dusk mt-2">
+            Contains CQC data. Crown copyright and database right.
+          </p>
+        </div>
+      )}
+
       {/* Key Question Ratings */}
       {ratingDimensions.some((d) => provider[d.key]) && (
         <div className="bg-cream border border-stone rounded-lg p-6 mb-6">
