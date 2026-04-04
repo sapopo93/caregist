@@ -126,6 +126,61 @@ export const PRICING_LADDER: PricingTier[] = [
   },
 ];
 
+// ── Provider Profile Tiers ──
+// Enhanced listing tiers for claimed care providers.
+// Maps to backend profile_tier: basic, standard, premium.
+export const PROVIDER_TIERS = [
+  {
+    tier: "basic" as const,
+    label: "Basic",
+    price: "£30 + VAT/mo",
+    color: "#10b981",
+    photos: 3,
+    virtualTour: false,
+    inspectionResponse: false,
+    includes: [
+      "Verified listing badge",
+      "Provider description (2,000 chars)",
+      "Up to 3 photos",
+    ],
+    limit: "No virtual tour · no inspection response",
+  },
+  {
+    tier: "standard" as const,
+    label: "Standard",
+    price: "£50 + VAT/mo",
+    color: "#8b5cf6",
+    photos: 5,
+    virtualTour: true,
+    inspectionResponse: true,
+    includes: [
+      "Everything in Basic",
+      "Up to 5 photos",
+      "Virtual tour link",
+      "Respond to CQC inspection (public)",
+    ],
+    limit: "Up to 5 photos",
+  },
+  {
+    tier: "premium" as const,
+    label: "Premium",
+    price: "£80 + VAT/mo",
+    color: "#C8862A",
+    photos: 10,
+    virtualTour: true,
+    inspectionResponse: true,
+    includes: [
+      "Everything in Standard",
+      "Up to 10 photos",
+      "Priority placement in search results",
+      "Enquiry analytics (monthly)",
+    ],
+    limit: "Top tier — no further restrictions",
+  },
+] as const;
+
+export type ProviderTierKey = typeof PROVIDER_TIERS[number]["tier"];
+
 // ── Add-Ons ──
 export const ADD_ONS: AddOn[] = [
   { name: "Extra monitors pack",           price: "\u00A315/mo",               note: "Additional 25 monitors" },

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { PRICING_LADDER, ADD_ONS, LAUNCH_PRICING } from "@/lib/caregist-config";
+import { PRICING_LADDER, ADD_ONS, LAUNCH_PRICING, PROVIDER_TIERS } from "@/lib/caregist-config";
 import PricingCTA from "@/components/PricingCTA";
 
 export default function PricingPage() {
@@ -8,10 +8,17 @@ export default function PricingPage() {
       {/* Header */}
       <div className="text-center mb-12">
         <h1 className="text-4xl font-bold mb-4">Simple, transparent pricing</h1>
-        <p className="text-dusk text-lg" style={{ fontFamily: "Lora" }}>
-          Access 55,818 CQC-rated care providers. Start free, upgrade when you need more.
+        <p className="text-dusk text-lg mb-6" style={{ fontFamily: "Lora" }}>
+          Two product lines — data access for professionals, and enhanced listings for providers.
         </p>
+        <div className="inline-flex rounded-lg border border-stone overflow-hidden text-sm font-medium">
+          <a href="#data-plans" className="px-5 py-2 bg-bark text-cream">Data &amp; API Plans</a>
+          <a href="#provider-plans" className="px-5 py-2 bg-cream text-bark hover:bg-parchment transition-colors">Provider Listings</a>
+        </div>
       </div>
+
+      {/* Data Plans anchor */}
+      <div id="data-plans" className="scroll-mt-8" />
 
       {/* Launch pricing summary */}
       <div className="bg-bark rounded-xl p-6 mb-10">
@@ -109,6 +116,67 @@ export default function PricingPage() {
             </div>
           </div>
         ))}
+      </div>
+
+      {/* Provider Listing Plans */}
+      <div id="provider-plans" className="scroll-mt-8 mt-16">
+        <div className="text-center mb-8">
+          <h2 className="text-2xl font-bold mb-2">Enhanced Provider Listings</h2>
+          <p className="text-dusk" style={{ fontFamily: "Lora" }}>
+            For care providers who have claimed their listing. Add photos, a description, and respond to your CQC inspection.
+          </p>
+          <p className="text-sm text-dusk mt-2">
+            First,{" "}
+            <Link href="/search" className="text-clay underline">find your provider page</Link>
+            {" "}and claim it free — then upgrade to enhance your listing.
+          </p>
+        </div>
+
+        {/* Free claim callout */}
+        <div className="bg-moss/10 border border-moss/30 rounded-xl p-5 mb-6 flex items-start gap-4">
+          <span className="text-2xl mt-0.5">&#10003;</span>
+          <div>
+            <p className="font-bold text-moss mb-1">Claiming your listing is free</p>
+            <p className="text-sm text-dusk">
+              Every claimed provider gets a verified badge and can publish an inspection response at no cost.
+              Enhanced photos and descriptions require a paid tier below.
+            </p>
+          </div>
+        </div>
+
+        <div className="grid md:grid-cols-3 gap-5">
+          {PROVIDER_TIERS.map((t, i) => (
+            <div
+              key={t.tier}
+              className={`bg-cream border rounded-xl p-6 flex flex-col ${i === 1 ? "border-2" : "border"}`}
+              style={{ borderColor: i === 1 ? t.color : undefined }}
+            >
+              {i === 1 && (
+                <span className="text-xs font-mono font-bold uppercase mb-3 self-start px-2 py-0.5 rounded" style={{ background: t.color + "22", color: t.color }}>
+                  Most popular
+                </span>
+              )}
+              <h3 className="text-lg font-bold text-bark mb-1">{t.label}</h3>
+              <p className="text-2xl font-bold mb-4" style={{ color: t.color }}>{t.price}</p>
+              <ul className="space-y-1.5 mb-6 flex-1">
+                {t.includes.map((inc) => (
+                  <li key={inc} className="text-sm text-charcoal">
+                    <span className="text-moss mr-1">&#10003;</span>{inc}
+                  </li>
+                ))}
+              </ul>
+              <p className="text-xs text-dusk italic mb-4">{t.limit}</p>
+              <a
+                href="mailto:hello@caregist.co.uk?subject=Enhanced+listing+enquiry"
+                className="block text-center py-2.5 rounded-lg text-sm font-medium text-white transition-colors"
+                style={{ background: t.color }}
+              >
+                Get started
+              </a>
+            </div>
+          ))}
+        </div>
+        <p className="text-center text-xs text-dusk mt-4">All prices exclude VAT · Cancel anytime · Claim your listing first at no cost</p>
       </div>
 
       {/* Add-ons */}

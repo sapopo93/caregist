@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { PROVIDER_TIERS } from "@/lib/caregist-config";
 
 export default function ProviderDashboardPage({ params }: { params: Promise<{ slug: string }> }) {
   const router = useRouter();
@@ -116,12 +117,7 @@ export default function ProviderDashboardPage({ params }: { params: Promise<{ sl
 
   const tier = provider.profile_tier;
   const isClaimedByUser = provider.is_claimed;
-  const tierConfig: Record<string, any> = {
-    basic: { photos: 3, virtualTour: false, inspectionResponse: false, label: "Basic" },
-    standard: { photos: 5, virtualTour: true, inspectionResponse: true, label: "Standard" },
-    premium: { photos: 10, virtualTour: true, inspectionResponse: true, label: "Premium" },
-  };
-  const config = tierConfig[tier] || null;
+  const config = PROVIDER_TIERS.find((t) => t.tier === tier) || null;
 
   return (
     <div className="max-w-3xl mx-auto px-6 py-12">
@@ -178,25 +174,17 @@ export default function ProviderDashboardPage({ params }: { params: Promise<{ sl
               Upgrade to an Enhanced Profile to add photos, a description, and a virtual tour link.
             </p>
             <div className="grid grid-cols-3 gap-4 max-w-lg mx-auto mb-4">
-              <div className="bg-parchment rounded-lg p-3 text-center">
-                <p className="font-bold text-bark">Basic</p>
-                <p className="text-xl font-bold text-clay">£30<span className="text-xs text-dusk">/mo</span></p>
-                <p className="text-xs text-dusk mt-1">3 photos + description</p>
-              </div>
-              <div className="bg-parchment rounded-lg p-3 text-center border-2 border-clay">
-                <p className="font-bold text-bark">Standard</p>
-                <p className="text-xl font-bold text-clay">£50<span className="text-xs text-dusk">/mo</span></p>
-                <p className="text-xs text-dusk mt-1">5 photos + tour</p>
-              </div>
-              <div className="bg-parchment rounded-lg p-3 text-center">
-                <p className="font-bold text-bark">Premium</p>
-                <p className="text-xl font-bold text-clay">£80<span className="text-xs text-dusk">/mo</span></p>
-                <p className="text-xs text-dusk mt-1">10 photos + everything</p>
-              </div>
+              {PROVIDER_TIERS.map((t, i) => (
+                <div key={t.tier} className={`bg-parchment rounded-lg p-3 text-center ${i === 1 ? "border-2 border-clay" : ""}`}>
+                  <p className="font-bold text-bark">{t.label}</p>
+                  <p className="text-xl font-bold text-clay">{t.price.split(" ")[0]}<span className="text-xs text-dusk">/mo</span></p>
+                  <p className="text-xs text-dusk mt-1">{t.photos} photos{t.virtualTour ? " + tour" : ""}</p>
+                </div>
+              ))}
             </div>
-            <a href="mailto:hello@caregist.co.uk" className="text-sm text-clay underline">
-              Contact us to get started
-            </a>
+            <Link href="/pricing#provider-plans" className="text-sm text-clay underline">
+              See full details and pricing
+            </Link>
           </div>
         </>
       )}
@@ -208,7 +196,7 @@ export default function ProviderDashboardPage({ params }: { params: Promise<{ sl
               {config.label} Profile
             </span>
             <span className="text-sm text-dusk">
-              Up to {config.photos} photos
+              {config.price} · Up to {config.photos} photos
               {config.virtualTour && " + virtual tour"}
               {config.inspectionResponse && " + inspection response"}
             </span>
