@@ -144,32 +144,61 @@ export default function ProviderDashboardPage({ params }: { params: Promise<{ sl
       )}
 
       {isClaimedByUser && !tier && (
-        <div className="bg-cream border border-stone rounded-lg p-6 mb-6 text-center">
-          <p className="font-semibold text-bark mb-2">Upgrade to an Enhanced Profile</p>
-          <p className="text-sm text-dusk mb-4">
-            Add photos, a description, virtual tour, and respond to your CQC inspection. Families are more likely to enquire about providers with enhanced listings.
-          </p>
-          <div className="grid grid-cols-3 gap-4 max-w-lg mx-auto mb-4">
-            <div className="bg-parchment rounded-lg p-3 text-center">
-              <p className="font-bold text-bark">Basic</p>
-              <p className="text-xl font-bold text-clay">£30<span className="text-xs text-dusk">/mo</span></p>
-              <p className="text-xs text-dusk mt-1">3 photos + description</p>
-            </div>
-            <div className="bg-parchment rounded-lg p-3 text-center border-2 border-clay">
-              <p className="font-bold text-bark">Standard</p>
-              <p className="text-xl font-bold text-clay">£50<span className="text-xs text-dusk">/mo</span></p>
-              <p className="text-xs text-dusk mt-1">5 photos + tour + response</p>
-            </div>
-            <div className="bg-parchment rounded-lg p-3 text-center">
-              <p className="font-bold text-bark">Premium</p>
-              <p className="text-xl font-bold text-clay">£80<span className="text-xs text-dusk">/mo</span></p>
-              <p className="text-xs text-dusk mt-1">10 photos + everything</p>
-            </div>
+        <>
+          {/* Free inspection response editor */}
+          <div className="bg-moss/5 border border-moss/20 rounded-lg p-6 mb-6">
+            <h2 className="text-xl font-bold mb-2 text-moss">Respond to Your Inspection — Free</h2>
+            <p className="text-sm text-dusk mb-4">
+              Tell families what you have done since your last CQC inspection. This appears publicly on your provider page.
+            </p>
+            <textarea
+              value={inspectionResponse}
+              onChange={(e) => setInspectionResponse(e.target.value)}
+              maxLength={2000}
+              rows={5}
+              placeholder="We have invested in new staff training, upgraded our medication management systems, and appointed a new registered manager who brings 15 years of experience..."
+              className="w-full px-4 py-3 rounded-lg border border-stone bg-white text-sm resize-y"
+            />
+            <p className="text-xs text-dusk mt-1">{inspectionResponse.length}/2,000 characters</p>
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="mt-3 w-full py-3 bg-moss text-white rounded-lg font-medium hover:bg-bark transition-colors disabled:opacity-50"
+            >
+              {saving ? "Saving..." : "Publish Response"}
+            </button>
+            {error && <p className="text-alert text-xs mt-2">{error}</p>}
+            {success && <p className="text-moss text-xs mt-2">{success}</p>}
           </div>
-          <a href="mailto:hello@caregist.co.uk?subject=Enhanced Profile for ${slug}" className="text-sm text-clay underline">
-            Contact us to get started
-          </a>
-        </div>
+
+          {/* Upgrade upsell for other features */}
+          <div className="bg-cream border border-stone rounded-lg p-6 mb-6 text-center">
+            <p className="font-semibold text-bark mb-2">Want to add photos and a description?</p>
+            <p className="text-sm text-dusk mb-4">
+              Upgrade to an Enhanced Profile to add photos, a description, and a virtual tour link.
+            </p>
+            <div className="grid grid-cols-3 gap-4 max-w-lg mx-auto mb-4">
+              <div className="bg-parchment rounded-lg p-3 text-center">
+                <p className="font-bold text-bark">Basic</p>
+                <p className="text-xl font-bold text-clay">£30<span className="text-xs text-dusk">/mo</span></p>
+                <p className="text-xs text-dusk mt-1">3 photos + description</p>
+              </div>
+              <div className="bg-parchment rounded-lg p-3 text-center border-2 border-clay">
+                <p className="font-bold text-bark">Standard</p>
+                <p className="text-xl font-bold text-clay">£50<span className="text-xs text-dusk">/mo</span></p>
+                <p className="text-xs text-dusk mt-1">5 photos + tour</p>
+              </div>
+              <div className="bg-parchment rounded-lg p-3 text-center">
+                <p className="font-bold text-bark">Premium</p>
+                <p className="text-xl font-bold text-clay">£80<span className="text-xs text-dusk">/mo</span></p>
+                <p className="text-xs text-dusk mt-1">10 photos + everything</p>
+              </div>
+            </div>
+            <a href="mailto:hello@caregist.co.uk" className="text-sm text-clay underline">
+              Contact us to get started
+            </a>
+          </div>
+        </>
       )}
 
       {isClaimedByUser && tier && config && (

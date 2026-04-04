@@ -84,13 +84,17 @@ async def update_profile(
         raise HTTPException(status_code=403, detail="You don't have an approved claim for this provider.")
 
     tier = provider["profile_tier"]
-    if not tier:
-        raise HTTPException(
-            status_code=403,
-            detail="Enhanced profile requires a subscription. Visit /pricing to upgrade.",
-        )
 
-    tier_config = PROFILE_TIERS.get(tier, PROFILE_TIERS["basic"])
+    # Inspection response is free for all claimed providers (provider acquisition tool)
+    # Other features (photos, description, virtual tour) require paid tier
+    if not tier:
+        if req.description is not None or req.photos is not None or req.virtual_tour_url is not None:
+            raise HTTPException(
+                status_code=403,
+                detail="Photos, description, and virtual tour require an enhanced profile subscription. Inspection response is free. Visit /pricing to upgrade.",
+            )
+
+    tier_config = PROFILE_TIERS.get(tier, PROFILE_TIERS["basic"]) if tier else {"photos": 0, "description": False, "virtual_tour": False, "inspection_response": True}
 
     # Enforce tier limits
     if req.photos and len(req.photos) > tier_config["photos"]:

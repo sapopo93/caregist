@@ -171,8 +171,9 @@ export default async function ProviderPage({ params }: { params: Promise<{ slug:
       {provider.inspection_response && (
         <div className="bg-moss/5 border border-moss/20 rounded-lg p-6 mb-6">
           <h2 className="text-xl font-bold mb-3 text-moss">Provider Response to Inspection</h2>
+          <p className="text-xs font-semibold text-dusk mb-2">The provider states:</p>
           <p className="text-sm text-charcoal leading-relaxed">{provider.inspection_response}</p>
-          <p className="text-xs text-dusk mt-3">Response provided by the care provider.</p>
+          <p className="text-xs text-dusk mt-3">This response was submitted by the care provider. CareGist does not verify provider statements.</p>
         </div>
       )}
 
@@ -213,18 +214,30 @@ export default async function ProviderPage({ params }: { params: Promise<{ slug:
       {/* CareGist Assessment */}
       <CareGistAssessment provider={provider} />
 
-      {/* Key Question Ratings */}
-      {ratingDimensions.some((d) => provider[d.key]) && (
+      {/* Key Question Ratings — always show all 5, flag unassessed */}
+      {provider.overall_rating && provider.overall_rating !== "Not Yet Inspected" && (
         <div className="bg-cream border border-stone rounded-lg p-6 mb-6">
           <h2 className="text-xl font-bold mb-4">CQC Inspection Ratings</h2>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             {ratingDimensions.map((d) => (
               <div key={d.key} className="text-center">
                 <div className="text-sm text-dusk mb-1">{d.label}</div>
-                <RatingBadge rating={provider[d.key] || "N/A"} />
+                {provider[d.key] ? (
+                  <RatingBadge rating={provider[d.key]} />
+                ) : (
+                  <span className="inline-block px-3 py-1 bg-stone/20 text-dusk text-xs rounded-full">
+                    Not assessed
+                  </span>
+                )}
               </div>
             ))}
           </div>
+          {ratingDimensions.some((d) => !provider[d.key]) && (
+            <p className="text-xs text-dusk mt-4">
+              Dimensions marked &ldquo;Not assessed&rdquo; were not evaluated in the most recent CQC inspection.
+              This may indicate a focused inspection rather than a comprehensive assessment.
+            </p>
+          )}
         </div>
       )}
 

@@ -83,20 +83,31 @@ export default function CareGistAssessment({ provider }: Props) {
 
   if (!hasRatings && !qualityScore) return null;
 
+  // Data Confidence Index — degrades as inspection ages
+  const dataConfidence = (() => {
+    if (!provider.last_inspection_date) return 10;
+    const days = Math.floor((Date.now() - new Date(provider.last_inspection_date).getTime()) / 86400000);
+    return Math.max(10, Math.round(100 - (days / 14)));
+  })();
+  const confidenceColor = dataConfidence >= 70 ? "#4A5E45" : dataConfidence >= 40 ? "#D4943A" : "#C44444";
+  const confidenceLabel = dataConfidence >= 70 ? "High" : dataConfidence >= 40 ? "Moderate" : "Low";
+
   // Determine trajectory from rating history if available
   const trajectory = provider.inspection_summary?.includes("improved") ? "improving"
     : provider.inspection_summary?.includes("downgraded") ? "declining"
     : "stable";
 
-  // Find weakest and strongest dimensions
-  const dimensions = Object.entries(DIMENSION_LABELS)
+  // All 5 dimensions — including unassessed ones
+  const allDimensions = Object.entries(DIMENSION_LABELS)
     .map(([key, label]) => ({
       key,
       label,
       rating: provider[key] || null,
       score: RATING_SCORE[provider[key]] || 0,
-    }))
-    .filter((d) => d.rating);
+      assessed: !!provider[key],
+    }));
+  const dimensions = allDimensions.filter((d) => d.assessed);
+  const unassessedCount = allDimensions.filter((d) => !d.assessed).length;
 
   const weakest = dimensions.length > 0 ? dimensions.reduce((a, b) => a.score < b.score ? a : b) : null;
   const strongest = dimensions.length > 0 ? dimensions.reduce((a, b) => a.score > b.score ? a : b) : null;
@@ -157,6 +168,32 @@ export default function CareGistAssessment({ provider }: Props) {
         </div>
       )}
 
+      {/* Data Confidence */}
+      <div className="bg-parchment rounded-lg p-4 mb-4">
+        <div className="flex items-center justify-between mb-2">
+          <div>
+            <span className="text-sm font-semibold text-bark">Data Confidence</span>
+            <p className="text-xs text-dusk mt-0.5">Based on inspection recency — not provider quality</p>
+          </div>
+          <div className="text-right">
+            <span className="text-xl font-bold" style={{ color: confidenceColor }}>{dataConfidence}%</span>
+            <span className="text-xs font-semibold ml-1" style={{ color: confidenceColor }}>{confidenceLabel}</span>
+          </div>
+        </div>
+        <div className="w-full bg-stone/30 rounded-full h-2.5">
+          <div
+            className="h-2.5 rounded-full transition-all"
+            style={{ width: `${dataConfidence}%`, backgroundColor: confidenceColor }}
+          />
+        </div>
+        {provider.last_inspection_date && (
+          <p className="text-xs text-dusk mt-2">
+            CQC has not reinspected since {new Date(provider.last_inspection_date).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}.
+            {dataConfidence < 40 && " This rating may not reflect current performance."}
+          </p>
+        )}
+      </div>
+
       {/* Local Rank */}
       {nearbyData && (
         <div className="bg-parchment rounded-lg p-4 mb-4 flex items-center justify-between">
@@ -172,11 +209,22 @@ export default function CareGistAssessment({ provider }: Props) {
       )}
 
       {/* Dimension Breakdown */}
-      {dimensions.length > 0 && (
+      {hasRatings && (
         <div className="mb-4">
           <p className="text-sm font-semibold text-bark mb-3">CQC Dimension Analysis</p>
           <div className="space-y-2">
-            {dimensions.map((d) => {
+            {allDimensions.map((d) => {
+              if (!d.assessed) {
+                return (
+                  <div key={d.key} className="flex items-center gap-3 opacity-50">
+                    <span className="text-xs text-dusk w-20 shrink-0">{d.label}</span>
+                    <div className="flex-1 bg-stone/10 rounded-full h-2.5" />
+                    <span className="text-xs text-dusk px-2 py-0.5 rounded-full shrink-0 bg-stone/10">
+                      Not assessed
+                    </span>
+                  </div>
+                );
+              }
               const color = RATING_COLOR[d.rating] || "#8a6a4a";
               return (
                 <div key={d.key} className="flex items-center gap-3">
@@ -197,6 +245,11 @@ export default function CareGistAssessment({ provider }: Props) {
               );
             })}
           </div>
+          {unassessedCount > 0 && (
+            <p className="text-xs text-dusk mt-2">
+              {unassessedCount} dimension{unassessedCount > 1 ? "s were" : " was"} not evaluated in the most recent inspection.
+            </p>
+          )}
         </div>
       )}
 
