@@ -108,7 +108,7 @@ export default async function ProviderPage({ params }: { params: Promise<{ slug:
       {/* Freshness warning */}
       {daysSinceInspection !== null && daysSinceInspection > 730 && (
         <div className="bg-amber/10 border border-amber rounded-lg p-4 mb-6 text-sm text-charcoal">
-          This provider has not been inspected in over {Math.floor(daysSinceInspection / 365)} years. The rating shown may not reflect current performance.
+          This service was last inspected over {Math.floor(daysSinceInspection / 365)} years ago. The rating shown is the most recent available from CQC. Consider contacting the provider directly for the latest information.
         </div>
       )}
 

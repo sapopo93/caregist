@@ -188,8 +188,8 @@ export default function CareGistAssessment({ provider }: Props) {
         </div>
         {provider.last_inspection_date && (
           <p className="text-xs text-dusk mt-2">
-            CQC has not reinspected since {new Date(provider.last_inspection_date).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}.
-            {dataConfidence < 40 && " This rating may not reflect current performance."}
+            Last inspected {new Date(provider.last_inspection_date).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}.
+            {dataConfidence < 40 && " A more recent inspection would provide a clearer picture of this service today."}
           </p>
         )}
       </div>
