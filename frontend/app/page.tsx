@@ -7,98 +7,89 @@ export default function HomePage() {
   return (
     <div>
       {/* Hero */}
-      <section className="bg-bark text-cream py-14 md:py-20 px-6">
+      <section className="bg-bark text-cream py-16 md:py-24 px-6">
         <div className="max-w-4xl mx-auto text-center">
-          <h1 className="text-4xl md:text-5xl font-bold mb-3" style={{ fontFamily: "Playfair Display" }}>
+          <h1 className="text-4xl md:text-6xl font-bold mb-4" style={{ fontFamily: "Playfair Display" }}>
             The gist of good care
           </h1>
-          <p className="text-amber text-sm font-medium tracking-wide uppercase mb-5">
+          <p className="text-amber text-sm md:text-base font-medium tracking-wide uppercase mb-5">
             Independent quality intelligence for 55,818 CQC-registered care services
           </p>
-          <p className="text-stone text-base mb-8 max-w-xl mx-auto" style={{ fontFamily: "Lora" }}>
+          <p className="text-stone text-base md:text-lg mb-8 max-w-xl mx-auto" style={{ fontFamily: "Lora" }}>
             Find, compare, and monitor care providers across England — rated by CQC inspection data, not advertising.
           </p>
-          <div className="flex justify-center mb-6">
+          <div className="flex justify-center mb-8">
             <SearchBar />
           </div>
-          <div className="flex flex-wrap justify-center gap-4 text-stone/70 text-xs">
+          <div className="flex flex-wrap justify-center gap-4 text-cream/80 text-sm font-medium">
             <span>55,818 providers</span>
-            <span>·</span>
+            <span className="text-amber">|</span>
             <span>Updated daily</span>
-            <span>·</span>
+            <span className="text-amber">|</span>
             <span>Ranked by data, not by who pays</span>
           </div>
         </div>
       </section>
 
-      {/* Value propositions */}
+      {/* Value propositions — cards with backgrounds */}
       <section className="bg-cream py-10 border-b border-stone">
         <div className="max-w-5xl mx-auto px-6">
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="flex gap-4">
-              <div className="w-10 h-10 bg-clay/15 rounded-lg flex items-center justify-center shrink-0 mt-0.5">
-                <span className="text-xl">&#128202;</span>
-              </div>
-              <div>
-                <h3 className="font-bold text-bark mb-1 text-sm">Quality Scored</h3>
-                <p className="text-xs text-dusk leading-relaxed">
-                  Every provider gets a 0–100 quality score. See how they compare nationally and locally.
-                </p>
-              </div>
-            </div>
-            <div className="flex gap-4">
-              <div className="w-10 h-10 bg-clay/15 rounded-lg flex items-center justify-center shrink-0 mt-0.5">
-                <span className="text-xl">&#128337;</span>
-              </div>
-              <div>
-                <h3 className="font-bold text-bark mb-1 text-sm">Data Confidence</h3>
-                <p className="text-xs text-dusk leading-relaxed">
-                  Know how fresh each rating is. Our confidence indicator shows whether data reflects recent performance.
-                </p>
-              </div>
-            </div>
-            <div className="flex gap-4">
-              <div className="w-10 h-10 bg-clay/15 rounded-lg flex items-center justify-center shrink-0 mt-0.5">
-                <span className="text-xl">&#128276;</span>
-              </div>
-              <div>
-                <h3 className="font-bold text-bark mb-1 text-sm">Weekly Intelligence</h3>
-                <p className="text-xs text-dusk leading-relaxed">
-                  Get notified when providers in your area change CQC rating. Stay informed automatically.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Stats */}
-      <section className="py-8">
-        <div className="max-w-5xl mx-auto px-6">
-          <div className="grid grid-cols-4 gap-4 text-center">
+          <div className="grid md:grid-cols-3 gap-5">
             {[
-              { value: "55,818", label: "Providers" },
-              { value: "22,617", label: "Rated Good" },
-              { value: "4,876", label: "Groups" },
-              { value: "Daily", label: "Refresh" },
-            ].map((stat) => (
-              <div key={stat.label}>
-                <div className="text-2xl md:text-3xl font-bold text-clay">{stat.value}</div>
-                <div className="text-xs text-dusk mt-0.5">{stat.label}</div>
+              {
+                icon: "\u{1F4CA}",
+                title: "Quality Scored",
+                desc: "Every provider gets a 0\u2013100 quality score. See how they compare nationally and locally.",
+              },
+              {
+                icon: "\u{1F551}",
+                title: "Data Confidence",
+                desc: "Know how fresh each rating is. Our confidence indicator shows whether data reflects recent performance.",
+              },
+              {
+                icon: "\u{1F514}",
+                title: "Weekly Intelligence",
+                desc: "Get notified when providers in your area change CQC rating. Stay informed automatically.",
+              },
+            ].map((card) => (
+              <div key={card.title} className="bg-parchment border border-stone rounded-xl p-5 flex gap-4">
+                <div className="w-11 h-11 bg-clay/15 rounded-lg flex items-center justify-center shrink-0">
+                  <span className="text-xl">{card.icon}</span>
+                </div>
+                <div>
+                  <h3 className="font-bold text-bark mb-1 text-sm">{card.title}</h3>
+                  <p className="text-xs text-dusk leading-relaxed">{card.desc}</p>
+                </div>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* CTAs — clean cards, no background images */}
-      <section className="max-w-5xl mx-auto px-6 py-6">
-        <div className="grid md:grid-cols-2 gap-4">
+      {/* Stats + CTAs combined */}
+      <section className="max-w-5xl mx-auto px-6 py-10">
+        {/* Stats */}
+        <div className="grid grid-cols-4 gap-4 text-center mb-10">
+          {[
+            { value: "55,818", label: "Providers" },
+            { value: "22,617", label: "Rated Good" },
+            { value: "4,876", label: "Groups" },
+            { value: "Daily", label: "Refresh" },
+          ].map((stat) => (
+            <div key={stat.label}>
+              <div className="text-3xl md:text-4xl font-extrabold text-clay">{stat.value}</div>
+              <div className="text-xs text-dusk mt-1 font-medium">{stat.label}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* CTAs */}
+        <div className="grid md:grid-cols-2 gap-5">
           <Link
             href="/find-care"
-            className="block bg-bark text-cream rounded-xl p-6 hover:bg-charcoal transition-colors"
+            className="block bg-bark text-cream rounded-xl p-7 hover:bg-charcoal transition-colors"
           >
-            <h2 className="text-lg font-bold mb-1" style={{ fontFamily: "Playfair Display", color: "var(--color-amber)" }}>
+            <h2 className="text-xl font-bold mb-2" style={{ fontFamily: "Playfair Display", color: "var(--color-amber)" }}>
               Find care near you
             </h2>
             <p className="text-stone text-sm">
@@ -107,9 +98,9 @@ export default function HomePage() {
           </Link>
           <Link
             href="/groups"
-            className="block bg-bark text-cream rounded-xl p-6 hover:bg-charcoal transition-colors"
+            className="block bg-bark text-cream rounded-xl p-7 hover:bg-charcoal transition-colors"
           >
-            <h2 className="text-lg font-bold mb-1" style={{ fontFamily: "Playfair Display", color: "var(--color-amber)" }}>
+            <h2 className="text-xl font-bold mb-2" style={{ fontFamily: "Playfair Display", color: "var(--color-amber)" }}>
               Compare care groups
             </h2>
             <p className="text-stone text-sm">
@@ -124,10 +115,10 @@ export default function HomePage() {
         <EmailCaptureStrip source="homepage" />
       </section>
 
-      {/* Browse by Service Type */}
+      {/* Browse by Service Type + Region combined */}
       <section className="max-w-5xl mx-auto px-6 py-8">
         <h2 className="text-xl font-bold mb-4">Browse by service type</h2>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-10">
           {[
             { name: "Care Homes", count: "10,309", slug: "care-homes" },
             { name: "Nursing Homes", count: "4,386", slug: "nursing-homes" },
@@ -146,10 +137,7 @@ export default function HomePage() {
             </Link>
           ))}
         </div>
-      </section>
 
-      {/* Browse by Region */}
-      <section className="max-w-5xl mx-auto px-6 pb-8">
         <h2 className="text-xl font-bold mb-4">Browse by region</h2>
         <div className="grid grid-cols-3 md:grid-cols-5 gap-2">
           {[
