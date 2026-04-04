@@ -11,6 +11,7 @@ import RatingTimeline from "@/components/RatingTimeline";
 import TrustSignal from "@/components/TrustSignal";
 import TrackProfileView from "@/components/TrackProfileView";
 import CareGistAssessment from "@/components/CareGistAssessment";
+import MapView from "@/components/MapView";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
@@ -301,6 +302,22 @@ export default async function ProviderPage({ params }: { params: Promise<{ slug:
           {provider.ownership_type && <p className="mb-1"><span className="text-dusk">Ownership:</span> {provider.ownership_type}</p>}
         </div>
       </div>
+
+      {/* Map */}
+      {provider.latitude && provider.longitude && (
+        <div className="bg-cream border border-stone rounded-lg p-4 mb-6">
+          <h2 className="text-xl font-bold mb-3">Location</h2>
+          <MapView providers={[{
+            slug: slug,
+            name: provider.name,
+            town: provider.town || "",
+            overall_rating: provider.overall_rating || "",
+            latitude: provider.latitude,
+            longitude: provider.longitude,
+            type: provider.type || "",
+          }]} />
+        </div>
+      )}
 
       {/* Services & Specialisms */}
       {(services.length > 0 || specs.length > 0) && (

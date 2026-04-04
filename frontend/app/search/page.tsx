@@ -4,6 +4,7 @@ import FilterSidebar from "@/components/FilterSidebar";
 import MapToggle from "@/components/MapToggle";
 import ExportCSVButton from "@/components/ExportCSVButton";
 import PrintButton from "@/components/PrintButton";
+import InlineSortSelect from "@/components/InlineSortSelect";
 import MobileFilterToggle from "@/components/MobileFilterToggle";
 import { searchProviders } from "@/lib/api";
 import { Suspense } from "react";
@@ -94,13 +95,14 @@ export default async function SearchPage({
           )}
 
           {!error && results.meta.total > 0 && (
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
               <p className="text-sm text-dusk">
                 {results.meta.total.toLocaleString()} providers found
                 {query && <> for &ldquo;{query}&rdquo;</>}
                 {" "} (page {results.meta.page} of {results.meta.pages})
               </p>
               <div className="flex gap-3 items-center print:hidden">
+                <Suspense fallback={null}><InlineSortSelect /></Suspense>
                 <ExportCSVButton exportUrl={`/api/v1/providers/export.csv?${exportParams.toString()}`} />
                 <PrintButton />
               </div>

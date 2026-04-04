@@ -52,6 +52,7 @@ export default function RadiusFinder() {
   const [searched, setSearched] = useState(false);
   const [error, setError] = useState("");
   const [emailGated, setEmailGated] = useState(true);
+  const [sortBy, setSortBy] = useState<"distance" | "rating" | "name">("distance");
 
   async function handleSearch(e: React.FormEvent) {
     e.preventDefault();
@@ -88,8 +89,14 @@ export default function RadiusFinder() {
     }
   }
 
-  const visibleResults = emailGated ? results.slice(0, 3) : results;
-  const hiddenCount = emailGated ? Math.max(0, results.length - 3) : 0;
+  const RATING_ORDER: Record<string, number> = { Outstanding: 1, Good: 2, "Requires Improvement": 3, Inadequate: 4 };
+  const sortedResults = [...results].sort((a, b) => {
+    if (sortBy === "rating") return (RATING_ORDER[a.overall_rating] || 5) - (RATING_ORDER[b.overall_rating] || 5);
+    if (sortBy === "name") return a.name.localeCompare(b.name);
+    return (a.distance_miles || 0) - (b.distance_miles || 0);
+  });
+  const visibleResults = emailGated ? sortedResults.slice(0, 3) : sortedResults;
+  const hiddenCount = emailGated ? Math.max(0, sortedResults.length - 3) : 0;
 
   return (
     <div>
@@ -177,11 +184,20 @@ export default function RadiusFinder() {
 
       {visibleResults.length > 0 && (
         <>
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
             <p className="text-sm text-dusk">
               Showing {visibleResults.length} of {total} providers within {radius} miles of {postcode.toUpperCase()}.
             </p>
-            <div className="flex gap-3">
+            <div className="flex gap-3 items-center">
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as any)}
+                className="px-2 py-1 text-xs rounded border border-stone bg-white text-charcoal print:hidden"
+              >
+                <option value="distance">Nearest first</option>
+                <option value="rating">Best rated</option>
+                <option value="name">Name (A-Z)</option>
+              </select>
               <button
                 onClick={() => {
                   const header = "Name,Town,Postcode,Distance (miles),Type,Rating,Last Inspected\n";
