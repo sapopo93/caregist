@@ -72,7 +72,8 @@ BASIC_FIELDS = [
     "region", "local_authority", "overall_rating", "service_types",
     "specialisms", "number_of_beds", "quality_score", "quality_tier",
     "phone", "website", "last_inspection_date", "inspection_report_url",
-    "inspection_summary",
+    "inspection_summary", "profile_description", "profile_photos",
+    "virtual_tour_url", "inspection_response", "profile_tier",
 ]
 
 STANDARD_FIELDS = BASIC_FIELDS + [

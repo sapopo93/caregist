@@ -139,6 +139,52 @@ export default async function ProviderPage({ params }: { params: Promise<{ slug:
         )}
       </div>
 
+      {/* Enhanced Profile — paid content from claimed providers */}
+      {provider.profile_description && (
+        <div className="bg-cream border border-stone rounded-lg p-6 mb-6">
+          {provider.profile_photos && JSON.parse(provider.profile_photos || "[]").length > 0 && (
+            <div className="flex gap-3 overflow-x-auto mb-4 pb-2">
+              {JSON.parse(provider.profile_photos).map((url: string, i: number) => (
+                <img key={i} src={url} alt={`${provider.name} photo ${i + 1}`} className="h-48 rounded-lg object-cover flex-shrink-0" />
+              ))}
+            </div>
+          )}
+          <h2 className="text-xl font-bold mb-3">About {provider.name}</h2>
+          <p className="text-sm text-charcoal leading-relaxed">{provider.profile_description}</p>
+          {provider.virtual_tour_url && (
+            <a
+              href={provider.virtual_tour_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block mt-3 px-4 py-2 bg-clay text-white rounded-lg text-sm hover:bg-bark transition-colors"
+            >
+              Take a virtual tour
+            </a>
+          )}
+        </div>
+      )}
+
+      {provider.inspection_response && (
+        <div className="bg-moss/5 border border-moss/20 rounded-lg p-6 mb-6">
+          <h2 className="text-xl font-bold mb-3 text-moss">Provider Response to Inspection</h2>
+          <p className="text-sm text-charcoal leading-relaxed">{provider.inspection_response}</p>
+          <p className="text-xs text-dusk mt-3">Response provided by the care provider.</p>
+        </div>
+      )}
+
+      {/* CTA for unclaimed providers */}
+      {!provider.is_claimed && (
+        <div className="bg-amber/5 border border-amber/20 rounded-lg p-4 mb-6 flex items-center justify-between">
+          <div>
+            <p className="text-sm font-semibold text-bark">Is this your care service?</p>
+            <p className="text-xs text-dusk">Claim this listing to add photos, respond to inspections, and track analytics.</p>
+          </div>
+          <a href={`/claim/${slug}`} className="px-4 py-2 bg-clay text-white rounded-lg text-sm hover:bg-bark transition-colors shrink-0">
+            Claim listing
+          </a>
+        </div>
+      )}
+
       {/* Inspection Summary */}
       {provider.inspection_summary && (
         <div className="bg-parchment border border-stone rounded-lg p-6 mb-6">

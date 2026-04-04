@@ -14,7 +14,7 @@ from api.logging_config import setup_logging
 
 # Structured JSON logs in production, human-readable locally
 setup_logging(json_output="localhost" not in settings.database_url)
-from api.routers import admin, api_applications, auth, billing, city_pages, claims, comparisons, enquiries, health, providers, public_tools, region_stats, regions, reviews, subscribe
+from api.routers import admin, api_applications, auth, billing, city_pages, claims, comparisons, enquiries, health, provider_profile, providers, public_tools, region_stats, regions, reviews, subscribe
 
 if settings.sentry_dsn:
     sentry_sdk.init(
@@ -107,6 +107,7 @@ app.include_router(claims.router)
 app.include_router(reviews.router)
 app.include_router(enquiries.router)
 app.include_router(admin.router)
+app.include_router(provider_profile.router)
 app.include_router(providers.router)
 app.include_router(regions.router)
 app.include_router(subscribe.router)
