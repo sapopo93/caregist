@@ -1,14 +1,14 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" role="img" aria-labelledby="title desc">
-  <title id="title">CareGist icon mark</title>
-  <desc id="desc">A stylised C formed by a protective arc with three quality markers.</desc>
+  <title id="title">CareGist icon mark monochrome</title>
+  <desc id="desc">A stylised C formed by a protective arc with three quality markers, in a single color.</desc>
   <rect width="180" height="180" fill="none"/>
   <path d="M132 28
            A74 74 0 1 0 132 152"
         fill="none"
-        stroke="#C1784F"
+        stroke="#6B4C35"
         stroke-width="22"
         stroke-linecap="round"/>
-  <g fill="#C1784F">
+  <g fill="#6B4C35">
     <rect x="117" y="54" width="16" height="16" rx="5"/>
     <rect x="129" y="82" width="18" height="18" rx="5"/>
     <rect x="117" y="114" width="16" height="16" rx="5"/>

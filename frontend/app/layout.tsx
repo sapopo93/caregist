@@ -31,8 +31,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-screen flex flex-col">
         <header className="bg-bark text-cream px-6 py-4 relative">
           <div className="max-w-6xl mx-auto flex items-center justify-between">
-            <Link href="/" className="text-2xl font-bold" style={{ fontFamily: "Playfair Display" }}>
-              <span className="text-amber">C</span>are<span className="text-amber">G</span>ist
+            <Link href="/" className="flex items-center gap-2">
+              <img src="/logo-mark.svg" alt="" className="h-8 w-8" />
+              <span className="text-2xl font-bold" style={{ fontFamily: "Playfair Display" }}>
+                <span className="text-amber">C</span>are<span className="text-amber">G</span>ist
+              </span>
             </Link>
             <AuthNav />
           </div>
