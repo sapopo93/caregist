@@ -7,8 +7,13 @@ export default function HomePage() {
   return (
     <div>
       {/* Hero */}
-      <section className="bg-bark text-cream py-16 md:py-24 px-6">
-        <div className="max-w-4xl mx-auto text-center">
+      <section className="relative text-cream py-16 md:py-24 px-6 overflow-hidden">
+        <div className="absolute inset-0" style={{
+          backgroundImage: "url('https://images.unsplash.com/photo-1576765608535-5f04d1e3f289?w=1200&q=60&auto=format')",
+          backgroundSize: "cover", backgroundPosition: "center top"
+        }} />
+        <div className="absolute inset-0 bg-bark/75" />
+        <div className="max-w-4xl mx-auto text-center relative z-10">
           <h1 className="text-4xl md:text-6xl font-bold mb-4" style={{ fontFamily: "Playfair Display" }}>
             The gist of good care
           </h1>
