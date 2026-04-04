@@ -110,6 +110,29 @@ async def track_profile_view(
     return {"tracked": True}
 
 
+@router.get("/unsubscribe")
+async def unsubscribe(email: str, source: str = "weekly_movers") -> dict:
+    """One-click unsubscribe. No auth required (PECR compliance)."""
+    try:
+        async with get_connection() as conn:
+            await conn.execute(
+                "UPDATE email_subscribers SET unsubscribed_at = NOW() WHERE email = $1 AND ($2 = '' OR source = $2) AND unsubscribed_at IS NULL",
+                email, source,
+            )
+    except Exception as exc:
+        logger.error("Unsubscribe failed: %s", exc)
+
+    # Return a simple HTML page (not JSON) so clicking the link in email works
+    from fastapi.responses import HTMLResponse
+    return HTMLResponse(
+        '<html><body style="font-family:system-ui;max-width:400px;margin:80px auto;text-align:center">'
+        '<h1 style="color:#6B4C35">Unsubscribed</h1>'
+        '<p style="color:#8a6a4a">You will no longer receive emails from CareGist.</p>'
+        '<p><a href="https://caregist.co.uk" style="color:#C1784F">Back to CareGist</a></p>'
+        '</body></html>'
+    )
+
+
 @router.get("/last-sync")
 async def last_sync() -> dict:
     """Return the last pipeline sync date (public, no auth)."""

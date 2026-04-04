@@ -4,8 +4,8 @@ import { useState } from "react";
 
 export default function EmailCaptureStrip({
   source = "homepage",
-  heading = "Get weekly CQC rating changes \u2014 free.",
-  subheading = "No spam. Unsubscribe anytime.",
+  heading = "Get weekly CQC rating changes in your area \u2014 free.",
+  subheading = "Weekly digest of rating upgrades and downgrades. No spam. Unsubscribe anytime.",
   onSuccess,
 }: {
   source?: string;

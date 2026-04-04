@@ -227,14 +227,46 @@ def upsert_provider(cur, record: dict[str, Any]) -> str:
     if "id" not in safe_record:
         return "skipped"
 
-    cur.execute("SELECT id FROM care_providers WHERE id = %s", (safe_record["id"],))
-    exists = cur.fetchone()
+    cur.execute(
+        "SELECT id, overall_rating, name, slug, town, postcode, region FROM care_providers WHERE id = %s",
+        (safe_record["id"],),
+    )
+    existing = cur.fetchone()
 
     cols = list(safe_record.keys())
     vals = [safe_record[c] for c in cols]
     now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
 
-    if exists:
+    if existing:
+        old_rating = existing[1]
+        new_rating = safe_record.get("overall_rating")
+
+        # Detect rating change and log it
+        if (new_rating and old_rating and new_rating != old_rating
+                and old_rating not in ("", "Not Yet Inspected")
+                and new_rating not in ("", "Not Yet Inspected")):
+            try:
+                cur.execute(
+                    """INSERT INTO rating_changes
+                       (provider_id, provider_name, slug, town, postcode, region, old_rating, new_rating, inspection_date)
+                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)""",
+                    (safe_record["id"], existing[2] or safe_record.get("name"),
+                     existing[3] or safe_record.get("slug"),
+                     existing[4] or safe_record.get("town"),
+                     existing[5] or safe_record.get("postcode"),
+                     existing[6] or safe_record.get("region"),
+                     old_rating, new_rating,
+                     safe_record.get("last_inspection_date")),
+                )
+                # Also log to rating history
+                cur.execute(
+                    """INSERT INTO provider_rating_history (provider_id, overall_rating, inspection_date)
+                       VALUES (%s, %s, %s) ON CONFLICT (provider_id, inspection_date) DO NOTHING""",
+                    (safe_record["id"], new_rating, safe_record.get("last_inspection_date")),
+                )
+            except Exception as exc:
+                print(f"  Warning: Failed to log rating change for {safe_record['id']}: {exc}")
+
         set_clause = ", ".join(f"{c} = %s" for c in cols)
         cur.execute(
             f"UPDATE care_providers SET {set_clause}, updated_at = %s WHERE id = %s",
