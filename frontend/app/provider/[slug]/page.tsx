@@ -10,6 +10,7 @@ import MonitorButton from "@/components/MonitorButton";
 import RatingTimeline from "@/components/RatingTimeline";
 import TrustSignal from "@/components/TrustSignal";
 import TrackProfileView from "@/components/TrackProfileView";
+import CareGistAssessment from "@/components/CareGistAssessment";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
@@ -208,6 +209,9 @@ export default async function ProviderPage({ params }: { params: Promise<{ slug:
           </p>
         </div>
       )}
+
+      {/* CareGist Assessment */}
+      <CareGistAssessment provider={provider} />
 
       {/* Key Question Ratings */}
       {ratingDimensions.some((d) => provider[d.key]) && (
