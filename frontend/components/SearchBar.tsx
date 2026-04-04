@@ -62,15 +62,14 @@ export default function SearchBar({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const params = new URLSearchParams();
-    if (query.trim()) params.set("q", query.trim());
+    params.set("q", query.trim());
     if (advanced) {
       if (region) params.set("region", region);
       if (rating) params.set("rating", rating);
       if (serviceType) params.set("service_type", serviceType);
       if (postcode.trim()) params.set("postcode", postcode.trim());
     }
-    const qs = params.toString();
-    router.push(qs ? `/search?${qs}` : "/search");
+    router.push(`/search?${params.toString()}`);
   };
 
   // Fallback service types if API call fails

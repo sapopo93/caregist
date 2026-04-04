@@ -23,9 +23,11 @@ export default async function SearchPage({
   let error = false;
   let warmingUp = false;
 
+  // Search if user has any query/filter OR if they navigated to /search with params (even empty q=)
   const hasQuery = !!(query || params.region || params.rating || params.service_type);
+  const searchSubmitted = hasQuery || "q" in params || "page" in params;
 
-  if (hasQuery) {
+  if (searchSubmitted) {
     try {
       results = await searchProviders({ ...params, page, sort });
     } catch (e: any) {
@@ -141,7 +143,7 @@ export default async function SearchPage({
             </div>
           )}
 
-          {!error && !hasQuery && (
+          {!error && !searchSubmitted && (
             <div className="text-center py-12 text-dusk">
               <p className="text-lg">Enter a search term or select filters to find providers.</p>
             </div>
