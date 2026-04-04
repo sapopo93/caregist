@@ -99,6 +99,18 @@ export default function DashboardPage() {
         )}
       </div>
 
+      {/* Provider Management */}
+      <div className="bg-cream border border-stone rounded-lg p-6 mb-6">
+        <h2 className="text-xl font-bold mb-3">Provider Management</h2>
+        <p className="text-dusk text-sm mb-4">
+          Claim a care provider listing to add photos, respond to inspections, and track analytics.
+        </p>
+        <div className="flex gap-4">
+          <Link href="/find-care" className="text-sm text-clay underline">Find a provider to claim</Link>
+          <Link href="/search" className="text-sm text-clay underline">Search providers</Link>
+        </div>
+      </div>
+
       {/* Quick Start */}
       <div className="bg-cream border border-stone rounded-lg p-6">
         <h2 className="text-xl font-bold mb-3">Quick Start</h2>

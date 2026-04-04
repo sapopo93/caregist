@@ -117,6 +117,9 @@ export default async function ProviderPage({ params }: { params: Promise<{ slug:
           <div className="flex items-center gap-3 flex-wrap">
             <h1 className="text-3xl font-bold">{provider.name}</h1>
             {provider.is_claimed && <VerifiedBadge size="md" />}
+            {provider.is_claimed && (
+              <a href={`/provider-dashboard/${slug}`} className="text-xs text-clay underline ml-2">Manage listing</a>
+            )}
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <MonitorButton slug={slug} />
