@@ -173,25 +173,29 @@ export default function CareGistAssessment({ provider }: Props) {
         <div className="flex items-center justify-between mb-2">
           <div>
             <span className="text-sm font-semibold text-bark">Data Confidence</span>
-            <p className="text-xs text-dusk mt-0.5">Based on inspection recency — not provider quality</p>
           </div>
           <div className="text-right">
             <span className="text-xl font-bold" style={{ color: confidenceColor }}>{dataConfidence}%</span>
             <span className="text-xs font-semibold ml-1" style={{ color: confidenceColor }}>{confidenceLabel}</span>
           </div>
         </div>
-        <div className="w-full bg-stone/30 rounded-full h-2.5">
+        <div className="w-full bg-stone/30 rounded-full h-2.5 mb-2">
           <div
             className="h-2.5 rounded-full transition-all"
             style={{ width: `${dataConfidence}%`, backgroundColor: confidenceColor }}
           />
         </div>
         {provider.last_inspection_date && (
-          <p className="text-xs text-dusk mt-2">
-            Last inspected {new Date(provider.last_inspection_date).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}.
-            {dataConfidence < 40 && " A more recent inspection would provide a clearer picture of this service today."}
+          <p className="text-xs" style={{ color: confidenceColor }}>
+            {(() => {
+              const dateStr = new Date(provider.last_inspection_date).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+              if (dataConfidence >= 70) return `Last inspected ${dateStr} — ratings from this period are highly reliable.`;
+              if (dataConfidence >= 40) return `Last inspected ${dateStr} — ratings from this period are moderately reliable.`;
+              return `Last inspected ${dateStr} — this inspection is over 2 years old. Consider contacting the provider for current information.`;
+            })()}
           </p>
         )}
+        <p className="text-[10px] text-dusk mt-1">Data confidence reflects inspection recency, not the quality of care provided.</p>
       </div>
 
       {/* Local Rank */}
@@ -327,7 +331,8 @@ export default function CareGistAssessment({ provider }: Props) {
       <div className="flex gap-3 print:hidden">
         <button
           onClick={() => {
-            navigator.clipboard.writeText(window.location.href + "#assessment");
+            const url = window.location.href.split("#")[0] + "#assessment";
+            navigator.clipboard.writeText(url);
             const btn = document.getElementById("share-btn");
             if (btn) { btn.textContent = "Link copied!"; setTimeout(() => { btn.textContent = "Share assessment"; }, 2000); }
           }}

@@ -12,6 +12,16 @@ export const metadata: Metadata = {
 export default function FindCarePage() {
   return (
     <div className="max-w-3xl mx-auto px-6 py-12">
+      {/* Hero image */}
+      <div className="rounded-xl overflow-hidden mb-8 h-40 relative">
+        <img
+          src="https://images.unsplash.com/photo-1576765608535-5f04d1e3f289?w=800&q=40&auto=format"
+          alt="Care home garden"
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-bark/60 to-transparent" />
+      </div>
+
       {/* AEO block */}
       <section className="bg-parchment border-b border-stone px-6 py-4 rounded-t-lg text-sm text-charcoal leading-relaxed mb-8">
         <p>

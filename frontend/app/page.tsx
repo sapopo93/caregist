@@ -7,8 +7,12 @@ export default function HomePage() {
   return (
     <div>
       {/* Hero */}
-      <section className="bg-bark text-cream py-16 md:py-24 px-6">
-        <div className="max-w-4xl mx-auto text-center">
+      <section className="bg-bark text-cream py-16 md:py-24 px-6 relative overflow-hidden">
+        <div className="absolute inset-0 opacity-10" style={{
+          backgroundImage: "url('https://images.unsplash.com/photo-1576765608535-5f04d1e3f289?w=1200&q=30&auto=format')",
+          backgroundSize: "cover", backgroundPosition: "center"
+        }} />
+        <div className="max-w-4xl mx-auto text-center relative z-10">
           <h1 className="text-4xl md:text-5xl font-bold mb-3" style={{ fontFamily: "Playfair Display" }}>
             The gist of good care
           </h1>
@@ -92,25 +96,37 @@ export default function HomePage() {
         <div className="grid md:grid-cols-2 gap-4">
           <Link
             href="/find-care"
-            className="block bg-bark text-cream rounded-xl p-6 hover:bg-charcoal transition-colors"
+            className="block bg-bark text-cream rounded-xl overflow-hidden hover:bg-charcoal transition-colors relative"
           >
-            <h2 className="text-xl font-bold mb-1" style={{ fontFamily: "Playfair Display", color: "var(--color-amber)" }}>
-              Find care near you
-            </h2>
-            <p className="text-stone text-sm">
-              Enter your postcode to see all CQC-rated providers within your chosen radius.
-            </p>
+            <div className="absolute inset-0 opacity-15" style={{
+              backgroundImage: "url('https://images.unsplash.com/photo-1582719471384-894fbb16e074?w=600&q=30&auto=format')",
+              backgroundSize: "cover", backgroundPosition: "center"
+            }} />
+            <div className="relative p-6">
+              <h2 className="text-xl font-bold mb-1" style={{ fontFamily: "Playfair Display", color: "var(--color-amber)" }}>
+                Find care near you
+              </h2>
+              <p className="text-stone text-sm">
+                Enter your postcode to see all CQC-rated providers within your chosen radius.
+              </p>
+            </div>
           </Link>
           <Link
             href="/groups"
-            className="block bg-bark text-cream rounded-xl p-6 hover:bg-charcoal transition-colors"
+            className="block bg-bark text-cream rounded-xl overflow-hidden hover:bg-charcoal transition-colors relative"
           >
-            <h2 className="text-xl font-bold mb-1" style={{ fontFamily: "Playfair Display", color: "var(--color-amber)" }}>
-              Compare care groups
-            </h2>
-            <p className="text-stone text-sm">
-              Benchmark 4,876 UK care organisations by CQC ratings, quality scores, and locations.
-            </p>
+            <div className="absolute inset-0 opacity-15" style={{
+              backgroundImage: "url('https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=600&q=30&auto=format')",
+              backgroundSize: "cover", backgroundPosition: "center"
+            }} />
+            <div className="relative p-6">
+              <h2 className="text-xl font-bold mb-1" style={{ fontFamily: "Playfair Display", color: "var(--color-amber)" }}>
+                Compare care groups
+              </h2>
+              <p className="text-stone text-sm">
+                Benchmark 4,876 UK care organisations by CQC ratings, quality scores, and locations.
+              </p>
+            </div>
           </Link>
         </div>
       </section>

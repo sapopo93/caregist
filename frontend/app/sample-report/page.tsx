@@ -41,6 +41,16 @@ const sampleProvider = {
 export default function SampleReportPage() {
   return (
     <div className="max-w-4xl mx-auto px-6 py-12">
+      {/* Hero image */}
+      <div className="rounded-xl overflow-hidden mb-8 h-44 relative">
+        <img
+          src="https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=900&q=40&auto=format"
+          alt="Healthcare professional reviewing data"
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-parchment/80 to-transparent" />
+      </div>
+
       {/* Hero */}
       <div className="text-center mb-12">
         <h1 className="text-4xl font-bold mb-4">The CareGist Assessment</h1>

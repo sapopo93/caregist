@@ -31,6 +31,16 @@ const VALUE_TABLE = [
 export default function WhyCareGistPage() {
   return (
     <div className="max-w-4xl mx-auto px-6 py-12">
+      {/* Hero image */}
+      <div className="rounded-xl overflow-hidden mb-8 h-48 relative">
+        <img
+          src="https://images.unsplash.com/photo-1516733725897-1aa73b87c8e8?w=900&q=40&auto=format"
+          alt="Elderly person holding hands with carer"
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-parchment/80 to-transparent" />
+      </div>
+
       {/* Hero */}
       <div className="text-center mb-12">
         <h1 className="text-4xl font-bold mb-4">Why CareGist</h1>
