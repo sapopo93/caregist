@@ -95,6 +95,10 @@ async def search_providers(
     - CQC IDs (e.g. 1-2881562896) → direct ID lookup
     - Everything else → full-text search with ts_rank relevance
     """
+    # Normalize empty string to None so SQL treats it as "no query"
+    if q is not None and not q.strip():
+        q = None
+
     # Sanitize null bytes that crash the database
     if q and "\x00" in q:
         q = q.replace("\x00", "")
