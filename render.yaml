@@ -1,4 +1,34 @@
 services:
+  - type: cron
+    name: weekly-movers-digest
+    runtime: python
+    region: frankfurt
+    schedule: "0 8 * * 1"
+    buildCommand: pip install -r requirements-api.txt
+    startCommand: python tools/send_weekly_movers.py
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: APP_URL
+        value: https://caregist.co.uk
+
+  - type: cron
+    name: monitor-alerts
+    runtime: python
+    region: frankfurt
+    schedule: "0 7 * * *"
+    buildCommand: pip install -r requirements-api.txt
+    startCommand: python tools/send_monitor_alerts.py
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: APP_URL
+        value: https://caregist.co.uk
+
   - type: web
     name: caregist-api
     runtime: python
@@ -19,11 +49,23 @@ services:
         value: price_1TFvyt4mijLHzRRkyouYDBqo
       - key: STRIPE_PRICE_PRO
         value: price_1TFw1h4mijLHzRRkiGDF4P8X
+      - key: STRIPE_PRICE_PRO_SEAT
+        sync: false
       - key: STRIPE_PRICE_BUSINESS
         value: price_1TFw3p4mijLHzRRkTuNDsac0
+      - key: STRIPE_PRICE_ENTERPRISE
+        sync: false
       - key: RESEND_API_KEY
         sync: false
       - key: ENQUIRY_FROM_EMAIL
+        sync: false
+      - key: MONITOR_ALERT_FAILURE_EMAIL
+        sync: false
+      - key: SUPPORT_PLATFORM_URL
+        sync: false
+      - key: CAREGIST_TO_SUPPORT_TOKEN
+        sync: false
+      - key: SUPPORT_INTERNAL_TOKEN
         sync: false
       - key: CORS_ORIGINS
         value: https://caregist.co.uk,https://www.caregist.co.uk,http://localhost:3000
