@@ -58,7 +58,7 @@ export default function PricingPage() {
                   <h2 className="text-xl font-bold text-bark">{tier.tier}</h2>
                   {i === 0 && (
                     <span className="font-mono text-[10px] bg-moss/15 text-moss px-2 py-0.5 rounded">
-                      EVALUATION
+                      ENTRY
                     </span>
                   )}
                   {tier.recommended && (

@@ -62,7 +62,7 @@ export const PRICING_LADDER: PricingTier[] = [
       "Browse profiles, ratings, and inspection dates",
       "Sample CSV export (25 rows)",
       "1 provider watchlist",
-      "2 req/sec \u00B7 20 req/day \u00B7 60 req/7 days",
+      "2 req/min \u00B7 20 req/day \u00B7 60 req/7 days",
     ],
     limit: "No nearby search \u00B7 no compare \u00B7 basic fields only \u00B7 not for ongoing business workflows",
     pricingLogic:
@@ -81,7 +81,7 @@ export const PRICING_LADDER: PricingTier[] = [
       "CSV & Excel export (500 rows)",
       "15 provider watchlists with alerts",
       "Standard fields incl. phone, coordinates, specialisms",
-      "10 req/sec \u00B7 500 req/day",
+      "10 req/min \u00B7 500 req/day",
     ],
     limit: "Built to prove the data in a real workflow \u00B7 standard fields only",
     pricingLogic:
@@ -102,7 +102,7 @@ export const PRICING_LADDER: PricingTier[] = [
       "3 named users included",
       "Extra users at \u00A315 + VAT / user / month",
       "Priority support for small-team workflows",
-      "25 req/sec \u00B7 2,000 req/day",
+      "25 req/min \u00B7 2,000 req/day",
     ],
     limit: "No webhooks \u00B7 standard fields",
     pricingLogic:
@@ -122,7 +122,7 @@ export const PRICING_LADDER: PricingTier[] = [
       "500 provider monitors",
       "10 named users included",
       "Operational onboarding support",
-      "60 req/sec \u00B7 10,000 req/day",
+      "60 req/min \u00B7 10,000 req/day",
     ],
     limit: "For higher limits or custom terms \u2014 see Enterprise.",
     pricingLogic:
@@ -250,10 +250,10 @@ export const PLAN_NEXT_STEP: Record<string, string> = {
 };
 
 export const PLAN_LIMIT_SUMMARY: Record<string, string> = {
-  free: "2 req/sec \u00B7 20 req/day \u00B7 60 req/7 days",
-  starter: "10 req/sec \u00B7 500 req/day",
-  pro: "25 req/sec \u00B7 2,000 req/day",
-  business: "60 req/sec \u00B7 10,000 req/day",
+  free: "2 req/min \u00B7 20 req/day \u00B7 60 req/7 days",
+  starter: "10 req/min \u00B7 500 req/day",
+  pro: "25 req/min \u00B7 2,000 req/day",
+  business: "60 req/min \u00B7 10,000 req/day",
   enterprise: "Custom limits",
 };
 
