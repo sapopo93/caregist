@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import LoginPromptModal from "@/components/LoginPromptModal";
+import { trackEvent } from "@/lib/analytics";
 
 export default function MonitorButton({ slug }: { slug: string }) {
   const [monitoring, setMonitoring] = useState(false);
@@ -47,10 +48,14 @@ export default function MonitorButton({ slug }: { slug: string }) {
         });
         if (res.status === 403) {
           const data = await res.json().catch(() => ({}));
-          alert(data.detail || "Monitor limit reached. Upgrade for more.");
+          void trackEvent("upgrade_click", "watchlist_limit_prompt", { slug, target_tier: "starter" });
+          alert(data.detail || "Monitor limit reached. Upgrade to Starter for more watchlists.");
           return;
         }
-        if (res.ok) setMonitoring(true);
+        if (res.ok) {
+          setMonitoring(true);
+          void trackEvent("watchlist_created", "provider_monitor_button", { slug });
+        }
       }
     } catch {
       // silently fail

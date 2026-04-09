@@ -91,9 +91,13 @@ export default function ExportCSVButton({ exportUrl }: { exportUrl: string }) {
 
       {showUpgrade && isFree && (
         <span className="text-xs text-dusk ml-2">
-          Showing up to 25 rows.{" "}
-          <a href="/pricing" className="text-clay underline">
-            Upgrade for full export
+          Showing up to 25 rows. Starter unlocks workflow-sized exports, nearby search, and recurring use.{" "}
+          <a
+            href="/pricing"
+            className="text-clay underline"
+            onClick={() => void trackEvent("upgrade_click", "export_limit_prompt", { tier: "free", target_tier: "starter" })}
+          >
+            Upgrade to Starter
           </a>
         </span>
       )}

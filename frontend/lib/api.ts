@@ -1,14 +1,8 @@
-// Server-side only — no NEXT_PUBLIC_ prefix, key stays on server
-const API_BASE = process.env.API_URL || "http://localhost:8000";
-const API_KEY = process.env.API_KEY || "dev_key_change_me";
+import { getPublicApiBase, getServerApiBase, getServerApiKey } from "@/lib/server-api-config";
 
-// Warn loudly if env vars are missing (visible in Vercel function logs)
-if (!process.env.API_URL) {
-  console.warn("[caregist] API_URL env var is not set — falling back to localhost:8000");
-}
-if (!process.env.API_KEY) {
-  console.warn("[caregist] API_KEY env var is not set — using default dev key");
-}
+// Server-side only — no NEXT_PUBLIC_ prefix, key stays on server
+const API_BASE = getServerApiBase();
+const API_KEY = getServerApiKey();
 
 async function apiFetch(path: string, params?: Record<string, string | undefined>) {
   const url = new URL(`${API_BASE}${path}`);
@@ -98,7 +92,7 @@ export async function getComparisonByToken(token: string) {
 }
 
 // Region stats and city endpoints are public (no auth needed)
-const PUBLIC_API = process.env.NEXT_PUBLIC_API_URL || API_BASE;
+const PUBLIC_API = getPublicApiBase();
 
 async function publicFetch(path: string, params?: Record<string, string | undefined>) {
   const url = new URL(`${PUBLIC_API}${path}`);

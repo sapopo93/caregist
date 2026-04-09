@@ -3,6 +3,26 @@
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { trackEvent } from "@/lib/analytics";
+
+const PLAN_COPY: Record<string, { title: string; body: string }> = {
+  free: {
+    title: "Start with Free",
+    body: "Built for evaluation: test the dashboard, sample exports, and one provider watchlist before moving into a paid workflow.",
+  },
+  starter: {
+    title: "Start Starter",
+    body: "Starter is the first real workflow tier: nearby search, cleaned exports, and enough monitoring to replace a manual process.",
+  },
+  pro: {
+    title: "Start Pro",
+    body: "Pro is the recommended small-team production tier with 3 included users, broader monitoring, and enough usage for recurring work.",
+  },
+  business: {
+    title: "Start Business",
+    body: "Business is for operational integration: fuller data access, webhooks, higher limits, and stronger admin support.",
+  },
+};
 
 function SignupForm() {
   const router = useRouter();
@@ -29,6 +49,8 @@ function SignupForm() {
     setLoading(true);
 
     try {
+      void trackEvent("plan_selection", "signup_form", { plan });
+
       const res = await fetch("/api/v1/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -72,9 +94,9 @@ function SignupForm() {
 
   return (
     <div className="max-w-md mx-auto px-6 py-16">
-      <h1 className="text-3xl font-bold text-center mb-2">Create your account</h1>
+      <h1 className="text-3xl font-bold text-center mb-2">{PLAN_COPY[plan]?.title || "Create your account"}</h1>
       <p className="text-dusk text-center mb-8">
-        {plan === "free" ? "Get a free API key instantly." : `Sign up for the ${plan} plan.`}
+        {PLAN_COPY[plan]?.body || "Create your CareGist account."}
       </p>
 
       {error && (
@@ -123,7 +145,7 @@ function SignupForm() {
           disabled={loading}
           className="w-full py-3 bg-clay text-white rounded-lg font-medium hover:bg-bark transition-colors disabled:opacity-50"
         >
-          {loading ? "Creating account..." : "Create Account"}
+          {loading ? "Creating account..." : plan === "free" ? "Create evaluation account" : `Continue to ${plan.charAt(0).toUpperCase()}${plan.slice(1)}`}
         </button>
       </form>
 

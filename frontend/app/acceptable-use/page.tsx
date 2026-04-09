@@ -83,7 +83,7 @@ export default function AcceptableUsePage() {
           <h2 className="text-xl font-bold text-bark mt-8 mb-3">4. API usage rules</h2>
 
           <h3 className="text-lg font-semibold text-bark mt-4 mb-2">4.1 Rate limits</h3>
-          <p>Each subscription tier has defined rate limits (per minute, daily, and monthly). These are enforced automatically. When you exceed a limit:</p>
+          <p>Each subscription tier has defined burst, daily, 7-day, and monthly limits. These are enforced automatically. When you exceed a limit:</p>
           <ul className="list-disc pl-6 space-y-1">
             <li>The API returns HTTP 429 (Too Many Requests)</li>
             <li>Response headers indicate your remaining quota and reset time</li>
@@ -94,7 +94,7 @@ export default function AcceptableUsePage() {
           <ul className="list-disc pl-6 space-y-1">
             <li>Store API keys securely (environment variables, secrets managers) — never in source code, client-side JavaScript, or public repositories</li>
             <li>Rotate your API key immediately if you suspect it has been compromised (use the /api/v1/auth/rotate-key endpoint)</li>
-            <li>Each API key is for use by a single organisation. Contact us for multi-team arrangements.</li>
+            <li>Each API key is for use by a single organisation. Pro includes 3 named users, Business includes 10, and larger arrangements run through Enterprise.</li>
           </ul>
 
           <h3 className="text-lg font-semibold text-bark mt-4 mb-2">4.3 Attribution</h3>

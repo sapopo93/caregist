@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import LoginPromptModal from "@/components/LoginPromptModal";
+import { trackEvent } from "@/lib/analytics";
 
 export default function ComparisonActions({ slugs }: { slugs: string[] }) {
   const [showLogin, setShowLogin] = useState(false);
@@ -88,7 +89,13 @@ export default function ComparisonActions({ slugs }: { slugs: string[] }) {
       {error && (
         <span className="text-xs text-alert">
           {error}{" "}
-          <a href="/pricing" className="underline">Upgrade</a>
+          <a
+            href="/pricing"
+            className="underline"
+            onClick={() => void trackEvent("upgrade_click", "comparison_limit_prompt", { target_tier: "starter" })}
+          >
+            Upgrade to Starter
+          </a>
         </span>
       )}
 

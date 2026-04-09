@@ -70,6 +70,11 @@ async def register_webhook(
         )
 
     logger.info("Webhook registered for user %d: %s", user_id, url)
+    try:
+        from api.utils.analytics import log_event
+        await log_event("webhook_configured", "webhook_api", user_id=user_id, meta={"events": body.events, "url": url})
+    except Exception:
+        pass
     return {
         "id": row["id"],
         "url": url,
@@ -112,11 +117,11 @@ async def list_webhooks(_auth: dict = Depends(validate_api_key)) -> dict:
     }
 
 
-@router.delete("/{webhook_id}", status_code=204)
+@router.delete("/{webhook_id}")
 async def delete_webhook(
     webhook_id: int,
     _auth: dict = Depends(validate_api_key),
-) -> None:
+) -> dict:
     """Deactivate a webhook subscription."""
     _require_webhook_access(_auth)
 
@@ -128,3 +133,4 @@ async def delete_webhook(
 
     if result == "UPDATE 0":
         raise HTTPException(status_code=404, detail="Webhook not found.")
+    return {"deleted": True}

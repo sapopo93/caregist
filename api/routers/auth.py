@@ -7,28 +7,37 @@ import logging
 import secrets
 from datetime import datetime, timedelta, timezone
 
-import bcrypt
+try:
+    import bcrypt
+except ImportError:  # pragma: no cover - local fallback when bcrypt is unavailable
+    bcrypt = None
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, EmailStr, Field
 
 from api.middleware.ip_rate_limit import check_ip_rate_limit
 
-from api.config import settings, get_tier_config
+from api.config import get_subscription_entitlements, get_tier_config, settings
 from api.database import get_connection
 
 logger = logging.getLogger("caregist.auth")
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
 
-_DUMMY_HASH = bcrypt.hashpw(b"dummy", bcrypt.gensalt()).decode()
+if bcrypt:
+    _DUMMY_HASH = bcrypt.hashpw(b"dummy", bcrypt.gensalt()).decode()
+else:
+    _DUMMY_HASH = "fallback:dummy"
 
 
 def _hash_password(password: str) -> str:
-    return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+    if bcrypt:
+        return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+    salt = secrets.token_hex(16)
+    return f"{salt}:{hashlib.sha256(f'{salt}:{password}'.encode()).hexdigest()}"
 
 
 def _verify_password(password: str, stored: str) -> bool:
     # bcrypt hashes start with $2b$
-    if stored.startswith("$2b$"):
+    if bcrypt and stored.startswith("$2b$"):
         return bcrypt.checkpw(password.encode(), stored.encode())
     # Legacy SHA-256 fallback: "salt:hash" format
     if ":" in stored:
@@ -72,6 +81,7 @@ async def register(req: RegisterRequest, _ip=Depends(check_ip_rate_limit)) -> di
         api_key = f"cg_{secrets.token_urlsafe(32)}"
 
         async with conn.transaction():
+            free_entitlements = get_subscription_entitlements("free")
             user = await conn.fetchrow(
                 """INSERT INTO users (email, name, password_hash, verification_token, is_verified)
                    VALUES ($1, $2, $3, $4, true)
@@ -86,9 +96,15 @@ async def register(req: RegisterRequest, _ip=Depends(check_ip_rate_limit)) -> di
             )
 
             await conn.execute(
-                """INSERT INTO subscriptions (user_id, tier, status)
-                   VALUES ($1, 'free', 'active')""",
+                """INSERT INTO subscriptions (
+                       user_id, tier, status, included_users, extra_seats, max_users, seat_price_gbp
+                   )
+                   VALUES ($1, 'free', 'active', $2, $3, $4, $5)""",
                 user["id"],
+                free_entitlements["included_users"],
+                free_entitlements["extra_seats"],
+                free_entitlements["max_users"],
+                free_entitlements["seat_price_gbp"],
             )
 
     return {
@@ -110,7 +126,8 @@ async def login(req: LoginRequest, _ip=Depends(check_ip_rate_limit)) -> dict:
         )
 
     if not user:
-        bcrypt.checkpw(req.password.encode(), _DUMMY_HASH.encode())
+        if bcrypt:
+            bcrypt.checkpw(req.password.encode(), _DUMMY_HASH.encode())
         raise HTTPException(status_code=401, detail="Invalid email or password.")
     if not _verify_password(req.password, user["password_hash"]):
         raise HTTPException(status_code=401, detail="Invalid email or password.")

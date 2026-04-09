@@ -25,21 +25,30 @@ async def validate_api_key(api_key: str | None = Security(api_key_header)) -> di
     if api_key == settings.api_master_key:
         tier = "admin"
         remaining = check_rate_limit(api_key, tier)
-        return {"name": "master", "tier": tier, "remaining": remaining}
+        return {
+            "key_id": None,
+            "name": "master",
+            "email": None,
+            "user_id": None,
+            "tier": tier,
+            "remaining": remaining,
+        }
 
     # Look up key in database
     async with get_connection() as conn:
         row = await conn.fetchrow(
-            "SELECT name, tier, is_active FROM api_keys WHERE key = $1",
+            "SELECT id, name, email, user_id, tier, is_active FROM api_keys WHERE key = $1",
             api_key,
         )
 
     if not row:
         raise HTTPException(status_code=401, detail="Invalid API key.")
-    if not row["is_active"]:
+    row_data = dict(row)
+
+    if not row_data.get("is_active", True):
         raise HTTPException(status_code=403, detail="API key is disabled.")
 
-    tier = row["tier"] or "free"
+    tier = row_data.get("tier") or "free"
     remaining = check_rate_limit(api_key, tier)
 
     # Update last_used_at
@@ -49,4 +58,11 @@ async def validate_api_key(api_key: str | None = Security(api_key_header)) -> di
     except Exception as exc:
         logger.warning("Failed to update last_used_at: %s", exc)
 
-    return {"name": row["name"], "tier": tier, "remaining": remaining}
+    return {
+        "key_id": row_data.get("id"),
+        "name": row_data.get("name"),
+        "email": row_data.get("email"),
+        "user_id": row_data.get("user_id"),
+        "tier": tier,
+        "remaining": remaining,
+    }

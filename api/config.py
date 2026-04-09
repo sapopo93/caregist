@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     stripe_webhook_secret: str = ""
     stripe_price_starter: str = ""
     stripe_price_pro: str = ""
+    stripe_price_pro_seat: str = ""
     stripe_price_business: str = ""
     stripe_price_enterprise: str = ""
     default_page_size: int = 20
@@ -50,23 +51,123 @@ settings.validate_production()
 # --- Tier definitions (single source of truth) ---
 
 # Tier limits — staircase designed around job-to-be-done, not just usage caps.
-#
-# Free:       evaluation — taste the data, hit friction fast, upgrade to solve a real problem
-#             100/day keeps it useful for search/browse without enabling recurring workflows
-# Starter:    first real workflow — enough for a solo consultant or operator to act on data daily
-#             500/day × 30 = 15,000/month (cap at 10,000 — hits it mid-month in heavy use)
-# Pro:        small-team production use — broader monitoring and more volume
-#             2,000/day × 30 = 60,000/month (cap at 50,000 — team hits it in week 3)
-# Business:   operational integration — high limits, full fields, workflow embedding
-#             10,000/day × 30 = 300,000/month (cap at 250,000)
-# Enterprise: custom — negotiated per contract
+# Free is intentionally constrained to evaluation. Paid tiers are built around the
+# first solo workflow, small-team production use, and higher-volume operational integration.
 TIERS = {
-    "free":       {"rate": 5,    "daily": 100,    "monthly": 3000,     "page_size": 5,   "fields": "basic",    "nearby": False, "export": 25,    "compare": 0,  "webhooks": False, "monitors": 1},
-    "starter":    {"rate": 30,   "daily": 500,    "monthly": 10000,    "page_size": 20,  "fields": "standard", "nearby": True,  "export": 500,   "compare": 3,  "webhooks": False, "monitors": 15},
-    "pro":        {"rate": 60,   "daily": 2000,   "monthly": 50000,    "page_size": 50,  "fields": "standard", "nearby": True,  "export": 5000,  "compare": 5,  "webhooks": False, "monitors": 100},
-    "business":   {"rate": 200,  "daily": 10000,  "monthly": 250000,   "page_size": 100, "fields": "full",     "nearby": True,  "export": 10000, "compare": 10, "webhooks": True,  "monitors": 500},
-    "enterprise": {"rate": 500,  "daily": 50000,  "monthly": 1500000,  "page_size": 100, "fields": "full",     "nearby": True,  "export": 50000, "compare": 20, "webhooks": True,  "monitors": 5000},
-    "admin":      {"rate": 99999,"daily": 9999999,"monthly": 99999999, "page_size": 100, "fields": "full",     "nearby": True,  "export": 99999, "compare": 99, "webhooks": False, "monitors": 99999},
+    "free": {
+        "rate": 2,
+        "rate_window_seconds": 1,
+        "daily": 20,
+        "rolling_7d": 60,
+        "monthly": 300,
+        "page_size": 5,
+        "fields": "basic",
+        "nearby": False,
+        "export": 25,
+        "compare": 0,
+        "webhooks": False,
+        "monitors": 1,
+        "included_users": 1,
+        "base_price_gbp": 0,
+        "seat_price_gbp": 0,
+        "extra_seat_min_tier": None,
+        "next_tier": "starter",
+    },
+    "starter": {
+        "rate": 10,
+        "rate_window_seconds": 1,
+        "daily": 500,
+        "rolling_7d": 3500,
+        "monthly": 10000,
+        "page_size": 20,
+        "fields": "standard",
+        "nearby": True,
+        "export": 500,
+        "compare": 3,
+        "webhooks": False,
+        "monitors": 15,
+        "included_users": 1,
+        "base_price_gbp": 39,
+        "seat_price_gbp": 0,
+        "extra_seat_min_tier": None,
+        "next_tier": "pro",
+    },
+    "pro": {
+        "rate": 25,
+        "rate_window_seconds": 1,
+        "daily": 2000,
+        "rolling_7d": 14000,
+        "monthly": 50000,
+        "page_size": 50,
+        "fields": "standard",
+        "nearby": True,
+        "export": 5000,
+        "compare": 5,
+        "webhooks": False,
+        "monitors": 100,
+        "included_users": 3,
+        "base_price_gbp": 99,
+        "seat_price_gbp": 15,
+        "extra_seat_min_tier": "pro",
+        "next_tier": "business",
+    },
+    "business": {
+        "rate": 60,
+        "rate_window_seconds": 1,
+        "daily": 10000,
+        "rolling_7d": 70000,
+        "monthly": 250000,
+        "page_size": 100,
+        "fields": "full",
+        "nearby": True,
+        "export": 10000,
+        "compare": 10,
+        "webhooks": True,
+        "monitors": 500,
+        "included_users": 10,
+        "base_price_gbp": 399,
+        "seat_price_gbp": 15,
+        "extra_seat_min_tier": "business",
+        "next_tier": "enterprise",
+    },
+    "enterprise": {
+        "rate": 200,
+        "rate_window_seconds": 1,
+        "daily": 50000,
+        "rolling_7d": 350000,
+        "monthly": 1500000,
+        "page_size": 100,
+        "fields": "full",
+        "nearby": True,
+        "export": 50000,
+        "compare": 20,
+        "webhooks": True,
+        "monitors": 5000,
+        "included_users": 10,
+        "base_price_gbp": 0,
+        "seat_price_gbp": 15,
+        "extra_seat_min_tier": "business",
+        "next_tier": None,
+    },
+    "admin": {
+        "rate": 99999,
+        "rate_window_seconds": 1,
+        "daily": 9999999,
+        "rolling_7d": 99999999,
+        "monthly": 99999999,
+        "page_size": 100,
+        "fields": "full",
+        "nearby": True,
+        "export": 99999,
+        "compare": 99,
+        "webhooks": True,
+        "monitors": 99999,
+        "included_users": 99999,
+        "base_price_gbp": 0,
+        "seat_price_gbp": 0,
+        "extra_seat_min_tier": "pro",
+        "next_tier": None,
+    },
 }
 
 # Fields included in the free-tier basic CSV export
@@ -117,6 +218,44 @@ def get_tier_config(tier: str) -> dict:
     if normalized.startswith("enterprise"):
         return TIERS["enterprise"]
     return TIERS["free"]
+
+
+def get_tier_price_gbp(tier: str) -> int:
+    return int(get_tier_config(tier).get("base_price_gbp", 0))
+
+
+def get_included_user_count(tier: str) -> int:
+    return int(get_tier_config(tier).get("included_users", 1))
+
+
+def get_seat_price_gbp(tier: str) -> int:
+    return int(get_tier_config(tier).get("seat_price_gbp", 0))
+
+
+def get_next_tier(tier: str) -> str | None:
+    return get_tier_config(tier).get("next_tier")
+
+
+def allows_extra_seats(tier: str) -> bool:
+    return get_seat_price_gbp(tier) > 0
+
+
+def get_max_users(tier: str, extra_seats: int = 0) -> int:
+    base = get_included_user_count(tier)
+    return base + max(0, extra_seats) if allows_extra_seats(tier) else base
+
+
+def get_subscription_entitlements(tier: str, extra_seats: int = 0) -> dict[str, int | str | bool | None]:
+    config = get_tier_config(tier)
+    return {
+        "tier": tier,
+        "included_users": get_included_user_count(tier),
+        "extra_seats": max(0, extra_seats),
+        "max_users": get_max_users(tier, extra_seats),
+        "seat_price_gbp": get_seat_price_gbp(tier),
+        "allows_extra_seats": allows_extra_seats(tier),
+        "next_tier": config.get("next_tier"),
+    }
 
 
 def get_allowed_fields(tier: str) -> set[str]:

@@ -108,6 +108,13 @@ export default function WhyCareGistPage() {
         </p>
       </div>
 
+      <div className="bg-cream border border-stone rounded-xl p-6 mb-10">
+        <h2 className="text-2xl font-bold text-bark mb-3">Where CareGist fits</h2>
+        <p className="text-sm text-charcoal">
+          LaingBuisson is strong for periodic strategy and institutional intelligence. CareGist is built for operational, continuous-use workflows at a fraction of the cost.
+        </p>
+      </div>
+
       <h2 className="text-2xl font-bold mb-6">Who CareGist launches for</h2>
       <div className="grid md:grid-cols-2 gap-4 mb-10">
         <div className="bg-cream border border-stone rounded-lg p-5">

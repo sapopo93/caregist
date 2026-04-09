@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 
 import PricingCTA from "@/components/PricingCTA";
 import TrackedLink from "@/components/TrackedLink";
-import { LAUNCH_PRICING, PRICING_LADDER, PROVIDER_TIERS } from "@/lib/caregist-config";
+import { LAUNCH_PRICING, PLAN_NEXT_STEP, PRICING_LADDER, PROVIDER_TIERS } from "@/lib/caregist-config";
 
 export const metadata: Metadata = {
   title: "Pricing — CareGist",
@@ -41,7 +41,7 @@ export default function PricingPage() {
           ))}
         </div>
         <p className="font-mono text-xs text-dusk mt-4 pt-4 border-t border-white/10">
-          Benchmark: comparable directory listings £34–£69 + VAT/mo · market intelligence reports £950–£3,895/report
+          CQC provides the raw regulatory feed. CareGist makes it usable inside workflows through dashboard, exports, monitoring, and API access.
         </p>
       </div>
 
@@ -49,7 +49,7 @@ export default function PricingPage() {
         {PRICING_LADDER.map((tier, i) => (
           <div
             key={tier.tier}
-            className={`bg-cream border rounded-xl p-6 ${tier.recommended ? "border-clay shadow-md" : "border-stone"}`}
+            className={`bg-cream border rounded-xl p-6 ${tier.recommended ? "border-2 border-clay shadow-lg ring-2 ring-amber/20" : "border-stone"}`}
             style={{ borderLeftWidth: 4, borderLeftColor: tier.color }}
           >
             <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-4">
@@ -58,12 +58,12 @@ export default function PricingPage() {
                   <h2 className="text-xl font-bold text-bark">{tier.tier}</h2>
                   {i === 0 && (
                     <span className="font-mono text-[10px] bg-moss/15 text-moss px-2 py-0.5 rounded">
-                      ENTRY
+                      EVALUATION
                     </span>
                   )}
                   {tier.recommended && (
-                    <span className="font-mono text-[10px] bg-amber/20 text-amber px-2 py-0.5 rounded">
-                      RECOMMENDED
+                    <span className="font-mono text-[10px] bg-amber text-bark px-2 py-0.5 rounded font-bold">
+                      RECOMMENDED FOR SMALL-TEAM PRODUCTION
                     </span>
                   )}
                 </div>
@@ -87,6 +87,10 @@ export default function PricingPage() {
 
             <p className="font-mono text-xs text-dusk italic mb-3">{tier.limit}</p>
             <p className="text-sm text-dusk mb-4">{tier.pricingLogic}</p>
+            <div className="mb-4 rounded-lg bg-parchment border border-stone px-4 py-3">
+              <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-dusk mb-1">Why upgrade next</p>
+              <p className="text-sm text-bark">{PLAN_NEXT_STEP[tier.tier.toLowerCase()]}</p>
+            </div>
 
             <div className="flex flex-col sm:flex-row sm:items-center gap-4 pt-4 border-t border-stone">
               {tier.tier === "Enterprise" ? (

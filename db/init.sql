@@ -138,6 +138,10 @@ CREATE TABLE IF NOT EXISTS subscriptions (
   stripe_price_id VARCHAR(100),
   tier VARCHAR(20) NOT NULL DEFAULT 'free',
   status VARCHAR(20) NOT NULL DEFAULT 'active',
+  included_users INT NOT NULL DEFAULT 1,
+  extra_seats INT NOT NULL DEFAULT 0,
+  max_users INT NOT NULL DEFAULT 1,
+  seat_price_gbp INT NOT NULL DEFAULT 0,
   current_period_end TIMESTAMP,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
@@ -221,6 +225,23 @@ CREATE INDEX IF NOT EXISTS idx_enquiries_status ON enquiries (status);
 -- Indexes for query performance
 CREATE INDEX IF NOT EXISTS idx_api_keys_user_id ON api_keys (user_id);
 CREATE INDEX IF NOT EXISTS idx_subscriptions_user_id ON subscriptions (user_id);
+
+-- Outbound webhook subscriptions for Business and Enterprise plans
+CREATE TABLE IF NOT EXISTS webhook_subscriptions (
+  id SERIAL PRIMARY KEY,
+  user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  url TEXT NOT NULL,
+  secret TEXT NOT NULL,
+  events TEXT[] NOT NULL DEFAULT '{provider.rating_changed}',
+  active BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  last_delivery_at TIMESTAMPTZ,
+  delivery_failures INT NOT NULL DEFAULT 0,
+  UNIQUE(user_id, url)
+);
+
+CREATE INDEX IF NOT EXISTS idx_ws_user ON webhook_subscriptions (user_id);
+CREATE INDEX IF NOT EXISTS idx_ws_active ON webhook_subscriptions (active) WHERE active = TRUE;
 
 -- Password reset tokens table
 CREATE TABLE IF NOT EXISTS password_reset_tokens (

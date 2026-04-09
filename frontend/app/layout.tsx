@@ -4,14 +4,15 @@ import Link from "next/link";
 import CompareBar from "@/components/CompareBar";
 import AuthNav from "@/components/AuthNav";
 import CookieConsent from "@/components/CookieConsent";
+import SupportWidgetMount from "@/components/SupportWidgetMount";
 
 export const metadata: Metadata = {
-  title: "CareGist — UK Care Provider Directory",
+  title: "CareGist — UK Care-Provider Data Intelligence",
   description:
-    "Find and compare CQC-rated care homes, GP surgeries, dental practices, and home care agencies across England. Powered by Care Quality Commission data.",
+    "Daily-refreshed UK care-provider data for dashboard, exports, and API workflows. Cleaned, normalised, geospatial, and monitorable on top of the CQC register.",
   openGraph: {
-    title: "CareGist — UK Care Provider Directory",
-    description: "Find and compare CQC-rated care homes, GP surgeries, dental practices, and home care agencies across England.",
+    title: "CareGist — UK Care-Provider Data Intelligence",
+    description: "Daily-refreshed UK care-provider data for dashboard, exports, and API workflows.",
     siteName: "CareGist",
     type: "website",
     locale: "en_GB",
@@ -42,6 +43,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
         <CompareBar />
         <CookieConsent />
+        <SupportWidgetMount />
 
         <footer className="bg-charcoal text-stone px-6 py-8 text-sm">
           <div className="max-w-6xl mx-auto">
@@ -63,6 +65,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Link href="/cookies" className="underline hover:text-cream">Cookies</Link>
               <Link href="/pricing" className="underline hover:text-cream">Pricing</Link>
               <Link href="/api" className="underline hover:text-cream">API</Link>
+              <Link href="/search" className="underline hover:text-cream">Data Explorer</Link>
               <Link href="/find-care" className="underline hover:text-cream">Find Care</Link>
               <Link href="/groups" className="underline hover:text-cream">Care Groups</Link>
               <Link href="/why-caregist" className="underline hover:text-cream">Why CareGist</Link>

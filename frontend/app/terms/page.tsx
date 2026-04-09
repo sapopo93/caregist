@@ -54,7 +54,7 @@ export default function TermsPage() {
           <ul className="list-disc pl-6 space-y-1">
             <li>You must provide accurate information when registering.</li>
             <li>You are responsible for keeping your API key confidential. Do not share it or embed it in client-side code.</li>
-            <li>Each API key is for use by a single organisation. Contact us for multi-team arrangements.</li>
+            <li>Free and Starter are single-user tiers. Pro includes 3 named users, Business includes 10, and larger arrangements run through Enterprise.</li>
             <li>You may delete your account at any time by emailing <a href="mailto:support@caregist.co.uk" className="text-clay underline">support@caregist.co.uk</a>.</li>
           </ul>
         </section>
@@ -79,7 +79,7 @@ export default function TermsPage() {
           <h2 className="text-xl font-bold text-bark mt-8 mb-3">6. Subscriptions and billing</h2>
           <ul className="list-disc pl-6 space-y-1">
             <li>Paid plans are billed monthly via Stripe. Prices are in GBP and exclude VAT where applicable.</li>
-            <li>You can upgrade, downgrade, or cancel at any time. Changes take effect at the next billing cycle.</li>
+            <li>You can upgrade, downgrade, or cancel at any time. Subscription changes are processed through Stripe and reflected in your CareGist entitlements.</li>
             <li>Cancellation reverts your account to the Free tier. No refunds are provided for partial months.</li>
             <li>We may change pricing with 30 days&apos; written notice. Existing subscriptions continue at the old price until renewal.</li>
           </ul>

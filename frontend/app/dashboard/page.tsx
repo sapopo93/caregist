@@ -6,12 +6,14 @@ import { useRouter } from "next/navigation";
 
 import DeleteAccountButton from "@/components/DeleteAccountButton";
 import { trackEvent } from "@/lib/analytics";
+import { PLAN_LIMIT_SUMMARY, PLAN_NEXT_STEP, PLAN_PRIMARY_CTA } from "@/lib/caregist-config";
 
 export default function DashboardPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [apiKey, setApiKey] = useState("");
   const [tier, setTier] = useState("free");
+  const [subscription, setSubscription] = useState<any>(null);
   const [copied, setCopied] = useState(false);
 
   const handleLogout = () => {
@@ -29,6 +31,14 @@ export default function DashboardPage() {
     if (stored) setUser(JSON.parse(stored));
     setApiKey(key);
     setTier(t);
+    if (key) {
+      fetch("/api/v1/billing/subscription", {
+        headers: { "X-API-Key": key },
+      })
+        .then((res) => res.json())
+        .then((data) => setSubscription(data))
+        .catch(() => {});
+    }
   }, []);
 
   const copyKey = () => {
@@ -47,14 +57,43 @@ export default function DashboardPage() {
     );
   }
 
-  const tierInfo: Record<string, { limit: string; features: string }> = {
-    free: { limit: "5 req/min · 100/day", features: "Evaluate search, sample exports, and one provider monitor" },
-    starter: { limit: "30 req/min · 500/day", features: "Nearby search, 500-row export, compare, and 15 monitors" },
-    pro: { limit: "60 req/min · 2,000/day", features: "5,000-row export, 100 monitors, and heavier recurring analysis" },
-    business: { limit: "200 req/min · 10,000/day", features: "Full field access, 10,000-row export, webhooks, and high-volume integration workflows" },
+  const tierInfo: Record<string, { limit: string; features: string; cta: string; next: string }> = {
+    free: {
+      limit: PLAN_LIMIT_SUMMARY.free,
+      features: "Built for evaluation: browse providers, test the data, sample exports, and monitor one provider.",
+      cta: PLAN_PRIMARY_CTA.free,
+      next: PLAN_NEXT_STEP.free,
+    },
+    starter: {
+      limit: PLAN_LIMIT_SUMMARY.starter,
+      features: "First real workflow: nearby search, 500-row exports, comparisons, and 15 provider watchlists.",
+      cta: PLAN_PRIMARY_CTA.starter,
+      next: PLAN_NEXT_STEP.starter,
+    },
+    pro: {
+      limit: PLAN_LIMIT_SUMMARY.pro,
+      features: "Small-team production use: 5,000-row exports, 100 monitors, 3 named users, and daily operational headroom.",
+      cta: PLAN_PRIMARY_CTA.pro,
+      next: PLAN_NEXT_STEP.pro,
+    },
+    business: {
+      limit: PLAN_LIMIT_SUMMARY.business,
+      features: "Operational integration: full fields, webhooks, 10,000-row exports, 500 monitors, and stronger admin support.",
+      cta: PLAN_PRIMARY_CTA.business,
+      next: PLAN_NEXT_STEP.business,
+    },
   };
 
   const info = tierInfo[tier] || tierInfo.free;
+  const entitlements = subscription?.entitlements;
+  const seatSummary = entitlements
+    ? `${entitlements.included_users} included user${entitlements.included_users === 1 ? "" : "s"}${entitlements.extra_seats ? ` + ${entitlements.extra_seats} extra seat${entitlements.extra_seats === 1 ? "" : "s"}` : ""}`
+    : tier === "pro"
+      ? "3 included users"
+      : tier === "business"
+        ? "10 included users"
+        : "1 included user";
+  const upgradeHref = tier === "business" ? "mailto:enterprise@caregist.co.uk?subject=CareGist+Enterprise" : "/pricing";
 
   return (
     <div className="max-w-4xl mx-auto px-6 py-12">
@@ -77,16 +116,19 @@ export default function DashboardPage() {
           <span className="px-3 py-1 rounded-full bg-moss text-white text-sm font-medium capitalize">{tier}</span>
         </div>
         <p className="text-dusk text-sm mb-1">Rate limit: {info.limit}</p>
-        <p className="text-dusk text-sm mb-4">Includes: {info.features}</p>
-        {tier === "free" && (
+        <p className="text-dusk text-sm mb-1">Includes: {info.features}</p>
+        <p className="text-dusk text-sm mb-4">Users: {seatSummary}</p>
+        <div className="rounded-lg bg-parchment border border-stone p-4">
+          <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-dusk mb-1">Next step</p>
+          <p className="text-sm text-bark mb-3">{info.next}</p>
           <Link
-            href="/pricing"
+            href={upgradeHref}
             className="text-clay underline text-sm"
-            onClick={() => void trackEvent("pricing_cta_click", "dashboard_plan_card", { tier: "free", action: "upgrade" })}
+            onClick={() => void trackEvent("upgrade_click", "dashboard_plan_card", { tier, target: tier === "business" ? "enterprise" : undefined })}
           >
-            Upgrade your plan
+            {info.cta}
           </Link>
-        )}
+        </div>
       </div>
 
       <div className="grid md:grid-cols-2 gap-6 mb-6">
@@ -131,9 +173,54 @@ export default function DashboardPage() {
         <p className="text-sm text-dusk mt-3">
           Pass this as <code className="bg-parchment px-1 rounded">X-API-Key</code> in API requests.
         </p>
+        {tier === "free" && (
+          <p className="text-xs text-dusk mt-3">
+            Free is built for evaluation. Upgrade to Starter when you need nearby search, larger exports, or a workflow you will run more than occasionally.
+          </p>
+        )}
       </div>
 
-      <div className="bg-cream border border-stone rounded-lg p-6">
+      <div className="grid md:grid-cols-2 gap-6">
+        <div className="bg-cream border border-stone rounded-lg p-6">
+          <h2 className="text-xl font-bold mb-3">Team and attribution</h2>
+          <p className="text-dusk text-sm mb-3">
+            {tier === "pro" || tier === "business"
+              ? `This plan includes named-user access so teams can avoid shared passwords and keep activity attributable. ${seatSummary}.`
+              : "Free and Starter are single-user tiers. Upgrade to Pro when multiple people need their own logins and clearer accountability."}
+          </p>
+          <p className="text-xs text-dusk mb-4">
+            {tier === "pro" || tier === "business"
+              ? "Additional named users are priced at £15 + VAT / user / month and provisioned against your current plan entitlements."
+              : "Pro includes 3 users. Additional users are £15 + VAT / user / month."}
+          </p>
+          <Link
+            href={upgradeHref}
+            className="text-clay underline text-sm"
+            onClick={() => void trackEvent("seat_addon_click", "dashboard_team_card", { tier })}
+          >
+            {tier === "business" ? "Contact sales" : tier === "pro" ? "Upgrade to Business" : "Upgrade to Pro"}
+          </Link>
+        </div>
+
+        <div className="bg-cream border border-stone rounded-lg p-6">
+          <h2 className="text-xl font-bold mb-3">Webhooks and integrations</h2>
+          <p className="text-dusk text-sm mb-3">
+            Business and Enterprise can register outbound webhooks for provider rating changes. Starter and Pro keep the focus on dashboard, exports, monitoring, and direct API use.
+          </p>
+          <p className="text-xs text-dusk mb-4">
+            The current supported webhook event is <code className="bg-parchment px-1 rounded">provider.rating_changed</code>.
+          </p>
+          <Link
+            href={tier === "business" ? "/api" : "/pricing"}
+            className="text-clay underline text-sm"
+            onClick={() => void trackEvent("upgrade_click", "dashboard_webhook_card", { tier, target: "business" })}
+          >
+            {tier === "business" ? "Review webhook docs" : "Upgrade to Business"}
+          </Link>
+        </div>
+      </div>
+
+      <div className="bg-cream border border-stone rounded-lg p-6 mt-6">
         <h2 className="text-xl font-bold mb-3">Quick start</h2>
         <p className="text-dusk text-sm mb-4">
           Typical flow: search in the dashboard, export a shortlist, then automate recurring checks through the API when the workflow proves out.

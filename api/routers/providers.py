@@ -11,7 +11,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from fastapi.responses import StreamingResponse
 
-from api.config import BASIC_CSV_FIELDS, filter_fields, get_tier_config, settings
+from api.config import BASIC_CSV_FIELDS, filter_fields, get_next_tier, get_tier_config, settings
 from api.database import get_connection
 from api.middleware.auth import validate_api_key
 from api.middleware.rate_limit import add_rate_limit_headers
@@ -447,9 +447,10 @@ async def create_monitor(
     async with get_connection() as conn:
         count_row = await conn.fetchrow(COUNT_USER_MONITORS, user_id)
         if count_row and count_row["total"] >= max_monitors:
+            next_tier = get_next_tier(tier)
             raise HTTPException(
                 status_code=403,
-                detail=f"Monitor limit reached ({max_monitors}). Upgrade for more monitors.",
+                detail=f"Monitor limit reached ({max_monitors}). Upgrade to {next_tier.title() if next_tier else 'a higher plan'} for more monitors.",
             )
         row = await conn.fetchrow(INSERT_MONITOR, user_id, provider_id)
 

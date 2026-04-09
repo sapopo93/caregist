@@ -1,8 +1,8 @@
 # CareGist — Technical Completion Report
 
 **Prepared for:** Prospective investors
-**Date:** 28 March 2026
-**Status:** Product complete. Ready for deployment and first customers.
+**Date:** 4 April 2026
+**Status:** Product deployed. Live at caregist.co.uk. Ready for first customers.
 
 ---
 
@@ -35,64 +35,95 @@ The data pipeline extracts from the CQC public API, normalises UK-specific field
 
 ### API (the product)
 
-15+ REST endpoints serving provider data from PostgreSQL + PostGIS:
+17 route modules and 15+ REST endpoints serving provider data from PostgreSQL + PostGIS:
 
 - **Search** — Full-text search with region, rating, service type, postcode filters, 7 sort options
 - **Nearby** — Geographic radius search using PostGIS spatial indexes
-- **Compare** — Side-by-side comparison of up to 3 providers
+- **Compare** — Side-by-side comparison of up to 10 providers (tier-dependent)
 - **Export** — CSV download of search results (up to 10,000 rows)
 - **Detail** — Complete provider profile with all 40+ fields
 - **Lookups** — Regions, service types, ratings with provider counts
+- **City pages** — Programmatic city-level provider listings
+- **Region stats** — Local authority rating distributions
+- **Groups** — Care group aggregation across locations
+- **Provider profiles** — Enhanced claimed/paid provider listings
 
-Authentication via API key (auto-generated on registration). Rate limiting enforced per tier. All queries parameterised (no SQL injection risk).
+Authentication via API key (auto-generated on registration). Rate limiting enforced per tier (IP + key). All queries parameterised (no SQL injection risk).
 
 ### Frontend (the experience)
 
-Consumer-facing directory at feature parity with established competitors:
+Consumer-facing directory at feature parity with established competitors — 27 route groups:
 
 - Homepage with search, stats, and service type browsing
 - Search results with filter sidebar, sort dropdown, map toggle (Leaflet/OpenStreetMap)
-- Provider detail pages with CQC ratings (all 5 key questions), contact info, Google Maps link, inspection report link
+- Provider detail pages with CQC ratings (all 5 key questions), contact info, Google Maps link, inspection report link, reviews, enquiry forms
+- Provider dashboard for claimed profiles (manage listing, view analytics)
 - Region and service type browse pages
+- Rating filter pages (Outstanding/Good/Requires Improvement care homes by city)
+- Care groups directory
+- Radius finder tool (/find-care) — postcode-based nearby search
+- Compare tool — side-by-side provider comparison
+- Pricing page with 4 API tiers + 4 provider listing tiers
+- Sample report page
+- Auth flows: signup, login, forgot password
+- Admin dashboard: moderate claims, reviews, enquiries
 - Loading skeletons, error boundaries, branded 404 page
 - Per-page SEO metadata (55,818 unique title/description combinations)
 
-Brand system: warm earth-tone palette (terracotta, moss, parchment) deliberately positioned against clinical healthcare blue. Typography: Playfair Display (display), Lora (body), DM Sans (UI).
+Brand system: warm earth-tone palette (clay, bark, moss, parchment) deliberately positioned against clinical healthcare blue. Typography: Playfair Display (headings), DM Sans (body/UI).
 
 ### Billing (the revenue)
 
-Stripe integration with three tiers:
+Stripe integration with four API tiers and four provider listing tiers:
 
-| Tier | Price | Rate Limit | Features |
-|------|-------|------------|----------|
-| Free | £0 | 100 req/min | Search + basic details |
-| Starter | £49/month | 1,000 req/min | Full API + CSV export + nearby |
-| Pro | £199/month | 5,000 req/min | Everything + bulk export + priority support |
+**API Tiers (data consumers)**
 
-Self-serve flow: signup → API key generated instantly → optional Stripe checkout for paid tiers → dashboard with key display, plan info, and usage guide.
+| Tier | Price | Rate Limit | Key Features |
+|------|-------|------------|--------------|
+| Free | £0 | 2 req/sec · 20/day · 60/7 days | Evaluation only: search, basic fields, 25-row sample CSV, 1 watchlist |
+| Starter | £39 + VAT/mo | 10 req/sec · 500/day | Nearby search, compare (3), 500-row CSV, 15 monitors |
+| Pro | £99 + VAT/mo | 25 req/sec · 2,000/day | Compare (5), 5,000-row CSV, 100 monitors, 3 included users |
+| Business | £399 + VAT/mo | 60 req/sec · 10,000/day | Full fields, compare (10), 10,000-row CSV, 500 monitors, webhooks, 10 included users |
 
-Webhook handler processes subscription lifecycle (upgrades, downgrades, cancellations) and automatically adjusts API key tier and rate limits.
+**Provider Listing Tiers (supply side)**
+
+| Tier | Price | Key Features |
+|------|-------|--------------|
+| Claimed | £0 | Verified badge, inspection response |
+| Enhanced | £59 + VAT/mo | Description, 5 photos, virtual tour |
+| Premium | £89 + VAT/mo | 10 photos, priority search placement, analytics |
+| Sponsored | £129 + VAT/mo | 15 photos, sponsored badge, top placement |
+
+Self-serve flow: signup → API key generated instantly → optional Stripe checkout for paid tiers → dashboard with key display, plan info, entitlements, and usage guide.
+
+Webhook handler processes subscription lifecycle (upgrades, downgrades, cancellations) and automatically adjusts API key tier, rate limits, and persisted seat entitlements.
 
 ### Growth Features (the flywheel)
 
 | Feature | Business Purpose | Status |
 |---------|-----------------|--------|
-| Provider claiming | Providers claim listings → invest in profile → attract clients | Built (with admin moderation) |
+| Provider claiming | Providers claim listings → invest in profile → attract clients | Built (with admin moderation, multi-step flow) |
+| Enhanced profiles | Paid listings with photos, descriptions, virtual tours | Built (4 tiers: claimed → sponsored) |
 | Reviews | User-generated content → SEO + trust signals → more visitors | Built (1-5 stars, moderation queue) |
 | Enquiry forms | Lead capture → monetisable referrals to providers | Built (name, email, care type, urgency) |
-| Comparison tool | Decision support → higher engagement → longer sessions | Built (up to 3 providers side-by-side) |
+| Comparison tool | Decision support → higher engagement → longer sessions | Built (up to 10 providers, shareable links) |
+| Care groups | Group-level aggregation for multi-site operators | Built (group directory + detail pages) |
+| Provider dashboard | Claimed providers manage listing, respond to inspections | Built |
 | Admin dashboard | Operational control → moderate claims/reviews/enquiries | Built (stats, queues, approve/reject) |
+| Email queue | Transactional emails (verification, enquiries, resets) | Built (Resend integration, background processing) |
+| Rating filter pages | SEO pages for "[rating] care homes in [city]" queries | Built (Outstanding/Good/Requires Improvement) |
 
 ### Infrastructure
 
 | Component | Technology | Status |
 |-----------|-----------|--------|
-| Database | PostgreSQL 16 + PostGIS | Schema complete, seeded, indexed |
-| API | Python FastAPI + asyncpg | Built, containerised |
-| Frontend | Next.js 15 + Tailwind CSS | Built, Vercel-ready |
+| Database | PostgreSQL 16 + PostGIS | Schema complete, seeded, indexed, 6 migrations applied |
+| API | Python FastAPI + asyncpg | Built, containerised, deployed on Render |
+| Frontend | Next.js 15 + React 19 + Tailwind CSS 4 | Built, deployed on Vercel |
 | Containers | Docker + docker-compose | One-command local deployment |
-| Tests | pytest (139 passing) | Pipeline + API coverage |
-| CI/CD | Railway (API) + Vercel (frontend) configs | Deployment configs ready |
+| Tests | pytest (109 tests collected) | Pipeline + API coverage |
+| Monitoring | Sentry (API + frontend) | Error tracking + performance |
+| Hosting | Render (API) + Vercel (frontend) | Live at caregist.co.uk |
 | Data refresh | Incremental update script (CQC changes API) | Built, needs scheduling |
 
 ---
@@ -123,35 +154,36 @@ Geographic coverage: all 9 English regions. South East (9,731), London (9,266), 
 
 ### Revenue Model
 
-Three monetisation paths, all proven in the UK care market:
+Four monetisation paths, all proven in the UK care market:
 
-1. **Data API subscriptions** (Starter £49/mo, Pro £199/mo) — Highest margin (~90%), fastest to revenue
-2. **Lead generation** — Enquiry forms capture family details; providers pay £5-15 per qualified lead
-3. **Provider listings** — Claimed profiles with enhanced features; providers pay £20-100/month
+1. **Data subscriptions** (Starter £39/mo, Pro £99/mo, Business £399/mo) — Highest margin (~90%), fastest to revenue
+2. **Provider listings** (Enhanced £59/mo, Premium £89/mo, Sponsored £129/mo) — Recurring B2B revenue from supply side
+3. **Lead generation** — Enquiry forms capture family details; providers pay per qualified lead
+4. **Add-ons** — Extra monitors, benchmark reports, and white-label consulting reports
 
 ---
 
 ## What's Not Built (and doesn't need to be for launch)
 
 - Mobile app (responsive web works on mobile)
-- Email notification system (can use Resend or SendGrid when needed)
-- Analytics dashboard for providers (post-first-customer feature)
+- Provider analytics dashboard (basic stats available; full analytics post-first-customer)
 - Multi-country support (England-only is the correct scope for launch)
+- Automated CQC data refresh scheduling (script built, needs cron/scheduler)
 
 ---
 
-## Deployment Checklist (remaining)
+## Deployment Status
 
-| Step | Time | Cost |
-|------|------|------|
-| Stripe account + product setup | 20 min | Free (2.9% + 20p per transaction) |
-| Domain registration (caregist.co.uk) | 10 min | ~£8/year |
-| Deploy API to Railway | 30 min | ~£5/month |
-| Deploy frontend to Vercel | 15 min | Free (hobby tier) |
-| Deploy managed PostgreSQL | 15 min | ~£7/month (Neon free tier or Railway) |
-| Seed database | 5 min | — |
-| Stripe webhook configuration | 10 min | — |
-| **Total** | **~2 hours** | **~£12/month** |
+| Component | Status | Platform |
+|-----------|--------|----------|
+| Domain (caregist.co.uk) | Live | — |
+| API | Deployed | Render (free tier) |
+| Frontend | Deployed | Vercel |
+| Database | Deployed + seeded | Managed PostgreSQL |
+| Stripe | Configured | 3 API price IDs active |
+| Sentry | Configured | API + frontend error tracking |
+
+**Remaining:** Schedule automated CQC data refresh. Configure Resend for transactional email delivery.
 
 ---
 
@@ -178,18 +210,18 @@ Three monetisation paths, all proven in the UK care market:
 
 | Metric | Value |
 |--------|-------|
-| Total lines of code | ~11,000 |
-| Files | 80+ |
-| Test coverage | 139 tests passing |
+| Total lines of code | ~15,500 |
+| Files | 147 (source files) |
+| Test coverage | 109 tests collected |
 | Languages | Python (backend/pipeline), TypeScript (frontend) |
-| Database | PostgreSQL 16 + PostGIS (55,818 records, 8 indexes, spatial search) |
-| API endpoints | 15+ |
-| Frontend pages | 12 (homepage, search, detail, compare, pricing, signup, login, dashboard, admin, region, services, 404) |
-| Monthly infrastructure cost | ~£12 |
-| Time to deploy | ~2 hours |
+| Database | PostgreSQL 16 + PostGIS (55,818 records, 8+ indexes, spatial search) |
+| API route modules | 17 |
+| Frontend route groups | 27 |
+| Frontend components | 40 |
+| Status | Deployed and live at caregist.co.uk |
 
 ---
 
 *CareGist — the gist of good care.*
 
-*Built March 2026. Ready for customers.*
+*Built March 2026. Deployed April 2026. Live at caregist.co.uk.*

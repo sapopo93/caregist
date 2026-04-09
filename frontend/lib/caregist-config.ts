@@ -53,20 +53,20 @@ export const GATES: Record<GateKey, Gate> = {
 export const PRICING_LADDER: PricingTier[] = [
   {
     tier: "Free",
-    forWho: "Families, researchers, developers evaluating",
+    forWho: "Evaluators, researchers, and first-time product teams",
     color: "#10b981",
     price: "\u00A30",
-    priceNote: "Always free",
+    priceNote: "Built for evaluation",
     includes: [
       "Search all 55,818 providers",
       "Browse profiles, ratings, and inspection dates",
       "Sample CSV export (25 rows)",
       "1 provider watchlist",
-      "5 req/min \u00B7 100 req/day",
+      "2 req/sec \u00B7 20 req/day \u00B7 60 req/7 days",
     ],
-    limit: "No nearby search \u00B7 no compare \u00B7 basic fields only \u00B7 no recurring workflows",
+    limit: "No nearby search \u00B7 no compare \u00B7 basic fields only \u00B7 not for ongoing business workflows",
     pricingLogic:
-      "Evaluation only. Enough to confirm the data is useful — not enough to replace a paid workflow. Friction at export and monitor limits drives upgrade.",
+      "Built for evaluation. Enough to prove the data is useful and decide whether CareGist should replace manual checks, spreadsheets, or raw-feed workarounds.",
   },
   {
     tier: "Starter",
@@ -81,51 +81,52 @@ export const PRICING_LADDER: PricingTier[] = [
       "CSV & Excel export (500 rows)",
       "15 provider watchlists with alerts",
       "Standard fields incl. phone, coordinates, specialisms",
-      "30 req/min \u00B7 500 req/day",
+      "10 req/sec \u00B7 500 req/day",
     ],
     limit: "Built to prove the data in a real workflow \u00B7 standard fields only",
     pricingLogic:
-      "First real workflow tier. Enough usage to solve an actual repeated problem — tracking local competitors, monitoring a shortlist, or exporting for a report.",
+      "First real workflow tier. Enough usage to solve an actual repeated problem — local market mapping, shortlist monitoring, or recurring exports for one operator or builder.",
   },
   {
     tier: "Pro",
     forWho: "Small teams, operators, analysts, group managers",
     color: "#C8862A",
     price: "\u00A399 + VAT/mo",
-    priceNote: "Cancel anytime \u00B7 add teammates at \u00A315/user/mo",
+    priceNote: "Includes 3 users \u00B7 extra users \u00A315 + VAT/mo",
     recommended: true,
     includes: [
       "Everything in Starter",
       "Compare up to 5 providers",
       "Bulk CSV & Excel export (5,000 rows)",
       "100 provider monitors with rating-change alerts",
-      "Team seats \u2014 coming soon \u00B7 \u00A315/user/mo",
-      "Priority support",
-      "60 req/min \u00B7 2,000 req/day",
+      "3 named users included",
+      "Extra users at \u00A315 + VAT / user / month",
+      "Priority support for small-team workflows",
+      "25 req/sec \u00B7 2,000 req/day",
     ],
     limit: "No webhooks \u00B7 standard fields",
     pricingLogic:
-      "Production tier for recurring operational work. More export headroom, more monitoring coverage, and enough usage to support a small working team.",
+      "Production tier for recurring operational work. It is designed to stop shared-password use, improve accountability, and give a small team enough headroom to run the workflow daily.",
   },
   {
     tier: "Business",
     forWho: "Developers, SaaS builders, multi-site operators",
     color: "#ef4444",
     price: "\u00A3399 + VAT/mo",
-    priceNote: "Cancel anytime \u00B7 webhooks included",
+    priceNote: "Includes 10 users \u00B7 webhooks and admin support",
     includes: [
       "Everything in Pro",
       "Webhooks for rating & status changes",
       "Full field access incl. registration dates, geocode source",
       "Bulk CSV & Excel export (10,000 rows)",
       "500 provider monitors",
-      "Admin controls & audit depth",
-      "Onboarding support",
-      "200 req/min \u00B7 10,000 req/day",
+      "10 named users included",
+      "Operational onboarding support",
+      "60 req/sec \u00B7 10,000 req/day",
     ],
     limit: "For higher limits or custom terms \u2014 see Enterprise.",
     pricingLogic:
-      "Operational integration tier. Higher limits and fuller data access for teams embedding CareGist into products or serious monitoring workflows.",
+      "Operational integration tier. Higher limits, webhooks, fuller fields, and stronger team support for products, internal ops tooling, and recurring monitoring programs.",
   },
   {
     tier: "Enterprise",
@@ -231,6 +232,30 @@ export type ProviderTierKey = typeof PROVIDER_TIERS[number]["tier"];
 
 // ── Provider Add-on: Extra Team Seat ──
 export const PROVIDER_TEAM_SEAT_PRICE = 15; // £15 + VAT/mo per seat
+
+export const PLAN_PRIMARY_CTA: Record<string, string> = {
+  free: "Upgrade to Starter",
+  starter: "Upgrade to Pro",
+  pro: "Upgrade to Business",
+  business: "Contact sales",
+  enterprise: "Contact sales",
+};
+
+export const PLAN_NEXT_STEP: Record<string, string> = {
+  free: "Starter unlocks nearby search, full starter exports, and a real solo workflow.",
+  starter: "Pro adds 3 named users, broader monitoring, and more export headroom for daily team use.",
+  pro: "Business adds webhooks, full-field operational integration, and stronger admin support.",
+  business: "Enterprise adds custom limits, procurement support, security review, and contract terms.",
+  enterprise: "Talk to sales for custom implementation and procurement support.",
+};
+
+export const PLAN_LIMIT_SUMMARY: Record<string, string> = {
+  free: "2 req/sec \u00B7 20 req/day \u00B7 60 req/7 days",
+  starter: "10 req/sec \u00B7 500 req/day",
+  pro: "25 req/sec \u00B7 2,000 req/day",
+  business: "60 req/sec \u00B7 10,000 req/day",
+  enterprise: "Custom limits",
+};
 
 // ── Add-Ons ──
 export const ADD_ONS: AddOn[] = [

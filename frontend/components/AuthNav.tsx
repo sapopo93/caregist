@@ -38,9 +38,9 @@ export default function AuthNav() {
 
   const navLinks = (
     <>
-      <Link href="/search" className="hover:text-amber transition-colors" onClick={() => setMenuOpen(false)}>Search</Link>
-      <Link href="/find-care" className="hover:text-amber transition-colors" onClick={() => setMenuOpen(false)}>Find Care</Link>
-      <Link href="/compare" className="hover:text-amber transition-colors" onClick={() => setMenuOpen(false)}>Compare</Link>
+      <Link href="/why-caregist" className="hover:text-amber transition-colors" onClick={() => setMenuOpen(false)}>Why CareGist</Link>
+      <Link href="/search" className="hover:text-amber transition-colors" onClick={() => setMenuOpen(false)}>Data Explorer</Link>
+      <Link href="/api" className="hover:text-amber transition-colors" onClick={() => setMenuOpen(false)}>API</Link>
       <Link href="/pricing" className="hover:text-amber transition-colors" onClick={() => setMenuOpen(false)}>Pricing</Link>
     </>
   );
