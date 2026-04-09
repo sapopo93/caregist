@@ -11,14 +11,90 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Credentials and API keys live in `.env` — never store secrets anywhere else.
 - Final deliverables go to cloud services (Google Sheets, Slides, etc.). Local files are for processing only. Everything in `.tmp/` is disposable.
 
+## Architecture Overview
+
+CareGist is a UK care provider directory with three main subsystems:
+
+1. **CQC ETL Pipeline** (root `*.py` files) — extracts data from the CQC public API into PostgreSQL
+2. **FastAPI Backend** (`api/`) — REST API serving provider data with tiered API key auth and Stripe billing
+3. **Next.js Frontend** (`frontend/`) — SSR directory UI deployed on Vercel, proxies API calls to the backend
+
+### How They Connect
+
+- The ETL pipeline produces `directory_providers.csv` → seeded into PostgreSQL via `db/seed.py`
+- The API reads from PostgreSQL (PostGIS) via `asyncpg` — no ORM, raw SQL in `api/queries/`
+- The frontend calls the API server-side via `lib/api.ts` using `X-API-Key` auth header, with 1-hour ISR cache (`revalidate: 3600`)
+- Next.js rewrites `/api/*` to the backend URL (`NEXT_PUBLIC_API_URL` / `API_URL` env vars)
+- API is deployed on Render (free tier), frontend on Vercel
+
+### Database
+
+PostgreSQL with PostGIS. Schema in `db/init.sql`, migrations in `db/migrations/` (numbered SQL files, applied manually in local/dev and auto-applied on Render startup via `db/apply_migrations.py`). Key tables: `care_providers` (primary), `api_keys`, `users`, `subscriptions`, `provider_claims`, `reviews`, `enquiries`.
+
+The `care_providers.id` column is the CQC `locationId` (VARCHAR, not auto-increment). Spatial queries use PostGIS `geom` column (SRID 4326). Full-text search uses a GIN index on name/town/postcode/services.
+
+### API Tier System
+
+Defined in `api/config.py` as `TIERS` dict. Tiers (free/starter/pro/business/admin) control: rate limits, daily/monthly quotas, page size, field visibility, nearby search, export limits, comparison slots, and webhook access. Field filtering happens via `filter_fields()` — hidden fields return `None`, not omitted.
+
+### Frontend
+
+Next.js 15 + React 19 + Tailwind CSS 4. App Router (`frontend/app/`). Brand palette defined in `globals.css` as CSS custom properties (clay, bark, parchment, moss, etc.). Typography: Playfair Display (headings), DM Sans (body). Config types and pricing data centralized in `lib/caregist-config.ts`.
+
+## Development Commands
+
+```bash
+# --- Backend ---
+docker compose up db          # Start PostgreSQL (PostGIS)
+docker compose up seed        # Seed DB from directory_providers.csv
+uvicorn api.main:app --reload # API at localhost:8000 (docs at /docs)
+
+# --- Frontend ---
+cd frontend && npm run dev    # Next.js dev at localhost:3000
+cd frontend && npm run build  # Production build
+
+# --- Tests ---
+pytest                        # All tests (mocked DB, no real connection needed)
+pytest tests/test_api_reviews.py            # Single test file
+pytest tests/test_api_reviews.py::test_name # Single test
+
+# --- ETL Pipeline ---
+pip install -r requirements.txt
+./run_enriched_pipeline.sh                  # Full pipeline
+python3 extract_cqc.py --sleep 0.02        # Individual stages
+python3 clean_cqc.py
+python3 quality_audit.py
+python3 prepare_directory.py
+```
+
+### Environment Variables
+
+Backend reads from `.env` via pydantic-settings. Key vars: `DATABASE_URL`, `API_MASTER_KEY`, `CORS_ORIGINS`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `RESEND_API_KEY`, `SENTRY_DSN`. Frontend needs: `API_URL` (server-side), `API_KEY`, `NEXT_PUBLIC_API_URL` (client rewrites).
+
 ## File Structure
 
 ```
-tools/          # Python scripts for execution (API calls, data transforms, file ops)
-workflows/      # Markdown SOPs defining objectives, inputs, tools, outputs, edge cases
-.tmp/           # Temporary/intermediate files, regenerated as needed
-.env            # API keys and environment variables
-credentials.json, token.json  # Google OAuth (gitignored)
+api/                    # FastAPI backend
+  config.py             # Settings + tier definitions (single source of truth for tiers/fields)
+  database.py           # asyncpg connection pool
+  routers/              # Route modules (providers, billing, claims, reviews, etc.)
+  queries/              # Raw SQL query modules
+  middleware/            # Auth (API key), rate limiting, IP rate limiting
+  utils/                # Analytics, email queue
+frontend/               # Next.js 15 app
+  app/                  # App Router pages
+  components/           # React components
+  lib/api.ts            # Server-side API client (apiFetch with X-API-Key)
+  lib/types.ts          # TypeScript interfaces (Provider, Review, User, config types)
+  lib/caregist-config.ts # Pricing tiers, feature gates, growth config
+db/                     # Database schema
+  init.sql              # Base schema (PostGIS, care_providers, api_keys, users, etc.)
+  migrations/           # Numbered SQL migrations
+  seed.py               # CSV → PostgreSQL seeder
+tools/                  # Python scripts for execution (API calls, data transforms, file ops)
+workflows/              # Markdown SOPs
+tests/                  # pytest tests (mock DB via conftest.py fixtures)
+*.py (root)             # CQC ETL pipeline scripts
 ```
 
 ## CQC Directory Pipeline
@@ -40,30 +116,6 @@ The full pipeline runs via `run_enriched_pipeline.sh` and executes in order:
 ### Shared Module
 
 `cqc_common.py` — Shared utilities: `normalize_whitespace`, `parse_any_date`, `ensure_list`, `flatten_json`, `deep_get`, `first_non_empty`, `to_float`, `as_json`.
-
-### Running the Pipeline
-
-```bash
-# Full pipeline
-./run_enriched_pipeline.sh
-
-# Individual stages
-python3 extract_cqc.py --sleep 0.02
-python3 clean_cqc.py
-python3 quality_audit.py
-python3 prepare_directory.py
-python3 prepare_directory.py --enable-geocode  # backfill missing coords via postcodes.io
-```
-
-All scripts accept `--help`. Key extract flags: `--sleep` (inter-request delay), `--checkpoint-every`, `--workers` (parallel detail fetches).
-
-### Dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-Core: `requests`, `pandas`, `numpy`, `tqdm`, `python-slugify`, `phonenumbers`, `validators`. The pipeline gracefully degrades if `phonenumbers` or `validators` are missing.
 
 ### Data Flow
 

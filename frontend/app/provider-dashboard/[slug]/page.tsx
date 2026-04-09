@@ -21,6 +21,12 @@ export default function ProviderDashboardPage({ params }: { params: Promise<{ sl
   const [newPhotoUrl, setNewPhotoUrl] = useState("");
   const [virtualTourUrl, setVirtualTourUrl] = useState("");
   const [inspectionResponse, setInspectionResponse] = useState("");
+  const [logoUrl, setLogoUrl] = useState("");
+  const [fundingTypes, setFundingTypes] = useState<string[]>([]);
+  const [feeGuidance, setFeeGuidance] = useState("");
+  const [minVisitDuration, setMinVisitDuration] = useState("");
+  const [contractTypes, setContractTypes] = useState<string[]>([]);
+  const [ageRanges, setAgeRanges] = useState<string[]>([]);
 
   useEffect(() => {
     params.then(({ slug: s }) => {
@@ -51,6 +57,12 @@ export default function ProviderDashboardPage({ params }: { params: Promise<{ sl
       setPhotos(p.profile_photos ? (typeof p.profile_photos === "string" ? JSON.parse(p.profile_photos) : p.profile_photos) : []);
       setVirtualTourUrl(p.virtual_tour_url || "");
       setInspectionResponse(p.inspection_response || "");
+      setLogoUrl(p.logo_url || "");
+      setFundingTypes(p.funding_types || []);
+      setFeeGuidance(p.fee_guidance || "");
+      setMinVisitDuration(p.min_visit_duration || "");
+      setContractTypes(p.contract_types || []);
+      setAgeRanges(p.age_ranges || []);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -72,6 +84,12 @@ export default function ProviderDashboardPage({ params }: { params: Promise<{ sl
           photos: photos.length > 0 ? photos : null,
           virtual_tour_url: virtualTourUrl || null,
           inspection_response: inspectionResponse || null,
+          logo_url: logoUrl || null,
+          funding_types: fundingTypes.length > 0 ? fundingTypes : null,
+          fee_guidance: feeGuidance || null,
+          min_visit_duration: minVisitDuration || null,
+          contract_types: contractTypes.length > 0 ? contractTypes : null,
+          age_ranges: ageRanges.length > 0 ? ageRanges : null,
         }),
       });
       const data = await res.json();
@@ -139,7 +157,7 @@ export default function ProviderDashboardPage({ params }: { params: Promise<{ sl
         </div>
       )}
 
-      {isClaimedByUser && !tier && (
+      {isClaimedByUser && (!tier || tier === "claimed") && (
         <>
           {/* Free inspection response editor */}
           <div className="bg-moss/5 border border-moss/20 rounded-lg p-6 mb-6">
@@ -167,6 +185,51 @@ export default function ProviderDashboardPage({ params }: { params: Promise<{ sl
             {success && <p className="text-moss text-xs mt-2">{success}</p>}
           </div>
 
+          {/* Logo — free for all claimed providers */}
+          <div className="bg-cream border border-stone rounded-lg p-6 mb-6">
+            <h2 className="text-xl font-bold mb-3">Provider Logo</h2>
+            <input
+              type="url"
+              value={logoUrl}
+              onChange={(e) => setLogoUrl(e.target.value)}
+              placeholder="Paste your logo image URL..."
+              className="w-full px-4 py-3 rounded-lg border border-stone bg-white text-sm"
+            />
+            {logoUrl && (
+              <img src={logoUrl} alt="Logo preview" className="h-16 mt-3 rounded-lg object-contain bg-white border border-stone p-1" />
+            )}
+          </div>
+
+          {/* Funding & Practical — free for all claimed providers */}
+          <div className="bg-cream border border-stone rounded-lg p-6 mb-6">
+            <h2 className="text-xl font-bold mb-3">Funding & Practical Info</h2>
+            <p className="text-sm text-dusk mb-4">Help families understand your service better — this information appears on your public profile.</p>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-semibold text-bark block mb-2">Fee guidance</label>
+                <input
+                  type="text"
+                  value={feeGuidance}
+                  onChange={(e) => setFeeGuidance(e.target.value)}
+                  maxLength={500}
+                  placeholder="e.g. From £25/hour, Available on request"
+                  className="w-full px-4 py-3 rounded-lg border border-stone bg-white text-sm"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-semibold text-bark block mb-2">Minimum visit duration</label>
+                <input
+                  type="text"
+                  value={minVisitDuration}
+                  onChange={(e) => setMinVisitDuration(e.target.value)}
+                  maxLength={100}
+                  placeholder="e.g. 30 minutes, 1 hour"
+                  className="w-full px-4 py-3 rounded-lg border border-stone bg-white text-sm"
+                />
+              </div>
+            </div>
+          </div>
+
           {/* Upgrade upsell for other features */}
           <div className="bg-cream border border-stone rounded-lg p-6 mb-6 text-center">
             <p className="font-semibold text-bark mb-2">Want to add photos and a description?</p>
@@ -174,10 +237,10 @@ export default function ProviderDashboardPage({ params }: { params: Promise<{ sl
               Upgrade to an Enhanced Profile to add photos, a description, and a virtual tour link.
             </p>
             <div className="grid grid-cols-3 gap-4 max-w-lg mx-auto mb-4">
-              {PROVIDER_TIERS.map((t, i) => (
-                <div key={t.tier} className={`bg-parchment rounded-lg p-3 text-center ${i === 1 ? "border-2 border-clay" : ""}`}>
+              {PROVIDER_TIERS.filter((t) => t.tier !== "claimed").map((t, i) => (
+                <div key={t.tier} className={`bg-parchment rounded-lg p-3 text-center ${i === 0 ? "border-2 border-clay" : ""}`}>
                   <p className="font-bold text-bark">{t.label}</p>
-                  <p className="text-xl font-bold text-clay">{t.price.split(" ")[0]}<span className="text-xs text-dusk">/mo</span></p>
+                  <p className="text-xl font-bold text-clay">£{t.priceMonthly}<span className="text-xs text-dusk">/mo</span></p>
                   <p className="text-xs text-dusk mt-1">{t.photos} photos{t.virtualTour ? " + tour" : ""}</p>
                 </div>
               ))}
@@ -297,6 +360,126 @@ export default function ProviderDashboardPage({ params }: { params: Promise<{ sl
               <p className="text-xs text-dusk mt-1">{inspectionResponse.length}/2,000 characters</p>
             </div>
           )}
+
+          {/* Logo */}
+          <div className="bg-cream border border-stone rounded-lg p-6 mb-6">
+            <h2 className="text-xl font-bold mb-3">Provider Logo</h2>
+            <input
+              type="url"
+              value={logoUrl}
+              onChange={(e) => setLogoUrl(e.target.value)}
+              placeholder="Paste your logo image URL..."
+              className="w-full px-4 py-3 rounded-lg border border-stone bg-white text-sm"
+            />
+            {logoUrl && (
+              <img src={logoUrl} alt="Logo preview" className="h-16 mt-3 rounded-lg object-contain bg-white border border-stone p-1" />
+            )}
+          </div>
+
+          {/* Funding & Fees */}
+          <div className="bg-cream border border-stone rounded-lg p-6 mb-6">
+            <h2 className="text-xl font-bold mb-3">Funding & Fees</h2>
+            <p className="text-sm text-dusk mb-3">Help families understand what funding you accept and what your fees look like.</p>
+            <div className="mb-4">
+              <label className="text-sm font-semibold text-bark block mb-2">Funding types accepted</label>
+              <div className="space-y-2">
+                {[
+                  { value: "self_funded", label: "Private / Self-funded" },
+                  { value: "direct_payments", label: "Direct Payments (from Local Authority / NHS)" },
+                  { value: "local_authority", label: "Local Authority (Council funded)" },
+                  { value: "nhs_contracted", label: "NHS (Contracted provider)" },
+                ].map((opt) => (
+                  <label key={opt.value} className="flex items-center gap-2 text-sm text-charcoal">
+                    <input
+                      type="checkbox"
+                      checked={fundingTypes.includes(opt.value)}
+                      onChange={(e) => {
+                        if (e.target.checked) setFundingTypes([...fundingTypes, opt.value]);
+                        else setFundingTypes(fundingTypes.filter((f) => f !== opt.value));
+                      }}
+                      className="rounded border-stone"
+                    />
+                    {opt.label}
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="text-sm font-semibold text-bark block mb-2">Fee guidance</label>
+              <input
+                type="text"
+                value={feeGuidance}
+                onChange={(e) => setFeeGuidance(e.target.value)}
+                maxLength={500}
+                placeholder="e.g. From £25/hour, Available on request, £1,200/week"
+                className="w-full px-4 py-3 rounded-lg border border-stone bg-white text-sm"
+              />
+            </div>
+          </div>
+
+          {/* Practical Details */}
+          <div className="bg-cream border border-stone rounded-lg p-6 mb-6">
+            <h2 className="text-xl font-bold mb-3">Practical Details</h2>
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-semibold text-bark block mb-2">Minimum visit duration</label>
+                <input
+                  type="text"
+                  value={minVisitDuration}
+                  onChange={(e) => setMinVisitDuration(e.target.value)}
+                  maxLength={100}
+                  placeholder="e.g. 30 minutes, 1 hour"
+                  className="w-full px-4 py-3 rounded-lg border border-stone bg-white text-sm"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-semibold text-bark block mb-2">Contract types</label>
+                <div className="space-y-2">
+                  {[
+                    { value: "ongoing", label: "Ongoing / Long-term" },
+                    { value: "short_term", label: "Short-term / Respite" },
+                    { value: "trial", label: "Trial period available" },
+                  ].map((opt) => (
+                    <label key={opt.value} className="flex items-center gap-2 text-sm text-charcoal">
+                      <input
+                        type="checkbox"
+                        checked={contractTypes.includes(opt.value)}
+                        onChange={(e) => {
+                          if (e.target.checked) setContractTypes([...contractTypes, opt.value]);
+                          else setContractTypes(contractTypes.filter((c) => c !== opt.value));
+                        }}
+                        className="rounded border-stone"
+                      />
+                      {opt.label}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="mt-4">
+              <label className="text-sm font-semibold text-bark block mb-2">Age groups served</label>
+              <div className="space-y-2">
+                {[
+                  { value: "older_adults_65+", label: "Older adults (65+)" },
+                  { value: "younger_adults_18-65", label: "Younger adults (18–65)" },
+                  { value: "children", label: "Children" },
+                ].map((opt) => (
+                  <label key={opt.value} className="flex items-center gap-2 text-sm text-charcoal">
+                    <input
+                      type="checkbox"
+                      checked={ageRanges.includes(opt.value)}
+                      onChange={(e) => {
+                        if (e.target.checked) setAgeRanges([...ageRanges, opt.value]);
+                        else setAgeRanges(ageRanges.filter((a) => a !== opt.value));
+                      }}
+                      className="rounded border-stone"
+                    />
+                    {opt.label}
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
 
           {/* Save */}
           <button

@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { getPublicApiBase } from "@/lib/server-api-config";
 
 const BASE = "https://caregist.co.uk";
 
@@ -12,6 +13,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE}/pricing`, lastModified: now, changeFrequency: "monthly", priority: 0.8 },
     { url: `${BASE}/compare`, lastModified: now, changeFrequency: "weekly", priority: 0.7 },
     { url: `${BASE}/api`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${BASE}/why-caregist`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
     { url: `${BASE}/find-care`, lastModified: now, changeFrequency: "weekly", priority: 0.9 },
   ];
 
@@ -31,7 +33,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   let cityPages: MetadataRoute.Sitemap = [];
   let laPages: MetadataRoute.Sitemap = [];
 
-  const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  const apiBase = getPublicApiBase();
 
   try {
     const citiesRes = await fetch(`${apiBase}/api/v1/cities`, { next: { revalidate: 86400 } });

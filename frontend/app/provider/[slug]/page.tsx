@@ -12,6 +12,8 @@ import TrustSignal from "@/components/TrustSignal";
 import TrackProfileView from "@/components/TrackProfileView";
 import CareGistAssessment from "@/components/CareGistAssessment";
 import MapView from "@/components/MapView";
+import ServiceBreakdown from "@/components/ServiceBreakdown";
+import ProfileNav from "@/components/ProfileNav";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
@@ -23,6 +25,22 @@ const ratingDimensions = [
   { key: "rating_responsive", label: "Responsive" },
   { key: "rating_well_led", label: "Well-led" },
 ];
+
+function parseProfilePhotos(value: unknown): string[] {
+  if (!value) return [];
+  if (Array.isArray(value)) return value.filter((item): item is string => typeof item === "string" && item.length > 0);
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed)
+        ? parsed.filter((item): item is string => typeof item === "string" && item.length > 0)
+        : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
@@ -59,6 +77,8 @@ export default async function ProviderPage({ params }: { params: Promise<{ slug:
 
   if (!provider) notFound();
 
+  const profilePhotos = parseProfilePhotos(provider.profile_photos);
+
   // Fetch reviews (non-blocking — page still renders if this fails)
   let reviews: any[] = [];
   let reviewSummary = { count: 0, avg_rating: null as number | null };
@@ -74,8 +94,7 @@ export default async function ProviderPage({ params }: { params: Promise<{ slug:
     .filter(Boolean)
     .join(", ");
 
-  const services = provider.service_types?.split("|").filter(Boolean) || [];
-  const specs = provider.specialisms?.split("|").filter(Boolean) || [];
+  // service_types and specialisms are used by ServiceBreakdown component
 
   const daysSinceInspection = provider.last_inspection_date
     ? Math.floor((Date.now() - new Date(provider.last_inspection_date).getTime()) / 86400000)
@@ -114,9 +133,12 @@ export default async function ProviderPage({ params }: { params: Promise<{ slug:
       )}
 
       {/* Header */}
-      <div className="mb-8">
+      <div className="mb-8" id="overview">
         <div className="flex items-start justify-between gap-4 mb-3">
           <div className="flex items-center gap-3 flex-wrap">
+            {provider.logo_url && (
+              <img src={provider.logo_url} alt={`${provider.name} logo`} className="h-12 w-12 rounded-lg object-contain bg-white border border-stone" />
+            )}
             <h1 className="text-3xl font-bold">{provider.name}</h1>
             {provider.is_claimed && <VerifiedBadge size="md" />}
             {provider.is_claimed && (
@@ -156,12 +178,15 @@ export default async function ProviderPage({ params }: { params: Promise<{ slug:
         )}
       </div>
 
+      {/* Sticky section nav */}
+      <ProfileNav />
+
       {/* Enhanced Profile — paid content from claimed providers */}
       {provider.profile_description && (
         <div className="bg-cream border border-stone rounded-lg p-6 mb-6">
-          {provider.profile_photos && JSON.parse(provider.profile_photos || "[]").length > 0 && (
+          {profilePhotos.length > 0 && (
             <div className="flex gap-3 overflow-x-auto mb-4 pb-2">
-              {JSON.parse(provider.profile_photos).map((url: string, i: number) => (
+              {profilePhotos.map((url: string, i: number) => (
                 <img key={i} src={url} alt={`${provider.name} photo ${i + 1}`} className="h-48 rounded-lg object-cover flex-shrink-0" />
               ))}
             </div>
@@ -229,7 +254,7 @@ export default async function ProviderPage({ params }: { params: Promise<{ slug:
 
       {/* Key Question Ratings — always show all 5, flag unassessed */}
       {provider.overall_rating && provider.overall_rating !== "Not Yet Inspected" && (
-        <div className="bg-cream border border-stone rounded-lg p-6 mb-6">
+        <div className="bg-cream border border-stone rounded-lg p-6 mb-6" id="ratings">
           <h2 className="text-xl font-bold mb-4">CQC Inspection Ratings</h2>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             {ratingDimensions.map((d) => (
@@ -258,7 +283,7 @@ export default async function ProviderPage({ params }: { params: Promise<{ slug:
       <RatingTimeline slug={slug} />
 
       {/* Details Grid */}
-      <div className="grid md:grid-cols-2 gap-6 mb-6">
+      <div className="grid md:grid-cols-2 gap-6 mb-6" id="contact-details">
         {/* Contact */}
         <div className="bg-cream border border-stone rounded-lg p-6">
           <h2 className="text-xl font-bold mb-3">Contact</h2>
@@ -319,26 +344,28 @@ export default async function ProviderPage({ params }: { params: Promise<{ slug:
         </div>
       )}
 
-      {/* Services & Specialisms */}
-      {(services.length > 0 || specs.length > 0) && (
-        <div className="bg-cream border border-stone rounded-lg p-6 mb-6">
-          <h2 className="text-xl font-bold mb-3">Services & Specialisms</h2>
-          {services.length > 0 && (
-            <div className="mb-3">
-              <span className="text-dusk text-sm">Services:</span>
-              <div className="flex flex-wrap gap-2 mt-1">
-                {services.map((s: string) => (
-                  <span key={s} className="bg-parchment border border-stone px-3 py-1 rounded-full text-sm">{s}</span>
-                ))}
-              </div>
-            </div>
+      {/* Care Provided — categorised services, specialisms, regulated activities */}
+      <ServiceBreakdown
+        serviceTypes={provider.service_types}
+        specialisms={provider.specialisms}
+        regulatedActivities={provider.regulated_activities}
+      />
+
+      {/* Funding & Fees — provider-entered when claimed */}
+      {((provider.funding_types && provider.funding_types.length > 0) || provider.fee_guidance) && (
+        <div className="bg-cream border border-stone rounded-lg p-6 mb-6" id="funding">
+          <h2 className="text-xl font-bold mb-4">Funding & Fees</h2>
+          {provider.fee_guidance && (
+            <p className="text-charcoal mb-3">{provider.fee_guidance}</p>
           )}
-          {specs.length > 0 && (
+          {provider.funding_types && (
             <div>
-              <span className="text-dusk text-sm">Specialisms:</span>
-              <div className="flex flex-wrap gap-2 mt-1">
-                {specs.map((s: string) => (
-                  <span key={s} className="bg-parchment border border-stone px-3 py-1 rounded-full text-sm">{s}</span>
+              <p className="text-sm text-dusk mb-2 font-semibold">Funding types accepted:</p>
+              <div className="flex flex-wrap gap-2">
+                {provider.funding_types.map((f: string) => (
+                  <span key={f} className="bg-parchment border border-stone px-3 py-1.5 rounded-lg text-sm text-charcoal">
+                    {f.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase())}
+                  </span>
                 ))}
               </div>
             </div>
@@ -346,11 +373,56 @@ export default async function ProviderPage({ params }: { params: Promise<{ slug:
         </div>
       )}
 
+      {/* Practical Details — provider-entered when claimed */}
+      {(provider.min_visit_duration || (provider.contract_types && provider.contract_types.length > 0) || (provider.age_ranges && provider.age_ranges.length > 0)) && (
+        <div className="bg-cream border border-stone rounded-lg p-6 mb-6">
+          <h2 className="text-xl font-bold mb-4">Practical Details</h2>
+          <div className="grid sm:grid-cols-3 gap-4">
+            {provider.min_visit_duration && (
+              <div className="bg-parchment rounded-lg p-4">
+                <p className="text-sm text-dusk font-semibold mb-1">Minimum visit</p>
+                <p className="text-charcoal">{provider.min_visit_duration}</p>
+              </div>
+            )}
+            {provider.contract_types && (
+              <div className="bg-parchment rounded-lg p-4">
+                <p className="text-sm text-dusk font-semibold mb-1">Contract types</p>
+                <ul className="space-y-1">
+                  {provider.contract_types.map((c: string) => (
+                    <li key={c} className="text-sm text-charcoal">
+                      <span className="text-moss mr-1">&#10003;</span>
+                      {c.replace(/_/g, " ").replace(/\b\w/g, (ch: string) => ch.toUpperCase())}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {provider.age_ranges && (
+              <div className="bg-parchment rounded-lg p-4">
+                <p className="text-sm text-dusk font-semibold mb-1">Age groups</p>
+                <ul className="space-y-1">
+                  {provider.age_ranges.map((a: string) => (
+                    <li key={a} className="text-sm text-charcoal">
+                      <span className="text-moss mr-1">&#10003;</span>
+                      {a.replace(/_/g, " ").replace(/\b\w/g, (ch: string) => ch.toUpperCase())}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Enquiry Form — the money section */}
-      <EnquiryForm slug={slug} providerName={provider.name} />
+      <div id="enquiry">
+        <EnquiryForm slug={slug} providerName={provider.name} />
+      </div>
 
       {/* Reviews */}
-      <ReviewsSection slug={slug} reviews={reviews} summary={reviewSummary} providerName={provider.name} />
+      <div id="reviews">
+        <ReviewsSection slug={slug} reviews={reviews} summary={reviewSummary} providerName={provider.name} />
+      </div>
 
       {/* CQC Link */}
       {provider.inspection_report_url && (

@@ -1,5 +1,6 @@
 import { getProvider } from "@/lib/api";
 import ClaimStepper from "@/components/ClaimStepper";
+import TrackEventOnMount from "@/components/TrackEventOnMount";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 
@@ -54,6 +55,7 @@ export default async function ClaimPage({ params }: { params: Promise<{ slug: st
 
   return (
     <div className="max-w-2xl mx-auto px-6 py-12">
+      <TrackEventOnMount eventType="provider_claim_start" eventSource="claim_page" meta={{ slug }} />
       <ClaimStepper
         slug={slug}
         providerName={provider.name}

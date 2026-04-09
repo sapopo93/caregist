@@ -8,6 +8,7 @@ from httpx import AsyncClient, ASGITransport
 from api.main import app
 
 HEADERS = {"X-API-Key": "change_me_in_production"}
+STARTER_HEADERS = {"X-API-Key": "starter_key"}
 
 
 @pytest.fixture
@@ -69,8 +70,16 @@ async def test_compare_two_providers(patched_db):
 
 
 @pytest.mark.asyncio
-async def test_compare_max_three(patched_db):
+async def test_compare_respects_starter_limit(patched_db):
     mock_conn = patched_db
+    mock_conn.fetchrow.return_value = {
+        "id": 1,
+        "name": "Starter User",
+        "email": "starter@example.com",
+        "user_id": "user-1",
+        "tier": "starter",
+        "is_active": True,
+    }
     mock_conn.fetch.return_value = [
         mock_provider_row("a", "A"),
         mock_provider_row("b", "B"),
@@ -80,13 +89,35 @@ async def test_compare_max_three(patched_db):
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         resp = await client.get(
             "/api/v1/providers/compare?slugs=a,b,c,d,e",
+            headers=STARTER_HEADERS,
+        )
+
+    assert resp.status_code == 200
+    # Starter tier should only include first 3 slugs.
+    call_args = mock_conn.fetch.call_args
+    assert len(call_args[0][1]) == 3
+
+
+@pytest.mark.asyncio
+async def test_compare_master_can_compare_more_than_three(patched_db):
+    mock_conn = patched_db
+    mock_conn.fetch.return_value = [
+        mock_provider_row("a", "A"),
+        mock_provider_row("b", "B"),
+        mock_provider_row("c", "C"),
+        mock_provider_row("d", "D"),
+        mock_provider_row("e", "E"),
+    ]
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.get(
+            "/api/v1/providers/compare?slugs=a,b,c,d,e",
             headers=HEADERS,
         )
 
     assert resp.status_code == 200
-    # Query should only include first 3 slugs
     call_args = mock_conn.fetch.call_args
-    assert len(call_args[0][1]) == 3
+    assert len(call_args[0][1]) == 5
 
 
 @pytest.mark.asyncio

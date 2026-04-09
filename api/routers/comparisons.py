@@ -29,14 +29,10 @@ class SaveComparisonRequest(BaseModel):
 
 
 async def _get_user_id(auth: dict) -> int:
-    async with get_connection() as conn:
-        row = await conn.fetchrow(
-            "SELECT user_id FROM api_keys WHERE name = $1 AND is_active = true",
-            auth.get("name", ""),
-        )
-    if not row or not row["user_id"]:
+    user_id = auth.get("user_id")
+    if not user_id:
         raise HTTPException(status_code=401, detail="User account required.")
-    return row["user_id"]
+    return user_id
 
 
 @router.post("", status_code=201)
@@ -54,7 +50,7 @@ async def save_comparison(
             if count_row and count_row["total"] >= 2:
                 raise HTTPException(
                     status_code=403,
-                    detail="Free tier allows 2 saved comparisons. Upgrade to Pro Alerts for unlimited.",
+                    detail="Free tier allows 2 saved comparisons. Upgrade to Pro for broader recurring analysis.",
                 )
 
         token = secrets.token_urlsafe(16)

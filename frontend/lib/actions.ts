@@ -1,7 +1,9 @@
 "use server";
 
-const API_BASE = process.env.API_URL || "http://localhost:8000";
-const API_KEY = process.env.API_KEY || "dev_key_change_me";
+import { getServerApiBase, getServerApiKey } from "@/lib/server-api-config";
+
+const API_BASE = getServerApiBase();
+const API_KEY = getServerApiKey();
 
 async function apiPost(path: string, body: Record<string, unknown>) {
   const res = await fetch(`${API_BASE}${path}`, {

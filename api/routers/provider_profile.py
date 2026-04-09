@@ -16,15 +16,22 @@ router = APIRouter(prefix="/api/v1/providers", tags=["provider-profile"])
 
 class ProfileUpdateRequest(BaseModel):
     description: str | None = Field(None, max_length=2000)
-    photos: list[str] | None = Field(None, max_items=10)
+    photos: list[str] | None = Field(None, max_length=15)
     virtual_tour_url: str | None = Field(None, max_length=500)
     inspection_response: str | None = Field(None, max_length=2000)
+    logo_url: str | None = Field(None, max_length=500)
+    funding_types: list[str] | None = None
+    fee_guidance: str | None = Field(None, max_length=500)
+    min_visit_duration: str | None = Field(None, max_length=100)
+    contract_types: list[str] | None = None
+    age_ranges: list[str] | None = None
 
 
 PROFILE_TIERS = {
-    "basic": {"photos": 3, "description": True, "virtual_tour": False, "inspection_response": False},
-    "standard": {"photos": 5, "description": True, "virtual_tour": True, "inspection_response": True},
-    "premium": {"photos": 10, "description": True, "virtual_tour": True, "inspection_response": True},
+    "claimed": {"photos": 0, "description": False, "virtual_tour": False, "inspection_response": True, "logo": True, "funding": True, "practical": True},
+    "enhanced": {"photos": 5, "description": True, "virtual_tour": True, "inspection_response": True, "logo": True, "funding": True, "practical": True},
+    "premium": {"photos": 10, "description": True, "virtual_tour": True, "inspection_response": True, "logo": True, "funding": True, "practical": True},
+    "sponsored": {"photos": 15, "description": True, "virtual_tour": True, "inspection_response": True, "logo": True, "funding": True, "practical": True},
 }
 
 
@@ -35,7 +42,9 @@ async def get_profile(slug: str, _auth: dict = Depends(validate_api_key)) -> dic
         row = await conn.fetchrow(
             """SELECT id, name, slug, profile_description, profile_photos,
                       virtual_tour_url, inspection_response, profile_tier,
-                      profile_updated_at, is_claimed
+                      profile_updated_at, is_claimed,
+                      logo_url, funding_types, fee_guidance,
+                      min_visit_duration, contract_types, age_ranges
                FROM care_providers WHERE slug = $1""",
             slug,
         )
@@ -52,15 +61,9 @@ async def update_profile(
     _auth: dict = Depends(validate_api_key),
 ) -> dict:
     """Update the enhanced profile. Requires claimed + active profile subscription."""
-    # Resolve user from API key
-    async with get_connection() as conn:
-        key_row = await conn.fetchrow(
-            "SELECT user_id FROM api_keys WHERE name = $1 AND is_active = true",
-            _auth.get("name", ""),
-        )
-    if not key_row or not key_row["user_id"]:
+    user_id = _auth.get("user_id")
+    if not user_id:
         raise HTTPException(status_code=401, detail="User account required.")
-    user_id = key_row["user_id"]
 
     async with get_connection() as conn:
         provider = await conn.fetchrow(
@@ -94,7 +97,7 @@ async def update_profile(
                 detail="Photos, description, and virtual tour require an enhanced profile subscription. Inspection response is free. Visit /pricing to upgrade.",
             )
 
-    tier_config = PROFILE_TIERS.get(tier, PROFILE_TIERS["basic"]) if tier else {"photos": 0, "description": False, "virtual_tour": False, "inspection_response": True}
+    tier_config = PROFILE_TIERS.get(tier, PROFILE_TIERS["claimed"]) if tier else PROFILE_TIERS["claimed"]
 
     # Enforce tier limits
     if req.photos and len(req.photos) > tier_config["photos"]:
@@ -128,6 +131,30 @@ async def update_profile(
     if req.inspection_response is not None:
         updates.append(f"inspection_response = ${i}")
         params.append(req.inspection_response)
+        i += 1
+    if req.logo_url is not None:
+        updates.append(f"logo_url = ${i}")
+        params.append(req.logo_url)
+        i += 1
+    if req.funding_types is not None:
+        updates.append(f"funding_types = ${i}::text[]")
+        params.append(req.funding_types)
+        i += 1
+    if req.fee_guidance is not None:
+        updates.append(f"fee_guidance = ${i}")
+        params.append(req.fee_guidance)
+        i += 1
+    if req.min_visit_duration is not None:
+        updates.append(f"min_visit_duration = ${i}")
+        params.append(req.min_visit_duration)
+        i += 1
+    if req.contract_types is not None:
+        updates.append(f"contract_types = ${i}::text[]")
+        params.append(req.contract_types)
+        i += 1
+    if req.age_ranges is not None:
+        updates.append(f"age_ranges = ${i}::text[]")
+        params.append(req.age_ranges)
         i += 1
 
     if not updates:

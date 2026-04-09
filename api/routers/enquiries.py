@@ -48,11 +48,12 @@ async def submit_enquiry(
             if not provider:
                 raise HTTPException(status_code=404, detail=f"Provider not found: {slug}")
 
-            provider_name = provider["name"] or slug
+            provider_data = dict(provider)
+            provider_name = provider_data.get("name") or slug
 
             row = await conn.fetchrow(
                 INSERT_ENQUIRY,
-                provider["id"],
+                provider_data["id"],
                 req.enquirer_name,
                 req.enquirer_email,
                 req.enquirer_phone,
@@ -62,7 +63,7 @@ async def submit_enquiry(
                 req.message,
             )
 
-            await conn.execute(UPDATE_PROVIDER_ENQUIRY_COUNT, provider["id"])
+            await conn.execute(UPDATE_PROVIDER_ENQUIRY_COUNT, provider_data["id"])
     except HTTPException:
         raise
     except Exception as exc:

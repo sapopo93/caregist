@@ -98,9 +98,9 @@ async def submit_claim(
             req.claimant_email,
             "Unlock visibility analytics for your listing",
             f"<p>Hi {req.claimant_name},</p>"
-            f"<p>Upgrade to Provider Pro (£89/mo) to unlock visibility analytics, "
-            f"competitor benchmarking, and enhanced search placement for {provider_name}.</p>"
-            f"<p><a href='https://caregist.co.uk/pricing'>See Provider Pro plans →</a></p>",
+            f"<p>Upgrade your claimed listing to unlock richer profile content, "
+            f"competitor benchmarking, and higher-visibility placement for {provider_name}.</p>"
+            f"<p><a href='https://caregist.co.uk/pricing#provider-plans'>See provider plans →</a></p>",
             send_after=now + timedelta(days=7),
         )
     except Exception:
@@ -118,13 +118,8 @@ async def claim_status(
     _auth: dict = Depends(validate_api_key),
 ) -> dict:
     """Check claim status for a provider (by the authenticated user's email)."""
-    # Resolve API key to user email
-    async with get_connection() as conn:
-        key_row = await conn.fetchrow(
-            "SELECT u.email FROM api_keys ak JOIN users u ON u.id = ak.user_id WHERE ak.name = $1 AND ak.is_active = true",
-            _auth.get("name", ""),
-        )
-    if not key_row:
+    claimant_email = _auth.get("email")
+    if not claimant_email:
         return {"data": None}
 
     try:
@@ -132,7 +127,7 @@ async def claim_status(
             provider = await conn.fetchrow(PROVIDER_ID_BY_SLUG, slug)
             if not provider:
                 raise HTTPException(status_code=404, detail=f"Provider not found: {slug}")
-            row = await conn.fetchrow(GET_CLAIM_STATUS, key_row["email"], provider["id"])
+            row = await conn.fetchrow(GET_CLAIM_STATUS, claimant_email, provider["id"])
     except HTTPException:
         raise
     except Exception as exc:

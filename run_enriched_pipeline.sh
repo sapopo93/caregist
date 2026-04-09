@@ -25,3 +25,4 @@ fi
 "$PYTHON" -u clean_cqc.py
 "$PYTHON" -u quality_audit.py
 "$PYTHON" -u prepare_directory.py
+"$PYTHON" -u support_quality_hook.py || true

@@ -1,11 +1,12 @@
 import Link from "next/link";
 import RatingBadge from "@/components/RatingBadge";
 import PrintButton from "@/components/PrintButton";
+import { getServerApiBase, getServerApiKey } from "@/lib/server-api-config";
 import type { Metadata } from "next";
 
 async function fetchGroup(slug: string) {
-  const API_BASE = process.env.API_URL || "http://localhost:8000";
-  const API_KEY = process.env.API_KEY || "dev_key_change_me";
+  const API_BASE = getServerApiBase();
+  const API_KEY = getServerApiKey();
   const res = await fetch(`${API_BASE}/api/v1/groups/${slug}`, {
     headers: { "X-API-Key": API_KEY },
     next: { revalidate: 3600 },

@@ -2,6 +2,7 @@ import Link from "next/link";
 import ExportCSVButton from "@/components/ExportCSVButton";
 import PrintButton from "@/components/PrintButton";
 import { searchProviders } from "@/lib/api";
+import { getServerApiBase, getServerApiKey } from "@/lib/server-api-config";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -12,8 +13,8 @@ export const metadata: Metadata = {
 };
 
 async function fetchGroups(q?: string, page?: string) {
-  const API_BASE = process.env.API_URL || "http://localhost:8000";
-  const API_KEY = process.env.API_KEY || "dev_key_change_me";
+  const API_BASE = getServerApiBase();
+  const API_KEY = getServerApiKey();
   const params = new URLSearchParams({ per_page: "25", page: page || "1", min_locations: "3" });
   if (q) params.set("q", q);
 
