@@ -17,9 +17,9 @@ const STATS = [
 ];
 
 const CONTEXT_STATS = [
-  { value: "4.8 weeks", label: "Average family search time before choosing care", source: "Lottie care-seeker survey" },
-  { value: "2.2 weeks", label: "Average time from decision to move-in", source: "Lottie care-seeker survey" },
-  { value: "44%", label: "Families who later regret their care choice", source: "Lottie care-seeker survey" },
+  { value: "4.8 weeks", label: "Average family search time before choosing care", source: "UK care-seeker research" },
+  { value: "2.2 weeks", label: "Average time from decision to move-in", source: "UK care-seeker research" },
+  { value: "44%", label: "Families who later regret their care choice", source: "UK care-seeker research" },
 ];
 
 const VALUE_TABLE = [
@@ -111,7 +111,7 @@ export default function WhyCareGistPage() {
       <div className="bg-cream border border-stone rounded-xl p-6 mb-10">
         <h2 className="text-2xl font-bold text-bark mb-3">Where CareGist fits</h2>
         <p className="text-sm text-charcoal">
-          LaingBuisson is strong for periodic strategy and institutional intelligence. CareGist is built for operational, continuous-use workflows at a fraction of the cost.
+          Market intelligence reports are strong for periodic strategy. CareGist is built for operational, continuous-use workflows at a fraction of the cost.
         </p>
       </div>
 
