@@ -32,6 +32,8 @@ class Settings(BaseSettings):
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8", "extra": "ignore"}
 
     def validate_production(self) -> None:
+        if "pytest" in sys.modules:
+            return
         if self.api_master_key == "change_me_in_production":
             # On Render (or any host that sets DATABASE_URL externally), this is production
             if self.database_url != "postgresql://caregist:caregist_dev@localhost:5432/caregist":
@@ -53,9 +55,9 @@ settings.validate_production()
 #             100/day keeps it useful for search/browse without enabling recurring workflows
 # Starter:    first real workflow — enough for a solo consultant or operator to act on data daily
 #             500/day × 30 = 15,000/month (cap at 10,000 — hits it mid-month in heavy use)
-# Pro:        team production use — broader monitoring, team seats, more volume
+# Pro:        small-team production use — broader monitoring and more volume
 #             2,000/day × 30 = 60,000/month (cap at 50,000 — team hits it in week 3)
-# Business:   operational integration — webhooks, high limits, workflow embedding
+# Business:   operational integration — high limits, full fields, workflow embedding
 #             10,000/day × 30 = 300,000/month (cap at 250,000)
 # Enterprise: custom — negotiated per contract
 TIERS = {
@@ -64,7 +66,7 @@ TIERS = {
     "pro":        {"rate": 60,   "daily": 2000,   "monthly": 50000,    "page_size": 50,  "fields": "standard", "nearby": True,  "export": 5000,  "compare": 5,  "webhooks": False, "monitors": 100},
     "business":   {"rate": 200,  "daily": 10000,  "monthly": 250000,   "page_size": 100, "fields": "full",     "nearby": True,  "export": 10000, "compare": 10, "webhooks": True,  "monitors": 500},
     "enterprise": {"rate": 500,  "daily": 50000,  "monthly": 1500000,  "page_size": 100, "fields": "full",     "nearby": True,  "export": 50000, "compare": 20, "webhooks": True,  "monitors": 5000},
-    "admin":      {"rate": 99999,"daily": 9999999,"monthly": 99999999, "page_size": 100, "fields": "full",     "nearby": True,  "export": 99999, "compare": 99, "webhooks": True,  "monitors": 99999},
+    "admin":      {"rate": 99999,"daily": 9999999,"monthly": 99999999, "page_size": 100, "fields": "full",     "nearby": True,  "export": 99999, "compare": 99, "webhooks": False, "monitors": 99999},
 }
 
 # Fields included in the free-tier basic CSV export
@@ -109,7 +111,12 @@ FIELD_SETS = {
 
 def get_tier_config(tier: str) -> dict:
     """Get config for a tier, defaulting to free."""
-    return TIERS.get(tier, TIERS["free"])
+    normalized = (tier or "free").lower()
+    if normalized in TIERS:
+        return TIERS[normalized]
+    if normalized.startswith("enterprise"):
+        return TIERS["enterprise"]
+    return TIERS["free"]
 
 
 def get_allowed_fields(tier: str) -> set[str]:

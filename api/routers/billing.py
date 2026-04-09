@@ -37,7 +37,7 @@ def init_stripe():
 
 class CheckoutRequest(BaseModel):
     email: EmailStr
-    tier: str  # "starter" or "pro"
+    tier: str  # "starter", "pro", or "business"
 
 
 @router.post("/checkout")
@@ -53,6 +53,11 @@ async def create_checkout(req: CheckoutRequest, _auth: dict = Depends(validate_a
     }
     price_id = price_map.get(req.tier)
     if not price_id:
+        if req.tier == "enterprise":
+            raise HTTPException(
+                status_code=422,
+                detail="Enterprise plans require custom setup. Contact enterprise@caregist.co.uk to get started.",
+            )
         raise HTTPException(status_code=400, detail=f"Invalid tier: {req.tier}. Choose 'starter', 'pro', or 'business'.")
 
     # Find or create Stripe customer

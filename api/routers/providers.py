@@ -5,6 +5,7 @@ from __future__ import annotations
 import csv
 import io
 import logging
+from io import BytesIO
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
@@ -250,24 +251,16 @@ async def export_providers_csv(
         from api.utils.email_queue import queue_email
         from datetime import datetime, timedelta, timezone
         await log_event("csv_download", "search", meta={"tier": tier, "rows": len(data), "total": total, "crm_state": "data_intent_user"})
-        # Get user email for follow-up
-        try:
-            async with get_connection() as conn:
-                urow = await conn.fetchrow(
-                    "SELECT u.email FROM api_keys ak JOIN users u ON u.id = ak.user_id WHERE ak.name = $1",
-                    _auth.get("name", ""),
-                )
-            if urow and urow["email"]:
-                await queue_email(
-                    urow["email"],
-                    "Your CareGist export is ready — want alerts?",
-                    "<p>You recently exported a provider list from CareGist.</p>"
-                    "<p>Want to be notified when any of these providers change their CQC rating?</p>"
-                    "<p><a href='https://caregist.co.uk/pricing'>Set up monitoring alerts →</a></p>",
-                    send_after=datetime.now(timezone.utc) + timedelta(hours=24),
-                )
-        except Exception:
-            pass
+        user_email = _auth.get("email")
+        if user_email:
+            await queue_email(
+                user_email,
+                "Your CareGist export is ready — want alerts?",
+                "<p>You recently exported a provider list from CareGist.</p>"
+                "<p>Want to be notified when any of these providers change their CQC rating?</p>"
+                "<p><a href='https://caregist.co.uk/pricing'>Set up monitoring alerts →</a></p>",
+                send_after=datetime.now(timezone.utc) + timedelta(hours=24),
+            )
     except Exception:
         pass
 
@@ -276,6 +269,82 @@ async def export_providers_csv(
         iter([buf.getvalue()]),
         media_type="text/csv",
         headers={"Content-Disposition": "attachment; filename=caregist_export.csv"},
+    )
+
+
+@router.get("/export.xlsx")
+async def export_providers_xlsx(
+    response: Response,
+    q: str | None = Query(None, max_length=500),
+    region: str | None = Query(None),
+    rating: str | None = Query(None),
+    type: str | None = Query(None),
+    service_type: str | None = Query(None),
+    postcode: str | None = Query(None, max_length=10),
+    _auth: dict = Depends(validate_api_key),
+) -> StreamingResponse:
+    """Export search results as Excel (.xlsx). Row limit depends on tier."""
+    import openpyxl
+    from openpyxl.styles import Font
+
+    tier = _auth["tier"]
+    config = get_tier_config(tier)
+    add_rate_limit_headers(response, tier, _auth["remaining"])
+
+    row_limit = config["export"]
+    if row_limit == 0:
+        raise HTTPException(status_code=403, detail="Export requires an account. Sign up free at /signup")
+
+    if tier in ("free", "starter") and not any([q, region, rating, type, service_type, postcode]):
+        raise HTTPException(status_code=400, detail="Provide at least one filter. Upgrade to Pro for unfiltered export.")
+
+    if q and "\x00" in q:
+        q = q.replace("\x00", "")
+        if not q.strip():
+            q = None
+
+    is_basic = tier == "free"
+
+    try:
+        async with get_connection() as conn:
+            rows = await conn.fetch(SEARCH_EXPORT + " LIMIT $7", q, region, rating, type, service_type, postcode, row_limit)
+    except Exception as exc:
+        logger.error("Export (xlsx) query failed: %s", exc)
+        raise HTTPException(status_code=503, detail="Export failed.")
+
+    if not rows:
+        raise HTTPException(status_code=404, detail="No results to export.")
+
+    if is_basic:
+        fieldnames = BASIC_CSV_FIELDS
+        data = [{k: _row_to_dict(r).get(k) for k in fieldnames} for r in rows]
+    else:
+        data = [filter_fields(_row_to_dict(r), tier) for r in rows]
+        fieldnames = [k for k in data[0].keys() if data[0][k] is not None]
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "CareGist Export"
+    ws.append(fieldnames)
+    for cell in ws[1]:
+        cell.font = Font(bold=True)
+    for row in data:
+        ws.append([row.get(k) for k in fieldnames])
+
+    buf = BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+
+    try:
+        from api.utils.analytics import log_event
+        await log_event("xlsx_download", "search", meta={"tier": tier, "rows": len(data)})
+    except Exception:
+        pass
+
+    return StreamingResponse(
+        iter([buf.getvalue()]),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=caregist_export.xlsx"},
     )
 
 
@@ -369,14 +438,9 @@ async def create_monitor(
     config = get_tier_config(tier)
     max_monitors = config.get("monitors", 2)
 
-    async with get_connection() as conn:
-        key_row = await conn.fetchrow(
-            "SELECT user_id FROM api_keys WHERE name = $1 AND is_active = true",
-            _auth.get("name", ""),
-        )
-    if not key_row or not key_row["user_id"]:
+    user_id = _auth.get("user_id")
+    if not user_id:
         raise HTTPException(status_code=401, detail="User account required.")
-    user_id = key_row["user_id"]
 
     provider_id = await _resolve_provider_id(slug)
 
@@ -404,18 +468,14 @@ async def remove_monitor(
     _auth: dict = Depends(validate_api_key),
 ) -> dict:
     """Stop monitoring a provider."""
-    async with get_connection() as conn:
-        key_row = await conn.fetchrow(
-            "SELECT user_id FROM api_keys WHERE name = $1 AND is_active = true",
-            _auth.get("name", ""),
-        )
-    if not key_row or not key_row["user_id"]:
+    user_id = _auth.get("user_id")
+    if not user_id:
         raise HTTPException(status_code=401, detail="User account required.")
 
     provider_id = await _resolve_provider_id(slug)
 
     async with get_connection() as conn:
-        await conn.execute(DELETE_MONITOR, key_row["user_id"], provider_id)
+        await conn.execute(DELETE_MONITOR, user_id, provider_id)
 
     return {"monitoring": False}
 
@@ -426,18 +486,14 @@ async def monitor_status(
     _auth: dict = Depends(validate_api_key),
 ) -> dict:
     """Check if the current user is monitoring a provider."""
-    async with get_connection() as conn:
-        key_row = await conn.fetchrow(
-            "SELECT user_id FROM api_keys WHERE name = $1 AND is_active = true",
-            _auth.get("name", ""),
-        )
-    if not key_row or not key_row["user_id"]:
+    user_id = _auth.get("user_id")
+    if not user_id:
         return {"monitoring": False}
 
     provider_id = await _resolve_provider_id(slug)
 
     async with get_connection() as conn:
-        row = await conn.fetchrow(CHECK_MONITOR, key_row["user_id"], provider_id)
+        row = await conn.fetchrow(CHECK_MONITOR, user_id, provider_id)
 
     return {"monitoring": row is not None}
 

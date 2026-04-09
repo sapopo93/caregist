@@ -1,11 +1,12 @@
-import Link from "next/link";
 import ApiApplicationForm from "@/components/ApiApplicationForm";
 import type { Metadata } from "next";
+import TrackEventOnMount from "@/components/TrackEventOnMount";
+import TrackedLink from "@/components/TrackedLink";
 
 export const metadata: Metadata = {
-  title: "CareGist API — CQC Provider Data for Developers",
+  title: "CareGist API — Workflow-Ready UK Care-Provider Data",
   description:
-    "Programmatic access to 55,818 CQC-registered care providers. Search, filter, and export UK care data via REST API. Updated daily.",
+    "Use CareGist data in dashboard, exports, and API workflows. Daily-refreshed, cleaned, normalised, and geospatially useful on top of the CQC register.",
   alternates: { canonical: "https://caregist.co.uk/api" },
 };
 
@@ -31,35 +32,36 @@ const SAMPLE_JSON = `{
 }`;
 
 const CAPABILITIES = [
-  { title: "Search & Filter", desc: "Query by name, postcode, region, rating, and service type." },
-  { title: "Geographic Radius", desc: "Find providers within a radius of any UK postcode." },
-  { title: "Full Provider Data", desc: "Ratings, coordinates, contact details, inspection history." },
-  { title: "Bulk Export", desc: "CSV and JSON exports with enriched fields." },
-  { title: "Rating Webhooks", desc: "Get notified when providers change rating (Business tier)." },
-  { title: "Daily Refresh", desc: "Data synced from CQC public register daily at 3am." },
+  { title: "Dashboard-first workflow", desc: "Start with search, nearby discovery, saved comparisons, exports, and monitoring before writing integration code." },
+  { title: "Geospatial search", desc: "Query by postcode, region, service type, and nearby radius using cleaned coordinates and locality fields." },
+  { title: "Operational exports", desc: "Move lists into analyst and operator workflows with plan-based CSV exports and field visibility." },
+  { title: "API access", desc: "Use the same cleaned dataset programmatically when you need embedding, product integration, or recurring automation." },
+  { title: "Monitoring layer", desc: "Track providers for rating changes so teams do not have to poll the raw register manually." },
+  { title: "Daily refresh", desc: "Data syncs against the public CQC register every day; we avoid claiming live source updates." },
 ];
 
 const TIERS = [
-  { name: "Starter", price: "\u00A339 + VAT/mo", features: "30 req/sec, nearby search, compare, 500-row export" },
-  { name: "Pro", price: "\u00A389 + VAT/mo", features: "60 req/sec, bulk export, 100 monitors, alerts" },
-  { name: "Business", price: "\u00A3249 + VAT/mo", features: "200 req/sec, full fields, webhooks, 10K req/day" },
+  { name: "Starter", price: "\u00A339 + VAT/mo", features: "Nearby search, 500-row export, 15 monitors, 30 req/min" },
+  { name: "Pro", price: "\u00A399 + VAT/mo", features: "5,000-row export, 100 monitors, 60 req/min, recommended for recurring team use" },
+  { name: "Business", price: "\u00A3399 + VAT/mo", features: "Full fields, webhooks, 10,000-row export, 500 monitors, 10K req/day" },
 ];
 
 export default function ApiLandingPage() {
   return (
     <div className="max-w-4xl mx-auto px-6 py-12">
+      <TrackEventOnMount eventType="api_docs_visit" eventSource="api_landing" />
       {/* AEO Block */}
       <section className="bg-parchment border-b border-stone px-6 py-4 rounded-t-lg text-sm text-charcoal leading-relaxed mb-8">
         <p>
-          CareGist provides programmatic access to 55,818 CQC-registered care providers across
-          England via a REST API. Data is cleaned, normalised, and refreshed daily from the CQC
-          public register.
+          CareGist exposes daily-refreshed UK care-provider data through the same layer that powers
+          the dashboard and exports. The goal is not raw feed access alone. The goal is operationally
+          usable regulatory data.
         </p>
       </section>
 
-      <h1 className="text-3xl font-bold mb-2">CareGist API</h1>
+      <h1 className="text-3xl font-bold mb-2">Dashboard, exports, and API on one data layer</h1>
       <p className="text-dusk mb-10" style={{ fontFamily: "Lora" }}>
-        Build on top of the most complete UK care provider dataset.
+        Use CareGist in the way your team actually works: browser first, export next, API when embedding and automation matter.
       </p>
 
       {/* Capabilities */}
@@ -85,30 +87,33 @@ export default function ApiLandingPage() {
         <h2 className="text-xl font-bold mb-4">Pricing</h2>
         <div className="grid md:grid-cols-3 gap-4">
           {TIERS.map((t) => (
-            <div key={t.name} className="bg-cream border border-stone rounded-lg p-5 text-center">
+            <div key={t.name} className={`bg-cream border rounded-lg p-5 text-center ${t.name === "Pro" ? "border-clay shadow-sm" : "border-stone"}`}>
               <h3 className="font-bold text-bark">{t.name}</h3>
+              {t.name === "Pro" && <p className="text-[10px] uppercase tracking-[0.2em] text-clay mt-2">Recommended</p>}
               <p className="text-2xl font-bold text-clay mt-2">{t.price}</p>
               <p className="text-xs text-dusk mt-2">{t.features}</p>
             </div>
           ))}
         </div>
         <p className="text-sm text-dusk mt-4 text-center">
-          <Link href="/pricing" className="text-clay underline">See full pricing details</Link>
+          <TrackedLink href="/pricing" eventType="pricing_cta_click" eventSource="api_landing">
+            <span className="text-clay underline">See full pricing details</span>
+          </TrackedLink>
         </p>
       </div>
 
       {/* Application Form */}
       <div className="bg-cream border border-stone rounded-lg p-6">
-        <h2 className="text-xl font-bold mb-4">Apply for API Access</h2>
+        <h2 className="text-xl font-bold mb-4">Need a reviewed integration path?</h2>
         <p className="text-sm text-dusk mb-6">
-          Tell us about your use case. We review applications within 2 business days.
+          Starter, Pro, and Business can begin self-serve. Use this form if you want help scoping a higher-volume integration or enterprise procurement path.
         </p>
         <ApiApplicationForm />
       </div>
 
       {/* Trust */}
       <p className="text-center text-xs text-dusk mt-8">
-        Data sourced from CQC public register · Updated daily · All plans include SLA
+        Data sourced from the CQC public register · Updated daily · Built to make raw regulatory data usable inside workflows
       </p>
     </div>
   );

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import LoginPromptModal from "@/components/LoginPromptModal";
+import { trackEvent } from "@/lib/analytics";
 
 export default function ExportCSVButton({ exportUrl }: { exportUrl: string }) {
   const [tier, setTier] = useState<string | null>(null);
@@ -9,6 +10,7 @@ export default function ExportCSVButton({ exportUrl }: { exportUrl: string }) {
   const [showModal, setShowModal] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
+  const [format, setFormat] = useState<"csv" | "xlsx">("csv");
 
   useEffect(() => {
     setTier(localStorage.getItem("caregist_tier"));
@@ -26,7 +28,9 @@ export default function ExportCSVButton({ exportUrl }: { exportUrl: string }) {
 
     setDownloading(true);
     try {
-      const res = await fetch(exportUrl, {
+      const base = exportUrl.replace(/\/export\.(csv|xlsx)$/, "");
+      const url = `${base}/export.${format}`;
+      const res = await fetch(url, {
         headers: { "X-API-Key": apiKey! },
       });
       if (!res.ok) {
@@ -35,12 +39,13 @@ export default function ExportCSVButton({ exportUrl }: { exportUrl: string }) {
         return;
       }
       const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
+      const objectUrl = URL.createObjectURL(blob);
       const a = document.createElement("a");
-      a.href = url;
-      a.download = "caregist_export.csv";
+      a.href = objectUrl;
+      a.download = `caregist_export.${format}`;
       a.click();
-      URL.revokeObjectURL(url);
+      URL.revokeObjectURL(objectUrl);
+      void trackEvent("export_cta_click", "export_button", { tier: tier || "free", format });
 
       if (isFree) {
         setShowUpgrade(true);
@@ -54,21 +59,39 @@ export default function ExportCSVButton({ exportUrl }: { exportUrl: string }) {
 
   return (
     <>
-      <button
-        onClick={handleDownload}
-        disabled={downloading}
-        className="text-sm text-clay underline hover:text-bark disabled:opacity-50"
-      >
-        {downloading
-          ? "Downloading..."
-          : isLoggedIn && isFree
-            ? "Export CSV (Basic)"
-            : "Export CSV"}
-      </button>
+      <div className="flex items-center gap-2">
+        {!isFree && (
+          <div className="inline-flex rounded border border-stone overflow-hidden text-xs">
+            <button
+              onClick={() => setFormat("csv")}
+              className={`px-2 py-1 ${format === "csv" ? "bg-bark text-cream" : "bg-cream text-dusk hover:bg-parchment"}`}
+            >
+              CSV
+            </button>
+            <button
+              onClick={() => setFormat("xlsx")}
+              className={`px-2 py-1 ${format === "xlsx" ? "bg-bark text-cream" : "bg-cream text-dusk hover:bg-parchment"}`}
+            >
+              Excel
+            </button>
+          </div>
+        )}
+        <button
+          onClick={handleDownload}
+          disabled={downloading}
+          className="text-sm text-clay underline hover:text-bark disabled:opacity-50"
+        >
+          {downloading
+            ? "Downloading..."
+            : isLoggedIn && isFree
+              ? "Export CSV (Basic)"
+              : `Export ${format.toUpperCase()}`}
+        </button>
+      </div>
 
       {showUpgrade && isFree && (
         <span className="text-xs text-dusk ml-2">
-          Showing up to 100 rows.{" "}
+          Showing up to 25 rows.{" "}
           <a href="/pricing" className="text-clay underline">
             Upgrade for full export
           </a>

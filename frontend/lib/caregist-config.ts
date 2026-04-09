@@ -33,9 +33,9 @@ export const BRAND = {
 
 // ── Buyer Segments ──
 export const BUYERS: BuyerSegment[] = [
-  { label: "Developers / data buyers",    color: "#3b82f6", value: 4 },
-  { label: "Consultants / commissioners", color: "#8b5cf6", value: 3 },
-  { label: "Operators / providers",       color: "#C8862A", value: 2 },
+  { label: "CareTech / product teams",    color: "#3b82f6", value: 4 },
+  { label: "Operators / care groups",     color: "#C8862A", value: 3 },
+  { label: "Commissioners / ICSs",        color: "#8b5cf6", value: 2 },
   { label: "Families",                    color: "#10b981", value: 1 },
 ];
 
@@ -62,7 +62,7 @@ export const PRICING_LADDER: PricingTier[] = [
       "Browse profiles, ratings, and inspection dates",
       "Sample CSV export (25 rows)",
       "1 provider watchlist",
-      "5 req/sec \u00B7 100 req/day",
+      "5 req/min \u00B7 100 req/day",
     ],
     limit: "No nearby search \u00B7 no compare \u00B7 basic fields only \u00B7 no recurring workflows",
     pricingLogic:
@@ -70,7 +70,7 @@ export const PRICING_LADDER: PricingTier[] = [
   },
   {
     tier: "Starter",
-    forWho: "Solo builders, care consultants, small operators",
+    forWho: "Solo builders, analysts, care consultants, small operators",
     color: "#8b5cf6",
     price: "\u00A339 + VAT/mo",
     priceNote: "Cancel anytime",
@@ -81,9 +81,9 @@ export const PRICING_LADDER: PricingTier[] = [
       "CSV & Excel export (500 rows)",
       "15 provider watchlists with alerts",
       "Standard fields incl. phone, coordinates, specialisms",
-      "30 req/sec \u00B7 500 req/day",
+      "30 req/min \u00B7 500 req/day",
     ],
-    limit: "Single seat \u00B7 no webhooks \u00B7 standard fields",
+    limit: "Built to prove the data in a real workflow \u00B7 standard fields only",
     pricingLogic:
       "First real workflow tier. Enough usage to solve an actual repeated problem — tracking local competitors, monitoring a shortlist, or exporting for a report.",
   },
@@ -99,20 +99,20 @@ export const PRICING_LADDER: PricingTier[] = [
       "Compare up to 5 providers",
       "Bulk CSV & Excel export (5,000 rows)",
       "100 provider monitors with rating-change alerts",
-      "Team use \u2014 add extra seats at \u00A315/user/mo",
+      "Team seats \u2014 coming soon \u00B7 \u00A315/user/mo",
       "Priority support",
-      "60 req/sec \u00B7 2,000 req/day",
+      "60 req/min \u00B7 2,000 req/day",
     ],
     limit: "No webhooks \u00B7 standard fields",
     pricingLogic:
-      "Team production tier. Broader monitoring, more volume, and shared workflows. Each member gets their own login, activity history, and access controls.",
+      "Production tier for recurring operational work. More export headroom, more monitoring coverage, and enough usage to support a small working team.",
   },
   {
     tier: "Business",
     forWho: "Developers, SaaS builders, multi-site operators",
     color: "#ef4444",
     price: "\u00A3399 + VAT/mo",
-    priceNote: "Cancel anytime",
+    priceNote: "Cancel anytime \u00B7 webhooks included",
     includes: [
       "Everything in Pro",
       "Webhooks for rating & status changes",
@@ -121,11 +121,11 @@ export const PRICING_LADDER: PricingTier[] = [
       "500 provider monitors",
       "Admin controls & audit depth",
       "Onboarding support",
-      "200 req/sec \u00B7 10,000 req/day",
+      "200 req/min \u00B7 10,000 req/day",
     ],
     limit: "For higher limits or custom terms \u2014 see Enterprise.",
     pricingLogic:
-      "Operational integration tier. Webhooks, embedding, and high limits for teams building on top of CareGist or running serious monitoring workflows.",
+      "Operational integration tier. Higher limits and fuller data access for teams embedding CareGist into products or serious monitoring workflows.",
   },
   {
     tier: "Enterprise",
@@ -269,7 +269,7 @@ export const REVENUE_CONTROLS: RevenueControl[] = [
     color: "#C8862A",
     trigger: "User hits starter export limit or needs more monitors",
     upgradeMoment: "At export limit boundary or monitor cap",
-    paywallMessage: "Upgrade to Pro for bulk exports, more monitors, rating-change alerts, and team workflows.",
+    paywallMessage: "Upgrade to Pro for bulk exports, more monitors, and recurring monitoring workflows.",
     targetConversion: "15\u201325% of active Starter users",
     targetARPU: "\u00A399/mo",
     primarySurface: "Provider Profile \u00B7 CSV export gate \u00B7 Monitor cap",
@@ -277,9 +277,9 @@ export const REVENUE_CONTROLS: RevenueControl[] = [
   {
     tier: "Business",
     color: "#ef4444",
-    trigger: "Repeated bulk export, enterprise inquiry, webhook need, or stated integration intent",
-    upgradeMoment: "After use-case qualification or webhook need identified",
-    paywallMessage: "Upgrade to Business for webhooks, full field access, admin controls, and 10,000 req/day.",
+    trigger: "Repeated bulk export, enterprise inquiry, or stated integration intent",
+    upgradeMoment: "After use-case qualification or higher-volume integration need identified",
+    paywallMessage: "Upgrade to Business for full field access, higher export capacity, and 10,000 req/day.",
     targetConversion: "20\u201340% of qualified applicants",
     targetARPU: "\u00A3399/mo",
     primarySurface: "API Landing \u00B7 Search Results \u00B7 outbound follow-up",
@@ -560,7 +560,7 @@ export const PAGE_SPECS: PageSpec[] = [
     gate: "login",
     capturedAsset: "Identified user + search query (location, rating, service type) \u2014 high segmentation signal",
     revenuePath: "Login to export \u2192 free basic CSV; Data Pro unlocks enriched CSV with contacts, coordinates, and inspection history",
-    upgradeTrigger: "User hits free row limit (100 rows) or selects locked enriched columns",
+    upgradeTrigger: "User hits free row limit (25 rows) or selects locked enriched columns",
     successMetric: "CSV click-to-login conversion rate (target: \u226515% of search sessions)",
     followUpAutomation: "Post-export email: \u2018Your list is ready. Want alerts when any of these providers change rating?\u2019 \u2192 Pro Alerts upsell.",
     trustLayer: "\u2018Sourced from CQC public register, refreshed weekly\u2019 in results header. Show record count and last refresh timestamp.",
