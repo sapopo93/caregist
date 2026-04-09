@@ -111,7 +111,7 @@ export default function WhyCareGistPage() {
       <div className="bg-cream border border-stone rounded-xl p-6 mb-10">
         <h2 className="text-2xl font-bold text-bark mb-3">Where CareGist fits</h2>
         <p className="text-sm text-charcoal">
-          Market intelligence reports are strong for periodic strategy. CareGist is built for operational, continuous-use workflows at a fraction of the cost.
+          LaingBuisson is strong for periodic strategy and institutional intelligence. CareGist is built for operational, continuous-use workflows at a fraction of the cost.
         </p>
       </div>
 
@@ -130,7 +130,7 @@ export default function WhyCareGistPage() {
         <div className="bg-cream border border-stone rounded-lg p-5">
           <h3 className="font-bold text-bark mb-2">Care groups and operators</h3>
           <ul className="space-y-2 text-sm text-charcoal">
-            <li>Monitor local markets and competitor changes continuously</li>
+            <li>Monitor local markets and rating changes continuously</li>
             <li>Benchmark group portfolios using the same cleaned dataset</li>
             <li>Export shortlists and regional views into operating workflows</li>
             <li>Use dashboard-first access without needing internal engineering support</li>
@@ -154,7 +154,7 @@ export default function WhyCareGistPage() {
             <li>Claimed providers can still add richer profile information</li>
             <li>Search and browse flows preserve existing directory utility</li>
             <li>These are valuable secondary motions, not the launch message</li>
-            <li>Operational data use remains the primary GTM narrative</li>
+            <li>Operational workflows stay at the centre of the product story</li>
           </ul>
         </div>
       </div>

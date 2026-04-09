@@ -62,7 +62,7 @@ export const PRICING_LADDER: PricingTier[] = [
       "Browse profiles, ratings, and inspection dates",
       "Sample CSV export (25 rows)",
       "1 provider watchlist",
-      "2 requests/sec \u00B7 20 requests/day \u00B7 60 requests/week",
+      "2 requests/sec \u00B7 20 requests/day \u00B7 60 requests / 7 days",
     ],
     limit: "No nearby search \u00B7 no compare \u00B7 basic fields only \u00B7 not for ongoing business workflows",
     pricingLogic:
@@ -92,41 +92,41 @@ export const PRICING_LADDER: PricingTier[] = [
     forWho: "Small teams, operators, analysts, group managers",
     color: "#C8862A",
     price: "\u00A399 + VAT/mo",
-    priceNote: "Includes 3 users \u00B7 extra users \u00A315 + VAT/mo",
+    priceNote: "Includes 3 named access seats \u00B7 extra seats \u00A315 + VAT/mo",
     recommended: true,
     includes: [
       "Everything in Starter",
       "Compare up to 5 providers",
       "Bulk CSV & Excel export (5,000 rows)",
       "100 provider monitors with rating-change alerts",
-      "3 named users included",
-      "Extra users at \u00A315 + VAT / user / month",
+      "3 named access seats included",
+      "Extra seats at \u00A315 + VAT / seat / month",
       "Priority support for small-team workflows",
       "25 requests/sec \u00B7 2,000 requests/day",
     ],
     limit: "No webhooks \u00B7 standard fields",
     pricingLogic:
-      "Production tier for recurring operational work. It is designed to stop shared-password use, improve accountability, and give a small team enough headroom to run the workflow daily.",
+      "Production tier for recurring operational work. Built for small teams that need named access, clearer accountability, and enough headroom to run the workflow daily.",
   },
   {
     tier: "Business",
     forWho: "Developers, SaaS builders, multi-site operators",
     color: "#ef4444",
     price: "\u00A3399 + VAT/mo",
-    priceNote: "Includes 10 users \u00B7 webhooks and admin support",
+    priceNote: "Includes 10 named access seats \u00B7 webhooks and admin support",
     includes: [
       "Everything in Pro",
       "Webhooks for rating & status changes",
       "Full field access incl. registration dates, geocode source",
       "Bulk CSV & Excel export (10,000 rows)",
       "500 provider monitors",
-      "10 named users included",
+      "10 named access seats included",
       "Operational onboarding support",
       "60 requests/sec \u00B7 10,000 requests/day",
     ],
     limit: "For higher limits or custom terms \u2014 see Enterprise.",
     pricingLogic:
-      "Operational integration tier. Higher limits, webhooks, fuller fields, and stronger team support for products, internal ops tooling, and recurring monitoring programs.",
+      "Operational integration tier. Higher limits, webhooks, fuller fields, and stronger team support for product integrations, internal workflows, and recurring monitoring programs.",
   },
   {
     tier: "Enterprise",
@@ -144,7 +144,7 @@ export const PRICING_LADDER: PricingTier[] = [
     ],
     limit: "",
     pricingLogic:
-      "Enterprise motion for public sector, large care groups, and institutional buyers. Slower deal cycle \u2014 expand into after product-market fit with Starter\u2013Business.",
+      "Built for commissioners, local authorities, ICSs, and large care groups that need custom limits, procurement support, security review, and contractual terms.",
   },
 ];
 
@@ -243,14 +243,14 @@ export const PLAN_PRIMARY_CTA: Record<string, string> = {
 
 export const PLAN_NEXT_STEP: Record<string, string> = {
   free: "Starter unlocks nearby search, full starter exports, and a real solo workflow.",
-  starter: "Pro adds 3 named users, broader monitoring, and more export headroom for daily team use.",
+  starter: "Pro adds 3 named access seats, broader monitoring, and more export headroom for daily team use.",
   pro: "Business adds webhooks, full-field operational integration, and stronger admin support.",
   business: "Enterprise adds custom limits, procurement support, security review, and contract terms.",
   enterprise: "Talk to sales for custom implementation and procurement support.",
 };
 
 export const PLAN_LIMIT_SUMMARY: Record<string, string> = {
-  free: "2 requests/sec \u00B7 20 requests/day \u00B7 60 requests/week",
+  free: "2 requests/sec \u00B7 20 requests/day \u00B7 60 requests / 7 days",
   starter: "10 requests/sec \u00B7 500 requests/day",
   pro: "25 requests/sec \u00B7 2,000 requests/day",
   business: "60 requests/sec \u00B7 10,000 requests/day",

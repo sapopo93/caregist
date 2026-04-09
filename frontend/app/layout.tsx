@@ -7,6 +7,7 @@ import CookieConsent from "@/components/CookieConsent";
 import SupportWidgetMount from "@/components/SupportWidgetMount";
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://caregist.co.uk"),
   title: "CareGist — UK Care-Provider Data Intelligence",
   description:
     "Daily-refreshed UK care-provider data for dashboard, exports, and API workflows. Cleaned, normalised, geospatial, and monitorable on top of the CQC register.",
@@ -16,6 +17,13 @@ export const metadata: Metadata = {
     siteName: "CareGist",
     type: "website",
     locale: "en_GB",
+    images: [{ url: "/opengraph-image" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "CareGist — UK Care-Provider Data Intelligence",
+    description: "Daily-refreshed UK care-provider data for dashboard, exports, and API workflows.",
+    images: ["/twitter-image"],
   },
 };
 

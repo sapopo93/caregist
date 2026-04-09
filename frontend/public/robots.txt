@@ -5,3 +5,4 @@ Disallow: /admin/
 Disallow: /dashboard/
 
 Sitemap: https://caregist.co.uk/sitemap.xml
+Sitemap: https://caregist.co.uk/provider-sitemap-index.xml

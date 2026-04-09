@@ -166,6 +166,23 @@ async def update_profile(
 
     async with get_connection() as conn:
         await conn.execute(sql, *params)
+        await conn.execute(
+            """
+            UPDATE care_providers
+            SET profile_completeness = LEAST(
+              100,
+              (CASE WHEN profile_description IS NOT NULL AND length(trim(profile_description)) >= 40 THEN 30 ELSE 0 END) +
+              (CASE WHEN COALESCE(jsonb_array_length(profile_photos), 0) > 0 THEN 20 ELSE 0 END) +
+              (CASE WHEN virtual_tour_url IS NOT NULL AND trim(virtual_tour_url) != '' THEN 10 ELSE 0 END) +
+              (CASE WHEN inspection_response IS NOT NULL AND length(trim(inspection_response)) >= 40 THEN 20 ELSE 0 END) +
+              (CASE WHEN logo_url IS NOT NULL AND trim(logo_url) != '' THEN 10 ELSE 0 END) +
+              (CASE WHEN funding_types IS NOT NULL AND array_length(funding_types, 1) > 0 THEN 5 ELSE 0 END) +
+              (CASE WHEN fee_guidance IS NOT NULL AND trim(fee_guidance) != '' THEN 5 ELSE 0 END)
+            )
+            WHERE slug = $1
+            """,
+            slug,
+        )
 
     logger.info("Profile updated for %s by user %s", slug, user_id)
     return {"message": "Profile updated successfully."}

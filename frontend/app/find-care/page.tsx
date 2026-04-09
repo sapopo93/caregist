@@ -3,9 +3,9 @@ import TrustSignal from "@/components/TrustSignal";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Find CQC-rated Care Near You | CareGist",
+  title: "Find Care Near You | CareGist Directory",
   description:
-    "Enter your postcode to find CQC-rated care homes, nursing homes, home care agencies, and GP surgeries near you. Free radius search tool.",
+    "Search CQC-rated care providers by postcode and radius. CareGist keeps directory and claiming flows available while the launch product centres on care-provider data intelligence.",
   alternates: { canonical: "https://caregist.co.uk/find-care" },
 };
 
@@ -26,14 +26,27 @@ export default function FindCarePage() {
       <section className="bg-parchment border-b border-stone px-6 py-4 rounded-t-lg text-sm text-charcoal leading-relaxed mb-8">
         <p>
           Search all 55,818 CQC-registered care providers in England by postcode and radius.
-          Find care homes, nursing homes, home care agencies, and more — rated by the Care Quality Commission.
+          Find care homes, nursing homes, home care agencies, and more — rated by the Care Quality Commission. This directory remains available as a secondary entry point alongside CareGist&apos;s dashboard, exports, and API workflows.
         </p>
       </section>
 
       <h1 className="text-3xl font-bold mb-2">Find CQC-rated care near you</h1>
       <p className="text-dusk mb-8" style={{ fontFamily: "Lora" }}>
-        Enter your postcode to see all rated providers within your chosen radius.
+        Enter your postcode to browse local providers. If you need operational monitoring, exports, or benchmarking, CareGist&apos;s pricing and data explorer are the stronger starting point.
       </p>
+
+      <div className="bg-cream border border-stone rounded-lg p-4 mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <p className="text-xs uppercase tracking-[0.18em] text-dusk mb-1">Operational workflows</p>
+          <p className="text-sm text-bark">
+            Teams using CareGist for recurring search, exports, and monitoring should start with the data product.
+          </p>
+        </div>
+        <div className="flex gap-3 text-sm">
+          <a href="/search" className="text-clay underline">Open data explorer</a>
+          <a href="/pricing" className="text-clay underline">See pricing</a>
+        </div>
+      </div>
 
       <RadiusFinder />
 

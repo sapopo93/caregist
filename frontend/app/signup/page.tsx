@@ -16,7 +16,7 @@ const PLAN_COPY: Record<string, { title: string; body: string }> = {
   },
   pro: {
     title: "Start Pro",
-    body: "Pro is the recommended small-team production tier with 3 included users, broader monitoring, and enough usage for recurring work.",
+    body: "Pro is the recommended small-team production tier with 3 named access seats, broader monitoring, and enough usage for recurring work.",
   },
   business: {
     title: "Start Business",
@@ -64,27 +64,8 @@ function SignupForm() {
         return;
       }
 
-      // Store API key in localStorage for dashboard
-      localStorage.setItem("caregist_api_key", data.api_key);
-      localStorage.setItem("caregist_user", JSON.stringify(data.user));
-      localStorage.setItem("caregist_tier", data.tier);
-      window.dispatchEvent(new Event("caregist_auth_change"));
-
-      // If paid plan, redirect to checkout
-      if (plan !== "free") {
-        const checkoutRes = await fetch("/api/v1/billing/checkout", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "X-API-Key": data.api_key },
-          body: JSON.stringify({ email, tier: plan }),
-        });
-        const checkoutData = await checkoutRes.json();
-        if (checkoutData.checkout_url) {
-          window.location.href = checkoutData.checkout_url;
-          return;
-        }
-      }
-
-      router.push("/dashboard");
+      const next = plan !== "free" ? `/login?upgrade=${plan}` : "/login";
+      router.push(`/verify-email?email=${encodeURIComponent(email)}&next=${encodeURIComponent(next)}`);
     } catch {
       setError("Something went wrong. Please try again.");
     } finally {
@@ -97,6 +78,9 @@ function SignupForm() {
       <h1 className="text-3xl font-bold text-center mb-2">{PLAN_COPY[plan]?.title || "Create your account"}</h1>
       <p className="text-dusk text-center mb-8">
         {PLAN_COPY[plan]?.body || "Create your CareGist account."}
+      </p>
+      <p className="text-xs text-dusk text-center mb-6">
+        We&apos;ll ask you to verify your email before you log in or start billing.
       </p>
 
       {error && (

@@ -1,8 +1,15 @@
+import type { Metadata } from "next";
 import SearchBar from "@/components/SearchBar";
 import EmailCaptureStrip from "@/components/EmailCaptureStrip";
 import TrustSignal from "@/components/TrustSignal";
 import TrackEventOnMount from "@/components/TrackEventOnMount";
 import TrackedLink from "@/components/TrackedLink";
+
+export const metadata: Metadata = {
+  title: "CareGist — The Intelligence Layer for UK Care-Provider Data",
+  description:
+    "Daily-refreshed UK care-provider data for dashboard, exports, monitoring, and API workflows. Built for CareTech teams and care operators first.",
+};
 
 export default function HomePage() {
   return (
@@ -61,7 +68,7 @@ export default function HomePage() {
               </div>
             </div>
             <div className="bg-charcoal/70 border border-white/10 rounded-2xl p-5 backdrop-blur-sm">
-              <p className="text-xs uppercase tracking-[0.2em] text-amber mb-3">Launch moat</p>
+              <p className="text-xs uppercase tracking-[0.2em] text-amber mb-3">What you get</p>
               <div className="grid grid-cols-2 gap-3 text-sm text-stone">
                 <div className="rounded-xl border border-white/10 p-3">Cleaned, normalised provider data</div>
                 <div className="rounded-xl border border-white/10 p-3">Geospatial nearby search</div>
@@ -159,7 +166,7 @@ export default function HomePage() {
               For care operators
             </h2>
             <p className="text-stone text-sm">
-              Monitor local competitors, benchmark care groups, and export cleaner regulatory data into internal operating workflows.
+              Monitor local markets, benchmark care groups, and export cleaner regulatory data into your operating workflows.
             </p>
           </TrackedLink>
         </div>

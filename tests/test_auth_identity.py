@@ -7,6 +7,7 @@ import pytest
 from fastapi import HTTPException
 
 from api.middleware.auth import validate_api_key
+from api.routers.auth import TeamKeyCreateRequest, create_team_key
 from api.routers.comparisons import _get_user_id
 
 
@@ -14,14 +15,19 @@ from api.routers.comparisons import _get_user_id
 async def test_validate_api_key_returns_user_context():
     conn = AsyncMock()
     conn.fetchrow = AsyncMock(
-        return_value={
-            "id": 7,
-            "name": "Alice Example",
-            "email": "alice@example.com",
-            "user_id": 42,
-            "tier": "starter",
-            "is_active": True,
-        }
+        side_effect=[
+            {
+                "id": 7,
+                "name": "Alice Example",
+                "email": "alice@example.com",
+                "user_id": 42,
+                "tier": "starter",
+                "is_active": True,
+                "is_verified": True,
+                "created_at": None,
+            },
+            {"active_keys": 1, "max_users": 3},
+        ]
     )
     conn.execute = AsyncMock()
 
@@ -30,7 +36,7 @@ async def test_validate_api_key_returns_user_context():
         yield conn
 
     with patch("api.middleware.auth.get_connection", mock_get_connection), \
-         patch("api.middleware.auth.check_rate_limit", return_value={"burst_remaining": 1, "daily_remaining": 2, "rolling_7d_remaining": 3, "monthly_remaining": 4}):
+         patch("api.middleware.auth.check_rate_limit", AsyncMock(return_value={"burst_remaining": 1, "daily_remaining": 2, "rolling_7d_remaining": 3, "monthly_remaining": 4})):
         auth = await validate_api_key("cg_test_key")
 
     assert auth["key_id"] == 7
@@ -51,3 +57,79 @@ async def test_comparisons_get_user_id_requires_user_context():
     with pytest.raises(HTTPException) as exc:
         await _get_user_id({"name": "Duplicate Name"})
     assert exc.value.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_validate_api_key_rejects_key_outside_seat_limit():
+    conn = AsyncMock()
+    conn.fetchrow = AsyncMock(
+        side_effect=[
+            {
+                "id": 7,
+                "name": "Alice Example",
+                "email": "alice@example.com",
+                "user_id": 42,
+                "tier": "pro",
+                "is_active": True,
+                "is_verified": True,
+                "created_at": None,
+            },
+            {"active_keys": 3, "max_users": 2},
+        ]
+    )
+    conn.fetch = AsyncMock(return_value=[{"id": 1}, {"id": 2}])
+    conn.execute = AsyncMock()
+
+    @asynccontextmanager
+    async def mock_get_connection():
+        yield conn
+
+    with patch("api.middleware.auth.get_connection", mock_get_connection), \
+         patch("api.middleware.auth.check_rate_limit", AsyncMock(return_value={"burst_remaining": 1, "daily_remaining": 2, "rolling_7d_remaining": 3, "monthly_remaining": 4})):
+        with pytest.raises(HTTPException) as exc:
+            await validate_api_key("cg_test_key")
+
+    assert exc.value.status_code == 403
+    assert "seat limit" in exc.value.detail
+
+
+@pytest.mark.asyncio
+async def test_create_team_key_blocks_when_capacity_reached():
+    conn = AsyncMock()
+    conn.fetchrow = AsyncMock(return_value={"active_keys": 3, "max_users": 3})
+    conn.execute = AsyncMock()
+
+    @asynccontextmanager
+    async def mock_get_connection():
+        yield conn
+
+    with patch("api.routers.auth.get_connection", mock_get_connection):
+        with pytest.raises(HTTPException) as exc:
+            await create_team_key(
+                TeamKeyCreateRequest(name="Ops Seat", email="ops@example.com"),
+                {"user_id": 42, "tier": "pro", "is_verified": True},
+            )
+
+    assert exc.value.status_code == 403
+    assert "named access seats" in exc.value.detail
+
+
+@pytest.mark.asyncio
+async def test_create_team_key_requires_verified_email():
+    conn = AsyncMock()
+    conn.fetchrow = AsyncMock()
+    conn.execute = AsyncMock()
+
+    @asynccontextmanager
+    async def mock_get_connection():
+        yield conn
+
+    with patch("api.routers.auth.get_connection", mock_get_connection):
+        with pytest.raises(HTTPException) as exc:
+            await create_team_key(
+                TeamKeyCreateRequest(name="Ops Seat", email="ops@example.com"),
+                {"user_id": 42, "tier": "pro", "is_verified": False},
+            )
+
+    assert exc.value.status_code == 403
+    assert "Verify your email" in exc.value.detail

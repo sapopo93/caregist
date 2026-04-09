@@ -4,10 +4,14 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   transpilePackages: ["@support-platform/ui"],
   async rewrites() {
+    const apiBase =
+      process.env.NEXT_PUBLIC_API_URL ||
+      process.env.API_URL ||
+      (process.env.VERCEL ? "https://caregist-api.onrender.com" : "http://localhost:8000");
     return [
       {
         source: "/api/:path*",
-        destination: `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/:path*`,
+        destination: `${apiBase}/api/:path*`,
       },
     ];
   },

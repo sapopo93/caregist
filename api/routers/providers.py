@@ -74,6 +74,13 @@ def _paginated_response(data: list, total: int, page: int, per_page: int, tier: 
     return resp
 
 
+def _stream_headers(response: Response, disposition: str, total: int) -> dict[str, str]:
+    headers = dict(response.headers)
+    headers["Content-Disposition"] = disposition
+    headers["X-Total-Count"] = str(total)
+    return headers
+
+
 @router.get("/search")
 async def search_providers(
     response: Response,
@@ -268,7 +275,7 @@ async def export_providers_csv(
     return StreamingResponse(
         iter([buf.getvalue()]),
         media_type="text/csv",
-        headers={"Content-Disposition": "attachment; filename=caregist_export.csv"},
+        headers=_stream_headers(response, "attachment; filename=caregist_export.csv", total),
     )
 
 
@@ -308,12 +315,15 @@ async def export_providers_xlsx(
     try:
         async with get_connection() as conn:
             rows = await conn.fetch(SEARCH_EXPORT + " LIMIT $7", q, region, rating, type, service_type, postcode, row_limit)
+            count_row = await conn.fetchrow(build_count_query(), q, region, rating, type, service_type, postcode)
     except Exception as exc:
         logger.error("Export (xlsx) query failed: %s", exc)
         raise HTTPException(status_code=503, detail="Export failed.")
 
     if not rows:
         raise HTTPException(status_code=404, detail="No results to export.")
+
+    total = count_row["total"] if count_row else len(rows)
 
     if is_basic:
         fieldnames = BASIC_CSV_FIELDS
@@ -344,7 +354,7 @@ async def export_providers_xlsx(
     return StreamingResponse(
         iter([buf.getvalue()]),
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": "attachment; filename=caregist_export.xlsx"},
+        headers=_stream_headers(response, "attachment; filename=caregist_export.xlsx", total),
     )
 
 

@@ -224,7 +224,19 @@ CREATE INDEX IF NOT EXISTS idx_enquiries_status ON enquiries (status);
 
 -- Indexes for query performance
 CREATE INDEX IF NOT EXISTS idx_api_keys_user_id ON api_keys (user_id);
+CREATE INDEX IF NOT EXISTS idx_api_keys_user_active ON api_keys (user_id, is_active);
 CREATE INDEX IF NOT EXISTS idx_subscriptions_user_id ON subscriptions (user_id);
+
+-- Persistent API usage counters for daily / rolling / monthly quotas
+CREATE TABLE IF NOT EXISTS api_rate_usage_daily (
+  api_key VARCHAR(64) NOT NULL,
+  usage_date DATE NOT NULL,
+  request_count INT NOT NULL DEFAULT 0,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (api_key, usage_date)
+);
+
+CREATE INDEX IF NOT EXISTS idx_api_rate_usage_daily_date ON api_rate_usage_daily (usage_date);
 
 -- Outbound webhook subscriptions for Business and Enterprise plans
 CREATE TABLE IF NOT EXISTS webhook_subscriptions (

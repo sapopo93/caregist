@@ -107,6 +107,8 @@ async def _persist_subscription_state(
 @router.post("/checkout")
 async def create_checkout(req: CheckoutRequest, _auth: dict = Depends(validate_api_key)) -> dict:
     """Create a Stripe Checkout session for upgrading."""
+    if not _auth.get("is_verified", False):
+        raise HTTPException(status_code=403, detail="Verify your email before starting billing.")
     if not settings.stripe_secret_key:
         raise HTTPException(status_code=503, detail="Billing not configured.")
 

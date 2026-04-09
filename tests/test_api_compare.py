@@ -72,14 +72,18 @@ async def test_compare_two_providers(patched_db):
 @pytest.mark.asyncio
 async def test_compare_respects_starter_limit(patched_db):
     mock_conn = patched_db
-    mock_conn.fetchrow.return_value = {
-        "id": 1,
-        "name": "Starter User",
-        "email": "starter@example.com",
-        "user_id": "user-1",
-        "tier": "starter",
-        "is_active": True,
-    }
+    mock_conn.fetchrow.side_effect = [
+        {
+            "id": 1,
+            "name": "Starter User",
+            "email": "starter@example.com",
+            "user_id": 1,
+            "tier": "starter",
+            "is_active": True,
+            "created_at": None,
+        },
+        {"active_keys": 1, "max_users": 1},
+    ]
     mock_conn.fetch.return_value = [
         mock_provider_row("a", "A"),
         mock_provider_row("b", "B"),

@@ -18,6 +18,7 @@ import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+import traceback
 
 
 # ── Config ──
@@ -30,6 +31,7 @@ RATING_ORDER = {"Outstanding": 1, "Good": 2, "Requires Improvement": 3, "Inadequ
 UPGRADE_COLOR = "#4A5E45"
 DOWNGRADE_COLOR = "#C44444"
 BRAND_COLOR = "#C1784F"
+ALERT_EMAIL_TO = os.environ.get("MONITOR_ALERT_FAILURE_EMAIL") or os.environ.get("ENQUIRY_FROM_EMAIL") or "hello@caregist.co.uk"
 
 
 def get_database_url() -> str:
@@ -104,6 +106,42 @@ def build_email_html(user_name: str, changes: list[dict]) -> str:
         <a href="{APP_URL}/dashboard" style="color:#aaa;">Manage your monitors</a>
       </p>
     </div>"""
+
+
+def notify_failure(exc: Exception) -> None:
+    resend_api_key = os.environ.get("RESEND_API_KEY", "")
+    if not resend_api_key:
+        print(f"[ALERT] send_monitor_alerts failed: {exc}", file=sys.stderr)
+        return
+
+    import json
+    from urllib import request as urllib_request
+
+    from_email = os.environ.get("ENQUIRY_FROM_EMAIL", "noreply@caregist.co.uk")
+    body = (
+        "send_monitor_alerts.py failed.\n\n"
+        f"Error: {type(exc).__name__}: {exc}\n\n"
+        f"Traceback:\n{traceback.format_exc()}"
+    )
+    try:
+        req = urllib_request.Request(
+            "https://api.resend.com/emails",
+            data=json.dumps({
+                "from": from_email,
+                "to": [ALERT_EMAIL_TO],
+                "subject": "CareGist monitor alert job failed",
+                "text": body,
+            }).encode(),
+            headers={
+                "Authorization": f"Bearer {resend_api_key}",
+                "Content-Type": "application/json",
+            },
+            method="POST",
+        )
+        with urllib_request.urlopen(req, timeout=10):
+            pass
+    except Exception as notify_exc:
+        print(f"[ALERT] Failed to send monitor alert failure email: {notify_exc}", file=sys.stderr)
 
 
 def run(dry_run: bool = False) -> None:
@@ -270,7 +308,11 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Send per-user provider monitor rating-change alerts.")
     parser.add_argument("--dry-run", action="store_true", help="Preview without queuing emails.")
     args = parser.parse_args()
-    run(dry_run=args.dry_run)
+    try:
+        run(dry_run=args.dry_run)
+    except Exception as exc:
+        notify_failure(exc)
+        raise
 
 
 if __name__ == "__main__":

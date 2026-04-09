@@ -14,6 +14,15 @@ export default function DashboardPage() {
   const [apiKey, setApiKey] = useState("");
   const [tier, setTier] = useState("free");
   const [subscription, setSubscription] = useState<any>(null);
+  const [webhooks, setWebhooks] = useState<any[]>([]);
+  const [teamKeys, setTeamKeys] = useState<any[]>([]);
+  const [seatDraft, setSeatDraft] = useState(0);
+  const [seatLoading, setSeatLoading] = useState(false);
+  const [seatError, setSeatError] = useState("");
+  const [newKeyName, setNewKeyName] = useState("");
+  const [newKeyEmail, setNewKeyEmail] = useState("");
+  const [newKeyValue, setNewKeyValue] = useState("");
+  const [keyLoading, setKeyLoading] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const handleLogout = () => {
@@ -36,10 +45,41 @@ export default function DashboardPage() {
         headers: { "X-API-Key": key },
       })
         .then((res) => res.json())
-        .then((data) => setSubscription(data))
+        .then((data) => {
+          setSubscription(data);
+          setSeatDraft(data?.entitlements?.extra_seats || 0);
+        })
         .catch(() => {});
+      fetch("/api/v1/auth/team-keys", {
+        headers: { "X-API-Key": key },
+      })
+        .then((res) => res.json())
+        .then((data) => setTeamKeys(Array.isArray(data?.keys) ? data.keys : []))
+        .catch(() => setTeamKeys([]));
     }
   }, []);
+
+  useEffect(() => {
+    if (!apiKey || (tier !== "business" && tier !== "enterprise")) return;
+    fetch("/api/v1/webhooks", {
+      headers: { "X-API-Key": apiKey },
+    })
+      .then((res) => res.json())
+      .then((data) => setWebhooks(Array.isArray(data?.webhooks) ? data.webhooks : []))
+      .catch(() => setWebhooks([]));
+  }, [apiKey, tier]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const sessionId = params.get("session_id");
+    const billingStatus = params.get("billing");
+    if (sessionId) {
+      void trackEvent("upgrade_conversion", "dashboard_checkout_return", { tier, session_id: sessionId });
+    } else if (billingStatus === "updated") {
+      void trackEvent("upgrade_conversion", "dashboard_subscription_update", { tier });
+    }
+  }, [tier]);
 
   const copyKey = () => {
     navigator.clipboard.writeText(apiKey);
@@ -72,7 +112,7 @@ export default function DashboardPage() {
     },
     pro: {
       limit: PLAN_LIMIT_SUMMARY.pro,
-      features: "Small-team production use: 5,000-row exports, 100 monitors, 3 named users, and daily operational headroom.",
+      features: "Small-team production use: 5,000-row exports, 100 monitors, 3 named access seats, and daily operational headroom.",
       cta: PLAN_PRIMARY_CTA.pro,
       next: PLAN_NEXT_STEP.pro,
     },
@@ -94,6 +134,97 @@ export default function DashboardPage() {
         ? "10 included users"
         : "1 included user";
   const upgradeHref = tier === "business" ? "mailto:enterprise@caregist.co.uk?subject=CareGist+Enterprise" : "/pricing";
+  const supportsSeatCheckout = tier === "pro" || tier === "business";
+
+  async function handleSeatUpdate() {
+    if (!supportsSeatCheckout || !user || !apiKey) return;
+    setSeatLoading(true);
+    setSeatError("");
+    void trackEvent("seat_addon_interaction", "dashboard_team_card", { tier, extra_seats: seatDraft });
+
+    try {
+      const res = await fetch("/api/v1/billing/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-API-Key": apiKey },
+        body: JSON.stringify({ email: user.email, tier, extra_seats: seatDraft }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setSeatError(data.detail || "Could not update seats.");
+        return;
+      }
+      if (data.updated) {
+        setSubscription((current: any) => current ? {
+          ...current,
+          entitlements: {
+            ...current.entitlements,
+            extra_seats: data.extra_seats,
+            max_users: (current.entitlements?.included_users || 0) + data.extra_seats,
+          },
+        } : current);
+        return;
+      }
+      if (data.checkout_url) {
+        window.location.href = data.checkout_url;
+      }
+    } catch {
+      setSeatError("Could not update seats.");
+    } finally {
+      setSeatLoading(false);
+    }
+  }
+
+  async function handleCreateTeamKey() {
+    if (!apiKey || !newKeyName.trim() || !newKeyEmail.trim()) return;
+    setKeyLoading(true);
+    setSeatError("");
+    try {
+      const res = await fetch("/api/v1/auth/team-keys", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-API-Key": apiKey },
+        body: JSON.stringify({ name: newKeyName.trim(), email: newKeyEmail.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setSeatError(data.detail || "Could not create named access key.");
+        return;
+      }
+      setNewKeyValue(data.api_key);
+      setTeamKeys((current) => [
+        ...current,
+        {
+          id: Date.now(),
+          name: data.name,
+          email: data.email,
+          masked_key: `${data.api_key.slice(0, 10)}…${data.api_key.slice(-4)}`,
+          last_used_at: null,
+        },
+      ]);
+      setNewKeyName("");
+      setNewKeyEmail("");
+    } catch {
+      setSeatError("Could not create named access key.");
+    } finally {
+      setKeyLoading(false);
+    }
+  }
+
+  async function handleRevokeTeamKey(keyId: number) {
+    try {
+      const res = await fetch(`/api/v1/auth/team-keys/${keyId}`, {
+        method: "DELETE",
+        headers: { "X-API-Key": apiKey },
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setSeatError(data.detail || "Could not revoke access key.");
+        return;
+      }
+      setTeamKeys((current) => current.filter((key) => key.id !== keyId));
+    } catch {
+      setSeatError("Could not revoke access key.");
+    }
+  }
 
   return (
     <div className="max-w-4xl mx-auto px-6 py-12">
@@ -185,18 +316,98 @@ export default function DashboardPage() {
           <h2 className="text-xl font-bold mb-3">Team and attribution</h2>
           <p className="text-dusk text-sm mb-3">
             {tier === "pro" || tier === "business"
-              ? `This plan includes named-user access so teams can avoid shared passwords and keep activity attributable. ${seatSummary}.`
-              : "Free and Starter are single-user tiers. Upgrade to Pro when multiple people need their own logins and clearer accountability."}
+              ? `This plan includes named access seats so teams can avoid shared passwords and keep activity attributable. ${seatSummary}.`
+              : "Free and Starter are single-seat tiers. Upgrade to Pro when multiple people need their own named access and clearer accountability."}
           </p>
           <p className="text-xs text-dusk mb-4">
             {tier === "pro" || tier === "business"
-              ? "Additional named users are priced at £15 + VAT / user / month and provisioned against your current plan entitlements."
-              : "Pro includes 3 users. Additional users are £15 + VAT / user / month."}
+              ? "Additional named access seats are priced at £15 + VAT / seat / month and provisioned against your current plan entitlements."
+              : "Pro includes 3 named access seats. Additional seats are £15 + VAT / seat / month."}
           </p>
+          {supportsSeatCheckout && (
+            <div className="rounded-lg bg-parchment border border-stone p-4 mb-4">
+              <p className="text-[11px] uppercase tracking-[0.18em] text-dusk mb-2">Seat planning</p>
+              <div className="flex items-center gap-3 mb-2">
+                <label htmlFor="seat-count" className="text-sm text-bark">Extra seats</label>
+                <input
+                  id="seat-count"
+                  type="number"
+                  min={0}
+                  max={50}
+                  value={seatDraft}
+                  onChange={(e) => setSeatDraft(Math.max(0, Math.min(50, Number(e.target.value) || 0)))}
+                  className="w-24 px-3 py-2 rounded border border-stone bg-white text-sm"
+                />
+                <button
+                  onClick={() => void handleSeatUpdate()}
+                  disabled={seatLoading}
+                  className="px-4 py-2 bg-clay text-white rounded-lg text-sm hover:bg-bark transition-colors disabled:opacity-50"
+                >
+                  {seatLoading ? "Updating..." : "Update seats"}
+                </button>
+              </div>
+              <p className="text-xs text-dusk">
+                Add named access seats without moving to a different plan immediately. This updates your current subscription quantity.
+              </p>
+              {seatError && <p className="text-xs text-alert mt-2">{seatError}</p>}
+            </div>
+          )}
+          {(tier === "pro" || tier === "business") && (
+            <div className="rounded-lg bg-parchment border border-stone p-4 mb-4">
+              <p className="text-[11px] uppercase tracking-[0.18em] text-dusk mb-2">Named access keys</p>
+              <p className="text-xs text-dusk mb-3">
+                Issue separate API keys for each teammate or workflow owner. Each active key consumes one seat.
+              </p>
+              <div className="grid sm:grid-cols-[1fr_1fr_auto] gap-3 mb-3">
+                <input
+                  type="text"
+                  value={newKeyName}
+                  onChange={(e) => setNewKeyName(e.target.value)}
+                  placeholder="Name"
+                  className="px-3 py-2 rounded border border-stone bg-white text-sm"
+                />
+                <input
+                  type="email"
+                  value={newKeyEmail}
+                  onChange={(e) => setNewKeyEmail(e.target.value)}
+                  placeholder="Email"
+                  className="px-3 py-2 rounded border border-stone bg-white text-sm"
+                />
+                <button
+                  onClick={() => void handleCreateTeamKey()}
+                  disabled={keyLoading}
+                  className="px-4 py-2 bg-clay text-white rounded-lg text-sm hover:bg-bark transition-colors disabled:opacity-50"
+                >
+                  {keyLoading ? "Creating..." : "Create key"}
+                </button>
+              </div>
+              {newKeyValue && (
+                <div className="mb-3 rounded border border-moss/30 bg-moss/10 p-3">
+                  <p className="text-xs text-bark mb-1">Store this key securely. It is shown once.</p>
+                  <code className="text-xs break-all">{newKeyValue}</code>
+                </div>
+              )}
+              <div className="space-y-2">
+                {teamKeys.map((key) => (
+                  <div key={key.id} className="flex items-center justify-between gap-3 text-xs text-dusk border-b border-stone pb-2 last:border-b-0 last:pb-0">
+                    <div>
+                      <p className="font-medium text-bark">{key.name || "Unnamed key"} · {key.email || "No email"}</p>
+                      <p>{key.masked_key} · Last used: {key.last_used_at ? new Date(key.last_used_at).toLocaleString("en-GB") : "Not used yet"}</p>
+                    </div>
+                    {typeof key.id === "number" && (
+                      <button onClick={() => void handleRevokeTeamKey(key.id)} className="text-clay underline">
+                        Revoke
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
           <Link
             href={upgradeHref}
             className="text-clay underline text-sm"
-            onClick={() => void trackEvent("seat_addon_click", "dashboard_team_card", { tier })}
+            onClick={() => void trackEvent("upgrade_click", "dashboard_team_card", { tier })}
           >
             {tier === "business" ? "Contact sales" : tier === "pro" ? "Upgrade to Business" : "Upgrade to Pro"}
           </Link>
@@ -217,6 +428,23 @@ export default function DashboardPage() {
           >
             {tier === "business" ? "Review webhook docs" : "Upgrade to Business"}
           </Link>
+          {(tier === "business" || tier === "enterprise") && (
+            <div className="mt-4 rounded-lg bg-parchment border border-stone p-4">
+              <p className="text-[11px] uppercase tracking-[0.18em] text-dusk mb-2">Delivery status</p>
+              {webhooks.length === 0 ? (
+                <p className="text-xs text-dusk">No webhooks registered yet. Use the API docs to register your first endpoint.</p>
+              ) : (
+                <div className="space-y-3">
+                  {webhooks.map((webhook) => (
+                    <div key={webhook.id} className="text-xs text-dusk border-b border-stone pb-3 last:border-b-0 last:pb-0">
+                      <p className="font-medium text-bark break-all">{webhook.url}</p>
+                      <p>Failures: {webhook.delivery_failures} · Last delivery: {webhook.last_delivery_at ? new Date(webhook.last_delivery_at).toLocaleString("en-GB") : "No successful delivery yet"}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

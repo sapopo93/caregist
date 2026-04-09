@@ -21,28 +21,30 @@ def reset_rate_limit_state():
     rate_limit._monthly_counts.clear()
 
 
-def test_free_plan_allows_two_requests_per_second():
+@pytest.mark.asyncio
+async def test_free_plan_allows_two_requests_per_second():
     key = "cg_free_test"
-    first = rate_limit.check_rate_limit(key, "free")
-    second = rate_limit.check_rate_limit(key, "free")
+    first = await rate_limit.check_rate_limit(key, "free")
+    second = await rate_limit.check_rate_limit(key, "free")
 
     assert first["burst_remaining"] == 1
     assert second["burst_remaining"] == 0
 
     with pytest.raises(HTTPException) as exc:
-        rate_limit.check_rate_limit(key, "free")
+        await rate_limit.check_rate_limit(key, "free")
 
     assert exc.value.status_code == 429
-    assert "2/sec" in exc.value.detail
+    assert "2 requests/sec" in exc.value.detail
 
 
-def test_free_plan_blocks_when_rolling_seven_day_cap_is_reached():
+@pytest.mark.asyncio
+async def test_free_plan_blocks_when_rolling_seven_day_cap_is_reached():
     key = "cg_free_weekly"
     today = rate_limit._today()
     rate_limit._rolling_7d_counts[key][today] = 60
 
     with pytest.raises(HTTPException) as exc:
-        rate_limit.check_rate_limit(key, "free")
+        await rate_limit.check_rate_limit(key, "free")
 
     assert exc.value.status_code == 429
     assert "60/7 days" in exc.value.detail

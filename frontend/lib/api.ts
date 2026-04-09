@@ -5,7 +5,7 @@ const API_BASE = getServerApiBase();
 const API_KEY = getServerApiKey();
 
 async function apiFetch(path: string, params?: Record<string, string | undefined>) {
-  const url = new URL(`${API_BASE}${path}`);
+  const url = new URL(path, API_BASE);
   if (params) {
     Object.entries(params).forEach(([k, v]) => {
       if (v !== undefined && v !== "") url.searchParams.set(k, v);
@@ -95,7 +95,8 @@ export async function getComparisonByToken(token: string) {
 const PUBLIC_API = getPublicApiBase();
 
 async function publicFetch(path: string, params?: Record<string, string | undefined>) {
-  const url = new URL(`${PUBLIC_API}${path}`);
+  const base = PUBLIC_API || (typeof window !== "undefined" ? window.location.origin : API_BASE);
+  const url = new URL(path, base);
   if (params) {
     Object.entries(params).forEach(([k, v]) => {
       if (v !== undefined && v !== "") url.searchParams.set(k, v);

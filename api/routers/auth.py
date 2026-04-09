@@ -18,6 +18,7 @@ from api.middleware.ip_rate_limit import check_ip_rate_limit
 
 from api.config import get_subscription_entitlements, get_tier_config, settings
 from api.database import get_connection
+from api.middleware.auth import validate_api_key
 
 logger = logging.getLogger("caregist.auth")
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
@@ -68,9 +69,41 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class TeamKeyCreateRequest(BaseModel):
+    name: str = Field(..., max_length=255)
+    email: EmailStr
+
+
+class VerifyEmailRequest(BaseModel):
+    token: str
+
+
+class ResendVerificationRequest(BaseModel):
+    email: EmailStr
+
+
+async def _get_key_capacity(conn, user_id: int) -> tuple[int, int]:
+    row = await conn.fetchrow(
+        """
+        SELECT
+          (SELECT COUNT(*) FROM api_keys WHERE user_id = $1 AND is_active = true) AS active_keys,
+          COALESCE(
+            (SELECT max_users
+             FROM subscriptions
+             WHERE user_id = $1
+             ORDER BY created_at DESC
+             LIMIT 1),
+            1
+          ) AS max_users
+        """,
+        user_id,
+    )
+    return int(row["active_keys"] or 0), int(row["max_users"] or 1)
+
+
 @router.post("/register")
 async def register(req: RegisterRequest, _ip=Depends(check_ip_rate_limit)) -> dict:
-    """Register a new user and generate a free-tier API key."""
+    """Register a new user, provision free-tier access, and send verification email."""
     async with get_connection() as conn:
         existing = await conn.fetchrow("SELECT id FROM users WHERE email = $1", req.email)
         if existing:
@@ -84,7 +117,7 @@ async def register(req: RegisterRequest, _ip=Depends(check_ip_rate_limit)) -> di
             free_entitlements = get_subscription_entitlements("free")
             user = await conn.fetchrow(
                 """INSERT INTO users (email, name, password_hash, verification_token, is_verified)
-                   VALUES ($1, $2, $3, $4, true)
+                   VALUES ($1, $2, $3, $4, false)
                    RETURNING id, email, name""",
                 req.email, req.name, password_hash, verification_token,
             )
@@ -107,12 +140,13 @@ async def register(req: RegisterRequest, _ip=Depends(check_ip_rate_limit)) -> di
                 free_entitlements["seat_price_gbp"],
             )
 
+    await _send_verification_email(req.email, req.name, verification_token)
+
     return {
         "user": {"id": user["id"], "email": user["email"], "name": user["name"]},
-        "api_key": api_key,
         "tier": "free",
-        "rate_limit": get_tier_config("free")["rate"],
-        "message": "Registration successful. Your API key is ready to use.",
+        "verification_required": True,
+        "message": "Registration successful. Check your inbox to verify your email before you log in.",
     }
 
 
@@ -121,7 +155,7 @@ async def login(req: LoginRequest, _ip=Depends(check_ip_rate_limit)) -> dict:
     """Login and retrieve API key."""
     async with get_connection() as conn:
         user = await conn.fetchrow(
-            "SELECT id, email, name, password_hash FROM users WHERE email = $1",
+            "SELECT id, email, name, password_hash, is_verified FROM users WHERE email = $1",
             req.email,
         )
 
@@ -131,6 +165,8 @@ async def login(req: LoginRequest, _ip=Depends(check_ip_rate_limit)) -> dict:
         raise HTTPException(status_code=401, detail="Invalid email or password.")
     if not _verify_password(req.password, user["password_hash"]):
         raise HTTPException(status_code=401, detail="Invalid email or password.")
+    if not user["is_verified"]:
+        raise HTTPException(status_code=403, detail="Verify your email before logging in.")
 
     # Upgrade legacy SHA-256 hash to bcrypt on successful login
     await _rehash_if_legacy(user["id"], req.password, user["password_hash"])
@@ -191,6 +227,101 @@ async def rotate_key(req: LoginRequest, _ip=Depends(check_ip_rate_limit)) -> dic
     return {"api_key": new_key, "tier": tier, "rate_limit": rate_limit}
 
 
+@router.get("/team-keys")
+async def list_team_keys(_auth: dict = Depends(validate_api_key)) -> dict:
+    user_id = _auth.get("user_id")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="User account required.")
+
+    async with get_connection() as conn:
+        keys = await conn.fetch(
+            """
+            SELECT id, name, email, tier, created_at, last_used_at, key
+            FROM api_keys
+            WHERE user_id = $1 AND is_active = true
+            ORDER BY created_at ASC
+            """,
+            user_id,
+        )
+        active_keys, max_users = await _get_key_capacity(conn, user_id)
+
+    return {
+        "keys": [
+            {
+                "id": row["id"],
+                "name": row["name"],
+                "email": row["email"],
+                "tier": row["tier"],
+                "created_at": row["created_at"].isoformat() if row["created_at"] else None,
+                "last_used_at": row["last_used_at"].isoformat() if row["last_used_at"] else None,
+                "masked_key": f"{row['key'][:10]}…{row['key'][-4:]}" if row["key"] else None,
+            }
+            for row in keys
+        ],
+        "active_keys": active_keys,
+        "max_users": max_users,
+    }
+
+
+@router.post("/team-keys", status_code=201)
+async def create_team_key(req: TeamKeyCreateRequest, _auth: dict = Depends(validate_api_key)) -> dict:
+    user_id = _auth.get("user_id")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="User account required.")
+    if not _auth.get("is_verified", False):
+        raise HTTPException(status_code=403, detail="Verify your email before creating additional access keys.")
+
+    async with get_connection() as conn:
+        active_keys, max_users = await _get_key_capacity(conn, user_id)
+        if active_keys >= max_users:
+            raise HTTPException(
+                status_code=403,
+                detail="You have used all named access seats on this plan. Add seats or upgrade to issue another key.",
+            )
+        new_key = f"cg_{secrets.token_urlsafe(32)}"
+        await conn.execute(
+            """
+            INSERT INTO api_keys (key, name, email, tier, rate_limit, is_active, user_id)
+            VALUES ($1, $2, $3, $4, $5, true, $6)
+            """,
+            new_key,
+            req.name,
+            req.email,
+            _auth["tier"],
+            get_tier_config(_auth["tier"])["rate"],
+            user_id,
+        )
+
+    return {
+        "api_key": new_key,
+        "name": req.name,
+        "email": req.email,
+        "message": "Named access key created. Store it securely — it is shown once.",
+    }
+
+
+@router.delete("/team-keys/{key_id}")
+async def revoke_team_key(key_id: int, _auth: dict = Depends(validate_api_key)) -> dict:
+    user_id = _auth.get("user_id")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="User account required.")
+    if key_id == _auth.get("key_id"):
+        raise HTTPException(status_code=400, detail="Use key rotation to replace the key you are currently using.")
+
+    async with get_connection() as conn:
+        active_keys, _ = await _get_key_capacity(conn, user_id)
+        if active_keys <= 1:
+            raise HTTPException(status_code=400, detail="You must keep at least one active key on the account.")
+        result = await conn.execute(
+            "UPDATE api_keys SET is_active = false WHERE id = $1 AND user_id = $2",
+            key_id,
+            user_id,
+        )
+    if result == "UPDATE 0":
+        raise HTTPException(status_code=404, detail="Access key not found.")
+    return {"revoked": True}
+
+
 # --- Password reset ---
 
 
@@ -240,6 +371,53 @@ async def forgot_password(req: ForgotPasswordRequest, _ip=Depends(check_ip_rate_
     await _send_reset_email(req.email, code)
 
     return {"message": "If that email is registered, a reset code has been sent."}
+
+
+@router.post("/verify-email")
+async def verify_email(req: VerifyEmailRequest, _ip=Depends(check_ip_rate_limit)) -> dict:
+    """Verify a user email using the one-time token."""
+    async with get_connection() as conn:
+        user = await conn.fetchrow(
+            """
+            SELECT id, email
+            FROM users
+            WHERE verification_token = $1
+              AND is_verified = false
+            """,
+            req.token,
+        )
+        if not user:
+            raise HTTPException(status_code=400, detail="Invalid or expired verification link.")
+        await conn.execute(
+            """
+            UPDATE users
+            SET is_verified = true,
+                verification_token = NULL,
+                updated_at = NOW()
+            WHERE id = $1
+            """,
+            user["id"],
+        )
+    return {"message": "Email verified. You can now log in.", "email": user["email"]}
+
+
+@router.post("/resend-verification")
+async def resend_verification(req: ResendVerificationRequest, _ip=Depends(check_ip_rate_limit)) -> dict:
+    """Resend a verification email for accounts still waiting verification."""
+    async with get_connection() as conn:
+        user = await conn.fetchrow(
+            "SELECT name, verification_token, is_verified FROM users WHERE email = $1",
+            req.email,
+        )
+    if not user or user["is_verified"]:
+        return {"message": "If that email is waiting for verification, a new link has been sent."}
+
+    token = user["verification_token"] or secrets.token_urlsafe(32)
+    if not user["verification_token"]:
+        async with get_connection() as conn:
+            await conn.execute("UPDATE users SET verification_token = $1 WHERE email = $2", token, req.email)
+    await _send_verification_email(req.email, user["name"] or "there", token)
+    return {"message": "If that email is waiting for verification, a new link has been sent."}
 
 
 @router.post("/reset-password")
@@ -323,6 +501,42 @@ async def _send_reset_email(email: str, code: str) -> None:
                 logger.error("Resend API error %s: %s", resp.status_code, resp.text)
     except Exception as exc:
         logger.error("Failed to send reset email: %s", exc)
+
+
+async def _send_verification_email(email: str, name: str, token: str) -> None:
+    """Send email verification link via Resend. Fails silently."""
+    if not settings.resend_api_key:
+        logger.warning("RESEND_API_KEY not set — skipping verification email")
+        return
+
+    import httpx
+
+    from_email = settings.enquiry_from_email or "noreply@caregist.co.uk"
+    verify_link = f"{settings.app_url}/verify-email?token={token}"
+    html = (
+        f"<p>Hi {name},</p>"
+        "<p>Verify your CareGist email to activate dashboard access, billing, and named access seats.</p>"
+        f"<p><a href=\"{verify_link}\">Verify your email</a></p>"
+        f"<p>If the button does not work, copy this link into your browser:</p><p>{verify_link}</p>"
+    )
+
+    try:
+        async with httpx.AsyncClient() as client:
+            resp = await client.post(
+                "https://api.resend.com/emails",
+                headers={"Authorization": f"Bearer {settings.resend_api_key}"},
+                json={
+                    "from": from_email,
+                    "to": [email],
+                    "subject": "Verify your CareGist email",
+                    "html": html,
+                },
+                timeout=10,
+            )
+            if resp.status_code >= 400:
+                logger.error("Resend verification email error %s: %s", resp.status_code, resp.text)
+    except Exception as exc:
+        logger.error("Failed to send verification email: %s", exc)
 
 
 class DeleteAccountRequest(BaseModel):

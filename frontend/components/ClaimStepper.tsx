@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { submitClaim } from "@/lib/actions";
+import { trackEvent } from "@/lib/analytics";
 
 const ROLES = ["Registered Manager", "Nominated Individual", "Provider Director", "Other"];
 
@@ -43,6 +44,10 @@ export default function ClaimStepper({
     if (res.error) {
       setError(res.error);
     } else {
+      void trackEvent("provider_claim_complete", "claim_stepper", {
+        slug,
+        fast_track: fastTrack,
+      });
       setStep(3);
     }
   }
@@ -196,12 +201,12 @@ export default function ClaimStepper({
           </p>
           {!fastTrack && (
             <p className="text-sm text-dusk">
-              Need it faster?{" "}
+              Need a faster commercial path?{" "}
               <a
-                href={`/signup?plan=fast-track&redirect=/claim/${slug}`}
+                href="/pricing"
                 className="text-clay font-medium underline hover:text-bark"
               >
-                Fast-track for \u00A349 — reviewed within 24 hours
+                Start with Starter for workflow access, or contact support for urgent claim review
               </a>
             </p>
           )}

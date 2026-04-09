@@ -1,18 +1,8 @@
 "use client";
 
-import { useState, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
-
-function ResetBanner() {
-  const searchParams = useSearchParams();
-  if (searchParams.get("reset") !== "success") return null;
-  return (
-    <div className="bg-cream border border-green-500 rounded-lg p-3 mb-4 text-sm text-green-700">
-      Password reset successful. You can now log in with your new password.
-    </div>
-  );
-}
 
 function LoginForm() {
   const router = useRouter();
@@ -20,6 +10,13 @@ function LoginForm() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showResetBanner, setShowResetBanner] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    setShowResetBanner(params.get("reset") === "success");
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,7 +42,8 @@ function LoginForm() {
       localStorage.setItem("caregist_tier", data.tier);
       window.dispatchEvent(new Event("caregist_auth_change"));
 
-      router.push("/dashboard");
+      const upgrade = new URLSearchParams(window.location.search).get("upgrade");
+      router.push(upgrade ? `/pricing?highlight=${upgrade}` : "/dashboard");
     } catch {
       setError("Something went wrong. Please try again.");
     } finally {
@@ -57,9 +55,11 @@ function LoginForm() {
     <div className="max-w-md mx-auto px-6 py-16">
       <h1 className="text-3xl font-bold text-center mb-8">Log in</h1>
 
-      <Suspense>
-        <ResetBanner />
-      </Suspense>
+      {showResetBanner && (
+        <div className="bg-cream border border-green-500 rounded-lg p-3 mb-4 text-sm text-green-700">
+          Password reset successful. You can now log in with your new password.
+        </div>
+      )}
 
       {error && (
         <div className="bg-cream border border-alert rounded-lg p-3 mb-4 text-sm text-alert">

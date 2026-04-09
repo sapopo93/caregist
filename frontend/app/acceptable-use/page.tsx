@@ -94,7 +94,7 @@ export default function AcceptableUsePage() {
           <ul className="list-disc pl-6 space-y-1">
             <li>Store API keys securely (environment variables, secrets managers) — never in source code, client-side JavaScript, or public repositories</li>
             <li>Rotate your API key immediately if you suspect it has been compromised (use the /api/v1/auth/rotate-key endpoint)</li>
-            <li>Each API key is for use by a single organisation. Pro includes 3 named users, Business includes 10, and larger arrangements run through Enterprise.</li>
+            <li>Each API key is for use by a single organisation. Pro includes 3 named access seats, Business includes 10, and larger arrangements run through Enterprise.</li>
           </ul>
 
           <h3 className="text-lg font-semibold text-bark mt-4 mb-2">4.3 Attribution</h3>

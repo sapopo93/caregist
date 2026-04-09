@@ -46,6 +46,19 @@ const TIERS = [
   { name: "Business", price: "\u00A3399 + VAT/mo", features: "Full fields, webhooks, 10,000-row export, 500 monitors, 10 included users, 10,000 requests/day" },
 ];
 
+const WEBHOOK_EXAMPLE = `POST /webhooks
+{
+  "url": "https://ops.example.com/caregist/webhooks",
+  "events": ["provider.rating_changed"]
+}
+
+Headers on delivery:
+X-CareGist-Event: provider.rating_changed
+X-CareGist-Signature: sha256=<hmac>
+
+Retries:
+1s, 2s, 4s backoff before final failure`;
+
 export default function ApiLandingPage() {
   return (
     <div className="max-w-4xl mx-auto px-6 py-12">
@@ -80,6 +93,30 @@ export default function ApiLandingPage() {
         <pre className="bg-charcoal text-cream rounded-lg p-5 text-xs overflow-x-auto font-mono leading-relaxed">
           {SAMPLE_JSON}
         </pre>
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-6 mb-12">
+        <div className="bg-cream border border-stone rounded-lg p-6">
+          <h2 className="text-xl font-bold mb-3">How webhooks work</h2>
+          <p className="text-sm text-dusk mb-4">
+            Business plans can register outbound webhooks for rating changes. CareGist signs each payload with
+            an HMAC SHA-256 signature in <code className="bg-parchment px-1 rounded">X-CareGist-Signature</code>.
+          </p>
+          <p className="text-sm text-dusk mb-4">
+            The currently supported event is <code className="bg-parchment px-1 rounded">provider.rating_changed</code>.
+            Delivery retries use 1s, 2s, and 4s backoff. Failed deliveries remain visible in the dashboard so teams
+            can spot broken endpoints without digging through support tickets.
+          </p>
+          <p className="text-xs text-dusk">
+            Webhooks are intended for operational sync and alerting workflows, not as a substitute for daily batch exports.
+          </p>
+        </div>
+        <div>
+          <h2 className="text-xl font-bold mb-3">Webhook Example</h2>
+          <pre className="bg-charcoal text-cream rounded-lg p-5 text-xs overflow-x-auto font-mono leading-relaxed">
+            {WEBHOOK_EXAMPLE}
+          </pre>
+        </div>
       </div>
 
       {/* Pricing */}

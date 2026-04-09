@@ -54,7 +54,7 @@ export default function TermsPage() {
           <ul className="list-disc pl-6 space-y-1">
             <li>You must provide accurate information when registering.</li>
             <li>You are responsible for keeping your API key confidential. Do not share it or embed it in client-side code.</li>
-            <li>Free and Starter are single-user tiers. Pro includes 3 named users, Business includes 10, and larger arrangements run through Enterprise.</li>
+            <li>Free and Starter are single-seat tiers. Pro includes 3 named access seats, Business includes 10, and larger arrangements run through Enterprise.</li>
             <li>You may delete your account at any time by emailing <a href="mailto:support@caregist.co.uk" className="text-clay underline">support@caregist.co.uk</a>.</li>
           </ul>
         </section>
