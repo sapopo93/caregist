@@ -85,7 +85,7 @@ def check_rate_limit(api_key: str, tier: str) -> dict[str, int]:
     if burst_remaining <= 0:
         raise HTTPException(
             status_code=429,
-            detail=f"Rate limit exceeded ({config['rate']}/sec). Upgrade at /pricing",
+            detail=f"Rate limit exceeded ({config['rate']} requests/sec). Upgrade at /pricing",
             headers={"Retry-After": str(window_seconds)},
         )
 

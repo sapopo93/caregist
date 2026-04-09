@@ -41,9 +41,9 @@ const CAPABILITIES = [
 ];
 
 const TIERS = [
-  { name: "Starter", price: "\u00A339 + VAT/mo", features: "Nearby search, 500-row export, 15 monitors, 10 req/min" },
-  { name: "Pro", price: "\u00A399 + VAT/mo", features: "5,000-row export, 100 monitors, 3 included users, 25 req/min, recommended for recurring team use" },
-  { name: "Business", price: "\u00A3399 + VAT/mo", features: "Full fields, webhooks, 10,000-row export, 500 monitors, 10 included users, 10K req/day" },
+  { name: "Starter", price: "\u00A339 + VAT/mo", features: "Nearby search, 500-row export, 15 monitors, 10 requests/sec" },
+  { name: "Pro", price: "\u00A399 + VAT/mo", features: "5,000-row export, 100 monitors, 3 included users, 25 requests/sec, recommended for recurring team use" },
+  { name: "Business", price: "\u00A3399 + VAT/mo", features: "Full fields, webhooks, 10,000-row export, 500 monitors, 10 included users, 10,000 requests/day" },
 ];
 
 export default function ApiLandingPage() {

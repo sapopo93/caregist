@@ -62,7 +62,7 @@ export const PRICING_LADDER: PricingTier[] = [
       "Browse profiles, ratings, and inspection dates",
       "Sample CSV export (25 rows)",
       "1 provider watchlist",
-      "2 req/min \u00B7 20 req/day \u00B7 60 req/7 days",
+      "2 requests/sec \u00B7 20 requests/day \u00B7 60 requests/week",
     ],
     limit: "No nearby search \u00B7 no compare \u00B7 basic fields only \u00B7 not for ongoing business workflows",
     pricingLogic:
@@ -81,7 +81,7 @@ export const PRICING_LADDER: PricingTier[] = [
       "CSV & Excel export (500 rows)",
       "15 provider watchlists with alerts",
       "Standard fields incl. phone, coordinates, specialisms",
-      "10 req/min \u00B7 500 req/day",
+      "10 requests/sec \u00B7 500 requests/day",
     ],
     limit: "Built to prove the data in a real workflow \u00B7 standard fields only",
     pricingLogic:
@@ -102,7 +102,7 @@ export const PRICING_LADDER: PricingTier[] = [
       "3 named users included",
       "Extra users at \u00A315 + VAT / user / month",
       "Priority support for small-team workflows",
-      "25 req/min \u00B7 2,000 req/day",
+      "25 requests/sec \u00B7 2,000 requests/day",
     ],
     limit: "No webhooks \u00B7 standard fields",
     pricingLogic:
@@ -122,7 +122,7 @@ export const PRICING_LADDER: PricingTier[] = [
       "500 provider monitors",
       "10 named users included",
       "Operational onboarding support",
-      "60 req/min \u00B7 10,000 req/day",
+      "60 requests/sec \u00B7 10,000 requests/day",
     ],
     limit: "For higher limits or custom terms \u2014 see Enterprise.",
     pricingLogic:
@@ -250,10 +250,10 @@ export const PLAN_NEXT_STEP: Record<string, string> = {
 };
 
 export const PLAN_LIMIT_SUMMARY: Record<string, string> = {
-  free: "2 req/min \u00B7 20 req/day \u00B7 60 req/7 days",
-  starter: "10 req/min \u00B7 500 req/day",
-  pro: "25 req/min \u00B7 2,000 req/day",
-  business: "60 req/min \u00B7 10,000 req/day",
+  free: "2 requests/sec \u00B7 20 requests/day \u00B7 60 requests/week",
+  starter: "10 requests/sec \u00B7 500 requests/day",
+  pro: "25 requests/sec \u00B7 2,000 requests/day",
+  business: "60 requests/sec \u00B7 10,000 requests/day",
   enterprise: "Custom limits",
 };
 
@@ -304,7 +304,7 @@ export const REVENUE_CONTROLS: RevenueControl[] = [
     color: "#ef4444",
     trigger: "Repeated bulk export, enterprise inquiry, or stated integration intent",
     upgradeMoment: "After use-case qualification or higher-volume integration need identified",
-    paywallMessage: "Upgrade to Business for full field access, higher export capacity, and 10,000 req/day.",
+    paywallMessage: "Upgrade to Business for full field access, higher export capacity, and 10,000 requests/day.",
     targetConversion: "20\u201340% of qualified applicants",
     targetARPU: "\u00A3399/mo",
     primarySurface: "API Landing \u00B7 Search Results \u00B7 outbound follow-up",
@@ -650,7 +650,7 @@ export const PAGE_SPECS: PageSpec[] = [
     actionType: "apply",
     gate: "manual",
     capturedAsset: "Name, company, use case, request volume \u2014 full commercial profile of the buyer",
-    revenuePath: "Manual qualification \u2192 standard (1k req/min), pro (10k req/min), enterprise (custom SLA)",
+    revenuePath: "Manual qualification \u2192 standard (1k requests/sec), pro (10k requests/sec), enterprise (custom SLA)",
     upgradeTrigger: "Applicant states high request volume or integration use case during qualification",
     successMetric: "Qualified API application rate \u2014 applications that pass review (target: \u226560%)",
     followUpAutomation: "Application confirmation within 1 hour. Review within 48 hours. Approved: sandbox key + pricing call link. Declined: waitlist + referral to Data Pro.",
