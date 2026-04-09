@@ -49,131 +49,179 @@ export const GATES: Record<GateKey, Gate> = {
 };
 
 // ── Pricing Ladder ──
-// Maps to backend tiers: free, starter, pro, business
+// Maps to backend tiers: free, starter, pro, business, enterprise
 export const PRICING_LADDER: PricingTier[] = [
   {
     tier: "Free",
-    forWho: "Families, public users, researchers",
+    forWho: "Families, researchers, developers evaluating",
     color: "#10b981",
     price: "\u00A30",
     priceNote: "Always free",
     includes: [
       "Search all 55,818 providers",
-      "Browse provider profiles",
-      "View ratings and inspection dates",
-      "Basic CSV export (100 rows)",
-      "5 req/sec \u00B7 150 req/day",
+      "Browse profiles, ratings, and inspection dates",
+      "Sample CSV export (25 rows)",
+      "1 provider watchlist",
+      "5 req/sec \u00B7 100 req/day",
     ],
-    limit: "No nearby search \u00B7 no compare \u00B7 basic fields only",
+    limit: "No nearby search \u00B7 no compare \u00B7 basic fields only \u00B7 no recurring workflows",
     pricingLogic:
-      "Traffic engine, not cash engine. Keep the gate on email, not payment.",
+      "Evaluation only. Enough to confirm the data is useful — not enough to replace a paid workflow. Friction at export and monitor limits drives upgrade.",
   },
   {
     tier: "Starter",
-    forWho: "Consultants, commissioners, care managers",
+    forWho: "Solo builders, care consultants, small operators",
     color: "#8b5cf6",
     price: "\u00A339 + VAT/mo",
     priceNote: "Cancel anytime",
     includes: [
       "Everything in Free",
+      "Cleaned, normalised provider data",
       "Nearby radius search",
-      "Compare up to 3 providers",
-      "CSV export (500 rows)",
-      "25 provider monitors",
+      "CSV & Excel export (500 rows)",
+      "15 provider watchlists with alerts",
       "Standard fields incl. phone, coordinates, specialisms",
       "30 req/sec \u00B7 500 req/day",
     ],
-    limit: "No webhooks \u00B7 standard fields",
+    limit: "Single seat \u00B7 no webhooks \u00B7 standard fields",
     pricingLogic:
-      "Priced below comparable directory listings while being intelligence-led. Easy yes for care consultants and managers.",
+      "First real workflow tier. Enough usage to solve an actual repeated problem — tracking local competitors, monitoring a shortlist, or exporting for a report.",
   },
   {
     tier: "Pro",
-    forWho: "Care home operators, analysts, group managers",
+    forWho: "Small teams, operators, analysts, group managers",
     color: "#C8862A",
-    price: "\u00A389 + VAT/mo",
-    priceNote: "Cancel anytime",
+    price: "\u00A399 + VAT/mo",
+    priceNote: "Cancel anytime \u00B7 add teammates at \u00A315/user/mo",
+    recommended: true,
     includes: [
       "Everything in Starter",
       "Compare up to 5 providers",
-      "Bulk CSV export (5,000 rows)",
-      "100 provider monitors",
-      "Rating-change alerts",
+      "Bulk CSV & Excel export (5,000 rows)",
+      "100 provider monitors with rating-change alerts",
+      "Team use \u2014 add extra seats at \u00A315/user/mo",
+      "Priority support",
       "60 req/sec \u00B7 2,000 req/day",
     ],
     limit: "No webhooks \u00B7 standard fields",
     pricingLogic:
-      "Competitively priced against traditional directory listings \u2014 selling benchmarking + intelligence, not listing uplift.",
+      "Team production tier. Broader monitoring, more volume, and shared workflows. Each member gets their own login, activity history, and access controls.",
   },
   {
     tier: "Business",
-    forWho: "Developers, SaaS builders, procurement platforms",
+    forWho: "Developers, SaaS builders, multi-site operators",
     color: "#ef4444",
-    price: "\u00A3249 + VAT/mo",
-    priceNote: "Cancel anytime \u00B7 custom plans available",
+    price: "\u00A3399 + VAT/mo",
+    priceNote: "Cancel anytime",
     includes: [
       "Everything in Pro",
+      "Webhooks for rating & status changes",
       "Full field access incl. registration dates, geocode source",
-      "Compare up to 10 providers",
-      "Bulk CSV export (10,000 rows)",
+      "Bulk CSV & Excel export (10,000 rows)",
       "500 provider monitors",
-      "Webhooks for rating changes",
+      "Admin controls & audit depth",
+      "Onboarding support",
       "200 req/sec \u00B7 10,000 req/day",
     ],
-    limit: "Need more? Contact us for enterprise terms.",
+    limit: "For higher limits or custom terms \u2014 see Enterprise.",
     pricingLogic:
-      "Priced as infrastructure, not a hobby product. CareGist price reflects cleanliness, history, filters, uptime, and implementation speed.",
+      "Operational integration tier. Webhooks, embedding, and high limits for teams building on top of CareGist or running serious monitoring workflows.",
+  },
+  {
+    tier: "Enterprise",
+    forWho: "Commissioners, local authorities, ICSs, large groups",
+    color: "#64748b",
+    price: "Contact us",
+    priceNote: "Custom terms \u00B7 procurement-ready",
+    includes: [
+      "Everything in Business",
+      "Custom rate limits and export volumes",
+      "Procurement & framework support",
+      "Commissioner and ICS packaging",
+      "Security review, SLA, and dedicated support",
+      "Custom data feeds and white-label options",
+    ],
+    limit: "",
+    pricingLogic:
+      "Enterprise motion for public sector, large care groups, and institutional buyers. Slower deal cycle \u2014 expand into after product-market fit with Starter\u2013Business.",
   },
 ];
 
 // ── Provider Profile Tiers ──
 // Enhanced listing tiers for claimed care providers.
-// Maps to backend profile_tier: basic, standard, premium.
+// Maps to backend profile_tier: claimed, enhanced, premium, sponsored.
 export const PROVIDER_TIERS = [
   {
-    tier: "basic" as const,
-    label: "Basic",
-    price: "£30 + VAT/mo",
+    tier: "claimed" as const,
+    label: "Claimed Profile",
+    price: "£0",
+    priceMonthly: 0,
+    priceAnnual: null,
+    stripeSlug: null,
     color: "#10b981",
-    photos: 3,
+    photos: 0,
     virtualTour: false,
-    inspectionResponse: false,
+    inspectionResponse: true,
     includes: [
       "Verified listing badge",
-      "Provider description (2,000 chars)",
-      "Up to 3 photos",
+      "Respond to CQC inspection (public)",
     ],
-    limit: "No virtual tour · no inspection response",
+    limit: "No photos · no description · no virtual tour",
   },
   {
-    tier: "standard" as const,
-    label: "Standard",
-    price: "£50 + VAT/mo",
+    tier: "enhanced" as const,
+    label: "Enhanced Profile",
+    price: "£59 + VAT/mo",
+    priceMonthly: 59,
+    priceAnnual: 590,
+    stripeSlug: "caregist_enhanced_profile",
     color: "#8b5cf6",
     photos: 5,
     virtualTour: true,
     inspectionResponse: true,
     includes: [
-      "Everything in Basic",
+      "Everything in Claimed Profile",
+      "Provider description (2,000 chars)",
       "Up to 5 photos",
       "Virtual tour link",
-      "Respond to CQC inspection (public)",
     ],
     limit: "Up to 5 photos",
   },
   {
     tier: "premium" as const,
-    label: "Premium",
-    price: "£80 + VAT/mo",
+    label: "Premium Profile",
+    price: "£89 + VAT/mo",
+    priceMonthly: 89,
+    priceAnnual: 890,
+    stripeSlug: "caregist_premium_profile",
     color: "#C8862A",
     photos: 10,
     virtualTour: true,
     inspectionResponse: true,
     includes: [
-      "Everything in Standard",
+      "Everything in Enhanced Profile",
       "Up to 10 photos",
       "Priority placement in search results",
       "Enquiry analytics (monthly)",
+    ],
+    limit: "No sponsored placement",
+  },
+  {
+    tier: "sponsored" as const,
+    label: "Sponsored Profile",
+    price: "£129 + VAT/mo",
+    priceMonthly: 129,
+    priceAnnual: 1290,
+    stripeSlug: "caregist_sponsored_profile",
+    color: "#ef4444",
+    photos: 15,
+    virtualTour: true,
+    inspectionResponse: true,
+    includes: [
+      "Everything in Premium Profile",
+      "Up to 15 photos",
+      "Sponsored badge & visibility boost",
+      "Top placement in search results",
     ],
     limit: "Top tier — no further restrictions",
   },
@@ -181,10 +229,13 @@ export const PROVIDER_TIERS = [
 
 export type ProviderTierKey = typeof PROVIDER_TIERS[number]["tier"];
 
+// ── Provider Add-on: Extra Team Seat ──
+export const PROVIDER_TEAM_SEAT_PRICE = 15; // £15 + VAT/mo per seat
+
 // ── Add-Ons ──
 export const ADD_ONS: AddOn[] = [
   { name: "Extra monitors pack",           price: "\u00A315/mo",               note: "Additional 25 monitors" },
-  { name: "Extra team seat",               price: "\u00A312/mo per user",      note: "Pro and above" },
+  { name: "Extra team seat",               price: "\u00A315/mo per user",      note: "Pro and above \u00B7 own login, activity history, and access controls" },
   { name: "Area movers pack",              price: "\u00A319/mo per area",      note: "Additional local authority coverage" },
   { name: "Benchmark PDF pack",            price: "\u00A329/report",           note: "Included in higher plans" },
   { name: "Sponsored placement",           price: "from \u00A399/mo/location", note: "Featured placement on filter and region pages" },
@@ -194,10 +245,11 @@ export const ADD_ONS: AddOn[] = [
 
 // ── Launch Pricing ──
 export const LAUNCH_PRICING: LaunchPrice[] = [
-  { tier: "Free",     price: "\u00A30",                 color: "#10b981" },
-  { tier: "Starter",  price: "\u00A339 + VAT/mo",       color: "#8b5cf6" },
-  { tier: "Pro",      price: "\u00A389 + VAT/mo",       color: "#C8862A" },
-  { tier: "Business", price: "\u00A3249 + VAT/mo",      color: "#ef4444" },
+  { tier: "Free",       price: "\u00A30",                 color: "#10b981" },
+  { tier: "Starter",    price: "\u00A339 + VAT/mo",       color: "#8b5cf6" },
+  { tier: "Pro",        price: "\u00A399 + VAT/mo",       color: "#C8862A" },
+  { tier: "Business",   price: "\u00A3399 + VAT/mo",      color: "#ef4444" },
+  { tier: "Enterprise", price: "Contact us",              color: "#64748b" },
 ];
 
 // ── Revenue Controls ──
@@ -217,19 +269,19 @@ export const REVENUE_CONTROLS: RevenueControl[] = [
     color: "#C8862A",
     trigger: "User hits starter export limit or needs more monitors",
     upgradeMoment: "At export limit boundary or monitor cap",
-    paywallMessage: "Upgrade to Pro for bulk exports, more monitors, and rating-change alerts.",
+    paywallMessage: "Upgrade to Pro for bulk exports, more monitors, rating-change alerts, and team workflows.",
     targetConversion: "15\u201325% of active Starter users",
-    targetARPU: "\u00A389/mo",
+    targetARPU: "\u00A399/mo",
     primarySurface: "Provider Profile \u00B7 CSV export gate \u00B7 Monitor cap",
   },
   {
     tier: "Business",
     color: "#ef4444",
-    trigger: "Repeated bulk export, enterprise inquiry, or stated integration intent",
+    trigger: "Repeated bulk export, enterprise inquiry, webhook need, or stated integration intent",
     upgradeMoment: "After use-case qualification or webhook need identified",
-    paywallMessage: "Upgrade to Business for full field access, webhooks, and 10,000 req/day.",
+    paywallMessage: "Upgrade to Business for webhooks, full field access, admin controls, and 10,000 req/day.",
     targetConversion: "20\u201340% of qualified applicants",
-    targetARPU: "\u00A3249/mo",
+    targetARPU: "\u00A3399/mo",
     primarySurface: "API Landing \u00B7 Search Results \u00B7 outbound follow-up",
   },
 ];

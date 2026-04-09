@@ -36,7 +36,7 @@ export default function PricingPage() {
           ))}
         </div>
         <p className="font-mono text-xs text-dusk mt-4 pt-4 border-t border-white/10">
-          Benchmark: comparable directory listings range £80–£165 + VAT/mo per location
+          Benchmark: comparable provider directory listings £34–£69 + VAT/mo · market intelligence reports £950–£3,895/report
         </p>
       </div>
 
@@ -58,9 +58,9 @@ export default function PricingPage() {
                       ENTRY
                     </span>
                   )}
-                  {i === PRICING_LADDER.length - 1 && (
-                    <span className="font-mono text-[10px] bg-amber/15 text-amber px-2 py-0.5 rounded">
-                      TOP ARPU
+                  {tier.recommended && (
+                    <span className="font-mono text-[10px] bg-amber/20 text-amber px-2 py-0.5 rounded">
+                      RECOMMENDED
                     </span>
                   )}
                 </div>
@@ -112,7 +112,16 @@ export default function PricingPage() {
 
             {/* CTA */}
             <div className="flex flex-col sm:flex-row sm:items-center gap-4 pt-4 border-t border-stone">
-              <PricingCTA tier={tier.tier} isFreeTier={i === 0} />
+              {tier.tier === "Enterprise" ? (
+                <a
+                  href="mailto:enterprise@caregist.co.uk?subject=Enterprise+enquiry"
+                  className="inline-block text-center py-2.5 px-6 rounded-lg font-medium text-sm transition-colors border border-clay text-clay hover:bg-clay hover:text-white"
+                >
+                  Contact us
+                </a>
+              ) : (
+                <PricingCTA tier={tier.tier} isFreeTier={i === 0} />
+              )}
             </div>
           </div>
         ))}
@@ -121,14 +130,14 @@ export default function PricingPage() {
       {/* Provider Listing Plans */}
       <div id="provider-plans" className="scroll-mt-8 mt-16">
         <div className="text-center mb-8">
-          <h2 className="text-2xl font-bold mb-2">Enhanced Provider Listings</h2>
+          <h2 className="text-2xl font-bold mb-2">Provider Listings</h2>
           <p className="text-dusk" style={{ fontFamily: "Lora" }}>
-            For care providers who have claimed their listing. Add photos, a description, and respond to your CQC inspection.
+            Claim your listing for free. Upgrade for photos, descriptions, and sponsored visibility.
           </p>
           <p className="text-sm text-dusk mt-2">
             First,{" "}
             <Link href="/search" className="text-clay underline">find your provider page</Link>
-            {" "}and claim it free — then upgrade to enhance your listing.
+            {" "}and claim it free — then choose a plan below.
           </p>
         </div>
 
@@ -136,28 +145,31 @@ export default function PricingPage() {
         <div className="bg-moss/10 border border-moss/30 rounded-xl p-5 mb-6 flex items-start gap-4">
           <span className="text-2xl mt-0.5">&#10003;</span>
           <div>
-            <p className="font-bold text-moss mb-1">Claiming your listing is free</p>
+            <p className="font-bold text-moss mb-1">Claiming your listing is always free</p>
             <p className="text-sm text-dusk">
               Every claimed provider gets a verified badge and can publish an inspection response at no cost.
-              Enhanced photos and descriptions require a paid tier below.
+              Upgrade below for photos, descriptions, virtual tours, and sponsored placement.
             </p>
           </div>
         </div>
 
         <div className="grid md:grid-cols-3 gap-5">
-          {PROVIDER_TIERS.map((t, i) => (
+          {PROVIDER_TIERS.filter((t) => t.tier !== "claimed").map((t, i) => (
             <div
               key={t.tier}
-              className={`bg-cream border rounded-xl p-6 flex flex-col ${i === 1 ? "border-2" : "border"}`}
-              style={{ borderColor: i === 1 ? t.color : undefined }}
+              className={`bg-cream border rounded-xl p-6 flex flex-col ${i === 0 ? "border-2" : "border"}`}
+              style={{ borderColor: i === 0 ? t.color : undefined }}
             >
-              {i === 1 && (
+              {i === 0 && (
                 <span className="text-xs font-mono font-bold uppercase mb-3 self-start px-2 py-0.5 rounded" style={{ background: t.color + "22", color: t.color }}>
                   Most popular
                 </span>
               )}
               <h3 className="text-lg font-bold text-bark mb-1">{t.label}</h3>
-              <p className="text-2xl font-bold mb-4" style={{ color: t.color }}>{t.price}</p>
+              <p className="text-2xl font-bold mb-1" style={{ color: t.color }}>{t.price}</p>
+              {t.priceAnnual && (
+                <p className="text-xs text-dusk mb-4">or £{t.priceAnnual}/yr (save {Math.round((1 - t.priceAnnual / (t.priceMonthly * 12)) * 100)}%)</p>
+              )}
               <ul className="space-y-1.5 mb-6 flex-1">
                 {t.includes.map((inc) => (
                   <li key={inc} className="text-sm text-charcoal">

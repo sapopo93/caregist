@@ -32,6 +32,13 @@ export interface Provider {
   is_claimed: boolean;
   review_count: number;
   avg_review_rating: number | null;
+  // Provider-entered fields (claimed/paid profiles)
+  logo_url: string | null;
+  funding_types: string[] | null;
+  fee_guidance: string | null;
+  min_visit_duration: string | null;
+  contract_types: string[] | null;
+  age_ranges: string[] | null;
 }
 
 export interface SearchMeta {
@@ -93,6 +100,7 @@ export interface PricingTier {
   color: string;
   price: string;
   priceNote: string;
+  recommended?: boolean;
   variants?: PricingVariant[];
   includes: string[];
   limit: string;
