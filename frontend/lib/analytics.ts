@@ -8,6 +8,11 @@ export async function trackEvent(
   meta: EventMeta = {},
 ) {
   try {
+    if (typeof window !== "undefined") {
+      const hostname = window.location.hostname;
+      if (hostname === "localhost" || hostname === "127.0.0.1") return;
+    }
+
     await fetch("/api/v1/analytics/events", {
       method: "POST",
       headers: { "Content-Type": "application/json" },

@@ -22,12 +22,16 @@ export default function SearchBar({
   defaultRating = "",
   defaultServiceType = "",
   defaultPostcode = "",
+  showAdvancedToggle = true,
+  fetchServiceTypes = true,
 }: {
   defaultValue?: string;
   defaultRegion?: string;
   defaultRating?: string;
   defaultServiceType?: string;
   defaultPostcode?: string;
+  showAdvancedToggle?: boolean;
+  fetchServiceTypes?: boolean;
 }) {
   const [query, setQuery] = useState(defaultValue);
   const [advanced, setAdvanced] = useState(
@@ -43,6 +47,8 @@ export default function SearchBar({
 
   // Load service types dynamically from API
   useEffect(() => {
+    if (!fetchServiceTypes) return;
+
     fetch("/api/v1/service-types")
       .then((r) => (r.ok ? r.json() : { data: [] }))
       .then((d) => {
@@ -50,7 +56,7 @@ export default function SearchBar({
         if (types.length > 0) setServiceTypes(types);
       })
       .catch(() => {});
-  }, []);
+  }, [fetchServiceTypes]);
 
   // Detect postcode in main query
   useEffect(() => {
@@ -113,35 +119,37 @@ export default function SearchBar({
       )}
 
       {/* Toggle */}
-      <div className="mt-2 flex items-center gap-2">
-        <button
-          type="button"
-          onClick={() => setAdvanced(!advanced)}
-          className="text-xs text-dusk hover:text-clay transition-colors flex items-center gap-1"
-        >
-          <span className="inline-block transition-transform" style={{ transform: advanced ? "rotate(90deg)" : "rotate(0deg)" }}>
-            &#9654;
-          </span>
-          {advanced ? "Simple search" : "Advanced search"}
-          {filterCount > 0 && (
-            <span className="ml-1 bg-clay text-white text-[10px] font-bold w-4 h-4 rounded-full inline-flex items-center justify-center">
-              {filterCount}
-            </span>
-          )}
-        </button>
-        {advanced && filterCount > 0 && (
+      {showAdvancedToggle && (
+        <div className="mt-2 flex items-center gap-2">
           <button
             type="button"
-            onClick={() => { setRegion(""); setRating(""); setServiceType(""); setPostcode(""); }}
-            className="text-xs text-clay underline hover:text-bark"
+            onClick={() => setAdvanced(!advanced)}
+            className="text-xs text-dusk hover:text-clay transition-colors flex items-center gap-1"
           >
-            Clear filters
+            <span className="inline-block transition-transform" style={{ transform: advanced ? "rotate(90deg)" : "rotate(0deg)" }}>
+              &#9654;
+            </span>
+            {advanced ? "Simple search" : "Advanced search"}
+            {filterCount > 0 && (
+              <span className="ml-1 bg-clay text-white text-[10px] font-bold w-4 h-4 rounded-full inline-flex items-center justify-center">
+                {filterCount}
+              </span>
+            )}
           </button>
-        )}
-      </div>
+          {advanced && filterCount > 0 && (
+            <button
+              type="button"
+              onClick={() => { setRegion(""); setRating(""); setServiceType(""); setPostcode(""); }}
+              className="text-xs text-clay underline hover:text-bark"
+            >
+              Clear filters
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Advanced filters */}
-      {advanced && (
+      {showAdvancedToggle && advanced && (
         <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-3">
           <div>
             <label htmlFor="adv-region" className="block text-xs font-medium text-dusk mb-1">Region</label>

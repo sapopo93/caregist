@@ -12,29 +12,38 @@ export const metadata: Metadata = {
 };
 
 export default function HomePage() {
+  const heroProof = [
+    "55,818 providers cleaned and normalised",
+    "Daily refresh cadence for regulatory changes",
+    "Dashboard, exports, watchlists, and API access",
+  ];
+
   return (
     <div>
       <TrackEventOnMount eventType="homepage_view" eventSource="homepage" />
       {/* Hero */}
-      <section className="relative text-cream py-16 md:py-24 px-6 overflow-hidden">
+      <section className="relative text-cream py-12 md:py-20 px-6 overflow-hidden">
         <div className="absolute inset-0" style={{
           backgroundImage: "url('https://images.unsplash.com/photo-1516549655169-df83a0774514?w=1200&q=60&auto=format')",
           backgroundSize: "cover", backgroundPosition: "center top"
         }} />
         <div className="absolute inset-0 bg-bark/75" />
         <div className="max-w-5xl mx-auto relative z-10">
-          <p className="text-amber text-sm md:text-base font-medium tracking-wide uppercase mb-5">
-            Daily-refreshed regulatory data for CareTech teams and care operators
+          <p className="text-amber text-sm md:text-base font-medium tracking-wide uppercase mb-4">
+            Daily-refreshed UK care-provider intelligence
           </p>
-          <h1 className="text-4xl md:text-6xl font-bold mb-4 max-w-4xl" style={{ fontFamily: "Playfair Display" }}>
-            The intelligence layer for UK care-provider data
+          <h1
+            className="text-4xl md:text-6xl font-bold mb-4 max-w-4xl text-cream"
+            style={{ fontFamily: "Playfair Display", color: "var(--color-cream)" }}
+          >
+            CQC data you can use in live care-market workflows
           </h1>
           <p className="text-stone text-base md:text-lg mb-8 max-w-3xl" style={{ fontFamily: "Lora" }}>
-            Cleaned and normalised CQC provider data, geospatial search, watchlists, exports, and API access in one workflow-ready product. Start in the dashboard, expand into exports and integrations when your team needs more.
+            CareGist gives care operators and CareTech teams cleaned provider records, geospatial search, watchlists, exports, and API access without forcing them to work from the raw register.
           </p>
-          <div className="grid gap-6 lg:grid-cols-[1.3fr_0.7fr] items-start">
+          <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr] items-start">
             <div>
-              <div className="flex flex-wrap gap-3 mb-6">
+              <div className="flex flex-wrap gap-3 mb-5">
                 <TrackedLink
                   href="/pricing"
                   eventType="homepage_cta_click"
@@ -53,36 +62,45 @@ export default function HomePage() {
                 >
                   Explore API
                 </TrackedLink>
-                <TrackedLink
-                  href="/search"
-                  eventType="homepage_cta_click"
-                  eventSource="homepage_hero"
-                  meta={{ cta: "open_data_explorer" }}
-                  className="inline-flex items-center justify-center px-6 py-3 border border-cream/20 text-stone rounded-lg font-medium hover:bg-white/5 transition-colors"
-                >
-                  Open data explorer
-                </TrackedLink>
               </div>
-              <div className="max-w-xl">
-                <SearchBar />
+              <div className="grid gap-3 sm:grid-cols-3 max-w-3xl">
+                {heroProof.map((item) => (
+                  <div
+                    key={item}
+                    className="rounded-2xl border border-white/12 bg-black/10 px-4 py-4 text-sm text-cream/90 backdrop-blur-sm"
+                  >
+                    {item}
+                  </div>
+                ))}
               </div>
-            </div>
-            <div className="bg-charcoal/70 border border-white/10 rounded-2xl p-5 backdrop-blur-sm">
-              <p className="text-xs uppercase tracking-[0.2em] text-amber mb-3">What you get</p>
-              <div className="grid grid-cols-2 gap-3 text-sm text-stone">
-                <div className="rounded-xl border border-white/10 p-3">Cleaned, normalised provider data</div>
-                <div className="rounded-xl border border-white/10 p-3">Geospatial nearby search</div>
-                <div className="rounded-xl border border-white/10 p-3">Watchlists and alerts</div>
-                <div className="rounded-xl border border-white/10 p-3">Dashboard, exports, and API</div>
+              <div className="flex flex-wrap gap-4 text-cream/85 text-sm font-medium mt-6">
+                <span>55,818 providers</span>
+                <span className="text-amber">|</span>
+                <span>Updated daily</span>
+                <span className="text-amber">|</span>
+                <span>Dashboard + exports + API</span>
               </div>
             </div>
-          </div>
-          <div className="flex flex-wrap gap-4 text-cream/80 text-sm font-medium mt-8">
-            <span>55,818 providers</span>
-            <span className="text-amber">|</span>
-            <span>Updated daily</span>
-            <span className="text-amber">|</span>
-            <span>Dashboard + exports + API</span>
+            <div className="bg-charcoal/75 border border-white/10 rounded-3xl p-6 backdrop-blur-sm">
+              <p className="text-xs uppercase tracking-[0.2em] text-amber mb-3">What you can do first</p>
+              <div className="space-y-3 text-sm text-stone">
+                <div className="rounded-2xl border border-white/10 p-4">
+                  Search nearby providers and inspect cleaner records instead of raw regulatory tables.
+                </div>
+                <div className="rounded-2xl border border-white/10 p-4">
+                  Track shortlist changes and export structured data into operating or product workflows.
+                </div>
+              </div>
+              <TrackedLink
+                href="/search"
+                eventType="homepage_cta_click"
+                eventSource="homepage_hero"
+                meta={{ cta: "open_data_explorer" }}
+                className="inline-flex items-center justify-center mt-4 text-amber font-medium underline underline-offset-4 hover:text-cream transition-colors"
+              >
+                Open the data explorer
+              </TrackedLink>
+            </div>
           </div>
         </div>
       </section>
@@ -183,6 +201,10 @@ export default function HomePage() {
         <p className="text-dusk mb-4" style={{ fontFamily: "Lora" }}>
           CareGist still supports search, directory SEO, and provider claiming. Those flows stay available, but the launch product leads with the intelligence layer above them.
         </p>
+        <div className="bg-cream border border-stone rounded-2xl p-5 mb-8">
+          <p className="text-sm font-semibold text-bark mb-3">Explore the directory when you need a lighter-weight lookup</p>
+          <SearchBar fetchServiceTypes={false} showAdvancedToggle={false} />
+        </div>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-10">
           {[
             { name: "Care Homes", count: "10,309", slug: "care-homes" },
@@ -237,7 +259,7 @@ export default function HomePage() {
       <section className="bg-bark py-8">
         <div className="max-w-4xl mx-auto px-6 text-center">
           <h2 className="text-xl font-bold mb-4" style={{ fontFamily: "Playfair Display", color: "var(--color-amber)" }}>
-            Why families and professionals choose CareGist
+            Why operators and CareTech teams choose CareGist
           </h2>
           <div className="grid md:grid-cols-3 gap-6 text-stone text-xs mt-4">
             <div>
