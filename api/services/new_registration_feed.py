@@ -169,6 +169,15 @@ def _build_feed_query(filters: FeedFilters, limit: int, offset: int) -> tuple[st
     return query, count_query, [*args, limit, offset]
 
 
+def _raw_jsonb(value: Any) -> dict[str, Any]:
+    """Decode a JSONB column that may arrive as a string (raw asyncpg) or dict (app pool)."""
+    if value is None:
+        return {}
+    if isinstance(value, str):
+        return json.loads(value)
+    return dict(value)
+
+
 def _event_payload_from_row(row: dict[str, Any]) -> dict[str, Any]:
     return {
         "event_type": EVENT_TYPE,
@@ -176,7 +185,7 @@ def _event_payload_from_row(row: dict[str, Any]) -> dict[str, Any]:
         "effective_date": row["effective_date"],
         "confidence_score": float(row["confidence_score"] or 0),
         "provider_id": row.get("provider_id"),
-        **dict(row.get("metadata") or {}),
+        **(_raw_jsonb(row.get("metadata"))),
     }
 
 
@@ -319,7 +328,8 @@ async def deliver_new_registration_event(conn, event_payload: dict[str, Any]) ->
     delivered = 0
 
     for row in rows:
-        filter_config = dict(row["filter_config"] or {})
+        raw_fc = row["filter_config"]
+        filter_config = json.loads(raw_fc) if isinstance(raw_fc, str) else (raw_fc or {})
         if not event_matches_filter(event_payload, filter_config):
             continue
 
@@ -479,7 +489,8 @@ async def queue_weekly_new_registration_digests(conn, *, reference_date: date | 
             skipped += 1
             continue
 
-        filters = dict(row["filters"] or {})
+        raw_f = row["filters"]
+        filters = json.loads(raw_f) if isinstance(raw_f, str) else (raw_f or {})
         filter_model = FeedFilters(
             q=filters.get("q"),
             region=filters.get("region"),
