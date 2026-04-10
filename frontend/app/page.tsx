@@ -151,7 +151,7 @@ export default function HomePage() {
         </div>
 
         {/* CTAs */}
-        <div className="grid md:grid-cols-2 gap-5">
+        <div className="grid md:grid-cols-3 gap-5">
           <TrackedLink
             href="/api"
             eventType="homepage_cta_click"
@@ -178,6 +178,20 @@ export default function HomePage() {
             </h2>
             <p className="text-stone text-sm">
               Monitor local markets, benchmark care groups, and export cleaner regulatory data into your operating workflows.
+            </p>
+          </TrackedLink>
+          <TrackedLink
+            href="/find-care"
+            eventType="homepage_cta_click"
+            eventSource="homepage_midpage"
+            meta={{ cta: "commissioner_segment" }}
+            className="block bg-bark text-cream rounded-xl p-7 hover:bg-charcoal transition-colors"
+          >
+            <h2 className="text-xl font-bold mb-2" style={{ fontFamily: "Playfair Display", color: "var(--color-amber)" }}>
+              For local authorities &amp; commissioners
+            </h2>
+            <p className="text-stone text-sm">
+              Map provider capacity by area, track new registrations in your patch, and feed cleaner data into commissioning and placement workflows.
             </p>
           </TrackedLink>
         </div>
