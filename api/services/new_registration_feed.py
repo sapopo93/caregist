@@ -114,11 +114,11 @@ def _build_filter_clause(filters: FeedFilters, start_index: int = 1) -> tuple[st
         index += 1
     if filters.from_date:
         clauses.append(f"tel.effective_date >= ${index}")
-        args.append(filters.from_date)
+        args.append(date.fromisoformat(filters.from_date) if isinstance(filters.from_date, str) else filters.from_date)
         index += 1
     if filters.to_date:
         clauses.append(f"tel.effective_date <= ${index}")
-        args.append(filters.to_date)
+        args.append(date.fromisoformat(filters.to_date) if isinstance(filters.to_date, str) else filters.to_date)
         index += 1
 
     return " AND ".join(clauses), args
