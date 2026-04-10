@@ -22,12 +22,24 @@ function warnOnce(flag: "server_base" | "server_key" | "public_base", message: s
 
 export function getServerApiBase() {
   if (process.env.API_URL) return process.env.API_URL;
+  if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
+  if (process.env.APP_URL) {
+    try {
+      const appUrl = new URL(process.env.APP_URL);
+      if (appUrl.hostname === "caregist.co.uk" || appUrl.hostname === "www.caregist.co.uk") {
+        return `${appUrl.protocol}//api.caregist.co.uk`;
+      }
+    } catch {
+      // Fall through to the development default below.
+    }
+  }
   warnOnce("server_base", "[caregist] API_URL env var is not set — falling back to localhost:8000");
   return DEV_API_BASE;
 }
 
 export function getServerApiKey() {
   if (process.env.API_KEY) return process.env.API_KEY;
+  if (process.env.API_MASTER_KEY) return process.env.API_MASTER_KEY;
   warnOnce("server_key", "[caregist] API_KEY env var is not set — using default dev key");
   return DEV_API_KEY;
 }
