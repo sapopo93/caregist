@@ -233,6 +233,15 @@ FIELD_SETS = {
     "full": set(FULL_FIELDS),
 }
 
+TIER_RANK = {
+    "free": 0,
+    "starter": 1,
+    "pro": 2,
+    "business": 3,
+    "enterprise": 4,
+    "admin": 5,
+}
+
 
 def get_tier_config(tier: str) -> dict:
     """Get config for a tier, defaulting to free."""
@@ -258,6 +267,20 @@ def get_seat_price_gbp(tier: str) -> int:
 
 def get_next_tier(tier: str) -> str | None:
     return get_tier_config(tier).get("next_tier")
+
+
+def get_tier_rank(tier: str) -> int:
+    normalized = (tier or "free").lower()
+    if normalized.startswith("enterprise"):
+        normalized = "enterprise"
+    return int(TIER_RANK.get(normalized, 0))
+
+
+def max_tier(*tiers: str | None) -> str:
+    candidates = [tier for tier in tiers if tier]
+    if not candidates:
+        return "free"
+    return max(candidates, key=get_tier_rank)
 
 
 def allows_extra_seats(tier: str) -> bool:

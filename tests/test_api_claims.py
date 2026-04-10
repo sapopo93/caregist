@@ -1,10 +1,13 @@
 """Tests for provider claiming endpoints."""
 
-import pytest
+from contextlib import asynccontextmanager
 from unittest.mock import AsyncMock, patch
-from httpx import AsyncClient, ASGITransport
+
+import pytest
+from httpx import ASGITransport, AsyncClient
 
 from api.main import app
+from api.middleware.auth import validate_api_key
 
 
 @pytest.fixture
@@ -18,17 +21,24 @@ def mock_conn():
 
 @pytest.fixture
 def patched_db(mock_conn):
-    """Patch get_connection to yield a mock connection."""
-    from contextlib import asynccontextmanager
-
     @asynccontextmanager
     async def mock_get_connection():
         yield mock_conn
 
-    with patch("api.routers.claims.get_connection", mock_get_connection), \
-         patch("api.routers.providers.get_connection", mock_get_connection), \
-         patch("api.middleware.auth.get_connection", mock_get_connection):
+    app.dependency_overrides[validate_api_key] = lambda: {
+        "tier": "starter",
+        "remaining": {
+            "burst_remaining": 10,
+            "daily_remaining": 100,
+            "rolling_7d_remaining": 100,
+            "monthly_remaining": 100,
+        },
+        "user_id": 1,
+        "email": "ops@caregist.co.uk",
+    }
+    with patch("api.routers.claims.get_connection", mock_get_connection):
         yield mock_conn
+    app.dependency_overrides = {}
 
 
 HEADERS = {"X-API-Key": "change_me_in_production"}
@@ -37,9 +47,7 @@ HEADERS = {"X-API-Key": "change_me_in_production"}
 @pytest.mark.asyncio
 async def test_submit_claim_success(patched_db):
     mock_conn = patched_db
-    # Provider exists and is not claimed
     mock_conn.fetchrow.side_effect = [
-        # validate_api_key: key lookup (skipped for master key)
         {"id": "LOC123", "is_claimed": False},  # PROVIDER_ID_BY_SLUG
         None,  # HAS_PENDING_CLAIM
         {"id": 1, "provider_id": "LOC123", "status": "pending", "claimant_name": "Jane", "claimant_email": "jane@care.co.uk", "created_at": "2026-01-01"},  # INSERT_CLAIM
@@ -116,9 +124,36 @@ async def test_submit_claim_pending_exists(patched_db):
 @pytest.mark.asyncio
 async def test_submit_claim_validation():
     """Missing required fields should return 422."""
+    app.dependency_overrides[validate_api_key] = lambda: {
+        "tier": "starter",
+        "remaining": {
+            "burst_remaining": 10,
+            "daily_remaining": 100,
+            "rolling_7d_remaining": 100,
+            "monthly_remaining": 100,
+        },
+        "user_id": 1,
+        "email": "ops@caregist.co.uk",
+    }
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         resp = await client.post("/api/v1/providers/test/claim", json={
             "claimant_name": "Jane",
         }, headers=HEADERS)
+    app.dependency_overrides = {}
 
     assert resp.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_claim_status_returns_authenticated_users_claim(patched_db):
+    mock_conn = patched_db
+    mock_conn.fetchrow.side_effect = [
+        {"id": "LOC123", "is_claimed": False},
+        {"id": 1, "provider_id": "LOC123", "status": "pending", "claimant_email": "ops@caregist.co.uk"},
+    ]
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.get("/api/v1/providers/test-provider/claim-status", headers=HEADERS)
+
+    assert resp.status_code == 200
+    assert resp.json()["data"]["status"] == "pending"

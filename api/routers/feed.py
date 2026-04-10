@@ -5,6 +5,7 @@ from __future__ import annotations
 import csv
 import io
 import json
+import logging
 import secrets
 from io import BytesIO
 from typing import Any
@@ -19,6 +20,7 @@ from api.middleware.auth import validate_api_key
 from api.middleware.rate_limit import add_rate_limit_headers
 from api.services.new_registration_feed import (
     FeedFilters,
+    coerce_json_object,
     deliver_new_registration_event,
     list_new_registration_events,
     queue_weekly_new_registration_digests,
@@ -31,6 +33,7 @@ from api.services.new_registration_feed import (
 from api.utils.analytics import log_event
 
 router = APIRouter(prefix="/api/v1/feed", tags=["feed"])
+logger = logging.getLogger("caregist.feed")
 
 
 class SavedFilterCreateRequest(BaseModel):
@@ -100,6 +103,13 @@ def _export_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     ]
 
 
+async def _best_effort_sync_feed(conn) -> None:
+    try:
+        await sync_new_registration_events(conn)
+    except Exception as exc:
+        logger.warning("Skipping inline feed sync and serving existing ledger state: %s", exc)
+
+
 @router.get("/new-registrations")
 async def get_new_registration_feed(
     response: Response,
@@ -124,7 +134,7 @@ async def get_new_registration_feed(
     filters = _filters_from_query(q, region, local_authority, service_type, provider_type, postcode_prefix, from_date, to_date)
 
     async with get_connection() as conn:
-        await sync_new_registration_events(conn)
+        await _best_effort_sync_feed(conn)
         rows, total = await list_new_registration_events(conn, filters, limit=page_size, offset=offset)
 
     if tier == "free":
@@ -156,7 +166,7 @@ async def export_new_registration_csv(
     limit = int(config["export"])
     filters = _filters_from_query(q, region, local_authority, service_type, provider_type, postcode_prefix, from_date, to_date)
     async with get_connection() as conn:
-        await sync_new_registration_events(conn)
+        await _best_effort_sync_feed(conn)
         rows, total = await list_new_registration_events(conn, filters, limit=limit, offset=0)
 
     export_rows = _export_rows(rows)
@@ -201,7 +211,7 @@ async def export_new_registration_xlsx(
     limit = int(config["export"])
     filters = _filters_from_query(q, region, local_authority, service_type, provider_type, postcode_prefix, from_date, to_date)
     async with get_connection() as conn:
-        await sync_new_registration_events(conn)
+        await _best_effort_sync_feed(conn)
         rows, total = await list_new_registration_events(conn, filters, limit=limit, offset=0)
 
     export_rows = _export_rows(rows)
@@ -251,7 +261,7 @@ async def list_saved_filters(_auth: dict = Depends(validate_api_key)) -> dict[st
             {
                 "id": row["id"],
                 "name": row["name"],
-                "filters": dict(row["filters"] or {}),
+                "filters": coerce_json_object(row["filters"]),
                 "created_at": row["created_at"].isoformat(),
                 "updated_at": row["updated_at"].isoformat(),
             }
@@ -288,7 +298,7 @@ async def create_saved_filter(body: SavedFilterCreateRequest, _auth: dict = Depe
     return {
         "id": row["id"],
         "name": row["name"],
-        "filters": dict(row["filters"] or {}),
+        "filters": coerce_json_object(row["filters"]),
         "created_at": row["created_at"].isoformat(),
         "updated_at": row["updated_at"].isoformat(),
     }
@@ -328,7 +338,7 @@ async def get_digest_subscription(_auth: dict = Depends(validate_api_key)) -> di
         "subscription": {
             "id": row["id"],
             "email": row["email"],
-            "filters": dict(row["filters"] or {}),
+            "filters": coerce_json_object(row["filters"]),
             "active": row["active"],
             "frequency": row["frequency"],
             "unsubscribe_url": f"/api/v1/feed/new-registrations/digest/unsubscribe/{row['unsubscribe_token']}",
@@ -365,7 +375,7 @@ async def upsert_digest_subscription(body: DigestSubscriptionRequest, _auth: dic
         "subscription": {
             "id": row["id"],
             "email": row["email"],
-            "filters": dict(row["filters"] or {}),
+            "filters": coerce_json_object(row["filters"]),
             "active": row["active"],
             "frequency": row["frequency"],
             "unsubscribe_url": f"/api/v1/feed/new-registrations/digest/unsubscribe/{row['unsubscribe_token']}",

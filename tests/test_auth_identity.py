@@ -74,10 +74,10 @@ async def test_validate_api_key_rejects_key_outside_seat_limit():
                 "is_verified": True,
                 "created_at": None,
             },
-            {"active_keys": 3, "max_users": 2},
+            {"active_keys": 4, "max_users": 2},
         ]
     )
-    conn.fetch = AsyncMock(return_value=[{"id": 1}, {"id": 2}])
+    conn.fetch = AsyncMock(return_value=[{"id": 1}, {"id": 2}, {"id": 3}])
     conn.execute = AsyncMock()
 
     @asynccontextmanager
@@ -91,6 +91,38 @@ async def test_validate_api_key_rejects_key_outside_seat_limit():
 
     assert exc.value.status_code == 403
     assert "seat limit" in exc.value.detail
+
+
+@pytest.mark.asyncio
+async def test_validate_api_key_honours_paid_tier_seat_floor_when_subscription_is_stale():
+    conn = AsyncMock()
+    conn.fetchrow = AsyncMock(
+        side_effect=[
+            {
+                "id": 7,
+                "name": "Alice Example",
+                "email": "alice@example.com",
+                "user_id": 42,
+                "tier": "business",
+                "is_active": True,
+                "is_verified": True,
+                "created_at": None,
+            },
+            {"active_keys": 1, "max_users": 1},
+        ]
+    )
+    conn.execute = AsyncMock()
+
+    @asynccontextmanager
+    async def mock_get_connection():
+        yield conn
+
+    with patch("api.middleware.auth.get_connection", mock_get_connection), \
+         patch("api.middleware.auth.check_rate_limit", AsyncMock(return_value={"burst_remaining": 1, "daily_remaining": 2, "rolling_7d_remaining": 3, "monthly_remaining": 4})):
+        auth = await validate_api_key("cg_test_key")
+
+    assert auth["tier"] == "business"
+    conn.fetch.assert_not_awaited()
 
 
 @pytest.mark.asyncio
@@ -133,3 +165,23 @@ async def test_create_team_key_requires_verified_email():
 
     assert exc.value.status_code == 403
     assert "Verify your email" in exc.value.detail
+
+
+@pytest.mark.asyncio
+async def test_create_team_key_uses_paid_tier_capacity_when_subscription_row_is_stale():
+    conn = AsyncMock()
+    conn.fetchrow = AsyncMock(return_value={"active_keys": 1, "max_users": 1})
+    conn.execute = AsyncMock()
+
+    @asynccontextmanager
+    async def mock_get_connection():
+        yield conn
+
+    with patch("api.routers.auth.get_connection", mock_get_connection):
+        result = await create_team_key(
+            TeamKeyCreateRequest(name="Ops Seat", email="ops@example.com"),
+            {"user_id": 42, "tier": "business", "is_verified": True},
+        )
+
+    assert result["email"] == "ops@example.com"
+    conn.execute.assert_awaited()

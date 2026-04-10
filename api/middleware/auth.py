@@ -7,7 +7,7 @@ import logging
 from fastapi import HTTPException, Security
 from fastapi.security import APIKeyHeader
 
-from api.config import get_tier_config, settings
+from api.config import get_max_users, get_tier_config, settings
 from api.database import get_connection
 from api.middleware.rate_limit import check_rate_limit
 
@@ -73,7 +73,8 @@ async def validate_api_key(api_key: str | None = Security(api_key_header)) -> di
                 user_id,
             )
             active_keys = int(seat_row["active_keys"] or 0) if seat_row else 0
-            max_users = int(seat_row["max_users"] or 1) if seat_row else 1
+            subscription_max = int(seat_row["max_users"] or 1) if seat_row else 1
+            max_users = max(subscription_max, get_max_users(row_data.get("tier") or "free"))
             if active_keys > max_users:
                 allowed_rows = await conn.fetch(
                     """

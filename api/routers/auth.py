@@ -16,7 +16,7 @@ from pydantic import BaseModel, EmailStr, Field
 
 from api.middleware.ip_rate_limit import check_ip_rate_limit
 
-from api.config import get_subscription_entitlements, get_tier_config, settings
+from api.config import get_max_users, get_subscription_entitlements, get_tier_config, settings
 from api.database import get_connection
 from api.middleware.auth import validate_api_key
 
@@ -82,7 +82,7 @@ class ResendVerificationRequest(BaseModel):
     email: EmailStr
 
 
-async def _get_key_capacity(conn, user_id: int) -> tuple[int, int]:
+async def _get_key_capacity(conn, user_id: int, tier: str | None = None) -> tuple[int, int]:
     row = await conn.fetchrow(
         """
         SELECT
@@ -98,7 +98,10 @@ async def _get_key_capacity(conn, user_id: int) -> tuple[int, int]:
         """,
         user_id,
     )
-    return int(row["active_keys"] or 0), int(row["max_users"] or 1)
+    active_keys = int(row["active_keys"] or 0)
+    subscription_max = int(row["max_users"] or 1)
+    tier_max = get_max_users(tier or "free")
+    return active_keys, max(subscription_max, tier_max)
 
 
 @router.post("/register")
@@ -243,7 +246,7 @@ async def list_team_keys(_auth: dict = Depends(validate_api_key)) -> dict:
             """,
             user_id,
         )
-        active_keys, max_users = await _get_key_capacity(conn, user_id)
+        active_keys, max_users = await _get_key_capacity(conn, user_id, _auth.get("tier"))
 
     return {
         "keys": [
@@ -272,7 +275,7 @@ async def create_team_key(req: TeamKeyCreateRequest, _auth: dict = Depends(valid
         raise HTTPException(status_code=403, detail="Verify your email before creating additional access keys.")
 
     async with get_connection() as conn:
-        active_keys, max_users = await _get_key_capacity(conn, user_id)
+        active_keys, max_users = await _get_key_capacity(conn, user_id, _auth.get("tier"))
         if active_keys >= max_users:
             raise HTTPException(
                 status_code=403,
@@ -309,7 +312,7 @@ async def revoke_team_key(key_id: int, _auth: dict = Depends(validate_api_key)) 
         raise HTTPException(status_code=400, detail="Use key rotation to replace the key you are currently using.")
 
     async with get_connection() as conn:
-        active_keys, _ = await _get_key_capacity(conn, user_id)
+        active_keys, _ = await _get_key_capacity(conn, user_id, _auth.get("tier"))
         if active_keys <= 1:
             raise HTTPException(status_code=400, detail="You must keep at least one active key on the account.")
         result = await conn.execute(

@@ -51,6 +51,49 @@ class FeedFilters:
         }
 
 
+def coerce_json_object(value: Any) -> dict[str, Any]:
+    """Normalize json/jsonb fields across asyncpg codecs and environments."""
+    if value is None:
+        return {}
+    if isinstance(value, dict):
+        return value
+    if isinstance(value, str):
+        value = value.strip()
+        if not value:
+            return {}
+        try:
+            parsed = json.loads(value)
+        except json.JSONDecodeError:
+            logger.warning("Unable to decode json object from string value: %r", value[:120])
+            return {}
+        if isinstance(parsed, dict):
+            return parsed
+        logger.warning("Expected json object but decoded %s", type(parsed).__name__)
+        return {}
+    if hasattr(value, "items"):
+        return dict(value.items())
+    try:
+        return dict(value)
+    except (TypeError, ValueError):
+        logger.warning("Unable to coerce json object from %s", type(value).__name__)
+        return {}
+
+
+def coerce_optional_date(value: Any) -> date | None:
+    if value in (None, ""):
+        return None
+    if isinstance(value, date) and not isinstance(value, datetime):
+        return value
+    if isinstance(value, datetime):
+        return value.date()
+    if isinstance(value, str):
+        value = value.strip()
+        if not value:
+            return None
+        return date.fromisoformat(value)
+    raise ValueError(f"Unsupported date value: {value!r}")
+
+
 def require_feed_access(tier: str) -> dict[str, Any]:
     config = get_tier_config(tier)
     if config.get("feed_rows", 0) <= 0:
@@ -114,11 +157,11 @@ def _build_filter_clause(filters: FeedFilters, start_index: int = 1) -> tuple[st
         index += 1
     if filters.from_date:
         clauses.append(f"tel.effective_date >= ${index}")
-        args.append(date.fromisoformat(filters.from_date) if isinstance(filters.from_date, str) else filters.from_date)
+        args.append(coerce_optional_date(filters.from_date))
         index += 1
     if filters.to_date:
         clauses.append(f"tel.effective_date <= ${index}")
-        args.append(date.fromisoformat(filters.to_date) if isinstance(filters.to_date, str) else filters.to_date)
+        args.append(coerce_optional_date(filters.to_date))
         index += 1
 
     return " AND ".join(clauses), args
@@ -169,15 +212,6 @@ def _build_feed_query(filters: FeedFilters, limit: int, offset: int) -> tuple[st
     return query, count_query, [*args, limit, offset]
 
 
-def _raw_jsonb(value: Any) -> dict[str, Any]:
-    """Decode a JSONB column that may arrive as a string (raw asyncpg) or dict (app pool)."""
-    if value is None:
-        return {}
-    if isinstance(value, str):
-        return json.loads(value)
-    return dict(value)
-
-
 def _event_payload_from_row(row: dict[str, Any]) -> dict[str, Any]:
     return {
         "event_type": EVENT_TYPE,
@@ -185,7 +219,7 @@ def _event_payload_from_row(row: dict[str, Any]) -> dict[str, Any]:
         "effective_date": row["effective_date"],
         "confidence_score": float(row["confidence_score"] or 0),
         "provider_id": row.get("provider_id"),
-        **(_raw_jsonb(row.get("metadata"))),
+        **coerce_json_object(row.get("metadata")),
     }
 
 
@@ -268,7 +302,14 @@ async def list_new_registration_events(conn, filters: FeedFilters, *, limit: int
     rows = await conn.fetch(query, *args)
     count_row = await conn.fetchrow(count_query, *args[:-2])
     total = int(count_row["total"] or 0) if count_row else 0
-    return [dict(row) for row in rows], total
+    normalized_rows: list[dict[str, Any]] = []
+    for row in rows:
+        item = dict(row)
+        item["metadata"] = coerce_json_object(item.get("metadata"))
+        if item.get("confidence_score") is not None:
+            item["confidence_score"] = float(item["confidence_score"])
+        normalized_rows.append(item)
+    return normalized_rows, total
 
 
 def event_matches_filter(payload: dict[str, Any], filter_config: dict[str, Any]) -> bool:
@@ -328,8 +369,12 @@ async def deliver_new_registration_event(conn, event_payload: dict[str, Any]) ->
     delivered = 0
 
     for row in rows:
+<<<<<<< HEAD
         raw_fc = row["filter_config"]
         filter_config = json.loads(raw_fc) if isinstance(raw_fc, str) else (raw_fc or {})
+=======
+        filter_config = coerce_json_object(row["filter_config"])
+>>>>>>> ee0bdb4 (Harden feed wedge deploy and auth entitlement handling)
         if not event_matches_filter(event_payload, filter_config):
             continue
 
@@ -489,8 +534,12 @@ async def queue_weekly_new_registration_digests(conn, *, reference_date: date | 
             skipped += 1
             continue
 
+<<<<<<< HEAD
         raw_f = row["filters"]
         filters = json.loads(raw_f) if isinstance(raw_f, str) else (raw_f or {})
+=======
+        filters = coerce_json_object(row["filters"])
+>>>>>>> ee0bdb4 (Harden feed wedge deploy and auth entitlement handling)
         filter_model = FeedFilters(
             q=filters.get("q"),
             region=filters.get("region"),

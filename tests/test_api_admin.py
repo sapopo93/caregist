@@ -5,6 +5,7 @@ from unittest.mock import AsyncMock, patch
 from httpx import AsyncClient, ASGITransport
 
 from api.main import app
+from api.middleware.auth import validate_api_key
 
 MASTER_KEY = "change_me_in_production"
 REGULAR_KEY = "regular_key"
@@ -28,9 +29,19 @@ def patched_db(mock_conn):
     async def mock_get_connection():
         yield mock_conn
 
-    with patch("api.routers.admin.get_connection", mock_get_connection), \
-         patch("api.middleware.auth.get_connection", mock_get_connection):
+    app.dependency_overrides[validate_api_key] = lambda: {
+        "tier": "admin",
+        "name": "master",
+        "remaining": {
+            "burst_remaining": 10,
+            "daily_remaining": 100,
+            "rolling_7d_remaining": 100,
+            "monthly_remaining": 100,
+        },
+    }
+    with patch("api.routers.admin.get_connection", mock_get_connection):
         yield mock_conn
+    app.dependency_overrides = {}
 
 
 @pytest.mark.asyncio
@@ -61,13 +72,15 @@ async def test_dashboard_stats(patched_db):
 
 @pytest.mark.asyncio
 async def test_admin_requires_master_key(patched_db):
-    mock_conn = patched_db
-    # Simulate regular key lookup
-    mock_conn.fetchrow.return_value = {
-        "name": "Regular User",
+    app.dependency_overrides[validate_api_key] = lambda: {
         "tier": "free",
-        "rate_limit": 100,
-        "is_active": True,
+        "name": "Regular User",
+        "remaining": {
+            "burst_remaining": 10,
+            "daily_remaining": 100,
+            "rolling_7d_remaining": 100,
+            "monthly_remaining": 100,
+        },
     }
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
@@ -75,6 +88,7 @@ async def test_admin_requires_master_key(patched_db):
             "/api/v1/admin/stats",
             headers={"X-API-Key": REGULAR_KEY},
         )
+    app.dependency_overrides = {}
 
     assert resp.status_code == 403
     assert "Admin access required" in resp.json()["detail"]

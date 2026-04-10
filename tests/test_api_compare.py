@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock, patch
 from httpx import AsyncClient, ASGITransport
 
 from api.main import app
+from api.middleware.auth import validate_api_key
 
 HEADERS = {"X-API-Key": "change_me_in_production"}
 STARTER_HEADERS = {"X-API-Key": "starter_key"}
@@ -28,9 +29,18 @@ def patched_db(mock_conn):
     async def mock_get_connection():
         yield mock_conn
 
-    with patch("api.routers.providers.get_connection", mock_get_connection), \
-         patch("api.middleware.auth.get_connection", mock_get_connection):
+    app.dependency_overrides[validate_api_key] = lambda: {
+        "tier": "admin",
+        "remaining": {
+            "burst_remaining": 10,
+            "daily_remaining": 100,
+            "rolling_7d_remaining": 100,
+            "monthly_remaining": 100,
+        },
+    }
+    with patch("api.routers.providers.get_connection", mock_get_connection):
         yield mock_conn
+    app.dependency_overrides = {}
 
 
 def mock_provider_row(slug, name):
@@ -72,18 +82,15 @@ async def test_compare_two_providers(patched_db):
 @pytest.mark.asyncio
 async def test_compare_respects_starter_limit(patched_db):
     mock_conn = patched_db
-    mock_conn.fetchrow.side_effect = [
-        {
-            "id": 1,
-            "name": "Starter User",
-            "email": "starter@example.com",
-            "user_id": 1,
-            "tier": "starter",
-            "is_active": True,
-            "created_at": None,
+    app.dependency_overrides[validate_api_key] = lambda: {
+        "tier": "starter",
+        "remaining": {
+            "burst_remaining": 10,
+            "daily_remaining": 100,
+            "rolling_7d_remaining": 100,
+            "monthly_remaining": 100,
         },
-        {"active_keys": 1, "max_users": 1},
-    ]
+    }
     mock_conn.fetch.return_value = [
         mock_provider_row("a", "A"),
         mock_provider_row("b", "B"),
@@ -95,6 +102,7 @@ async def test_compare_respects_starter_limit(patched_db):
             "/api/v1/providers/compare?slugs=a,b,c,d,e",
             headers=STARTER_HEADERS,
         )
+    app.dependency_overrides = {}
 
     assert resp.status_code == 200
     # Starter tier should only include first 3 slugs.

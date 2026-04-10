@@ -61,6 +61,11 @@ Operational rules:
 
 CareGist production is assumed to run on AWS EC2, not Render or Vercel.
 
+Repo-managed EC2 assets:
+
+- PM2 process file: `ecosystem.config.cjs`
+- Nginx reverse-proxy reference: `deploy/nginx/api.caregist.co.uk.conf`
+
 Recommended scheduled jobs:
 
 1. Apply migrations during deploy:
@@ -78,6 +83,13 @@ Required environment variables:
 - `RESEND_API_KEY`
 - `ENQUIRY_FROM_EMAIL`
 - Stripe and Sentry keys as already required by billing/runtime
+
+Deployment guardrails:
+
+- Restart the API process with updated environment after deploy:
+  - `pm2 restart caregist-api --update-env`
+- Keep `db/migrations/005_care_groups.sql` and `db/migrations/006_rating_changes.sql` defensive around legacy object ownership.
+  Those migrations must not fail on EC2 hosts where historical objects are owned by `postgres` rather than the application role.
 
 ## Scope discipline
 

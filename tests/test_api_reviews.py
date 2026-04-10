@@ -5,6 +5,7 @@ from unittest.mock import AsyncMock, patch
 from httpx import AsyncClient, ASGITransport
 
 from api.main import app
+from api.middleware.auth import validate_api_key
 
 HEADERS = {"X-API-Key": "change_me_in_production"}
 
@@ -26,10 +27,20 @@ def patched_db(mock_conn):
     async def mock_get_connection():
         yield mock_conn
 
-    with patch("api.routers.reviews.get_connection", mock_get_connection), \
-         patch("api.routers.providers.get_connection", mock_get_connection), \
-         patch("api.middleware.auth.get_connection", mock_get_connection):
+    app.dependency_overrides[validate_api_key] = lambda: {
+        "tier": "admin",
+        "remaining": {
+            "burst_remaining": 10,
+            "daily_remaining": 100,
+            "rolling_7d_remaining": 100,
+            "monthly_remaining": 100,
+        },
+        "user_id": 1,
+        "email": "ops@caregist.co.uk",
+    }
+    with patch("api.routers.reviews.get_connection", mock_get_connection):
         yield mock_conn
+    app.dependency_overrides = {}
 
 
 @pytest.mark.asyncio

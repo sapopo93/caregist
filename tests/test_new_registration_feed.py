@@ -10,6 +10,7 @@ from api.main import app
 from api.services.new_registration_feed import (
     FeedFilters,
     build_weekly_digest_html,
+    coerce_json_object,
     deliver_new_registration_event,
     digest_key_for_week,
     event_matches_filter,
@@ -74,6 +75,12 @@ def test_sync_new_registration_event_payloads_maps_inserted_rows():
     assert rows[0]["dedupe_key"] == "new_registration:LOC123:2026-04-01"
     assert rows[0]["name"] == "Sunrise Care"
     assert rows[0]["confidence_score"] == pytest.approx(0.99)
+
+
+def test_coerce_json_object_accepts_json_strings():
+    assert coerce_json_object('{"region":"London","active":true}') == {"region": "London", "active": True}
+    assert coerce_json_object("") == {}
+    assert coerce_json_object(None) == {}
 
 
 def test_event_matches_filter_checks_region_service_type_and_dates():
@@ -148,6 +155,36 @@ async def test_queue_weekly_new_registration_digests_is_idempotent(mock_conn):
 
     assert first == {"queued": 1, "skipped": 0}
     assert second == {"queued": 0, "skipped": 1}
+    queue_mock.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_queue_weekly_new_registration_digests_accepts_json_string_filters(mock_conn):
+    mock_conn.fetch.return_value = [
+        {
+            "id": 1,
+            "user_id": 7,
+            "email": "ops@caregist.co.uk",
+            "filters": '{"region":"London"}',
+            "unsubscribe_token": "token-1",
+        }
+    ]
+    mock_conn.fetchval.return_value = None
+
+    with patch("api.services.new_registration_feed.list_new_registration_events", new=AsyncMock(return_value=([
+        {
+            "slug": "sunrise-care",
+            "name": "Sunrise Care",
+            "town": "London",
+            "region": "London",
+            "local_authority": "Camden",
+            "service_types": "Home care",
+            "effective_date": "2026-04-01",
+        }
+    ], 1))), patch("api.services.new_registration_feed.queue_email", new=AsyncMock(return_value=55)) as queue_mock:
+        result = await queue_weekly_new_registration_digests(mock_conn, reference_date=date(2026, 4, 10))
+
+    assert result == {"queued": 1, "skipped": 0}
     queue_mock.assert_awaited_once()
 
 

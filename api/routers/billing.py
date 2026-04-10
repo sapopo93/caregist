@@ -12,6 +12,7 @@ from api.middleware.auth import validate_api_key
 
 from api.config import (
     allows_extra_seats,
+    max_tier,
     get_subscription_entitlements,
     get_tier_config,
     settings,
@@ -233,11 +234,12 @@ async def get_subscription(_auth: dict = Depends(validate_api_key)) -> dict:
             user_id,
         )
 
-    tier = sub["tier"] if sub else _auth.get("tier", "free")
+    stored_tier = sub["tier"] if sub else None
+    effective_tier = max_tier(_auth.get("tier", "free"), stored_tier)
     extra_seats = int(sub["extra_seats"] or 0) if sub else 0
-    entitlements = get_subscription_entitlements(tier, extra_seats)
+    entitlements = get_subscription_entitlements(effective_tier, extra_seats)
     return {
-        "tier": tier,
+        "tier": effective_tier,
         "status": sub["status"] if sub else "active",
         "stripe_subscription_id": sub["stripe_subscription_id"] if sub else None,
         "entitlements": entitlements,

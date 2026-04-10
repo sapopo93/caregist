@@ -111,7 +111,7 @@ export default function WhyCareGistPage() {
       <div className="bg-cream border border-stone rounded-xl p-6 mb-10">
         <h2 className="text-2xl font-bold text-bark mb-3">Where CareGist fits</h2>
         <p className="text-sm text-charcoal">
-          LaingBuisson is strong for periodic strategy and institutional intelligence. CareGist is built for operational, continuous-use workflows at a fraction of the cost.
+          CareGist is built for operational, continuous-use workflows on top of the CQC register: recurring search, monitoring, exports, and API access for teams that need a working data layer rather than another static snapshot.
         </p>
       </div>
 

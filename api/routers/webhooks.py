@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field, HttpUrl
 from api.config import get_tier_config
 from api.database import get_connection
 from api.middleware.auth import validate_api_key
+from api.services.new_registration_feed import coerce_json_object
 
 logger = logging.getLogger("caregist.webhooks")
 router = APIRouter(prefix="/webhooks", tags=["webhooks"])
@@ -114,7 +115,7 @@ async def list_webhooks(_auth: dict = Depends(validate_api_key)) -> dict:
                 "created_at": r["created_at"].isoformat(),
                 "last_delivery_at": r["last_delivery_at"].isoformat() if r["last_delivery_at"] else None,
                 "delivery_failures": r["delivery_failures"],
-                "filters": dict(r["filter_config"] or {}),
+                "filters": coerce_json_object(r["filter_config"]),
             }
             for r in rows
         ]
