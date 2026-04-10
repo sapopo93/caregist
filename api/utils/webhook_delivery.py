@@ -23,13 +23,15 @@ def _sign_payload(secret: str, payload_json: str) -> str:
     return hmac.new(secret.encode(), payload_json.encode(), hashlib.sha256).hexdigest()  # type: ignore[attr-defined]
 
 
-async def deliver_webhook(url: str, secret: str, payload: dict) -> bool:
+async def deliver_webhook(url: str, secret: str, payload: dict, *, return_metadata: bool = False):
     """
     Deliver a webhook payload to the given URL.
 
     Signs with HMAC-SHA256 (X-CareGist-Signature header).
     Retries up to 3 times with exponential backoff.
     Returns True on success, False if all attempts fail.
+    When return_metadata=True, returns a tuple:
+    `(success, attempts, response_status, error_message)`.
     """
     payload_json = json.dumps(payload, default=str)
     signature = _sign_payload(secret, payload_json)
@@ -40,24 +42,34 @@ async def deliver_webhook(url: str, secret: str, payload: dict) -> bool:
         "User-Agent": "CareGist-Webhooks/1.0",
     }
 
+    last_status_code: int | None = None
+    last_error_message: str | None = None
+
     async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
         for attempt, delay in enumerate((*_RETRY_DELAYS, None), start=1):
             try:
                 resp = await client.post(url, content=payload_json, headers=headers)
+                last_status_code = resp.status_code
                 if resp.status_code < 300:
                     logger.info("Webhook delivered to %s (attempt %d, status %d)", url, attempt, resp.status_code)
+                    if return_metadata:
+                        return True, attempt, resp.status_code, None
                     return True
                 logger.warning(
                     "Webhook to %s returned %d on attempt %d",
                     url, resp.status_code, attempt,
                 )
+                last_error_message = f"HTTP {resp.status_code}"
             except Exception as exc:
                 logger.warning("Webhook to %s failed on attempt %d: %s", url, attempt, exc)
+                last_error_message = str(exc)
 
             if delay is not None:
                 await asyncio.sleep(delay)
 
     logger.error("Webhook to %s failed after %d attempts", url, len(_RETRY_DELAYS) + 1)
+    if return_metadata:
+        return False, len(_RETRY_DELAYS) + 1, last_status_code, last_error_message
     return False
 
 

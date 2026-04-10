@@ -53,7 +53,7 @@ export const GATES: Record<GateKey, Gate> = {
 export const PRICING_LADDER: PricingTier[] = [
   {
     tier: "Free",
-    forWho: "Evaluators, researchers, and first-time product teams",
+    forWho: "Evaluators and buyer teams proving the wedge before recurring use",
     color: "#10b981",
     price: "\u00A30",
     priceNote: "Built for evaluation",
@@ -64,38 +64,43 @@ export const PRICING_LADDER: PricingTier[] = [
       "1 provider watchlist",
       "2 requests/sec \u00B7 20 requests/day \u00B7 60 requests / 7 days",
     ],
-    limit: "No nearby search \u00B7 no compare \u00B7 basic fields only \u00B7 not for ongoing business workflows",
+    limit: "No recurring feed workflow \u00B7 no saved feed views \u00B7 no weekly digests \u00B7 basic fields only",
     pricingLogic:
-      "Built for evaluation. Enough to prove the data is useful and decide whether CareGist should replace manual checks, spreadsheets, or raw-feed workarounds.",
+      "Built for evaluation only. Enough to prove the data is useful before moving into the recurring new-registration workflow.",
   },
   {
     tier: "Starter",
-    forWho: "Solo builders, analysts, care consultants, small operators",
+    forWho: "Solo commercial teams, analysts, and founder-led sellers",
     color: "#8b5cf6",
     price: "\u00A339 + VAT/mo",
     priceNote: "Cancel anytime",
     includes: [
       "Everything in Free",
+      "New registration feed",
       "Cleaned, normalised provider data",
+      "3 saved feed filters",
+      "1 weekly feed digest",
       "Nearby radius search",
       "CSV & Excel export (500 rows)",
       "15 provider watchlists with alerts",
       "Standard fields incl. phone, coordinates, specialisms",
       "10 requests/sec \u00B7 500 requests/day",
     ],
-    limit: "Built to prove the data in a real workflow \u00B7 standard fields only",
+    limit: "First real recurring workflow tier \u00B7 standard fields only",
     pricingLogic:
-      "First real workflow tier. Enough usage to solve an actual repeated problem — local market mapping, shortlist monitoring, or recurring exports for one operator or builder.",
+      "First real workflow tier. Built for recurring discovery of newly registered providers without manual register checking.",
   },
   {
     tier: "Pro",
-    forWho: "Small teams, operators, analysts, group managers",
+    forWho: "Small teams running the feed as a daily production workflow",
     color: "#C8862A",
     price: "\u00A399 + VAT/mo",
     priceNote: "Includes 3 named access seats \u00B7 extra seats \u00A315 + VAT/mo",
     recommended: true,
     includes: [
       "Everything in Starter",
+      "20 saved feed filters",
+      "10 weekly digests",
       "Compare up to 5 providers",
       "Bulk CSV & Excel export (5,000 rows)",
       "100 provider monitors with rating-change alerts",
@@ -106,17 +111,17 @@ export const PRICING_LADDER: PricingTier[] = [
     ],
     limit: "No webhooks \u00B7 standard fields",
     pricingLogic:
-      "Production tier for recurring operational work. Built for small teams that need named access, clearer accountability, and enough headroom to run the workflow daily.",
+      "Production tier for recurring operational work. Built for small teams that need named access, clearer accountability, and enough headroom to run the feed daily.",
   },
   {
     tier: "Business",
-    forWho: "Developers, SaaS builders, multi-site operators",
+    forWho: "Teams embedding the feed into CRM, outbound, and internal systems",
     color: "#ef4444",
     price: "\u00A3399 + VAT/mo",
     priceNote: "Includes 10 named access seats \u00B7 webhooks and admin support",
     includes: [
       "Everything in Pro",
-      "Webhooks for rating & status changes",
+      "Webhooks for new registrations and rating changes",
       "Full field access incl. registration dates, geocode source",
       "Bulk CSV & Excel export (10,000 rows)",
       "500 provider monitors",
@@ -126,7 +131,7 @@ export const PRICING_LADDER: PricingTier[] = [
     ],
     limit: "For higher limits or custom terms \u2014 see Enterprise.",
     pricingLogic:
-      "Operational integration tier. Higher limits, webhooks, fuller fields, and stronger team support for product integrations, internal workflows, and recurring monitoring programs.",
+      "Operational integration tier. Higher limits, signed webhooks, fuller fields, and stronger team support for recurring commercial delivery.",
   },
   {
     tier: "Enterprise",
@@ -242,9 +247,9 @@ export const PLAN_PRIMARY_CTA: Record<string, string> = {
 };
 
 export const PLAN_NEXT_STEP: Record<string, string> = {
-  free: "Starter unlocks nearby search, full starter exports, and a real solo workflow.",
-  starter: "Pro adds 3 named access seats, broader monitoring, and more export headroom for daily team use.",
-  pro: "Business adds webhooks, full-field operational integration, and stronger admin support.",
+  free: "Starter unlocks the new registration feed, recurring exports, saved views, and weekly digest delivery.",
+  starter: "Pro adds 3 named access seats, wider feed coverage, and more export headroom for daily team use.",
+  pro: "Business adds signed new-registration webhooks, full-field operational integration, and stronger admin support.",
   business: "Enterprise adds custom limits, procurement support, security review, and contract terms.",
   enterprise: "Talk to sales for custom implementation and procurement support.",
 };

@@ -10,5 +10,5 @@ COPY api/ api/
 
 EXPOSE 8000
 
-# Render / host sets $PORT; default to 8000 locally
+# Host sets $PORT; default to 8000 locally
 CMD uvicorn api.main:app --host 0.0.0.0 --port ${PORT:-8000} --proxy-headers --forwarded-allow-ips="*"

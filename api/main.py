@@ -17,7 +17,7 @@ from api.logging_config import setup_logging
 
 # Structured JSON logs in production, human-readable locally
 setup_logging(json_output="localhost" not in settings.database_url)
-from api.routers import admin, analytics, api_applications, auth, billing, city_pages, claims, comparisons, enquiries, groups, health, internal, provider_profile, providers, public_tools, region_stats, regions, reviews, sitemaps, subscribe, webhooks
+from api.routers import admin, analytics, api_applications, auth, billing, city_pages, claims, comparisons, enquiries, feed, groups, health, internal, provider_profile, providers, public_tools, region_stats, regions, reviews, sitemaps, subscribe, webhooks
 
 if sentry_sdk and settings.sentry_dsn:
     sentry_sdk.init(
@@ -41,8 +41,8 @@ _is_local = "localhost" in settings.database_url
 
 app = FastAPI(
     title="CareGist API",
-    description="Daily-refreshed UK care-provider data built for dashboard, exports, and API workflows. "
-    "Cleaned, normalised, geospatially useful, and monitorable on top of the CQC register.",
+    description="Ledger-backed UK care-provider intelligence built for recurring new-registration workflows, "
+    "dashboard delivery, exports, digests, and API integration on top of the CQC register.",
     version="1.0.0",
     lifespan=lifespan,
     docs_url="/docs" if _is_local else None,
@@ -53,7 +53,7 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins.split(","),
-    allow_methods=["GET", "POST", "PATCH", "DELETE"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
     allow_headers=["X-API-Key", "Content-Type", "Accept"],
 )
 
@@ -116,6 +116,7 @@ app.include_router(admin.router)
 app.include_router(groups.router)
 app.include_router(provider_profile.router)
 app.include_router(providers.router)
+app.include_router(feed.router)
 app.include_router(regions.router)
 app.include_router(subscribe.router)
 app.include_router(comparisons.router)

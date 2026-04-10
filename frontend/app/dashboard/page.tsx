@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import DeleteAccountButton from "@/components/DeleteAccountButton";
+import NewRegistrationFeedPanel from "@/components/NewRegistrationFeedPanel";
 import { trackEvent } from "@/lib/analytics";
 import { PLAN_LIMIT_SUMMARY, PLAN_NEXT_STEP, PLAN_PRIMARY_CTA } from "@/lib/caregist-config";
 
@@ -106,19 +107,19 @@ export default function DashboardPage() {
     },
     starter: {
       limit: PLAN_LIMIT_SUMMARY.starter,
-      features: "First real workflow: nearby search, 500-row exports, comparisons, and 15 provider watchlists.",
+      features: "First real workflow: new registration feed, recurring exports, saved views, weekly digest, and 15 provider watchlists.",
       cta: PLAN_PRIMARY_CTA.starter,
       next: PLAN_NEXT_STEP.starter,
     },
     pro: {
       limit: PLAN_LIMIT_SUMMARY.pro,
-      features: "Small-team production use: 5,000-row exports, 100 monitors, 3 named access seats, and daily operational headroom.",
+      features: "Small-team production use: broader feed coverage, 5,000-row exports, 100 monitors, 3 named access seats, and daily operational headroom.",
       cta: PLAN_PRIMARY_CTA.pro,
       next: PLAN_NEXT_STEP.pro,
     },
     business: {
       limit: PLAN_LIMIT_SUMMARY.business,
-      features: "Operational integration: full fields, webhooks, 10,000-row exports, 500 monitors, and stronger admin support.",
+      features: "Operational integration: full fields, signed feed webhooks, 10,000-row exports, 500 monitors, and stronger admin support.",
       cta: PLAN_PRIMARY_CTA.business,
       next: PLAN_NEXT_STEP.business,
     },
@@ -238,7 +239,7 @@ export default function DashboardPage() {
         </button>
       </div>
       <p className="text-dusk mb-8">
-        Welcome back, {user.name}. This workspace is built to turn daily-refreshed regulatory data into monitoring, export, and integration workflows.
+        Welcome back, {user.name}. This workspace is built to turn newly registered UK care providers into a recurring commercial workflow, backed by a trusted event ledger.
       </p>
 
       <div className="bg-cream border border-stone rounded-lg p-6 mb-6">
@@ -262,11 +263,13 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      <NewRegistrationFeedPanel apiKey={apiKey} tier={tier} upgradeHref={upgradeHref} />
+
       <div className="grid md:grid-cols-2 gap-6 mb-6">
         <div className="bg-cream border border-stone rounded-lg p-6">
           <h2 className="text-xl font-bold mb-3">Data explorer</h2>
           <p className="text-dusk text-sm mb-4">
-            Search, filter, compare, and export cleaned provider data before you wire up any downstream integration.
+            Search and profile the wider provider universe once the new registration feed has identified where you want to focus.
           </p>
           <div className="flex gap-4">
             <Link href="/search" className="text-sm text-clay underline">Open explorer</Link>
@@ -276,7 +279,7 @@ export default function DashboardPage() {
         <div className="bg-cream border border-stone rounded-lg p-6">
           <h2 className="text-xl font-bold mb-3">Provider claiming</h2>
           <p className="text-dusk text-sm mb-4">
-            Provider claiming remains available, but it is a secondary workflow to the data and monitoring layer.
+            Provider claiming remains available, but it is secondary to the recurring intelligence wedge.
           </p>
           <div className="flex gap-4">
             <Link href="/find-care" className="text-sm text-clay underline">Find a provider to claim</Link>
@@ -288,7 +291,7 @@ export default function DashboardPage() {
       <div className="bg-cream border border-stone rounded-lg p-6 mb-6">
         <h2 className="text-xl font-bold mb-3">API access</h2>
         <p className="text-dusk text-sm mb-4">
-          Use your key when you are ready to embed CareGist data into product or operational workflows.
+          Use your key when you are ready to query the same event-led workflow programmatically.
         </p>
         <div className="flex items-center gap-3">
           <code className="flex-1 bg-parchment border border-stone rounded px-4 py-2 text-sm font-mono text-charcoal truncate">
@@ -306,7 +309,7 @@ export default function DashboardPage() {
         </p>
         {tier === "free" && (
           <p className="text-xs text-dusk mt-3">
-            Free is built for evaluation. Upgrade to Starter when you need nearby search, larger exports, or a workflow you will run more than occasionally.
+            Free is built for evaluation. Upgrade to Starter when you need recurring feed exports, saved views, weekly digests, or a workflow you will run more than occasionally.
           </p>
         )}
       </div>
@@ -416,10 +419,10 @@ export default function DashboardPage() {
         <div className="bg-cream border border-stone rounded-lg p-6">
           <h2 className="text-xl font-bold mb-3">Webhooks and integrations</h2>
           <p className="text-dusk text-sm mb-3">
-            Business and Enterprise can register outbound webhooks for provider rating changes. Starter and Pro keep the focus on dashboard, exports, monitoring, and direct API use.
+            Business and Enterprise can register outbound webhooks for the new registration feed and provider rating changes. Starter and Pro keep the focus on dashboard, exports, digests, and direct API use.
           </p>
           <p className="text-xs text-dusk mb-4">
-            The current supported webhook event is <code className="bg-parchment px-1 rounded">provider.rating_changed</code>.
+            Supported webhook events are <code className="bg-parchment px-1 rounded">feed.new_registration</code> and <code className="bg-parchment px-1 rounded">provider.rating_changed</code>.
           </p>
           <Link
             href={tier === "business" ? "/api" : "/pricing"}
@@ -451,12 +454,12 @@ export default function DashboardPage() {
       <div className="bg-cream border border-stone rounded-lg p-6 mt-6">
         <h2 className="text-xl font-bold mb-3">Quick start</h2>
         <p className="text-dusk text-sm mb-4">
-          Typical flow: search in the dashboard, export a shortlist, then automate recurring checks through the API when the workflow proves out.
+          Typical flow: filter newly registered providers, export the current patch, save the view, then automate recurring delivery through the API or signed webhooks when the workflow proves out.
         </p>
         <div className="bg-charcoal text-cream rounded-lg p-4 text-sm font-mono overflow-x-auto">
-          <p className="text-dusk"># Search for monitored providers in London</p>
+          <p className="text-dusk"># Query the new registration feed for London</p>
           <p>curl -H &quot;X-API-Key: {apiKey.slice(0, 20)}...&quot; \</p>
-          <p>&nbsp; &quot;https://api.caregist.co.uk/api/v1/providers/search?region=London&amp;rating=Good&quot;</p>
+          <p>&nbsp; &quot;https://api.caregist.co.uk/api/v1/feed/new-registrations?region=London&quot;</p>
         </div>
         <div className="mt-4 flex gap-4 text-sm">
           <Link href="/api" className="text-clay underline">API documentation</Link>

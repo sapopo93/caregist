@@ -12,8 +12,8 @@ async function apiFetch(path: string, params?: Record<string, string | undefined
     });
   }
 
-  // 10-second timeout — keeps us well inside Vercel's 30s function limit
-  // even when Render free tier is cold-starting
+  // 10-second timeout keeps server-side fetches bounded when the backend is
+  // starting cold or the upstream query path is degraded.
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 10_000);
 

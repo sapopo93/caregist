@@ -34,6 +34,9 @@ def test_free_plan_launch_limits_match_public_pricing():
     assert config["rolling_7d"] == 60
     assert config["export"] == 25
     assert config["monitors"] == 1
+    assert config["feed_rows"] == 10
+    assert config["saved_filters"] == 0
+    assert config["feed_digests"] == 0
 
 
 def test_pro_and_business_seat_entitlements_are_persistable():
@@ -46,3 +49,16 @@ def test_pro_and_business_seat_entitlements_are_persistable():
     assert pro["seat_price_gbp"] == 15
     assert business["included_users"] == 10
     assert business["max_users"] == 10
+
+
+def test_feed_limits_scale_by_plan():
+    starter = get_tier_config("starter")
+    pro = get_tier_config("pro")
+    business = get_tier_config("business")
+
+    assert starter["feed_rows"] == 25
+    assert starter["saved_filters"] == 3
+    assert starter["feed_digests"] == 1
+    assert pro["feed_rows"] == 50
+    assert pro["saved_filters"] == 20
+    assert business["webhooks"] is True

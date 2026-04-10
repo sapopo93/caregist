@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import secrets
 import logging
+import json
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, HttpUrl
+from pydantic import BaseModel, Field, HttpUrl
 
 from api.config import get_tier_config
 from api.database import get_connection
@@ -17,12 +18,13 @@ router = APIRouter(prefix="/webhooks", tags=["webhooks"])
 
 _WEBHOOK_TIERS = {"business", "enterprise", "admin"}
 
-SUPPORTED_EVENTS = ["provider.rating_changed"]
+SUPPORTED_EVENTS = ["provider.rating_changed", "feed.new_registration"]
 
 
 class WebhookCreate(BaseModel):
     url: HttpUrl
-    events: list[str] = ["provider.rating_changed"]
+    events: list[str] = Field(default_factory=lambda: ["provider.rating_changed"])
+    filters: dict[str, str] = Field(default_factory=dict)
 
 
 def _require_webhook_access(auth: dict) -> dict:
@@ -62,11 +64,11 @@ async def register_webhook(
 
         row = await conn.fetchrow(
             """
-            INSERT INTO webhook_subscriptions (user_id, url, secret, events)
-            VALUES ($1, $2, $3, $4)
+            INSERT INTO webhook_subscriptions (user_id, url, secret, events, filter_config)
+            VALUES ($1, $2, $3, $4, $5::jsonb)
             RETURNING id, created_at
             """,
-            user_id, url, secret, body.events,
+            user_id, url, secret, body.events, json.dumps(body.filters),
         )
 
     logger.info("Webhook registered for user %d: %s", user_id, url)
@@ -79,6 +81,7 @@ async def register_webhook(
         "id": row["id"],
         "url": url,
         "events": body.events,
+        "filters": body.filters,
         "secret": secret,
         "note": "Store this secret securely — it will not be shown again. Use it to verify the X-CareGist-Signature header on incoming requests.",
         "created_at": row["created_at"].isoformat(),
@@ -93,7 +96,7 @@ async def list_webhooks(_auth: dict = Depends(validate_api_key)) -> dict:
     async with get_connection() as conn:
         rows = await conn.fetch(
             """
-            SELECT id, url, events, active, created_at, last_delivery_at, delivery_failures
+            SELECT id, url, events, active, created_at, last_delivery_at, delivery_failures, filter_config
             FROM webhook_subscriptions
             WHERE user_id = $1
             ORDER BY created_at DESC
@@ -111,6 +114,7 @@ async def list_webhooks(_auth: dict = Depends(validate_api_key)) -> dict:
                 "created_at": r["created_at"].isoformat(),
                 "last_delivery_at": r["last_delivery_at"].isoformat() if r["last_delivery_at"] else None,
                 "delivery_failures": r["delivery_failures"],
+                "filters": dict(r["filter_config"] or {}),
             }
             for r in rows
         ]

@@ -4,9 +4,9 @@ import TrackEventOnMount from "@/components/TrackEventOnMount";
 import TrackedLink from "@/components/TrackedLink";
 
 export const metadata: Metadata = {
-  title: "CareGist API — Workflow-Ready UK Care-Provider Data",
+  title: "CareGist API — New Registration Feed and Workflow-Ready UK Care-Provider Data",
   description:
-    "Use CareGist data in dashboard, exports, and API workflows. Daily-refreshed, cleaned, normalised, and geospatially useful on top of the CQC register.",
+    "Use CareGist data in dashboard, exports, and API workflows. Launch v1 centers on newly registered UK care providers delivered through a trusted event ledger.",
   alternates: { canonical: "https://caregist.co.uk/api" },
 };
 
@@ -32,6 +32,7 @@ const SAMPLE_JSON = `{
 }`;
 
 const CAPABILITIES = [
+  { title: "New registration feed", desc: "Track newly registered UK care providers through a ledger-backed recurring feed that supports filters, exports, digests, and webhooks." },
   { title: "Dashboard-first workflow", desc: "Start with search, nearby discovery, saved comparisons, exports, and monitoring before writing integration code." },
   { title: "Geospatial search", desc: "Query by postcode, region, service type, and nearby radius using cleaned coordinates and locality fields." },
   { title: "Operational exports", desc: "Move lists into analyst and operator workflows with plan-based CSV exports and field visibility." },
@@ -41,19 +42,20 @@ const CAPABILITIES = [
 ];
 
 const TIERS = [
-  { name: "Starter", price: "\u00A339 + VAT/mo", features: "Nearby search, 500-row export, 15 monitors, 10 requests/sec" },
-  { name: "Pro", price: "\u00A399 + VAT/mo", features: "5,000-row export, 100 monitors, 3 included users, 25 requests/sec, recommended for recurring team use" },
-  { name: "Business", price: "\u00A3399 + VAT/mo", features: "Full fields, webhooks, 10,000-row export, 500 monitors, 10 included users, 10,000 requests/day" },
+  { name: "Starter", price: "\u00A339 + VAT/mo", features: "New registration feed, saved filters, weekly digest, 500-row export, 15 monitors, 10 requests/sec" },
+  { name: "Pro", price: "\u00A399 + VAT/mo", features: "5,000-row export, broader feed usage, 100 monitors, 3 included users, 25 requests/sec, recommended for recurring team use" },
+  { name: "Business", price: "\u00A3399 + VAT/mo", features: "Full fields, feed.new_registration webhooks, 10,000-row export, 500 monitors, 10 included users, 10,000 requests/day" },
 ];
 
 const WEBHOOK_EXAMPLE = `POST /webhooks
 {
   "url": "https://ops.example.com/caregist/webhooks",
-  "events": ["provider.rating_changed"]
+  "events": ["feed.new_registration"],
+  "filters": { "region": "London", "service_type": "home care" }
 }
 
 Headers on delivery:
-X-CareGist-Event: provider.rating_changed
+X-CareGist-Event: feed.new_registration
 X-CareGist-Signature: sha256=<hmac>
 
 Retries:
@@ -67,12 +69,11 @@ export default function ApiLandingPage() {
       <section className="bg-parchment border-b border-stone px-6 py-4 rounded-t-lg text-sm text-charcoal leading-relaxed mb-8">
         <p>
           CareGist exposes daily-refreshed UK care-provider data through the same layer that powers
-          the dashboard and exports. The goal is not raw feed access alone. The goal is operationally
-          usable regulatory data.
+          the dashboard and exports. Launch v1 is the new registration feed: a recurring workflow for finding newly opened care providers without polling the raw register manually.
         </p>
       </section>
 
-      <h1 className="text-3xl font-bold mb-2">Dashboard, exports, and API on one data layer</h1>
+      <h1 className="text-3xl font-bold mb-2">New registration feed, exports, and API on one data layer</h1>
       <p className="text-dusk mb-10" style={{ fontFamily: "Lora" }}>
         Use CareGist in the way your team actually works: browser first, export next, API when embedding and automation matter.
       </p>
@@ -99,11 +100,11 @@ export default function ApiLandingPage() {
         <div className="bg-cream border border-stone rounded-lg p-6">
           <h2 className="text-xl font-bold mb-3">How webhooks work</h2>
           <p className="text-sm text-dusk mb-4">
-            Business plans can register outbound webhooks for rating changes. CareGist signs each payload with
+            Business plans can register outbound webhooks for the new registration feed and rating changes. CareGist signs each payload with
             an HMAC SHA-256 signature in <code className="bg-parchment px-1 rounded">X-CareGist-Signature</code>.
           </p>
           <p className="text-sm text-dusk mb-4">
-            The currently supported event is <code className="bg-parchment px-1 rounded">provider.rating_changed</code>.
+            Supported events are <code className="bg-parchment px-1 rounded">feed.new_registration</code> and <code className="bg-parchment px-1 rounded">provider.rating_changed</code>.
             Delivery retries use 1s, 2s, and 4s backoff. Failed deliveries remain visible in the dashboard so teams
             can spot broken endpoints without digging through support tickets.
           </p>

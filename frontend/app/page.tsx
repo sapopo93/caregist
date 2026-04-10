@@ -8,42 +8,42 @@ import TrackedLink from "@/components/TrackedLink";
 export const metadata: Metadata = {
   title: "CareGist — The Intelligence Layer for UK Care-Provider Data",
   description:
-    "Daily-refreshed UK care-provider data for dashboard, exports, monitoring, and API workflows. Built for CareTech teams and care operators first.",
+    "Newly registered UK care providers, delivered as a filtered recurring intelligence feed. Daily-refreshed data through dashboard, exports, weekly digest, and API workflows.",
 };
 
 export default function HomePage() {
   const heroProof = [
-    "55,818 providers cleaned and normalised",
-    "Daily refresh cadence for regulatory changes",
-    "Dashboard, exports, watchlists, and API access",
+    "55,818 providers",
+    "Updated daily",
+    "Ledger-backed feed",
   ];
 
   return (
     <div>
       <TrackEventOnMount eventType="homepage_view" eventSource="homepage" />
       {/* Hero */}
-      <section className="relative text-cream py-12 md:py-20 px-6 overflow-hidden">
+      <section className="relative text-cream py-8 md:py-20 px-6 overflow-hidden">
         <div className="absolute inset-0" style={{
           backgroundImage: "url('https://images.unsplash.com/photo-1516549655169-df83a0774514?w=1200&q=60&auto=format')",
           backgroundSize: "cover", backgroundPosition: "center top"
         }} />
         <div className="absolute inset-0 bg-bark/75" />
         <div className="max-w-5xl mx-auto relative z-10">
-          <p className="text-amber text-sm md:text-base font-medium tracking-wide uppercase mb-4">
-            Daily-refreshed UK care-provider intelligence
+          <p className="text-amber text-xs md:text-base font-medium tracking-[0.18em] uppercase mb-3 md:mb-4">
+            For CareTech sales, growth, and RevOps teams
           </p>
           <h1
-            className="text-4xl md:text-6xl font-bold mb-4 max-w-4xl text-cream"
+            className="text-[2rem] leading-tight md:text-6xl font-bold mb-3 md:mb-4 max-w-4xl text-cream"
             style={{ fontFamily: "Playfair Display", color: "var(--color-cream)" }}
           >
-            CQC data you can use in live care-market workflows
+            Newly registered UK care providers, delivered as a recurring feed
           </h1>
-          <p className="text-stone text-base md:text-lg mb-8 max-w-3xl" style={{ fontFamily: "Lora" }}>
-            CareGist gives care operators and CareTech teams cleaned provider records, geospatial search, watchlists, exports, and API access without forcing them to work from the raw register.
+          <p className="text-stone text-[15px] leading-6 md:text-lg mb-6 md:mb-8 max-w-3xl" style={{ fontFamily: "Lora" }}>
+            CareGist turns the raw CQC register into a filtered recurring workflow: find newly opened providers, save the view, export it, schedule a digest, or wire it into downstream systems.
           </p>
-          <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr] items-start">
+          <div className="grid gap-5 md:gap-6 lg:grid-cols-[1.2fr_0.8fr] items-start">
             <div>
-              <div className="flex flex-wrap gap-3 mb-5">
+              <div className="flex flex-col sm:flex-row gap-3 mb-4 md:mb-5">
                 <TrackedLink
                   href="/pricing"
                   eventType="homepage_cta_click"
@@ -63,32 +63,25 @@ export default function HomePage() {
                   Explore API
                 </TrackedLink>
               </div>
-              <div className="grid gap-3 sm:grid-cols-3 max-w-3xl">
+              <div className="flex flex-wrap gap-2.5 md:grid md:gap-3 md:sm:grid-cols-3 max-w-3xl">
                 {heroProof.map((item) => (
                   <div
                     key={item}
-                    className="rounded-2xl border border-white/12 bg-black/10 px-4 py-4 text-sm text-cream/90 backdrop-blur-sm"
+                    className="rounded-full md:rounded-2xl border border-white/12 bg-black/10 px-3.5 py-2 md:px-4 md:py-4 text-xs md:text-sm text-cream/90 backdrop-blur-sm"
                   >
                     {item}
                   </div>
                 ))}
               </div>
-              <div className="flex flex-wrap gap-4 text-cream/85 text-sm font-medium mt-6">
-                <span>55,818 providers</span>
-                <span className="text-amber">|</span>
-                <span>Updated daily</span>
-                <span className="text-amber">|</span>
-                <span>Dashboard + exports + API</span>
-              </div>
             </div>
-            <div className="bg-charcoal/75 border border-white/10 rounded-3xl p-6 backdrop-blur-sm">
-              <p className="text-xs uppercase tracking-[0.2em] text-amber mb-3">What you can do first</p>
-              <div className="space-y-3 text-sm text-stone">
-                <div className="rounded-2xl border border-white/10 p-4">
-                  Search nearby providers and inspect cleaner records instead of raw regulatory tables.
+            <div className="bg-charcoal/75 border border-white/10 rounded-2xl md:rounded-3xl p-4 md:p-6 backdrop-blur-sm">
+              <p className="text-xs uppercase tracking-[0.2em] text-amber mb-3">Start with a workflow</p>
+              <div className="space-y-2.5 text-sm text-stone">
+                <div className="rounded-2xl border border-white/10 px-4 py-3">
+                  Filter newly registered providers by region, service type, or local authority.
                 </div>
-                <div className="rounded-2xl border border-white/10 p-4">
-                  Track shortlist changes and export structured data into operating or product workflows.
+                <div className="rounded-2xl border border-white/10 px-4 py-3">
+                  Save the view, export the feed, or route it into CRM and outbound workflows.
                 </div>
               </div>
               <TrackedLink
@@ -143,16 +136,16 @@ export default function HomePage() {
       {/* Stats + CTAs combined */}
       <section className="max-w-5xl mx-auto px-6 py-10">
         {/* Stats */}
-        <div className="grid grid-cols-4 gap-4 text-center mb-10">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-6 text-center mb-10">
           {[
             { value: "55,818", label: "Providers" },
             { value: "Daily", label: "Refresh cadence" },
             { value: "4,876", label: "Groups" },
             { value: "API", label: "Available on paid plans" },
           ].map((stat) => (
-            <div key={stat.label}>
-              <div className="text-3xl md:text-4xl font-extrabold text-clay">{stat.value}</div>
-              <div className="text-xs text-dusk mt-1 font-medium">{stat.label}</div>
+            <div key={stat.label} className="flex flex-col items-center">
+              <div className="text-3xl md:text-4xl font-extrabold text-clay leading-none">{stat.value}</div>
+              <div className="text-xs text-dusk mt-2 font-medium max-w-[6.5rem] md:max-w-none leading-snug">{stat.label}</div>
             </div>
           ))}
         </div>

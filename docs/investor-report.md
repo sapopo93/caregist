@@ -118,12 +118,12 @@ Webhook handler processes subscription lifecycle (upgrades, downgrades, cancella
 | Component | Technology | Status |
 |-----------|-----------|--------|
 | Database | PostgreSQL 16 + PostGIS | Schema complete, seeded, indexed, 6 migrations applied |
-| API | Python FastAPI + asyncpg | Built, containerised, deployed on Render |
-| Frontend | Next.js 15 + React 19 + Tailwind CSS 4 | Built, deployed on Vercel |
+| API | Python FastAPI + asyncpg | Built, containerised, deployable on AWS EC2 |
+| Frontend | Next.js 15 + React 19 + Tailwind CSS 4 | Built, deployable on AWS EC2 |
 | Containers | Docker + docker-compose | One-command local deployment |
 | Tests | pytest (109 tests collected) | Pipeline + API coverage |
 | Monitoring | Sentry (API + frontend) | Error tracking + performance |
-| Hosting | Render (API) + Vercel (frontend) | Live at caregist.co.uk |
+| Hosting | AWS EC2 deployment target | Live stack target for caregist.co.uk |
 | Data refresh | Incremental update script (CQC changes API) | Built, needs scheduling |
 
 ---
@@ -177,8 +177,8 @@ Four monetisation paths, all proven in the UK care market:
 | Component | Status | Platform |
 |-----------|--------|----------|
 | Domain (caregist.co.uk) | Live | — |
-| API | Deployed | Render (free tier) |
-| Frontend | Deployed | Vercel |
+| API | Deployable | AWS EC2 |
+| Frontend | Deployable | AWS EC2 |
 | Database | Deployed + seeded | Managed PostgreSQL |
 | Stripe | Configured | 3 API price IDs active |
 | Sentry | Configured | API + frontend error tracking |

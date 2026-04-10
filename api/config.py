@@ -36,7 +36,7 @@ class Settings(BaseSettings):
         if "pytest" in sys.modules:
             return
         if self.api_master_key == "change_me_in_production":
-            # On Render (or any host that sets DATABASE_URL externally), this is production
+            # On any non-localhost environment, this is production
             if self.database_url != "postgresql://caregist:caregist_dev@localhost:5432/caregist":
                 raise RuntimeError(
                     "FATAL: API_MASTER_KEY is still the default value. "
@@ -67,6 +67,10 @@ TIERS = {
         "compare": 0,
         "webhooks": False,
         "monitors": 1,
+        "feed_rows": 10,
+        "saved_filters": 0,
+        "feed_digests": 0,
+        "feed_api": False,
         "included_users": 1,
         "base_price_gbp": 0,
         "seat_price_gbp": 0,
@@ -86,6 +90,10 @@ TIERS = {
         "compare": 3,
         "webhooks": False,
         "monitors": 15,
+        "feed_rows": 25,
+        "saved_filters": 3,
+        "feed_digests": 1,
+        "feed_api": True,
         "included_users": 1,
         "base_price_gbp": 39,
         "seat_price_gbp": 0,
@@ -105,6 +113,10 @@ TIERS = {
         "compare": 5,
         "webhooks": False,
         "monitors": 100,
+        "feed_rows": 50,
+        "saved_filters": 20,
+        "feed_digests": 10,
+        "feed_api": True,
         "included_users": 3,
         "base_price_gbp": 99,
         "seat_price_gbp": 15,
@@ -124,6 +136,10 @@ TIERS = {
         "compare": 10,
         "webhooks": True,
         "monitors": 500,
+        "feed_rows": 100,
+        "saved_filters": 100,
+        "feed_digests": 100,
+        "feed_api": True,
         "included_users": 10,
         "base_price_gbp": 399,
         "seat_price_gbp": 15,
@@ -143,6 +159,10 @@ TIERS = {
         "compare": 20,
         "webhooks": True,
         "monitors": 5000,
+        "feed_rows": 250,
+        "saved_filters": 500,
+        "feed_digests": 500,
+        "feed_api": True,
         "included_users": 10,
         "base_price_gbp": 0,
         "seat_price_gbp": 15,
@@ -162,6 +182,10 @@ TIERS = {
         "compare": 99,
         "webhooks": True,
         "monitors": 99999,
+        "feed_rows": 1000,
+        "saved_filters": 99999,
+        "feed_digests": 99999,
+        "feed_api": True,
         "included_users": 99999,
         "base_price_gbp": 0,
         "seat_price_gbp": 0,

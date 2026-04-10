@@ -7,7 +7,7 @@ import { LAUNCH_PRICING, PLAN_NEXT_STEP, PRICING_LADDER, PROVIDER_TIERS } from "
 
 export const metadata: Metadata = {
   title: "Pricing — CareGist",
-  description: "Launch pricing for CareGist data intelligence: Starter £39, Pro £99, Business £399, and Enterprise contact sales.",
+  description: "Launch pricing for CareGist's new registration feed: Starter £39, Pro £99, Business £399, and Enterprise contact sales.",
 };
 
 export default function PricingPage() {
@@ -16,7 +16,7 @@ export default function PricingPage() {
       <div className="text-center mb-12">
         <h1 className="text-4xl font-bold mb-4">Pricing for operational care-provider data</h1>
         <p className="text-dusk text-lg mb-6" style={{ fontFamily: "Lora" }}>
-          Launch around the intelligence layer first: dashboard, exports, monitoring, and API access. Provider claiming remains available as a secondary product line.
+          CareGist launch v1 is newly registered UK care providers delivered as a filtered recurring intelligence feed. Provider claiming remains a secondary product line.
         </p>
         <div className="inline-flex rounded-lg border border-stone overflow-hidden text-sm font-medium">
           <a href="#data-plans" className="px-5 py-2 bg-bark text-cream">Data intelligence plans</a>
@@ -41,7 +41,7 @@ export default function PricingPage() {
           ))}
         </div>
         <p className="font-mono text-xs text-dusk mt-4 pt-4 border-t border-white/10">
-          CQC provides the raw regulatory feed. CareGist makes it usable inside workflows through dashboard, exports, monitoring, and API access.
+          CQC provides the raw regulatory feed. CareGist makes it usable through a trusted event ledger, dashboard feed, exports, weekly digest, and API delivery.
         </p>
       </div>
 

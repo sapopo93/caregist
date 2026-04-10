@@ -17,7 +17,7 @@ CareGist is a UK care provider directory with three main subsystems:
 
 1. **CQC ETL Pipeline** (root `*.py` files) — extracts data from the CQC public API into PostgreSQL
 2. **FastAPI Backend** (`api/`) — REST API serving provider data with tiered API key auth and Stripe billing
-3. **Next.js Frontend** (`frontend/`) — SSR directory UI deployed on Vercel, proxies API calls to the backend
+3. **Next.js Frontend** (`frontend/`) — SSR dashboard and directory UI, deployable alongside the backend on AWS EC2, proxies API calls to the backend
 
 ### How They Connect
 
@@ -25,11 +25,11 @@ CareGist is a UK care provider directory with three main subsystems:
 - The API reads from PostgreSQL (PostGIS) via `asyncpg` — no ORM, raw SQL in `api/queries/`
 - The frontend calls the API server-side via `lib/api.ts` using `X-API-Key` auth header, with 1-hour ISR cache (`revalidate: 3600`)
 - Next.js rewrites `/api/*` to the backend URL (`NEXT_PUBLIC_API_URL` / `API_URL` env vars)
-- API is deployed on Render (free tier), frontend on Vercel
+- Production deployment target is AWS EC2. Local development can still use Docker Compose and standalone processes.
 
 ### Database
 
-PostgreSQL with PostGIS. Schema in `db/init.sql`, migrations in `db/migrations/` (numbered SQL files, applied manually in local/dev and auto-applied on Render startup via `db/apply_migrations.py`). Key tables: `care_providers` (primary), `api_keys`, `users`, `subscriptions`, `provider_claims`, `reviews`, `enquiries`.
+PostgreSQL with PostGIS. Schema in `db/init.sql`, migrations in `db/migrations/` (numbered SQL files, applied manually in local/dev and during EC2 deploys via `db/apply_migrations.py`). Key tables: `care_providers` (primary), `api_keys`, `users`, `subscriptions`, `provider_claims`, `reviews`, `enquiries`, `trusted_event_ledger`.
 
 The `care_providers.id` column is the CQC `locationId` (VARCHAR, not auto-increment). Spatial queries use PostGIS `geom` column (SRID 4326). Full-text search uses a GIN index on name/town/postcode/services.
 

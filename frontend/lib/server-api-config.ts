@@ -1,5 +1,4 @@
 const DEV_API_BASE = "http://localhost:8000";
-const PROD_API_BASE = "https://caregist-api.onrender.com";
 const DEV_API_KEY = "dev_key_change_me";
 
 let hasWarnedServerApiBase = false;
@@ -23,7 +22,6 @@ function warnOnce(flag: "server_base" | "server_key" | "public_base", message: s
 
 export function getServerApiBase() {
   if (process.env.API_URL) return process.env.API_URL;
-  if (process.env.VERCEL) return PROD_API_BASE;
   warnOnce("server_base", "[caregist] API_URL env var is not set — falling back to localhost:8000");
   return DEV_API_BASE;
 }
@@ -38,7 +36,6 @@ export function getPublicApiBase() {
   if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
   if (process.env.API_URL) return process.env.API_URL;
   if (typeof window !== "undefined") return "";
-  if (process.env.VERCEL) return PROD_API_BASE;
   warnOnce("public_base", "[caregist] NEXT_PUBLIC_API_URL env var is not set — falling back to localhost:8000");
   return DEV_API_BASE;
 }

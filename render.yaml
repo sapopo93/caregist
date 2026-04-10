@@ -1,3 +1,5 @@
+# Legacy Render manifest retained only as historical reference.
+# Production deployment target is AWS EC2; see docs/new-registration-feed-wedge.md.
 services:
   - type: cron
     name: weekly-movers-digest

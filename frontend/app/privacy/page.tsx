@@ -103,8 +103,7 @@ export default function PrivacyPage() {
             </thead>
             <tbody>
               <tr><td className="p-2 border-b border-stone">Stripe Inc.</td><td className="p-2 border-b border-stone">Payment processing</td><td className="p-2 border-b border-stone">US (SCCs in place)</td></tr>
-              <tr><td className="p-2 border-b border-stone">Railway Corp.</td><td className="p-2 border-b border-stone">API and database hosting</td><td className="p-2 border-b border-stone">US/EU</td></tr>
-              <tr><td className="p-2 border-b border-stone">Vercel Inc.</td><td className="p-2 border-b border-stone">Frontend website hosting</td><td className="p-2 border-b border-stone">US/EU</td></tr>
+              <tr><td className="p-2 border-b border-stone">Amazon Web Services</td><td className="p-2 border-b border-stone">Application and database infrastructure hosting</td><td className="p-2 border-b border-stone">UK/EU</td></tr>
               <tr><td className="p-2 border-b border-stone">Postcodes.io (ONS)</td><td className="p-2 border-b border-stone">Postcode geocoding (no personal data sent)</td><td className="p-2 border-b border-stone">UK</td></tr>
             </tbody>
           </table>
@@ -120,7 +119,7 @@ export default function PrivacyPage() {
         <section>
           <h2 className="text-xl font-bold text-bark mt-8 mb-3">5. International transfers</h2>
           <p>
-            Some of our data processors (Stripe, Railway, Vercel) process data in the United States.
+            Some of our data processors, including Stripe, may process data in the United States.
             These transfers are protected by Standard Contractual Clauses (SCCs) approved by the UK
             Information Commissioner&apos;s Office (ICO), or by the processor&apos;s participation in
             recognised data transfer frameworks.
