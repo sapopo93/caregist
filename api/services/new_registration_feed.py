@@ -369,12 +369,7 @@ async def deliver_new_registration_event(conn, event_payload: dict[str, Any]) ->
     delivered = 0
 
     for row in rows:
-<<<<<<< HEAD
-        raw_fc = row["filter_config"]
-        filter_config = json.loads(raw_fc) if isinstance(raw_fc, str) else (raw_fc or {})
-=======
         filter_config = coerce_json_object(row["filter_config"])
->>>>>>> ee0bdb4 (Harden feed wedge deploy and auth entitlement handling)
         if not event_matches_filter(event_payload, filter_config):
             continue
 
@@ -534,12 +529,7 @@ async def queue_weekly_new_registration_digests(conn, *, reference_date: date | 
             skipped += 1
             continue
 
-<<<<<<< HEAD
-        raw_f = row["filters"]
-        filters = json.loads(raw_f) if isinstance(raw_f, str) else (raw_f or {})
-=======
         filters = coerce_json_object(row["filters"])
->>>>>>> ee0bdb4 (Harden feed wedge deploy and auth entitlement handling)
         filter_model = FeedFilters(
             q=filters.get("q"),
             region=filters.get("region"),
