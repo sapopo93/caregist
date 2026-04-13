@@ -1,7 +1,12 @@
 """Shared test fixtures for API tests."""
 
 import asyncio
+import os
 from unittest.mock import AsyncMock, MagicMock, patch
+
+# Set required env vars before any api.* imports so pydantic Settings() can initialise.
+os.environ.setdefault("API_MASTER_KEY", "test-master-key-for-pytest")
+os.environ.setdefault("SUPPORT_INTERNAL_TOKEN", "test-internal-token-for-pytest")
 
 import pytest
 
@@ -36,8 +41,8 @@ def patch_db(mock_pool):
 
 @pytest.fixture
 def api_headers():
-    """Default API headers with dev key."""
-    return {"X-API-Key": "change_me_in_production"}
+    """Default API headers using the test master key."""
+    return {"X-API-Key": "test-master-key-for-pytest"}
 
 
 @pytest.fixture

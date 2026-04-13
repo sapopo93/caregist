@@ -70,18 +70,33 @@ Recommended scheduled jobs:
 
 1. Apply migrations during deploy:
    - `python db/apply_migrations.py`
-2. Run the recurring feed cycle on a schedule:
+2. Refresh `care_providers` from the CQC changes API (every 30 minutes):
+   - `python incremental_update.py`
+3. Run the recurring feed cycle on a schedule (hourly, after the refresh job):
    - `python tools/run_new_registration_feed_cycle.py`
-3. Process queued emails on a schedule:
-   - call `api.utils.email_queue.process_email_queue()` from an existing job runner or management command
+4. Send provider monitor alerts (daily at 08:00):
+   - `python tools/send_monitor_alerts.py`
+5. Send weekly movers digest (Mondays at 07:00):
+   - `python tools/send_weekly_movers.py`
+6. Flush queued emails on a dedicated schedule:
+   - `python tools/flush_email_queue.py`
+7. Run the pipeline watchdog and alert on stale or degraded operation:
+   - `python tools/check_new_registration_pipeline.py --notify`
+8. Run a smoke check after deploys or cron changes:
+   - `python tools/smoke_new_registration_pipeline.py --base-url https://caregist.co.uk --api-key "$API_MASTER_KEY" --internal-token "$SUPPORT_INTERNAL_TOKEN"`
+
+See `workflows/deploy-ec2.md` for the full cron configuration block.
 
 Required environment variables:
 
 - `DATABASE_URL`
+- `CQC_API_KEY`
 - `API_MASTER_KEY`
+- `SUPPORT_INTERNAL_TOKEN`
 - `APP_URL`
 - `RESEND_API_KEY`
 - `ENQUIRY_FROM_EMAIL`
+- `PIPELINE_ALERT_EMAIL`
 - Stripe and Sentry keys as already required by billing/runtime
 
 Deployment guardrails:

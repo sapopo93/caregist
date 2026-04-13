@@ -22,7 +22,8 @@ from api.database import get_connection
 logger = logging.getLogger("caregist.billing")
 router = APIRouter(prefix="/api/v1/billing", tags=["billing"])
 
-PRICE_TO_TIER = {}  # Populated at startup from settings
+PRICE_TO_TIER = {}         # B2B data plan prices → tier name
+PRICE_TO_PROFILE_TIER = {}  # Provider listing prices → profile tier name
 
 
 def init_stripe():
@@ -39,6 +40,12 @@ def init_stripe():
         PRICE_TO_TIER[settings.stripe_price_pro_seat] = "pro-seat"
     if settings.stripe_price_business:
         PRICE_TO_TIER[settings.stripe_price_business] = "business"
+    if settings.stripe_price_profile_enhanced:
+        PRICE_TO_PROFILE_TIER[settings.stripe_price_profile_enhanced] = "enhanced"
+    if settings.stripe_price_profile_premium:
+        PRICE_TO_PROFILE_TIER[settings.stripe_price_profile_premium] = "premium"
+    if settings.stripe_price_profile_sponsored:
+        PRICE_TO_PROFILE_TIER[settings.stripe_price_profile_sponsored] = "sponsored"
 
 
 def _is_base_plan_price(price_id: str | None) -> bool:
@@ -212,6 +219,79 @@ async def create_checkout(req: CheckoutRequest, _auth: dict = Depends(validate_a
         metadata={"user_id": str(user["id"]), "tier": req.tier, "extra_seats": str(extra_seats), "price_id": price_id},
     )
 
+    stripe_mode = "test" if settings.stripe_secret_key.startswith("sk_test_") else "live"
+    return {"checkout_url": session.url, "session_id": session.id, "stripe_mode": stripe_mode}
+
+
+_PROFILE_TIERS = {"enhanced", "premium", "sponsored"}
+
+
+class ProfileCheckoutRequest(BaseModel):
+    slug: str
+    tier: str
+    email: EmailStr
+
+
+@router.post("/profile-checkout")
+async def create_profile_checkout(
+    req: ProfileCheckoutRequest,
+    _auth: dict = Depends(validate_api_key),
+) -> dict:
+    """Create a Stripe Checkout session for a provider listing tier upgrade."""
+    if not settings.stripe_secret_key:
+        raise HTTPException(status_code=503, detail="Billing not configured.")
+
+    if req.tier not in _PROFILE_TIERS:
+        raise HTTPException(status_code=400, detail=f"Invalid profile tier: {req.tier}. Choose from {sorted(_PROFILE_TIERS)}.")
+
+    price_map = {
+        "enhanced": settings.stripe_price_profile_enhanced,
+        "premium": settings.stripe_price_profile_premium,
+        "sponsored": settings.stripe_price_profile_sponsored,
+    }
+    price_id = price_map[req.tier]
+    if not price_id:
+        raise HTTPException(status_code=503, detail=f"Checkout for the {req.tier} profile tier is not yet configured.")
+
+    async with get_connection() as conn:
+        user = await conn.fetchrow("SELECT id, stripe_customer_id FROM users WHERE email = $1", req.email)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found. Register first.")
+
+    async with get_connection() as conn:
+        provider = await conn.fetchrow(
+            "SELECT id, is_claimed, profile_tier FROM care_providers WHERE slug = $1", req.slug
+        )
+    if not provider:
+        raise HTTPException(status_code=404, detail="Provider not found.")
+    if not provider["is_claimed"]:
+        raise HTTPException(status_code=403, detail="Provider must be claimed before upgrading the listing.")
+
+    customer_id = user["stripe_customer_id"]
+    if not customer_id:
+        customer = stripe.Customer.create(email=req.email)
+        customer_id = customer.id
+        async with get_connection() as conn:
+            await conn.execute(
+                "UPDATE users SET stripe_customer_id = $1 WHERE id = $2",
+                customer_id, user["id"],
+            )
+
+    session = stripe.checkout.Session.create(
+        customer=customer_id,
+        payment_method_types=["card"],
+        line_items=[{"price": price_id, "quantity": 1}],
+        mode="subscription",
+        success_url=f"{settings.app_url}/provider-dashboard/{req.slug}?upgraded=1",
+        cancel_url=f"{settings.app_url}/provider-dashboard/{req.slug}",
+        metadata={
+            "type": "profile",
+            "slug": req.slug,
+            "provider_id": str(provider["id"]),
+            "tier": req.tier,
+        },
+    )
+
     return {"checkout_url": session.url, "session_id": session.id}
 
 
@@ -266,6 +346,22 @@ async def stripe_webhook(request: Request) -> dict:
         logger.error("Webhook signature failed: %s", e)
         raise HTTPException(status_code=400, detail="Invalid webhook signature.")
 
+    # Deduplicate: skip events we've already processed (handles Stripe retries / replays)
+    event_id = event["id"]
+    async with get_connection() as conn:
+        inserted = await conn.fetchval(
+            """INSERT INTO stripe_processed_events (event_id)
+               VALUES ($1) ON CONFLICT DO NOTHING RETURNING event_id""",
+            event_id,
+        )
+        if not inserted:
+            logger.info("Duplicate Stripe event %s — skipping", event_id)
+            return {"status": "ok"}
+        # Expire old entries (keep last 24 h)
+        await conn.execute(
+            "DELETE FROM stripe_processed_events WHERE processed_at < NOW() - INTERVAL '24 hours'"
+        )
+
     event_type = event["type"]
     data = event["data"]["object"]
 
@@ -282,7 +378,11 @@ async def stripe_webhook(request: Request) -> dict:
 
 
 async def _handle_checkout_completed(session: dict) -> None:
-    """Upgrade user after successful checkout."""
+    """Route completed checkout to B2B or provider profile handler."""
+    if session.get("metadata", {}).get("type") == "profile":
+        await _handle_profile_checkout_completed(session)
+        return
+
     user_id = session.get("metadata", {}).get("user_id")
     tier = session.get("metadata", {}).get("tier", "starter")
     extra_seats = int(session.get("metadata", {}).get("extra_seats", "0") or 0)
@@ -348,9 +448,10 @@ async def _handle_subscription_updated(subscription: dict) -> None:
 
 
 async def _handle_subscription_deleted(subscription: dict) -> None:
-    """Downgrade to free on cancellation."""
+    """Downgrade to free on cancellation (B2B) or to claimed on cancellation (profile)."""
     sub_id = subscription.get("id")
 
+    # B2B plan cancellation
     async with get_connection() as conn:
         sub_row = await conn.fetchrow(
             "SELECT user_id FROM subscriptions WHERE stripe_subscription_id = $1", sub_id
@@ -363,5 +464,34 @@ async def _handle_subscription_deleted(subscription: dict) -> None:
             "canceled",
             extra_seats=0,
         )
+        logger.info("Subscription %s canceled, user downgraded to free", sub_id)
 
-    logger.info("Subscription %s canceled, user downgraded to free", sub_id)
+    # Provider profile cancellation
+    async with get_connection() as conn:
+        await conn.execute(
+            """UPDATE care_providers
+               SET profile_tier = 'claimed', profile_subscription_id = NULL
+               WHERE profile_subscription_id = $1""",
+            sub_id,
+        )
+
+
+async def _handle_profile_checkout_completed(session: dict) -> None:
+    """Activate provider listing tier after successful profile checkout."""
+    slug = session.get("metadata", {}).get("slug")
+    tier = session.get("metadata", {}).get("tier")
+    subscription_id = session.get("subscription")
+
+    if not slug or not tier:
+        logger.error("Profile checkout completed with missing slug or tier in metadata")
+        return
+
+    async with get_connection() as conn:
+        await conn.execute(
+            """UPDATE care_providers
+               SET profile_tier = $1, profile_subscription_id = $2
+               WHERE slug = $3""",
+            tier, subscription_id, slug,
+        )
+
+    logger.info("Provider %s upgraded to profile tier %s (subscription: %s)", slug, tier, subscription_id)

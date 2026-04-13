@@ -13,13 +13,24 @@ _CLEANUP_INTERVAL = 500
 _MAX_PER_MINUTE = 5
 _MAX_PUBLIC_PER_MINUTE = 30
 
+# Number of trusted reverse proxies in front of this service.
+# The rightmost N entries in X-Forwarded-For are added by trusted proxies;
+# the entry just before them is the real client IP.
+_TRUSTED_PROXY_COUNT = 1
+
 
 def _get_client_ip(request: Request) -> str:
-    """Extract real client IP, respecting X-Forwarded-For behind reverse proxies."""
+    """Extract real client IP, respecting X-Forwarded-For behind reverse proxies.
+
+    Takes the entry added by the outermost trusted proxy rather than blindly
+    trusting the first (leftmost) value, which a client can forge.
+    """
     forwarded = request.headers.get("x-forwarded-for")
     if forwarded:
-        # First IP in the chain is the original client
-        return forwarded.split(",")[0].strip()
+        ips = [ip.strip() for ip in forwarded.split(",")]
+        # Strip the rightmost N entries (added by trusted proxies); take the next one.
+        idx = max(0, len(ips) - _TRUSTED_PROXY_COUNT)
+        return ips[idx]
     return request.client.host if request.client else "unknown"
 
 

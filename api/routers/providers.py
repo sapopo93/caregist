@@ -92,7 +92,7 @@ async def search_providers(
     postcode: str | None = Query(None, max_length=10),
     sort: str = Query(DEFAULT_SORT),
     page: int = Query(1, ge=1),
-    per_page: int | None = Query(None, ge=1),
+    per_page: int | None = Query(None, ge=1, le=500),
     facets: bool = Query(False),
     _auth: dict = Depends(validate_api_key),
 ) -> dict:
@@ -398,7 +398,7 @@ async def nearby_providers(
     type: str | None = Query(None),
     rating: str | None = Query(None),
     page: int = Query(1, ge=1),
-    per_page: int | None = Query(None, ge=1),
+    per_page: int | None = Query(None, ge=1, le=500),
     _auth: dict = Depends(validate_api_key),
 ) -> dict:
     """Find providers near a point. Requires Starter tier or above."""

@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
-import secrets
+import ipaddress
 import logging
 import json
+import secrets
+import socket
+from urllib.parse import urlparse
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field, HttpUrl
@@ -16,6 +19,34 @@ from api.services.new_registration_feed import coerce_json_object
 
 logger = logging.getLogger("caregist.webhooks")
 router = APIRouter(prefix="/webhooks", tags=["webhooks"])
+
+_PRIVATE_NETWORKS = [
+    ipaddress.ip_network("127.0.0.0/8"),
+    ipaddress.ip_network("10.0.0.0/8"),
+    ipaddress.ip_network("172.16.0.0/12"),
+    ipaddress.ip_network("192.168.0.0/16"),
+    ipaddress.ip_network("169.254.0.0/16"),
+    ipaddress.ip_network("::1/128"),
+    ipaddress.ip_network("fd00::/8"),
+]
+
+
+def _assert_public_url(url: str) -> None:
+    """Raise HTTPException if the webhook URL resolves to a private/reserved IP (SSRF guard)."""
+    hostname = urlparse(url).hostname
+    if not hostname:
+        raise HTTPException(status_code=400, detail="Invalid webhook URL.")
+    try:
+        results = socket.getaddrinfo(hostname, None)
+    except socket.gaierror:
+        raise HTTPException(status_code=400, detail="Webhook URL hostname could not be resolved.")
+    for _, _, _, _, sockaddr in results:
+        ip = ipaddress.ip_address(sockaddr[0])
+        if any(ip in net for net in _PRIVATE_NETWORKS):
+            raise HTTPException(
+                status_code=400,
+                detail="Webhook URL must be a public internet address.",
+            )
 
 _WEBHOOK_TIERS = {"business", "enterprise", "admin"}
 
@@ -53,6 +84,7 @@ async def register_webhook(
 
     user_id = _auth["user_id"]
     url = str(body.url)
+    _assert_public_url(url)
     secret = secrets.token_hex(32)
 
     async with get_connection() as conn:

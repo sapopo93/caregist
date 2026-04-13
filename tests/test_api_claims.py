@@ -41,7 +41,7 @@ def patched_db(mock_conn):
     app.dependency_overrides = {}
 
 
-HEADERS = {"X-API-Key": "change_me_in_production"}
+HEADERS = {"X-API-Key": "test-master-key-for-pytest"}
 
 
 @pytest.mark.asyncio

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import secrets
 
 from fastapi import HTTPException, Security
 from fastapi.security import APIKeyHeader
@@ -22,7 +23,7 @@ async def validate_api_key(api_key: str | None = Security(api_key_header)) -> di
         raise HTTPException(status_code=401, detail="Missing API key. Pass X-API-Key header.")
 
     # Master key
-    if api_key == settings.api_master_key:
+    if secrets.compare_digest(api_key, settings.api_master_key):
         tier = "admin"
         remaining = await check_rate_limit(api_key, tier)
         return {

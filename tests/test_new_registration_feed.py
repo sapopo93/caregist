@@ -19,7 +19,7 @@ from api.services.new_registration_feed import (
 )
 
 
-HEADERS = {"X-API-Key": "change_me_in_production"}
+HEADERS = {"X-API-Key": "test-master-key-for-pytest"}
 
 
 def _auth(tier: str = "starter") -> dict:

@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     database_url: str = "postgresql://caregist:caregist_dev@localhost:5432/caregist"
     api_host: str = "0.0.0.0"
     api_port: int = 8000
-    api_master_key: str = "change_me_in_production"
+    api_master_key: str
     cors_origins: str = "http://localhost:3000"
     query_timeout_ms: int = 10000
     stripe_secret_key: str = ""
@@ -21,6 +21,9 @@ class Settings(BaseSettings):
     stripe_price_pro_seat: str = ""
     stripe_price_business: str = ""
     stripe_price_enterprise: str = ""
+    stripe_price_profile_enhanced: str = ""
+    stripe_price_profile_premium: str = ""
+    stripe_price_profile_sponsored: str = ""
     default_page_size: int = 20
     app_url: str = "http://localhost:3000"
     resend_api_key: str = ""
@@ -28,21 +31,22 @@ class Settings(BaseSettings):
     sentry_dsn: str = ""
     support_platform_url: str = ""
     caregist_to_support_token: str = ""
-    support_internal_token: str = "caregist-internal-token"
+    support_internal_token: str
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8", "extra": "ignore"}
 
     def validate_production(self) -> None:
         if "pytest" in sys.modules:
             return
-        if self.api_master_key == "change_me_in_production":
-            # On any non-localhost environment, this is production
-            if self.database_url != "postgresql://caregist:caregist_dev@localhost:5432/caregist":
-                raise RuntimeError(
-                    "FATAL: API_MASTER_KEY is still the default value. "
-                    "Set a secure API_MASTER_KEY environment variable before starting in production."
-                )
-            print("WARNING: API_MASTER_KEY is set to default. Set a secure value in .env", file=sys.stderr)
+
+        # Stripe environment guard: reject live keys in dev/test
+        is_localhost = self.database_url == "postgresql://caregist:caregist_dev@localhost:5432/caregist"
+        if self.stripe_secret_key.startswith("sk_live_") and is_localhost:
+            raise RuntimeError(
+                "FATAL: Live Stripe secret key (sk_live_) detected in local development environment. "
+                "Use test credentials (sk_test_) for development. "
+                "Live keys are only for production deployments."
+            )
 
 
 settings = Settings()

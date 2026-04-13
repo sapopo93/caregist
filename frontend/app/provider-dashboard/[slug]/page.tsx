@@ -12,6 +12,7 @@ export default function ProviderDashboardPage({ params }: { params: Promise<{ sl
   const [provider, setProvider] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [upgrading, setUpgrading] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
@@ -38,8 +39,35 @@ export default function ProviderDashboardPage({ params }: { params: Promise<{ sl
         return;
       }
       fetchProfile(s, key);
+      // Show success banner if returning from Stripe checkout
+      if (typeof window !== "undefined" && window.location.search.includes("upgraded=1")) {
+        setSuccess("Your profile has been upgraded. It may take a moment to activate — refresh if you don't see the new editor.");
+        const url = new URL(window.location.href);
+        url.searchParams.delete("upgraded");
+        window.history.replaceState({}, "", url.toString());
+      }
     });
   }, [params, router]);
+
+  async function handleUpgrade(tier: string) {
+    const email = prompt("Enter the email address on your CareGist account:");
+    if (!email) return;
+    setUpgrading(tier);
+    setError("");
+    try {
+      const res = await fetch("/api/v1/billing/profile-checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-API-Key": apiKey },
+        body: JSON.stringify({ slug, tier, email }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || "Failed to start checkout.");
+      window.location.href = data.checkout_url;
+    } catch (err: any) {
+      setError(err.message);
+      setUpgrading(null);
+    }
+  }
 
   async function fetchProfile(s: string, key: string) {
     try {
@@ -231,23 +259,31 @@ export default function ProviderDashboardPage({ params }: { params: Promise<{ sl
           </div>
 
           {/* Upgrade upsell for other features */}
-          <div className="bg-cream border border-stone rounded-lg p-6 mb-6 text-center">
-            <p className="font-semibold text-bark mb-2">Want to add photos and a description?</p>
+          <div className="bg-cream border border-stone rounded-lg p-6 mb-6">
+            <p className="font-semibold text-bark mb-1">Want to add photos and a description?</p>
             <p className="text-sm text-dusk mb-4">
               Upgrade to an Enhanced Profile to add photos, a description, and a virtual tour link.
             </p>
-            <div className="grid grid-cols-3 gap-4 max-w-lg mx-auto mb-4">
+            {error && <p className="text-alert text-xs mb-3">{error}</p>}
+            <div className="grid grid-cols-3 gap-4">
               {PROVIDER_TIERS.filter((t) => t.tier !== "claimed").map((t, i) => (
-                <div key={t.tier} className={`bg-parchment rounded-lg p-3 text-center ${i === 0 ? "border-2 border-clay" : ""}`}>
-                  <p className="font-bold text-bark">{t.label}</p>
+                <div key={t.tier} className={`bg-parchment rounded-lg p-4 text-center flex flex-col gap-2 ${i === 0 ? "border-2 border-clay" : "border border-stone"}`}>
+                  <p className="font-bold text-bark text-sm">{t.label}</p>
                   <p className="text-xl font-bold text-clay">£{t.priceMonthly}<span className="text-xs text-dusk">/mo</span></p>
-                  <p className="text-xs text-dusk mt-1">{t.photos} photos{t.virtualTour ? " + tour" : ""}</p>
+                  <p className="text-xs text-dusk">{t.photos} photos{t.virtualTour ? " + tour" : ""}</p>
+                  <button
+                    onClick={() => handleUpgrade(t.tier)}
+                    disabled={upgrading !== null}
+                    className="mt-auto px-3 py-2 bg-clay text-white rounded-lg text-xs font-medium hover:bg-bark transition-colors disabled:opacity-50"
+                  >
+                    {upgrading === t.tier ? "Redirecting…" : "Get started"}
+                  </button>
                 </div>
               ))}
             </div>
-            <Link href="/pricing#provider-plans" className="text-sm text-clay underline">
-              See full details and pricing
-            </Link>
+            <p className="text-xs text-dusk text-center mt-3">
+              <Link href="/pricing#provider-plans" className="underline">See full feature comparison</Link>
+            </p>
           </div>
         </>
       )}

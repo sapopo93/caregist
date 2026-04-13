@@ -23,6 +23,8 @@ from api.services.new_registration_feed import (
     sync_new_registration_event_payloads,
 )
 
+FEED_CYCLE_LOCK_ID = 802451202
+
 
 def resolve_database_url(cli_value: str | None) -> str | None:
     if cli_value:
@@ -46,20 +48,72 @@ def resolve_database_url(cli_value: str | None) -> str | None:
 async def run_cycle(database_url: str, *, skip_digests: bool = False) -> dict[str, int]:
     conn = await asyncpg.connect(database_url)
     try:
-        new_events = await sync_new_registration_event_payloads(conn, force=True)
-        delivered = 0
-        for event in new_events:
-            delivered += await deliver_new_registration_event(conn, event)
-        digest_result = {"queued": 0, "skipped": 0}
-        if not skip_digests:
-            digest_result = await queue_weekly_new_registration_digests(conn)
-        return {
-            "inserted_events": len(new_events),
-            "webhook_deliveries": delivered,
-            "digests_queued": digest_result["queued"],
-            "digests_skipped": digest_result["skipped"],
-        }
+        lock_acquired = await conn.fetchval("SELECT pg_try_advisory_lock($1)", FEED_CYCLE_LOCK_ID)
+        if not lock_acquired:
+            return {
+                "inserted_events": 0,
+                "webhook_deliveries": 0,
+                "digests_queued": 0,
+                "digests_skipped": 0,
+                "skipped": 1,
+            }
+
+        run_id = await conn.fetchval(
+            """
+            INSERT INTO pipeline_runs (run_type, started_at, status)
+            VALUES ('feed_cycle', NOW(), 'running')
+            RETURNING id
+            """
+        )
+
+        try:
+            new_events = await sync_new_registration_event_payloads(conn, force=True)
+            delivered = 0
+            for event in new_events:
+                delivered += await deliver_new_registration_event(conn, event)
+            digest_result = {"queued": 0, "skipped": 0}
+            if not skip_digests:
+                digest_result = await queue_weekly_new_registration_digests(conn)
+
+            await conn.execute(
+                """
+                UPDATE pipeline_runs
+                SET completed_at = NOW(),
+                    status = 'completed',
+                    records_added = $1,
+                    records_updated = $2,
+                    error_message = NULL
+                WHERE id = $3
+                """,
+                len(new_events),
+                delivered,
+                run_id,
+            )
+            return {
+                "inserted_events": len(new_events),
+                "webhook_deliveries": delivered,
+                "digests_queued": digest_result["queued"],
+                "digests_skipped": digest_result["skipped"],
+                "skipped": 0,
+            }
+        except Exception as exc:
+            await conn.execute(
+                """
+                UPDATE pipeline_runs
+                SET completed_at = NOW(),
+                    status = 'failed',
+                    error_message = $1
+                WHERE id = $2
+                """,
+                str(exc)[:4000],
+                run_id,
+            )
+            raise
     finally:
+        try:
+            await conn.execute("SELECT pg_advisory_unlock($1)", FEED_CYCLE_LOCK_ID)
+        except Exception:
+            pass
         await conn.close()
 
 
@@ -89,6 +143,7 @@ def main() -> int:
         f" webhook_deliveries={result['webhook_deliveries']}"
         f" digests_queued={result['digests_queued']}"
         f" digests_skipped={result['digests_skipped']}"
+        f" skipped={result['skipped']}"
     )
     return 0
 

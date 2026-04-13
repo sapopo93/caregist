@@ -93,11 +93,13 @@ CREATE TABLE IF NOT EXISTS pending_emails (
   html_body TEXT NOT NULL,
   status VARCHAR(20) DEFAULT 'pending',
   attempts INT DEFAULT 0,
+  processing_started_at TIMESTAMPTZ,
   send_after TIMESTAMPTZ DEFAULT NOW(),
   created_at TIMESTAMPTZ DEFAULT NOW(),
   sent_at TIMESTAMPTZ
 );
 CREATE INDEX IF NOT EXISTS idx_pe_status ON pending_emails (status, send_after);
+CREATE INDEX IF NOT EXISTS idx_pe_processing ON pending_emails (status, processing_started_at);
 
 -- 9. Postcode geocode cache (Task 7)
 CREATE TABLE IF NOT EXISTS postcode_cache (

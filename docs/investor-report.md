@@ -35,18 +35,21 @@ The data pipeline extracts from the CQC public API, normalises UK-specific field
 
 ### API (the product)
 
-17 route modules and 15+ REST endpoints serving provider data from PostgreSQL + PostGIS:
+22 route modules and 40+ REST endpoints serving provider data from PostgreSQL + PostGIS:
 
 - **Search** — Full-text search with region, rating, service type, postcode filters, 7 sort options
 - **Nearby** — Geographic radius search using PostGIS spatial indexes
 - **Compare** — Side-by-side comparison of up to 10 providers (tier-dependent)
-- **Export** — CSV download of search results (up to 10,000 rows)
+- **Export** — CSV/XLSX download of search results and feed data (up to 10,000 rows)
 - **Detail** — Complete provider profile with all 40+ fields
 - **Lookups** — Regions, service types, ratings with provider counts
 - **City pages** — Programmatic city-level provider listings
 - **Region stats** — Local authority rating distributions
 - **Groups** — Care group aggregation across locations
 - **Provider profiles** — Enhanced claimed/paid provider listings
+- **New registration feed** — Filterable recurring intelligence feed for newly registered providers (Starter+)
+- **Webhooks** — Signed outbound delivery of feed events to Business+ subscribers
+- **Internal** — Support platform integration (token-gated, not customer-facing)
 
 Authentication via API key (auto-generated on registration). Rate limiting enforced per tier (IP + key). All queries parameterised (no SQL injection risk).
 
@@ -108,16 +111,21 @@ Webhook handler processes subscription lifecycle (upgrades, downgrades, cancella
 | Enquiry forms | Lead capture → monetisable referrals to providers | Built (name, email, care type, urgency) |
 | Comparison tool | Decision support → higher engagement → longer sessions | Built (up to 10 providers, shareable links) |
 | Care groups | Group-level aggregation for multi-site operators | Built (group directory + detail pages) |
+| New registration feed | Recurring intelligence feed for newly registered providers (core B2B wedge) | Built (filtered feed, CSV/XLSX export, saved filters, weekly digests) |
+| Provider monitors | Pro+ users watch specific providers for rating changes | Built (per-provider alerts, daily email, 24h throttle) |
+| Signed webhooks | Real-time event delivery for Business+ API customers | Built (HMAC-SHA256, delivery log, replay-safe) |
+| Weekly movers digest | Weekly email digest of feed changes delivered to subscribers | Built |
+| Seat/team billing | Organisation-wide access with per-seat add-ons | Built (Pro+, enforced in auth middleware) |
 | Provider dashboard | Claimed providers manage listing, respond to inspections | Built |
 | Admin dashboard | Operational control → moderate claims/reviews/enquiries | Built (stats, queues, approve/reject) |
-| Email queue | Transactional emails (verification, enquiries, resets) | Built (Resend integration, background processing) |
+| Email queue | Transactional emails (verification, enquiries, resets, digests, alerts) | Built (Resend integration, background drain + manual flush script) |
 | Rating filter pages | SEO pages for "[rating] care homes in [city]" queries | Built (Outstanding/Good/Requires Improvement) |
 
 ### Infrastructure
 
 | Component | Technology | Status |
 |-----------|-----------|--------|
-| Database | PostgreSQL 16 + PostGIS | Schema complete, seeded, indexed, 6 migrations applied |
+| Database | PostgreSQL 16 + PostGIS | Schema complete, seeded, indexed, 17 migrations applied |
 | API | Python FastAPI + asyncpg | Built, containerised, deployable on AWS EC2 |
 | Frontend | Next.js 15 + React 19 + Tailwind CSS 4 | Built, deployable on AWS EC2 |
 | Containers | Docker + docker-compose | One-command local deployment |
@@ -180,10 +188,12 @@ Four monetisation paths, all proven in the UK care market:
 | API | Deployable | AWS EC2 |
 | Frontend | Deployable | AWS EC2 |
 | Database | Deployed + seeded | Managed PostgreSQL |
-| Stripe | Configured | 3 API price IDs active |
+| Stripe | Configured | API tier prices + 3 provider listing tier prices; webhook deduplication active |
+| Email | Configured | Resend integration, pending_emails queue, background drain |
 | Sentry | Configured | API + frontend error tracking |
+| Cron jobs | Defined | Feed cycle (hourly), monitor alerts (daily), weekly movers digest (Monday), email flush |
 
-**Remaining:** Schedule automated CQC data refresh. Configure Resend for transactional email delivery.
+**Remaining:** Schedule automated CQC data refresh (script built, needs EC2 cron). Configure cron jobs on EC2 using `workflows/deploy-ec2.md`.
 
 ---
 
@@ -215,7 +225,7 @@ Four monetisation paths, all proven in the UK care market:
 | Test coverage | 109 tests collected |
 | Languages | Python (backend/pipeline), TypeScript (frontend) |
 | Database | PostgreSQL 16 + PostGIS (55,818 records, 8+ indexes, spatial search) |
-| API route modules | 17 |
+| API route modules | 22 |
 | Frontend route groups | 27 |
 | Frontend components | 40 |
 | Status | Deployed and live at caregist.co.uk |

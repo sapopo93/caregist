@@ -7,6 +7,7 @@ import PrintButton from "@/components/PrintButton";
 import InlineSortSelect from "@/components/InlineSortSelect";
 import MobileFilterToggle from "@/components/MobileFilterToggle";
 import { searchProviders } from "@/lib/api";
+import { hasSearchCriteria } from "@/lib/searchCriteria";
 import { Suspense } from "react";
 import Link from "next/link";
 
@@ -24,9 +25,15 @@ export default async function SearchPage({
   let error = false;
   let warmingUp = false;
 
-  // Search if user has any query/filter OR if they navigated to /search with params (even empty q=)
-  const hasQuery = !!(query || params.region || params.rating || params.service_type);
-  const searchSubmitted = hasQuery || "q" in params || "page" in params;
+  // Run search only when meaningful filters are present.
+  const searchSubmitted = hasSearchCriteria({
+    q: query,
+    region: params.region,
+    rating: params.rating,
+    service_type: params.service_type,
+    type: params.type,
+    postcode: params.postcode,
+  });
 
   if (searchSubmitted) {
     try {
@@ -117,7 +124,7 @@ export default async function SearchPage({
             ))}
           </div>
 
-          {!error && results.data.length === 0 && hasQuery && (
+          {!error && results.data.length === 0 && searchSubmitted && (
             <div className="text-center py-12">
               <p className="text-lg text-bark font-semibold mb-3">No providers found</p>
               {query && (

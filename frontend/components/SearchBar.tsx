@@ -68,7 +68,8 @@ export default function SearchBar({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const params = new URLSearchParams();
-    params.set("q", query.trim());
+    const trimmedQuery = query.trim();
+    if (trimmedQuery) params.set("q", trimmedQuery);
     if (advanced) {
       if (region) params.set("region", region);
       if (rating) params.set("rating", rating);

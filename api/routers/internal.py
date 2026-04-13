@@ -13,6 +13,7 @@ from pydantic import BaseModel, Field
 
 from api.database import get_connection
 from api.middleware.internal_auth import validate_internal_token
+from api.services.pipeline_health import get_pipeline_health
 from api.utils.email_queue import process_email_queue
 
 logger = logging.getLogger("caregist.internal")
@@ -338,6 +339,57 @@ async def internal_diagnostics(_auth=Depends(validate_internal_token)) -> dict[s
         "emailQueue": {
             "pending": int(counts["pending_emails"] or 0),
         },
+    }
+
+
+@router.get("/pipeline")
+async def internal_pipeline_status(_auth=Depends(validate_internal_token)) -> dict[str, Any]:
+    async with get_connection() as conn:
+        snapshot = await get_pipeline_health(conn)
+        runs = await conn.fetch(
+            """
+            SELECT run_type, status, started_at, completed_at, records_added, records_updated, error_message
+            FROM pipeline_runs
+            WHERE run_type IN ('incremental', 'feed_cycle')
+            ORDER BY started_at DESC
+            LIMIT 10
+            """
+        )
+        ledger = await conn.fetchrow(
+            """
+            SELECT
+              COUNT(*) AS total_new_registration_events,
+              COUNT(*) FILTER (WHERE observed_at >= NOW() - INTERVAL '7 days') AS new_registration_events_last_7d,
+              MAX(observed_at) AS latest_observed_at,
+              MAX(effective_date) AS latest_effective_date
+            FROM trusted_event_ledger
+            WHERE event_type = 'new_registration'
+            """
+        )
+
+    return {
+        "status": snapshot["status"],
+        "readiness_ok": snapshot["readiness_ok"],
+        "feed_fresh": snapshot["feed_fresh"],
+        "checks": snapshot["checks"],
+        "ledger": {
+            "totalNewRegistrationEvents": int(ledger["total_new_registration_events"] or 0) if ledger else 0,
+            "newRegistrationEventsLast7d": int(ledger["new_registration_events_last_7d"] or 0) if ledger else 0,
+            "latestObservedAt": ledger["latest_observed_at"].isoformat() if ledger and ledger["latest_observed_at"] else None,
+            "latestEffectiveDate": ledger["latest_effective_date"].isoformat() if ledger and ledger["latest_effective_date"] else None,
+        },
+        "recentRuns": [
+            {
+                "runType": row["run_type"],
+                "status": row["status"],
+                "startedAt": row["started_at"].isoformat() if row["started_at"] else None,
+                "completedAt": row["completed_at"].isoformat() if row["completed_at"] else None,
+                "recordsAdded": int(row["records_added"] or 0),
+                "recordsUpdated": int(row["records_updated"] or 0),
+                "error": row["error_message"],
+            }
+            for row in runs
+        ],
     }
 
 

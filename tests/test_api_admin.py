@@ -7,7 +7,7 @@ from httpx import AsyncClient, ASGITransport
 from api.main import app
 from api.middleware.auth import validate_api_key
 
-MASTER_KEY = "change_me_in_production"
+MASTER_KEY = "test-master-key-for-pytest"
 REGULAR_KEY = "regular_key"
 HEADERS = {"X-API-Key": MASTER_KEY}
 
