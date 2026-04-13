@@ -52,7 +52,7 @@ export async function searchProviders(params: {
   postcode?: string;
   [key: string]: string | undefined;
 }) {
-  return apiFetch("/api/v1/providers/search", params);
+  return publicFetch("/api/v1/providers/search", params);
 }
 
 export async function getProvider(slug: string) {

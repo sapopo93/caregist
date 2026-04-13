@@ -13,7 +13,7 @@ from fastapi.responses import StreamingResponse
 
 from api.config import BASIC_CSV_FIELDS, filter_fields, get_next_tier, get_tier_config, settings
 from api.database import get_connection
-from api.middleware.auth import validate_api_key
+from api.middleware.auth import validate_api_key, validate_optional_api_key
 from api.middleware.rate_limit import add_rate_limit_headers
 from api.queries.providers import (
     CQC_ID_LOOKUP,
@@ -94,7 +94,7 @@ async def search_providers(
     page: int = Query(1, ge=1),
     per_page: int | None = Query(None, ge=1, le=500),
     facets: bool = Query(False),
-    _auth: dict = Depends(validate_api_key),
+    _auth: dict = Depends(validate_optional_api_key),
 ) -> dict:
     """Search care providers. Handles postcodes, CQC IDs, and free text.
 

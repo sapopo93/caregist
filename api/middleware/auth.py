@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import secrets
 
-from fastapi import HTTPException, Security
+from fastapi import HTTPException, Request, Security
 from fastapi.security import APIKeyHeader
 
 from api.config import get_max_users, get_tier_config, settings
@@ -15,6 +15,24 @@ from api.middleware.rate_limit import check_rate_limit
 logger = logging.getLogger("caregist.auth")
 
 api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
+
+
+def _client_identifier(request: Request) -> str:
+    """Build a stable identifier for anonymous traffic rate limiting."""
+    forwarded_for = request.headers.get("x-forwarded-for", "")
+    if forwarded_for:
+        client_ip = forwarded_for.split(",")[0].strip()
+        if client_ip:
+            return client_ip
+
+    real_ip = request.headers.get("x-real-ip")
+    if real_ip:
+        return real_ip.strip()
+
+    if request.client and request.client.host:
+        return request.client.host
+
+    return "unknown"
 
 
 async def validate_api_key(api_key: str | None = Security(api_key_header)) -> dict:
@@ -113,5 +131,26 @@ async def validate_api_key(api_key: str | None = Security(api_key_header)) -> di
         "user_id": user_id,
         "tier": tier,
         "is_verified": row_data.get("is_verified", True),
+        "remaining": remaining,
+    }
+
+
+async def validate_optional_api_key(
+    request: Request,
+    api_key: str | None = Security(api_key_header),
+) -> dict:
+    """Return authenticated metadata when a key is present, else a free guest tier."""
+    if api_key:
+        return await validate_api_key(api_key)
+
+    guest_key = f"guest:{_client_identifier(request)}"
+    remaining = await check_rate_limit(guest_key, "free")
+    return {
+        "key_id": None,
+        "name": "guest",
+        "email": None,
+        "user_id": None,
+        "tier": "free",
+        "is_verified": True,
         "remaining": remaining,
     }
