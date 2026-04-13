@@ -25,10 +25,13 @@ async def _geocode_postcode(postcode: str) -> tuple[float, float]:
     """Geocode a UK postcode. Checks cache first, then postcodes.io."""
     clean = postcode.strip().upper().replace(" ", "")
 
-    async with get_connection() as conn:
-        cached = await conn.fetchrow(GET_CACHED_POSTCODE, clean)
-        if cached:
-            return float(cached["latitude"]), float(cached["longitude"])
+    try:
+        async with get_connection() as conn:
+            cached = await conn.fetchrow(GET_CACHED_POSTCODE, clean)
+            if cached:
+                return float(cached["latitude"]), float(cached["longitude"])
+    except Exception as exc:
+        logger.warning("Postcode cache lookup failed for %s: %s", clean, exc)
 
     try:
         async with httpx.AsyncClient(timeout=3) as client:

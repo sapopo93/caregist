@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 
 from api.database import get_connection
 from api.middleware.ip_rate_limit import check_public_rate_limit
@@ -22,9 +22,12 @@ async def list_regions(_ip=Depends(check_public_rate_limit)) -> dict:
 @router.get("/service-types")
 async def list_service_types(_ip=Depends(check_public_rate_limit)) -> dict:
     """List all service types with provider counts."""
-    async with get_connection() as conn:
-        rows = await conn.fetch(SERVICE_TYPES_QUERY)
-    return {"data": [dict(r) for r in rows]}
+    try:
+        async with get_connection() as conn:
+            rows = await conn.fetch(SERVICE_TYPES_QUERY)
+        return {"data": [dict(r) for r in rows]}
+    except Exception:
+        raise HTTPException(status_code=503, detail="Service unavailable.")
 
 
 @router.get("/ratings")

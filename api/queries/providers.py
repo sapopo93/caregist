@@ -188,10 +188,11 @@ ORDER BY provider_count DESC
 """
 
 SERVICE_TYPES_QUERY = """
-SELECT unnest(string_to_array(service_types, '|')) as service_type, COUNT(*) as provider_count
+SELECT st AS service_type, COUNT(*) AS provider_count
 FROM care_providers
+CROSS JOIN LATERAL unnest(string_to_array(service_types, '|')) AS st
 WHERE service_types IS NOT NULL AND service_types != '' AND UPPER(status) = 'ACTIVE'
-GROUP BY service_type
+GROUP BY st
 ORDER BY provider_count DESC
 """
 
