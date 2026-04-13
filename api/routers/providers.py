@@ -525,7 +525,7 @@ async def rating_history(
 
 # /{slug} must be last — it catches any path segment as a slug
 @router.get("/{slug}")
-async def get_provider(response: Response, slug: str, _auth: dict = Depends(validate_api_key)) -> dict:
+async def get_provider(response: Response, slug: str, _auth: dict = Depends(validate_optional_api_key)) -> dict:
     """Get a single provider by slug. Field visibility depends on tier."""
     tier = _auth["tier"]
     add_rate_limit_headers(response, tier, _auth["remaining"])

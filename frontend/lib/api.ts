@@ -56,7 +56,7 @@ export async function searchProviders(params: {
 }
 
 export async function getProvider(slug: string) {
-  return apiFetch(`/api/v1/providers/${slug}`);
+  return publicFetch(`/api/v1/providers/${slug}`);
 }
 
 export async function getNearby(lat: number, lon: number, radiusKm = 10) {
