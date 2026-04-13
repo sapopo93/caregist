@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import RatingBadge from "@/components/RatingBadge";
 import EmailCaptureStrip from "@/components/EmailCaptureStrip";
 
@@ -42,6 +43,7 @@ const SERVICE_TYPES = [
 ];
 
 export default function RadiusFinder() {
+  const searchParams = useSearchParams();
   const [postcode, setPostcode] = useState("");
   const [radius, setRadius] = useState(5);
   const [rating, setRating] = useState("All");
@@ -53,6 +55,33 @@ export default function RadiusFinder() {
   const [error, setError] = useState("");
   const [emailGated, setEmailGated] = useState(true);
   const [sortBy, setSortBy] = useState<"distance" | "rating" | "name">("distance");
+  const autoSearched = useRef(false);
+
+  // Pre-populate form from URL params and auto-run search on first mount
+  useEffect(() => {
+    if (autoSearched.current) return;
+    const urlPostcode = searchParams.get("postcode") || searchParams.get("q") || "";
+    const urlRadius = parseFloat(searchParams.get("radius_miles") || "");
+    const urlRating = searchParams.get("rating") || "";
+    const urlServiceType = searchParams.get("service_type") || "";
+    if (urlPostcode) setPostcode(urlPostcode);
+    if (!isNaN(urlRadius) && RADII.includes(urlRadius)) setRadius(urlRadius);
+    if (urlRating && RATINGS.includes(urlRating)) setRating(urlRating);
+    if (urlServiceType) setServiceType(urlServiceType);
+    if (urlPostcode) {
+      autoSearched.current = true;
+      const params = new URLSearchParams({ postcode: urlPostcode, radius_miles: String(!isNaN(urlRadius) ? urlRadius : 5), limit: "200" });
+      if (urlRating && urlRating !== "All") params.set("rating", urlRating);
+      if (urlServiceType) params.set("service_type", urlServiceType);
+      setSearching(true);
+      fetch(`/api/v1/tools/radius-search?${params}`)
+        .then((res) => res.ok ? res.json() : res.json().then((d) => Promise.reject(new Error(d.detail || "Search failed"))))
+        .then((data) => { setResults(data.data || []); setTotal(data.meta?.total || 0); setSearched(true); setEmailGated(true); })
+        .catch((err) => setError(typeof err?.message === "string" ? err.message : "Search failed. Please try again."))
+        .finally(() => setSearching(false));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function handleSearch(e: React.FormEvent) {
     e.preventDefault();
@@ -107,6 +136,7 @@ export default function RadiusFinder() {
             <label className="block text-sm font-medium text-bark mb-1">Postcode</label>
             <input
               type="text"
+              name="postcode"
               required
               placeholder="e.g. BH1 1AA"
               value={postcode}
@@ -139,6 +169,7 @@ export default function RadiusFinder() {
           <div>
             <label className="block text-sm font-medium text-bark mb-1">Rating</label>
             <select
+              name="rating"
               value={rating}
               onChange={(e) => setRating(e.target.value)}
               className="w-full px-4 py-2.5 rounded-lg border border-stone bg-white text-sm"
@@ -151,6 +182,7 @@ export default function RadiusFinder() {
           <div>
             <label className="block text-sm font-medium text-bark mb-1">Service type</label>
             <select
+              name="service_type"
               value={serviceType}
               onChange={(e) => setServiceType(e.target.value)}
               className="w-full px-4 py-2.5 rounded-lg border border-stone bg-white text-sm"
