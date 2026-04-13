@@ -1,11 +1,11 @@
 import { getPublicApiBase, getServerApiBase, getServerApiKey } from "@/lib/server-api-config";
 
-// Server-side only — no NEXT_PUBLIC_ prefix, key stays on server
-const API_BASE = getServerApiBase();
-const API_KEY = getServerApiKey();
-
 async function apiFetch(path: string, params?: Record<string, string | undefined>) {
-  const url = new URL(path, API_BASE);
+  // Resolve server config lazily so public-only imports do not fail at module load
+  // when the authenticated server fetch path is not actually used.
+  const apiBase = getServerApiBase();
+  const apiKey = getServerApiKey();
+  const url = new URL(path, apiBase);
   if (params) {
     Object.entries(params).forEach(([k, v]) => {
       if (v !== undefined && v !== "") url.searchParams.set(k, v);
@@ -19,7 +19,7 @@ async function apiFetch(path: string, params?: Record<string, string | undefined
 
   try {
     const res = await fetch(url.toString(), {
-      headers: { "X-API-Key": API_KEY },
+      headers: { "X-API-Key": apiKey },
       next: { revalidate: 3600 },
       signal: controller.signal,
     });
@@ -92,10 +92,9 @@ export async function getComparisonByToken(token: string) {
 }
 
 // Region stats and city endpoints are public (no auth needed)
-const PUBLIC_API = getPublicApiBase();
-
 async function publicFetch(path: string, params?: Record<string, string | undefined>) {
-  const base = PUBLIC_API || (typeof window !== "undefined" ? window.location.origin : API_BASE);
+  const publicApi = getPublicApiBase();
+  const base = publicApi || (typeof window !== "undefined" ? window.location.origin : getServerApiBase());
   const url = new URL(path, base);
   if (params) {
     Object.entries(params).forEach(([k, v]) => {

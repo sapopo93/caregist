@@ -2,13 +2,12 @@
 
 import { getServerApiBase, getServerApiKey } from "@/lib/server-api-config";
 
-const API_BASE = getServerApiBase();
-const API_KEY = getServerApiKey();
-
 async function apiPost(path: string, body: Record<string, unknown>) {
-  const res = await fetch(`${API_BASE}${path}`, {
+  const apiBase = getServerApiBase();
+  const apiKey = getServerApiKey();
+  const res = await fetch(`${apiBase}${path}`, {
     method: "POST",
-    headers: { "X-API-Key": API_KEY, "Content-Type": "application/json" },
+    headers: { "X-API-Key": apiKey, "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
   const data = await res.json().catch(() => ({}));
