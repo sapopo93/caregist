@@ -61,15 +61,8 @@ export function getServerApiBase() {
     return rootApiUrl;
   }
   if (process.env.APP_URL) {
-    try {
-      const appUrl = new URL(process.env.APP_URL);
-      if (appUrl.hostname === "caregist.co.uk" || appUrl.hostname === "www.caregist.co.uk") {
-        warnOnce("server_base", "[caregist] API_URL env var is not set — deriving API host from APP_URL");
-        return `${appUrl.protocol}//api.caregist.co.uk`;
-      }
-    } catch {
-      // Fall through to the development default below.
-    }
+    warnOnce("server_base", "[caregist] API_URL env var is not set — falling back to APP_URL");
+    return process.env.APP_URL;
   }
   warnOnce("server_base", "[caregist] API_URL env var is not set — falling back to localhost:8000");
   return DEV_API_BASE;
