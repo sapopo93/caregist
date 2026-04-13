@@ -8,6 +8,19 @@ let hasWarnedPublicApiBase = false;
 let hasWarnedServerApiKey = false;
 let rootEnvCache: Record<string, string> | null = null;
 
+function deriveApiBaseFromAppUrl(appUrlRaw: string): string | undefined {
+  try {
+    const appUrl = new URL(appUrlRaw);
+    if (appUrl.hostname === "caregist.co.uk" || appUrl.hostname === "www.caregist.co.uk") {
+      return `${appUrl.protocol}//api.caregist.co.uk`;
+    }
+  } catch {
+    return undefined;
+  }
+
+  return undefined;
+}
+
 function warnOnce(flag: "server_base" | "server_key" | "public_base", message: string) {
   if (flag === "server_base" && !hasWarnedServerApiBase) {
     hasWarnedServerApiBase = true;
@@ -61,8 +74,11 @@ export function getServerApiBase() {
     return rootApiUrl;
   }
   if (process.env.APP_URL) {
-    warnOnce("server_base", "[caregist] API_URL env var is not set — falling back to APP_URL");
-    return process.env.APP_URL;
+    const derivedApiBase = deriveApiBaseFromAppUrl(process.env.APP_URL);
+    if (derivedApiBase) {
+      warnOnce("server_base", "[caregist] API_URL env var is not set — deriving API host from APP_URL");
+      return derivedApiBase;
+    }
   }
   warnOnce("server_base", "[caregist] API_URL env var is not set — falling back to localhost:8000");
   return DEV_API_BASE;

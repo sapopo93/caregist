@@ -1,6 +1,21 @@
 import { withSentryConfig } from "@sentry/nextjs";
 import type { NextConfig } from "next";
 
+function deriveApiBaseFromAppUrl(appUrlRaw?: string) {
+  if (!appUrlRaw) return undefined;
+
+  try {
+    const appUrl = new URL(appUrlRaw);
+    if (appUrl.hostname === "caregist.co.uk" || appUrl.hostname === "www.caregist.co.uk") {
+      return `${appUrl.protocol}//api.caregist.co.uk`;
+    }
+  } catch {
+    return undefined;
+  }
+
+  return undefined;
+}
+
 function failOrWarn(message: string) {
   if (process.env.NODE_ENV === "production") {
     throw new Error(message);
@@ -59,6 +74,7 @@ const nextConfig: NextConfig = {
     const apiBase =
       process.env.NEXT_PUBLIC_API_URL ||
       process.env.API_URL ||
+      deriveApiBaseFromAppUrl(process.env.APP_URL) ||
       "http://localhost:8000";
     return [
       {
