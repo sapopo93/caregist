@@ -301,7 +301,14 @@ export default async function ProviderPage({ params }: { params: Promise<{ slug:
               </a>
             </p>
           )}
-          {provider.email && <p className="mb-1"><span className="text-dusk">Email:</span> {provider.email}</p>}
+          {provider.email && (
+            <p className="mb-1">
+              <span className="text-dusk">Email:</span>{" "}
+              <a href={`mailto:${provider.email}`} className="text-clay underline">
+                {provider.email}
+              </a>
+            </p>
+          )}
           {provider.latitude && provider.longitude && (
             <p className="mt-3">
               <a

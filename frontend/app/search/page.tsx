@@ -6,6 +6,7 @@ import ExportCSVButton from "@/components/ExportCSVButton";
 import PrintButton from "@/components/PrintButton";
 import InlineSortSelect from "@/components/InlineSortSelect";
 import MobileFilterToggle from "@/components/MobileFilterToggle";
+import WarmingUpBanner from "@/components/WarmingUpBanner";
 import { searchProviders } from "@/lib/api";
 import { hasSearchCriteria } from "@/lib/searchCriteria";
 import { Suspense } from "react";
@@ -82,17 +83,7 @@ export default async function SearchPage({
 
         {/* Results */}
         <div className="flex-1 min-w-0">
-          {warmingUp && (
-            <>
-              <meta httpEquiv="refresh" content="30" />
-              <div className="bg-cream border border-amber rounded-lg p-6 mb-6 text-center">
-                <p className="text-bark font-semibold">The server is waking up</p>
-                <p className="text-dusk text-sm mt-1">
-                  This takes about 30 seconds on first load. Refreshing the page in a moment...
-                </p>
-              </div>
-            </>
-          )}
+          {warmingUp && <WarmingUpBanner />}
 
           {error && !warmingUp && (
             <div className="bg-cream border border-alert rounded-lg p-6 mb-6 text-center">

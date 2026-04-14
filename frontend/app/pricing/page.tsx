@@ -159,13 +159,13 @@ export default function PricingPage() {
                 ))}
               </ul>
               <p className="text-xs text-dusk italic mb-4">{tier.limit}</p>
-              <a
-                href="mailto:hello@caregist.co.uk?subject=Enhanced+listing+enquiry"
+              <Link
+                href="/search?intent=claim"
                 className="block text-center py-2.5 rounded-lg text-sm font-medium text-white transition-colors"
                 style={{ background: tier.color }}
               >
                 Get started
-              </a>
+              </Link>
             </div>
           ))}
         </div>

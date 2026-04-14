@@ -20,6 +20,7 @@ export default function DashboardPage() {
   const [seatDraft, setSeatDraft] = useState(0);
   const [seatLoading, setSeatLoading] = useState(false);
   const [seatError, setSeatError] = useState("");
+  const [loadError, setLoadError] = useState(false);
   const [newKeyName, setNewKeyName] = useState("");
   const [newKeyEmail, setNewKeyEmail] = useState("");
   const [newKeyValue, setNewKeyValue] = useState("");
@@ -50,13 +51,13 @@ export default function DashboardPage() {
           setSubscription(data);
           setSeatDraft(data?.entitlements?.extra_seats || 0);
         })
-        .catch(() => {});
+        .catch(() => setLoadError(true));
       fetch("/api/v1/auth/team-keys", {
         headers: { "X-API-Key": key },
       })
         .then((res) => res.json())
         .then((data) => setTeamKeys(Array.isArray(data?.keys) ? data.keys : []))
-        .catch(() => setTeamKeys([]));
+        .catch(() => { setTeamKeys([]); setLoadError(true); });
     }
   }, []);
 
@@ -67,7 +68,7 @@ export default function DashboardPage() {
     })
       .then((res) => res.json())
       .then((data) => setWebhooks(Array.isArray(data?.webhooks) ? data.webhooks : []))
-      .catch(() => setWebhooks([]));
+      .catch(() => { setWebhooks([]); setLoadError(true); });
   }, [apiKey, tier]);
 
   useEffect(() => {
@@ -229,6 +230,11 @@ export default function DashboardPage() {
 
   return (
     <div className="max-w-4xl mx-auto px-6 py-12">
+      {loadError && (
+        <div className="bg-amber-50 border border-amber-300 rounded-lg px-4 py-3 mb-6 text-sm text-amber-800">
+          Some account data could not be loaded — please refresh the page.
+        </div>
+      )}
       <div className="flex items-center justify-between mb-2">
         <h1 className="text-3xl font-bold">Dashboard</h1>
         <button

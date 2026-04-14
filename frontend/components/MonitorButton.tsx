@@ -9,6 +9,7 @@ export default function MonitorButton({ slug }: { slug: string }) {
   const [loading, setLoading] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [checked, setChecked] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     const apiKey = localStorage.getItem("caregist_api_key");
@@ -58,7 +59,7 @@ export default function MonitorButton({ slug }: { slug: string }) {
         }
       }
     } catch {
-      // silently fail
+      setError("Could not update monitor. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -69,7 +70,7 @@ export default function MonitorButton({ slug }: { slug: string }) {
   return (
     <>
       <button
-        onClick={handleToggle}
+        onClick={() => { setError(""); void handleToggle(); }}
         disabled={loading}
         className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
           monitoring
@@ -79,6 +80,7 @@ export default function MonitorButton({ slug }: { slug: string }) {
       >
         {loading ? "..." : monitoring ? "Monitoring \u2713" : "Monitor"}
       </button>
+      {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
 
       {showLogin && (
         <LoginPromptModal
