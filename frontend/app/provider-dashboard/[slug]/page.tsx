@@ -13,6 +13,7 @@ export default function ProviderDashboardPage({ params }: { params: Promise<{ sl
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [upgrading, setUpgrading] = useState<string | null>(null);
+  const [userEmail, setUserEmail] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
@@ -34,6 +35,10 @@ export default function ProviderDashboardPage({ params }: { params: Promise<{ sl
       setSlug(s);
       const key = localStorage.getItem("caregist_api_key") || "";
       setApiKey(key);
+      try {
+        const stored = localStorage.getItem("caregist_user");
+        if (stored) setUserEmail(JSON.parse(stored).email || "");
+      } catch {}
       if (!key) {
         router.push("/login");
         return;
@@ -50,15 +55,17 @@ export default function ProviderDashboardPage({ params }: { params: Promise<{ sl
   }, [params, router]);
 
   async function handleUpgrade(tier: string) {
-    const email = prompt("Enter the email address on your CareGist account:");
-    if (!email) return;
+    if (!userEmail) {
+      setError("Could not determine your account email. Please log out and log in again.");
+      return;
+    }
     setUpgrading(tier);
     setError("");
     try {
       const res = await fetch("/api/v1/billing/profile-checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json", "X-API-Key": apiKey },
-        body: JSON.stringify({ slug, tier, email }),
+        body: JSON.stringify({ slug, tier, email: userEmail }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || "Failed to start checkout.");

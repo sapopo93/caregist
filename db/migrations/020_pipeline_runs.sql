@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS pipeline_runs (
   status TEXT NOT NULL,         -- 'running' | 'completed' | 'failed'
   started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   completed_at TIMESTAMPTZ,
-  error TEXT
+  error_message TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_pipeline_runs_type_completed
