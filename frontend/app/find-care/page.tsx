@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import RadiusFinder from "@/components/RadiusFinder";
 import TrustSignal from "@/components/TrustSignal";
 import type { Metadata } from "next";
@@ -48,7 +49,9 @@ export default function FindCarePage() {
         </div>
       </div>
 
-      <RadiusFinder />
+      <Suspense>
+        <RadiusFinder />
+      </Suspense>
 
       <div className="mt-8">
         <TrustSignal />
