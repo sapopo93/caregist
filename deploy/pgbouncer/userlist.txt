@@ -1,0 +1,8 @@
+# PgBouncer user list — one entry per line:
+# "username" "password-hash-or-md5"
+#
+# Generate a scram-sha-256 hash with:
+#   psql -c "SELECT concat('\"caregist\" \"', passwd, '\"') FROM pg_shadow WHERE usename='caregist';"
+#
+# Replace the placeholder below with the actual hash from your PostgreSQL server.
+"caregist" "REPLACE_WITH_SCRAM_SHA256_HASH_FROM_PG_SHADOW"

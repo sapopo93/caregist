@@ -14,7 +14,7 @@ from fastapi.responses import StreamingResponse
 from api.config import BASIC_CSV_FIELDS, filter_fields, get_next_tier, get_tier_config, settings
 from api.database import get_connection
 from api.middleware.auth import validate_api_key, validate_optional_api_key
-from api.middleware.rate_limit import add_rate_limit_headers
+from api.middleware.rate_limit import add_rate_limit_headers, check_export_limit
 from api.queries.providers import (
     CQC_ID_LOOKUP,
     CHECK_MONITOR,
@@ -212,6 +212,7 @@ async def export_providers_csv(
     row_limit = config["export"]
     if row_limit == 0:
         raise HTTPException(status_code=403, detail="CSV export requires an account. Sign up free at /signup")
+    check_export_limit(_auth.get("key_id") or _auth.get("name", "guest"), tier)
 
     # Require at least one filter for free/starter to prevent bulk scraping
     # Pro and above can download unfiltered (within their row limit)
@@ -239,18 +240,12 @@ async def export_providers_csv(
 
     total = count_row["total"] if count_row else len(rows)
 
-    buf = io.StringIO()
     if is_basic:
         fieldnames = BASIC_CSV_FIELDS
         data = [{k: _row_to_dict(r).get(k) for k in fieldnames} for r in rows]
     else:
         data = [filter_fields(_row_to_dict(r), tier) for r in rows]
         fieldnames = [k for k in data[0].keys() if data[0][k] is not None]
-
-    writer = csv.DictWriter(buf, fieldnames=fieldnames, extrasaction="ignore")
-    writer.writeheader()
-    for row in data:
-        writer.writerow({k: v for k, v in row.items() if v is not None})
 
     # Log analytics + schedule follow-up email
     try:
@@ -271,9 +266,19 @@ async def export_providers_csv(
     except Exception:
         pass
 
-    buf.seek(0)
+    def _csv_stream():
+        buf = io.StringIO()
+        writer = csv.DictWriter(buf, fieldnames=fieldnames, extrasaction="ignore")
+        writer.writeheader()
+        yield buf.getvalue()
+        for row in data:
+            buf.seek(0)
+            buf.truncate()
+            writer.writerow({k: v for k, v in row.items() if v is not None})
+            yield buf.getvalue()
+
     return StreamingResponse(
-        iter([buf.getvalue()]),
+        _csv_stream(),
         media_type="text/csv",
         headers=_stream_headers(response, "attachment; filename=caregist_export.csv", total),
     )
@@ -301,6 +306,7 @@ async def export_providers_xlsx(
     row_limit = config["export"]
     if row_limit == 0:
         raise HTTPException(status_code=403, detail="Export requires an account. Sign up free at /signup")
+    check_export_limit(_auth.get("key_id") or _auth.get("name", "guest"), tier)
 
     if tier in ("free", "starter") and not any([q, region, rating, type, service_type, postcode]):
         raise HTTPException(status_code=400, detail="Provide at least one filter. Upgrade to Pro for unfiltered export.")
@@ -332,12 +338,16 @@ async def export_providers_xlsx(
         data = [filter_fields(_row_to_dict(r), tier) for r in rows]
         fieldnames = [k for k in data[0].keys() if data[0][k] is not None]
 
-    wb = openpyxl.Workbook()
-    ws = wb.active
-    ws.title = "CareGist Export"
-    ws.append(fieldnames)
-    for cell in ws[1]:
+    from openpyxl.cell import WriteOnlyCell
+
+    wb = openpyxl.Workbook(write_only=True)
+    ws = wb.create_sheet("CareGist Export")
+    header_cells = []
+    for h in fieldnames:
+        cell = WriteOnlyCell(ws, value=h)
         cell.font = Font(bold=True)
+        header_cells.append(cell)
+    ws.append(header_cells)
     for row in data:
         ws.append([row.get(k) for k in fieldnames])
 

@@ -112,6 +112,28 @@ async def submit_claim(
     }
 
 
+@router.get("/claims/my-providers")
+async def my_claimed_providers(auth: dict = Depends(validate_api_key)) -> dict:
+    """Return approved claimed providers for the authenticated user."""
+    email = auth.get("email")
+    if not email or not auth.get("user_id"):
+        raise HTTPException(status_code=401, detail="User account required.")
+    try:
+        async with get_connection() as conn:
+            rows = await conn.fetch(
+                """SELECT cp.id, cp.slug, cp.name, cp.profile_tier
+                   FROM provider_claims pc
+                   JOIN care_providers cp ON cp.id = pc.provider_id
+                   WHERE pc.claimant_email = $1 AND pc.status = 'approved' AND cp.is_claimed = true
+                   ORDER BY pc.created_at""",
+                email,
+            )
+    except Exception as exc:
+        logger.error("my_claimed_providers failed: %s", exc)
+        raise HTTPException(status_code=503, detail="Failed to load claimed providers.")
+    return {"providers": [dict(r) for r in rows]}
+
+
 @router.get("/providers/{slug}/claim-status")
 async def claim_status(
     slug: str,

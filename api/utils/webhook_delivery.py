@@ -12,6 +12,9 @@ from datetime import datetime, timezone
 
 import httpx
 
+from api.config import settings
+from api.utils.crypto import maybe_decrypt
+
 logger = logging.getLogger("caregist.webhook_delivery")
 
 _RETRY_DELAYS = (1, 2, 4)  # seconds between attempts
@@ -73,6 +76,45 @@ async def deliver_webhook(url: str, secret: str, payload: dict, *, return_metada
     return False
 
 
+_FAILURE_DISABLE_THRESHOLD = 10
+
+
+async def record_delivery_failure(conn, subscription_id: int, url: str) -> None:
+    """
+    Increment delivery_failures. If the threshold is reached, disable the subscription
+    and queue a notification email to the owner.
+    """
+    row = await conn.fetchrow(
+        """
+        UPDATE webhook_subscriptions
+        SET delivery_failures = delivery_failures + 1,
+            active = CASE WHEN delivery_failures + 1 >= $2 THEN FALSE ELSE active END
+        WHERE id = $1
+        RETURNING active, delivery_failures,
+                  (SELECT u.email FROM users u WHERE u.id = webhook_subscriptions.user_id) AS owner_email
+        """,
+        subscription_id,
+        _FAILURE_DISABLE_THRESHOLD,
+    )
+    if row and not row["active"] and row["delivery_failures"] >= _FAILURE_DISABLE_THRESHOLD:
+        owner_email = row["owner_email"]
+        if owner_email:
+            from api.utils.email_queue import queue_email  # local import to avoid circular
+            html = (
+                f"<p>Your webhook endpoint <strong>{url}</strong> has been automatically disabled "
+                f"after {_FAILURE_DISABLE_THRESHOLD} consecutive delivery failures.</p>"
+                "<p>Please check that the endpoint is reachable and returning a 2xx response, "
+                "then re-enable it from your dashboard.</p>"
+            )
+            await queue_email(owner_email, "CareGist webhook disabled after repeated failures", html)
+        logger.warning(
+            "Webhook subscription %d disabled after %d consecutive failures (url=%s)",
+            subscription_id,
+            _FAILURE_DISABLE_THRESHOLD,
+            url,
+        )
+
+
 async def deliver_to_subscriptions(
     conn,
     user_id: int,
@@ -99,14 +141,12 @@ async def deliver_to_subscriptions(
     full_payload = {"event": event, "timestamp": now.isoformat(), **payload}
 
     for row in rows:
-        success = await deliver_webhook(row["url"], row["secret"], full_payload)
+        secret = maybe_decrypt(row["secret"], settings.webhook_secret_key)
+        success = await deliver_webhook(row["url"], secret, full_payload)
         if success:
             await conn.execute(
                 "UPDATE webhook_subscriptions SET last_delivery_at = $1, delivery_failures = 0 WHERE id = $2",
                 now, row["id"],
             )
         else:
-            await conn.execute(
-                "UPDATE webhook_subscriptions SET delivery_failures = delivery_failures + 1 WHERE id = $1",
-                row["id"],
-            )
+            await record_delivery_failure(conn, row["id"], row["url"])

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import time
@@ -12,8 +13,9 @@ from typing import Any
 from fastapi import HTTPException
 
 from api.config import get_next_tier, get_tier_config, settings
+from api.utils.crypto import maybe_decrypt
 from api.utils.email_queue import queue_email
-from api.utils.webhook_delivery import deliver_webhook
+from api.utils.webhook_delivery import deliver_webhook, record_delivery_failure
 
 logger = logging.getLogger("caregist.new_registration_feed")
 
@@ -356,7 +358,12 @@ def event_matches_filter(payload: dict[str, Any], filter_config: dict[str, Any])
 
 
 async def deliver_new_registration_event(conn, event_payload: dict[str, Any]) -> int:
-    """Deliver one new-registration event to matching webhook subscriptions."""
+    """Deliver one new-registration event to matching webhook subscriptions.
+
+    DB operations (dedup check, log insert) are serial on the shared connection.
+    HTTP deliveries for all matching subscriptions run concurrently via asyncio.gather.
+    DB updates (log + subscription stats) are then applied serially after all HTTP work completes.
+    """
     rows = await conn.fetch(
         """
         SELECT id, url, secret, filter_config
@@ -366,7 +373,11 @@ async def deliver_new_registration_event(conn, event_payload: dict[str, Any]) ->
         """,
         WEBHOOK_EVENT,
     )
-    delivered = 0
+
+    # Phase 1: serial DB — filter, dedup check, claim log entries
+    timestamp = datetime.now(timezone.utc).isoformat()
+    full_payload = {"event": WEBHOOK_EVENT, "timestamp": timestamp, **event_payload}
+    to_deliver: list[tuple[int, int, str, str]] = []  # (log_id, sub_id, url, secret)
 
     for row in rows:
         filter_config = coerce_json_object(row["filter_config"])
@@ -399,17 +410,31 @@ async def deliver_new_registration_event(conn, event_payload: dict[str, Any]) ->
                 event_payload["dedupe_key"],
                 json.dumps(event_payload, default=str),
             )
+        to_deliver.append((existing["id"], row["id"], row["url"], row["secret"]))
 
+    if not to_deliver:
+        return 0
+
+    # Phase 2: concurrent HTTP — all deliveries fire simultaneously
+    async def _http_deliver(log_id: int, sub_id: int, url: str, secret: str):
+        plaintext_secret = maybe_decrypt(secret, settings.webhook_secret_key)
         success, attempts, status_code, error_message = await deliver_webhook(
-            row["url"],
-            row["secret"],
-            {
-                "event": WEBHOOK_EVENT,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-                **event_payload,
-            },
-            return_metadata=True,
+            url, plaintext_secret, full_payload, return_metadata=True,
         )
+        return log_id, sub_id, url, success, attempts, status_code, error_message
+
+    results = await asyncio.gather(
+        *[_http_deliver(log_id, sub_id, url, secret) for log_id, sub_id, url, secret in to_deliver],
+        return_exceptions=True,
+    )
+
+    # Phase 3: serial DB — write outcomes
+    delivered = 0
+    for result in results:
+        if isinstance(result, Exception):
+            logger.error("Webhook delivery task raised: %s", result)
+            continue
+        log_id, sub_id, url, success, attempts, status_code, error_message = result
         await conn.execute(
             """
             UPDATE webhook_delivery_log
@@ -424,27 +449,16 @@ async def deliver_new_registration_event(conn, event_payload: dict[str, Any]) ->
             attempts,
             status_code,
             error_message,
-            existing["id"],
+            log_id,
         )
         if success:
             await conn.execute(
-                """
-                UPDATE webhook_subscriptions
-                SET last_delivery_at = NOW(), delivery_failures = 0
-                WHERE id = $1
-                """,
-                row["id"],
+                "UPDATE webhook_subscriptions SET last_delivery_at = NOW(), delivery_failures = 0 WHERE id = $1",
+                sub_id,
             )
             delivered += 1
         else:
-            await conn.execute(
-                """
-                UPDATE webhook_subscriptions
-                SET delivery_failures = delivery_failures + 1
-                WHERE id = $1
-                """,
-                row["id"],
-            )
+            await record_delivery_failure(conn, sub_id, url)
 
     return delivered
 
@@ -517,15 +531,21 @@ async def queue_weekly_new_registration_digests(conn, *, reference_date: date | 
         """
     )
 
+    # Batch dedup check: fetch all subscription_ids already delivered for this digest_key
+    all_ids = [row["id"] for row in rows]
+    already_delivered: set[int] = set()
+    if all_ids:
+        delivered_rows = await conn.fetch(
+            "SELECT subscription_id FROM feed_digest_delivery_log WHERE subscription_id = ANY($1) AND digest_key = $2",
+            all_ids,
+            digest_key,
+        )
+        already_delivered = {r["subscription_id"] for r in delivered_rows}
+
     queued = 0
     skipped = 0
     for row in rows:
-        existing = await conn.fetchval(
-            "SELECT id FROM feed_digest_delivery_log WHERE subscription_id = $1 AND digest_key = $2",
-            row["id"],
-            digest_key,
-        )
-        if existing:
+        if row["id"] in already_delivered:
             skipped += 1
             continue
 

@@ -32,6 +32,12 @@ class Settings(BaseSettings):
     support_platform_url: str = ""
     caregist_to_support_token: str = ""
     support_internal_token: str
+    # AES-GCM key for webhook secret encryption. Must be 32 bytes, base64-encoded.
+    # If unset, webhook secrets are stored plaintext (dev/legacy mode).
+    webhook_secret_key: str = ""
+    # Optional Redis URL for shared burst rate limiting across workers.
+    # When unset, burst limiting falls back to the process-local in-memory dict.
+    redis_url: str = ""
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8", "extra": "ignore"}
 
@@ -68,6 +74,7 @@ TIERS = {
         "fields": "basic",
         "nearby": False,
         "export": 25,
+        "exports_per_day": 3,
         "compare": 0,
         "webhooks": False,
         "monitors": 1,
@@ -91,6 +98,7 @@ TIERS = {
         "fields": "standard",
         "nearby": True,
         "export": 500,
+        "exports_per_day": 10,
         "compare": 3,
         "webhooks": False,
         "monitors": 15,
@@ -114,6 +122,7 @@ TIERS = {
         "fields": "standard",
         "nearby": True,
         "export": 5000,
+        "exports_per_day": 50,
         "compare": 5,
         "webhooks": False,
         "monitors": 100,
@@ -137,6 +146,7 @@ TIERS = {
         "fields": "full",
         "nearby": True,
         "export": 10000,
+        "exports_per_day": 100,
         "compare": 10,
         "webhooks": True,
         "monitors": 500,
@@ -160,6 +170,7 @@ TIERS = {
         "fields": "full",
         "nearby": True,
         "export": 50000,
+        "exports_per_day": 500,
         "compare": 20,
         "webhooks": True,
         "monitors": 5000,
@@ -183,6 +194,7 @@ TIERS = {
         "fields": "full",
         "nearby": True,
         "export": 99999,
+        "exports_per_day": 99999,
         "compare": 99,
         "webhooks": True,
         "monitors": 99999,

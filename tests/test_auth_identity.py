@@ -15,19 +15,17 @@ from api.routers.comparisons import _get_user_id
 async def test_validate_api_key_returns_user_context():
     conn = AsyncMock()
     conn.fetchrow = AsyncMock(
-        side_effect=[
-            {
-                "id": 7,
-                "name": "Alice Example",
-                "email": "alice@example.com",
-                "user_id": 42,
-                "tier": "starter",
-                "is_active": True,
-                "is_verified": True,
-                "created_at": None,
-            },
-            {"active_keys": 1, "max_users": 3},
-        ]
+        return_value={
+            "id": 7,
+            "name": "Alice Example",
+            "email": "alice@example.com",
+            "user_id": 42,
+            "tier": "starter",
+            "is_active": True,
+            "is_verified": True,
+            "active_keys": 1,
+            "subscription_max_users": 3,
+        }
     )
     conn.execute = AsyncMock()
 
@@ -63,19 +61,17 @@ async def test_comparisons_get_user_id_requires_user_context():
 async def test_validate_api_key_rejects_key_outside_seat_limit():
     conn = AsyncMock()
     conn.fetchrow = AsyncMock(
-        side_effect=[
-            {
-                "id": 7,
-                "name": "Alice Example",
-                "email": "alice@example.com",
-                "user_id": 42,
-                "tier": "pro",
-                "is_active": True,
-                "is_verified": True,
-                "created_at": None,
-            },
-            {"active_keys": 4, "max_users": 2},
-        ]
+        return_value={
+            "id": 7,
+            "name": "Alice Example",
+            "email": "alice@example.com",
+            "user_id": 42,
+            "tier": "pro",
+            "is_active": True,
+            "is_verified": True,
+            "active_keys": 4,
+            "subscription_max_users": 2,
+        }
     )
     conn.fetch = AsyncMock(return_value=[{"id": 1}, {"id": 2}, {"id": 3}])
     conn.execute = AsyncMock()
@@ -97,19 +93,17 @@ async def test_validate_api_key_rejects_key_outside_seat_limit():
 async def test_validate_api_key_honours_paid_tier_seat_floor_when_subscription_is_stale():
     conn = AsyncMock()
     conn.fetchrow = AsyncMock(
-        side_effect=[
-            {
-                "id": 7,
-                "name": "Alice Example",
-                "email": "alice@example.com",
-                "user_id": 42,
-                "tier": "business",
-                "is_active": True,
-                "is_verified": True,
-                "created_at": None,
-            },
-            {"active_keys": 1, "max_users": 1},
-        ]
+        return_value={
+            "id": 7,
+            "name": "Alice Example",
+            "email": "alice@example.com",
+            "user_id": 42,
+            "tier": "business",
+            "is_active": True,
+            "is_verified": True,
+            "active_keys": 1,
+            "subscription_max_users": 1,
+        }
     )
     conn.execute = AsyncMock()
 

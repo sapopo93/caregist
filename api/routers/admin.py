@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -28,6 +29,24 @@ from api.queries.reviews import (
 
 logger = logging.getLogger("caregist.admin")
 router = APIRouter(prefix="/api/v1/admin", tags=["admin"])
+
+
+async def _audit(conn, *, action: str, entity_type: str, entity_id: int, actor: str, **meta) -> None:
+    """Insert one row into admin_audit_log. Never raises — audit failures must not block the action."""
+    try:
+        await conn.execute(
+            """
+            INSERT INTO admin_audit_log (action, entity_type, entity_id, actor, metadata)
+            VALUES ($1, $2, $3, $4, $5::jsonb)
+            """,
+            action,
+            entity_type,
+            entity_id,
+            actor,
+            json.dumps(meta) if meta else None,
+        )
+    except Exception as exc:
+        logger.warning("Audit log insert failed (action=%s entity=%s/%s): %s", action, entity_type, entity_id, exc)
 
 
 async def require_admin(auth: dict = Depends(validate_api_key)) -> dict:
@@ -109,6 +128,15 @@ async def moderate_claim(
                 await conn.execute(MARK_PROVIDER_CLAIMED, row["provider_id"])
             elif req.status == "rejected":
                 await conn.execute(MARK_PROVIDER_UNCLAIMED, row["provider_id"])
+            await _audit(
+                conn,
+                action=f"claim.{req.status}",
+                entity_type="claim",
+                entity_id=claim_id,
+                actor=auth.get("name", "admin"),
+                provider_id=str(row["provider_id"]),
+                notes=req.admin_notes,
+            )
     except HTTPException:
         raise
     except Exception as exc:
@@ -155,7 +183,7 @@ class ReviewAction(BaseModel):
 async def moderate_review(
     review_id: int,
     req: ReviewAction,
-    _auth: dict = Depends(require_admin),
+    auth: dict = Depends(require_admin),
 ) -> dict:
     """Approve or reject a review."""
     try:
@@ -165,6 +193,15 @@ async def moderate_review(
                 raise HTTPException(status_code=404, detail="Review not found.")
 
             await conn.execute(UPDATE_PROVIDER_REVIEW_STATS, row["provider_id"])
+            await _audit(
+                conn,
+                action=f"review.{req.status}",
+                entity_type="review",
+                entity_id=review_id,
+                actor=auth.get("name", "admin"),
+                provider_id=str(row["provider_id"]),
+                notes=req.admin_notes,
+            )
     except HTTPException:
         raise
     except Exception as exc:
@@ -211,7 +248,7 @@ class EnquiryAction(BaseModel):
 async def update_enquiry(
     enquiry_id: int,
     req: EnquiryAction,
-    _auth: dict = Depends(require_admin),
+    auth: dict = Depends(require_admin),
 ) -> dict:
     """Update enquiry status."""
     try:
@@ -219,6 +256,13 @@ async def update_enquiry(
             row = await conn.fetchrow(UPDATE_ENQUIRY_STATUS, enquiry_id, req.status)
             if not row:
                 raise HTTPException(status_code=404, detail="Enquiry not found.")
+            await _audit(
+                conn,
+                action=f"enquiry.{req.status}",
+                entity_type="enquiry",
+                entity_id=enquiry_id,
+                actor=auth.get("name", "admin"),
+            )
     except HTTPException:
         raise
     except Exception as exc:
@@ -226,3 +270,50 @@ async def update_enquiry(
         raise HTTPException(status_code=503, detail="Failed to update enquiry.")
 
     return {"data": dict(row), "message": f"Enquiry marked as {req.status}."}
+
+
+# -- Audit log --
+
+
+@router.get("/audit-log")
+async def list_audit_log(
+    entity_type: str | None = Query(None),
+    actor: str | None = Query(None),
+    page: int = Query(1, ge=1),
+    per_page: int = Query(50, ge=1, le=200),
+    _auth: dict = Depends(require_admin),
+) -> dict:
+    """Read admin audit log."""
+    offset = (page - 1) * per_page
+    try:
+        async with get_connection() as conn:
+            rows = await conn.fetch(
+                """
+                SELECT id, action, entity_type, entity_id, actor, metadata, created_at
+                FROM admin_audit_log
+                WHERE ($1::text IS NULL OR entity_type = $1)
+                  AND ($2::text IS NULL OR actor = $2)
+                ORDER BY created_at DESC
+                LIMIT $3 OFFSET $4
+                """,
+                entity_type, actor, per_page, offset,
+            )
+            total = await conn.fetchval(
+                """
+                SELECT COUNT(*) FROM admin_audit_log
+                WHERE ($1::text IS NULL OR entity_type = $1)
+                  AND ($2::text IS NULL OR actor = $2)
+                """,
+                entity_type, actor,
+            )
+    except Exception as exc:
+        logger.error("Audit log query failed: %s", exc)
+        raise HTTPException(status_code=503, detail="Failed to load audit log.")
+
+    return {
+        "data": [
+            {**dict(r), "created_at": r["created_at"].isoformat()}
+            for r in rows
+        ],
+        "meta": {"total": total, "page": page, "per_page": per_page},
+    }

@@ -17,7 +17,7 @@ from pydantic import BaseModel, Field
 from api.config import get_next_tier
 from api.database import get_connection
 from api.middleware.auth import validate_api_key
-from api.middleware.rate_limit import add_rate_limit_headers
+from api.middleware.rate_limit import add_rate_limit_headers, check_export_limit
 from api.services.new_registration_feed import (
     FeedFilters,
     coerce_json_object,
@@ -163,6 +163,7 @@ async def export_new_registration_csv(
     if tier == "free":
         raise HTTPException(status_code=403, detail="Exporting the new registration feed starts on the Starter plan.")
 
+    check_export_limit(_auth.get("key_id") or _auth.get("name", "guest"), tier)
     limit = int(config["export"])
     filters = _filters_from_query(q, region, local_authority, service_type, provider_type, postcode_prefix, from_date, to_date)
     async with get_connection() as conn:
@@ -175,14 +176,23 @@ async def export_new_registration_csv(
 
     await log_event("new_registration_feed_export_csv", "new_registration_feed", user_id=_auth.get("user_id"), meta={"tier": tier, "rows": len(export_rows)})
 
-    buf = io.StringIO()
-    writer = csv.DictWriter(buf, fieldnames=list(export_rows[0].keys()))
-    writer.writeheader()
-    writer.writerows(export_rows)
+    fieldnames = list(export_rows[0].keys())
     headers = dict(response.headers)
     headers["Content-Disposition"] = "attachment; filename=new-registrations.csv"
     headers["X-Total-Count"] = str(total)
-    return StreamingResponse(iter([buf.getvalue()]), media_type="text/csv", headers=headers)
+
+    def _csv_stream():
+        buf = io.StringIO()
+        writer = csv.DictWriter(buf, fieldnames=fieldnames)
+        writer.writeheader()
+        yield buf.getvalue()
+        for row in export_rows:
+            buf.seek(0)
+            buf.truncate()
+            writer.writerow(row)
+            yield buf.getvalue()
+
+    return StreamingResponse(_csv_stream(), media_type="text/csv", headers=headers)
 
 
 @router.get("/new-registrations/export.xlsx")
@@ -208,6 +218,7 @@ async def export_new_registration_xlsx(
     if tier == "free":
         raise HTTPException(status_code=403, detail="Exporting the new registration feed starts on the Starter plan.")
 
+    check_export_limit(_auth.get("key_id") or _auth.get("name", "guest"), tier)
     limit = int(config["export"])
     filters = _filters_from_query(q, region, local_authority, service_type, provider_type, postcode_prefix, from_date, to_date)
     async with get_connection() as conn:
@@ -220,13 +231,17 @@ async def export_new_registration_xlsx(
 
     await log_event("new_registration_feed_export_xlsx", "new_registration_feed", user_id=_auth.get("user_id"), meta={"tier": tier, "rows": len(export_rows)})
 
-    workbook = openpyxl.Workbook()
-    sheet = workbook.active
-    sheet.title = "New Registrations"
+    from openpyxl.cell import WriteOnlyCell
+
     headers_list = list(export_rows[0].keys())
-    sheet.append(headers_list)
-    for cell in sheet[1]:
+    workbook = openpyxl.Workbook(write_only=True)
+    sheet = workbook.create_sheet("New Registrations")
+    header_cells = []
+    for h in headers_list:
+        cell = WriteOnlyCell(sheet, value=h)
         cell.font = Font(bold=True)
+        header_cells.append(cell)
+    sheet.append(header_cells)
     for row in export_rows:
         sheet.append([row.get(column) for column in headers_list])
 

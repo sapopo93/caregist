@@ -1,15 +1,80 @@
-"""Rate limiter with in-memory burst controls and persistent quota storage."""
+"""Rate limiter with in-memory burst controls and persistent quota storage.
+
+Burst limiting uses Redis (fixed window INCR/EXPIRE) when REDIS_URL is configured,
+falling back to a process-local in-memory sliding window otherwise.
+Daily/7d/monthly limits are always DB-backed.
+"""
 
 from __future__ import annotations
 
+import logging
 import time
 from collections import defaultdict
 from datetime import date, datetime, timedelta, timezone
+from typing import Any
 
 from fastapi import HTTPException
 from starlette.responses import Response
 
-from api.config import get_tier_config
+from api.config import get_tier_config, settings
+
+logger = logging.getLogger("caregist.rate_limit")
+
+# -- Redis client (lazy init) --
+_redis_client: Any | None = None
+_redis_unavailable: bool = False  # latched True after first connection failure
+
+
+async def _get_redis():
+    """Return the async Redis client, or None if Redis is not configured/unavailable."""
+    global _redis_client, _redis_unavailable
+    if _redis_unavailable or not settings.redis_url:
+        return None
+    if _redis_client is not None:
+        return _redis_client
+    try:
+        import redis.asyncio as aioredis
+        _redis_client = aioredis.from_url(settings.redis_url, decode_responses=True)
+        await _redis_client.ping()
+        logger.info("Redis burst rate limiter connected: %s", settings.redis_url)
+    except Exception as exc:
+        logger.warning("Redis unavailable, falling back to in-memory burst limiting: %s", exc)
+        _redis_unavailable = True
+        _redis_client = None
+    return _redis_client
+
+
+async def _redis_burst_check(api_key: str, config: dict) -> int:
+    """
+    Fixed-window burst check via Redis INCR + EXPIRE.
+    Returns remaining burst count. Raises 429 if limit exceeded.
+    """
+    redis = await _get_redis()
+    if redis is None:
+        return -1  # sentinel: fall back to in-memory
+
+    window_seconds = config.get("rate_window_seconds", 1)
+    limit = config["rate"]
+    rkey = f"burst:{api_key}"
+    try:
+        pipe = redis.pipeline()
+        pipe.incr(rkey)
+        pipe.expire(rkey, window_seconds)
+        results = await pipe.execute()
+        count = int(results[0])
+    except Exception as exc:
+        logger.warning("Redis burst check failed, falling back to in-memory: %s", exc)
+        return -1  # sentinel: fall back
+
+    remaining = limit - count
+    if remaining < 0:
+        raise HTTPException(
+            status_code=429,
+            detail=f"Rate limit exceeded ({limit} requests/sec). Upgrade at /pricing",
+            headers={"Retry-After": str(window_seconds)},
+        )
+    return remaining
+
 
 # Burst window: key -> list of timestamps
 _burst_requests: dict[str, list[float]] = defaultdict(list)
@@ -208,19 +273,26 @@ async def check_rate_limit(api_key: str, tier: str) -> dict[str, int]:
     """Check all rate limits. Raise 429 if exceeded. Returns remaining counts."""
     _cleanup_stale()
     config = get_tier_config(tier)
-    now = time.monotonic()
 
-    window_seconds = config.get("rate_window_seconds", 1)
-    window_start = now - window_seconds
-    _burst_requests[api_key] = [t for t in _burst_requests[api_key] if t > window_start]
-    burst_remaining = config["rate"] - len(_burst_requests[api_key])
+    # Burst check — prefer Redis (shared across workers), fall back to in-memory
+    burst_remaining = await _redis_burst_check(api_key, config)
+    _used_redis_burst = burst_remaining != -1
+    _burst_ts: float | None = None  # timestamp to append after all checks pass
 
-    if burst_remaining <= 0:
-        raise HTTPException(
-            status_code=429,
-            detail=f"Rate limit exceeded ({config['rate']} requests/sec). Upgrade at /pricing",
-            headers={"Retry-After": str(window_seconds)},
-        )
+    if not _used_redis_burst:
+        # In-memory fallback: check only — append deferred until all quota checks pass
+        _burst_ts = time.monotonic()
+        window_seconds = config.get("rate_window_seconds", 1)
+        window_start = _burst_ts - window_seconds
+        _burst_requests[api_key] = [t for t in _burst_requests[api_key] if t > window_start]
+        burst_remaining = config["rate"] - len(_burst_requests[api_key])
+
+        if burst_remaining <= 0:
+            raise HTTPException(
+                status_code=429,
+                detail=f"Rate limit exceeded ({config['rate']} requests/sec). Upgrade at /pricing",
+                headers={"Retry-After": str(window_seconds)},
+            )
 
     try:
         daily_used, rolling_7d_used, monthly_used = await _load_persisted_counts(api_key)
@@ -253,7 +325,9 @@ async def check_rate_limit(api_key: str, tier: str) -> dict[str, int]:
             headers={"Retry-After": "86400"},
         )
 
-    _burst_requests[api_key].append(now)
+    # Append burst timestamp now that all quota checks have passed
+    if not _used_redis_burst and _burst_ts is not None:
+        _burst_requests[api_key].append(_burst_ts)
     if persistent_store:
         await _persist_request(api_key)
 
@@ -263,6 +337,29 @@ async def check_rate_limit(api_key: str, tier: str) -> dict[str, int]:
         "rolling_7d_remaining": rolling_7d_remaining - 1,
         "monthly_remaining": monthly_remaining - 1,
     }
+
+
+# Export counts: key -> {date_str: count}
+_export_counts: dict[str, dict[str, int]] = defaultdict(dict)
+
+
+def check_export_limit(api_key: str, tier: str) -> None:
+    """Raise 429 if the key has exceeded its daily export limit.
+
+    In-memory, process-local. Sufficient for single-instance deployments.
+    Prevents runaway repeated large exports from a single key.
+    """
+    config = get_tier_config(tier)
+    limit = config.get("exports_per_day", 10)
+    today = _today()
+    used = _export_counts[api_key].get(today, 0)
+    if used >= limit:
+        raise HTTPException(
+            status_code=429,
+            detail=f"Export limit reached ({limit} exports/day). Try again tomorrow or upgrade your plan.",
+            headers={"Retry-After": "86400"},
+        )
+    _export_counts[api_key][today] = used + 1
 
 
 def add_rate_limit_headers(response: Response, tier: str, remaining: dict[str, int]) -> None:

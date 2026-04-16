@@ -12,10 +12,11 @@ from urllib.parse import urlparse
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field, HttpUrl
 
-from api.config import get_tier_config
+from api.config import get_tier_config, settings
 from api.database import get_connection
 from api.middleware.auth import validate_api_key
 from api.services.new_registration_feed import coerce_json_object
+from api.utils.crypto import encrypt_webhook_secret
 
 logger = logging.getLogger("caregist.webhooks")
 router = APIRouter(prefix="/webhooks", tags=["webhooks"])
@@ -86,6 +87,11 @@ async def register_webhook(
     url = str(body.url)
     _assert_public_url(url)
     secret = secrets.token_hex(32)
+    stored_secret = (
+        encrypt_webhook_secret(secret, settings.webhook_secret_key)
+        if settings.webhook_secret_key
+        else secret
+    )
 
     async with get_connection() as conn:
         existing = await conn.fetchval(
@@ -101,7 +107,7 @@ async def register_webhook(
             VALUES ($1, $2, $3, $4, $5::jsonb)
             RETURNING id, created_at
             """,
-            user_id, url, secret, body.events, json.dumps(body.filters),
+            user_id, url, stored_secret, body.events, json.dumps(body.filters),
         )
 
     logger.info("Webhook registered for user %d: %s", user_id, url)

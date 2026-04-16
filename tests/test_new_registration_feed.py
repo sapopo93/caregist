@@ -128,7 +128,7 @@ async def test_deliver_new_registration_event_skips_already_delivered(mock_conn)
 
 @pytest.mark.asyncio
 async def test_queue_weekly_new_registration_digests_is_idempotent(mock_conn):
-    mock_conn.fetch.return_value = [
+    _subscription_row = [
         {
             "id": 1,
             "user_id": 7,
@@ -137,7 +137,13 @@ async def test_queue_weekly_new_registration_digests_is_idempotent(mock_conn):
             "unsubscribe_token": "token-1",
         }
     ]
-    mock_conn.fetchval.side_effect = [None, 1]
+    # fetch is called twice per queue_weekly call: subscriptions, then batch dedup check
+    mock_conn.fetch.side_effect = [
+        _subscription_row,          # first call: subscriptions
+        [],                         # first call: none already delivered
+        _subscription_row,          # second call: subscriptions
+        [{"subscription_id": 1}],   # second call: already delivered
+    ]
 
     with patch("api.services.new_registration_feed.list_new_registration_events", new=AsyncMock(return_value=([
         {
@@ -160,16 +166,18 @@ async def test_queue_weekly_new_registration_digests_is_idempotent(mock_conn):
 
 @pytest.mark.asyncio
 async def test_queue_weekly_new_registration_digests_accepts_json_string_filters(mock_conn):
-    mock_conn.fetch.return_value = [
-        {
-            "id": 1,
-            "user_id": 7,
-            "email": "ops@caregist.co.uk",
-            "filters": '{"region":"London"}',
-            "unsubscribe_token": "token-1",
-        }
+    mock_conn.fetch.side_effect = [
+        [
+            {
+                "id": 1,
+                "user_id": 7,
+                "email": "ops@caregist.co.uk",
+                "filters": '{"region":"London"}',
+                "unsubscribe_token": "token-1",
+            }
+        ],
+        [],  # batch dedup: none already delivered
     ]
-    mock_conn.fetchval.return_value = None
 
     with patch("api.services.new_registration_feed.list_new_registration_events", new=AsyncMock(return_value=([
         {

@@ -428,6 +428,21 @@ async def _handle_subscription_updated(subscription: dict) -> None:
             elif mapped == "pro-seat":
                 extra_seats += int(item.get("quantity") or 0)
 
+    if price_id and PRICE_TO_TIER.get(price_id) is None:
+        logger.error(
+            "subscription.updated: unrecognized price_id %r for subscription %s — defaulting to 'starter'. "
+            "Update PRICE_TO_TIER if a new Stripe price was created.",
+            price_id,
+            sub_id,
+        )
+        try:
+            import sentry_sdk as _sentry
+            _sentry.capture_message(
+                f"subscription.updated: unrecognized price_id {price_id!r} for subscription {sub_id}",
+                level="error",
+            )
+        except Exception:
+            pass
     tier = PRICE_TO_TIER.get(price_id, "starter") if price_id else "starter"
 
     async with get_connection() as conn:

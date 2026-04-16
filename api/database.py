@@ -19,25 +19,11 @@ async def init_pool() -> None:
     global _pool
     _pool = await asyncpg.create_pool(
         settings.database_url,
-        min_size=1,
-        max_size=5,
+        min_size=2,
+        max_size=20,
         command_timeout=settings.query_timeout_ms / 1000,
     )
-    logger.info("Database pool initialized (min=1, max=5)")
-
-    # Ensure password_reset_tokens table exists
-    async with _pool.acquire() as conn:
-        await conn.execute("""
-            CREATE TABLE IF NOT EXISTS password_reset_tokens (
-                id SERIAL PRIMARY KEY,
-                token VARCHAR(10) NOT NULL,
-                email VARCHAR(255) NOT NULL,
-                expires_at TIMESTAMPTZ NOT NULL,
-                used BOOLEAN NOT NULL DEFAULT false,
-                attempts INTEGER NOT NULL DEFAULT 0,
-                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-            )
-        """)
+    logger.info("Database pool initialized (min=2, max=20)")
 
 
 async def close_pool() -> None:

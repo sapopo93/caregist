@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from contextlib import asynccontextmanager
 
 try:
@@ -29,11 +30,32 @@ if sentry_sdk and settings.sentry_dsn:
     )
 
 
+async def _email_drain_loop() -> None:
+    """Drain the pending_emails queue every 30 seconds, independent of health checks."""
+    from api.utils.email_queue import process_email_queue
+    import logging as _logging
+    _log = _logging.getLogger("caregist.email_drain")
+    while True:
+        try:
+            await asyncio.sleep(30)
+            await process_email_queue(batch_size=50)
+        except asyncio.CancelledError:
+            break
+        except Exception as exc:
+            _log.warning("Email drain loop error: %s", exc)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_pool()
     billing.init_stripe()
+    drain_task = asyncio.create_task(_email_drain_loop())
     yield
+    drain_task.cancel()
+    try:
+        await drain_task
+    except asyncio.CancelledError:
+        pass
     await close_pool()
 
 
@@ -74,38 +96,6 @@ async def global_exception_handler(request, exc):
 
 app.include_router(health.router)
 app.include_router(internal.router)
-
-
-# Process email queue on a background schedule triggered by health checks
-import asyncio
-
-_email_task_running = False
-
-
-@app.middleware("http")
-async def email_queue_middleware(request, call_next):
-    global _email_task_running
-    response = await call_next(request)
-    # Piggyback on health check to drain the email queue
-    if request.url.path == "/api/v1/health" and not _email_task_running:
-        _email_task_running = True
-        try:
-            from api.utils.email_queue import process_email_queue
-            asyncio.create_task(_process_emails())
-        except Exception:
-            _email_task_running = False
-    return response
-
-
-async def _process_emails():
-    global _email_task_running
-    try:
-        from api.utils.email_queue import process_email_queue
-        await process_email_queue(batch_size=20)
-    except Exception as exc:
-        _logger.warning("Email queue processing error: %s", exc)
-    finally:
-        _email_task_running = False
 app.include_router(auth.router)
 app.include_router(analytics.router)
 app.include_router(billing.router)

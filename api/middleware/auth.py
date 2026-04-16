@@ -35,6 +35,15 @@ def _client_identifier(request: Request) -> str:
     return "unknown"
 
 
+async def _update_last_used(api_key: str) -> None:
+    """Fire-and-forget: update last_used_at without blocking the request."""
+    try:
+        async with get_connection() as conn:
+            await conn.execute("UPDATE api_keys SET last_used_at = NOW() WHERE key = $1", api_key)
+    except Exception as exc:
+        logger.warning("Failed to update last_used_at: %s", exc)
+
+
 async def validate_api_key(api_key: str | None = Security(api_key_header)) -> dict:
     """Validate API key, enforce rate limits, return key metadata with remaining counts."""
     if not api_key:
@@ -53,12 +62,31 @@ async def validate_api_key(api_key: str | None = Security(api_key_header)) -> di
             "remaining": remaining,
         }
 
-    # Look up key in database
+    # Single query: key lookup + user verification + seat count
     async with get_connection() as conn:
         row = await conn.fetchrow(
             """
-            SELECT ak.id, ak.name, ak.email, ak.user_id, ak.tier, ak.is_active, ak.created_at,
-                   COALESCE(u.is_verified, true) AS is_verified
+            SELECT
+                ak.id,
+                ak.name,
+                ak.email,
+                ak.user_id,
+                ak.tier,
+                ak.is_active,
+                COALESCE(u.is_verified, true) AS is_verified,
+                (
+                    SELECT COUNT(*)
+                    FROM api_keys ak2
+                    WHERE ak2.user_id = ak.user_id AND ak2.is_active = true
+                ) AS active_keys,
+                COALESCE(
+                    (SELECT s.max_users
+                     FROM subscriptions s
+                     WHERE s.user_id = ak.user_id
+                     ORDER BY s.created_at DESC
+                     LIMIT 1),
+                    1
+                ) AS subscription_max_users
             FROM api_keys ak
             LEFT JOIN users u ON u.id = ak.user_id
             WHERE ak.key = $1
@@ -68,69 +96,50 @@ async def validate_api_key(api_key: str | None = Security(api_key_header)) -> di
 
     if not row:
         raise HTTPException(status_code=401, detail="Invalid API key.")
-    row_data = dict(row)
 
-    if not row_data.get("is_active", True):
+    if not row["is_active"]:
         raise HTTPException(status_code=403, detail="API key is disabled.")
 
-    user_id = row_data.get("user_id")
+    user_id = row["user_id"]
+    tier = row["tier"] or "free"
+
+    # Seat enforcement for user-linked keys
     if user_id:
-        async with get_connection() as conn:
-            seat_row = await conn.fetchrow(
-                """
-                SELECT
-                  (SELECT COUNT(*) FROM api_keys WHERE user_id = $1 AND is_active = true) AS active_keys,
-                  COALESCE(
-                    (SELECT max_users
-                     FROM subscriptions
-                     WHERE user_id = $1
-                     ORDER BY created_at DESC
-                     LIMIT 1),
-                    1
-                  ) AS max_users
-                """,
-                user_id,
-            )
-            active_keys = int(seat_row["active_keys"] or 0) if seat_row else 0
-            subscription_max = int(seat_row["max_users"] or 1) if seat_row else 1
-            max_users = max(subscription_max, get_max_users(row_data.get("tier") or "free"))
-            if active_keys > max_users:
+        active_keys = int(row["active_keys"] or 0)
+        subscription_max = int(row["subscription_max_users"] or 1)
+        max_users = max(subscription_max, get_max_users(tier))
+        if active_keys > max_users:
+            # Fetch oldest allowed key IDs to determine if this key is within quota
+            async with get_connection() as conn:
                 allowed_rows = await conn.fetch(
                     """
-                    SELECT id
-                    FROM api_keys
+                    SELECT id FROM api_keys
                     WHERE user_id = $1 AND is_active = true
-                    ORDER BY created_at ASC
-                    LIMIT $2
+                    ORDER BY created_at ASC LIMIT $2
                     """,
                     user_id,
                     max_users,
                 )
-        if active_keys > max_users:
-            allowed_ids = {int(row["id"]) for row in allowed_rows}
-            if int(row_data["id"]) not in allowed_ids:
+            allowed_ids = {int(r["id"]) for r in allowed_rows}
+            if int(row["id"]) not in allowed_ids:
                 raise HTTPException(
                     status_code=403,
                     detail="This access key is outside your plan seat limit. Revoke extra keys or upgrade your plan.",
                 )
 
-    tier = row_data.get("tier") or "free"
     remaining = await check_rate_limit(api_key, tier)
 
-    # Update last_used_at
-    try:
-        async with get_connection() as conn:
-            await conn.execute("UPDATE api_keys SET last_used_at = NOW() WHERE key = $1", api_key)
-    except Exception as exc:
-        logger.warning("Failed to update last_used_at: %s", exc)
+    # Fire-and-forget: do not hold a pool connection for analytics writes
+    import asyncio
+    asyncio.create_task(_update_last_used(api_key))
 
     return {
-        "key_id": row_data.get("id"),
-        "name": row_data.get("name"),
-        "email": row_data.get("email"),
+        "key_id": row["id"],
+        "name": row["name"],
+        "email": row["email"],
         "user_id": user_id,
         "tier": tier,
-        "is_verified": row_data.get("is_verified", True),
+        "is_verified": row["is_verified"],
         "remaining": remaining,
     }
 
