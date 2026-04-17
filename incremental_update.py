@@ -502,11 +502,19 @@ def upsert_provider(cur, record: dict[str, Any]) -> str:
 
     # Generate slug for new inserts; never overwrite an existing slug on update
     if not existing and not safe_record.get("slug"):
-        safe_record["slug"] = _make_slug(
+        base_slug = _make_slug(
             safe_record.get("name", ""),
             safe_record.get("town", ""),
             safe_record["id"],
         )
+        # Ensure uniqueness: if base slug is taken by a different provider, append location_id
+        cur.execute("SELECT id FROM care_providers WHERE slug = %s", (base_slug,))
+        collision = cur.fetchone()
+        if collision and collision[0] != safe_record["id"]:
+            id_suffix = _slugify(safe_record["id"], separator="-") or safe_record["id"].lower()
+            safe_record["slug"] = f"{base_slug}-{id_suffix}"
+        else:
+            safe_record["slug"] = base_slug
 
     cols = list(safe_record.keys())
     vals = [safe_record[c] for c in cols]
@@ -688,13 +696,21 @@ def main() -> int:
             """, (ids,))
 
         # Backfill slugs for any providers that ended up with NULL slug (e.g. from a prior
-        # incremental run before slug generation was added). Generates slug from name+town+id.
+        # incremental run before slug generation was added). Generates slug from name+town+id
+        # with collision handling against the unique constraint.
         cur.execute("SELECT id, name, town FROM care_providers WHERE slug IS NULL OR slug = ''")
         null_slug_rows = cur.fetchall()
         if null_slug_rows:
             print(f"  Backfilling slugs for {len(null_slug_rows)} providers with NULL slug...")
+            cur.execute("SELECT slug FROM care_providers WHERE slug IS NOT NULL AND slug != ''")
+            used_slugs = {r[0] for r in cur.fetchall()}
             for row_id, row_name, row_town in null_slug_rows:
-                slug = _make_slug(row_name or "", row_town or "", row_id)
+                base = _make_slug(row_name or "", row_town or "", row_id)
+                slug = base
+                if slug in used_slugs:
+                    id_suffix = _slugify(row_id, separator="-") or row_id.lower()
+                    slug = f"{base}-{id_suffix}"
+                used_slugs.add(slug)
                 cur.execute("UPDATE care_providers SET slug = %s WHERE id = %s", (slug, row_id))
             print(f"  Slug backfill complete.")
 
