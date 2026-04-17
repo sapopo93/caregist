@@ -24,10 +24,26 @@ const PLAN_COPY: Record<string, { title: string; body: string }> = {
   },
 };
 
+const PROVIDER_TIER_COPY: Record<string, { title: string; body: string }> = {
+  enhanced: {
+    title: "Upgrade to Enhanced Profile",
+    body: "Create your account to claim your listing and unlock an Enhanced Profile — description, photos, and virtual tour.",
+  },
+  premium: {
+    title: "Upgrade to Premium Profile",
+    body: "Create your account to claim your listing and unlock a Premium Profile — priority placement and detailed analytics.",
+  },
+  sponsored: {
+    title: "Upgrade to Sponsored Profile",
+    body: "Create your account to claim your listing and unlock a Sponsored Profile — top placement, sponsored badge, and maximum visibility.",
+  },
+};
+
 function SignupForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const plan = searchParams.get("plan") || "free";
+  const providerTier = searchParams.get("provider_tier") || "";
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -39,9 +55,9 @@ function SignupForm() {
   useEffect(() => {
     const stored = localStorage.getItem("caregist_user");
     if (stored) {
-      router.replace(plan !== "free" ? `/pricing` : "/dashboard");
+      router.replace(plan !== "free" || providerTier ? `/pricing` : "/dashboard");
     }
-  }, [plan, router]);
+  }, [plan, providerTier, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,7 +65,7 @@ function SignupForm() {
     setLoading(true);
 
     try {
-      void trackEvent("plan_selection", "signup_form", { plan });
+      void trackEvent("plan_selection", "signup_form", { plan, provider_tier: providerTier || undefined });
 
       const res = await fetch("/api/v1/auth/register", {
         method: "POST",
@@ -64,7 +80,14 @@ function SignupForm() {
         return;
       }
 
-      const next = plan !== "free" ? `/login?upgrade=${plan}` : "/login";
+      let next: string;
+      if (providerTier) {
+        next = `/login?provider_tier=${providerTier}`;
+      } else if (plan !== "free") {
+        next = `/login?upgrade=${plan}`;
+      } else {
+        next = "/login";
+      }
       router.push(`/verify-email?email=${encodeURIComponent(email)}&next=${encodeURIComponent(next)}`);
     } catch {
       setError("Something went wrong. Please try again.");
@@ -75,9 +98,15 @@ function SignupForm() {
 
   return (
     <div className="max-w-md mx-auto px-6 py-16">
-      <h1 className="text-3xl font-bold text-center mb-2">{PLAN_COPY[plan]?.title || "Create your account"}</h1>
+      <h1 className="text-3xl font-bold text-center mb-2">
+        {providerTier
+          ? (PROVIDER_TIER_COPY[providerTier]?.title ?? "Create your provider account")
+          : (PLAN_COPY[plan]?.title ?? "Create your account")}
+      </h1>
       <p className="text-dusk text-center mb-8">
-        {PLAN_COPY[plan]?.body || "Create your CareGist account."}
+        {providerTier
+          ? (PROVIDER_TIER_COPY[providerTier]?.body ?? "Create your CareGist account.")
+          : (PLAN_COPY[plan]?.body ?? "Create your CareGist account.")}
       </p>
       <p className="text-xs text-dusk text-center mb-6">
         We&apos;ll ask you to verify your email before you log in or start billing.
@@ -129,7 +158,13 @@ function SignupForm() {
           disabled={loading}
           className="w-full py-3 bg-clay text-white rounded-lg font-medium hover:bg-bark transition-colors disabled:opacity-50"
         >
-          {loading ? "Creating account..." : plan === "free" ? "Create evaluation account" : `Continue to ${plan.charAt(0).toUpperCase()}${plan.slice(1)}`}
+          {loading
+            ? "Creating account..."
+            : providerTier
+            ? "Create account and claim listing"
+            : plan === "free"
+            ? "Create evaluation account"
+            : `Continue to ${plan.charAt(0).toUpperCase()}${plan.slice(1)}`}
         </button>
       </form>
 
