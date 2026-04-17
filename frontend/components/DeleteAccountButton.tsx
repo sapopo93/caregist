@@ -24,6 +24,7 @@ export default function DeleteAccountButton() {
     try {
       const res = await fetch("/api/v1/auth/delete-account", {
         method: "DELETE",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: user.email, password }),
       });
@@ -32,7 +33,7 @@ export default function DeleteAccountButton() {
         setError(data.detail || "Deletion failed.");
         return;
       }
-      localStorage.removeItem("caregist_api_key");
+      await fetch("/api/v1/auth/session", { method: "DELETE", credentials: "include" }).catch(() => {});
       localStorage.removeItem("caregist_user");
       localStorage.removeItem("caregist_tier");
       router.push("/");

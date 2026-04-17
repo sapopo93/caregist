@@ -27,8 +27,8 @@ export default function DashboardPage() {
   const [keyLoading, setKeyLoading] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const handleLogout = () => {
-    localStorage.removeItem("caregist_api_key");
+  const handleLogout = async () => {
+    await fetch("/api/v1/auth/session", { method: "DELETE", credentials: "include" }).catch(() => {});
     localStorage.removeItem("caregist_user");
     localStorage.removeItem("caregist_tier");
     window.dispatchEvent(new Event("caregist_auth_change"));
@@ -37,39 +37,35 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const stored = localStorage.getItem("caregist_user");
-    const key = localStorage.getItem("caregist_api_key") || "";
     const t = localStorage.getItem("caregist_tier") || "free";
     if (stored) setUser(JSON.parse(stored));
-    setApiKey(key);
     setTier(t);
-    if (key) {
-      fetch("/api/v1/billing/subscription", {
-        headers: { "X-API-Key": key },
+
+    fetch("/api/v1/auth/me", { credentials: "include" })
+      .then((res) => res.ok ? res.json() : null)
+      .then((data) => { if (data?.api_key) setApiKey(data.api_key); })
+      .catch(() => {});
+
+    fetch("/api/v1/billing/subscription", { credentials: "include" })
+      .then((res) => res.json())
+      .then((data) => {
+        setSubscription(data);
+        setSeatDraft(data?.entitlements?.extra_seats || 0);
       })
-        .then((res) => res.json())
-        .then((data) => {
-          setSubscription(data);
-          setSeatDraft(data?.entitlements?.extra_seats || 0);
-        })
-        .catch(() => setLoadError(true));
-      fetch("/api/v1/auth/team-keys", {
-        headers: { "X-API-Key": key },
-      })
-        .then((res) => res.json())
-        .then((data) => setTeamKeys(Array.isArray(data?.keys) ? data.keys : []))
-        .catch(() => { setTeamKeys([]); setLoadError(true); });
-    }
+      .catch(() => setLoadError(true));
+    fetch("/api/v1/auth/team-keys", { credentials: "include" })
+      .then((res) => res.json())
+      .then((data) => setTeamKeys(Array.isArray(data?.keys) ? data.keys : []))
+      .catch(() => { setTeamKeys([]); setLoadError(true); });
   }, []);
 
   useEffect(() => {
-    if (!apiKey || (tier !== "business" && tier !== "enterprise")) return;
-    fetch("/api/v1/webhooks", {
-      headers: { "X-API-Key": apiKey },
-    })
+    if (tier !== "business" && tier !== "enterprise") return;
+    fetch("/api/v1/webhooks", { credentials: "include" })
       .then((res) => res.json())
       .then((data) => setWebhooks(Array.isArray(data?.webhooks) ? data.webhooks : []))
       .catch(() => { setWebhooks([]); setLoadError(true); });
-  }, [apiKey, tier]);
+  }, [tier]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -147,7 +143,8 @@ export default function DashboardPage() {
     try {
       const res = await fetch("/api/v1/billing/checkout", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "X-API-Key": apiKey },
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: user.email, tier, extra_seats: seatDraft }),
       });
       const data = await res.json();
@@ -183,7 +180,8 @@ export default function DashboardPage() {
     try {
       const res = await fetch("/api/v1/auth/team-keys", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "X-API-Key": apiKey },
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: newKeyName.trim(), email: newKeyEmail.trim() }),
       });
       const data = await res.json();
@@ -215,7 +213,7 @@ export default function DashboardPage() {
     try {
       const res = await fetch(`/api/v1/auth/team-keys/${keyId}`, {
         method: "DELETE",
-        headers: { "X-API-Key": apiKey },
+        credentials: "include",
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));

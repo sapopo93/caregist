@@ -5,6 +5,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 from fastapi import HTTPException
+from fastapi.responses import Response as FastAPIResponse
 
 from api.routers.auth import (
     LoginRequest,
@@ -73,7 +74,7 @@ async def test_login_blocks_unverified_user():
 
     with patch("api.routers.auth.get_connection", mock_get_connection):
         with pytest.raises(HTTPException) as exc:
-            await login(LoginRequest(email="alice@example.com", password="SuperSecret123"))
+            await login(LoginRequest(email="alice@example.com", password="SuperSecret123"), FastAPIResponse())
 
     assert exc.value.status_code == 403
     assert "Verify your email" in exc.value.detail

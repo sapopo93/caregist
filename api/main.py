@@ -75,8 +75,9 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins.split(","),
+    allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
-    allow_headers=["X-API-Key", "Content-Type", "Accept"],
+    allow_headers=["X-API-Key", "Content-Type", "Accept", "Cookie"],
 )
 
 import logging

@@ -26,8 +26,8 @@ export default function AuthNav() {
     };
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem("caregist_api_key");
+  const handleLogout = async () => {
+    await fetch("/api/v1/auth/session", { method: "DELETE", credentials: "include" }).catch(() => {});
     localStorage.removeItem("caregist_user");
     localStorage.removeItem("caregist_tier");
     window.dispatchEvent(new Event("caregist_auth_change"));

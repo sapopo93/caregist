@@ -37,12 +37,32 @@ function LoginForm() {
         return;
       }
 
-      localStorage.setItem("caregist_api_key", data.api_key);
       localStorage.setItem("caregist_user", JSON.stringify(data.user));
       localStorage.setItem("caregist_tier", data.tier);
       window.dispatchEvent(new Event("caregist_auth_change"));
 
-      const upgrade = new URLSearchParams(window.location.search).get("upgrade");
+      const params = new URLSearchParams(window.location.search);
+      const upgrade = params.get("upgrade");
+      const providerTier = params.get("provider_tier");
+
+      if (providerTier) {
+        try {
+          const claimsRes = await fetch("/api/v1/claims/my-providers", {
+            credentials: "include",
+          });
+          const claimsData = await claimsRes.json();
+          const providers: { slug: string }[] = claimsData.providers || [];
+          if (providers.length > 0) {
+            router.push(`/provider-dashboard/${providers[0].slug}?upgrade_tier=${providerTier}`);
+          } else {
+            router.push(`/search?claim_intent=${providerTier}`);
+          }
+        } catch {
+          router.push(`/search?claim_intent=${providerTier}`);
+        }
+        return;
+      }
+
       router.push(upgrade ? `/pricing?highlight=${upgrade}` : "/dashboard");
     } catch {
       setError("Something went wrong. Please try again.");

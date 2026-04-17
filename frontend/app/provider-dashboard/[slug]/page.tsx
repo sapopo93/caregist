@@ -8,7 +8,6 @@ import { PROVIDER_TIERS } from "@/lib/caregist-config";
 export default function ProviderDashboardPage({ params }: { params: Promise<{ slug: string }> }) {
   const router = useRouter();
   const [slug, setSlug] = useState("");
-  const [apiKey, setApiKey] = useState("");
   const [provider, setProvider] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -16,6 +15,7 @@ export default function ProviderDashboardPage({ params }: { params: Promise<{ sl
   const [userEmail, setUserEmail] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [upgradeBannerTier, setUpgradeBannerTier] = useState<string | null>(null);
 
   // Form state
   const [description, setDescription] = useState("");
@@ -33,23 +33,31 @@ export default function ProviderDashboardPage({ params }: { params: Promise<{ sl
   useEffect(() => {
     params.then(({ slug: s }) => {
       setSlug(s);
-      const key = localStorage.getItem("caregist_api_key") || "";
-      setApiKey(key);
       try {
         const stored = localStorage.getItem("caregist_user");
         if (stored) setUserEmail(JSON.parse(stored).email || "");
       } catch {}
-      if (!key) {
+      const loggedIn = !!localStorage.getItem("caregist_user");
+      if (!loggedIn) {
         router.push("/login");
         return;
       }
-      fetchProfile(s, key);
-      // Show success banner if returning from Stripe checkout
-      if (typeof window !== "undefined" && window.location.search.includes("upgraded=1")) {
-        setSuccess("Your profile has been upgraded. It may take a moment to activate — refresh if you don't see the new editor.");
+      fetchProfile(s);
+      if (typeof window !== "undefined") {
         const url = new URL(window.location.href);
-        url.searchParams.delete("upgraded");
-        window.history.replaceState({}, "", url.toString());
+        // Show success banner if returning from Stripe checkout
+        if (url.searchParams.get("upgraded") === "1") {
+          setSuccess("Your profile has been upgraded. It may take a moment to activate — refresh if you don't see the new editor.");
+          url.searchParams.delete("upgraded");
+          window.history.replaceState({}, "", url.toString());
+        }
+        // Auto-trigger upgrade prompt if coming from pricing CTA
+        const upgradeTier = url.searchParams.get("upgrade_tier");
+        if (upgradeTier && ["enhanced", "premium", "sponsored"].includes(upgradeTier)) {
+          setUpgradeBannerTier(upgradeTier);
+          url.searchParams.delete("upgrade_tier");
+          window.history.replaceState({}, "", url.toString());
+        }
       }
     });
   }, [params, router]);
@@ -64,7 +72,8 @@ export default function ProviderDashboardPage({ params }: { params: Promise<{ sl
     try {
       const res = await fetch("/api/v1/billing/profile-checkout", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "X-API-Key": apiKey },
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ slug, tier, email: userEmail }),
       });
       const data = await res.json();
@@ -76,10 +85,10 @@ export default function ProviderDashboardPage({ params }: { params: Promise<{ sl
     }
   }
 
-  async function fetchProfile(s: string, key: string) {
+  async function fetchProfile(s: string) {
     try {
       const res = await fetch(`/api/v1/providers/${s}/profile`, {
-        headers: { "X-API-Key": key },
+        credentials: "include",
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -113,7 +122,8 @@ export default function ProviderDashboardPage({ params }: { params: Promise<{ sl
     try {
       const res = await fetch(`/api/v1/providers/${slug}/profile`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json", "X-API-Key": apiKey },
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           description: description || null,
           photos: photos.length > 0 ? photos : null,
@@ -181,6 +191,32 @@ export default function ProviderDashboardPage({ params }: { params: Promise<{ sl
         </Link>
       </div>
       <p className="text-dusk mb-8">{provider.name}</p>
+
+      {upgradeBannerTier && (
+        <div className="bg-clay/10 border border-clay rounded-lg p-6 mb-6 flex items-center justify-between gap-4">
+          <div>
+            <p className="font-semibold text-bark mb-1">
+              Ready to upgrade to {upgradeBannerTier.charAt(0).toUpperCase() + upgradeBannerTier.slice(1)} Profile
+            </p>
+            <p className="text-sm text-dusk">Complete your payment below to activate your listing upgrade.</p>
+          </div>
+          <div className="flex gap-3 shrink-0">
+            <button
+              onClick={() => void handleUpgrade(upgradeBannerTier)}
+              disabled={upgrading === upgradeBannerTier}
+              className="px-5 py-2 bg-clay text-white rounded-lg text-sm font-medium hover:bg-bark transition-colors disabled:opacity-50"
+            >
+              {upgrading === upgradeBannerTier ? "Redirecting..." : "Upgrade now"}
+            </button>
+            <button
+              onClick={() => setUpgradeBannerTier(null)}
+              className="px-3 py-2 text-dusk text-sm hover:text-bark transition-colors"
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
 
       {!isClaimedByUser && (
         <div className="bg-amber/10 border border-amber rounded-lg p-6 mb-6 text-center">

@@ -11,18 +11,33 @@ export default function ProviderListingCTA({
   color: string;
 }) {
   const [loggedIn, setLoggedIn] = useState(false);
+  const [href, setHref] = useState(`/signup?provider_tier=${tier}`);
+  const [label, setLabel] = useState("Get started");
 
   useEffect(() => {
-    try {
-      setLoggedIn(!!localStorage.getItem("caregist_user"));
-    } catch {}
-  }, []);
+    const stored = localStorage.getItem("caregist_user");
+    if (!stored) return;
 
-  const href = loggedIn
-    ? `/search?intent=claim&provider_tier=${tier}`
-    : `/signup?provider_tier=${tier}`;
+    setLoggedIn(true);
 
-  const label = loggedIn ? "Find your listing" : "Get started";
+    fetch("/api/v1/claims/my-providers", { credentials: "include" })
+      .then((r) => r.json())
+      .then((data) => {
+        const providers: { slug: string; name: string; profile_tier: string }[] =
+          data.providers || [];
+        if (providers.length > 0) {
+          setHref(`/provider-dashboard/${providers[0].slug}?upgrade_tier=${tier}`);
+          setLabel("Upgrade your listing");
+        } else {
+          setHref(`/search?claim_intent=${tier}`);
+          setLabel("Find your listing");
+        }
+      })
+      .catch(() => {
+        setHref(`/search?claim_intent=${tier}`);
+        setLabel("Find your listing");
+      });
+  }, [tier]);
 
   return (
     <Link

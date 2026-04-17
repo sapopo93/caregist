@@ -20,9 +20,8 @@ export default function RatingTimeline({ slug }: { slug: string }) {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    const apiKey = localStorage.getItem("caregist_api_key") || "";
     fetch(`/api/v1/providers/${encodeURIComponent(slug)}/rating-history`, {
-      headers: apiKey ? { "X-API-Key": apiKey } : {},
+      credentials: "include",
     })
       .then((r) => (r.ok ? r.json() : { data: [] }))
       .then((d) => setHistory(d.data || []))

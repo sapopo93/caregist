@@ -25,19 +25,16 @@ const TIER_RANK: Record<string, number> = {
 export default function PricingCTA({ tier, isFreeTier }: { tier: string; isFreeTier: boolean }) {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
-  const [apiKey, setApiKey] = useState("");
   const [currentTier, setCurrentTier] = useState("free");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
     const stored = localStorage.getItem("caregist_user");
-    const key = localStorage.getItem("caregist_api_key") || "";
     const t = localStorage.getItem("caregist_tier") || "free";
     if (stored) {
       try { setUser(JSON.parse(stored)); } catch {}
     }
-    setApiKey(key);
     setCurrentTier(t);
   }, []);
 
@@ -49,7 +46,7 @@ export default function PricingCTA({ tier, isFreeTier }: { tier: string; isFreeT
   const targetRank = targetTier ? (TIER_RANK[targetTier] ?? 0) : 99;
 
   async function handleUpgrade(target: string) {
-    if (!user || !apiKey) return;
+    if (!user) return;
     setLoading(true);
     setError("");
     void trackEvent("pricing_cta_click", "pricing_card", { tier: tierKey, target_tier: target, action: "upgrade" });
@@ -58,7 +55,8 @@ export default function PricingCTA({ tier, isFreeTier }: { tier: string; isFreeT
     try {
       const res = await fetch("/api/v1/billing/checkout", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "X-API-Key": apiKey },
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: user.email, tier: target }),
       });
       const data = await res.json();

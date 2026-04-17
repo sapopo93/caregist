@@ -11,7 +11,7 @@ try:
     import bcrypt
 except ImportError:  # pragma: no cover - local fallback when bcrypt is unavailable
     bcrypt = None
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from pydantic import BaseModel, EmailStr, Field
 
 from api.middleware.ip_rate_limit import check_ip_rate_limit
@@ -153,8 +153,20 @@ async def register(req: RegisterRequest, _ip=Depends(check_ip_rate_limit)) -> di
     }
 
 
+def _set_session_cookie(response: Response, api_key: str, *, is_prod: bool) -> None:
+    response.set_cookie(
+        key="caregist_session",
+        value=api_key,
+        httponly=True,
+        secure=is_prod,
+        samesite="lax",
+        path="/",
+        max_age=30 * 24 * 3600,  # 30 days
+    )
+
+
 @router.post("/login")
-async def login(req: LoginRequest, _ip=Depends(check_ip_rate_limit)) -> dict:
+async def login(req: LoginRequest, response: Response, _ip=Depends(check_ip_rate_limit)) -> dict:
     """Login and retrieve API key."""
     async with get_connection() as conn:
         user = await conn.fetchrow(
@@ -183,11 +195,31 @@ async def login(req: LoginRequest, _ip=Depends(check_ip_rate_limit)) -> dict:
     if not key_row:
         raise HTTPException(status_code=404, detail="No active API key found. Contact support.")
 
+    _set_session_cookie(response, key_row["key"], is_prod="localhost" not in settings.database_url)
+
     return {
         "user": {"id": user["id"], "email": user["email"], "name": user["name"]},
         "api_key": key_row["key"],
         "tier": key_row["tier"],
         "rate_limit": key_row["rate_limit"],
+    }
+
+
+@router.delete("/session")
+async def logout_session(response: Response) -> dict:
+    """Clear the HttpOnly session cookie (browser logout)."""
+    response.delete_cookie(key="caregist_session", path="/")
+    return {"logged_out": True}
+
+
+@router.get("/me")
+async def get_me(_auth: dict = Depends(validate_api_key)) -> dict:
+    """Return the current user's API key and tier (authenticated via header or cookie)."""
+    return {
+        "api_key": _auth.get("api_key"),
+        "tier": _auth.get("tier"),
+        "user_id": _auth.get("user_id"),
+        "email": _auth.get("email"),
     }
 
 

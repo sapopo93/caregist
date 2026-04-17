@@ -12,13 +12,13 @@ export default function MonitorButton({ slug }: { slug: string }) {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const apiKey = localStorage.getItem("caregist_api_key");
-    if (!apiKey) {
+    const loggedIn = !!localStorage.getItem("caregist_user");
+    if (!loggedIn) {
       setChecked(true);
       return;
     }
     fetch(`/api/v1/providers/${encodeURIComponent(slug)}/monitor-status`, {
-      headers: { "X-API-Key": apiKey },
+      credentials: "include",
     })
       .then((r) => r.json())
       .then((data) => setMonitoring(!!data.monitoring))
@@ -27,8 +27,8 @@ export default function MonitorButton({ slug }: { slug: string }) {
   }, [slug]);
 
   async function handleToggle() {
-    const apiKey = localStorage.getItem("caregist_api_key");
-    if (!apiKey) {
+    const loggedIn = !!localStorage.getItem("caregist_user");
+    if (!loggedIn) {
       setShowLogin(true);
       return;
     }
@@ -38,13 +38,14 @@ export default function MonitorButton({ slug }: { slug: string }) {
       if (monitoring) {
         await fetch(`/api/v1/providers/${encodeURIComponent(slug)}/monitor`, {
           method: "DELETE",
-          headers: { "X-API-Key": apiKey },
+          credentials: "include",
         });
         setMonitoring(false);
       } else {
         const res = await fetch(`/api/v1/providers/${encodeURIComponent(slug)}/monitor`, {
           method: "POST",
-          headers: { "X-API-Key": apiKey, "Content-Type": "application/json" },
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
           body: "{}",
         });
         if (res.status === 403) {

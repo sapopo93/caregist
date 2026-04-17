@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import secrets
 
-from fastapi import HTTPException, Request, Security
+from fastapi import Cookie, HTTPException, Request, Security
 from fastapi.security import APIKeyHeader
 
 from api.config import get_max_users, get_tier_config, settings
@@ -44,11 +44,8 @@ async def _update_last_used(api_key: str) -> None:
         logger.warning("Failed to update last_used_at: %s", exc)
 
 
-async def validate_api_key(api_key: str | None = Security(api_key_header)) -> dict:
-    """Validate API key, enforce rate limits, return key metadata with remaining counts."""
-    if not api_key:
-        raise HTTPException(status_code=401, detail="Missing API key. Pass X-API-Key header.")
-
+async def _validate_key(api_key: str) -> dict:
+    """Core key validation logic — shared by header and cookie auth paths."""
     # Master key
     if secrets.compare_digest(api_key, settings.api_master_key):
         tier = "admin"
@@ -59,6 +56,7 @@ async def validate_api_key(api_key: str | None = Security(api_key_header)) -> di
             "email": None,
             "user_id": None,
             "tier": tier,
+            "api_key": api_key,
             "remaining": remaining,
         }
 
@@ -140,17 +138,31 @@ async def validate_api_key(api_key: str | None = Security(api_key_header)) -> di
         "user_id": user_id,
         "tier": tier,
         "is_verified": row["is_verified"],
+        "api_key": api_key,
         "remaining": remaining,
     }
+
+
+async def validate_api_key(
+    api_key: str | None = Security(api_key_header),
+    caregist_session: str | None = Cookie(default=None),
+) -> dict:
+    """Validate API key from X-API-Key header or caregist_session cookie."""
+    key = api_key or caregist_session
+    if not key:
+        raise HTTPException(status_code=401, detail="Missing API key. Pass X-API-Key header or log in.")
+    return await _validate_key(key)
 
 
 async def validate_optional_api_key(
     request: Request,
     api_key: str | None = Security(api_key_header),
+    caregist_session: str | None = Cookie(default=None),
 ) -> dict:
     """Return authenticated metadata when a key is present, else a free guest tier."""
-    if api_key:
-        return await validate_api_key(api_key)
+    key = api_key or caregist_session
+    if key:
+        return await _validate_key(key)
 
     guest_key = f"guest:{_client_identifier(request)}"
     remaining = await check_rate_limit(guest_key, "free")
@@ -161,5 +173,6 @@ async def validate_optional_api_key(
         "user_id": None,
         "tier": "free",
         "is_verified": True,
+        "api_key": None,
         "remaining": remaining,
     }

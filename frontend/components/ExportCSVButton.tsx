@@ -6,7 +6,7 @@ import { trackEvent } from "@/lib/analytics";
 
 export default function ExportCSVButton({ exportUrl }: { exportUrl: string }) {
   const [tier, setTier] = useState<string | null>(null);
-  const [apiKey, setApiKey] = useState<string | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
@@ -14,10 +14,8 @@ export default function ExportCSVButton({ exportUrl }: { exportUrl: string }) {
 
   useEffect(() => {
     setTier(localStorage.getItem("caregist_tier"));
-    setApiKey(localStorage.getItem("caregist_api_key"));
+    setIsLoggedIn(!!localStorage.getItem("caregist_user"));
   }, []);
-
-  const isLoggedIn = !!apiKey;
   const isFree = tier === "free" || !tier;
 
   async function handleDownload() {
@@ -30,9 +28,7 @@ export default function ExportCSVButton({ exportUrl }: { exportUrl: string }) {
     try {
       const base = exportUrl.replace(/\/export\.(csv|xlsx)$/, "");
       const url = `${base}/export.${format}`;
-      const res = await fetch(url, {
-        headers: { "X-API-Key": apiKey! },
-      });
+      const res = await fetch(url, { credentials: "include" });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         alert(data.detail || "Export failed. Please try again.");

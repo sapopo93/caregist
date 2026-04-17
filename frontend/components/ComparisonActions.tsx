@@ -13,8 +13,8 @@ export default function ComparisonActions({ slugs }: { slugs: string[] }) {
   const [error, setError] = useState("");
 
   async function handleSave() {
-    const apiKey = localStorage.getItem("caregist_api_key");
-    if (!apiKey) {
+    const loggedIn = !!localStorage.getItem("caregist_user");
+    if (!loggedIn) {
       setShowLogin(true);
       return;
     }
@@ -24,7 +24,8 @@ export default function ComparisonActions({ slugs }: { slugs: string[] }) {
     try {
       const res = await fetch("/api/v1/comparisons", {
         method: "POST",
-        headers: { "X-API-Key": apiKey, "Content-Type": "application/json" },
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ slug_list: slugs }),
       });
       if (res.status === 403) {
