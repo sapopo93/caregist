@@ -418,11 +418,11 @@ def clean_location(data: dict[str, Any]) -> dict[str, Any] | None:
     lat = to_float(data.get("onspdLatitude"))
     lon = to_float(data.get("onspdLongitude"))
 
-    # Dates
+    # Dates — use None rather than "" so PostgreSQL DATE columns don't reject empty strings
     last_inspection = data.get("lastInspection", {})
-    inspection_date = ""
+    inspection_date = None
     if isinstance(last_inspection, dict):
-        inspection_date = last_inspection.get("date", "") or ""
+        inspection_date = last_inspection.get("date") or None
 
     reg_status = normalize_whitespace(data.get("registrationStatus", ""))
     status = "ACTIVE" if "register" in reg_status.lower() and "deregister" not in reg_status.lower() else "INACTIVE"
@@ -433,7 +433,7 @@ def clean_location(data: dict[str, Any]) -> dict[str, Any] | None:
         "name": name,
         "type": normalize_whitespace(data.get("type", "")),
         "status": status,
-        "registration_date": parse_any_date(data.get("registrationDate")),
+        "registration_date": parse_any_date(data.get("registrationDate")) or None,
         "address_line1": normalize_whitespace(data.get("postalAddressLine1", "")),
         "address_line2": normalize_whitespace(data.get("postalAddressLine2", "")),
         "town": normalize_whitespace(data.get("postalAddressTownCity", "")),
