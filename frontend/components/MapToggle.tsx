@@ -6,7 +6,8 @@ import dynamic from "next/dynamic";
 const MapView = dynamic(() => import("./MapView"), { ssr: false });
 
 interface Provider {
-  slug: string;
+  id?: string | null;
+  slug?: string | null;
   name: string;
   town: string;
   overall_rating: string;

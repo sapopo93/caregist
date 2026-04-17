@@ -1,4 +1,5 @@
 import ProviderCard from "@/components/ProviderCard";
+import { getClaimHref } from "@/lib/provider-path";
 import ExportCSVButton from "@/components/ExportCSVButton";
 import PrintButton from "@/components/PrintButton";
 import RatingDistributionBar from "@/components/RatingDistributionBar";
@@ -106,7 +107,7 @@ export default async function CityRatingPage({
             <ProviderCard provider={provider} />
             {!provider.is_claimed && (
               <div className="text-right -mt-2 mb-2">
-                <Link href={`/claim/${provider.slug}`} className="text-xs text-dusk hover:text-clay underline">
+                <Link href={getClaimHref(provider)} className="text-xs text-dusk hover:text-clay underline">
                   Is this your home? Claim it
                 </Link>
               </div>

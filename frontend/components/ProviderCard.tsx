@@ -2,9 +2,11 @@ import RatingBadge from "./RatingBadge";
 import VerifiedBadge from "./VerifiedBadge";
 import CompareButton from "./CompareButton";
 import Link from "next/link";
+import { getProviderHref, getProviderPathKey } from "@/lib/provider-path";
 
 interface Provider {
-  slug: string;
+  id?: string | null;
+  slug?: string | null;
   name: string;
   type: string;
   town: string;
@@ -37,6 +39,8 @@ export default function ProviderCard({ provider }: { provider: Provider }) {
   const location = [provider.town, provider.county].filter(Boolean).join(", ");
   const rawServices = provider.service_types?.split("|").slice(0, 2) || [];
   const services = rawServices.map((s) => SERVICE_LABELS[s.trim()] || s.trim()).join(", ");
+  const providerKey = getProviderPathKey(provider);
+  const providerHref = getProviderHref(provider);
 
   // Data confidence based on inspection age
   const confidence = (() => {
@@ -47,7 +51,7 @@ export default function ProviderCard({ provider }: { provider: Provider }) {
   const confColor = confidence >= 70 ? "#4A5E45" : confidence >= 40 ? "#D4943A" : "#C44444";
 
   return (
-    <Link href={`/provider/${provider.slug}`}>
+    <Link href={providerHref}>
       <div className="bg-cream border border-stone rounded-lg p-5 hover:shadow-md transition-shadow cursor-pointer">
         <div className="flex justify-between items-start mb-2">
           <div className="flex items-center gap-2 min-w-0">
@@ -55,7 +59,7 @@ export default function ProviderCard({ provider }: { provider: Provider }) {
             {provider.is_claimed && <VerifiedBadge />}
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <CompareButton slug={provider.slug} name={provider.name} />
+            {providerKey && <CompareButton slug={providerKey} name={provider.name} />}
             <RatingBadge rating={provider.overall_rating} />
           </div>
         </div>

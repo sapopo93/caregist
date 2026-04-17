@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { getProviderHref } from "@/lib/provider-path";
 
 interface Provider {
-  slug: string;
+  id?: string | null;
+  slug?: string | null;
   name: string;
   town: string;
   overall_rating: string;
@@ -47,6 +49,7 @@ export default function MapView({ providers }: { providers: Provider[] }) {
       validProviders.forEach((p) => {
         const lat = Number(p.latitude);
         const lon = Number(p.longitude);
+        const href = getProviderHref(p);
         bounds.push([lat, lon]);
 
         const marker = L.circleMarker([lat, lon], {
@@ -58,7 +61,7 @@ export default function MapView({ providers }: { providers: Provider[] }) {
         }).addTo(map);
 
         marker.bindPopup(
-          `<strong><a href="/provider/${p.slug}" style="color:#C1784F">${p.name}</a></strong><br/>` +
+          `<strong><a href="${href}" style="color:#C1784F">${p.name}</a></strong><br/>` +
           `${p.town || ""}<br/>` +
           `<span style="color:#4A5E45">${p.overall_rating}</span>`
         );
