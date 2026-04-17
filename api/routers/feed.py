@@ -7,7 +7,6 @@ import io
 import json
 import logging
 import secrets
-from io import BytesIO
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
@@ -28,7 +27,6 @@ from api.services.new_registration_feed import (
     require_feed_access,
     require_saved_filter_access,
     sync_new_registration_event_payloads,
-    sync_new_registration_events,
 )
 from api.utils.analytics import log_event
 
@@ -103,13 +101,6 @@ def _export_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     ]
 
 
-async def _best_effort_sync_feed(conn) -> None:
-    try:
-        await sync_new_registration_events(conn)
-    except Exception as exc:
-        logger.warning("Skipping inline feed sync and serving existing ledger state: %s", exc)
-
-
 @router.get("/new-registrations")
 async def get_new_registration_feed(
     response: Response,
@@ -133,8 +124,10 @@ async def get_new_registration_feed(
     offset = (page - 1) * page_size
     filters = _filters_from_query(q, region, local_authority, service_type, provider_type, postcode_prefix, from_date, to_date)
 
+    # Feed sync is NOT triggered here. It runs exclusively via the hourly cron
+    # (tools/run_new_registration_feed_cycle.py) or the internal admin endpoint
+    # below. GET requests are read-only and never write to the ledger.
     async with get_connection() as conn:
-        await _best_effort_sync_feed(conn)
         rows, total = await list_new_registration_events(conn, filters, limit=page_size, offset=offset)
 
     if tier == "free":
@@ -167,7 +160,6 @@ async def export_new_registration_csv(
     limit = int(config["export"])
     filters = _filters_from_query(q, region, local_authority, service_type, provider_type, postcode_prefix, from_date, to_date)
     async with get_connection() as conn:
-        await _best_effort_sync_feed(conn)
         rows, total = await list_new_registration_events(conn, filters, limit=limit, offset=0)
 
     export_rows = _export_rows(rows)
@@ -222,7 +214,6 @@ async def export_new_registration_xlsx(
     limit = int(config["export"])
     filters = _filters_from_query(q, region, local_authority, service_type, provider_type, postcode_prefix, from_date, to_date)
     async with get_connection() as conn:
-        await _best_effort_sync_feed(conn)
         rows, total = await list_new_registration_events(conn, filters, limit=limit, offset=0)
 
     export_rows = _export_rows(rows)
@@ -230,6 +221,8 @@ async def export_new_registration_xlsx(
         raise HTTPException(status_code=404, detail="No feed events matched this filter.")
 
     await log_event("new_registration_feed_export_xlsx", "new_registration_feed", user_id=_auth.get("user_id"), meta={"tier": tier, "rows": len(export_rows)})
+
+    import tempfile
 
     from openpyxl.cell import WriteOnlyCell
 
@@ -245,16 +238,30 @@ async def export_new_registration_xlsx(
     for row in export_rows:
         sheet.append([row.get(column) for column in headers_list])
 
-    buf = BytesIO()
-    workbook.save(buf)
-    buf.seek(0)
-    headers = dict(response.headers)
-    headers["Content-Disposition"] = "attachment; filename=new-registrations.xlsx"
-    headers["X-Total-Count"] = str(total)
+    # SpooledTemporaryFile keeps the first 10 MB in RAM; larger files spill to
+    # disk automatically. This prevents a single large export from pinning the
+    # process heap when multiple exports run concurrently.
+    tmp = tempfile.SpooledTemporaryFile(max_size=10 * 1024 * 1024)
+    workbook.save(tmp)
+    tmp.seek(0)
+
+    def _xlsx_stream(f):
+        try:
+            while True:
+                chunk = f.read(65536)
+                if not chunk:
+                    break
+                yield chunk
+        finally:
+            f.close()
+
+    resp_headers = dict(response.headers)
+    resp_headers["Content-Disposition"] = "attachment; filename=new-registrations.xlsx"
+    resp_headers["X-Total-Count"] = str(total)
     return StreamingResponse(
-        iter([buf.getvalue()]),
+        _xlsx_stream(tmp),
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers=headers,
+        headers=resp_headers,
     )
 
 

@@ -229,9 +229,7 @@ def patched_feed_dependencies(mock_conn):
 
     app.dependency_overrides = {}
     app.dependency_overrides[validate_api_key] = lambda: _auth("starter")
-    with patch("api.routers.feed.get_connection", mock_get_connection), patch(
-        "api.routers.feed.sync_new_registration_events", new=AsyncMock(return_value=1)
-    ):
+    with patch("api.routers.feed.get_connection", mock_get_connection):
         yield mock_conn
     app.dependency_overrides = {}
 

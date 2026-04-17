@@ -199,7 +199,6 @@ async def login(req: LoginRequest, response: Response, _ip=Depends(check_ip_rate
 
     return {
         "user": {"id": user["id"], "email": user["email"], "name": user["name"]},
-        "api_key": key_row["key"],
         "tier": key_row["tier"],
         "rate_limit": key_row["rate_limit"],
     }
@@ -214,26 +213,63 @@ async def logout_session(response: Response) -> dict:
 
 @router.get("/me")
 async def get_me(_auth: dict = Depends(validate_api_key)) -> dict:
-    """Return the current user's API key and tier (authenticated via header or cookie)."""
+    """Return the current user's profile and tier (authenticated via header or cookie)."""
     return {
-        "api_key": _auth.get("api_key"),
         "tier": _auth.get("tier"),
         "user_id": _auth.get("user_id"),
         "email": _auth.get("email"),
+        "is_verified": _auth.get("is_verified", False),
     }
 
 
-@router.post("/rotate-key")
-async def rotate_key(req: LoginRequest, _ip=Depends(check_ip_rate_limit)) -> dict:
-    """Generate a new API key (invalidates old one)."""
+@router.post("/reveal-key")
+async def reveal_key(req: LoginRequest, _ip=Depends(check_ip_rate_limit)) -> dict:
+    """Return the current API key for an account after verifying the password.
+
+    Requires password re-verification so XSS cannot silently exfiltrate the key
+    without user interaction. The key is shown once in the response body — callers
+    should store it securely and never embed it in client-side code.
+    """
     async with get_connection() as conn:
         user = await conn.fetchrow(
-            "SELECT id, email, name, password_hash FROM users WHERE email = $1",
+            "SELECT id, password_hash, is_verified FROM users WHERE email = $1",
             req.email,
         )
 
     if not user or not _verify_password(req.password, user["password_hash"]):
+        if bcrypt:
+            bcrypt.checkpw(req.password.encode(), _DUMMY_HASH.encode())
         raise HTTPException(status_code=401, detail="Invalid email or password.")
+    if not user["is_verified"]:
+        raise HTTPException(status_code=403, detail="Verify your email before revealing an API key.")
+
+    async with get_connection() as conn:
+        key_row = await conn.fetchrow(
+            "SELECT key, tier, rate_limit FROM api_keys WHERE user_id = $1 AND is_active = true ORDER BY created_at DESC LIMIT 1",
+            user["id"],
+        )
+
+    if not key_row:
+        raise HTTPException(status_code=404, detail="No active API key found.")
+
+    return {"api_key": key_row["key"], "tier": key_row["tier"], "rate_limit": key_row["rate_limit"]}
+
+
+@router.post("/rotate-key")
+async def rotate_key(req: LoginRequest, _ip=Depends(check_ip_rate_limit)) -> dict:
+    """Generate a new API key (invalidates old one). Requires password re-verification."""
+    async with get_connection() as conn:
+        user = await conn.fetchrow(
+            "SELECT id, email, name, password_hash, is_verified FROM users WHERE email = $1",
+            req.email,
+        )
+
+    if not user or not _verify_password(req.password, user["password_hash"]):
+        if bcrypt:
+            bcrypt.checkpw(req.password.encode(), _DUMMY_HASH.encode())
+        raise HTTPException(status_code=401, detail="Invalid email or password.")
+    if not user["is_verified"]:
+        raise HTTPException(status_code=403, detail="Verify your email before rotating an API key.")
 
     new_key = f"cg_{secrets.token_urlsafe(32)}"
 

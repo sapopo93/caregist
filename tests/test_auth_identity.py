@@ -45,6 +45,35 @@ async def test_validate_api_key_returns_user_context():
 
 
 @pytest.mark.asyncio
+async def test_validate_api_key_blocks_unverified_user():
+    conn = AsyncMock()
+    conn.fetchrow = AsyncMock(
+        return_value={
+            "id": 7,
+            "name": "Alice Example",
+            "email": "alice@example.com",
+            "user_id": 42,
+            "tier": "starter",
+            "is_active": True,
+            "is_verified": False,
+            "active_keys": 1,
+            "subscription_max_users": 3,
+        }
+    )
+
+    @asynccontextmanager
+    async def mock_get_connection():
+        yield conn
+
+    with patch("api.middleware.auth.get_connection", mock_get_connection):
+        with pytest.raises(HTTPException) as exc:
+            await validate_api_key("cg_test_key")
+
+    assert exc.value.status_code == 403
+    assert "Verify your email" in exc.value.detail
+
+
+@pytest.mark.asyncio
 async def test_comparisons_get_user_id_uses_auth_payload():
     user_id = await _get_user_id({"user_id": 123})
     assert user_id == 123

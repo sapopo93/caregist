@@ -5,7 +5,7 @@ from __future__ import annotations
 import csv
 import io
 import logging
-from io import BytesIO
+import tempfile
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
@@ -351,9 +351,9 @@ async def export_providers_xlsx(
     for row in data:
         ws.append([row.get(k) for k in fieldnames])
 
-    buf = BytesIO()
-    wb.save(buf)
-    buf.seek(0)
+    tmp = tempfile.SpooledTemporaryFile(max_size=10 * 1024 * 1024)
+    wb.save(tmp)
+    tmp.seek(0)
 
     try:
         from api.utils.analytics import log_event
@@ -361,8 +361,18 @@ async def export_providers_xlsx(
     except Exception:
         pass
 
+    def _xlsx_stream(f):
+        try:
+            while True:
+                chunk = f.read(65536)
+                if not chunk:
+                    break
+                yield chunk
+        finally:
+            f.close()
+
     return StreamingResponse(
-        iter([buf.getvalue()]),
+        _xlsx_stream(tmp),
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers=_stream_headers(response, "attachment; filename=caregist_export.xlsx", total),
     )

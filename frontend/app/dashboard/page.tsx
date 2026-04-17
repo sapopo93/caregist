@@ -12,7 +12,10 @@ import { PLAN_LIMIT_SUMMARY, PLAN_NEXT_STEP, PLAN_PRIMARY_CTA } from "@/lib/care
 export default function DashboardPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
-  const [apiKey, setApiKey] = useState("");
+  const [revealedApiKey, setRevealedApiKey] = useState("");
+  const [revealPassword, setRevealPassword] = useState("");
+  const [revealLoading, setRevealLoading] = useState(false);
+  const [revealError, setRevealError] = useState("");
   const [tier, setTier] = useState("free");
   const [subscription, setSubscription] = useState<any>(null);
   const [webhooks, setWebhooks] = useState<any[]>([]);
@@ -40,11 +43,6 @@ export default function DashboardPage() {
     const t = localStorage.getItem("caregist_tier") || "free";
     if (stored) setUser(JSON.parse(stored));
     setTier(t);
-
-    fetch("/api/v1/auth/me", { credentials: "include" })
-      .then((res) => res.ok ? res.json() : null)
-      .then((data) => { if (data?.api_key) setApiKey(data.api_key); })
-      .catch(() => {});
 
     fetch("/api/v1/billing/subscription", { credentials: "include" })
       .then((res) => res.json())
@@ -80,10 +78,35 @@ export default function DashboardPage() {
   }, [tier]);
 
   const copyKey = () => {
-    navigator.clipboard.writeText(apiKey);
+    if (!revealedApiKey) return;
+    navigator.clipboard.writeText(revealedApiKey);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
+
+  async function handleRevealKey() {
+    if (!user?.email || !revealPassword) return;
+    setRevealLoading(true);
+    setRevealError("");
+    try {
+      const res = await fetch("/api/v1/auth/reveal-key", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: user.email, password: revealPassword }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setRevealError(data.detail || "Could not reveal your key.");
+        return;
+      }
+      setRevealedApiKey(data.api_key || "");
+      setRevealPassword("");
+    } catch {
+      setRevealError("Could not reveal your key.");
+    } finally {
+      setRevealLoading(false);
+    }
+  }
 
   if (!user) {
     return (
@@ -133,9 +156,10 @@ export default function DashboardPage() {
         : "1 included user";
   const upgradeHref = tier === "business" ? "mailto:enterprise@caregist.co.uk?subject=CareGist+Enterprise" : "/pricing";
   const supportsSeatCheckout = tier === "pro" || tier === "business";
+  const quickStartApiKey = revealedApiKey ? `${revealedApiKey.slice(0, 20)}...` : "cg_your_key";
 
   async function handleSeatUpdate() {
-    if (!supportsSeatCheckout || !user || !apiKey) return;
+    if (!supportsSeatCheckout || !user) return;
     setSeatLoading(true);
     setSeatError("");
     void trackEvent("seat_addon_interaction", "dashboard_team_card", { tier, extra_seats: seatDraft });
@@ -174,7 +198,7 @@ export default function DashboardPage() {
   }
 
   async function handleCreateTeamKey() {
-    if (!apiKey || !newKeyName.trim() || !newKeyEmail.trim()) return;
+    if (!newKeyName.trim() || !newKeyEmail.trim()) return;
     setKeyLoading(true);
     setSeatError("");
     try {
@@ -267,7 +291,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <NewRegistrationFeedPanel apiKey={apiKey} tier={tier} upgradeHref={upgradeHref} />
+      <NewRegistrationFeedPanel tier={tier} upgradeHref={upgradeHref} />
 
       <div className="grid md:grid-cols-2 gap-6 mb-6">
         <div className="bg-cream border border-stone rounded-lg p-6">
@@ -299,15 +323,33 @@ export default function DashboardPage() {
         </p>
         <div className="flex items-center gap-3">
           <code className="flex-1 bg-parchment border border-stone rounded px-4 py-2 text-sm font-mono text-charcoal truncate">
-            {apiKey}
+            {revealedApiKey || "Password required to reveal your API key"}
           </code>
           <button
             onClick={copyKey}
+            disabled={!revealedApiKey}
             className="px-4 py-2 bg-clay text-white rounded-lg text-sm hover:bg-bark transition-colors"
           >
             {copied ? "Copied!" : "Copy"}
           </button>
         </div>
+        <div className="mt-3 flex flex-col sm:flex-row gap-3">
+          <input
+            type="password"
+            value={revealPassword}
+            onChange={(e) => setRevealPassword(e.target.value)}
+            placeholder="Confirm password to reveal"
+            className="flex-1 px-3 py-2 rounded border border-stone bg-white text-sm"
+          />
+          <button
+            onClick={() => void handleRevealKey()}
+            disabled={revealLoading || !revealPassword}
+            className="px-4 py-2 border border-stone rounded-lg text-sm text-bark hover:bg-parchment transition-colors disabled:opacity-50"
+          >
+            {revealLoading ? "Checking..." : "Reveal key"}
+          </button>
+        </div>
+        {revealError && <p className="text-xs text-alert mt-2">{revealError}</p>}
         <p className="text-sm text-dusk mt-3">
           Pass this as <code className="bg-parchment px-1 rounded">X-API-Key</code> in API requests.
         </p>
@@ -462,7 +504,7 @@ export default function DashboardPage() {
         </p>
         <div className="bg-charcoal text-cream rounded-lg p-4 text-sm font-mono overflow-x-auto">
           <p className="text-dusk"># Query the new registration feed for London</p>
-          <p>curl -H &quot;X-API-Key: {apiKey.slice(0, 20)}...&quot; \</p>
+          <p>curl -H &quot;X-API-Key: {quickStartApiKey}&quot; \</p>
           <p>&nbsp; &quot;https://api.caregist.co.uk/api/v1/feed/new-registrations?region=London&quot;</p>
         </div>
         <div className="mt-4 flex gap-4 text-sm">

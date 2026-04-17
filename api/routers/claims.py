@@ -67,7 +67,9 @@ async def submit_claim(
         logger.error("Claim submission failed for %s: %s", slug, exc)
         raise HTTPException(status_code=503, detail="Failed to submit claim.")
 
-    # Queue claim email sequence
+    # Queue claim email sequence.
+    # Idempotency keys are scoped to (provider_id, email) so that retried
+    # submissions or concurrent requests do not deliver duplicate drip emails.
     try:
         from api.utils.analytics import log_event
         from api.utils.email_queue import queue_email
@@ -75,6 +77,7 @@ async def submit_claim(
         await log_event("claim_submitted", "provider", email=req.claimant_email, provider_id=provider["id"], meta={"crm_state": "provider_acquisition_lead"})
         now = datetime.now(timezone.utc)
         provider_name = slug.replace("-", " ").title()
+        claim_key = f"claim:{provider['id']}:{req.claimant_email}"
         await queue_email(
             req.claimant_email,
             f"Claim received for {provider_name}",
@@ -82,6 +85,7 @@ async def submit_claim(
             f"<p>We've received your claim for <strong>{provider_name}</strong> on CareGist. "
             f"We'll review it within {'24 hours (fast-track)' if req.fast_track else '24–48 hours'}.</p>"
             f"<p>— The CareGist Team</p>",
+            idempotency_key=f"{claim_key}:day0",
         )
         # Day 3: benchmark report prompt
         await queue_email(
@@ -92,6 +96,7 @@ async def submit_claim(
             f"see how your provider compares to the local average:</p>"
             f"<p><a href='https://caregist.co.uk/provider/{slug}'>View provider profile →</a></p>",
             send_after=now + timedelta(days=3),
+            idempotency_key=f"{claim_key}:day3",
         )
         # Day 7: upgrade prompt
         await queue_email(
@@ -102,6 +107,7 @@ async def submit_claim(
             f"competitor benchmarking, and higher-visibility placement for {provider_name}.</p>"
             f"<p><a href='https://caregist.co.uk/pricing#provider-plans'>See provider plans →</a></p>",
             send_after=now + timedelta(days=7),
+            idempotency_key=f"{claim_key}:day7",
         )
     except Exception:
         pass

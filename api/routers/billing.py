@@ -69,6 +69,7 @@ def _normalize_extra_seats(tier: str, extra_seats: int) -> int:
 
 
 async def _persist_subscription_state(
+    conn,
     user_id: int,
     subscription_id: str | None,
     tier: str,
@@ -79,37 +80,36 @@ async def _persist_subscription_state(
 ) -> None:
     entitlements = get_subscription_entitlements(tier, extra_seats)
     rate_limit = get_tier_config(tier)["rate"]
-    async with get_connection() as conn:
-        await conn.execute(
-            """
-            INSERT INTO subscriptions (
-                user_id, stripe_subscription_id, stripe_price_id, tier, status,
-                included_users, extra_seats, max_users, seat_price_gbp
-            )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-            ON CONFLICT (stripe_subscription_id) DO UPDATE SET
-                stripe_price_id = EXCLUDED.stripe_price_id,
-                tier = EXCLUDED.tier,
-                status = EXCLUDED.status,
-                included_users = EXCLUDED.included_users,
-                extra_seats = EXCLUDED.extra_seats,
-                max_users = EXCLUDED.max_users,
-                seat_price_gbp = EXCLUDED.seat_price_gbp
-            """,
-            user_id,
-            subscription_id,
-            stripe_price_id,
-            tier,
-            status,
-            entitlements["included_users"],
-            entitlements["extra_seats"],
-            entitlements["max_users"],
-            entitlements["seat_price_gbp"],
+    await conn.execute(
+        """
+        INSERT INTO subscriptions (
+            user_id, stripe_subscription_id, stripe_price_id, tier, status,
+            included_users, extra_seats, max_users, seat_price_gbp
         )
-        await conn.execute(
-            "UPDATE api_keys SET tier = $1, rate_limit = $2 WHERE user_id = $3 AND is_active = true",
-            tier, rate_limit, user_id,
-        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        ON CONFLICT (stripe_subscription_id) DO UPDATE SET
+            stripe_price_id = EXCLUDED.stripe_price_id,
+            tier = EXCLUDED.tier,
+            status = EXCLUDED.status,
+            included_users = EXCLUDED.included_users,
+            extra_seats = EXCLUDED.extra_seats,
+            max_users = EXCLUDED.max_users,
+            seat_price_gbp = EXCLUDED.seat_price_gbp
+        """,
+        user_id,
+        subscription_id,
+        stripe_price_id,
+        tier,
+        status,
+        entitlements["included_users"],
+        entitlements["extra_seats"],
+        entitlements["max_users"],
+        entitlements["seat_price_gbp"],
+    )
+    await conn.execute(
+        "UPDATE api_keys SET tier = $1, rate_limit = $2 WHERE user_id = $3 AND is_active = true",
+        tier, rate_limit, user_id,
+    )
 
 
 @router.post("/checkout")
@@ -186,14 +186,16 @@ async def create_checkout(req: CheckoutRequest, _auth: dict = Depends(validate_a
             proration_behavior="create_prorations",
             metadata={"user_id": str(user["id"]), "tier": req.tier, "extra_seats": str(extra_seats)},
         )
-        await _persist_subscription_state(
-            int(user["id"]),
-            subscription_id,
-            req.tier,
-            "active",
-            stripe_price_id=price_id,
-            extra_seats=extra_seats,
-        )
+        async with get_connection() as conn:
+            await _persist_subscription_state(
+                conn,
+                int(user["id"]),
+                subscription_id,
+                req.tier,
+                "active",
+                stripe_price_id=price_id,
+                extra_seats=extra_seats,
+            )
         return {"updated": True, "tier": req.tier, "extra_seats": extra_seats}
 
     customer_id = user["stripe_customer_id"]
@@ -328,7 +330,13 @@ async def get_subscription(_auth: dict = Depends(validate_api_key)) -> dict:
 
 @router.post("/webhook")
 async def stripe_webhook(request: Request) -> dict:
-    """Handle Stripe webhook events."""
+    """Handle Stripe webhook events.
+
+    Atomicity guarantee: the event is marked as processed inside the same DB
+    transaction that mutates subscription state. If the handler raises, the
+    transaction rolls back and the event_id is NOT recorded, so Stripe's retry
+    will re-deliver and the handler will run again cleanly.
+    """
     if not settings.stripe_secret_key:
         raise HTTPException(status_code=503, detail="Billing not configured.")
 
@@ -346,78 +354,95 @@ async def stripe_webhook(request: Request) -> dict:
         logger.error("Webhook signature failed: %s", e)
         raise HTTPException(status_code=400, detail="Invalid webhook signature.")
 
-    # Deduplicate: skip events we've already processed (handles Stripe retries / replays)
     event_id = event["id"]
-    async with get_connection() as conn:
-        inserted = await conn.fetchval(
-            """INSERT INTO stripe_processed_events (event_id)
-               VALUES ($1) ON CONFLICT DO NOTHING RETURNING event_id""",
-            event_id,
-        )
-        if not inserted:
-            logger.info("Duplicate Stripe event %s — skipping", event_id)
-            return {"status": "ok"}
-        # Expire old entries (keep last 24 h)
-        await conn.execute(
-            "DELETE FROM stripe_processed_events WHERE processed_at < NOW() - INTERVAL '24 hours'"
-        )
-
     event_type = event["type"]
     data = event["data"]["object"]
 
-    if event_type == "checkout.session.completed":
-        await _handle_checkout_completed(data)
-    elif event_type == "customer.subscription.updated":
-        await _handle_subscription_updated(data)
-    elif event_type == "customer.subscription.deleted":
-        await _handle_subscription_deleted(data)
-    else:
-        logger.info("Unhandled Stripe event: %s", event_type)
+    async with get_connection() as conn:
+        async with conn.transaction():
+            # Dedup check inside the transaction — concurrent deliveries of the
+            # same event_id will block here; only one INSERT wins; the loser
+            # sees inserted=None and returns immediately without doing any work.
+            inserted = await conn.fetchval(
+                """INSERT INTO stripe_processed_events (event_id)
+                   VALUES ($1) ON CONFLICT DO NOTHING RETURNING event_id""",
+                event_id,
+            )
+            if not inserted:
+                logger.info("Duplicate Stripe event %s — skipping", event_id)
+                return {"status": "ok"}
+
+            # All handler DB mutations share this transaction. On any exception
+            # the transaction rolls back and the event_id insert is undone so
+            # Stripe's next retry will process the event fresh.
+            if event_type == "checkout.session.completed":
+                await _handle_checkout_completed(conn, data)
+            elif event_type == "customer.subscription.updated":
+                await _handle_subscription_updated(conn, data)
+            elif event_type == "customer.subscription.deleted":
+                await _handle_subscription_deleted(conn, data)
+            else:
+                logger.info("Unhandled Stripe event: %s", event_type)
+
+            # Expire old dedup entries (keep last 24 h). Non-critical; runs
+            # inside the transaction but the DELETE is cheap.
+            await conn.execute(
+                "DELETE FROM stripe_processed_events WHERE processed_at < NOW() - INTERVAL '24 hours'"
+            )
 
     return {"status": "ok"}
 
 
-async def _handle_checkout_completed(session: dict) -> None:
+async def _handle_checkout_completed(conn, session: dict) -> None:
     """Route completed checkout to B2B or provider profile handler."""
     if session.get("metadata", {}).get("type") == "profile":
-        await _handle_profile_checkout_completed(session)
+        await _handle_profile_checkout_completed(conn, session)
         return
 
     user_id = session.get("metadata", {}).get("user_id")
-    tier = session.get("metadata", {}).get("tier", "starter")
+    tier = session.get("metadata", {}).get("tier")
     extra_seats = int(session.get("metadata", {}).get("extra_seats", "0") or 0)
     subscription_id = session.get("subscription")
     customer_id = session.get("customer")
+    price_id = session.get("metadata", {}).get("price_id")
 
     if not user_id:
-        logger.error("Checkout completed without user_id in metadata")
-        return
+        raise RuntimeError("checkout.session.completed missing user_id metadata")
+    if tier not in {"starter", "pro", "business"}:
+        raise RuntimeError(f"checkout.session.completed has invalid tier metadata: {tier!r}")
+    if not subscription_id:
+        raise RuntimeError("checkout.session.completed missing subscription id")
+    if price_id and PRICE_TO_TIER.get(price_id) != tier:
+        raise RuntimeError(
+            f"checkout.session.completed price/tier mismatch: price_id={price_id!r} tier={tier!r}"
+        )
 
     await _persist_subscription_state(
+        conn,
         int(user_id),
         subscription_id,
         tier,
         "active",
-        stripe_price_id=session.get("metadata", {}).get("price_id"),
+        stripe_price_id=price_id,
         extra_seats=extra_seats,
     )
 
-    async with get_connection() as conn:
-        if customer_id:
-            await conn.execute(
-                "UPDATE users SET stripe_customer_id = $1 WHERE id = $2",
-                customer_id, int(user_id),
-            )
+    if customer_id:
+        await conn.execute(
+            "UPDATE users SET stripe_customer_id = $1 WHERE id = $2",
+            customer_id, int(user_id),
+        )
 
     logger.info("User %s upgraded to %s (subscription: %s)", user_id, tier, subscription_id)
 
 
-async def _handle_subscription_updated(subscription: dict) -> None:
+async def _handle_subscription_updated(conn, subscription: dict) -> None:
     """Handle subscription changes (upgrade/downgrade)."""
     sub_id = subscription.get("id")
     status = subscription.get("status", "active")
     price_id = None
     extra_seats = 0
+    unknown_price_ids: list[str] = []
     items = subscription.get("items", {}).get("data", [])
     if items:
         for item in items:
@@ -427,52 +452,47 @@ async def _handle_subscription_updated(subscription: dict) -> None:
                 price_id = item_price_id
             elif mapped == "pro-seat":
                 extra_seats += int(item.get("quantity") or 0)
+            elif item_price_id:
+                unknown_price_ids.append(item_price_id)
 
-    if price_id and PRICE_TO_TIER.get(price_id) is None:
-        logger.error(
-            "subscription.updated: unrecognized price_id %r for subscription %s — defaulting to 'starter'. "
-            "Update PRICE_TO_TIER if a new Stripe price was created.",
-            price_id,
-            sub_id,
-        )
-        try:
-            import sentry_sdk as _sentry
-            _sentry.capture_message(
-                f"subscription.updated: unrecognized price_id {price_id!r} for subscription {sub_id}",
-                level="error",
-            )
-        except Exception:
-            pass
-    tier = PRICE_TO_TIER.get(price_id, "starter") if price_id else "starter"
+    sub_row = await conn.fetchrow(
+        "SELECT user_id FROM subscriptions WHERE stripe_subscription_id = $1", sub_id
+    )
+    if not sub_row:
+        logger.info("Subscription %s updated but no B2B subscription row exists; skipping", sub_id)
+        return
 
-    async with get_connection() as conn:
-        sub_row = await conn.fetchrow(
-            "SELECT user_id FROM subscriptions WHERE stripe_subscription_id = $1", sub_id
+    if unknown_price_ids or not price_id:
+        raise RuntimeError(
+            f"subscription.updated cannot map base price for subscription {sub_id}: "
+            f"base_price={price_id!r}, unknown_prices={unknown_price_ids!r}"
         )
-    if sub_row:
-        await _persist_subscription_state(
-            sub_row["user_id"],
-            sub_id,
-            tier,
-            status,
-            stripe_price_id=price_id,
-            extra_seats=extra_seats,
-        )
+
+    tier = PRICE_TO_TIER[price_id]
+    await _persist_subscription_state(
+        conn,
+        sub_row["user_id"],
+        sub_id,
+        tier,
+        status,
+        stripe_price_id=price_id,
+        extra_seats=extra_seats,
+    )
 
     logger.info("Subscription %s updated: tier=%s status=%s", sub_id, tier, status)
 
 
-async def _handle_subscription_deleted(subscription: dict) -> None:
+async def _handle_subscription_deleted(conn, subscription: dict) -> None:
     """Downgrade to free on cancellation (B2B) or to claimed on cancellation (profile)."""
     sub_id = subscription.get("id")
 
     # B2B plan cancellation
-    async with get_connection() as conn:
-        sub_row = await conn.fetchrow(
-            "SELECT user_id FROM subscriptions WHERE stripe_subscription_id = $1", sub_id
-        )
+    sub_row = await conn.fetchrow(
+        "SELECT user_id FROM subscriptions WHERE stripe_subscription_id = $1", sub_id
+    )
     if sub_row:
         await _persist_subscription_state(
+            conn,
             sub_row["user_id"],
             sub_id,
             "free",
@@ -482,31 +502,34 @@ async def _handle_subscription_deleted(subscription: dict) -> None:
         logger.info("Subscription %s canceled, user downgraded to free", sub_id)
 
     # Provider profile cancellation
-    async with get_connection() as conn:
-        await conn.execute(
-            """UPDATE care_providers
-               SET profile_tier = 'claimed', profile_subscription_id = NULL
-               WHERE profile_subscription_id = $1""",
-            sub_id,
-        )
+    await conn.execute(
+        """UPDATE care_providers
+           SET profile_tier = 'claimed', profile_subscription_id = NULL
+           WHERE profile_subscription_id = $1""",
+        sub_id,
+    )
 
 
-async def _handle_profile_checkout_completed(session: dict) -> None:
+async def _handle_profile_checkout_completed(conn, session: dict) -> None:
     """Activate provider listing tier after successful profile checkout."""
     slug = session.get("metadata", {}).get("slug")
     tier = session.get("metadata", {}).get("tier")
     subscription_id = session.get("subscription")
 
     if not slug or not tier:
-        logger.error("Profile checkout completed with missing slug or tier in metadata")
-        return
+        raise RuntimeError("profile checkout completed with missing slug or tier metadata")
+    if tier not in _PROFILE_TIERS:
+        raise RuntimeError(f"profile checkout completed with invalid tier metadata: {tier!r}")
+    if not subscription_id:
+        raise RuntimeError("profile checkout completed without subscription id")
 
-    async with get_connection() as conn:
-        await conn.execute(
-            """UPDATE care_providers
-               SET profile_tier = $1, profile_subscription_id = $2
-               WHERE slug = $3""",
-            tier, subscription_id, slug,
-        )
+    result = await conn.execute(
+        """UPDATE care_providers
+           SET profile_tier = $1, profile_subscription_id = $2
+           WHERE slug = $3""",
+        tier, subscription_id, slug,
+    )
+    if result == "UPDATE 0":
+        raise RuntimeError(f"profile checkout completed for unknown provider slug: {slug!r}")
 
     logger.info("Provider %s upgraded to profile tier %s (subscription: %s)", slug, tier, subscription_id)

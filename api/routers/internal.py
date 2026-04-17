@@ -254,14 +254,13 @@ async def _recompute_profile_completeness(_: dict[str, Any]) -> dict[str, Any]:
         await conn.execute(
             """
             UPDATE care_providers
-            SET profile_completeness = LEAST(
-              100,
-              (CASE WHEN profile_description IS NOT NULL AND length(trim(profile_description)) >= 40 THEN 30 ELSE 0 END) +
-              (CASE WHEN COALESCE(jsonb_array_length(profile_photos), 0) > 0 THEN 20 ELSE 0 END) +
-              (CASE WHEN virtual_tour_url IS NOT NULL AND trim(virtual_tour_url) != '' THEN 10 ELSE 0 END) +
-              (CASE WHEN inspection_response IS NOT NULL AND trim(inspection_response) != '' THEN 15 ELSE 0 END) +
-              (CASE WHEN is_claimed = true THEN 10 ELSE 0 END) +
-              (CASE WHEN profile_tier IS NOT NULL THEN 15 ELSE 0 END)
+            SET profile_completeness = calculate_profile_completeness(
+                profile_description,
+                profile_photos,
+                virtual_tour_url,
+                inspection_response,
+                is_claimed,
+                profile_tier
             )
             """
         )

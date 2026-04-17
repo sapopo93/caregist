@@ -169,15 +169,13 @@ async def update_profile(
         await conn.execute(
             """
             UPDATE care_providers
-            SET profile_completeness = LEAST(
-              100,
-              (CASE WHEN profile_description IS NOT NULL AND length(trim(profile_description)) >= 40 THEN 30 ELSE 0 END) +
-              (CASE WHEN COALESCE(jsonb_array_length(profile_photos), 0) > 0 THEN 20 ELSE 0 END) +
-              (CASE WHEN virtual_tour_url IS NOT NULL AND trim(virtual_tour_url) != '' THEN 10 ELSE 0 END) +
-              (CASE WHEN inspection_response IS NOT NULL AND length(trim(inspection_response)) >= 40 THEN 20 ELSE 0 END) +
-              (CASE WHEN logo_url IS NOT NULL AND trim(logo_url) != '' THEN 10 ELSE 0 END) +
-              (CASE WHEN funding_types IS NOT NULL AND array_length(funding_types, 1) > 0 THEN 5 ELSE 0 END) +
-              (CASE WHEN fee_guidance IS NOT NULL AND trim(fee_guidance) != '' THEN 5 ELSE 0 END)
+            SET profile_completeness = calculate_profile_completeness(
+                profile_description,
+                profile_photos,
+                virtual_tour_url,
+                inspection_response,
+                is_claimed,
+                profile_tier
             )
             WHERE slug = $1
             """,

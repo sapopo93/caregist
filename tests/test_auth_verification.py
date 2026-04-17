@@ -14,6 +14,8 @@ from api.routers.auth import (
     _hash_password,
     login,
     register,
+    reveal_key,
+    rotate_key,
     verify_email,
 )
 
@@ -75,6 +77,54 @@ async def test_login_blocks_unverified_user():
     with patch("api.routers.auth.get_connection", mock_get_connection):
         with pytest.raises(HTTPException) as exc:
             await login(LoginRequest(email="alice@example.com", password="SuperSecret123"), FastAPIResponse())
+
+    assert exc.value.status_code == 403
+    assert "Verify your email" in exc.value.detail
+
+
+@pytest.mark.asyncio
+async def test_reveal_key_blocks_unverified_user():
+    conn = AsyncMock()
+    conn.fetchrow = AsyncMock(
+        return_value={
+            "id": 1,
+            "password_hash": _hash_password("SuperSecret123"),
+            "is_verified": False,
+        }
+    )
+
+    @asynccontextmanager
+    async def mock_get_connection():
+        yield conn
+
+    with patch("api.routers.auth.get_connection", mock_get_connection):
+        with pytest.raises(HTTPException) as exc:
+            await reveal_key(LoginRequest(email="alice@example.com", password="SuperSecret123"))
+
+    assert exc.value.status_code == 403
+    assert "Verify your email" in exc.value.detail
+
+
+@pytest.mark.asyncio
+async def test_rotate_key_blocks_unverified_user():
+    conn = AsyncMock()
+    conn.fetchrow = AsyncMock(
+        return_value={
+            "id": 1,
+            "email": "alice@example.com",
+            "name": "Alice",
+            "password_hash": _hash_password("SuperSecret123"),
+            "is_verified": False,
+        }
+    )
+
+    @asynccontextmanager
+    async def mock_get_connection():
+        yield conn
+
+    with patch("api.routers.auth.get_connection", mock_get_connection):
+        with pytest.raises(HTTPException) as exc:
+            await rotate_key(LoginRequest(email="alice@example.com", password="SuperSecret123"))
 
     assert exc.value.status_code == 403
     assert "Verify your email" in exc.value.detail

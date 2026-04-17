@@ -1,12 +1,8 @@
-"""Rate limiter with in-memory burst controls and persistent quota storage.
-
-Burst limiting uses Redis (fixed window INCR/EXPIRE) when REDIS_URL is configured,
-falling back to a process-local in-memory sliding window otherwise.
-Daily/7d/monthly limits are always DB-backed.
-"""
+"""Rate limiter with Redis-backed hot-path quotas and DB fallback storage."""
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import time
 from collections import defaultdict
@@ -44,6 +40,58 @@ async def _get_redis():
     return _redis_client
 
 
+# Lua script: atomically check all quota windows, then increment only when every
+# window has remaining capacity. Return shape:
+#   {0, daily_remaining, rolling_remaining, monthly_remaining} on success
+#   {-1|-2|-3, daily_remaining, rolling_remaining, monthly_remaining} on reject
+_QUOTA_LUA = """
+local daily_key = KEYS[1]
+local rolling_today_key = KEYS[2]
+local monthly_key = KEYS[3]
+
+local daily_limit = tonumber(ARGV[1])
+local rolling_limit = tonumber(ARGV[2])
+local monthly_limit = tonumber(ARGV[3])
+local daily_ttl = tonumber(ARGV[4])
+local rolling_ttl = tonumber(ARGV[5])
+local monthly_ttl = tonumber(ARGV[6])
+
+local daily_used = tonumber(redis.call('GET', daily_key) or '0')
+local monthly_used = tonumber(redis.call('GET', monthly_key) or '0')
+local rolling_used = 0
+for i = 4, #KEYS do
+    rolling_used = rolling_used + tonumber(redis.call('GET', KEYS[i]) or '0')
+end
+
+if daily_used >= daily_limit then
+    return {-1, daily_limit - daily_used, rolling_limit - rolling_used, monthly_limit - monthly_used}
+end
+if rolling_used >= rolling_limit then
+    return {-2, daily_limit - daily_used, rolling_limit - rolling_used, monthly_limit - monthly_used}
+end
+if monthly_used >= monthly_limit then
+    return {-3, daily_limit - daily_used, rolling_limit - rolling_used, monthly_limit - monthly_used}
+end
+
+local daily_count = redis.call('INCR', daily_key)
+if daily_count == 1 then
+    redis.call('EXPIRE', daily_key, daily_ttl)
+end
+
+local rolling_count = redis.call('INCR', rolling_today_key)
+if rolling_count == 1 then
+    redis.call('EXPIRE', rolling_today_key, rolling_ttl)
+end
+
+local monthly_count = redis.call('INCR', monthly_key)
+if monthly_count == 1 then
+    redis.call('EXPIRE', monthly_key, monthly_ttl)
+end
+
+return {0, daily_limit - daily_count, rolling_limit - (rolling_used + 1), monthly_limit - monthly_count}
+"""
+
+
 async def _redis_burst_check(api_key: str, config: dict) -> int:
     """
     Fixed-window burst check via Redis INCR + EXPIRE.
@@ -74,6 +122,88 @@ async def _redis_burst_check(api_key: str, config: dict) -> int:
             headers={"Retry-After": str(window_seconds)},
         )
     return remaining
+
+
+async def _redis_quota_check(api_key: str, config: dict) -> dict[str, int] | None:
+    """
+    Atomic daily / 7-day / monthly quota checks via one Lua script.
+
+    Returns a dict with remaining counts on success, or None if Redis is
+    unavailable (caller must fall back to DB-backed path).
+    Raises 429 if any quota window is exceeded.
+    """
+    redis = await _get_redis()
+    if redis is None:
+        return None
+
+    today = _today()
+    month = _this_month()
+    daily_key = f"quota:daily:{api_key}:{today}"
+    monthly_key = f"quota:monthly:{api_key}:{month}"
+
+    # Rolling 7-day: one counter per calendar day, summed atomically in Lua.
+    recent_days = sorted(_recent_days(7))
+    rolling_keys = [f"quota:7d:{api_key}:{d}" for d in recent_days]
+
+    daily_limit = config["daily"]
+    monthly_limit = config["monthly"]
+    rolling_limit = config["rolling_7d"]
+
+    rolling_today_key = f"quota:7d:{api_key}:{today}"
+    keys = [daily_key, rolling_today_key, monthly_key, *rolling_keys]
+
+    try:
+        results = await redis.eval(
+            _QUOTA_LUA,
+            len(keys),
+            *keys,
+            daily_limit,
+            rolling_limit,
+            monthly_limit,
+            2 * 86400,
+            8 * 86400,
+            35 * 86400,
+        )
+    except Exception as exc:
+        logger.warning("Redis quota check failed, falling back to DB: %s", exc)
+        return None
+
+    code = int(results[0])
+    daily_remaining = int(results[1])
+    rolling_remaining = int(results[2])
+    monthly_remaining = int(results[3])
+
+    if code == -1:
+        raise HTTPException(
+            status_code=429,
+            detail=f"Daily limit exceeded ({daily_limit}/day). Upgrade at /pricing",
+            headers={"Retry-After": "3600"},
+        )
+    if code == -2:
+        raise HTTPException(
+            status_code=429,
+            detail=f"7-day limit exceeded ({rolling_limit}/7 days). Upgrade at /pricing",
+            headers={"Retry-After": "86400"},
+        )
+    if code == -3:
+        raise HTTPException(
+            status_code=429,
+            detail=f"Monthly limit exceeded ({monthly_limit}/month). Upgrade at /pricing",
+            headers={"Retry-After": "86400"},
+        )
+
+    return {
+        "daily_remaining": daily_remaining,
+        "rolling_7d_remaining": max(0, rolling_remaining),
+        "monthly_remaining": monthly_remaining,
+    }
+
+
+def _log_background_task(task: Any) -> None:
+    try:
+        task.result()
+    except Exception as exc:
+        logger.warning("Background rate-limit persistence failed: %s", exc)
 
 
 # Burst window: key -> list of timestamps
@@ -270,17 +400,25 @@ async def _persist_request(api_key: str) -> None:
 
 
 async def check_rate_limit(api_key: str, tier: str) -> dict[str, int]:
-    """Check all rate limits. Raise 429 if exceeded. Returns remaining counts."""
+    """Check all rate limits. Raise 429 if exceeded. Returns remaining counts.
+
+    Hot path (Redis available):
+      1. Burst — Redis INCR in a 1s window (existing behaviour)
+      2. Daily / 7-day / monthly — one Lua script atomically checks every quota
+         window and increments only if all pass; DB write is fire-and-forget.
+
+    Fallback (Redis unavailable):
+      Falls back to DB-backed in-memory path (existing behaviour, unchanged).
+    """
     _cleanup_stale()
     config = get_tier_config(tier)
 
-    # Burst check — prefer Redis (shared across workers), fall back to in-memory
+    # --- Burst check (Redis preferred, in-memory fallback) ---
     burst_remaining = await _redis_burst_check(api_key, config)
     _used_redis_burst = burst_remaining != -1
-    _burst_ts: float | None = None  # timestamp to append after all checks pass
+    _burst_ts: float | None = None
 
     if not _used_redis_burst:
-        # In-memory fallback: check only — append deferred until all quota checks pass
         _burst_ts = time.monotonic()
         window_seconds = config.get("rate_window_seconds", 1)
         window_start = _burst_ts - window_seconds
@@ -294,6 +432,22 @@ async def check_rate_limit(api_key: str, tier: str) -> dict[str, int]:
                 headers={"Retry-After": str(window_seconds)},
             )
 
+    # --- Quota checks (Redis preferred, DB fallback) ---
+    redis_quota = await _redis_quota_check(api_key, config)
+
+    if redis_quota is not None:
+        # Redis path: quota already atomically incremented and checked above.
+        # Persist to DB asynchronously so auditing and recovery remain possible.
+        if not _used_redis_burst and _burst_ts is not None:
+            _burst_requests[api_key].append(_burst_ts)
+        task = asyncio.create_task(_persist_request(api_key))
+        task.add_done_callback(_log_background_task)
+        return {
+            "burst_remaining": max(0, burst_remaining - 1),
+            **redis_quota,
+        }
+
+    # --- DB fallback path ---
     try:
         daily_used, rolling_7d_used, monthly_used = await _load_persisted_counts(api_key)
         persistent_store = True
@@ -325,7 +479,6 @@ async def check_rate_limit(api_key: str, tier: str) -> dict[str, int]:
             headers={"Retry-After": "86400"},
         )
 
-    # Append burst timestamp now that all quota checks have passed
     if not _used_redis_burst and _burst_ts is not None:
         _burst_requests[api_key].append(_burst_ts)
     if persistent_store:

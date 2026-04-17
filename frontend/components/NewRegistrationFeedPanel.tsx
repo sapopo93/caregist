@@ -51,11 +51,9 @@ function buildFeedQuery(filters: FeedFilters, page = 1) {
 }
 
 export default function NewRegistrationFeedPanel({
-  apiKey,
   tier,
   upgradeHref,
 }: {
-  apiKey: string;
   tier: string;
   upgradeHref: string;
 }) {
@@ -74,12 +72,11 @@ export default function NewRegistrationFeedPanel({
   const [exportLoading, setExportLoading] = useState<"" | "csv" | "xlsx">("");
 
   async function loadFeed(nextPage = page, nextFilters = filters) {
-    if (!apiKey) return;
     setLoading(true);
     setError("");
     try {
       const res = await fetch(`/api/v1/feed/new-registrations?${buildFeedQuery(nextFilters, nextPage)}`, {
-        headers: { "X-API-Key": apiKey },
+        credentials: "include",
       });
       const data = await res.json();
       if (!res.ok) {
@@ -101,10 +98,9 @@ export default function NewRegistrationFeedPanel({
   }
 
   async function loadSavedFilters() {
-    if (!apiKey) return;
     try {
       const res = await fetch("/api/v1/feed/new-registrations/saved-filters", {
-        headers: { "X-API-Key": apiKey },
+        credentials: "include",
       });
       if (res.status === 403) {
         setSavedFilters([]);
@@ -118,10 +114,9 @@ export default function NewRegistrationFeedPanel({
   }
 
   async function loadDigest() {
-    if (!apiKey) return;
     try {
       const res = await fetch("/api/v1/feed/new-registrations/digest", {
-        headers: { "X-API-Key": apiKey },
+        credentials: "include",
       });
       if (res.status === 403) {
         setDigest(null);
@@ -135,19 +130,17 @@ export default function NewRegistrationFeedPanel({
   }
 
   useEffect(() => {
-    if (!apiKey) return;
     void loadFeed(1, EMPTY_FILTERS);
     void loadSavedFilters();
     void loadDigest();
-  }, [apiKey]);
+  }, []);
 
   async function handleExport(format: "csv" | "xlsx") {
-    if (!apiKey) return;
     setExportLoading(format);
     setError("");
     try {
       const res = await fetch(`/api/v1/feed/new-registrations/export.${format}?${buildFeedQuery(filters, 1)}`, {
-        headers: { "X-API-Key": apiKey },
+        credentials: "include",
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -170,13 +163,14 @@ export default function NewRegistrationFeedPanel({
   }
 
   async function handleSaveFilter() {
-    if (!apiKey || !savedFilterName.trim()) return;
+    if (!savedFilterName.trim()) return;
     setSaveLoading(true);
     setSavedFilterError("");
     try {
       const res = await fetch("/api/v1/feed/new-registrations/saved-filters", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "X-API-Key": apiKey },
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: savedFilterName.trim(), filters }),
       });
       const data = await res.json();
@@ -195,21 +189,20 @@ export default function NewRegistrationFeedPanel({
   }
 
   async function handleDeleteSavedFilter(filterId: number) {
-    if (!apiKey) return;
     await fetch(`/api/v1/feed/new-registrations/saved-filters/${filterId}`, {
       method: "DELETE",
-      headers: { "X-API-Key": apiKey },
+      credentials: "include",
     });
     setSavedFilters((current) => current.filter((item) => item.id !== filterId));
   }
 
   async function handleDigestToggle(active: boolean) {
-    if (!apiKey) return;
     setDigestLoading(true);
     try {
       const res = await fetch("/api/v1/feed/new-registrations/digest", {
         method: "PUT",
-        headers: { "Content-Type": "application/json", "X-API-Key": apiKey },
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ active, filters }),
       });
       const data = await res.json();

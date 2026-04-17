@@ -101,6 +101,9 @@ async def _validate_key(api_key: str) -> dict:
     user_id = row["user_id"]
     tier = row["tier"] or "free"
 
+    if user_id and not row["is_verified"]:
+        raise HTTPException(status_code=403, detail="Verify your email before using the API.")
+
     # Seat enforcement for user-linked keys
     if user_id:
         active_keys = int(row["active_keys"] or 0)
