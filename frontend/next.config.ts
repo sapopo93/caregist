@@ -5,7 +5,7 @@ function deriveApiBaseFromAppUrl(appUrlRaw?: string) {
   if (!appUrlRaw) return undefined;
 
   try {
-    const appUrl = new URL(appUrlRaw);
+    const appUrl = new URL(appUrlRaw.startsWith("http") ? appUrlRaw : `https://${appUrlRaw}`);
     if (appUrl.hostname === "caregist.co.uk" || appUrl.hostname === "www.caregist.co.uk") {
       return `${appUrl.protocol}//api.caregist.co.uk`;
     }
@@ -14,6 +14,34 @@ function deriveApiBaseFromAppUrl(appUrlRaw?: string) {
   }
 
   return undefined;
+}
+
+function deriveApiBaseFromConfiguredAppUrl() {
+  return (
+    deriveApiBaseFromAppUrl(process.env.APP_URL) ||
+    deriveApiBaseFromAppUrl(process.env.NEXT_PUBLIC_APP_URL) ||
+    deriveApiBaseFromAppUrl(process.env.VERCEL_PROJECT_PRODUCTION_URL) ||
+    deriveApiBaseFromAppUrl(process.env.VERCEL_URL)
+  );
+}
+
+function isLocalApiBase(value?: string) {
+  if (!value) return false;
+  try {
+    const url = new URL(value);
+    return ["localhost", "127.0.0.1", "0.0.0.0"].includes(url.hostname);
+  } catch {
+    return false;
+  }
+}
+
+function resolveApiBaseForProduction(value?: string) {
+  const derivedApiBase = deriveApiBaseFromConfiguredAppUrl();
+  if (value && derivedApiBase && isLocalApiBase(value)) {
+    console.warn("[caregist] Ignoring localhost API URL for production app URL — deriving API host from app URL.");
+    return derivedApiBase;
+  }
+  return value || derivedApiBase;
 }
 
 function failOrWarn(message: string) {
@@ -30,9 +58,12 @@ function validateServerApiEnv() {
     process.env.NEXT_PUBLIC_API_KEY;
 
   const serverApiBase =
-    process.env.API_URL ||
-    process.env.NEXT_PUBLIC_API_URL ||
-    process.env.APP_URL;
+    resolveApiBaseForProduction(process.env.API_URL) ||
+    resolveApiBaseForProduction(process.env.NEXT_PUBLIC_API_URL) ||
+    process.env.APP_URL ||
+    process.env.NEXT_PUBLIC_APP_URL ||
+    process.env.VERCEL_PROJECT_PRODUCTION_URL ||
+    process.env.VERCEL_URL;
 
   if (!serverApiBase) {
     failOrWarn(
@@ -72,9 +103,8 @@ const nextConfig: NextConfig = {
   transpilePackages: ["@support-platform/ui"],
   async rewrites() {
     const apiBase =
-      process.env.NEXT_PUBLIC_API_URL ||
-      process.env.API_URL ||
-      deriveApiBaseFromAppUrl(process.env.APP_URL) ||
+      resolveApiBaseForProduction(process.env.NEXT_PUBLIC_API_URL) ||
+      resolveApiBaseForProduction(process.env.API_URL) ||
       "http://localhost:8000";
     return [
       {

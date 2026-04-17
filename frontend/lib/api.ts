@@ -108,8 +108,19 @@ async function publicFetch(path: string, params?: Record<string, string | undefi
       next: { revalidate: 3600 },
       signal: controller.signal,
     });
-    if (!res.ok) throw new Error(`API error: ${res.status}`);
+    if (!res.ok) {
+      const error = new Error(`API error: ${res.status}`);
+      (error as any).status = res.status;
+      throw error;
+    }
     return res.json();
+  } catch (err) {
+    if (err instanceof DOMException && err.name === "AbortError") {
+      const warmup = new Error("warming_up");
+      (warmup as any).status = 503;
+      throw warmup;
+    }
+    throw err;
   } finally {
     clearTimeout(timer);
   }
