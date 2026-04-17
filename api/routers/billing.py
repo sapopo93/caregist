@@ -262,7 +262,14 @@ async def create_profile_checkout(
 
     async with get_connection() as conn:
         provider = await conn.fetchrow(
-            "SELECT id, is_claimed, profile_tier FROM care_providers WHERE slug = $1", req.slug
+            """
+            SELECT id, is_claimed, profile_tier
+            FROM care_providers
+            WHERE slug = $1 OR id = $1
+            ORDER BY CASE WHEN slug = $1 THEN 0 ELSE 1 END
+            LIMIT 1
+            """,
+            req.slug,
         )
     if not provider:
         raise HTTPException(status_code=404, detail="Provider not found.")

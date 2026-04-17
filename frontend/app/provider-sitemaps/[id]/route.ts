@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { getProviderHref } from "@/lib/provider-path";
 import { getPublicApiBase } from "@/lib/server-api-config";
 
 const BASE = "https://caregist.co.uk";
@@ -26,9 +27,9 @@ export async function GET(
 
   const payload = await res.json();
   const urls = (payload.data || [])
-    .map((row: { slug: string; updated_at?: string | null }) => `
+    .map((row: { id?: string | null; slug?: string | null; updated_at?: string | null }) => `
       <url>
-        <loc>${BASE}/provider/${row.slug}</loc>
+        <loc>${BASE}${getProviderHref(row)}</loc>
         ${row.updated_at ? `<lastmod>${row.updated_at}</lastmod>` : ""}
         <changefreq>daily</changefreq>
         <priority>0.6</priority>

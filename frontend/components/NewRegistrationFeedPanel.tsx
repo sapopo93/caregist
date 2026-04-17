@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 
 import { trackEvent } from "@/lib/analytics";
+import { getProviderHref, getProviderPathKey } from "@/lib/provider-path";
 
 type FeedFilters = {
   q: string;
@@ -18,10 +19,11 @@ type FeedFilters = {
 
 type FeedEvent = {
   id?: number;
+  provider_location_id?: string;
   effective_date: string;
   confidence_score: number;
   name: string;
-  slug: string;
+  slug?: string | null;
   service_types?: string;
   type?: string;
   region?: string;
@@ -321,21 +323,25 @@ export default function NewRegistrationFeedPanel({
                     </td>
                   </tr>
                 ) : (
-                  events.map((event) => (
-                    <tr key={`${event.slug}-${event.effective_date}`} className="border-t border-stone">
-                      <td className="px-4 py-3">
-                        <Link href={`/provider/${event.slug}`} className="font-medium text-bark underline-offset-4 hover:underline">
-                          {event.name}
-                        </Link>
-                        <div className="text-xs text-dusk mt-1">{event.town || "Unknown town"} · {event.postcode || "No postcode"}</div>
-                      </td>
-                      <td className="px-4 py-3 text-dusk">{event.service_types || "—"}</td>
-                      <td className="px-4 py-3 text-dusk">{event.local_authority || "—"}</td>
-                      <td className="px-4 py-3 text-dusk">{event.region || "—"}</td>
-                      <td className="px-4 py-3 text-dusk">{event.effective_date}</td>
-                      <td className="px-4 py-3 text-dusk">{Number(event.confidence_score || 0).toFixed(2)}</td>
-                    </tr>
-                  ))
+                  events.map((event) => {
+                    const providerRef = { id: event.provider_location_id, slug: event.slug };
+                    const providerKey = getProviderPathKey(providerRef);
+                    return (
+                      <tr key={`${providerKey || event.id || event.name}-${event.effective_date}`} className="border-t border-stone">
+                        <td className="px-4 py-3">
+                          <Link href={getProviderHref(providerRef)} className="font-medium text-bark underline-offset-4 hover:underline">
+                            {event.name}
+                          </Link>
+                          <div className="text-xs text-dusk mt-1">{event.town || "Unknown town"} · {event.postcode || "No postcode"}</div>
+                        </td>
+                        <td className="px-4 py-3 text-dusk">{event.service_types || "—"}</td>
+                        <td className="px-4 py-3 text-dusk">{event.local_authority || "—"}</td>
+                        <td className="px-4 py-3 text-dusk">{event.region || "—"}</td>
+                        <td className="px-4 py-3 text-dusk">{event.effective_date}</td>
+                        <td className="px-4 py-3 text-dusk">{Number(event.confidence_score || 0).toFixed(2)}</td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>

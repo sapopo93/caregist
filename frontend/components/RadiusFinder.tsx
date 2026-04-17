@@ -4,10 +4,12 @@ import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import RatingBadge from "@/components/RatingBadge";
 import EmailCaptureStrip from "@/components/EmailCaptureStrip";
+import { getProviderHref, getProviderPathKey } from "@/lib/provider-path";
 
 interface Result {
+  id: string;
   name: string;
-  slug: string;
+  slug: string | null;
   type: string;
   overall_rating: string;
   distance_miles: number;
@@ -262,8 +264,8 @@ export default function RadiusFinder() {
           <div className="grid gap-4 mb-6">
             {visibleResults.map((r) => (
               <a
-                key={r.slug}
-                href={`/provider/${r.slug}`}
+                key={getProviderPathKey(r) || r.name}
+                href={getProviderHref(r)}
                 className="bg-cream border border-stone rounded-lg p-4 hover:border-clay transition-colors block"
               >
                 <div className="flex items-start justify-between gap-3">

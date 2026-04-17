@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { getProviderHref } from "@/lib/provider-path";
 
 const DIMENSION_LABELS: Record<string, string> = {
   rating_safe: "Safe",
@@ -316,7 +317,7 @@ export default function CareGistAssessment({ provider }: Props) {
         <div className="bg-parchment rounded-lg p-4 mb-4">
           <p className="text-xs font-semibold text-dusk mb-1">Highest-rated alternative nearby</p>
           <a
-            href={`/provider/${nearbyData.topAlternative.slug}`}
+            href={getProviderHref(nearbyData.topAlternative)}
             className="text-sm font-semibold text-clay hover:text-bark"
           >
             {nearbyData.topAlternative.name}

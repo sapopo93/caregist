@@ -216,7 +216,26 @@ def test_digest_helpers_render_expected_content():
 
     assert digest_key == "2026-W15"
     assert "Sunrise Care" in html
+    assert "https://caregist.co.uk/provider/sunrise-care" in html
     assert "Applied filters" in html
+
+    fallback_html = build_weekly_digest_html(
+        {},
+        [
+            {
+                "slug": None,
+                "provider_location_id": "LOC1",
+                "name": "Fallback Care",
+                "town": "London",
+                "region": "London",
+                "local_authority": "Camden",
+                "service_types": "Home care",
+                "effective_date": "2026-04-01",
+            }
+        ],
+        digest_key,
+    )
+    assert "https://caregist.co.uk/provider/LOC1" in fallback_html
 
 
 @pytest.fixture

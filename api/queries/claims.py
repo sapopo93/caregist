@@ -1,7 +1,11 @@
 """SQL queries for provider claims."""
 
 PROVIDER_ID_BY_SLUG = """
-SELECT id, is_claimed FROM care_providers WHERE slug = $1
+SELECT id, is_claimed
+FROM care_providers
+WHERE slug = $1 OR id = $1
+ORDER BY CASE WHEN slug = $1 THEN 0 ELSE 1 END
+LIMIT 1
 """
 
 INSERT_CLAIM = """

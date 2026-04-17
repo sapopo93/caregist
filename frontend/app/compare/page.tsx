@@ -2,6 +2,7 @@ import { getCompareProviders, getComparisonByToken } from "@/lib/api";
 import RatingBadge from "@/components/RatingBadge";
 import VerifiedBadge from "@/components/VerifiedBadge";
 import ComparisonActions from "@/components/ComparisonActions";
+import { getProviderHref, getProviderPathKey } from "@/lib/provider-path";
 import Link from "next/link";
 import type { Metadata } from "next";
 
@@ -75,7 +76,7 @@ export default async function ComparePage({
 
   // Sort providers to match the slug order requested
   const ordered = slugs
-    .map((s) => providers.find((p: any) => p.slug === s))
+    .map((s) => providers.find((p: any) => p.slug === s || p.id === s))
     .filter(Boolean);
 
   const colClass = ordered.length === 2 ? "grid-cols-2" : "grid-cols-3";
@@ -90,8 +91,8 @@ export default async function ComparePage({
       {/* Provider names header */}
       <div className={`grid ${colClass} gap-4 mb-6`}>
         {ordered.map((p: any) => (
-          <div key={p.slug} className="bg-cream border border-stone rounded-lg p-4 text-center">
-            <Link href={`/provider/${p.slug}`} className="text-lg font-semibold text-bark hover:text-clay transition-colors">
+          <div key={getProviderPathKey(p) || p.name} className="bg-cream border border-stone rounded-lg p-4 text-center">
+            <Link href={getProviderHref(p)} className="text-lg font-semibold text-bark hover:text-clay transition-colors">
               {p.name}
             </Link>
             <div className="flex items-center justify-center gap-2 mt-2">
@@ -131,7 +132,7 @@ export default async function ComparePage({
         </div>
         <div className={`grid ${colClass} gap-0 border-t border-stone`}>
           {ordered.map((p: any) => (
-            <div key={p.slug} className="px-4 py-3 text-sm border-r last:border-r-0 border-stone">
+            <div key={getProviderPathKey(p) || p.name} className="px-4 py-3 text-sm border-r last:border-r-0 border-stone">
               {p.service_types
                 ? p.service_types.split("|").filter(Boolean).map((s: string) => (
                     <span key={s} className="inline-block bg-parchment border border-stone px-2 py-0.5 rounded-full text-xs mr-1 mb-1">{s}</span>
@@ -153,8 +154,8 @@ export default async function ComparePage({
       <div className={`grid ${colClass} gap-4 mt-6`}>
         {ordered.map((p: any) => (
           <Link
-            key={p.slug}
-            href={`/provider/${p.slug}#enquiry`}
+            key={getProviderPathKey(p) || p.name}
+            href={`${getProviderHref(p)}#enquiry`}
             className="block text-center px-4 py-3 bg-clay text-white rounded-lg font-medium hover:bg-bark transition-colors"
           >
             Enquire about {p.name.length > 20 ? p.name.slice(0, 20) + "..." : p.name}

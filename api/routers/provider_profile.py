@@ -45,9 +45,12 @@ async def get_profile(slug: str, _auth: dict = Depends(validate_api_key)) -> dic
                       profile_updated_at, is_claimed,
                       logo_url, funding_types, fee_guidance,
                       min_visit_duration, contract_types, age_ranges
-               FROM care_providers WHERE slug = $1""",
-            slug,
-        )
+               FROM care_providers
+               WHERE slug = $1 OR id = $1
+               ORDER BY CASE WHEN slug = $1 THEN 0 ELSE 1 END
+               LIMIT 1""",
+                slug,
+            )
     if not row:
         raise HTTPException(status_code=404, detail="Provider not found.")
 
@@ -67,7 +70,13 @@ async def update_profile(
 
     async with get_connection() as conn:
         provider = await conn.fetchrow(
-            "SELECT id, is_claimed, profile_tier FROM care_providers WHERE slug = $1",
+            """
+            SELECT id, is_claimed, profile_tier
+            FROM care_providers
+            WHERE slug = $1 OR id = $1
+            ORDER BY CASE WHEN slug = $1 THEN 0 ELSE 1 END
+            LIMIT 1
+            """,
             slug,
         )
     if not provider:

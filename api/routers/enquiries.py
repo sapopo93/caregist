@@ -43,7 +43,14 @@ async def submit_enquiry(
     try:
         async with get_connection() as conn:
             provider = await conn.fetchrow(
-                "SELECT id, name, is_claimed FROM care_providers WHERE slug = $1", slug,
+                """
+                SELECT id, name, is_claimed
+                FROM care_providers
+                WHERE slug = $1 OR id = $1
+                ORDER BY CASE WHEN slug = $1 THEN 0 ELSE 1 END
+                LIMIT 1
+                """,
+                slug,
             )
             if not provider:
                 raise HTTPException(status_code=404, detail=f"Provider not found: {slug}")

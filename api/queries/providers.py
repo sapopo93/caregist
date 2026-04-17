@@ -151,7 +151,10 @@ LIMIT 20
 """
 
 DETAIL_BY_SLUG = """
-SELECT * FROM care_providers WHERE slug = $1 OR id = $1
+SELECT * FROM care_providers
+WHERE slug = $1 OR id = $1
+ORDER BY CASE WHEN slug = $1 THEN 0 ELSE 1 END
+LIMIT 1
 """
 
 NEARBY_QUERY = """
@@ -205,7 +208,9 @@ ORDER BY provider_count DESC
 """
 
 COMPARE_QUERY = """
-SELECT * FROM care_providers WHERE slug = ANY($1::text[]) AND UPPER(status) = 'ACTIVE'
+SELECT * FROM care_providers
+WHERE (slug = ANY($1::text[]) OR id = ANY($1::text[]))
+  AND UPPER(status) = 'ACTIVE'
 """
 
 # --- Monitor queries ---
@@ -230,7 +235,10 @@ SELECT COUNT(*) as total FROM provider_monitors WHERE user_id = $1
 """
 
 PROVIDER_ID_FROM_SLUG = """
-SELECT id FROM care_providers WHERE slug = $1 OR id = $1
+SELECT id FROM care_providers
+WHERE slug = $1 OR id = $1
+ORDER BY CASE WHEN slug = $1 THEN 0 ELSE 1 END
+LIMIT 1
 """
 
 # --- Rating history queries ---

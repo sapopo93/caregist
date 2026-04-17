@@ -9,6 +9,7 @@ import time
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
 from typing import Any
+from urllib.parse import quote
 
 from fastapi import HTTPException
 
@@ -468,6 +469,13 @@ def digest_key_for_week(reference_date: date) -> str:
     return f"{iso_year}-W{iso_week:02d}"
 
 
+def _provider_profile_url(row: dict[str, Any]) -> str:
+    key = row.get("slug") or row.get("provider_location_id") or row.get("id")
+    if not key:
+        return "https://caregist.co.uk/search"
+    return f"https://caregist.co.uk/provider/{quote(str(key), safe='')}"
+
+
 def build_weekly_digest_html(filters: dict[str, Any], rows: list[dict[str, Any]], digest_key: str) -> str:
     filter_lines = []
     for key, value in filters.items():
@@ -478,7 +486,7 @@ def build_weekly_digest_html(filters: dict[str, Any], rows: list[dict[str, Any]]
         f"""
         <tr>
           <td style="padding:10px 12px;border-bottom:1px solid #E8E0D0">
-            <a href="https://caregist.co.uk/provider/{row['slug']}" style="color:#6B4C35;text-decoration:none;font-weight:600">{row['name']}</a>
+            <a href="{_provider_profile_url(row)}" style="color:#6B4C35;text-decoration:none;font-weight:600">{row['name']}</a>
             <div style="font-size:12px;color:#8a6a4a;margin-top:2px">{row['town'] or ''} · {row['region'] or ''}</div>
           </td>
           <td style="padding:10px 12px;border-bottom:1px solid #E8E0D0">{row['service_types'] or '—'}</td>

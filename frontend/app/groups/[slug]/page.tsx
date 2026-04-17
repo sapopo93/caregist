@@ -2,6 +2,7 @@ import Link from "next/link";
 import RatingBadge from "@/components/RatingBadge";
 import PrintButton from "@/components/PrintButton";
 import { getServerApiBase, getServerApiKey } from "@/lib/server-api-config";
+import { getProviderHref } from "@/lib/provider-path";
 import type { Metadata } from "next";
 
 async function fetchGroup(slug: string) {
@@ -142,7 +143,7 @@ export default async function GroupDetailPage({ params }: { params: Promise<{ sl
             {locations.map((loc: any) => (
               <tr key={loc.id} className="border-b border-stone/50 hover:bg-cream/50">
                 <td className="py-3 pr-4">
-                  <Link href={`/provider/${loc.slug}`} className="text-bark hover:text-clay font-medium">
+                  <Link href={getProviderHref(loc)} className="text-bark hover:text-clay font-medium">
                     {loc.name}
                   </Link>
                 </td>

@@ -1,5 +1,5 @@
 import ProviderCard from "@/components/ProviderCard";
-import { getClaimHref } from "@/lib/provider-path";
+import { getClaimHref, getProviderHref, getProviderPathKey } from "@/lib/provider-path";
 import ExportCSVButton from "@/components/ExportCSVButton";
 import PrintButton from "@/components/PrintButton";
 import RatingDistributionBar from "@/components/RatingDistributionBar";
@@ -60,7 +60,7 @@ export default async function CityRatingPage({
         "@type": "LocalBusiness",
         name: p.name,
         address: { "@type": "PostalAddress", addressLocality: p.town, postalCode: p.postcode, addressCountry: "GB" },
-        url: `https://caregist.co.uk/provider/${p.slug}`,
+        ...(getProviderPathKey(p) && { url: `https://caregist.co.uk${getProviderHref(p)}` }),
       },
     })),
   };

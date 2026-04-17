@@ -6,6 +6,7 @@ import RatingDistributionBar from "@/components/RatingDistributionBar";
 import EmailCaptureStrip from "@/components/EmailCaptureStrip";
 import TrustSignal from "@/components/TrustSignal";
 import { searchProviders, getRegionStats } from "@/lib/api";
+import { getProviderHref, getProviderPathKey } from "@/lib/provider-path";
 import Link from "next/link";
 import type { Metadata } from "next";
 
@@ -90,7 +91,11 @@ export default async function RegionPage({
       itemListElement: stats.top_providers.map((p: any, i: number) => ({
         "@type": "ListItem",
         position: i + 1,
-        item: { "@type": "LocalBusiness", name: p.name, url: `https://caregist.co.uk/provider/${p.slug}` },
+        item: {
+          "@type": "LocalBusiness",
+          name: p.name,
+          ...(getProviderPathKey(p) && { url: `https://caregist.co.uk${getProviderHref(p)}` }),
+        },
       })),
     }),
   };
@@ -130,8 +135,8 @@ export default async function RegionPage({
           <div className="space-y-3">
             {stats.top_providers.map((p: any) => (
               <Link
-                key={p.slug}
-                href={`/provider/${p.slug}`}
+                key={getProviderPathKey(p) || p.name}
+                href={getProviderHref(p)}
                 className="flex items-center justify-between p-3 rounded-lg hover:bg-parchment transition-colors"
               >
                 <div>

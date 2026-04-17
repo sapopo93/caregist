@@ -80,6 +80,27 @@ async def test_compare_two_providers(patched_db):
 
 
 @pytest.mark.asyncio
+async def test_compare_accepts_provider_ids_for_slugless_cards(patched_db):
+    mock_conn = patched_db
+    mock_conn.fetch.return_value = [
+        mock_provider_row("provider-a", "Provider A"),
+        mock_provider_row("provider-b", "Provider B"),
+    ]
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.get(
+            "/api/v1/providers/compare?slugs=LOC-provider-a,LOC-provider-b",
+            headers=HEADERS,
+        )
+
+    assert resp.status_code == 200
+    query, lookup_keys = mock_conn.fetch.await_args.args
+    assert "slug = ANY" in query
+    assert "id = ANY" in query
+    assert lookup_keys == ["LOC-provider-a", "LOC-provider-b"]
+
+
+@pytest.mark.asyncio
 async def test_compare_respects_starter_limit(patched_db):
     mock_conn = patched_db
     app.dependency_overrides[validate_api_key] = lambda: {

@@ -119,7 +119,6 @@ async def test_public_provider_detail_resolves_by_slug_or_id(patched_db, lookup_
     body = resp.json()
     assert body["data"]["id"] == "1-100"
     assert body["data"]["name"] == "Sunrise Care Home"
-    mock_conn.fetchrow.assert_awaited_with(
-        "\nSELECT * FROM care_providers WHERE slug = $1 OR id = $1\n",
-        lookup_key,
-    )
+    query, query_key = mock_conn.fetchrow.await_args.args
+    assert "slug = $1 OR id = $1" in query
+    assert query_key == lookup_key
