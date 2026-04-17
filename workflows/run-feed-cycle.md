@@ -99,3 +99,11 @@ SELECT * FROM webhook_delivery_log WHERE status NOT IN (200, 201) AND created_at
 **Performance degradation**
 - Check `trusted_event_ledger` row count (`SELECT COUNT(*) ...`). If >100k rows, consider archival strategy.
 - Monitor webhook delivery latency in `webhook_delivery_log.response_time_ms`
+
+**Changes endpoint 404 / incremental update failing with ChangesFetchError**
+- CQC may have deprecated or moved `/changes/location`. `incremental_update.py` will automatically fall back to a paginated location list scan and insert a `pipeline_alert_log` entry with key `changes_endpoint_unavailable`.
+- Verify the CQC API subscription key is valid: check `CQC_API_KEY` / `CQC_SUBSCRIPTION_KEY` in `.env`.
+- To force a recovery scan from a specific date: `python3 incremental_update.py --since 2026-02-24`
+- The list scan fallback processes all ~55k locations (~56 pages). For a 2-month recovery window expect 8–10 minutes.
+- If `care_providers` data is severely stale (>2 weeks) and list scan finds nothing, run the full pipeline: `./run_enriched_pipeline.sh` then `python3 db/seed.py`
+- After any recovery run, propagate to the feed: `python3 tools/run_new_registration_feed_cycle.py`

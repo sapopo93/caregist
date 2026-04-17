@@ -72,8 +72,13 @@ def api_headers(api_key: str | None) -> dict[str, str]:
     return headers
 
 
-def fetch_changes(base_url: str, api_key: str | None, since: str, sleep: float) -> list[str]:
-    """Fetch location IDs changed since a given date."""
+def fetch_changes(base_url: str, api_key: str | None, since: str, sleep: float) -> list[str] | None:
+    """Fetch location IDs changed since a given date.
+
+    Returns a list of changed location IDs, or None if the changes endpoint is
+    unavailable (404/410) — caller should fall back to fetch_recent_via_list_scan().
+    Raises ChangesFetchError for other non-retryable failures.
+    """
     url = f"{base_url}/changes/location"
     headers = api_headers(api_key)
     changed_ids: list[str] = []
@@ -90,6 +95,8 @@ def fetch_changes(base_url: str, api_key: str | None, since: str, sleep: float) 
                 if resp.status_code in RETRYABLE_STATUS_CODES and attempt < DEFAULT_MAX_RETRIES:
                     time.sleep(max(sleep, attempt))
                     continue
+                if resp.status_code in (404, 410):
+                    return None  # Endpoint gone — caller should use list scan fallback
                 raise ChangesFetchError(f"Changes API returned {resp.status_code} on page {page}")
             data = resp.json()
             changes = data.get("changes", [])
@@ -111,6 +118,82 @@ def fetch_changes(base_url: str, api_key: str | None, since: str, sleep: float) 
             raise ChangesFetchError(f"Error fetching changes page {page}: {exc}") from exc
 
     return list(set(changed_ids))
+
+
+def fetch_recent_via_list_scan(
+    base_url: str, api_key: str | None, since: str, sleep: float
+) -> list[str]:
+    """Fallback when /changes/location is unavailable.
+
+    Paginates GET /locations and collects IDs where registrationDate >= since.
+    Stops early after MAX_OLD_PAGES consecutive pages with no records newer than `since`.
+    Note: CQC list ordering is not guaranteed newest-first, so this may scan all pages
+    for long since-windows.
+    """
+    url = f"{base_url}/locations"
+    headers = api_headers(api_key)
+    # Normalise since to a naive datetime for comparison
+    since_clean = since.replace("Z", "+00:00")
+    try:
+        since_dt = datetime.fromisoformat(since_clean)
+        if since_dt.tzinfo is not None:
+            since_dt = since_dt.replace(tzinfo=None)
+    except ValueError:
+        since_dt = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=DEFAULT_LOOKBACK_DAYS)
+
+    found_ids: list[str] = []
+    page = 1
+    consecutive_old_pages = 0
+    MAX_OLD_PAGES = 3
+
+    while True:
+        params = {"page": page, "perPage": 1000, "registrationStatus": "Active"}
+        try:
+            resp = requests.get(url, headers=headers, params=params, timeout=30)
+            if resp.status_code != 200:
+                raise ChangesFetchError(f"List scan returned {resp.status_code} on page {page}")
+            data = resp.json()
+            locations = data.get("locations", [])
+            if not locations:
+                break
+            page_new = 0
+            for loc in locations:
+                loc_id = loc.get("locationId") or loc.get("id", "")
+                if not loc_id:
+                    continue
+                reg_date_raw = loc.get("registrationDate", "")
+                reg_dt = parse_any_date(reg_date_raw)
+                if reg_dt:
+                    if isinstance(reg_dt, str):
+                        try:
+                            reg_dt = datetime.fromisoformat(reg_dt)
+                        except ValueError:
+                            reg_dt = None
+                    if reg_dt is not None:
+                        if hasattr(reg_dt, "tzinfo") and reg_dt.tzinfo is not None:
+                            reg_dt = reg_dt.replace(tzinfo=None)
+                        if reg_dt >= since_dt:
+                            found_ids.append(str(loc_id))
+                            page_new += 1
+            if page_new == 0:
+                consecutive_old_pages += 1
+                if consecutive_old_pages >= MAX_OLD_PAGES:
+                    break
+            else:
+                consecutive_old_pages = 0
+            total = int(data.get("total", 0))
+            fetched_so_far = (page - 1) * 1000 + len(locations)
+            print(f"  List scan page {page}: {page_new} new since {since} (total scanned: {fetched_so_far}/{total})")
+            if fetched_so_far >= total:
+                break
+            page += 1
+            time.sleep(sleep)
+        except ChangesFetchError:
+            raise
+        except Exception as exc:
+            raise ChangesFetchError(f"List scan error on page {page}: {exc}") from exc
+
+    return list(set(found_ids))
 
 
 def resolve_since(cur, explicit_since: str | None, *, now: datetime | None = None) -> str:
@@ -428,7 +511,24 @@ def main() -> int:
 
         print(f"Fetching CQC changes since {since}...")
         changed_ids = fetch_changes(args.base_url, api_key, since, args.sleep)
-        print(f"Found {len(changed_ids)} changed locations")
+        if changed_ids is None:
+            print("WARNING: /changes/location endpoint unavailable (404/410). Falling back to location list scan.")
+            if cur is not None:
+                try:
+                    cur.execute(
+                        """
+                        INSERT INTO pipeline_alert_log (alert_key, severity, details)
+                        VALUES ('changes_endpoint_unavailable', 'warning',
+                                '{"message": "CQC /changes/location returned 404 — falling back to list scan"}'::jsonb)
+                        """,
+                    )
+                    conn.commit()
+                except Exception as alert_exc:
+                    print(f"  (Could not log alert: {alert_exc})")
+            changed_ids = fetch_recent_via_list_scan(args.base_url, api_key, since, args.sleep)
+            print(f"List scan found {len(changed_ids)} potentially new/changed locations")
+        else:
+            print(f"Found {len(changed_ids)} changed locations")
 
         if not changed_ids:
             if cur is not None and run_id is not None:
