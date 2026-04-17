@@ -35,6 +35,11 @@ INCREMENTAL_UPDATE_LOCK_ID = 802451201
 DEFAULT_MAX_RETRIES = 3
 RETRYABLE_STATUS_CODES = {408, 429, 500, 502, 503, 504}
 
+# ETL intermediate file written by extract_cqc.py — used as the "known IDs" baseline
+LOCATIONS_LIST_CACHE = Path("_locations_list.ndjson")
+# Safety cap: never fetch more than this many detail records in one list-scan fallback run
+LIST_SCAN_MAX_DETAIL_FETCHES = 5000
+
 
 class ChangesFetchError(RuntimeError):
     """Raised when the CQC changes API cannot be fetched reliably."""
@@ -120,80 +125,148 @@ def fetch_changes(base_url: str, api_key: str | None, since: str, sleep: float) 
     return list(set(changed_ids))
 
 
-def fetch_recent_via_list_scan(
-    base_url: str, api_key: str | None, since: str, sleep: float
-) -> list[str]:
-    """Fallback when /changes/location is unavailable.
+def _load_known_location_ids() -> frozenset[str]:
+    """Load the set of location IDs seen in the last full ETL run from the cache file."""
+    if not LOCATIONS_LIST_CACHE.exists():
+        return frozenset()
+    ids: set[str] = set()
+    for line in LOCATIONS_LIST_CACHE.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            item = json.loads(line)
+            loc_id = item.get("locationId") or item.get("id")
+            if loc_id:
+                ids.add(str(loc_id))
+        except json.JSONDecodeError:
+            pass
+    return frozenset(ids)
 
-    Paginates GET /locations and collects IDs where registrationDate >= since.
-    Stops early after MAX_OLD_PAGES consecutive pages with no records newer than `since`.
-    Note: CQC list ordering is not guaranteed newest-first, so this may scan all pages
-    for long since-windows.
-    """
+
+def _fetch_all_cqc_location_stubs(base_url: str, api_key: str | None, sleep: float) -> list[dict]:
+    """Fetch all location stubs from GET /locations (returns locationId, locationName, postalCode)."""
     url = f"{base_url}/locations"
     headers = api_headers(api_key)
-    # Normalise since to a naive datetime for comparison
-    since_clean = since.replace("Z", "+00:00")
-    try:
-        since_dt = datetime.fromisoformat(since_clean)
-        if since_dt.tzinfo is not None:
-            since_dt = since_dt.replace(tzinfo=None)
-    except ValueError:
-        since_dt = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=DEFAULT_LOOKBACK_DAYS)
-
-    found_ids: list[str] = []
+    all_items: list[dict] = []
     page = 1
-    consecutive_old_pages = 0
-    MAX_OLD_PAGES = 3
-
     while True:
-        params = {"page": page, "perPage": 1000, "registrationStatus": "Active"}
         try:
-            resp = requests.get(url, headers=headers, params=params, timeout=30)
+            resp = requests.get(url, headers=headers, params={"page": page, "perPage": 1000}, timeout=30)
             if resp.status_code != 200:
-                raise ChangesFetchError(f"List scan returned {resp.status_code} on page {page}")
+                raise ChangesFetchError(f"Location list scan returned {resp.status_code} on page {page}")
             data = resp.json()
             locations = data.get("locations", [])
             if not locations:
                 break
-            page_new = 0
-            for loc in locations:
-                loc_id = loc.get("locationId") or loc.get("id", "")
-                if not loc_id:
-                    continue
-                reg_date_raw = loc.get("registrationDate", "")
-                reg_dt = parse_any_date(reg_date_raw)
-                if reg_dt:
-                    if isinstance(reg_dt, str):
-                        try:
-                            reg_dt = datetime.fromisoformat(reg_dt)
-                        except ValueError:
-                            reg_dt = None
-                    if reg_dt is not None:
-                        if hasattr(reg_dt, "tzinfo") and reg_dt.tzinfo is not None:
-                            reg_dt = reg_dt.replace(tzinfo=None)
-                        if reg_dt >= since_dt:
-                            found_ids.append(str(loc_id))
-                            page_new += 1
-            if page_new == 0:
-                consecutive_old_pages += 1
-                if consecutive_old_pages >= MAX_OLD_PAGES:
-                    break
-            else:
-                consecutive_old_pages = 0
+            all_items.extend(locations)
             total = int(data.get("total", 0))
-            fetched_so_far = (page - 1) * 1000 + len(locations)
-            print(f"  List scan page {page}: {page_new} new since {since} (total scanned: {fetched_so_far}/{total})")
-            if fetched_so_far >= total:
+            if (page % 20) == 0:
+                print(f"  Fetched {len(all_items)}/{total} location IDs from CQC list...")
+            if len(all_items) >= total:
                 break
             page += 1
             time.sleep(sleep)
         except ChangesFetchError:
             raise
         except Exception as exc:
-            raise ChangesFetchError(f"List scan error on page {page}: {exc}") from exc
+            raise ChangesFetchError(f"Location list scan error on page {page}: {exc}") from exc
+    return all_items
 
-    return list(set(found_ids))
+
+def _append_to_locations_cache(new_stubs: list[dict]) -> None:
+    """Append newly discovered location stubs to the ETL cache file."""
+    if not new_stubs:
+        return
+    try:
+        with LOCATIONS_LIST_CACHE.open("a", encoding="utf-8") as fh:
+            for stub in new_stubs:
+                fh.write(json.dumps(stub, ensure_ascii=True) + "\n")
+    except OSError as exc:
+        print(f"  Warning: could not update locations cache: {exc}")
+
+
+def _parse_since_dt(since: str) -> datetime:
+    """Parse the since string to a naive UTC datetime for comparison."""
+    since_clean = since.replace("Z", "+00:00")
+    try:
+        dt = datetime.fromisoformat(since_clean)
+        return dt.replace(tzinfo=None) if dt.tzinfo is not None else dt
+    except ValueError:
+        return datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=DEFAULT_LOOKBACK_DAYS)
+
+
+def fetch_recent_via_list_scan(
+    base_url: str, api_key: str | None, since: str, sleep: float
+) -> list[str]:
+    """Fallback when /changes/location is unavailable.
+
+    Strategy:
+    1. Load the set of known location IDs from _locations_list.ndjson (written by the full ETL).
+    2. Fetch all current location IDs from GET /locations (CQC list endpoint, no date filter).
+    3. Diff: IDs in CQC now but not in the known set are candidates.
+    4. Fetch the detail record for each candidate and filter by registrationDate >= since.
+    5. Append new stubs to the cache so future runs don't re-process them.
+
+    The CQC /locations list endpoint returns only (locationId, locationName, postalCode) —
+    no registrationDate, no registrationStatus filter. Date filtering requires detail fetches.
+    """
+    since_dt = _parse_since_dt(since)
+
+    # Step 1: Load known IDs from ETL cache
+    known_ids = _load_known_location_ids()
+    cache_source = f"ETL cache ({len(known_ids)} IDs)" if known_ids else "no ETL cache found"
+    print(f"  List scan baseline: {cache_source}")
+
+    # Step 2: Fetch all current location IDs from CQC
+    print(f"  Fetching all current CQC location IDs...")
+    all_stubs = _fetch_all_cqc_location_stubs(base_url, api_key, sleep)
+    all_ids = {str(stub.get("locationId") or stub.get("id", "")) for stub in all_stubs if stub.get("locationId") or stub.get("id")}
+    print(f"  CQC total: {len(all_ids)} | Known from last ETL: {len(known_ids)}")
+
+    # Step 3: Compute new IDs (in CQC now but not in our last ETL snapshot or care_providers)
+    candidate_ids = sorted(all_ids - known_ids)  # sorted for deterministic order
+    print(f"  Candidates (not in last ETL snapshot): {len(candidate_ids)}")
+
+    if not candidate_ids:
+        print("  No new location IDs found since last ETL run.")
+        return []
+
+    if len(candidate_ids) > LIST_SCAN_MAX_DETAIL_FETCHES:
+        print(f"  WARNING: {len(candidate_ids)} candidates exceeds safety cap ({LIST_SCAN_MAX_DETAIL_FETCHES}). "
+              f"Run full ETL to rebuild baseline: ./run_enriched_pipeline.sh")
+        candidate_ids = candidate_ids[:LIST_SCAN_MAX_DETAIL_FETCHES]
+
+    # Step 4: Fetch details for each candidate, filter by registrationDate >= since
+    matched_ids: list[str] = []
+    new_stubs_to_cache: list[dict] = []
+    stub_by_id = {str(s.get("locationId") or s.get("id", "")): s for s in all_stubs}
+
+    for i, loc_id in enumerate(candidate_ids):
+        detail = fetch_location_detail(base_url, api_key, loc_id)
+        new_stubs_to_cache.append(stub_by_id.get(loc_id, {"locationId": loc_id}))
+        if detail is None:
+            continue
+        reg_date = parse_any_date(detail.get("registrationDate"))
+        if reg_date:
+            if isinstance(reg_date, str):
+                try:
+                    reg_date = datetime.fromisoformat(reg_date)
+                except ValueError:
+                    reg_date = None
+            if reg_date is not None:
+                if hasattr(reg_date, "tzinfo") and reg_date.tzinfo is not None:
+                    reg_date = reg_date.replace(tzinfo=None)
+                if reg_date >= since_dt:
+                    matched_ids.append(loc_id)
+        if (i + 1) % 50 == 0:
+            print(f"  Fetched {i + 1}/{len(candidate_ids)} candidate details, {len(matched_ids)} matched so far...")
+        time.sleep(sleep)
+
+    # Step 5: Update cache with all newly seen IDs (so next run won't re-process them)
+    _append_to_locations_cache(new_stubs_to_cache)
+    print(f"  List scan complete: {len(matched_ids)} new registrations since {since}")
+    return matched_ids
 
 
 def resolve_since(cur, explicit_since: str | None, *, now: datetime | None = None) -> str:
