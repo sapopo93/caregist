@@ -16,7 +16,9 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import time
+import unicodedata
 from collections import Counter
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -27,6 +29,22 @@ import psycopg2.extras
 import requests
 
 from cqc_common import deep_get, first_non_empty, normalize_whitespace, parse_any_date, ensure_list, to_float
+
+try:
+    from slugify import slugify as _slugify
+except ImportError:
+    def _slugify(value: str, separator: str = "-") -> str:
+        normalized = unicodedata.normalize("NFKD", value).encode("ascii", "ignore").decode("ascii")
+        lowered = re.sub(r"[^a-z0-9]+", separator, normalized.lower()).strip(separator)
+        return re.sub(rf"{re.escape(separator)}+", separator, lowered)
+
+
+def _make_slug(name: str, town: str, location_id: str) -> str:
+    """Generate a URL slug from name + town, falling back to location_id."""
+    base = _slugify(f"{name}-{town}" if town else name, separator="-")
+    if not base:
+        base = _slugify(location_id, separator="-") or f"provider-{location_id.lower()}"
+    return base
 
 DEFAULT_BASE_URL = "https://api.service.cqc.org.uk/public/v1"
 DEFAULT_SLEEP = 0.15
@@ -460,7 +478,7 @@ def clean_location(data: dict[str, Any]) -> dict[str, Any] | None:
 
 
 ALLOWED_COLUMNS = frozenset({
-    "id", "provider_id", "name", "type", "status", "registration_date",
+    "id", "provider_id", "name", "slug", "type", "status", "registration_date",
     "address_line1", "address_line2", "town", "county", "postcode",
     "region", "local_authority", "latitude", "longitude", "phone", "website",
     "overall_rating", "rating_safe", "rating_effective", "rating_caring",
@@ -481,6 +499,14 @@ def upsert_provider(cur, record: dict[str, Any]) -> str:
         (safe_record["id"],),
     )
     existing = cur.fetchone()
+
+    # Generate slug for new inserts; never overwrite an existing slug on update
+    if not existing and not safe_record.get("slug"):
+        safe_record["slug"] = _make_slug(
+            safe_record.get("name", ""),
+            safe_record.get("town", ""),
+            safe_record["id"],
+        )
 
     cols = list(safe_record.keys())
     vals = [safe_record[c] for c in cols]
@@ -660,6 +686,17 @@ def main() -> int:
                 SET geom = ST_SetSRID(ST_MakePoint(longitude::float, latitude::float), 4326)
                 WHERE id = ANY(%s) AND latitude IS NOT NULL AND longitude IS NOT NULL
             """, (ids,))
+
+        # Backfill slugs for any providers that ended up with NULL slug (e.g. from a prior
+        # incremental run before slug generation was added). Generates slug from name+town+id.
+        cur.execute("SELECT id, name, town FROM care_providers WHERE slug IS NULL OR slug = ''")
+        null_slug_rows = cur.fetchall()
+        if null_slug_rows:
+            print(f"  Backfilling slugs for {len(null_slug_rows)} providers with NULL slug...")
+            for row_id, row_name, row_town in null_slug_rows:
+                slug = _make_slug(row_name or "", row_town or "", row_id)
+                cur.execute("UPDATE care_providers SET slug = %s WHERE id = %s", (slug, row_id))
+            print(f"  Slug backfill complete.")
 
         complete_pipeline_run(
             cur,
