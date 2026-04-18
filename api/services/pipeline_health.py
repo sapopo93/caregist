@@ -20,6 +20,14 @@ def _as_iso(value: datetime | None) -> str | None:
     return value.isoformat()
 
 
+def _as_utc(value: datetime | None) -> datetime | None:
+    if value is None:
+        return None
+    if value.tzinfo is None:
+        return value.replace(tzinfo=UTC)
+    return value.astimezone(UTC)
+
+
 async def _table_exists(conn: asyncpg.Connection, table_name: str) -> bool:
     return bool(
         await conn.fetchval(
@@ -66,10 +74,10 @@ async def get_pipeline_health(conn: asyncpg.Connection) -> dict[str, Any]:
             """
         )
 
-    latest_completed_at = latest_run["completed_at"] if latest_run else None
-    latest_started_at = latest_run["started_at"] if latest_run else None
+    latest_completed_at = _as_utc(latest_run["completed_at"] if latest_run else None)
+    latest_started_at = _as_utc(latest_run["started_at"] if latest_run else None)
     latest_status = latest_run["status"] if latest_run else None
-    latest_observed_at = latest_event["latest_observed_at"] if latest_event else None
+    latest_observed_at = _as_utc(latest_event["latest_observed_at"] if latest_event else None)
     latest_effective_date = latest_event["latest_effective_date"] if latest_event else None
 
     recent_run_ok = bool(
