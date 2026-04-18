@@ -100,7 +100,6 @@ validateServerApiEnv();
 
 const nextConfig: NextConfig = {
   devIndicators: false,
-  transpilePackages: ["@support-platform/ui"],
   async rewrites() {
     const apiBase =
       resolveApiBaseForProduction(process.env.NEXT_PUBLIC_API_URL) ||
