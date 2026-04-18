@@ -25,6 +25,16 @@ WEBHOOK_EVENT = "feed.new_registration"
 _SYNC_COOLDOWN_SECONDS = 300
 _last_sync_completed_at = 0.0
 
+SORT_COLUMNS: dict[str, str] = {
+    "effective_date": "tel.effective_date",
+    "name": "cp.name",
+    "confidence_score": "tel.confidence_score",
+    "region": "cp.region",
+    "local_authority": "cp.local_authority",
+}
+DEFAULT_SORT_BY = "effective_date"
+DEFAULT_SORT_ORDER = "desc"
+
 
 @dataclass
 class FeedFilters:
@@ -170,7 +180,24 @@ def _build_filter_clause(filters: FeedFilters, start_index: int = 1) -> tuple[st
     return " AND ".join(clauses), args
 
 
-def _build_feed_query(filters: FeedFilters, limit: int, offset: int) -> tuple[str, str, list[Any]]:
+def _resolve_sort(sort_by: str | None, sort_order: str | None) -> tuple[str, str]:
+    column_key = (sort_by or DEFAULT_SORT_BY).lower()
+    if column_key not in SORT_COLUMNS:
+        column_key = DEFAULT_SORT_BY
+    direction = (sort_order or DEFAULT_SORT_ORDER).lower()
+    if direction not in {"asc", "desc"}:
+        direction = DEFAULT_SORT_ORDER
+    return SORT_COLUMNS[column_key], direction.upper()
+
+
+def _build_feed_query(
+    filters: FeedFilters,
+    limit: int,
+    offset: int,
+    *,
+    sort_by: str | None = None,
+    sort_order: str | None = None,
+) -> tuple[str, str, list[Any]]:
     where_sql, args = _build_filter_clause(filters)
     limit_index = len(args) + 1
     offset_index = len(args) + 2
@@ -181,6 +208,12 @@ def _build_feed_query(filters: FeedFilters, limit: int, offset: int) -> tuple[st
       ON cp.id = COALESCE(tel.location_id, tel.entity_id)
     WHERE {where_sql}
     """
+
+    sort_column, direction = _resolve_sort(sort_by, sort_order)
+    nulls_clause = "NULLS LAST" if direction == "DESC" else "NULLS FIRST"
+    order_clause = (
+        f"ORDER BY {sort_column} {direction} {nulls_clause}, tel.observed_at DESC, tel.id DESC"
+    )
 
     query = f"""
     SELECT
@@ -208,7 +241,7 @@ def _build_feed_query(filters: FeedFilters, limit: int, offset: int) -> tuple[st
       cp.phone,
       cp.overall_rating
     {base}
-    ORDER BY tel.effective_date DESC, tel.observed_at DESC, tel.id DESC
+    {order_clause}
     LIMIT ${limit_index} OFFSET ${offset_index}
     """
     count_query = f"SELECT COUNT(*) AS total {base}"
@@ -300,8 +333,18 @@ async def sync_new_registration_events(conn, *, force: bool = False) -> int:
     return len(await sync_new_registration_event_payloads(conn, force=force))
 
 
-async def list_new_registration_events(conn, filters: FeedFilters, *, limit: int, offset: int) -> tuple[list[dict[str, Any]], int]:
-    query, count_query, args = _build_feed_query(filters, limit, offset)
+async def list_new_registration_events(
+    conn,
+    filters: FeedFilters,
+    *,
+    limit: int,
+    offset: int,
+    sort_by: str | None = None,
+    sort_order: str | None = None,
+) -> tuple[list[dict[str, Any]], int]:
+    query, count_query, args = _build_feed_query(
+        filters, limit, offset, sort_by=sort_by, sort_order=sort_order,
+    )
     rows = await conn.fetch(query, *args)
     count_row = await conn.fetchrow(count_query, *args[:-2])
     total = int(count_row["total"] or 0) if count_row else 0
@@ -311,6 +354,14 @@ async def list_new_registration_events(conn, filters: FeedFilters, *, limit: int
         item["metadata"] = coerce_json_object(item.get("metadata"))
         if item.get("confidence_score") is not None:
             item["confidence_score"] = float(item["confidence_score"])
+        slug = item.get("slug")
+        slug_text = slug.strip() if isinstance(slug, str) else ""
+        if not slug_text or slug_text.lower() in {"null", "undefined"}:
+            logger.warning(
+                "New registration feed row has invalid provider slug: provider_location_id=%s slug=%r",
+                item.get("provider_location_id"),
+                slug,
+            )
         normalized_rows.append(item)
     return normalized_rows, total
 

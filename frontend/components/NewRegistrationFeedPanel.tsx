@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 
 import { trackEvent } from "@/lib/analytics";
@@ -16,6 +16,22 @@ type FeedFilters = {
   from_date: string;
   to_date: string;
 };
+
+type SortBy = "effective_date" | "name" | "confidence_score" | "region" | "local_authority";
+type SortOrder = "asc" | "desc";
+
+const SORT_BY_OPTIONS: Array<{ value: SortBy; label: string }> = [
+  { value: "effective_date", label: "Registration date" },
+  { value: "name", label: "Provider name" },
+  { value: "confidence_score", label: "Confidence score" },
+  { value: "region", label: "Region" },
+  { value: "local_authority", label: "Local authority" },
+];
+
+const SORT_ORDER_OPTIONS: Array<{ value: SortOrder; label: string }> = [
+  { value: "desc", label: "Newest / Z–A / High–Low" },
+  { value: "asc", label: "Oldest / A–Z / Low–High" },
+];
 
 type FeedEvent = {
   id?: number;
@@ -43,11 +59,77 @@ const EMPTY_FILTERS: FeedFilters = {
   to_date: "",
 };
 
-function buildFeedQuery(filters: FeedFilters, page = 1) {
+type FilterOption = {
+  value: string;
+  label: string;
+};
+
+const SELECT_CLASS = "px-3 py-2 rounded border border-stone bg-white text-sm min-w-0";
+const DATE_INPUT_CLASS = "px-3 py-2 rounded border border-stone bg-white text-sm min-w-0";
+
+function cleanOptionValue(value?: string | null): string {
+  return value?.trim() ?? "";
+}
+
+function toSortedOptions(values: Array<string | null | undefined>): FilterOption[] {
+  return Array.from(new Set(values.map(cleanOptionValue).filter(Boolean)))
+    .sort((a, b) => a.localeCompare(b))
+    .map((value) => ({ value, label: value }));
+}
+
+function serviceTypeOptions(events: FeedEvent[]): FilterOption[] {
+  return toSortedOptions(
+    events.flatMap((event) => event.service_types?.split("|").map((service) => service.trim()) ?? []),
+  );
+}
+
+function searchOptions(events: FeedEvent[]): FilterOption[] {
+  const providerOptions = events.map((event) => cleanOptionValue(event.name)).filter(Boolean);
+  const townOptions = events.map((event) => cleanOptionValue(event.town)).filter(Boolean);
+  return toSortedOptions([...providerOptions, ...townOptions]);
+}
+
+function filterOptionsWithSelected(options: FilterOption[], selected: string): FilterOption[] {
+  const value = selected.trim();
+  if (!value || options.some((option) => option.value === value)) return options;
+  return [{ value, label: value }, ...options];
+}
+
+function FilterSelect({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  options: FilterOption[];
+  onChange: (value: string) => void;
+}) {
+  return (
+    <select
+      aria-label={label}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className={SELECT_CLASS}
+    >
+      <option value="">{label}</option>
+      {filterOptionsWithSelected(options, value).map((option) => (
+        <option key={option.value} value={option.value}>
+          {option.label}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+function buildFeedQuery(filters: FeedFilters, page = 1, sortBy?: SortBy, sortOrder?: SortOrder) {
   const params = new URLSearchParams();
   Object.entries(filters).forEach(([key, value]) => {
     if (value) params.set(key, value);
   });
+  if (sortBy) params.set("sort_by", sortBy);
+  if (sortOrder) params.set("sort_order", sortOrder);
   params.set("page", String(page));
   return params.toString();
 }
@@ -60,6 +142,8 @@ export default function NewRegistrationFeedPanel({
   upgradeHref: string;
 }) {
   const [filters, setFilters] = useState<FeedFilters>(EMPTY_FILTERS);
+  const [sortBy, setSortBy] = useState<SortBy>("effective_date");
+  const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
   const [events, setEvents] = useState<FeedEvent[]>([]);
   const [meta, setMeta] = useState<any>(null);
   const [page, setPage] = useState(1);
@@ -73,13 +157,19 @@ export default function NewRegistrationFeedPanel({
   const [digestLoading, setDigestLoading] = useState(false);
   const [exportLoading, setExportLoading] = useState<"" | "csv" | "xlsx">("");
 
-  async function loadFeed(nextPage = page, nextFilters = filters) {
+  async function loadFeed(
+    nextPage = page,
+    nextFilters = filters,
+    nextSortBy: SortBy = sortBy,
+    nextSortOrder: SortOrder = sortOrder,
+  ) {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch(`/api/v1/feed/new-registrations?${buildFeedQuery(nextFilters, nextPage)}`, {
-        credentials: "include",
-      });
+      const res = await fetch(
+        `/api/v1/feed/new-registrations?${buildFeedQuery(nextFilters, nextPage, nextSortBy, nextSortOrder)}`,
+        { credentials: "include" },
+      );
       const data = await res.json();
       if (!res.ok) {
         setError(data.detail || "Could not load the new registration feed.");
@@ -227,6 +317,17 @@ export default function NewRegistrationFeedPanel({
   const hasDigestAccess = tier !== "free";
   const canExport = tier !== "free";
   const supportsWebhooks = tier === "business" || tier === "enterprise";
+  const filterOptions = useMemo(
+    () => ({
+      q: searchOptions(events),
+      region: toSortedOptions(events.map((event) => event.region)),
+      local_authority: toSortedOptions(events.map((event) => event.local_authority)),
+      service_type: serviceTypeOptions(events),
+      provider_type: toSortedOptions(events.map((event) => event.type)),
+      postcode_prefix: toSortedOptions(events.map((event) => event.postcode)),
+    }),
+    [events],
+  );
 
   return (
     <section className="bg-cream border border-stone rounded-lg p-6 mb-6">
@@ -255,24 +356,77 @@ export default function NewRegistrationFeedPanel({
       <div className="grid xl:grid-cols-[1.8fr_1fr] gap-6">
         <div>
           <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-3 mb-4">
-            <input value={filters.q} onChange={(e) => setFilters((current) => ({ ...current, q: e.target.value }))} placeholder="Search provider or town" className="px-3 py-2 rounded border border-stone bg-white text-sm" />
-            <input value={filters.region} onChange={(e) => setFilters((current) => ({ ...current, region: e.target.value }))} placeholder="Region" className="px-3 py-2 rounded border border-stone bg-white text-sm" />
-            <input value={filters.local_authority} onChange={(e) => setFilters((current) => ({ ...current, local_authority: e.target.value }))} placeholder="Local authority" className="px-3 py-2 rounded border border-stone bg-white text-sm" />
-            <input value={filters.service_type} onChange={(e) => setFilters((current) => ({ ...current, service_type: e.target.value }))} placeholder="Service type" className="px-3 py-2 rounded border border-stone bg-white text-sm" />
-            <input value={filters.provider_type} onChange={(e) => setFilters((current) => ({ ...current, provider_type: e.target.value }))} placeholder="Provider type" className="px-3 py-2 rounded border border-stone bg-white text-sm" />
-            <input value={filters.postcode_prefix} onChange={(e) => setFilters((current) => ({ ...current, postcode_prefix: e.target.value }))} placeholder="Postcode prefix" className="px-3 py-2 rounded border border-stone bg-white text-sm" />
-            <input value={filters.from_date} onChange={(e) => setFilters((current) => ({ ...current, from_date: e.target.value }))} type="date" className="px-3 py-2 rounded border border-stone bg-white text-sm" />
-            <input value={filters.to_date} onChange={(e) => setFilters((current) => ({ ...current, to_date: e.target.value }))} type="date" className="px-3 py-2 rounded border border-stone bg-white text-sm" />
+            <FilterSelect label="Provider or town" value={filters.q} options={filterOptions.q} onChange={(value) => setFilters((current) => ({ ...current, q: value }))} />
+            <FilterSelect label="Region" value={filters.region} options={filterOptions.region} onChange={(value) => setFilters((current) => ({ ...current, region: value }))} />
+            <FilterSelect label="Local authority" value={filters.local_authority} options={filterOptions.local_authority} onChange={(value) => setFilters((current) => ({ ...current, local_authority: value }))} />
+            <FilterSelect label="Service type" value={filters.service_type} options={filterOptions.service_type} onChange={(value) => setFilters((current) => ({ ...current, service_type: value }))} />
+            <FilterSelect label="Provider type" value={filters.provider_type} options={filterOptions.provider_type} onChange={(value) => setFilters((current) => ({ ...current, provider_type: value }))} />
+            <FilterSelect label="Postcode" value={filters.postcode_prefix} options={filterOptions.postcode_prefix} onChange={(value) => setFilters((current) => ({ ...current, postcode_prefix: value }))} />
+            <input
+              type="date"
+              aria-label="Registered from"
+              value={filters.from_date}
+              onChange={(e) => setFilters((current) => ({ ...current, from_date: e.target.value }))}
+              className={DATE_INPUT_CLASS}
+            />
+            <input
+              type="date"
+              aria-label="Registered to"
+              value={filters.to_date}
+              onChange={(e) => setFilters((current) => ({ ...current, to_date: e.target.value }))}
+              className={DATE_INPUT_CLASS}
+            />
+          </div>
+
+          <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-3 mb-4">
+            <label className="flex flex-col gap-1 text-xs font-mono uppercase tracking-[0.14em] text-dusk">
+              Sort by
+              <select
+                value={sortBy}
+                onChange={(e) => {
+                  const next = e.target.value as SortBy;
+                  setSortBy(next);
+                  void loadFeed(1, filters, next, sortOrder);
+                }}
+                className={SELECT_CLASS}
+              >
+                {SORT_BY_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="flex flex-col gap-1 text-xs font-mono uppercase tracking-[0.14em] text-dusk">
+              Order
+              <select
+                value={sortOrder}
+                onChange={(e) => {
+                  const next = e.target.value as SortOrder;
+                  setSortOrder(next);
+                  void loadFeed(1, filters, sortBy, next);
+                }}
+                className={SELECT_CLASS}
+              >
+                {SORT_ORDER_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
 
           <div className="flex flex-wrap gap-3 mb-4">
-            <button onClick={() => void loadFeed(1, filters)} disabled={loading} className="px-4 py-2 bg-clay text-white rounded-lg text-sm hover:bg-bark transition-colors disabled:opacity-50">
+            <button onClick={() => void loadFeed(1, filters, sortBy, sortOrder)} disabled={loading} className="px-4 py-2 bg-clay text-white rounded-lg text-sm hover:bg-bark transition-colors disabled:opacity-50">
               {loading ? "Loading..." : "Apply filters"}
             </button>
             <button
               onClick={() => {
                 setFilters(EMPTY_FILTERS);
-                void loadFeed(1, EMPTY_FILTERS);
+                setSortBy("effective_date");
+                setSortOrder("desc");
+                void loadFeed(1, EMPTY_FILTERS, "effective_date", "desc");
               }}
               className="px-4 py-2 border border-stone rounded-lg text-sm text-bark hover:bg-parchment transition-colors"
             >
@@ -354,10 +508,10 @@ export default function NewRegistrationFeedPanel({
                 : "Business adds webhook delivery of feed.new_registration for downstream CRM or ops systems."}
             </div>
             <div className="flex gap-3">
-              <button onClick={() => previousPage && void loadFeed(previousPage, filters)} disabled={!previousPage || loading} className="px-3 py-2 border border-stone rounded-lg disabled:opacity-50">
+              <button onClick={() => previousPage && void loadFeed(previousPage, filters, sortBy, sortOrder)} disabled={!previousPage || loading} className="px-3 py-2 border border-stone rounded-lg disabled:opacity-50">
                 Previous
               </button>
-              <button onClick={() => nextPage && void loadFeed(nextPage, filters)} disabled={!nextPage || loading} className="px-3 py-2 border border-stone rounded-lg disabled:opacity-50">
+              <button onClick={() => nextPage && void loadFeed(nextPage, filters, sortBy, sortOrder)} disabled={!nextPage || loading} className="px-3 py-2 border border-stone rounded-lg disabled:opacity-50">
                 Next
               </button>
             </div>
@@ -389,7 +543,7 @@ export default function NewRegistrationFeedPanel({
                             onClick={() => {
                               const nextFilters = { ...EMPTY_FILTERS, ...item.filters };
                               setFilters(nextFilters);
-                              void loadFeed(1, nextFilters);
+                              void loadFeed(1, nextFilters, sortBy, sortOrder);
                             }}
                             className="text-clay underline"
                           >

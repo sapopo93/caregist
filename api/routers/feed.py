@@ -112,6 +112,8 @@ async def get_new_registration_feed(
     postcode_prefix: str | None = Query(None),
     from_date: str | None = Query(None),
     to_date: str | None = Query(None),
+    sort_by: str | None = Query(None),
+    sort_order: str | None = Query(None),
     page: int = Query(1, ge=1),
     per_page: int | None = Query(None, ge=1, le=250),
     _auth: dict = Depends(validate_api_key),
@@ -128,7 +130,10 @@ async def get_new_registration_feed(
     # (tools/run_new_registration_feed_cycle.py) or the internal admin endpoint
     # below. GET requests are read-only and never write to the ledger.
     async with get_connection() as conn:
-        rows, total = await list_new_registration_events(conn, filters, limit=page_size, offset=offset)
+        rows, total = await list_new_registration_events(
+            conn, filters, limit=page_size, offset=offset,
+            sort_by=sort_by, sort_order=sort_order,
+        )
 
     if tier == "free":
         total = min(total, page_size)
