@@ -3,8 +3,14 @@ export interface ProviderPathSource {
   slug?: string | null;
 }
 
+function getValidSlug(slug?: string | null): string {
+  const trimmed = slug?.trim() ?? "";
+  const normalized = trimmed.toLowerCase();
+  return trimmed && normalized !== "null" && normalized !== "undefined" ? trimmed : "";
+}
+
 export function getProviderPathKey(provider: ProviderPathSource): string {
-  return provider.slug?.trim() || provider.id?.trim() || "";
+  return getValidSlug(provider.slug) || provider.id?.trim() || "";
 }
 
 export function getProviderHref(provider: ProviderPathSource): string {

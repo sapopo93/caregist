@@ -24,4 +24,34 @@ describe("provider path helpers", () => {
     assert.equal(getProviderHref({}), "/search");
     assert.equal(getProviderHref({ slug: "  ", id: "  " }), "/search");
   });
+
+  it("falls back to id when slug is null", () => {
+    assert.equal(getProviderPathKey({ id: "1-100", slug: null }), "1-100");
+    assert.equal(getProviderHref({ id: "1-100", slug: null }), "/provider/1-100");
+  });
+
+  it("falls back to id when slug is empty", () => {
+    assert.equal(getProviderPathKey({ id: "1-100", slug: "" }), "1-100");
+    assert.equal(getProviderHref({ id: "1-100", slug: "" }), "/provider/1-100");
+  });
+
+  it("falls back to id when slug is whitespace", () => {
+    assert.equal(getProviderPathKey({ id: "1-100", slug: "  " }), "1-100");
+    assert.equal(getProviderHref({ id: "1-100", slug: "  " }), "/provider/1-100");
+  });
+
+  it("falls back to id when slug is the string null", () => {
+    assert.equal(getProviderPathKey({ id: "1-100", slug: "null" }), "1-100");
+    assert.equal(getProviderHref({ id: "1-100", slug: "null" }), "/provider/1-100");
+  });
+
+  it("falls back to id when slug is the string undefined", () => {
+    assert.equal(getProviderPathKey({ id: "1-100", slug: "undefined" }), "1-100");
+    assert.equal(getProviderHref({ id: "1-100", slug: "undefined" }), "/provider/1-100");
+  });
+
+  it("uses real slug values", () => {
+    assert.equal(getProviderPathKey({ id: "1-100", slug: "real-slug" }), "real-slug");
+    assert.equal(getProviderHref({ id: "1-100", slug: "real-slug" }), "/provider/real-slug");
+  });
 });
