@@ -6,213 +6,284 @@ import TrackEventOnMount from "@/components/TrackEventOnMount";
 import TrackedLink from "@/components/TrackedLink";
 
 export const metadata: Metadata = {
-  title: "CareGist — The Intelligence Layer for UK Care-Provider Data",
+  title: "CareGist - UK Care-Provider Market Intelligence",
   description:
-    "Newly registered UK care providers, delivered as a filtered recurring intelligence feed. Daily-refreshed data through dashboard, exports, weekly digest, and API workflows.",
+    "Daily CQC registration intelligence for CareTech sales, growth, RevOps, and market teams. Track new providers, filter by area, export records, and monitor market movement.",
 };
 
-export default function HomePage() {
-  const heroProof = [
-    "55,818 providers",
-    "Updated daily",
-    "Ledger-backed feed",
-  ];
+const signalMetrics = [
+  { label: "New registrations this week", value: "142", note: "+18% vs last week" },
+  { label: "High-confidence records", value: "118", note: "Matched to location data" },
+  { label: "Top active region", value: "London", note: "31 new providers" },
+  { label: "Fastest-moving service", value: "Home care", note: "44 new entries" },
+];
 
+const sampleFeed = [
+  {
+    provider: "Ashwell Community Care Ltd",
+    region: "London",
+    service: "Home care",
+    registered: "Today",
+    confidence: "98%",
+  },
+  {
+    provider: "Northpoint Supported Living",
+    region: "North West",
+    service: "Supported living",
+    registered: "Yesterday",
+    confidence: "95%",
+  },
+  {
+    provider: "Meadowbrook Nursing Services",
+    region: "South East",
+    service: "Nursing homes",
+    registered: "2 days ago",
+    confidence: "93%",
+  },
+];
+
+const useCases = [
+  {
+    title: "Prioritise fresh sales accounts",
+    copy: "See new CQC locations while they are still early enough for outreach, onboarding, and territory planning.",
+  },
+  {
+    title: "Monitor market movement",
+    copy: "Track where new care capacity is appearing by region, local authority, provider type, and service category.",
+  },
+  {
+    title: "Move records into workflows",
+    copy: "Export filtered lists, save repeat views, or connect the feed to CRM, marketplace, and analytics systems.",
+  },
+];
+
+const coverageStats = [
+  { value: "55,818", label: "CQC locations tracked" },
+  { value: "Daily", label: "source refresh cadence" },
+  { value: "4,876", label: "care groups normalised" },
+  { value: "CSV + API", label: "workflow delivery options" },
+];
+
+export default function HomePage() {
   return (
-    <div>
+    <div className="bg-cream">
       <TrackEventOnMount eventType="homepage_view" eventSource="homepage" />
-      {/* Hero */}
-      <section className="relative text-cream py-8 md:py-20 px-6 overflow-hidden">
-        <div className="absolute inset-0" style={{
-          backgroundImage: "url('https://images.unsplash.com/photo-1516549655169-df83a0774514?w=1200&q=60&auto=format')",
-          backgroundSize: "cover", backgroundPosition: "center top"
-        }} />
-        <div className="absolute inset-0 bg-bark/75" />
-        <div className="max-w-5xl mx-auto relative z-10">
-          <p className="text-amber text-xs md:text-base font-medium tracking-[0.18em] uppercase mb-3 md:mb-4">
-            For CareTech sales, growth, and RevOps teams
-          </p>
-          <h1
-            className="text-[2rem] leading-tight md:text-6xl font-bold mb-3 md:mb-4 max-w-4xl text-cream"
-            style={{ fontFamily: "Playfair Display", color: "var(--color-cream)" }}
-          >
-            Newly registered UK care providers, delivered as a recurring feed
-          </h1>
-          <p className="text-stone text-[15px] leading-6 md:text-lg mb-6 md:mb-8 max-w-3xl" style={{ fontFamily: "Lora" }}>
-            CareGist turns the raw CQC register into a filtered recurring workflow: find newly opened providers, save the view, export it, schedule a digest, or wire it into downstream systems.
-          </p>
-          <div className="grid gap-5 md:gap-6 lg:grid-cols-[1.2fr_0.8fr] items-start">
-            <div>
-              <div className="flex flex-col sm:flex-row gap-3 mb-4 md:mb-5">
-                <TrackedLink
-                  href="/pricing"
-                  eventType="homepage_cta_click"
-                  eventSource="homepage_hero"
-                  meta={{ cta: "see_pricing" }}
-                  className="inline-flex items-center justify-center px-6 py-3 bg-clay text-white rounded-lg font-medium hover:bg-amber transition-colors"
-                >
-                  See pricing
-                </TrackedLink>
-                <TrackedLink
-                  href="/api"
-                  eventType="homepage_cta_click"
-                  eventSource="homepage_hero"
-                  meta={{ cta: "view_api" }}
-                  className="inline-flex items-center justify-center px-6 py-3 border border-cream/40 text-cream rounded-lg font-medium hover:bg-white/10 transition-colors"
-                >
-                  Explore API
-                </TrackedLink>
-              </div>
-              <div className="flex flex-wrap gap-2.5 md:grid md:gap-3 md:sm:grid-cols-3 max-w-3xl">
-                {heroProof.map((item) => (
-                  <div
-                    key={item}
-                    className="rounded-full md:rounded-2xl border border-white/12 bg-black/10 px-3.5 py-2 md:px-4 md:py-4 text-xs md:text-sm text-cream/90 backdrop-blur-sm"
-                  >
-                    {item}
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="bg-charcoal/75 border border-white/10 rounded-2xl md:rounded-3xl p-4 md:p-6 backdrop-blur-sm">
-              <p className="text-xs uppercase tracking-[0.2em] text-amber mb-3">Start with a workflow</p>
-              <div className="space-y-2.5 text-sm text-stone">
-                <div className="rounded-2xl border border-white/10 px-4 py-3">
-                  Filter newly registered providers by region, service type, or local authority.
-                </div>
-                <div className="rounded-2xl border border-white/10 px-4 py-3">
-                  Save the view, export the feed, or route it into CRM and outbound workflows.
-                </div>
-              </div>
+
+      <section className="relative overflow-hidden border-b border-stone bg-charcoal text-cream">
+        <div
+          className="absolute inset-0 opacity-30"
+          style={{
+            backgroundImage:
+              "url('https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=1600&q=70&auto=format')",
+            backgroundPosition: "center",
+            backgroundSize: "cover",
+          }}
+        />
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(43,37,32,0.96),rgba(43,37,32,0.86),rgba(43,37,32,0.72))]" />
+
+        <div className="relative z-10 mx-auto grid max-w-6xl gap-8 px-6 py-10 md:py-16 lg:grid-cols-[0.92fr_1.08fr] lg:items-center">
+          <div>
+            <p className="mb-4 text-xs font-semibold uppercase tracking-[0.18em] text-amber">
+              Care-provider market intelligence
+            </p>
+            <h1
+              className="max-w-3xl text-[2.35rem] font-extrabold leading-[1.04] text-cream md:text-6xl"
+              style={{ color: "var(--color-cream)" }}
+            >
+              Find newly registered care providers before your competitors do.
+            </h1>
+            <p className="mt-5 max-w-2xl text-base leading-7 text-stone md:text-lg" style={{ fontFamily: "Lora" }}>
+              CareGist turns CQC registration changes into a daily decision feed for sales, growth,
+              RevOps, and market teams: filter fresh providers, size local movement, export records,
+              and monitor the accounts that matter.
+            </p>
+
+            <div className="mt-7 flex flex-col gap-3 sm:flex-row">
               <TrackedLink
                 href="/search"
                 eventType="homepage_cta_click"
                 eventSource="homepage_hero"
-                meta={{ cta: "open_data_explorer" }}
-                className="inline-flex items-center justify-center mt-4 text-amber font-medium underline underline-offset-4 hover:text-cream transition-colors"
+                meta={{ cta: "view_live_feed" }}
+                className="inline-flex min-h-12 items-center justify-center rounded-lg bg-amber px-6 py-3 text-sm font-bold text-charcoal transition-colors hover:bg-cream"
               >
-                Open the data explorer
+                View live feed
               </TrackedLink>
+              <TrackedLink
+                href="/pricing"
+                eventType="homepage_cta_click"
+                eventSource="homepage_hero"
+                meta={{ cta: "see_plans" }}
+                className="inline-flex min-h-12 items-center justify-center rounded-lg border border-cream/35 px-6 py-3 text-sm font-bold text-cream transition-colors hover:bg-white/10"
+              >
+                See plans
+              </TrackedLink>
+            </div>
+
+            <div className="mt-7 grid grid-cols-3 gap-3 max-w-xl">
+              {["Daily CQC refresh", "Export-ready records", "Saved monitoring"].map((proof) => (
+                <div key={proof} className="border-l border-amber/50 pl-3 text-xs font-medium leading-5 text-stone">
+                  {proof}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-white/15 bg-cream text-charcoal shadow-2xl">
+            <div className="flex items-center justify-between border-b border-stone px-4 py-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-clay">Live signal preview</p>
+                <p className="mt-1 text-xs text-dusk">Last refreshed today</p>
+              </div>
+              <span className="rounded-full bg-moss px-3 py-1 text-xs font-bold text-cream">Active</span>
+            </div>
+
+            <div className="grid grid-cols-2 border-b border-stone">
+              {signalMetrics.map((metric) => (
+                <div key={metric.label} className="border-stone p-4 odd:border-r [&:nth-child(-n+2)]:border-b">
+                  <p className="text-xs font-medium text-dusk">{metric.label}</p>
+                  <p className="mt-2 text-2xl font-extrabold leading-none text-charcoal">{metric.value}</p>
+                  <p className="mt-2 text-xs font-medium text-moss">{metric.note}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="p-4">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <p className="text-sm font-bold text-bark">New provider feed</p>
+                <p className="text-xs text-dusk">Filtered: last 7 days</p>
+              </div>
+              <div className="overflow-hidden rounded-lg border border-stone bg-white">
+                <div className="grid grid-cols-[1.35fr_0.75fr_0.9fr_0.65fr] bg-parchment px-3 py-2 text-[11px] font-bold uppercase tracking-[0.08em] text-dusk">
+                  <span>Provider</span>
+                  <span>Region</span>
+                  <span>Service</span>
+                  <span className="text-right">Fit</span>
+                </div>
+                {sampleFeed.map((row) => (
+                  <div
+                    key={row.provider}
+                    className="grid grid-cols-[1.35fr_0.75fr_0.9fr_0.65fr] items-center border-t border-stone px-3 py-3 text-xs"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate font-bold text-charcoal">{row.provider}</p>
+                      <p className="mt-1 text-[11px] text-dusk">{row.registered}</p>
+                    </div>
+                    <span className="text-dusk">{row.region}</span>
+                    <span className="text-dusk">{row.service}</span>
+                    <span className="text-right font-bold text-moss">{row.confidence}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-4 flex flex-wrap gap-2">
+                {["Export CSV", "Save filter", "Send to CRM"].map((action) => (
+                  <span key={action} className="rounded-full border border-stone px-3 py-1.5 text-xs font-semibold text-bark">
+                    {action}
+                  </span>
+                ))}
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Value propositions — cards with backgrounds */}
-      <section className="bg-cream py-10 border-b border-stone">
-        <div className="max-w-5xl mx-auto px-6">
-          <div className="grid md:grid-cols-3 gap-5">
-            {[
-              {
-                icon: "\u{1F5FA}",
-                title: "Geospatially useful",
-                desc: "Radius search, coordinates, local authority fields, and location-aware exports for operational market work.",
-              },
-              {
-                icon: "\u{1F4E6}",
-                title: "Workflow-ready exports",
-                desc: "Move from browser to CSV in one step. Starter proves value quickly; Pro and Business support heavier recurring workflows.",
-              },
-              {
-                icon: "\u{1F514}",
-                title: "Continuous monitoring",
-                desc: "Watch provider shortlists and catch rating changes without checking the raw register manually.",
-              },
-            ].map((card) => (
-              <div key={card.title} className="bg-parchment border border-stone rounded-xl p-5 flex gap-4">
-                <div className="w-11 h-11 bg-clay/15 rounded-lg flex items-center justify-center shrink-0">
-                  <span className="text-xl">{card.icon}</span>
-                </div>
-                <div>
-                  <h3 className="font-bold text-bark mb-1 text-sm">{card.title}</h3>
-                  <p className="text-xs text-dusk leading-relaxed">{card.desc}</p>
-                </div>
+      <section className="border-b border-stone bg-parchment py-8">
+        <div className="mx-auto grid max-w-6xl grid-cols-2 gap-4 px-6 md:grid-cols-4">
+          {coverageStats.map((stat) => (
+            <div key={stat.label} className="bg-cream p-5">
+              <p className="text-3xl font-extrabold leading-none text-clay">{stat.value}</p>
+              <p className="mt-2 text-xs font-semibold uppercase tracking-[0.08em] text-dusk">{stat.label}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-6xl px-6 py-12">
+        <div className="grid gap-8 lg:grid-cols-[0.8fr_1.2fr] lg:items-start">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-clay">Manager use cases</p>
+            <h2 className="mt-3 text-3xl font-extrabold leading-tight md:text-4xl">
+              The page should answer, "What changed, where, and what should we do?"
+            </h2>
+            <p className="mt-4 text-sm leading-6 text-dusk" style={{ fontFamily: "Lora" }}>
+              CareGist is positioned around fast commercial decisions, not passive directory browsing.
+              The interface surfaces new market activity first, then gives teams paths to act.
+            </p>
+          </div>
+          <div className="grid gap-4 md:grid-cols-3">
+            {useCases.map((card, index) => (
+              <div key={card.title} className="border border-stone bg-cream p-5">
+                <p className="text-sm font-extrabold text-clay">0{index + 1}</p>
+                <h3 className="mt-3 text-base font-bold text-bark" style={{ fontFamily: "DM Sans" }}>
+                  {card.title}
+                </h3>
+                <p className="mt-3 text-sm leading-6 text-dusk">{card.copy}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Stats + CTAs combined */}
-      <section className="max-w-5xl mx-auto px-6 py-10">
-        {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-6 text-center mb-10">
-          {[
-            { value: "55,818", label: "Providers" },
-            { value: "Daily", label: "Refresh cadence" },
-            { value: "4,876", label: "Groups" },
-            { value: "API", label: "Available on paid plans" },
-          ].map((stat) => (
-            <div key={stat.label} className="flex flex-col items-center">
-              <div className="text-3xl md:text-4xl font-extrabold text-clay leading-none">{stat.value}</div>
-              <div className="text-xs text-dusk mt-2 font-medium max-w-[6.5rem] md:max-w-none leading-snug">{stat.label}</div>
+      <section className="bg-charcoal py-12 text-cream">
+        <div className="mx-auto grid max-w-6xl gap-8 px-6 lg:grid-cols-[1fr_0.9fr] lg:items-center">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-amber">From signal to workflow</p>
+            <h2 className="mt-3 text-3xl font-extrabold leading-tight text-cream md:text-4xl" style={{ color: "var(--color-cream)" }}>
+              Filter a market in seconds, then push the result into the next system.
+            </h2>
+            <div className="mt-6 grid gap-3 text-sm text-stone md:grid-cols-3">
+              {[
+                "Select region, service type, authority, and registration window.",
+                "Review confidence, source date, and matched location fields.",
+                "Save the view, export the list, or use API access on paid plans.",
+              ].map((step) => (
+                <div key={step} className="border-t border-amber/50 pt-3 leading-6">
+                  {step}
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-
-        {/* CTAs */}
-        <div className="grid md:grid-cols-3 gap-5">
-          <TrackedLink
-            href="/api"
-            eventType="homepage_cta_click"
-            eventSource="homepage_midpage"
-            meta={{ cta: "caretech_segment" }}
-            className="block bg-bark text-cream rounded-xl p-7 hover:bg-charcoal transition-colors"
-          >
-            <h2 className="text-xl font-bold mb-2" style={{ fontFamily: "Playfair Display", color: "var(--color-amber)" }}>
-              For CareTech teams
-            </h2>
-            <p className="text-stone text-sm">
-              Start with a dashboard and export workflow, then plug CareGist data into matching, CRM, marketplace, or analytics products.
-            </p>
-          </TrackedLink>
-          <TrackedLink
-            href="/groups"
-            eventType="homepage_cta_click"
-            eventSource="homepage_midpage"
-            meta={{ cta: "operator_segment" }}
-            className="block bg-bark text-cream rounded-xl p-7 hover:bg-charcoal transition-colors"
-          >
-            <h2 className="text-xl font-bold mb-2" style={{ fontFamily: "Playfair Display", color: "var(--color-amber)" }}>
-              For care operators
-            </h2>
-            <p className="text-stone text-sm">
-              Monitor local markets, benchmark care groups, and export cleaner regulatory data into your operating workflows.
-            </p>
-          </TrackedLink>
-          <TrackedLink
-            href="/find-care"
-            eventType="homepage_cta_click"
-            eventSource="homepage_midpage"
-            meta={{ cta: "commissioner_segment" }}
-            className="block bg-bark text-cream rounded-xl p-7 hover:bg-charcoal transition-colors"
-          >
-            <h2 className="text-xl font-bold mb-2" style={{ fontFamily: "Playfair Display", color: "var(--color-amber)" }}>
-              For local authorities &amp; commissioners
-            </h2>
-            <p className="text-stone text-sm">
-              Map provider capacity by area, track new registrations in your patch, and feed cleaner data into commissioning and placement workflows.
-            </p>
-          </TrackedLink>
+          </div>
+          <div className="border border-white/15 bg-bark/40 p-5">
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                ["Region", "North West"],
+                ["Service", "Home care"],
+                ["Window", "Last 30 days"],
+                ["Result", "23 providers"],
+              ].map(([label, value]) => (
+                <div key={label} className="bg-charcoal/70 p-4">
+                  <p className="text-xs uppercase tracking-[0.12em] text-amber">{label}</p>
+                  <p className="mt-2 font-bold text-cream">{value}</p>
+                </div>
+              ))}
+            </div>
+            <TrackedLink
+              href="/search"
+              eventType="homepage_cta_click"
+              eventSource="homepage_workflow"
+              meta={{ cta: "open_data_explorer" }}
+              className="mt-4 inline-flex w-full items-center justify-center rounded-lg bg-cream px-5 py-3 text-sm font-bold text-charcoal transition-colors hover:bg-amber"
+            >
+              Open the data explorer
+            </TrackedLink>
+          </div>
         </div>
       </section>
 
-      {/* Email Capture */}
-      <section className="max-w-5xl mx-auto px-6 py-4">
-        <EmailCaptureStrip source="homepage" />
-      </section>
-
-      {/* Browse by Service Type + Region combined */}
-      <section className="max-w-5xl mx-auto px-6 py-8">
-        <h2 className="text-xl font-bold mb-4">Secondary directory entry points</h2>
-        <p className="text-dusk mb-4" style={{ fontFamily: "Lora" }}>
-          CareGist still supports search, directory SEO, and provider claiming. Those flows stay available, but the launch product leads with the intelligence layer above them.
-        </p>
-        <div className="bg-cream border border-stone rounded-2xl p-5 mb-8">
-          <p className="text-sm font-semibold text-bark mb-3">Explore the directory when you need a lighter-weight lookup</p>
-          <SearchBar fetchServiceTypes={false} showAdvancedToggle={false} />
+      <section className="mx-auto max-w-6xl px-6 py-12">
+        <div className="grid gap-6 lg:grid-cols-[1fr_1fr] lg:items-start">
+          <div>
+            <h2 className="text-3xl font-extrabold leading-tight">Explore the underlying provider dataset</h2>
+            <p className="mt-3 max-w-xl text-sm leading-6 text-dusk" style={{ fontFamily: "Lora" }}>
+              Need a lighter lookup? Search the provider directory, then move into richer feed,
+              monitoring, export, and API workflows when the task needs repeatability.
+            </p>
+          </div>
+          <div className="border border-stone bg-parchment p-5">
+            <SearchBar fetchServiceTypes={false} showAdvancedToggle={false} />
+          </div>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-10">
+
+        <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {[
             { name: "Care Homes", count: "10,309", slug: "care-homes" },
             { name: "Nursing Homes", count: "4,386", slug: "nursing-homes" },
@@ -227,74 +298,70 @@ export default function HomePage() {
               eventType="homepage_cta_click"
               eventSource="homepage_directory"
               meta={{ service_type: type.slug }}
-              className="bg-cream border border-stone rounded-lg p-3 hover:border-clay transition-colors"
+              className="border border-stone bg-cream p-4 transition-colors hover:border-clay"
             >
-              <div className="font-semibold text-bark text-sm">{type.name}</div>
-              <div className="text-xs text-dusk">{type.count} providers</div>
+              <div className="font-bold text-bark">{type.name}</div>
+              <div className="mt-1 text-xs font-medium text-dusk">{type.count} providers</div>
             </TrackedLink>
           ))}
         </div>
+      </section>
 
-        <h2 className="text-xl font-bold mb-4">Browse by region</h2>
-        <div className="grid grid-cols-3 md:grid-cols-5 gap-2">
-          {[
-            { name: "London", slug: "london" },
-            { name: "South East", slug: "south-east" },
-            { name: "North West", slug: "north-west" },
-            { name: "East", slug: "east" },
-            { name: "West Midlands", slug: "west-midlands" },
-            { name: "South West", slug: "south-west" },
-            { name: "Yorkshire", slug: "yorkshire-humberside" },
-            { name: "East Midlands", slug: "east-midlands" },
-            { name: "North East", slug: "north-east" },
-          ].map((r) => (
+      <section className="mx-auto max-w-6xl px-6 pb-12">
+        <EmailCaptureStrip source="homepage" />
+      </section>
+
+      <section className="border-y border-stone bg-parchment py-10">
+        <div className="mx-auto max-w-6xl px-6">
+          <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-clay">Regional entry points</p>
+              <h2 className="mt-2 text-2xl font-extrabold">Browse market activity by region</h2>
+            </div>
             <TrackedLink
-              key={r.slug}
-              href={`/region/${r.slug}`}
+              href="/api"
               eventType="homepage_cta_click"
-              eventSource="homepage_regions"
-              meta={{ region: r.slug }}
-              className="bg-cream border border-stone rounded-lg p-2.5 text-center hover:border-clay transition-colors text-xs font-medium text-bark"
+              eventSource="homepage_api"
+              meta={{ cta: "explore_api" }}
+              className="text-sm font-bold text-clay underline underline-offset-4 hover:text-bark"
             >
-              {r.name}
+              Explore API access
             </TrackedLink>
-          ))}
-        </div>
-      </section>
-
-      {/* Why CareGist */}
-      <section className="bg-bark py-8">
-        <div className="max-w-4xl mx-auto px-6 text-center">
-          <h2 className="text-xl font-bold mb-4" style={{ fontFamily: "Playfair Display", color: "var(--color-amber)" }}>
-            Why operators and CareTech teams choose CareGist
-          </h2>
-          <div className="grid md:grid-cols-3 gap-6 text-stone text-xs mt-4">
-            <div>
-              <p className="text-cream font-semibold mb-1">Usable</p>
-              <p>CQC provides the raw regulatory feed. CareGist makes it usable inside workflows.</p>
-            </div>
-            <div>
-              <p className="text-cream font-semibold mb-1">Monitorable</p>
-              <p>Daily-refreshed data with continuous monitoring and event-driven alerts.</p>
-            </div>
-            <div>
-              <p className="text-cream font-semibold mb-1">Packaged for work</p>
-              <p>Dashboard-first access for operators, exports for analysts, and API access for CareTech teams.</p>
-            </div>
           </div>
-          <TrackedLink href="/why-caregist" eventType="homepage_cta_click" eventSource="homepage_why" className="inline-block mt-4 text-amber underline text-xs hover:text-cream">
-            Learn more about CareGist
-          </TrackedLink>
+          <div className="mt-6 grid grid-cols-2 gap-2 md:grid-cols-5">
+            {[
+              { name: "London", slug: "london" },
+              { name: "South East", slug: "south-east" },
+              { name: "North West", slug: "north-west" },
+              { name: "East", slug: "east" },
+              { name: "West Midlands", slug: "west-midlands" },
+              { name: "South West", slug: "south-west" },
+              { name: "Yorkshire", slug: "yorkshire-humberside" },
+              { name: "East Midlands", slug: "east-midlands" },
+              { name: "North East", slug: "north-east" },
+            ].map((region) => (
+              <TrackedLink
+                key={region.slug}
+                href={`/region/${region.slug}`}
+                eventType="homepage_cta_click"
+                eventSource="homepage_regions"
+                meta={{ region: region.slug }}
+                className="bg-cream px-3 py-3 text-center text-xs font-bold text-bark transition-colors hover:bg-white hover:text-clay"
+              >
+                {region.name}
+              </TrackedLink>
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* CQC Attribution */}
-      <section className="max-w-5xl mx-auto px-6 py-6 text-center text-xs text-dusk">
+      <section className="mx-auto max-w-5xl px-6 py-6 text-center text-xs text-dusk">
         <p>
-          Provider data sourced from the Care Quality Commission (CQC).
-          CareGist is not affiliated with or endorsed by CQC.
-          For official inspection reports, visit{" "}
-          <a href="https://www.cqc.org.uk" className="underline text-clay">cqc.org.uk</a>.
+          Provider data sourced from the Care Quality Commission (CQC). CareGist is not affiliated
+          with or endorsed by CQC. For official inspection reports, visit{" "}
+          <a href="https://www.cqc.org.uk" className="underline text-clay">
+            cqc.org.uk
+          </a>.
         </p>
       </section>
 
