@@ -26,7 +26,7 @@ export default function FindCarePage() {
       {/* AEO block */}
       <section className="bg-parchment border-b border-stone px-6 py-4 rounded-t-lg text-sm text-charcoal leading-relaxed mb-8">
         <p>
-          Search all 55,818 CQC-registered care providers in England by postcode and radius.
+          Search CQC-registered care providers in England by postcode and radius.
           Find care homes, nursing homes, home care agencies, and more — rated by the Care Quality Commission. This directory remains available as a secondary entry point alongside CareGist&apos;s dashboard, exports, and API workflows.
         </p>
       </section>

@@ -10,10 +10,10 @@ export const metadata: Metadata = {
 };
 
 const STATS = [
-  { value: "55,818", label: "CQC-registered providers in our database", source: "CQC Public Register" },
+  { value: "National", label: "CQC-registered provider coverage", source: "CQC Public Register" },
   { value: "Daily", label: "Data refresh from the CQC register", source: "CareGist pipeline" },
   { value: "Dashboard", label: "Search, export, and monitoring workflows", source: "CareGist product" },
-  { value: "4,876", label: "Care groups benchmarked nationally", source: "CareGist analysis" },
+  { value: "Grouped", label: "Care organisations normalised for benchmarking", source: "CareGist analysis" },
 ];
 
 const CONTEXT_STATS = [
@@ -140,7 +140,7 @@ export default function WhyCareGistPage() {
         <div className="bg-cream border border-stone rounded-lg p-5">
           <h3 className="font-bold text-bark mb-2">Commissioners and local authorities</h3>
           <ul className="space-y-2 text-sm text-charcoal">
-            <li>Group benchmarking across 4,876 care organisations</li>
+            <li>Group benchmarking across normalised care organisations</li>
             <li>Regional quality trends and rating distribution</li>
             <li>Monitoring and exports for market visibility</li>
             <li>Enriched CSV exports with quality scores and CQC report links</li>

@@ -35,8 +35,8 @@ export default function OpenGraphImage() {
           </div>
         </div>
         <div style={{ display: "flex", gap: 18, fontSize: 24, color: "#E8E0D0" }}>
-          <span>55,818 providers</span>
-          <span>Updated daily</span>
+          <span>National provider coverage</span>
+          <span>Daily refresh cadence</span>
           <span>Dashboard + exports + API</span>
         </div>
       </div>

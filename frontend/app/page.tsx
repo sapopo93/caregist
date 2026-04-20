@@ -24,21 +24,21 @@ const sampleFeed = [
     region: "London",
     service: "Home care",
     registered: "Today",
-    confidence: "98%",
+    confidence: "High",
   },
   {
     provider: "Northpoint Supported Living",
     region: "North West",
     service: "Supported living",
     registered: "Yesterday",
-    confidence: "95%",
+    confidence: "High",
   },
   {
     provider: "Meadowbrook Nursing Services",
     region: "South East",
     service: "Nursing homes",
     registered: "2 days ago",
-    confidence: "93%",
+    confidence: "High",
   },
 ];
 
@@ -58,9 +58,9 @@ const useCases = [
 ];
 
 const coverageStats = [
-  { value: "50k+", label: "CQC locations tracked" },
+  { value: "National", label: "CQC location coverage" },
   { value: "Daily", label: "source refresh cadence" },
-  { value: "4k+", label: "care groups normalised" },
+  { value: "Grouped", label: "care organisations normalised" },
   { value: "CSV + API", label: "workflow delivery options" },
 ];
 

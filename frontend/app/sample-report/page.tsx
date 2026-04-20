@@ -123,7 +123,7 @@ export default function SampleReportPage() {
       {/* Trust signals */}
       <div className="mt-12 grid grid-cols-3 gap-6 text-center">
         <div>
-          <p className="text-2xl font-bold text-clay">55,818</p>
+          <p className="text-2xl font-bold text-clay">National</p>
           <p className="text-xs text-dusk">Provider assessments</p>
         </div>
         <div>
