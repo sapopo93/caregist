@@ -58,7 +58,7 @@ export const PRICING_LADDER: PricingTier[] = [
     price: "\u00A30",
     priceNote: "Built for evaluation",
     includes: [
-      "Search all 55,818 providers",
+      "Search CQC-registered providers",
       "Browse profiles, ratings, and inspection dates",
       "Sample CSV export (25 rows)",
       "1 provider watchlist",
@@ -393,13 +393,13 @@ export const SEO_ENGINE: SeoPageFamily[] = [
   {
     family: "Provider Profiles",
     urlPattern: "/provider/[slug]",
-    estimatedPages: "55,818",
+    estimatedPages: "National coverage",
     color: "#C8862A",
     primaryKeywords: ["[care home name] CQC rating", "is [provider name] good", "[provider] inspection report", "[care home] review"],
     structuredData: "LocalBusiness + MedicalOrganization + AggregateRating",
     aeoBlock: "Open with: \u2018[Provider name] is rated [rating] by the CQC. Their most recent inspection was on [date], covering [service type] in [location].\u2019 This is the exact pattern AI models pull as a citation.",
     freshnessSignal: "Show \u2018Rating as of [date] \u00B7 Source: CQC public register \u00B7 Updated weekly\u2019 in a visible block above the fold.",
-    distributionValue: "55,818 indexed pages. Each is a long-tail keyword with near-zero competition. Compounding SEO asset that grows in authority over time.",
+    distributionValue: "National provider profile coverage. Each profile is a long-tail keyword with near-zero competition. Compounding SEO asset that grows in authority over time.",
     conversionRole: "SEO entry \u2192 monitor CTA \u2192 Pro Alerts. Also: claim CTA \u2192 Provider Pro.",
   },
   {
