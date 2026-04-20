@@ -83,10 +83,11 @@ Stripe integration with four API tiers and four provider listing tiers:
 
 | Tier | Price | Rate Limit | Key Features |
 |------|-------|------------|--------------|
-| Free | £0 | 2 req/sec · 20/day · 60/7 days | Evaluation only: search, basic fields, 25-row sample CSV, 1 watchlist |
-| Starter | £39 + VAT/mo | 10 req/sec · 500/day | Nearby search, compare (3), 500-row CSV, 15 monitors |
-| Pro | £99 + VAT/mo | 25 req/sec · 2,000/day | Compare (5), 5,000-row CSV, 100 monitors, 3 included users |
-| Business | £399 + VAT/mo | 60 req/sec · 10,000/day | Full fields, compare (10), 10,000-row CSV, 500 monitors, webhooks, 10 included users |
+| Free | £0 | 2 req/sec · 20/day | Evaluation only: search, basic fields, 25-row sample CSV, 1 watchlist |
+| Alerts Pro | £49 + VAT/mo | 5 req/sec · 200/day | Provider monitoring, watchlists, rating-change alerts, weekly digest |
+| Data Starter | £99 + VAT/mo | 10 req/sec · 500/day | New registration feed, 3 saved filters, 500-row CSV, 15 monitors |
+| Data Pro | £199 + VAT/mo | 25 req/sec · 2,000/day | 20 saved filters, 5,000-row CSV, 100 monitors, 3 included seats |
+| Data Business | £499 + VAT/mo | 60 req/sec · 10,000/day | Webhooks, full fields, 10,000-row CSV, 500 monitors, 10 included seats |
 
 **Provider Listing Tiers (supply side)**
 
@@ -164,8 +165,8 @@ Geographic coverage: all 9 English regions. South East (9,731), London (9,266), 
 
 Four monetisation paths, all proven in the UK care market:
 
-1. **Data subscriptions** (Starter £39/mo, Pro £99/mo, Business £399/mo) — Highest margin (~90%), fastest to revenue
-2. **Provider listings** (Enhanced £59/mo, Premium £89/mo, Sponsored £129/mo) — Recurring B2B revenue from supply side
+1. **Data subscriptions** (Alerts Pro £49/mo, Data Starter £99/mo, Data Pro £199/mo, Data Business £499/mo) — Highest margin (~90%), fastest to revenue
+2. **Provider listings** (Provider Pro Listing £99/location/mo, Sponsored Listing £149/location/mo) — Recurring B2B revenue from supply side
 3. **Lead generation** — Enquiry forms capture family details; providers pay per qualified lead
 4. **Add-ons** — Extra monitors, benchmark reports, and white-label consulting reports
 

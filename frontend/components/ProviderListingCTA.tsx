@@ -7,12 +7,14 @@ export default function ProviderListingCTA({
   tier,
   color,
 }: {
-  tier: "enhanced" | "premium" | "sponsored";
+  tier: "enhanced" | "sponsored";
   color: string;
 }) {
   const [loggedIn, setLoggedIn] = useState(false);
   const [href, setHref] = useState(`/signup?provider_tier=${tier}`);
-  const [label, setLabel] = useState("Get started");
+  const [label, setLabel] = useState(
+    tier === "enhanced" ? "Upgrade listing" : "Sponsor this location"
+  );
 
   useEffect(() => {
     const stored = localStorage.getItem("caregist_user");
@@ -27,10 +29,10 @@ export default function ProviderListingCTA({
           data.providers || [];
         if (providers.length > 0) {
           setHref(`/provider-dashboard/${providers[0].slug}?upgrade_tier=${tier}`);
-          setLabel("Upgrade your listing");
+          setLabel(tier === "enhanced" ? "Upgrade listing" : "Sponsor this location");
         } else {
           setHref(`/search?claim_intent=${tier}`);
-          setLabel("Find your listing");
+          setLabel(tier === "enhanced" ? "Find your listing" : "Find your listing");
         }
       })
       .catch(() => {

@@ -6,7 +6,7 @@ export default function NotFound() {
       <h1 className="text-4xl font-bold text-bark mb-4">Page not found</h1>
       <p className="text-dusk mb-8">
         The page you&apos;re looking for doesn&apos;t exist or has moved. The fastest way back into CareGist is usually the
-        data explorer, pricing, or the homepage.
+        New Provider Lead Feed, pricing, or the homepage.
       </p>
       <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
         <Link
@@ -19,7 +19,7 @@ export default function NotFound() {
           href="/search"
           className="inline-block px-6 py-3 border border-stone text-dusk rounded-lg font-medium hover:bg-cream transition-colors"
         >
-          Open data explorer
+          Open New Provider Lead Feed
         </Link>
         <Link
           href="/pricing"

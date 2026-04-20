@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import SearchBar from "@/components/SearchBar";
 import ProviderCard from "@/components/ProviderCard";
 import FilterSidebar from "@/components/FilterSidebar";
@@ -8,8 +9,17 @@ import InlineSortSelect from "@/components/InlineSortSelect";
 import MobileFilterToggle from "@/components/MobileFilterToggle";
 import WarmingUpBanner from "@/components/WarmingUpBanner";
 import { searchProviders } from "@/lib/api";
+import {
+  NEW_REGISTRATION_MONTHLY_AVG,
+  NEW_REGISTRATION_MONTHLY_AVG_CAVEAT,
+} from "@/lib/caregist-config";
 import { Suspense } from "react";
 import Link from "next/link";
+
+export const metadata: Metadata = {
+  title: "CareGist New Provider Lead Feed",
+  description: "Filter, export, and monitor newly registered CQC providers and UK care-market movement.",
+};
 
 export default async function SearchPage({
   searchParams,
@@ -46,6 +56,20 @@ export default async function SearchPage({
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-8">
+      <div className="mb-6">
+        <p className="text-xs font-bold uppercase tracking-[0.18em] text-clay">New Provider Lead Feed</p>
+        <h1 className="mt-2 text-3xl font-extrabold text-bark md:text-4xl">
+          New Provider Lead Feed
+        </h1>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-dusk" style={{ fontFamily: "Lora" }}>
+          Find, filter, export, and monitor newly registered CQC providers and wider UK care-market
+          movement. CareGist tracked an average of {NEW_REGISTRATION_MONTHLY_AVG} newly registered
+          providers per month from January to March 2026.
+        </p>
+        <p className="mt-2 text-[11px] text-dusk/80 leading-5">
+          {NEW_REGISTRATION_MONTHLY_AVG_CAVEAT}
+        </p>
+      </div>
       <div className="mb-8">
         <SearchBar
           defaultValue={query}

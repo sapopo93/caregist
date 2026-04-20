@@ -4,8 +4,8 @@ import { useState } from "react";
 
 export default function EmailCaptureStrip({
   source = "homepage",
-  heading = "Get weekly CQC rating changes in your area \u2014 free.",
-  subheading = "Weekly digest of rating upgrades and downgrades. No spam. Unsubscribe anytime.",
+  heading = "Get weekly CQC rating changes and new-provider movement in your area \u2014 free.",
+  subheading = "Weekly digest of rating changes, new registrations, and local market movement. Unsubscribe anytime.",
   onSuccess,
 }: {
   source?: string;
@@ -46,7 +46,7 @@ export default function EmailCaptureStrip({
       <div className="bg-moss/10 border border-moss/30 rounded-lg p-6 text-center">
         <p className="text-moss font-semibold">You&apos;re subscribed!</p>
         <p className="text-sm text-dusk mt-1">
-          You&apos;ll receive weekly CQC rating changes in your inbox.
+          You&apos;ll receive weekly CQC rating changes and new-provider movement in your inbox.
         </p>
       </div>
     );
@@ -69,7 +69,7 @@ export default function EmailCaptureStrip({
           disabled={status === "loading"}
           className="px-5 py-2.5 bg-clay text-white rounded-lg text-sm font-medium hover:bg-bark transition-colors disabled:opacity-50"
         >
-          {status === "loading" ? "..." : "Subscribe \u2192"}
+          {status === "loading" ? "..." : "Subscribe"}
         </button>
       </form>
       {status === "error" && (

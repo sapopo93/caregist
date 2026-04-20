@@ -169,7 +169,7 @@ export default function WhyCareGistPage() {
             Explore API
           </TrackedLink>
           <TrackedLink href="/search" eventType="homepage_cta_click" eventSource="why_caregist" className="px-8 py-3 border border-stone text-dusk rounded-lg font-medium hover:border-clay hover:text-clay transition-colors">
-            Open data explorer
+            Open New Provider Lead Feed
           </TrackedLink>
         </div>
       </div>

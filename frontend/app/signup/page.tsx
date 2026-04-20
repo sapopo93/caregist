@@ -10,32 +10,32 @@ const PLAN_COPY: Record<string, { title: string; body: string }> = {
     title: "Start with Free",
     body: "Built for evaluation: test the dashboard, sample exports, and one provider watchlist before moving into a paid workflow.",
   },
-  starter: {
-    title: "Start Starter",
-    body: "Starter is the first real workflow tier: nearby search, cleaned exports, and enough monitoring to replace a manual process.",
+  "alerts-pro": {
+    title: "Start Alerts Pro",
+    body: "Alerts Pro is for monitoring provider watchlists, rating movement, and weekly market alerts.",
   },
-  pro: {
-    title: "Start Pro",
-    body: "Pro is the recommended small-team production tier with 3 named access seats, broader monitoring, and enough usage for recurring work.",
+  "data-starter": {
+    title: "Start Data Starter",
+    body: "Data Starter is the first core new-provider intelligence plan for weekly feed exports and saved views.",
   },
-  business: {
-    title: "Start Business",
-    body: "Business is for operational integration: fuller data access, webhooks, higher limits, and stronger admin support.",
+  "data-pro": {
+    title: "Start Data Pro",
+    body: "Data Pro is for small teams using CareGist as a recurring new-provider sales workflow.",
+  },
+  "data-business": {
+    title: "Start Data Business",
+    body: "Data Business is for teams pushing provider intelligence into CRM, outbound, and internal systems.",
   },
 };
 
 const PROVIDER_TIER_COPY: Record<string, { title: string; body: string }> = {
   enhanced: {
-    title: "Upgrade to Enhanced Profile",
-    body: "Create your account to claim your listing and unlock an Enhanced Profile — description, photos, and virtual tour.",
-  },
-  premium: {
-    title: "Upgrade to Premium Profile",
-    body: "Create your account to claim your listing and unlock a Premium Profile — priority placement and detailed analytics.",
+    title: "Upgrade to Provider Pro Listing",
+    body: "Create your account to claim your listing and unlock a Provider Pro Listing — description, photos, and virtual tour.",
   },
   sponsored: {
-    title: "Upgrade to Sponsored Profile",
-    body: "Create your account to claim your listing and unlock a Sponsored Profile — top placement, sponsored badge, and maximum visibility.",
+    title: "Upgrade to Sponsored Listing",
+    body: "Create your account to claim your listing and unlock a Sponsored Listing — top placement, sponsored badge, and maximum visibility.",
   },
 };
 

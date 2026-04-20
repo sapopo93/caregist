@@ -4,14 +4,19 @@ import EmailCaptureStrip from "@/components/EmailCaptureStrip";
 import TrustSignal from "@/components/TrustSignal";
 import TrackEventOnMount from "@/components/TrackEventOnMount";
 import TrackedLink from "@/components/TrackedLink";
-import { getProviderCount, getNewRegistrationCount } from "@/lib/api";
+import {
+  CQC_INDEPENDENCE_LINE,
+  NEW_REGISTRATION_MONTHLY_AVG,
+  NEW_REGISTRATION_MONTHLY_AVG_CAVEAT,
+  NEW_REGISTRATION_MONTHLY_AVG_PERIOD,
+  NEW_REGISTRATION_SOURCE_LINE,
+} from "@/lib/caregist-config";
 
 export const revalidate = 3600;
 
 export const metadata: Metadata = {
-  title: "CareGist — UK Care-Provider Market Intelligence",
-  description:
-    "CareGist tracks new care-provider opportunities from CQC registration movement. Daily feed for sales, territory planning, and monitoring. Export-ready. England-wide coverage.",
+  title: "CareGist | New CQC Provider Intelligence",
+  description: `Find newly registered CQC providers before competitors do. CareGist tracked an average of ${NEW_REGISTRATION_MONTHLY_AVG} newly registered providers per month from January to March 2026.`,
 };
 
 const sampleFeed = [
@@ -41,23 +46,28 @@ const sampleFeed = [
 const buyerUseCases = [
   {
     buyer: "Suppliers to care providers",
-    pain: "Find new accounts before competitors",
-    promise: "Daily new-provider sales feed, filtered by region and service type.",
+    pain: "Find new accounts before competitors win them",
+    promise: "Daily new-provider lead feed, filtered by region and service type.",
   },
   {
     buyer: "Compliance consultants",
     pain: "New providers need policies and CQC readiness at setup",
-    promise: "Target providers at the exact moment they need governance support.",
+    promise: "Reach providers at the exact moment they are choosing governance support.",
   },
   {
     buyer: "Recruiters and staffing firms",
-    pain: "New services need people fast",
+    pain: "New services need carers and managers fast",
     promise: "Identify newly registered operators by region and service category.",
   },
   {
     buyer: "Software vendors",
     pain: "New providers need systems before legacy tools are embedded",
     promise: "Build outbound lists from live CQC registration movement.",
+  },
+  {
+    buyer: "Care-sector service providers",
+    pain: "New entrants need accounts, insurance, training, and marketing",
+    promise: "Reach providers while they are choosing suppliers.",
   },
   {
     buyer: "Market analysts and care groups",
@@ -68,44 +78,29 @@ const buyerUseCases = [
 
 const workflowSteps = [
   { step: "Filter", action: "Choose region, service type, and registration window." },
-  { step: "Prioritise", action: "High-confidence providers first. Sort by fit." },
-  { step: "Export", action: "CSV, API, or saved filter for your CRM workflow." },
-  { step: "Contact", action: "Reach new providers while they are still setting up." },
-  { step: "Monitor", action: "Save the view and track fresh movement weekly." },
+  { step: "Prioritise", action: "High-confidence newly registered providers first. Sort by fit." },
+  { step: "Export", action: "CSV, Excel, API, or saved filter for your CRM workflow." },
+  { step: "Contact", action: "Reach providers while they are still choosing suppliers." },
+  { step: "Monitor", action: "Save the view and track registration movement weekly." },
 ];
 
-export default async function HomePage() {
-  const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-
-  const [providerCountResult, feedCountResult] = await Promise.allSettled([
-    getProviderCount(),
-    getNewRegistrationCount(ninetyDaysAgo),
-  ]);
-
-  const providerCount =
-    providerCountResult.status === "fulfilled" && providerCountResult.value > 0
-      ? providerCountResult.value
-      : null;
-
-  const monthlyRate =
-    feedCountResult.status === "fulfilled" && feedCountResult.value > 0
-      ? Math.round(feedCountResult.value / 3)
-      : null;
-
-  const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  const rangeEnd = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-  const rangeStart = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
-  const avgLabel = `${MONTHS[rangeStart.getMonth()]}–${MONTHS[rangeEnd.getMonth()]} ${rangeEnd.getFullYear()} average`;
-  const dataFreshnessNote =
-    feedCountResult.status === "fulfilled" && feedCountResult.value > 0
-      ? `Based on CareGist registration tracking for the ${avgLabel.toLowerCase()}.`
-      : "Based on CareGist registration tracking; live totals refresh when the provider feed is available.";
-
+export default function HomePage() {
   const proofPoints = [
-    { value: monthlyRate ? `${monthlyRate}/mo` : "Live feed", label: "New CQC opportunities (90-day avg)" },
-    { value: "Daily", label: "CQC movement refresh" },
-    { value: providerCount ? providerCount.toLocaleString("en-GB") : "England-wide", label: "Locations tracked" },
-    { value: "CSV + API", label: "Export to CRM or workflow" },
+    {
+      title: `${NEW_REGISTRATION_MONTHLY_AVG}/month`,
+      label: "Newly registered CQC providers",
+      description: `Average tracked from ${NEW_REGISTRATION_MONTHLY_AVG_PERIOD} 2026.`,
+    },
+    {
+      title: "Daily",
+      label: "Registration movement tracking",
+      description: "Built around fresh CQC registration changes.",
+    },
+    {
+      title: "Export-ready",
+      label: "Commercial lead workflow",
+      description: "Filter, prioritise, export, and monitor provider opportunities.",
+    },
   ];
 
   return (
@@ -128,17 +123,15 @@ export default async function HomePage() {
         <div className="relative z-10 mx-auto grid max-w-6xl gap-8 px-6 py-10 md:py-16 lg:grid-cols-[0.92fr_1.08fr] lg:items-center">
           <div>
             <p className="mb-4 text-xs font-semibold uppercase tracking-[0.18em] text-amber">
-              Care-provider market intelligence
+              New-provider commercial intelligence for the UK care market
             </p>
             <h1 className="max-w-3xl text-[2.35rem] font-extrabold leading-[1.04] text-cream md:text-6xl">
-              {monthlyRate
-                ? `Find ${monthlyRate}+ new care-provider opportunities every month.`
-                : "Find new care-provider opportunities every month."}
+              Find newly registered CQC providers before your competitors do.
             </h1>
             <p className="mt-5 max-w-2xl text-base leading-7 text-stone md:text-lg" style={{ fontFamily: "Lora" }}>
-              CareGist tracks CQC registration movement daily and turns new provider activity into a
-              sales, onboarding, territory, and monitoring feed — so you reach new providers before
-              competitors build the relationship.
+              CareGist tracked an average of {NEW_REGISTRATION_MONTHLY_AVG} newly registered CQC providers per
+              month from January to March 2026, helping suppliers, consultants, recruiters, software vendors,
+              and care-sector service providers reach providers while they are still choosing who to work with.
             </p>
 
             <div className="mt-7 flex flex-col gap-3 sm:flex-row">
@@ -146,19 +139,19 @@ export default async function HomePage() {
                 href="/dashboard"
                 eventType="homepage_cta_click"
                 eventSource="homepage_hero"
-                meta={{ cta: "view_new_provider_feed" }}
+                meta={{ cta: "see_new_providers_in_my_region" }}
                 className="inline-flex min-h-12 items-center justify-center rounded-lg bg-amber px-6 py-3 text-sm font-bold text-charcoal transition-colors hover:bg-cream"
               >
-                See this month&rsquo;s new providers
+                See new providers in my region
               </TrackedLink>
               <TrackedLink
                 href="/pricing"
                 eventType="homepage_cta_click"
                 eventSource="homepage_hero"
-                meta={{ cta: "compare_plans" }}
+                meta={{ cta: "view_pricing" }}
                 className="inline-flex min-h-12 items-center justify-center rounded-lg border border-cream/35 px-6 py-3 text-sm font-bold text-cream transition-colors hover:bg-white/10"
               >
-                Compare plans
+                View pricing
               </TrackedLink>
             </div>
 
@@ -166,18 +159,27 @@ export default async function HomePage() {
               <div className="grid grid-cols-3 gap-3">
                 <div className="border-l border-amber/50 pl-3">
                   <p className="text-sm font-extrabold text-amber leading-none">
-                    {monthlyRate ? `${monthlyRate}/month` : "Live feed"}
+                    {NEW_REGISTRATION_MONTHLY_AVG}/month
                   </p>
-                  <p className="mt-1 text-[11px] font-medium text-stone leading-4">{avgLabel}</p>
+                  <p className="mt-1 text-[11px] font-medium text-stone leading-4">
+                    {NEW_REGISTRATION_MONTHLY_AVG_PERIOD} 2026 average
+                  </p>
                 </div>
-                {["Export-ready records", "Saved monitoring"].map((proof) => (
-                  <div key={proof} className="border-l border-amber/50 pl-3 text-xs font-medium leading-5 text-stone">
-                    {proof}
-                  </div>
-                ))}
+                <div className="border-l border-amber/50 pl-3">
+                  <p className="text-xs font-bold leading-4 text-stone">Daily tracking</p>
+                  <p className="mt-1 text-[11px] font-medium leading-4 text-stone/75">
+                    CQC registration movement
+                  </p>
+                </div>
+                <div className="border-l border-amber/50 pl-3">
+                  <p className="text-xs font-bold leading-4 text-stone">Export-ready</p>
+                  <p className="mt-1 text-[11px] font-medium leading-4 text-stone/75">
+                    CSV, Excel, CRM, or API
+                  </p>
+                </div>
               </div>
               <p className="mt-3 text-[11px] text-stone/60 leading-5">
-                {dataFreshnessNote}
+                {NEW_REGISTRATION_MONTHLY_AVG_CAVEAT}
               </p>
             </div>
           </div>
@@ -186,7 +188,7 @@ export default async function HomePage() {
           <div className="rounded-xl border border-white/15 bg-cream text-charcoal shadow-2xl">
             <div className="flex items-center justify-between border-b border-stone px-4 py-3">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-clay">New provider feed</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-clay">New provider lead feed</p>
                 <p className="mt-1 text-xs text-dusk">Registration window: last 30 days</p>
               </div>
               <span className="rounded-full bg-moss px-3 py-1 text-xs font-bold text-cream">Live</span>
@@ -218,7 +220,7 @@ export default async function HomePage() {
                 ))}
               </div>
               <div className="mt-4 flex flex-wrap gap-2">
-                {["Export new providers", "Save this filter", "Send to CRM"].map((action) => (
+                {["Get this week's lead list", "Save this filter", "Send to CRM"].map((action) => (
                   <span key={action} className="rounded-full border border-stone px-3 py-1.5 text-xs font-semibold text-bark">
                     {action}
                   </span>
@@ -231,14 +233,18 @@ export default async function HomePage() {
 
       {/* Proof strip */}
       <section className="border-b border-stone bg-parchment py-8">
-        <div className="mx-auto grid max-w-6xl grid-cols-2 gap-4 px-6 md:grid-cols-4">
+        <div className="mx-auto grid max-w-6xl grid-cols-1 gap-4 px-6 md:grid-cols-3">
           {proofPoints.map((stat) => (
             <div key={stat.label} className="bg-cream p-5">
-              <p className="text-3xl font-extrabold leading-none text-clay">{stat.value}</p>
+              <p className="text-3xl font-extrabold leading-none text-clay">{stat.title}</p>
               <p className="mt-2 text-xs font-semibold uppercase tracking-[0.08em] text-dusk">{stat.label}</p>
+              <p className="mt-2 text-xs text-dusk leading-5">{stat.description}</p>
             </div>
           ))}
         </div>
+        <p className="mx-auto mt-6 max-w-6xl px-6 text-[11px] text-dusk leading-5">
+          {NEW_REGISTRATION_MONTHLY_AVG_CAVEAT}
+        </p>
       </section>
 
       {/* The problem */}
@@ -247,18 +253,18 @@ export default async function HomePage() {
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-clay">The problem</p>
             <h2 className="mt-3 text-3xl font-extrabold leading-tight md:text-4xl">
-              New providers are invisible until your competitors already know them.
+              New providers are invisible until competitors win the relationship.
             </h2>
           </div>
           <div className="text-sm leading-7 text-dusk" style={{ fontFamily: "Lora" }}>
             <p>
               Most suppliers wait for Google results, directory referrals, or outdated CQC exports.
-              By then, the new provider has already chosen their policy provider, compliance consultant,
-              software vendor, recruiter, and marketing partner.
+              By then, the newly registered provider may already have chosen their policy provider,
+              compliance consultant, software vendor, recruiter, and marketing partner.
             </p>
             <p className="mt-4">
-              CareGist gives you the movement early — filtered to your region, your service category,
-              and your commercial window — so you reach new providers while they are still deciding.
+              CareGist surfaces registration movement early — filtered to your region, your service category,
+              and your commercial window — so you reach providers while they are choosing suppliers.
             </p>
           </div>
         </div>
@@ -270,7 +276,7 @@ export default async function HomePage() {
           <div className="mb-8">
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-amber">From signal to workflow</p>
             <h2 className="mt-3 text-3xl font-extrabold leading-tight text-cream md:text-4xl">
-              Build this week&rsquo;s sales list in seconds.
+              Filter, prioritise, export, and monitor.
             </h2>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-stone" style={{ fontFamily: "Lora" }}>
               Choose region, service type, confidence level, and registration window — then export the
@@ -292,19 +298,19 @@ export default async function HomePage() {
               href="/dashboard"
               eventType="homepage_cta_click"
               eventSource="homepage_workflow"
-              meta={{ cta: "view_feed" }}
+              meta={{ cta: "see_new_providers_in_my_region" }}
               className="inline-flex items-center justify-center rounded-lg bg-amber px-6 py-3 text-sm font-bold text-charcoal transition-colors hover:bg-cream"
             >
-              View new provider feed
+              See new providers in my region
             </TrackedLink>
             <TrackedLink
               href="/search"
               eventType="homepage_cta_click"
               eventSource="homepage_workflow"
-              meta={{ cta: "open_explorer" }}
+              meta={{ cta: "open_lead_feed" }}
               className="inline-flex items-center justify-center rounded-lg border border-cream/35 px-6 py-3 text-sm font-bold text-cream transition-colors hover:bg-white/10"
             >
-              Open data explorer
+              Open New Provider Lead Feed
             </TrackedLink>
           </div>
         </div>
@@ -315,7 +321,7 @@ export default async function HomePage() {
         <div className="mb-8">
           <p className="text-xs font-bold uppercase tracking-[0.18em] text-clay">Who uses it</p>
           <h2 className="mt-3 text-3xl font-extrabold leading-tight md:text-4xl">
-            Every commercial team targeting the UK care sector.
+            Built for suppliers, consultants, recruiters, software vendors, and care-sector service providers.
           </h2>
         </div>
 
@@ -336,30 +342,30 @@ export default async function HomePage() {
         <div className="mx-auto max-w-3xl px-6 text-center">
           <p className="text-xs font-bold uppercase tracking-[0.18em] text-clay">Get started</p>
           <h2 className="mt-3 text-3xl font-extrabold leading-tight">
-            Start with the new-provider feed.
+            Start with the new-provider lead feed.
           </h2>
           <p className="mt-4 text-sm leading-7 text-dusk" style={{ fontFamily: "Lora" }}>
-            Export fresh CQC registration opportunities every week. Filter by region, service type,
-            and registration window. Save recurring views and push records into CRM or API workflows.
+            Export newly registered CQC providers every week. Filter by region, service type, and
+            registration window. Save recurring views and push records into CRM or API workflows.
           </p>
           <div className="mt-7 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
             <TrackedLink
-              href="/signup"
+              href="/dashboard"
               eventType="homepage_cta_click"
               eventSource="homepage_pricing_cta"
-              meta={{ cta: "start_free" }}
+              meta={{ cta: "see_new_providers_in_my_region" }}
               className="inline-flex min-h-12 items-center justify-center rounded-lg bg-clay px-8 py-3 text-sm font-bold text-cream transition-colors hover:bg-bark"
             >
-              Start free
+              See new providers in my region
             </TrackedLink>
             <TrackedLink
               href="/pricing"
               eventType="homepage_cta_click"
               eventSource="homepage_pricing_cta"
-              meta={{ cta: "see_plans" }}
+              meta={{ cta: "view_pricing" }}
               className="inline-flex min-h-12 items-center justify-center rounded-lg border border-stone px-8 py-3 text-sm font-bold text-bark transition-colors hover:bg-cream"
             >
-              Compare plans
+              View pricing
             </TrackedLink>
           </div>
         </div>
@@ -369,10 +375,11 @@ export default async function HomePage() {
       <section className="mx-auto max-w-6xl px-6 py-12">
         <div className="grid gap-6 lg:grid-cols-[1fr_1fr] lg:items-start">
           <div>
-            <h2 className="text-2xl font-extrabold leading-tight">Explore the full provider dataset</h2>
+            <h2 className="text-2xl font-extrabold leading-tight">Explore the wider provider universe</h2>
             <p className="mt-3 max-w-xl text-sm leading-6 text-dusk" style={{ fontFamily: "Lora" }}>
-              Need a lighter lookup? Search {providerCount ? `${providerCount.toLocaleString("en-GB")} CQC-registered providers` : "the CQC-registered provider dataset"}, then move into feed,
-              monitoring, export, and API workflows when the task needs repeatability.
+              Need a wider lookup beyond newly registered providers? Search the full CQC-registered
+              dataset, then move into the new-provider lead feed, monitoring, exports, and API workflows
+              when the task is recurring.
             </p>
           </div>
           <div className="border border-stone bg-parchment p-5">
@@ -410,16 +417,16 @@ export default async function HomePage() {
           <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.18em] text-clay">Regional entry points</p>
-              <h2 className="mt-2 text-2xl font-extrabold">Browse market activity by region</h2>
+              <h2 className="mt-2 text-2xl font-extrabold">Browse new-provider movement by region</h2>
             </div>
             <TrackedLink
               href="/api"
               eventType="homepage_cta_click"
               eventSource="homepage_api"
-              meta={{ cta: "explore_api" }}
+              meta={{ cta: "request_crm_integration" }}
               className="text-sm font-bold text-clay underline underline-offset-4 hover:text-bark"
             >
-              Explore API access
+              Request CRM integration
             </TrackedLink>
           </div>
           <div className="mt-6 grid grid-cols-2 gap-2 md:grid-cols-5">
@@ -450,16 +457,19 @@ export default async function HomePage() {
       </section>
 
       <section className="mx-auto max-w-6xl px-6 pb-12 pt-8">
-        <EmailCaptureStrip source="homepage" />
+        <EmailCaptureStrip
+          source="homepage"
+          heading="Get this week's CQC registration movement in your area — free."
+          subheading="Weekly digest of newly registered providers, rating changes, and local market movement. Unsubscribe anytime."
+        />
       </section>
 
       <section className="mx-auto max-w-5xl px-6 py-6 text-center text-xs text-dusk">
-        <p>
-          Provider data sourced from the Care Quality Commission (CQC). CareGist is not affiliated
-          with or endorsed by CQC. Refreshed daily from CQC source movement.{" "}
-          <a href="https://www.cqc.org.uk" className="underline text-clay">
-            cqc.org.uk
-          </a>
+        <p>{NEW_REGISTRATION_SOURCE_LINE}</p>
+        <p className="mt-2">{CQC_INDEPENDENCE_LINE}</p>
+        <p className="mt-2">
+          Built for suppliers, consultants, recruiters, software vendors, and care-sector service
+          providers targeting the UK care market.
         </p>
       </section>
 

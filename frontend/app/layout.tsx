@@ -8,12 +8,12 @@ import SupportWidgetMount from "@/components/SupportWidgetMount";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://caregist.co.uk"),
-  title: "CareGist — UK Care-Provider Data Intelligence",
+  title: "CareGist | New CQC Provider Intelligence",
   description:
-    "Daily-refreshed UK care-provider data for dashboard, exports, and API workflows. Cleaned, normalised, geospatial, and monitorable on top of the CQC register.",
+    "Find newly registered CQC providers before competitors do. Commercial intelligence for suppliers, consultants, recruiters, software vendors, and care-sector service providers.",
   openGraph: {
-    title: "CareGist — UK Care-Provider Data Intelligence",
-    description: "Daily-refreshed UK care-provider data for dashboard, exports, and API workflows.",
+    title: "CareGist | New CQC Provider Intelligence",
+    description: "Find newly registered CQC providers before competitors do. Filter, export, and monitor registration movement.",
     siteName: "CareGist",
     type: "website",
     locale: "en_GB",
@@ -21,8 +21,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "CareGist — UK Care-Provider Data Intelligence",
-    description: "Daily-refreshed UK care-provider data for dashboard, exports, and API workflows.",
+    title: "CareGist | New CQC Provider Intelligence",
+    description: "Find newly registered CQC providers before competitors do. Filter, export, and monitor registration movement.",
     images: ["/twitter-image"],
   },
 };
@@ -73,7 +73,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Link href="/cookies" className="underline hover:text-cream">Cookies</Link>
               <Link href="/pricing" className="underline hover:text-cream">Pricing</Link>
               <Link href="/api" className="underline hover:text-cream">API</Link>
-              <Link href="/search" className="underline hover:text-cream">Data Explorer</Link>
+              <Link href="/search" className="underline hover:text-cream">New Provider Lead Feed</Link>
               <Link href="/find-care" className="underline hover:text-cream">Find Care</Link>
               <Link href="/groups" className="underline hover:text-cream">Care Groups</Link>
               <Link href="/why-caregist" className="underline hover:text-cream">Why CareGist</Link>

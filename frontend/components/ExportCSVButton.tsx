@@ -78,22 +78,23 @@ export default function ExportCSVButton({ exportUrl }: { exportUrl: string }) {
           className="text-sm text-clay underline hover:text-bark disabled:opacity-50"
         >
           {downloading
-            ? "Downloading..."
+            ? "Exporting..."
             : isLoggedIn && isFree
-              ? "Export CSV (Basic)"
-              : `Export ${format.toUpperCase()}`}
+              ? "Export this list (sample)"
+              : "Export this list"}
         </button>
       </div>
 
       {showUpgrade && isFree && (
         <span className="text-xs text-dusk ml-2">
-          Showing up to 25 rows. Starter unlocks workflow-sized exports, nearby search, and recurring use.{" "}
+          Showing up to 25 rows. Data Starter unlocks workflow-sized exports, recurring new-provider lead
+          lists, and saved views.{" "}
           <a
             href="/pricing"
             className="text-clay underline"
-            onClick={() => void trackEvent("upgrade_click", "export_limit_prompt", { tier: "free", target_tier: "starter" })}
+            onClick={() => void trackEvent("upgrade_click", "export_limit_prompt", { tier: "free", target_tier: "data-starter" })}
           >
-            Upgrade to Starter
+            Upgrade to Data Starter
           </a>
         </span>
       )}

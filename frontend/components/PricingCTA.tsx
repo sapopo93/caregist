@@ -6,20 +6,25 @@ import { useRouter } from "next/navigation";
 import { trackEvent } from "@/lib/analytics";
 import { PLAN_PRIMARY_CTA } from "@/lib/caregist-config";
 
-const NEXT_TIER: Record<string, string | null> = {
-  free: "starter",
-  starter: "pro",
-  pro: "business",
-  business: "enterprise",
-  enterprise: null,
-};
-
 const TIER_RANK: Record<string, number> = {
   free: 0,
-  starter: 1,
-  pro: 2,
-  business: 3,
-  enterprise: 4,
+  "alerts-pro": 1,
+  "data-starter": 2,
+  "data-pro": 3,
+  "data-business": 4,
+  enterprise: 5,
+  starter: 2,
+  pro: 3,
+  business: 4,
+};
+
+const BILLING_TIER: Record<string, string | null> = {
+  free: "free",
+  "alerts-pro": null,
+  "data-starter": "starter",
+  "data-pro": "pro",
+  "data-business": "business",
+  enterprise: null,
 };
 
 export default function PricingCTA({ tier, isFreeTier }: { tier: string; isFreeTier: boolean }) {
@@ -39,7 +44,8 @@ export default function PricingCTA({ tier, isFreeTier }: { tier: string; isFreeT
   }, []);
 
   const tierKey = tier.toLowerCase().replace(/\s+/g, "-");
-  const targetTier = NEXT_TIER[tierKey];
+  const billingTier = BILLING_TIER[tierKey] ?? null;
+  const targetTier = tierKey === "enterprise" ? null : tierKey;
   const ctaLabel = PLAN_PRIMARY_CTA[tierKey] || "Contact sales";
   const isCurrentTier = currentTier === tierKey;
   const currentRank = TIER_RANK[currentTier] ?? 0;
@@ -81,14 +87,29 @@ export default function PricingCTA({ tier, isFreeTier }: { tier: string; isFreeT
     }
   }
 
-  if (!targetTier) {
+  if (!targetTier || (tierKey === "alerts-pro" && user)) {
     return (
       <Link
-        href="mailto:enterprise@caregist.co.uk?subject=CareGist+Enterprise"
+        href={`mailto:enterprise@caregist.co.uk?subject=CareGist+${tier.replace(/\s+/g, "+")}`}
         className="inline-block text-center py-2.5 px-6 rounded-lg font-medium text-sm transition-colors border border-clay text-clay hover:bg-clay hover:text-white"
         onClick={() => void trackEvent("enterprise_contact_click", "pricing_card", { tier: tierKey })}
       >
-        Contact sales
+        {ctaLabel}
+      </Link>
+    );
+  }
+
+  if (isFreeTier && !user) {
+    return (
+      <Link
+        href="/signup"
+        className="inline-block text-center py-2.5 px-6 rounded-lg font-medium text-sm transition-colors border border-clay text-clay hover:bg-clay hover:text-white"
+        onClick={() => {
+          void trackEvent("pricing_cta_click", "pricing_card", { tier: tierKey, target_tier: "free", action: "signup_free" });
+          void trackEvent("plan_selection", "pricing_card", { source_tier: tierKey, target_tier: "free" });
+        }}
+      >
+        {ctaLabel}
       </Link>
     );
   }
@@ -100,7 +121,7 @@ export default function PricingCTA({ tier, isFreeTier }: { tier: string; isFreeT
           Current Plan
         </span>
         <button
-          onClick={() => void handleUpgrade(targetTier)}
+          onClick={() => billingTier && void handleUpgrade(billingTier)}
           disabled={loading}
           className="inline-block text-center py-2.5 px-6 rounded-lg font-medium text-sm transition-colors border border-clay text-clay hover:bg-clay hover:text-white disabled:opacity-50"
         >
@@ -111,11 +132,11 @@ export default function PricingCTA({ tier, isFreeTier }: { tier: string; isFreeT
     );
   }
 
-  if (user && currentRank < targetRank) {
+  if (user && currentRank < targetRank && billingTier) {
     return (
       <div>
         <button
-          onClick={() => void handleUpgrade(targetTier)}
+          onClick={() => void handleUpgrade(billingTier)}
           disabled={loading}
           className="inline-block text-center py-2.5 px-6 rounded-lg font-medium text-sm transition-colors border border-clay text-clay hover:bg-clay hover:text-white disabled:opacity-50"
         >
@@ -139,10 +160,10 @@ export default function PricingCTA({ tier, isFreeTier }: { tier: string; isFreeT
 
   return (
     <Link
-      href={`/signup?plan=${targetTier}`}
+      href={isFreeTier ? "/signup" : `/signup?plan=${targetTier}`}
       className="inline-block text-center py-2.5 px-6 rounded-lg font-medium text-sm transition-colors border border-clay text-clay hover:bg-clay hover:text-white"
       onClick={() => {
-        void trackEvent("pricing_cta_click", "pricing_card", { tier: tierKey, target_tier: targetTier, action: isFreeTier ? "signup_upgrade_path" : "signup_paid" });
+        void trackEvent("pricing_cta_click", "pricing_card", { tier: tierKey, target_tier: targetTier, action: isFreeTier ? "signup_free" : "signup_paid" });
         void trackEvent("plan_selection", "pricing_card", { source_tier: tierKey, target_tier: targetTier });
       }}
     >

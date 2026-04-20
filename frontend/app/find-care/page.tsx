@@ -33,18 +33,18 @@ export default function FindCarePage() {
 
       <h1 className="text-3xl font-bold mb-2">Find CQC-rated care near you</h1>
       <p className="text-dusk mb-8" style={{ fontFamily: "Lora" }}>
-        Enter your postcode to browse local providers. If you need operational monitoring, exports, or benchmarking, CareGist&apos;s pricing and data explorer are the stronger starting point.
+        Enter your postcode to browse local providers. If you need a recurring new-provider lead feed, operational monitoring, or bulk exports, CareGist&apos;s pricing and New Provider Lead Feed are the stronger starting point.
       </p>
 
       <div className="bg-cream border border-stone rounded-lg p-4 mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <p className="text-xs uppercase tracking-[0.18em] text-dusk mb-1">Operational workflows</p>
           <p className="text-sm text-bark">
-            Teams using CareGist for recurring search, exports, and monitoring should start with the data product.
+            Teams using CareGist for newly registered provider intelligence, exports, and monitoring should start with the lead feed.
           </p>
         </div>
         <div className="flex gap-3 text-sm">
-          <a href="/search" className="text-clay underline">Open data explorer</a>
+          <a href="/search" className="text-clay underline">Open New Provider Lead Feed</a>
           <a href="/pricing" className="text-clay underline">See pricing</a>
         </div>
       </div>

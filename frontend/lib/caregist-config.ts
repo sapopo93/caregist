@@ -251,9 +251,19 @@ export const PLAN_PRIMARY_CTA: Record<string, string> = {
   "alerts-pro": "Start Alerts Pro",
   "data-starter": "Start Data Starter",
   "data-pro": "Start Data Pro",
-  "data-business": "Contact sales",
+  "data-business": "Start Data Business",
   enterprise: "Contact sales",
 };
+
+// Headline commercial stat. Source of truth for the "340/month" claim.
+export const NEW_REGISTRATION_MONTHLY_AVG = 340;
+export const NEW_REGISTRATION_MONTHLY_AVG_PERIOD = "January\u2013March 2026";
+export const NEW_REGISTRATION_MONTHLY_AVG_CAVEAT =
+  "Monthly registration volumes vary. The 340/month figure is calculated from CareGist\u2019s January\u2013March 2026 live-feed average.";
+export const NEW_REGISTRATION_SOURCE_LINE =
+  "Source: CareGist tracking of CQC public registration movement.";
+export const CQC_INDEPENDENCE_LINE =
+  "CareGist is independent and is not affiliated with or endorsed by the Care Quality Commission.";
 
 export const PLAN_NEXT_STEP: Record<string, string> = {
   free: "Alerts Pro adds saved monitoring, provider watchlists, and weekly alert workflows.",
@@ -265,12 +275,16 @@ export const PLAN_NEXT_STEP: Record<string, string> = {
 };
 
 export const PLAN_LIMIT_SUMMARY: Record<string, string> = {
-  free: "2 requests/sec \u00B7 20 requests/day \u00B7 60 requests / 7 days",
+  free: "2 requests/sec \u00B7 20 requests/day",
   "alerts-pro": "5 requests/sec \u00B7 200 requests/day",
+  "data-starter": "10 requests/sec \u00B7 500 requests/day",
+  "data-pro": "25 requests/sec \u00B7 2,000 requests/day",
+  "data-business": "60 requests/sec \u00B7 10,000 requests/day",
+  enterprise: "Custom limits",
+  // backward-compat aliases for Stripe billing tier slugs
   starter: "10 requests/sec \u00B7 500 requests/day",
   pro: "25 requests/sec \u00B7 2,000 requests/day",
   business: "60 requests/sec \u00B7 10,000 requests/day",
-  enterprise: "Custom limits",
 };
 
 // ── Add-Ons ──
