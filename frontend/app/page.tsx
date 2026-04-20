@@ -12,10 +12,10 @@ export const metadata: Metadata = {
 };
 
 const signalMetrics = [
-  { label: "New registrations this week", value: "142", note: "+18% vs last week" },
-  { label: "High-confidence records", value: "118", note: "Matched to location data" },
-  { label: "Top active region", value: "London", note: "31 new providers" },
-  { label: "Fastest-moving service", value: "Home care", note: "44 new entries" },
+  { label: "Registration window", value: "Last 7 days", note: "Example filter" },
+  { label: "Confidence view", value: "High fit", note: "Matched location fields" },
+  { label: "Market focus", value: "London", note: "Example region" },
+  { label: "Service focus", value: "Home care", note: "Example service" },
 ];
 
 const sampleFeed = [
@@ -58,9 +58,9 @@ const useCases = [
 ];
 
 const coverageStats = [
-  { value: "55,818", label: "CQC locations tracked" },
+  { value: "50k+", label: "CQC locations tracked" },
   { value: "Daily", label: "source refresh cadence" },
-  { value: "4,876", label: "care groups normalised" },
+  { value: "4k+", label: "care groups normalised" },
   { value: "CSV + API", label: "workflow delivery options" },
 ];
 
@@ -131,10 +131,10 @@ export default function HomePage() {
           <div className="rounded-xl border border-white/15 bg-cream text-charcoal shadow-2xl">
             <div className="flex items-center justify-between border-b border-stone px-4 py-3">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-clay">Live signal preview</p>
-                <p className="mt-1 text-xs text-dusk">Last refreshed today</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-clay">Example signal preview</p>
+                <p className="mt-1 text-xs text-dusk">Illustrative workflow</p>
               </div>
-              <span className="rounded-full bg-moss px-3 py-1 text-xs font-bold text-cream">Active</span>
+              <span className="rounded-full bg-moss px-3 py-1 text-xs font-bold text-cream">Sample</span>
             </div>
 
             <div className="grid grid-cols-2 border-b border-stone">
@@ -149,8 +149,8 @@ export default function HomePage() {
 
             <div className="p-4">
               <div className="mb-3 flex items-center justify-between gap-3">
-                <p className="text-sm font-bold text-bark">New provider feed</p>
-                <p className="text-xs text-dusk">Filtered: last 7 days</p>
+                <p className="text-sm font-bold text-bark">Example provider feed</p>
+                <p className="text-xs text-dusk">Sample filter</p>
               </div>
               <div className="overflow-hidden rounded-lg border border-stone bg-white">
                 <div className="grid grid-cols-[1.35fr_0.75fr_0.9fr_0.65fr] bg-parchment px-3 py-2 text-[11px] font-bold uppercase tracking-[0.08em] text-dusk">
@@ -248,7 +248,7 @@ export default function HomePage() {
                 ["Region", "North West"],
                 ["Service", "Home care"],
                 ["Window", "Last 30 days"],
-                ["Result", "23 providers"],
+                ["Result", "Filtered providers"],
               ].map(([label, value]) => (
                 <div key={label} className="bg-charcoal/70 p-4">
                   <p className="text-xs uppercase tracking-[0.12em] text-amber">{label}</p>
@@ -285,12 +285,12 @@ export default function HomePage() {
 
         <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {[
-            { name: "Care Homes", count: "10,309", slug: "care-homes" },
-            { name: "Nursing Homes", count: "4,386", slug: "nursing-homes" },
-            { name: "Home Care", count: "14,240", slug: "home-care" },
-            { name: "GP Surgeries", count: "9,367", slug: "gp-surgeries" },
-            { name: "Dental Practices", count: "12,004", slug: "dental" },
-            { name: "Supported Living", count: "4,727", slug: "supported-living" },
+            { name: "Care Homes", slug: "care-homes" },
+            { name: "Nursing Homes", slug: "nursing-homes" },
+            { name: "Home Care", slug: "home-care" },
+            { name: "GP Surgeries", slug: "gp-surgeries" },
+            { name: "Dental Practices", slug: "dental" },
+            { name: "Supported Living", slug: "supported-living" },
           ].map((type) => (
             <TrackedLink
               key={type.name}
@@ -301,7 +301,7 @@ export default function HomePage() {
               className="border border-stone bg-cream p-4 transition-colors hover:border-clay"
             >
               <div className="font-bold text-bark">{type.name}</div>
-              <div className="mt-1 text-xs font-medium text-dusk">{type.count} providers</div>
+              <div className="mt-1 text-xs font-medium text-dusk">Browse providers</div>
             </TrackedLink>
           ))}
         </div>
