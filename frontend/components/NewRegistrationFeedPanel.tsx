@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 
 import { trackEvent } from "@/lib/analytics";
@@ -59,69 +59,9 @@ const EMPTY_FILTERS: FeedFilters = {
   to_date: "",
 };
 
-type FilterOption = {
-  value: string;
-  label: string;
-};
-
+const TEXT_INPUT_CLASS = "px-3 py-2 rounded border border-stone bg-white text-sm min-w-0";
 const SELECT_CLASS = "px-3 py-2 rounded border border-stone bg-white text-sm min-w-0";
 const DATE_INPUT_CLASS = "px-3 py-2 rounded border border-stone bg-white text-sm min-w-0";
-
-function cleanOptionValue(value?: string | null): string {
-  return value?.trim() ?? "";
-}
-
-function toSortedOptions(values: Array<string | null | undefined>): FilterOption[] {
-  return Array.from(new Set(values.map(cleanOptionValue).filter(Boolean)))
-    .sort((a, b) => a.localeCompare(b))
-    .map((value) => ({ value, label: value }));
-}
-
-function serviceTypeOptions(events: FeedEvent[]): FilterOption[] {
-  return toSortedOptions(
-    events.flatMap((event) => event.service_types?.split("|").map((service) => service.trim()) ?? []),
-  );
-}
-
-function searchOptions(events: FeedEvent[]): FilterOption[] {
-  const providerOptions = events.map((event) => cleanOptionValue(event.name)).filter(Boolean);
-  const townOptions = events.map((event) => cleanOptionValue(event.town)).filter(Boolean);
-  return toSortedOptions([...providerOptions, ...townOptions]);
-}
-
-function filterOptionsWithSelected(options: FilterOption[], selected: string): FilterOption[] {
-  const value = selected.trim();
-  if (!value || options.some((option) => option.value === value)) return options;
-  return [{ value, label: value }, ...options];
-}
-
-function FilterSelect({
-  label,
-  value,
-  options,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  options: FilterOption[];
-  onChange: (value: string) => void;
-}) {
-  return (
-    <select
-      aria-label={label}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className={SELECT_CLASS}
-    >
-      <option value="">{label}</option>
-      {filterOptionsWithSelected(options, value).map((option) => (
-        <option key={option.value} value={option.value}>
-          {option.label}
-        </option>
-      ))}
-    </select>
-  );
-}
 
 function buildFeedQuery(filters: FeedFilters, page = 1, sortBy?: SortBy, sortOrder?: SortOrder) {
   const params = new URLSearchParams();
@@ -317,17 +257,6 @@ export default function NewRegistrationFeedPanel({
   const hasDigestAccess = tier !== "free";
   const canExport = tier !== "free";
   const supportsWebhooks = tier === "business" || tier === "enterprise";
-  const filterOptions = useMemo(
-    () => ({
-      q: searchOptions(events),
-      region: toSortedOptions(events.map((event) => event.region)),
-      local_authority: toSortedOptions(events.map((event) => event.local_authority)),
-      service_type: serviceTypeOptions(events),
-      provider_type: toSortedOptions(events.map((event) => event.type)),
-      postcode_prefix: toSortedOptions(events.map((event) => event.postcode)),
-    }),
-    [events],
-  );
 
   return (
     <section className="bg-cream border border-stone rounded-lg p-6 mb-6">
@@ -356,12 +285,48 @@ export default function NewRegistrationFeedPanel({
       <div className="grid xl:grid-cols-[1.8fr_1fr] gap-6">
         <div>
           <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-3 mb-4">
-            <FilterSelect label="Provider or town" value={filters.q} options={filterOptions.q} onChange={(value) => setFilters((current) => ({ ...current, q: value }))} />
-            <FilterSelect label="Region" value={filters.region} options={filterOptions.region} onChange={(value) => setFilters((current) => ({ ...current, region: value }))} />
-            <FilterSelect label="Local authority" value={filters.local_authority} options={filterOptions.local_authority} onChange={(value) => setFilters((current) => ({ ...current, local_authority: value }))} />
-            <FilterSelect label="Service type" value={filters.service_type} options={filterOptions.service_type} onChange={(value) => setFilters((current) => ({ ...current, service_type: value }))} />
-            <FilterSelect label="Provider type" value={filters.provider_type} options={filterOptions.provider_type} onChange={(value) => setFilters((current) => ({ ...current, provider_type: value }))} />
-            <FilterSelect label="Postcode" value={filters.postcode_prefix} options={filterOptions.postcode_prefix} onChange={(value) => setFilters((current) => ({ ...current, postcode_prefix: value }))} />
+            <input
+              aria-label="Provider or town"
+              value={filters.q}
+              onChange={(e) => setFilters((current) => ({ ...current, q: e.target.value }))}
+              placeholder="Search provider or town"
+              className={TEXT_INPUT_CLASS}
+            />
+            <input
+              aria-label="Region"
+              value={filters.region}
+              onChange={(e) => setFilters((current) => ({ ...current, region: e.target.value }))}
+              placeholder="Region"
+              className={TEXT_INPUT_CLASS}
+            />
+            <input
+              aria-label="Local authority"
+              value={filters.local_authority}
+              onChange={(e) => setFilters((current) => ({ ...current, local_authority: e.target.value }))}
+              placeholder="Local authority"
+              className={TEXT_INPUT_CLASS}
+            />
+            <input
+              aria-label="Service type"
+              value={filters.service_type}
+              onChange={(e) => setFilters((current) => ({ ...current, service_type: e.target.value }))}
+              placeholder="Service type"
+              className={TEXT_INPUT_CLASS}
+            />
+            <input
+              aria-label="Provider type"
+              value={filters.provider_type}
+              onChange={(e) => setFilters((current) => ({ ...current, provider_type: e.target.value }))}
+              placeholder="Provider type"
+              className={TEXT_INPUT_CLASS}
+            />
+            <input
+              aria-label="Postcode prefix"
+              value={filters.postcode_prefix}
+              onChange={(e) => setFilters((current) => ({ ...current, postcode_prefix: e.target.value }))}
+              placeholder="Postcode prefix"
+              className={TEXT_INPUT_CLASS}
+            />
             <input
               type="date"
               aria-label="Registered from"
