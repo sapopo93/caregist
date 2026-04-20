@@ -197,6 +197,20 @@ export default function HomePage() {
         </div>
       </section>
 
+      <section className="border-b border-stone bg-cream py-6">
+        <div className="mx-auto grid max-w-6xl gap-4 px-6 md:grid-cols-[0.75fr_1.25fr] md:items-center">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-clay">Data freshness</p>
+            <h2 className="mt-2 text-2xl font-extrabold leading-tight">Daily refresh, not real-time source data.</h2>
+          </div>
+          <p className="text-sm leading-6 text-dusk" style={{ fontFamily: "Lora" }}>
+            CareGist refreshes against the CQC public register on a daily cadence, then normalises
+            registration, location, rating, and provider fields for workflow use. We avoid presenting
+            sample metrics as live totals unless they are backed by the product feed.
+          </p>
+        </div>
+      </section>
+
       <section className="mx-auto max-w-6xl px-6 py-12">
         <div className="grid gap-8 lg:grid-cols-[0.8fr_1.2fr] lg:items-start">
           <div>
