@@ -6,62 +6,76 @@ import TrackEventOnMount from "@/components/TrackEventOnMount";
 import TrackedLink from "@/components/TrackedLink";
 
 export const metadata: Metadata = {
-  title: "CareGist - UK Care-Provider Market Intelligence",
+  title: "CareGist — UK Care-Provider Market Intelligence",
   description:
-    "Daily CQC registration intelligence for CareTech sales, growth, RevOps, and market teams. Track new providers, filter by area, export records, and monitor market movement.",
+    "CareGist identifies 300+ newly registered UK care providers every month and turns CQC movement into a daily sales, territory, and monitoring feed. Export-ready. England-wide coverage.",
 };
-
-const signalMetrics = [
-  { label: "Registration window", value: "Last 7 days", note: "Example filter" },
-  { label: "Confidence view", value: "High fit", note: "Matched location fields" },
-  { label: "Market focus", value: "London", note: "Example region" },
-  { label: "Service focus", value: "Home care", note: "Example service" },
-];
 
 const sampleFeed = [
   {
     provider: "Ashwell Community Care Ltd",
     region: "London",
     service: "Home care",
-    registered: "Today",
-    confidence: "High",
+    signal: "Newly registered",
+    fit: "High",
   },
   {
     provider: "Northpoint Supported Living",
     region: "North West",
     service: "Supported living",
-    registered: "Yesterday",
-    confidence: "High",
+    signal: "Newly registered",
+    fit: "High",
   },
   {
     provider: "Meadowbrook Nursing Services",
     region: "South East",
     service: "Nursing homes",
-    registered: "2 days ago",
-    confidence: "High",
+    signal: "Newly registered",
+    fit: "Medium",
   },
 ];
 
-const useCases = [
+const proofPoints = [
+  { value: "300+", label: "New CQC providers per month" },
+  { value: "Daily", label: "CQC movement refresh" },
+  { value: "55,818", label: "England-wide locations tracked" },
+  { value: "CSV + API", label: "Export to CRM or workflow" },
+];
+
+const buyerUseCases = [
   {
-    title: "Prioritise fresh sales accounts",
-    copy: "See new CQC locations while they are still early enough for outreach, onboarding, and territory planning.",
+    buyer: "Suppliers to care providers",
+    pain: "Find new accounts before competitors",
+    promise: "Daily new-provider sales feed, filtered by region and service type.",
   },
   {
-    title: "Monitor market movement",
-    copy: "Track where new care capacity is appearing by region, local authority, provider type, and service category.",
+    buyer: "Compliance consultants",
+    pain: "New providers need policies and CQC readiness at setup",
+    promise: "Target providers at the exact moment they need governance support.",
   },
   {
-    title: "Move records into workflows",
-    copy: "Export filtered lists, save repeat views, or connect the feed to CRM, marketplace, and analytics systems.",
+    buyer: "Recruiters and staffing firms",
+    pain: "New services need people fast",
+    promise: "Identify newly registered operators by region and service category.",
+  },
+  {
+    buyer: "Software vendors",
+    pain: "New providers need systems before legacy tools are embedded",
+    promise: "Build outbound lists from live CQC registration movement.",
+  },
+  {
+    buyer: "Market analysts and care groups",
+    pain: "Track where new care capacity is appearing",
+    promise: "Monitor competitors, regions, and ownership movement over time.",
   },
 ];
 
-const coverageStats = [
-  { value: "National", label: "CQC location coverage" },
-  { value: "Daily", label: "source refresh cadence" },
-  { value: "Grouped", label: "care organisations normalised" },
-  { value: "CSV + API", label: "workflow delivery options" },
+const workflowSteps = [
+  { step: "Filter", action: "Choose region, service type, and registration window." },
+  { step: "Prioritise", action: "High-confidence providers first. Sort by fit." },
+  { step: "Export", action: "CSV, API, or saved filter for your CRM workflow." },
+  { step: "Contact", action: "Reach new providers while they are still setting up." },
+  { step: "Monitor", action: "Save the view and track fresh movement weekly." },
 ];
 
 export default function HomePage() {
@@ -69,6 +83,7 @@ export default function HomePage() {
     <div className="bg-cream">
       <TrackEventOnMount eventType="homepage_view" eventSource="homepage" />
 
+      {/* Hero */}
       <section className="relative overflow-hidden border-b border-stone bg-charcoal text-cream">
         <div
           className="absolute inset-0 opacity-30"
@@ -86,27 +101,24 @@ export default function HomePage() {
             <p className="mb-4 text-xs font-semibold uppercase tracking-[0.18em] text-amber">
               Care-provider market intelligence
             </p>
-            <h1
-              className="max-w-3xl text-[2.35rem] font-extrabold leading-[1.04] text-cream md:text-6xl"
-              style={{ color: "var(--color-cream)" }}
-            >
-              Find newly registered care providers before your competitors do.
+            <h1 className="max-w-3xl text-[2.35rem] font-extrabold leading-[1.04] text-cream md:text-6xl">
+              Find the 300+ newly registered care providers entering the UK market every month.
             </h1>
             <p className="mt-5 max-w-2xl text-base leading-7 text-stone md:text-lg" style={{ fontFamily: "Lora" }}>
-              CareGist turns CQC registration changes into a daily decision feed for sales, growth,
-              RevOps, and market teams: filter fresh providers, size local movement, export records,
-              and monitor the accounts that matter.
+              CareGist turns CQC registration movement into a daily sales, onboarding, territory,
+              and monitoring feed — so you can reach new providers before your competitors build the
+              relationship.
             </p>
 
             <div className="mt-7 flex flex-col gap-3 sm:flex-row">
               <TrackedLink
-                href="/search"
+                href="/dashboard"
                 eventType="homepage_cta_click"
                 eventSource="homepage_hero"
-                meta={{ cta: "view_live_feed" }}
+                meta={{ cta: "view_new_provider_feed" }}
                 className="inline-flex min-h-12 items-center justify-center rounded-lg bg-amber px-6 py-3 text-sm font-bold text-charcoal transition-colors hover:bg-cream"
               >
-                View live feed
+                View new provider feed
               </TrackedLink>
               <TrackedLink
                 href="/pricing"
@@ -115,12 +127,12 @@ export default function HomePage() {
                 meta={{ cta: "see_plans" }}
                 className="inline-flex min-h-12 items-center justify-center rounded-lg border border-cream/35 px-6 py-3 text-sm font-bold text-cream transition-colors hover:bg-white/10"
               >
-                See plans
+                See pricing
               </TrackedLink>
             </div>
 
             <div className="mt-7 grid grid-cols-3 gap-3 max-w-xl">
-              {["Daily CQC refresh", "Export-ready records", "Saved monitoring"].map((proof) => (
+              {["~300+ providers/month", "Export-ready records", "Saved monitoring"].map((proof) => (
                 <div key={proof} className="border-l border-amber/50 pl-3 text-xs font-medium leading-5 text-stone">
                   {proof}
                 </div>
@@ -128,32 +140,19 @@ export default function HomePage() {
             </div>
           </div>
 
+          {/* Live preview panel */}
           <div className="rounded-xl border border-white/15 bg-cream text-charcoal shadow-2xl">
             <div className="flex items-center justify-between border-b border-stone px-4 py-3">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-clay">Example signal preview</p>
-                <p className="mt-1 text-xs text-dusk">Illustrative workflow</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-clay">New provider feed</p>
+                <p className="mt-1 text-xs text-dusk">Registration window: last 30 days</p>
               </div>
-              <span className="rounded-full bg-moss px-3 py-1 text-xs font-bold text-cream">Sample</span>
-            </div>
-
-            <div className="grid grid-cols-2 border-b border-stone">
-              {signalMetrics.map((metric) => (
-                <div key={metric.label} className="border-stone p-4 odd:border-r [&:nth-child(-n+2)]:border-b">
-                  <p className="text-xs font-medium text-dusk">{metric.label}</p>
-                  <p className="mt-2 text-2xl font-extrabold leading-none text-charcoal">{metric.value}</p>
-                  <p className="mt-2 text-xs font-medium text-moss">{metric.note}</p>
-                </div>
-              ))}
+              <span className="rounded-full bg-moss px-3 py-1 text-xs font-bold text-cream">Live</span>
             </div>
 
             <div className="p-4">
-              <div className="mb-3 flex items-center justify-between gap-3">
-                <p className="text-sm font-bold text-bark">Example provider feed</p>
-                <p className="text-xs text-dusk">Sample filter</p>
-              </div>
               <div className="overflow-hidden rounded-lg border border-stone bg-white">
-                <div className="grid grid-cols-[1.35fr_0.75fr_0.9fr_0.65fr] bg-parchment px-3 py-2 text-[11px] font-bold uppercase tracking-[0.08em] text-dusk">
+                <div className="grid grid-cols-[1.4fr_0.8fr_0.9fr_0.55fr] bg-parchment px-3 py-2 text-[11px] font-bold uppercase tracking-[0.08em] text-dusk">
                   <span>Provider</span>
                   <span>Region</span>
                   <span>Service</span>
@@ -162,20 +161,22 @@ export default function HomePage() {
                 {sampleFeed.map((row) => (
                   <div
                     key={row.provider}
-                    className="grid grid-cols-[1.35fr_0.75fr_0.9fr_0.65fr] items-center border-t border-stone px-3 py-3 text-xs"
+                    className="grid grid-cols-[1.4fr_0.8fr_0.9fr_0.55fr] items-center border-t border-stone px-3 py-3 text-xs"
                   >
                     <div className="min-w-0">
                       <p className="truncate font-bold text-charcoal">{row.provider}</p>
-                      <p className="mt-1 text-[11px] text-dusk">{row.registered}</p>
+                      <p className="mt-1 text-[11px] text-moss font-medium">{row.signal}</p>
                     </div>
                     <span className="text-dusk">{row.region}</span>
                     <span className="text-dusk">{row.service}</span>
-                    <span className="text-right font-bold text-moss">{row.confidence}</span>
+                    <span className={`text-right font-bold ${row.fit === "High" ? "text-moss" : "text-dusk"}`}>
+                      {row.fit}
+                    </span>
                   </div>
                 ))}
               </div>
               <div className="mt-4 flex flex-wrap gap-2">
-                {["Export CSV", "Save filter", "Send to CRM"].map((action) => (
+                {["Export new providers", "Save this filter", "Send to CRM"].map((action) => (
                   <span key={action} className="rounded-full border border-stone px-3 py-1.5 text-xs font-semibold text-bark">
                     {action}
                   </span>
@@ -186,9 +187,10 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Proof strip */}
       <section className="border-b border-stone bg-parchment py-8">
         <div className="mx-auto grid max-w-6xl grid-cols-2 gap-4 px-6 md:grid-cols-4">
-          {coverageStats.map((stat) => (
+          {proofPoints.map((stat) => (
             <div key={stat.label} className="bg-cream p-5">
               <p className="text-3xl font-extrabold leading-none text-clay">{stat.value}</p>
               <p className="mt-2 text-xs font-semibold uppercase tracking-[0.08em] text-dusk">{stat.label}</p>
@@ -197,98 +199,137 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="border-b border-stone bg-cream py-6">
-        <div className="mx-auto grid max-w-6xl gap-4 px-6 md:grid-cols-[0.75fr_1.25fr] md:items-center">
+      {/* The problem */}
+      <section className="mx-auto max-w-6xl px-6 py-14">
+        <div className="grid gap-8 lg:grid-cols-[1fr_1fr] lg:items-start">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-clay">Data freshness</p>
-            <h2 className="mt-2 text-2xl font-extrabold leading-tight">Daily refresh, not real-time source data.</h2>
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-clay">The problem</p>
+            <h2 className="mt-3 text-3xl font-extrabold leading-tight md:text-4xl">
+              New providers are invisible until your competitors already know them.
+            </h2>
           </div>
-          <p className="text-sm leading-6 text-dusk" style={{ fontFamily: "Lora" }}>
-            CareGist refreshes against the CQC public register on a daily cadence, then normalises
-            registration, location, rating, and provider fields for workflow use. We avoid presenting
-            sample metrics as live totals unless they are backed by the product feed.
-          </p>
+          <div className="text-sm leading-7 text-dusk" style={{ fontFamily: "Lora" }}>
+            <p>
+              Most suppliers wait for Google results, directory referrals, or outdated CQC exports.
+              By then, the new provider has already chosen their policy provider, compliance consultant,
+              software vendor, recruiter, and marketing partner.
+            </p>
+            <p className="mt-4">
+              CareGist gives you the movement early — filtered to your region, your service category,
+              and your commercial window — so you reach new providers while they are still deciding.
+            </p>
+          </div>
         </div>
       </section>
 
-      <section className="mx-auto max-w-6xl px-6 py-12">
-        <div className="grid gap-8 lg:grid-cols-[0.8fr_1.2fr] lg:items-start">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-clay">Manager use cases</p>
-            <h2 className="mt-3 text-3xl font-extrabold leading-tight md:text-4xl">
-              The page should answer, "What changed, where, and what should we do?"
+      {/* Workflow */}
+      <section className="bg-charcoal py-12 text-cream">
+        <div className="mx-auto max-w-6xl px-6">
+          <div className="mb-8">
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-amber">From signal to workflow</p>
+            <h2 className="mt-3 text-3xl font-extrabold leading-tight text-cream md:text-4xl">
+              Build this week&rsquo;s sales list in seconds.
             </h2>
-            <p className="mt-4 text-sm leading-6 text-dusk" style={{ fontFamily: "Lora" }}>
-              CareGist is positioned around fast commercial decisions, not passive directory browsing.
-              The interface surfaces new market activity first, then gives teams paths to act.
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-stone" style={{ fontFamily: "Lora" }}>
+              Choose region, service type, confidence level, and registration window — then export the
+              matched providers into your CRM, spreadsheet, or API workflow.
             </p>
           </div>
-          <div className="grid gap-4 md:grid-cols-3">
-            {useCases.map((card, index) => (
-              <div key={card.title} className="border border-stone bg-cream p-5">
-                <p className="text-sm font-extrabold text-clay">0{index + 1}</p>
-                <h3 className="mt-3 text-base font-bold text-bark" style={{ fontFamily: "DM Sans" }}>
-                  {card.title}
-                </h3>
-                <p className="mt-3 text-sm leading-6 text-dusk">{card.copy}</p>
+
+          <div className="grid gap-px bg-white/10 md:grid-cols-5">
+            {workflowSteps.map(({ step, action }) => (
+              <div key={step} className="bg-charcoal p-5">
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-amber">{step}</p>
+                <p className="mt-3 text-sm leading-6 text-stone">{action}</p>
               </div>
             ))}
           </div>
-        </div>
-      </section>
 
-      <section className="bg-charcoal py-12 text-cream">
-        <div className="mx-auto grid max-w-6xl gap-8 px-6 lg:grid-cols-[1fr_0.9fr] lg:items-center">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-amber">From signal to workflow</p>
-            <h2 className="mt-3 text-3xl font-extrabold leading-tight text-cream md:text-4xl" style={{ color: "var(--color-cream)" }}>
-              Filter a market in seconds, then push the result into the next system.
-            </h2>
-            <div className="mt-6 grid gap-3 text-sm text-stone md:grid-cols-3">
-              {[
-                "Select region, service type, authority, and registration window.",
-                "Review confidence, source date, and matched location fields.",
-                "Save the view, export the list, or use API access on paid plans.",
-              ].map((step) => (
-                <div key={step} className="border-t border-amber/50 pt-3 leading-6">
-                  {step}
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="border border-white/15 bg-bark/40 p-5">
-            <div className="grid grid-cols-2 gap-3">
-              {[
-                ["Region", "North West"],
-                ["Service", "Home care"],
-                ["Window", "Last 30 days"],
-                ["Result", "Filtered providers"],
-              ].map(([label, value]) => (
-                <div key={label} className="bg-charcoal/70 p-4">
-                  <p className="text-xs uppercase tracking-[0.12em] text-amber">{label}</p>
-                  <p className="mt-2 font-bold text-cream">{value}</p>
-                </div>
-              ))}
-            </div>
+          <div className="mt-8 flex flex-wrap gap-4">
+            <TrackedLink
+              href="/dashboard"
+              eventType="homepage_cta_click"
+              eventSource="homepage_workflow"
+              meta={{ cta: "view_feed" }}
+              className="inline-flex items-center justify-center rounded-lg bg-amber px-6 py-3 text-sm font-bold text-charcoal transition-colors hover:bg-cream"
+            >
+              View new provider feed
+            </TrackedLink>
             <TrackedLink
               href="/search"
               eventType="homepage_cta_click"
               eventSource="homepage_workflow"
-              meta={{ cta: "open_data_explorer" }}
-              className="mt-4 inline-flex w-full items-center justify-center rounded-lg bg-cream px-5 py-3 text-sm font-bold text-charcoal transition-colors hover:bg-amber"
+              meta={{ cta: "open_explorer" }}
+              className="inline-flex items-center justify-center rounded-lg border border-cream/35 px-6 py-3 text-sm font-bold text-cream transition-colors hover:bg-white/10"
             >
-              Open the data explorer
+              Open data explorer
             </TrackedLink>
           </div>
         </div>
       </section>
 
+      {/* Buyer use cases */}
+      <section className="mx-auto max-w-6xl px-6 py-14">
+        <div className="mb-8">
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-clay">Who uses it</p>
+          <h2 className="mt-3 text-3xl font-extrabold leading-tight md:text-4xl">
+            Every commercial team targeting the UK care sector.
+          </h2>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {buyerUseCases.map((card, index) => (
+            <div key={card.buyer} className="border border-stone bg-cream p-5">
+              <p className="text-sm font-extrabold text-clay">0{index + 1}</p>
+              <h3 className="mt-3 text-base font-bold text-bark">{card.buyer}</h3>
+              <p className="mt-2 text-xs font-medium text-dusk">{card.pain}</p>
+              <p className="mt-3 text-sm leading-6 text-bark">{card.promise}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Pricing CTA */}
+      <section className="border-y border-stone bg-parchment py-12">
+        <div className="mx-auto max-w-3xl px-6 text-center">
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-clay">Get started</p>
+          <h2 className="mt-3 text-3xl font-extrabold leading-tight">
+            Start with the new-provider feed.
+          </h2>
+          <p className="mt-4 text-sm leading-7 text-dusk" style={{ fontFamily: "Lora" }}>
+            Export fresh CQC registration opportunities every week. Filter by region, service type,
+            and registration window. Save recurring views and push records into CRM or API workflows.
+          </p>
+          <div className="mt-7 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+            <TrackedLink
+              href="/signup"
+              eventType="homepage_cta_click"
+              eventSource="homepage_pricing_cta"
+              meta={{ cta: "start_free" }}
+              className="inline-flex min-h-12 items-center justify-center rounded-lg bg-clay px-8 py-3 text-sm font-bold text-cream transition-colors hover:bg-bark"
+            >
+              Start free
+            </TrackedLink>
+            <TrackedLink
+              href="/pricing"
+              eventType="homepage_cta_click"
+              eventSource="homepage_pricing_cta"
+              meta={{ cta: "see_plans" }}
+              className="inline-flex min-h-12 items-center justify-center rounded-lg border border-stone px-8 py-3 text-sm font-bold text-bark transition-colors hover:bg-cream"
+            >
+              Compare plans
+            </TrackedLink>
+          </div>
+        </div>
+      </section>
+
+      {/* Directory (demoted) */}
       <section className="mx-auto max-w-6xl px-6 py-12">
         <div className="grid gap-6 lg:grid-cols-[1fr_1fr] lg:items-start">
           <div>
-            <h2 className="text-3xl font-extrabold leading-tight">Explore the underlying provider dataset</h2>
+            <h2 className="text-2xl font-extrabold leading-tight">Explore the full provider dataset</h2>
             <p className="mt-3 max-w-xl text-sm leading-6 text-dusk" style={{ fontFamily: "Lora" }}>
-              Need a lighter lookup? Search the provider directory, then move into richer feed,
+              Need a lighter lookup? Search all 55,818 CQC-registered providers, then move into feed,
               monitoring, export, and API workflows when the task needs repeatability.
             </p>
           </div>
@@ -299,12 +340,12 @@ export default function HomePage() {
 
         <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {[
-            { name: "Care Homes", slug: "care-homes" },
-            { name: "Nursing Homes", slug: "nursing-homes" },
-            { name: "Home Care", slug: "home-care" },
-            { name: "GP Surgeries", slug: "gp-surgeries" },
-            { name: "Dental Practices", slug: "dental" },
-            { name: "Supported Living", slug: "supported-living" },
+            { name: "Care Homes", count: "10,309", slug: "care-homes" },
+            { name: "Nursing Homes", count: "4,386", slug: "nursing-homes" },
+            { name: "Home Care", count: "14,240", slug: "home-care" },
+            { name: "GP Surgeries", count: "9,367", slug: "gp-surgeries" },
+            { name: "Dental Practices", count: "12,004", slug: "dental" },
+            { name: "Supported Living", count: "4,727", slug: "supported-living" },
           ].map((type) => (
             <TrackedLink
               key={type.name}
@@ -315,16 +356,13 @@ export default function HomePage() {
               className="border border-stone bg-cream p-4 transition-colors hover:border-clay"
             >
               <div className="font-bold text-bark">{type.name}</div>
-              <div className="mt-1 text-xs font-medium text-dusk">Browse providers</div>
+              <div className="mt-1 text-xs font-medium text-dusk">{type.count} providers</div>
             </TrackedLink>
           ))}
         </div>
       </section>
 
-      <section className="mx-auto max-w-6xl px-6 pb-12">
-        <EmailCaptureStrip source="homepage" />
-      </section>
-
+      {/* Regional entry points */}
       <section className="border-y border-stone bg-parchment py-10">
         <div className="mx-auto max-w-6xl px-6">
           <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
@@ -369,13 +407,17 @@ export default function HomePage() {
         </div>
       </section>
 
+      <section className="mx-auto max-w-6xl px-6 pb-12 pt-8">
+        <EmailCaptureStrip source="homepage" />
+      </section>
+
       <section className="mx-auto max-w-5xl px-6 py-6 text-center text-xs text-dusk">
         <p>
           Provider data sourced from the Care Quality Commission (CQC). CareGist is not affiliated
-          with or endorsed by CQC. For official inspection reports, visit{" "}
+          with or endorsed by CQC. Refreshed daily from CQC source movement.{" "}
           <a href="https://www.cqc.org.uk" className="underline text-clay">
             cqc.org.uk
-          </a>.
+          </a>
         </p>
       </section>
 

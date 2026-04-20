@@ -8,7 +8,6 @@ import InlineSortSelect from "@/components/InlineSortSelect";
 import MobileFilterToggle from "@/components/MobileFilterToggle";
 import WarmingUpBanner from "@/components/WarmingUpBanner";
 import { searchProviders } from "@/lib/api";
-import { hasSearchCriteria } from "@/lib/searchCriteria";
 import { Suspense } from "react";
 import Link from "next/link";
 
@@ -26,26 +25,14 @@ export default async function SearchPage({
   let error = false;
   let warmingUp = false;
 
-  // Run search only when meaningful filters are present.
-  const searchSubmitted = hasSearchCriteria({
-    q: query,
-    region: params.region,
-    rating: params.rating,
-    service_type: params.service_type,
-    type: params.type,
-    postcode: params.postcode,
-  });
-
-  if (searchSubmitted) {
-    try {
-      results = await searchProviders({ ...params, page, sort });
-    } catch (e: any) {
-      console.error("Search failed:", e);
-      if (e?.message === "warming_up") {
-        warmingUp = true;
-      }
-      error = true;
+  try {
+    results = await searchProviders({ ...params, page, sort });
+  } catch (e: any) {
+    console.error("Search failed:", e);
+    if (e?.message === "warming_up") {
+      warmingUp = true;
     }
+    error = true;
   }
 
   // Build export URL
@@ -95,8 +82,8 @@ export default async function SearchPage({
           {!error && results.meta.total > 0 && (
             <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
               <p className="text-sm text-dusk">
-                {results.meta.total.toLocaleString()} providers found
-                {query && <> for &ldquo;{query}&rdquo;</>}
+                {results.meta.total.toLocaleString()} provider{results.meta.total === 1 ? "" : "s"}
+                {query ? <> matching &ldquo;{query}&rdquo;</> : " in the directory"}
                 {" "} (page {results.meta.page} of {results.meta.pages})
               </p>
               <div className="flex gap-3 items-center print:hidden">
@@ -115,7 +102,7 @@ export default async function SearchPage({
             ))}
           </div>
 
-          {!error && results.data.length === 0 && searchSubmitted && (
+          {!error && results.data.length === 0 && !warmingUp && (
             <div className="text-center py-12">
               <p className="text-lg text-bark font-semibold mb-3">No providers found</p>
               {query && (
@@ -140,12 +127,6 @@ export default async function SearchPage({
                   </Link>
                 </div>
               </div>
-            </div>
-          )}
-
-          {!error && !searchSubmitted && (
-            <div className="text-center py-12 text-dusk">
-              <p className="text-lg">Enter a search term or select filters to find providers.</p>
             </div>
           )}
 
