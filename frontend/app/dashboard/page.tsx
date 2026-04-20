@@ -9,6 +9,27 @@ import NewRegistrationFeedPanel from "@/components/NewRegistrationFeedPanel";
 import { trackEvent } from "@/lib/analytics";
 import { PLAN_LIMIT_SUMMARY, PLAN_NEXT_STEP, PLAN_PRIMARY_CTA } from "@/lib/caregist-config";
 
+type CountDatum = {
+  label: string;
+  count: number;
+};
+
+type GrowthDatum = {
+  label: string;
+  recent_count: number;
+  previous_count: number;
+  growth_count: number;
+  growth_rate: number;
+};
+
+type ProviderAnalytics = {
+  provider_types: CountDatum[];
+  service_types: CountDatum[];
+  service_growth: GrowthDatum[];
+};
+
+const CHART_COLORS = ["#C1784F", "#4A5E45", "#D4943A", "#6B4C35", "#7E9B79", "#8C7E6A", "#2B2520", "#C44444"];
+
 export default function DashboardPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
@@ -20,6 +41,9 @@ export default function DashboardPage() {
   const [subscription, setSubscription] = useState<any>(null);
   const [webhooks, setWebhooks] = useState<any[]>([]);
   const [teamKeys, setTeamKeys] = useState<any[]>([]);
+  const [providerAnalytics, setProviderAnalytics] = useState<ProviderAnalytics | null>(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  const [analyticsError, setAnalyticsError] = useState("");
   const [seatDraft, setSeatDraft] = useState(0);
   const [seatLoading, setSeatLoading] = useState(false);
   const [seatError, setSeatError] = useState("");
@@ -63,6 +87,31 @@ export default function DashboardPage() {
       .then((res) => res.json())
       .then((data) => setWebhooks(Array.isArray(data?.webhooks) ? data.webhooks : []))
       .catch(() => { setWebhooks([]); setLoadError(true); });
+  }, [tier]);
+
+  useEffect(() => {
+    if (!["starter", "pro", "business", "enterprise"].includes(tier)) {
+      setProviderAnalytics(null);
+      return;
+    }
+
+    setAnalyticsLoading(true);
+    setAnalyticsError("");
+    fetch("/api/v1/providers/analytics", { credentials: "include" })
+      .then(async (res) => {
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || "Could not load provider analytics.");
+        setProviderAnalytics({
+          provider_types: Array.isArray(data.provider_types) ? data.provider_types : [],
+          service_types: Array.isArray(data.service_types) ? data.service_types : [],
+          service_growth: Array.isArray(data.service_growth) ? data.service_growth : [],
+        });
+      })
+      .catch((err) => {
+        setProviderAnalytics(null);
+        setAnalyticsError(err instanceof Error ? err.message : "Could not load provider analytics.");
+      })
+      .finally(() => setAnalyticsLoading(false));
   }, [tier]);
 
   useEffect(() => {
@@ -290,6 +339,13 @@ export default function DashboardPage() {
           </Link>
         </div>
       </div>
+
+      <ProviderAnalyticsSection
+        analytics={providerAnalytics}
+        loading={analyticsLoading}
+        error={analyticsError}
+        tier={tier}
+      />
 
       <NewRegistrationFeedPanel tier={tier} upgradeHref={upgradeHref} />
 
@@ -522,4 +578,226 @@ export default function DashboardPage() {
       </div>
     </div>
   );
+}
+
+function ProviderAnalyticsSection({
+  analytics,
+  loading,
+  error,
+  tier,
+}: {
+  analytics: ProviderAnalytics | null;
+  loading: boolean;
+  error: string;
+  tier: string;
+}) {
+  if (!["starter", "pro", "business", "enterprise"].includes(tier)) {
+    return (
+      <div className="bg-cream border border-stone rounded-lg p-6 mb-6">
+        <h2 className="text-xl font-bold mb-2">Provider type analytics</h2>
+        <p className="text-sm text-dusk">
+          Upgrade to Starter or above to see provider mix, service-type distribution, and new-registration growth charts.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <section className="mb-6">
+      <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-3 mb-4">
+        <div>
+          <p className="text-xs uppercase tracking-[0.18em] text-clay mb-1">Market analytics</p>
+          <h2 className="text-2xl font-bold">Provider mix and growth</h2>
+        </div>
+        <p className="text-xs text-dusk max-w-md">
+          Based on active provider records and the new-registration event ledger.
+        </p>
+      </div>
+      {loading && <p className="text-sm text-dusk bg-cream border border-stone rounded-lg p-4">Loading analytics...</p>}
+      {error && <p className="text-sm text-alert bg-alert/5 border border-alert/30 rounded-lg p-4">{error}</p>}
+      {!loading && !error && (
+        <>
+          <div className="grid lg:grid-cols-[1.05fr_0.95fr] gap-6 mb-6">
+            <ServiceTypeBarChart data={analytics?.service_types || []} />
+            <ProviderTypePieChart data={analytics?.provider_types || []} />
+          </div>
+          <ServiceGrowthChart data={analytics?.service_growth || []} />
+        </>
+      )}
+    </section>
+  );
+}
+
+function ServiceTypeBarChart({ data }: { data: CountDatum[] }) {
+  const rows = normaliseCountData(data);
+  const max = Math.max(...rows.map((row) => row.count), 1);
+
+  return (
+    <section className="border border-stone bg-cream rounded-lg p-5">
+      <div className="flex items-start justify-between gap-4 mb-4">
+        <div>
+          <h3 className="text-lg font-bold text-bark">Providers by service type</h3>
+          <p className="text-xs text-dusk mt-1">Active providers grouped from CQC service fields.</p>
+        </div>
+        <span className="text-xs font-medium text-dusk">Top {rows.length || 0}</span>
+      </div>
+      {rows.length === 0 ? (
+        <p className="text-sm text-dusk">No service-type data available yet.</p>
+      ) : (
+        <div className="space-y-3">
+          {rows.map((row, index) => (
+            <div key={row.label}>
+              <div className="flex items-center justify-between gap-3 text-xs mb-1">
+                <span className="font-medium text-charcoal truncate">{row.label}</span>
+                <span className="font-mono text-dusk">{row.count.toLocaleString()}</span>
+              </div>
+              <div className="h-3 rounded-full bg-parchment overflow-hidden">
+                <div
+                  className="h-full rounded-full"
+                  style={{
+                    width: `${Math.max(4, (row.count / max) * 100)}%`,
+                    backgroundColor: CHART_COLORS[index % CHART_COLORS.length],
+                  }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function ProviderTypePieChart({ data }: { data: CountDatum[] }) {
+  const rows = normaliseCountData(data);
+  const total = rows.reduce((sum, row) => sum + row.count, 0);
+  const background = total > 0 ? buildConicGradient(rows) : "var(--color-parchment)";
+
+  return (
+    <section className="border border-stone bg-cream rounded-lg p-5">
+      <div className="mb-4">
+        <h3 className="text-lg font-bold text-bark">Provider category mix</h3>
+        <p className="text-xs text-dusk mt-1">Active providers by primary provider type.</p>
+      </div>
+      {rows.length === 0 ? (
+        <p className="text-sm text-dusk">No provider category data available yet.</p>
+      ) : (
+        <div className="grid sm:grid-cols-[10rem_1fr] gap-5 items-center">
+          <div
+            className="aspect-square rounded-full border border-stone"
+            style={{ background }}
+            aria-label="Provider category distribution pie chart"
+          />
+          <div className="space-y-2">
+            {rows.map((row, index) => {
+              const pct = total ? Math.round((row.count / total) * 100) : 0;
+              return (
+                <div key={row.label} className="flex items-center justify-between gap-3 text-xs">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span
+                      className="h-3 w-3 rounded-sm shrink-0"
+                      style={{ backgroundColor: CHART_COLORS[index % CHART_COLORS.length] }}
+                    />
+                    <span className="truncate text-charcoal">{row.label}</span>
+                  </div>
+                  <span className="font-mono text-dusk">{pct}%</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function ServiceGrowthChart({ data }: { data: GrowthDatum[] }) {
+  const rows = normaliseGrowthData(data);
+  const maxGrowth = Math.max(...rows.map((row) => Math.max(row.growth_count, 0)), 1);
+  const fastest = rows.find((row) => row.growth_count > 0) || rows[0];
+
+  return (
+    <section className="border border-stone bg-cream rounded-lg p-5">
+      <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-3 mb-4">
+        <div>
+          <h3 className="text-lg font-bold text-bark">Fastest-growing service types</h3>
+          <p className="text-xs text-dusk mt-1">Compares new-registration ledger activity in the last 90 days against the prior 90 days.</p>
+        </div>
+        {fastest && fastest.growth_count > 0 && (
+          <div className="rounded-lg bg-parchment border border-stone px-4 py-3">
+            <p className="text-[11px] uppercase tracking-[0.16em] text-dusk">Current leader</p>
+            <p className="text-sm font-bold text-bark">{fastest.label}</p>
+          </div>
+        )}
+      </div>
+      {rows.length === 0 ? (
+        <p className="text-sm text-dusk">No recent growth data available from the new-registration ledger.</p>
+      ) : (
+        <div className="space-y-3">
+          {rows.map((row, index) => {
+            const growth = Math.max(row.growth_count, 0);
+            return (
+              <div key={row.label} className="grid gap-2 md:grid-cols-[11rem_1fr_10rem] md:items-center">
+                <div className="text-sm font-medium text-charcoal truncate">{row.label}</div>
+                <div className="h-3 rounded-full bg-parchment overflow-hidden">
+                  <div
+                    className="h-full rounded-full"
+                    style={{
+                      width: `${Math.max(4, (growth / maxGrowth) * 100)}%`,
+                      backgroundColor: CHART_COLORS[index % CHART_COLORS.length],
+                    }}
+                  />
+                </div>
+                <div className="text-xs text-dusk md:text-right">
+                  <span className="font-mono text-bark">{formatSignedCount(row.growth_count)}</span>
+                  {" "}vs prior 90d
+                  <span className="block font-mono">{formatSignedPercent(row.growth_rate)}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function normaliseCountData(data: CountDatum[]): CountDatum[] {
+  return (Array.isArray(data) ? data : [])
+    .map((row) => ({ label: String(row.label || "Unknown"), count: Number(row.count || 0) }))
+    .filter((row) => row.count > 0);
+}
+
+function normaliseGrowthData(data: GrowthDatum[]): GrowthDatum[] {
+  return (Array.isArray(data) ? data : [])
+    .map((row) => ({
+      label: String(row.label || "Unknown"),
+      recent_count: Number(row.recent_count || 0),
+      previous_count: Number(row.previous_count || 0),
+      growth_count: Number(row.growth_count || 0),
+      growth_rate: Number(row.growth_rate || 0),
+    }))
+    .filter((row) => row.recent_count > 0 || row.previous_count > 0);
+}
+
+function buildConicGradient(rows: CountDatum[]): string {
+  const total = rows.reduce((sum, row) => sum + row.count, 0);
+  let cursor = 0;
+  const stops = rows.map((row, index) => {
+    const start = cursor;
+    cursor += (row.count / total) * 100;
+    const color = CHART_COLORS[index % CHART_COLORS.length];
+    return `${color} ${start}% ${cursor}%`;
+  });
+  return `conic-gradient(${stops.join(", ")})`;
+}
+
+function formatSignedCount(value: number): string {
+  if (value > 0) return `+${value.toLocaleString()}`;
+  return value.toLocaleString();
+}
+
+function formatSignedPercent(value: number): string {
+  if (value > 0) return `+${value.toLocaleString()}%`;
+  return `${value.toLocaleString()}%`;
 }

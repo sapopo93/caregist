@@ -37,6 +37,11 @@ from api.queries.providers import (
     build_search_query,
     classify_query,
 )
+from api.queries.admin import (
+    PROVIDER_TYPE_DISTRIBUTION,
+    SERVICE_TYPE_DISTRIBUTION,
+    SERVICE_TYPE_GROWTH,
+)
 
 logger = logging.getLogger("caregist.api")
 router = APIRouter(prefix="/api/v1/providers", tags=["providers"])
@@ -79,6 +84,35 @@ def _stream_headers(response: Response, disposition: str, total: int) -> dict[st
     headers["Content-Disposition"] = disposition
     headers["X-Total-Count"] = str(total)
     return headers
+
+
+@router.get("/analytics")
+async def provider_analytics(_auth: dict = Depends(validate_api_key)) -> dict:
+    """Aggregate provider analytics for paid dashboards.
+
+    Exposes distribution and growth data without returning individual provider records.
+    """
+    tier = _auth.get("tier", "free")
+    if tier not in {"starter", "pro", "business", "enterprise", "admin"}:
+        raise HTTPException(
+            status_code=403,
+            detail="Provider analytics are available on paid CareGist plans.",
+        )
+
+    try:
+        async with get_connection() as conn:
+            provider_types = await conn.fetch(PROVIDER_TYPE_DISTRIBUTION, 8)
+            service_types = await conn.fetch(SERVICE_TYPE_DISTRIBUTION, 10)
+            service_growth = await conn.fetch(SERVICE_TYPE_GROWTH, 10)
+    except Exception as exc:
+        logger.error("Provider analytics failed: %s", exc)
+        raise HTTPException(status_code=503, detail="Failed to load provider analytics.")
+
+    return {
+        "provider_types": [dict(r) for r in provider_types],
+        "service_types": [dict(r) for r in service_types],
+        "service_growth": [dict(r) for r in service_growth],
+    }
 
 
 @router.get("/search")
