@@ -8,7 +8,7 @@ import TrackedLink from "@/components/TrackedLink";
 export const metadata: Metadata = {
   title: "CareGist — UK Care-Provider Market Intelligence",
   description:
-    "CareGist identifies 300+ newly registered UK care providers every month and turns CQC movement into a daily sales, territory, and monitoring feed. Export-ready. England-wide coverage.",
+    "CareGist tracks 340+ new care-provider opportunities every month from CQC registration movement. Daily feed for sales, territory planning, and monitoring. Export-ready. England-wide coverage.",
 };
 
 const sampleFeed = [
@@ -36,7 +36,7 @@ const sampleFeed = [
 ];
 
 const proofPoints = [
-  { value: "300+", label: "New CQC providers per month" },
+  { value: "341/mo", label: "New CQC opportunities (Q1 2026 avg)" },
   { value: "Daily", label: "CQC movement refresh" },
   { value: "55,818", label: "England-wide locations tracked" },
   { value: "CSV + API", label: "Export to CRM or workflow" },
@@ -102,12 +102,12 @@ export default function HomePage() {
               Care-provider market intelligence
             </p>
             <h1 className="max-w-3xl text-[2.35rem] font-extrabold leading-[1.04] text-cream md:text-6xl">
-              Find the 300+ newly registered care providers entering the UK market every month.
+              Find 340+ new care-provider opportunities every month.
             </h1>
             <p className="mt-5 max-w-2xl text-base leading-7 text-stone md:text-lg" style={{ fontFamily: "Lora" }}>
-              CareGist turns CQC registration movement into a daily sales, onboarding, territory,
-              and monitoring feed — so you can reach new providers before your competitors build the
-              relationship.
+              CareGist tracks CQC registration movement daily and turns new provider activity into a
+              sales, onboarding, territory, and monitoring feed — so you reach new providers before
+              competitors build the relationship.
             </p>
 
             <div className="mt-7 flex flex-col gap-3 sm:flex-row">
@@ -131,12 +131,21 @@ export default function HomePage() {
               </TrackedLink>
             </div>
 
-            <div className="mt-7 grid grid-cols-3 gap-3 max-w-xl">
-              {["~300+ providers/month", "Export-ready records", "Saved monitoring"].map((proof) => (
-                <div key={proof} className="border-l border-amber/50 pl-3 text-xs font-medium leading-5 text-stone">
-                  {proof}
+            <div className="mt-7 max-w-xl">
+              <div className="grid grid-cols-3 gap-3">
+                <div className="border-l border-amber/50 pl-3">
+                  <p className="text-sm font-extrabold text-amber leading-none">341/month</p>
+                  <p className="mt-1 text-[11px] font-medium text-stone leading-4">Jan–Mar 2026 average</p>
                 </div>
-              ))}
+                {["Export-ready records", "Saved monitoring"].map((proof) => (
+                  <div key={proof} className="border-l border-amber/50 pl-3 text-xs font-medium leading-5 text-stone">
+                    {proof}
+                  </div>
+                ))}
+              </div>
+              <p className="mt-3 text-[11px] text-stone/60 leading-5">
+                Counts based on CareGist registration tracking. April 2026 is partial and currently pacing at 12.5 new records/day.
+              </p>
             </div>
           </div>
 
