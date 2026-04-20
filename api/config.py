@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     query_timeout_ms: int = 10000
     stripe_secret_key: str = ""
     stripe_webhook_secret: str = ""
+    stripe_price_alerts_pro: str = ""
     stripe_price_starter: str = ""
     stripe_price_pro: str = ""
     stripe_price_pro_seat: str = ""
@@ -88,6 +89,30 @@ TIERS = {
         "extra_seat_min_tier": None,
         "next_tier": "starter",
     },
+    "alerts-pro": {
+        "rate": 5,
+        "rate_window_seconds": 1,
+        "daily": 200,
+        "rolling_7d": 1400,
+        "monthly": 5000,
+        "page_size": 10,
+        "fields": "standard",
+        "nearby": False,
+        "export": 500,
+        "exports_per_day": 5,
+        "compare": 3,
+        "webhooks": False,
+        "monitors": 50,
+        "feed_rows": 0,
+        "saved_filters": 0,
+        "feed_digests": 0,
+        "feed_api": False,
+        "included_users": 1,
+        "base_price_gbp": 49,
+        "seat_price_gbp": 0,
+        "extra_seat_min_tier": None,
+        "next_tier": "starter",
+    },
     "starter": {
         "rate": 10,
         "rate_window_seconds": 1,
@@ -107,7 +132,7 @@ TIERS = {
         "feed_digests": 1,
         "feed_api": True,
         "included_users": 1,
-        "base_price_gbp": 39,
+        "base_price_gbp": 99,
         "seat_price_gbp": 0,
         "extra_seat_min_tier": None,
         "next_tier": "pro",
@@ -131,7 +156,7 @@ TIERS = {
         "feed_digests": 10,
         "feed_api": True,
         "included_users": 3,
-        "base_price_gbp": 99,
+        "base_price_gbp": 199,
         "seat_price_gbp": 15,
         "extra_seat_min_tier": "pro",
         "next_tier": "business",
@@ -155,7 +180,7 @@ TIERS = {
         "feed_digests": 100,
         "feed_api": True,
         "included_users": 10,
-        "base_price_gbp": 399,
+        "base_price_gbp": 499,
         "seat_price_gbp": 15,
         "extra_seat_min_tier": "business",
         "next_tier": "enterprise",

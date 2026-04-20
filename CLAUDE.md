@@ -102,9 +102,10 @@ All routers are registered in `api/main.py`. Full list:
 | Tier | Price | Rate | Daily | Feed | Webhooks | Users |
 |------|-------|------|-------|------|----------|-------|
 | free | £0 | 2/s | 20 | 10 rows, view-only | No | 1 |
-| starter | £39/mo | 10/s | 500 | 25 rows, CSV/XLSX export | No | 1 |
-| pro | £99/mo | 25/s | 2,000 | 50 rows, 20 saved filters | No | 3 (+seats) |
-| business | £399/mo | 60/s | 10,000 | 100 rows, 100 saved filters, webhooks | Yes | 10 (+seats) |
+| alerts-pro | £49/mo | 5/s | 200 | No feed (monitors only) | No | 1 |
+| starter | £99/mo | 10/s | 500 | 25 rows, CSV/XLSX export | No | 1 |
+| pro | £199/mo | 25/s | 2,000 | 50 rows, 20 saved filters | No | 3 (+seats) |
+| business | £499/mo | 60/s | 10,000 | 100 rows, 100 saved filters, webhooks | Yes | 10 (+seats) |
 | enterprise | custom | 200/s | 50,000 | 250 rows, 500 saved filters, webhooks | Yes | 10 (+seats) |
 | admin | internal | unlimited | unlimited | unlimited | Yes | — |
 
@@ -117,9 +118,9 @@ Field filtering happens via `filter_fields()` in `api/config.py` — restricted 
 | Tier | Price | Features |
 |------|-------|---------|
 | claimed | £0 | Verified badge, inspection response |
-| enhanced | £59/mo | Description, 5 photos, virtual tour |
-| premium | £89/mo | 10 photos, priority placement, analytics |
-| sponsored | £129/mo | 15 photos, sponsored badge, top placement |
+| enhanced | £99/mo | Description, photos, virtual tour |
+| sponsored | £149/mo | Sponsored badge, top placement |
+| enterprise | contact | Multi-location custom package |
 
 Maps to `care_providers.profile_tier`. Separate Stripe price IDs: `STRIPE_PRICE_PROFILE_ENHANCED`, `STRIPE_PRICE_PROFILE_PREMIUM`, `STRIPE_PRICE_PROFILE_SPONSORED`.
 

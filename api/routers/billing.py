@@ -40,6 +40,8 @@ def init_stripe():
         PRICE_TO_TIER[settings.stripe_price_pro_seat] = "pro-seat"
     if settings.stripe_price_business:
         PRICE_TO_TIER[settings.stripe_price_business] = "business"
+    if settings.stripe_price_alerts_pro:
+        PRICE_TO_TIER[settings.stripe_price_alerts_pro] = "alerts-pro"
     if settings.stripe_price_profile_enhanced:
         PRICE_TO_PROFILE_TIER[settings.stripe_price_profile_enhanced] = "enhanced"
     if settings.stripe_price_profile_premium:
@@ -121,6 +123,7 @@ async def create_checkout(req: CheckoutRequest, _auth: dict = Depends(validate_a
         raise HTTPException(status_code=503, detail="Billing not configured.")
 
     price_map = {
+        "alerts-pro": settings.stripe_price_alerts_pro,
         "starter": settings.stripe_price_starter,
         "pro": settings.stripe_price_pro,
         "business": settings.stripe_price_business,
@@ -132,7 +135,7 @@ async def create_checkout(req: CheckoutRequest, _auth: dict = Depends(validate_a
                 status_code=422,
                 detail="Enterprise plans require custom setup. Contact enterprise@caregist.co.uk to get started.",
             )
-        raise HTTPException(status_code=400, detail=f"Invalid tier: {req.tier}. Choose 'starter', 'pro', or 'business'.")
+        raise HTTPException(status_code=400, detail=f"Invalid tier: {req.tier}. Choose 'alerts-pro', 'starter', 'pro', or 'business'.")
 
     extra_seats = _normalize_extra_seats(req.tier, req.extra_seats)
 
