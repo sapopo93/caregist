@@ -11,7 +11,7 @@ export const revalidate = 3600;
 export const metadata: Metadata = {
   title: "CareGist — UK Care-Provider Market Intelligence",
   description:
-    "CareGist tracks 300+ new care-provider opportunities every month from CQC registration movement. Daily feed for sales, territory planning, and monitoring. Export-ready. England-wide coverage.",
+    "CareGist tracks new care-provider opportunities from CQC registration movement. Daily feed for sales, territory planning, and monitoring. Export-ready. England-wide coverage.",
 };
 
 const sampleFeed = [
@@ -37,9 +37,6 @@ const sampleFeed = [
     fit: "Medium",
   },
 ];
-
-const FALLBACK_PROVIDER_COUNT = 55818;
-const FALLBACK_MONTHLY_RATE = 341;
 
 const buyerUseCases = [
   {
@@ -88,17 +85,26 @@ export default async function HomePage() {
   const providerCount =
     providerCountResult.status === "fulfilled" && providerCountResult.value > 0
       ? providerCountResult.value
-      : FALLBACK_PROVIDER_COUNT;
+      : null;
 
   const monthlyRate =
     feedCountResult.status === "fulfilled" && feedCountResult.value > 0
       ? Math.round(feedCountResult.value / 3)
-      : FALLBACK_MONTHLY_RATE;
+      : null;
+
+  const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const rangeEnd = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  const rangeStart = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+  const avgLabel = `${MONTHS[rangeStart.getMonth()]}–${MONTHS[rangeEnd.getMonth()]} ${rangeEnd.getFullYear()} average`;
+  const dataFreshnessNote =
+    feedCountResult.status === "fulfilled" && feedCountResult.value > 0
+      ? `Based on CareGist registration tracking for the ${avgLabel.toLowerCase()}.`
+      : "Based on CareGist registration tracking; live totals refresh when the provider feed is available.";
 
   const proofPoints = [
-    { value: `${monthlyRate}/mo`, label: "New CQC opportunities (90-day avg)" },
+    { value: monthlyRate ? `${monthlyRate}/mo` : "Live feed", label: "New CQC opportunities (90-day avg)" },
     { value: "Daily", label: "CQC movement refresh" },
-    { value: providerCount.toLocaleString("en-GB"), label: "England-wide locations tracked" },
+    { value: providerCount ? providerCount.toLocaleString("en-GB") : "England-wide", label: "Locations tracked" },
     { value: "CSV + API", label: "Export to CRM or workflow" },
   ];
 
@@ -125,7 +131,9 @@ export default async function HomePage() {
               Care-provider market intelligence
             </p>
             <h1 className="max-w-3xl text-[2.35rem] font-extrabold leading-[1.04] text-cream md:text-6xl">
-              Find {monthlyRate}+ new care-provider opportunities every month.
+              {monthlyRate
+                ? `Find ${monthlyRate}+ new care-provider opportunities every month.`
+                : "Find new care-provider opportunities every month."}
             </h1>
             <p className="mt-5 max-w-2xl text-base leading-7 text-stone md:text-lg" style={{ fontFamily: "Lora" }}>
               CareGist tracks CQC registration movement daily and turns new provider activity into a
@@ -141,24 +149,26 @@ export default async function HomePage() {
                 meta={{ cta: "view_new_provider_feed" }}
                 className="inline-flex min-h-12 items-center justify-center rounded-lg bg-amber px-6 py-3 text-sm font-bold text-charcoal transition-colors hover:bg-cream"
               >
-                View new provider feed
+                See this month&rsquo;s new providers
               </TrackedLink>
               <TrackedLink
                 href="/pricing"
                 eventType="homepage_cta_click"
                 eventSource="homepage_hero"
-                meta={{ cta: "see_plans" }}
+                meta={{ cta: "compare_plans" }}
                 className="inline-flex min-h-12 items-center justify-center rounded-lg border border-cream/35 px-6 py-3 text-sm font-bold text-cream transition-colors hover:bg-white/10"
               >
-                See pricing
+                Compare plans
               </TrackedLink>
             </div>
 
             <div className="mt-7 max-w-xl">
               <div className="grid grid-cols-3 gap-3">
                 <div className="border-l border-amber/50 pl-3">
-                  <p className="text-sm font-extrabold text-amber leading-none">{monthlyRate}/month</p>
-                  <p className="mt-1 text-[11px] font-medium text-stone leading-4">Trailing 90-day average</p>
+                  <p className="text-sm font-extrabold text-amber leading-none">
+                    {monthlyRate ? `${monthlyRate}/month` : "Live feed"}
+                  </p>
+                  <p className="mt-1 text-[11px] font-medium text-stone leading-4">{avgLabel}</p>
                 </div>
                 {["Export-ready records", "Saved monitoring"].map((proof) => (
                   <div key={proof} className="border-l border-amber/50 pl-3 text-xs font-medium leading-5 text-stone">
@@ -167,7 +177,7 @@ export default async function HomePage() {
                 ))}
               </div>
               <p className="mt-3 text-[11px] text-stone/60 leading-5">
-                Counts based on CareGist registration tracking. April 2026 is partial and currently pacing at 12.5 new records/day.
+                {dataFreshnessNote}
               </p>
             </div>
           </div>
@@ -361,7 +371,7 @@ export default async function HomePage() {
           <div>
             <h2 className="text-2xl font-extrabold leading-tight">Explore the full provider dataset</h2>
             <p className="mt-3 max-w-xl text-sm leading-6 text-dusk" style={{ fontFamily: "Lora" }}>
-              Need a lighter lookup? Search all {providerCount.toLocaleString("en-GB")} CQC-registered providers, then move into feed,
+              Need a lighter lookup? Search {providerCount ? `${providerCount.toLocaleString("en-GB")} CQC-registered providers` : "the CQC-registered provider dataset"}, then move into feed,
               monitoring, export, and API workflows when the task needs repeatability.
             </p>
           </div>
@@ -372,12 +382,12 @@ export default async function HomePage() {
 
         <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {[
-            { name: "Care Homes", count: "10,309", slug: "care-homes" },
-            { name: "Nursing Homes", count: "4,386", slug: "nursing-homes" },
-            { name: "Home Care", count: "14,240", slug: "home-care" },
-            { name: "GP Surgeries", count: "9,367", slug: "gp-surgeries" },
-            { name: "Dental Practices", count: "12,004", slug: "dental" },
-            { name: "Supported Living", count: "4,727", slug: "supported-living" },
+            { name: "Care Homes", slug: "care-homes" },
+            { name: "Nursing Homes", slug: "nursing-homes" },
+            { name: "Home Care", slug: "home-care" },
+            { name: "GP Surgeries", slug: "gp-surgeries" },
+            { name: "Dental Practices", slug: "dental" },
+            { name: "Supported Living", slug: "supported-living" },
           ].map((type) => (
             <TrackedLink
               key={type.name}
@@ -388,7 +398,7 @@ export default async function HomePage() {
               className="border border-stone bg-cream p-4 transition-colors hover:border-clay"
             >
               <div className="font-bold text-bark">{type.name}</div>
-              <div className="mt-1 text-xs font-medium text-dusk">{type.count} providers</div>
+              <div className="mt-1 text-xs font-medium text-dusk">Browse current provider records</div>
             </TrackedLink>
           ))}
         </div>
