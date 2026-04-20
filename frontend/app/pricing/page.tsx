@@ -194,22 +194,24 @@ export default function PricingPage() {
                 ))}
               </ul>
               <p className="text-xs text-dusk italic mb-4">{tier.limit}</p>
-              {tier.tier === "claimed" ? (
-                <Link
-                  href="/search"
-                  className="block text-center py-2.5 rounded-lg text-sm font-medium text-white transition-colors"
-                  style={{ background: tier.color }}
-                >
-                  Claim free
-                </Link>
-              ) : tier.tier === "enterprise" ? (
-                <Link
-                  href="mailto:enterprise@caregist.co.uk?subject=Multi-location+listing"
+                {tier.tier === "claimed" ? (
+                  <Link
+                    href="/search"
+                    className="block text-center py-2.5 rounded-lg text-sm font-medium text-white transition-colors"
+                    style={{ background: tier.color }}
+                  >
+                    Claim free
+                  </Link>
+                ) : tier.tier === "enterprise" ? (
+                  <TrackedLink
+                    href="mailto:enterprise@caregist.co.uk?subject=Provider+Enterprise+enquiry"
+                    eventType="enterprise_contact_click"
+                    eventSource="provider_pricing_enterprise_card"
                   className="block text-center py-2.5 rounded-lg text-sm font-medium text-white transition-colors"
                   style={{ background: tier.color }}
                 >
                   Contact sales
-                </Link>
+                  </TrackedLink>
               ) : (
                 <ProviderListingCTA tier={tier.tier} color={tier.color} />
               )}
