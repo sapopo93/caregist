@@ -4,11 +4,14 @@ import EmailCaptureStrip from "@/components/EmailCaptureStrip";
 import TrustSignal from "@/components/TrustSignal";
 import TrackEventOnMount from "@/components/TrackEventOnMount";
 import TrackedLink from "@/components/TrackedLink";
+import { getProviderCount, getNewRegistrationCount } from "@/lib/api";
+
+export const revalidate = 3600;
 
 export const metadata: Metadata = {
   title: "CareGist — UK Care-Provider Market Intelligence",
   description:
-    "CareGist tracks 340+ new care-provider opportunities every month from CQC registration movement. Daily feed for sales, territory planning, and monitoring. Export-ready. England-wide coverage.",
+    "CareGist tracks 300+ new care-provider opportunities every month from CQC registration movement. Daily feed for sales, territory planning, and monitoring. Export-ready. England-wide coverage.",
 };
 
 const sampleFeed = [
@@ -35,12 +38,8 @@ const sampleFeed = [
   },
 ];
 
-const proofPoints = [
-  { value: "341/mo", label: "New CQC opportunities (Q1 2026 avg)" },
-  { value: "Daily", label: "CQC movement refresh" },
-  { value: "55,818", label: "England-wide locations tracked" },
-  { value: "CSV + API", label: "Export to CRM or workflow" },
-];
+const FALLBACK_PROVIDER_COUNT = 55818;
+const FALLBACK_MONTHLY_RATE = 341;
 
 const buyerUseCases = [
   {
@@ -78,7 +77,31 @@ const workflowSteps = [
   { step: "Monitor", action: "Save the view and track fresh movement weekly." },
 ];
 
-export default function HomePage() {
+export default async function HomePage() {
+  const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
+  const [providerCountResult, feedCountResult] = await Promise.allSettled([
+    getProviderCount(),
+    getNewRegistrationCount(ninetyDaysAgo),
+  ]);
+
+  const providerCount =
+    providerCountResult.status === "fulfilled" && providerCountResult.value > 0
+      ? providerCountResult.value
+      : FALLBACK_PROVIDER_COUNT;
+
+  const monthlyRate =
+    feedCountResult.status === "fulfilled" && feedCountResult.value > 0
+      ? Math.round(feedCountResult.value / 3)
+      : FALLBACK_MONTHLY_RATE;
+
+  const proofPoints = [
+    { value: `${monthlyRate}/mo`, label: "New CQC opportunities (90-day avg)" },
+    { value: "Daily", label: "CQC movement refresh" },
+    { value: providerCount.toLocaleString("en-GB"), label: "England-wide locations tracked" },
+    { value: "CSV + API", label: "Export to CRM or workflow" },
+  ];
+
   return (
     <div className="bg-cream">
       <TrackEventOnMount eventType="homepage_view" eventSource="homepage" />
@@ -102,7 +125,7 @@ export default function HomePage() {
               Care-provider market intelligence
             </p>
             <h1 className="max-w-3xl text-[2.35rem] font-extrabold leading-[1.04] text-cream md:text-6xl">
-              Find 340+ new care-provider opportunities every month.
+              Find {monthlyRate}+ new care-provider opportunities every month.
             </h1>
             <p className="mt-5 max-w-2xl text-base leading-7 text-stone md:text-lg" style={{ fontFamily: "Lora" }}>
               CareGist tracks CQC registration movement daily and turns new provider activity into a
@@ -134,8 +157,8 @@ export default function HomePage() {
             <div className="mt-7 max-w-xl">
               <div className="grid grid-cols-3 gap-3">
                 <div className="border-l border-amber/50 pl-3">
-                  <p className="text-sm font-extrabold text-amber leading-none">341/month</p>
-                  <p className="mt-1 text-[11px] font-medium text-stone leading-4">Jan–Mar 2026 average</p>
+                  <p className="text-sm font-extrabold text-amber leading-none">{monthlyRate}/month</p>
+                  <p className="mt-1 text-[11px] font-medium text-stone leading-4">Trailing 90-day average</p>
                 </div>
                 {["Export-ready records", "Saved monitoring"].map((proof) => (
                   <div key={proof} className="border-l border-amber/50 pl-3 text-xs font-medium leading-5 text-stone">
@@ -338,7 +361,7 @@ export default function HomePage() {
           <div>
             <h2 className="text-2xl font-extrabold leading-tight">Explore the full provider dataset</h2>
             <p className="mt-3 max-w-xl text-sm leading-6 text-dusk" style={{ fontFamily: "Lora" }}>
-              Need a lighter lookup? Search all 55,818 CQC-registered providers, then move into feed,
+              Need a lighter lookup? Search all {providerCount.toLocaleString("en-GB")} CQC-registered providers, then move into feed,
               monitoring, export, and API workflows when the task needs repeatability.
             </p>
           </div>

@@ -55,6 +55,16 @@ export async function searchProviders(params: {
   return publicFetch("/api/v1/providers/search", params);
 }
 
+export async function getProviderCount(): Promise<number> {
+  const data = await publicFetch("/api/v1/providers/search", { per_page: "1" });
+  return data?.meta?.total ?? 0;
+}
+
+export async function getNewRegistrationCount(fromDate: string): Promise<number> {
+  const data = await apiFetch("/api/v1/feed/new-registrations", { per_page: "1", from_date: fromDate });
+  return data?.meta?.total ?? 0;
+}
+
 export async function getProvider(slug: string) {
   return publicFetch(`/api/v1/providers/${slug}`);
 }
