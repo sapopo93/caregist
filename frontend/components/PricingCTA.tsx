@@ -19,7 +19,7 @@ const TIER_RANK: Record<string, number> = {
 };
 
 const BILLING_TIER: Record<string, string | null> = {
-  free: "free",
+  free: null,
   "alerts-pro": null,
   "data-starter": "starter",
   "data-pro": "pro",
@@ -120,14 +120,18 @@ export default function PricingCTA({ tier, isFreeTier }: { tier: string; isFreeT
         <span className="inline-block text-center py-2.5 px-6 rounded-lg font-medium text-sm bg-moss/15 text-moss border border-moss/30">
           Current Plan
         </span>
-        <button
-          onClick={() => billingTier && void handleUpgrade(billingTier)}
-          disabled={loading}
-          className="inline-block text-center py-2.5 px-6 rounded-lg font-medium text-sm transition-colors border border-clay text-clay hover:bg-clay hover:text-white disabled:opacity-50"
-        >
-          {loading ? "Redirecting..." : ctaLabel}
-        </button>
-        {error && <p className="text-alert text-xs mt-1">{error}</p>}
+        {billingTier && (
+          <>
+            <button
+              onClick={() => void handleUpgrade(billingTier)}
+              disabled={loading}
+              className="inline-block text-center py-2.5 px-6 rounded-lg font-medium text-sm transition-colors border border-clay text-clay hover:bg-clay hover:text-white disabled:opacity-50"
+            >
+              {loading ? "Redirecting..." : ctaLabel}
+            </button>
+            {error && <p className="text-alert text-xs mt-1">{error}</p>}
+          </>
+        )}
       </div>
     );
   }

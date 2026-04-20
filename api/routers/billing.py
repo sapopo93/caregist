@@ -122,6 +122,15 @@ async def create_checkout(req: CheckoutRequest, _auth: dict = Depends(validate_a
     if not settings.stripe_secret_key:
         raise HTTPException(status_code=503, detail="Billing not configured.")
 
+    _CHECKOUT_TIERS = {"alerts-pro", "starter", "pro", "business"}
+    if req.tier not in _CHECKOUT_TIERS:
+        if req.tier == "enterprise":
+            raise HTTPException(
+                status_code=422,
+                detail="Enterprise plans require custom setup. Contact enterprise@caregist.co.uk to get started.",
+            )
+        raise HTTPException(status_code=400, detail=f"Invalid tier: {req.tier}. Choose 'alerts-pro', 'starter', 'pro', or 'business'.")
+
     price_map = {
         "alerts-pro": settings.stripe_price_alerts_pro,
         "starter": settings.stripe_price_starter,
@@ -130,12 +139,7 @@ async def create_checkout(req: CheckoutRequest, _auth: dict = Depends(validate_a
     }
     price_id = price_map.get(req.tier)
     if not price_id:
-        if req.tier == "enterprise":
-            raise HTTPException(
-                status_code=422,
-                detail="Enterprise plans require custom setup. Contact enterprise@caregist.co.uk to get started.",
-            )
-        raise HTTPException(status_code=400, detail=f"Invalid tier: {req.tier}. Choose 'alerts-pro', 'starter', 'pro', or 'business'.")
+        raise HTTPException(status_code=503, detail=f"Checkout for the {req.tier} plan is not yet configured. Contact support@caregist.co.uk.")
 
     extra_seats = _normalize_extra_seats(req.tier, req.extra_seats)
 
