@@ -11,7 +11,13 @@ from pydantic import BaseModel, Field
 from api.config import settings
 from api.database import get_connection
 from api.middleware.auth import validate_api_key
-from api.queries.admin import DASHBOARD_STATS, TOP_ENQUIRED_PROVIDERS
+from api.queries.admin import (
+    DASHBOARD_STATS,
+    PROVIDER_TYPE_DISTRIBUTION,
+    SERVICE_TYPE_DISTRIBUTION,
+    SERVICE_TYPE_GROWTH,
+    TOP_ENQUIRED_PROVIDERS,
+)
 from api.queries.claims import (
     COUNT_CLAIMS,
     LIST_CLAIMS,
@@ -66,6 +72,9 @@ async def dashboard_stats(_auth: dict = Depends(require_admin)) -> dict:
         async with get_connection() as conn:
             row = await conn.fetchrow(DASHBOARD_STATS)
             top = await conn.fetch(TOP_ENQUIRED_PROVIDERS, 10)
+            provider_types = await conn.fetch(PROVIDER_TYPE_DISTRIBUTION, 8)
+            service_types = await conn.fetch(SERVICE_TYPE_DISTRIBUTION, 10)
+            service_growth = await conn.fetch(SERVICE_TYPE_GROWTH, 10)
     except Exception as exc:
         logger.error("Dashboard stats failed: %s", exc)
         raise HTTPException(status_code=503, detail="Failed to load stats.")
@@ -73,6 +82,9 @@ async def dashboard_stats(_auth: dict = Depends(require_admin)) -> dict:
     return {
         "data": dict(row),
         "top_enquired": [dict(r) for r in top],
+        "provider_types": [dict(r) for r in provider_types],
+        "service_types": [dict(r) for r in service_types],
+        "service_growth": [dict(r) for r in service_growth],
     }
 
 
