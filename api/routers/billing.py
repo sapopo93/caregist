@@ -54,9 +54,22 @@ def _is_base_plan_price(price_id: str | None) -> bool:
     return PRICE_TO_TIER.get(price_id) in {"starter", "pro", "business"}
 
 
+CHECKOUT_TIERS = {"alerts-pro", "starter", "pro", "business"}
+CHECKOUT_TIER_ALIASES = {
+    "data-starter": "starter",
+    "data-pro": "pro",
+    "data-business": "business",
+}
+
+
+def _normalize_checkout_tier(tier: str) -> str:
+    normalized = "-".join(tier.strip().lower().replace("_", "-").split())
+    return CHECKOUT_TIER_ALIASES.get(normalized, normalized)
+
+
 class CheckoutRequest(BaseModel):
     email: EmailStr
-    tier: str  # "starter", "pro", or "business"
+    tier: str  # "alerts-pro", "starter", "pro", or "business"
     extra_seats: int = Field(0, ge=0, le=50)
 
 
@@ -122,9 +135,11 @@ async def create_checkout(req: CheckoutRequest, _auth: dict = Depends(validate_a
     if not settings.stripe_secret_key:
         raise HTTPException(status_code=503, detail="Billing not configured.")
 
-    _CHECKOUT_TIERS = {"alerts-pro", "starter", "pro", "business"}
-    if req.tier not in _CHECKOUT_TIERS:
-        if req.tier == "enterprise":
+    tier = _normalize_checkout_tier(req.tier)
+    if tier == "free":
+        raise HTTPException(status_code=422, detail="The Free plan does not require checkout. Create an account to start free.")
+    if tier not in CHECKOUT_TIERS:
+        if tier == "enterprise":
             raise HTTPException(
                 status_code=422,
                 detail="Enterprise plans require custom setup. Contact enterprise@caregist.co.uk to get started.",
@@ -137,11 +152,12 @@ async def create_checkout(req: CheckoutRequest, _auth: dict = Depends(validate_a
         "pro": settings.stripe_price_pro,
         "business": settings.stripe_price_business,
     }
-    price_id = price_map.get(req.tier)
+    price_id = price_map.get(tier)
     if not price_id:
-        raise HTTPException(status_code=503, detail=f"Checkout for the {req.tier} plan is not yet configured. Contact support@caregist.co.uk.")
+        logger.error("Stripe checkout price missing for tier=%s", tier)
+        raise HTTPException(status_code=503, detail=f"Checkout for the {tier} plan is not yet configured. Contact support@caregist.co.uk.")
 
-    extra_seats = _normalize_extra_seats(req.tier, req.extra_seats)
+    extra_seats = _normalize_extra_seats(tier, req.extra_seats)
 
     # Find or create Stripe customer
     async with get_connection() as conn:
@@ -198,12 +214,12 @@ async def create_checkout(req: CheckoutRequest, _auth: dict = Depends(validate_a
                 conn,
                 int(user["id"]),
                 subscription_id,
-                req.tier,
+                tier,
                 "active",
                 stripe_price_id=price_id,
                 extra_seats=extra_seats,
             )
-        return {"updated": True, "tier": req.tier, "extra_seats": extra_seats}
+        return {"updated": True, "tier": tier, "extra_seats": extra_seats}
 
     customer_id = user["stripe_customer_id"]
     if not customer_id:
@@ -225,7 +241,7 @@ async def create_checkout(req: CheckoutRequest, _auth: dict = Depends(validate_a
         mode="subscription",
         success_url=f"{settings.app_url}/dashboard?session_id={{CHECKOUT_SESSION_ID}}",
         cancel_url=f"{settings.app_url}/pricing",
-        metadata={"user_id": str(user["id"]), "tier": req.tier, "extra_seats": str(extra_seats), "price_id": price_id},
+        metadata={"user_id": str(user["id"]), "tier": tier, "extra_seats": str(extra_seats), "price_id": price_id},
     )
 
     stripe_mode = "test" if settings.stripe_secret_key.startswith("sk_test_") else "live"

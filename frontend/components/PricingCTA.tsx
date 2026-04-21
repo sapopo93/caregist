@@ -20,7 +20,7 @@ const TIER_RANK: Record<string, number> = {
 
 const BILLING_TIER: Record<string, string | null> = {
   free: null,
-  "alerts-pro": null,
+  "alerts-pro": "alerts-pro",
   "data-starter": "starter",
   "data-pro": "pro",
   "data-business": "business",
@@ -87,27 +87,27 @@ export default function PricingCTA({ tier, isFreeTier }: { tier: string; isFreeT
     }
   }
 
-  if (!targetTier || (tierKey === "alerts-pro" && user)) {
+  if (isFreeTier) {
+    return (
+      <Link
+        href={user ? "/dashboard" : "/signup"}
+        className="inline-block text-center py-2.5 px-6 rounded-lg font-medium text-sm transition-colors border border-clay text-clay hover:bg-clay hover:text-white"
+        onClick={() => {
+          void trackEvent("pricing_cta_click", "pricing_card", { tier: tierKey, target_tier: "free", action: user ? "review_free" : "signup_free" });
+          void trackEvent("plan_selection", "pricing_card", { source_tier: tierKey, target_tier: "free" });
+        }}
+      >
+        {user ? "Review entitlements" : ctaLabel}
+      </Link>
+    );
+  }
+
+  if (!targetTier) {
     return (
       <Link
         href={`mailto:enterprise@caregist.co.uk?subject=CareGist+${tier.replace(/\s+/g, "+")}`}
         className="inline-block text-center py-2.5 px-6 rounded-lg font-medium text-sm transition-colors border border-clay text-clay hover:bg-clay hover:text-white"
         onClick={() => void trackEvent("enterprise_contact_click", "pricing_card", { tier: tierKey })}
-      >
-        {ctaLabel}
-      </Link>
-    );
-  }
-
-  if (isFreeTier && !user) {
-    return (
-      <Link
-        href="/signup"
-        className="inline-block text-center py-2.5 px-6 rounded-lg font-medium text-sm transition-colors border border-clay text-clay hover:bg-clay hover:text-white"
-        onClick={() => {
-          void trackEvent("pricing_cta_click", "pricing_card", { tier: tierKey, target_tier: "free", action: "signup_free" });
-          void trackEvent("plan_selection", "pricing_card", { source_tier: tierKey, target_tier: "free" });
-        }}
       >
         {ctaLabel}
       </Link>

@@ -217,6 +217,7 @@ Backend reads from `.env` via pydantic-settings:
 | `CORS_ORIGINS` | No | Comma-separated allowed origins (default: localhost:3000) |
 | `STRIPE_SECRET_KEY` | Yes | Stripe API key (`sk_test_` in dev, `sk_live_` in prod) |
 | `STRIPE_WEBHOOK_SECRET` | Yes | Stripe webhook signing secret |
+| `STRIPE_PRICE_ALERTS_PRO` | Yes | Stripe price ID for Alerts Pro tier |
 | `STRIPE_PRICE_STARTER` | Yes | Stripe price ID for Starter tier |
 | `STRIPE_PRICE_PRO` | Yes | Stripe price ID for Pro tier |
 | `STRIPE_PRICE_BUSINESS` | Yes | Stripe price ID for Business tier |
