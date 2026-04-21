@@ -5,28 +5,74 @@ from __future__ import annotations
 import hashlib
 import logging
 import secrets
+import time
 from datetime import datetime, timedelta, timezone
 
 try:
     import bcrypt
 except ImportError:  # pragma: no cover - local fallback when bcrypt is unavailable
     bcrypt = None
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Cookie, Depends, HTTPException, Response
 from pydantic import BaseModel, EmailStr, Field
 
 from api.middleware.ip_rate_limit import check_ip_rate_limit
 
 from api.config import get_max_users, get_subscription_entitlements, get_tier_config, settings
 from api.database import get_connection
-from api.middleware.auth import validate_api_key
+from api.middleware.auth import api_key_prefix, hash_api_key, validate_api_key
+from api.utils.audit import actor_from_auth, write_audit_log
 
 logger = logging.getLogger("caregist.auth")
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
+
+FAILED_ATTEMPT_LIMIT = 5
+FAILED_ATTEMPT_LOCK_SECONDS = 15 * 60
+GENERIC_AUTH_FAILURE = "Invalid email or password."
+_failed_auth_attempts: dict[tuple[str, str], dict[str, float | int]] = {}
 
 if bcrypt:
     _DUMMY_HASH = bcrypt.hashpw(b"dummy", bcrypt.gensalt()).decode()
 else:
     _DUMMY_HASH = "fallback:dummy"
+
+
+def _failed_attempt_key(email: str, action: str) -> tuple[str, str]:
+    return (email.strip().casefold(), action)
+
+
+def _check_failed_attempts(email: str, action: str) -> None:
+    state = _failed_auth_attempts.get(_failed_attempt_key(email, action))
+    if not state:
+        return
+    locked_until = float(state.get("locked_until", 0))
+    if locked_until > time.monotonic():
+        raise HTTPException(status_code=429, detail=GENERIC_AUTH_FAILURE)
+    if locked_until:
+        _failed_auth_attempts.pop(_failed_attempt_key(email, action), None)
+
+
+def _record_failed_attempt(email: str, action: str) -> None:
+    key = _failed_attempt_key(email, action)
+    state = _failed_auth_attempts.setdefault(key, {"count": 0, "locked_until": 0})
+    state["count"] = int(state["count"]) + 1
+    if int(state["count"]) >= FAILED_ATTEMPT_LIMIT:
+        state["locked_until"] = time.monotonic() + FAILED_ATTEMPT_LOCK_SECONDS
+
+
+def _reset_failed_attempts(email: str, action: str) -> None:
+    _failed_auth_attempts.pop(_failed_attempt_key(email, action), None)
+
+
+async def _raise_auth_failure(email: str, action: str, audit_action: str | None = None) -> None:
+    _record_failed_attempt(email, action)
+    await write_audit_log(
+        action=audit_action or action,
+        outcome="failure",
+        actor={"type": "anonymous", "email": email},
+        target_type="user",
+        target_id=email,
+    )
+    raise HTTPException(status_code=401, detail=GENERIC_AUTH_FAILURE)
 
 
 def _hash_password(password: str) -> str:
@@ -115,6 +161,7 @@ async def register(req: RegisterRequest, _ip=Depends(check_ip_rate_limit)) -> di
         password_hash = _hash_password(req.password)
         verification_token = secrets.token_urlsafe(32)
         api_key = f"cg_{secrets.token_urlsafe(32)}"
+        api_key_hash = hash_api_key(api_key)
 
         async with conn.transaction():
             free_entitlements = get_subscription_entitlements("free")
@@ -126,9 +173,17 @@ async def register(req: RegisterRequest, _ip=Depends(check_ip_rate_limit)) -> di
             )
 
             await conn.execute(
-                """INSERT INTO api_keys (key, name, email, tier, rate_limit, is_active, user_id)
-                   VALUES ($1, $2, $3, 'free', $4, true, $5)""",
-                api_key, req.name, req.email, get_tier_config("free")["rate"], user["id"],
+                """INSERT INTO api_keys (key_hash, key_prefix, name, email, tier, rate_limit, is_active, user_id)
+                   VALUES ($1, $2, $3, $4, 'free', $5, true, $6)""",
+                api_key_hash, api_key_prefix(api_key), req.name, req.email, get_tier_config("free")["rate"], user["id"],
+            )
+            await write_audit_log(
+                action="api_key.create",
+                outcome="success",
+                actor={"type": "user", "user_id": user["id"], "email": req.email, "name": req.name},
+                target_type="api_key",
+                metadata={"key_prefix": api_key_prefix(api_key), "source": "registration"},
+                conn=conn,
             )
 
             await conn.execute(
@@ -165,9 +220,25 @@ def _set_session_cookie(response: Response, api_key: str, *, is_prod: bool) -> N
     )
 
 
+async def _create_session(conn, *, user_id: int, api_key_id: int, response: Response) -> None:
+    session_token = f"cs_{secrets.token_urlsafe(32)}"
+    session_token_hash = hash_api_key(session_token)
+    await conn.execute(
+        """
+        INSERT INTO user_sessions (token_hash, user_id, api_key_id, expires_at)
+        VALUES ($1, $2, $3, NOW() + INTERVAL '30 days')
+        """,
+        session_token_hash,
+        user_id,
+        api_key_id,
+    )
+    _set_session_cookie(response, session_token, is_prod="localhost" not in settings.database_url)
+
+
 @router.post("/login")
 async def login(req: LoginRequest, response: Response, _ip=Depends(check_ip_rate_limit)) -> dict:
     """Login and retrieve API key."""
+    _check_failed_attempts(req.email, "login")
     async with get_connection() as conn:
         user = await conn.fetchrow(
             "SELECT id, email, name, password_hash, is_verified FROM users WHERE email = $1",
@@ -177,36 +248,63 @@ async def login(req: LoginRequest, response: Response, _ip=Depends(check_ip_rate
     if not user:
         if bcrypt:
             bcrypt.checkpw(req.password.encode(), _DUMMY_HASH.encode())
-        raise HTTPException(status_code=401, detail="Invalid email or password.")
+        await _raise_auth_failure(req.email, "login")
     if not _verify_password(req.password, user["password_hash"]):
-        raise HTTPException(status_code=401, detail="Invalid email or password.")
+        await _raise_auth_failure(req.email, "login")
     if not user["is_verified"]:
+        await write_audit_log(
+            action="login",
+            outcome="failure",
+            actor={"type": "user", "user_id": user["id"], "email": user["email"], "name": user["name"]},
+            target_type="user",
+            target_id=user["id"],
+        )
         raise HTTPException(status_code=403, detail="Verify your email before logging in.")
+    _reset_failed_attempts(req.email, "login")
 
     # Upgrade legacy SHA-256 hash to bcrypt on successful login
     await _rehash_if_legacy(user["id"], req.password, user["password_hash"])
 
     async with get_connection() as conn:
         key_row = await conn.fetchrow(
-            "SELECT key, tier, rate_limit FROM api_keys WHERE user_id = $1 AND is_active = true ORDER BY created_at DESC LIMIT 1",
+            "SELECT id, key, tier, rate_limit FROM api_keys WHERE user_id = $1 AND is_active = true ORDER BY created_at DESC LIMIT 1",
             user["id"],
         )
 
     if not key_row:
         raise HTTPException(status_code=404, detail="No active API key found. Contact support.")
 
-    _set_session_cookie(response, key_row["key"], is_prod="localhost" not in settings.database_url)
+    async with get_connection() as conn:
+        await _create_session(conn, user_id=int(user["id"]), api_key_id=int(key_row["id"]), response=response)
+        await write_audit_log(
+            action="login",
+            outcome="success",
+            actor={"type": "user", "user_id": user["id"], "email": user["email"], "name": user["name"]},
+            target_type="user",
+            target_id=user["id"],
+            conn=conn,
+        )
 
     return {
         "user": {"id": user["id"], "email": user["email"], "name": user["name"]},
         "tier": key_row["tier"],
         "rate_limit": key_row["rate_limit"],
+        "requires_key_rotation": key_row["key"] is None,
     }
 
 
 @router.delete("/session")
-async def logout_session(response: Response) -> dict:
-    """Clear the HttpOnly session cookie (browser logout)."""
+async def logout_session(
+    response: Response,
+    caregist_session: str | None = Cookie(default=None),
+) -> dict:
+    """Revoke and clear the HttpOnly browser session."""
+    if caregist_session:
+        async with get_connection() as conn:
+            await conn.execute(
+                "UPDATE user_sessions SET revoked_at = NOW() WHERE token_hash = $1 AND revoked_at IS NULL",
+                hash_api_key(caregist_session),
+            )
     response.delete_cookie(key="caregist_session", path="/")
     return {"logged_out": True}
 
@@ -230,6 +328,7 @@ async def reveal_key(req: LoginRequest, _ip=Depends(check_ip_rate_limit)) -> dic
     without user interaction. The key is shown once in the response body — callers
     should store it securely and never embed it in client-side code.
     """
+    _check_failed_attempts(req.email, "key-reveal")
     async with get_connection() as conn:
         user = await conn.fetchrow(
             "SELECT id, password_hash, is_verified FROM users WHERE email = $1",
@@ -239,25 +338,66 @@ async def reveal_key(req: LoginRequest, _ip=Depends(check_ip_rate_limit)) -> dic
     if not user or not _verify_password(req.password, user["password_hash"]):
         if bcrypt:
             bcrypt.checkpw(req.password.encode(), _DUMMY_HASH.encode())
-        raise HTTPException(status_code=401, detail="Invalid email or password.")
+        await _raise_auth_failure(req.email, "key-reveal", "api_key.reveal")
     if not user["is_verified"]:
+        await write_audit_log(
+            action="api_key.reveal",
+            outcome="failure",
+            actor={"type": "user", "user_id": user["id"], "email": req.email},
+            target_type="user",
+            target_id=user["id"],
+        )
         raise HTTPException(status_code=403, detail="Verify your email before revealing an API key.")
+    _reset_failed_attempts(req.email, "key-reveal")
 
     async with get_connection() as conn:
         key_row = await conn.fetchrow(
-            "SELECT key, tier, rate_limit FROM api_keys WHERE user_id = $1 AND is_active = true ORDER BY created_at DESC LIMIT 1",
+            "SELECT key, key_prefix, tier, rate_limit FROM api_keys WHERE user_id = $1 AND is_active = true ORDER BY created_at DESC LIMIT 1",
             user["id"],
         )
 
-    if not key_row:
-        raise HTTPException(status_code=404, detail="No active API key found.")
+        if not key_row:
+            await write_audit_log(
+                action="api_key.reveal",
+                outcome="failure",
+                actor={"type": "user", "user_id": user["id"], "email": req.email},
+                target_type="user",
+                target_id=user["id"],
+                conn=conn,
+            )
+            raise HTTPException(status_code=404, detail="No active API key found.")
 
+        if not key_row["key"]:
+            await write_audit_log(
+                action="api_key.reveal",
+                outcome="blocked",
+                actor={"type": "user", "user_id": user["id"], "email": req.email},
+                target_type="api_key",
+                metadata={"key_prefix": key_row["key_prefix"]},
+                conn=conn,
+            )
+            return {
+                "api_key": None,
+                "masked_key": f"{key_row['key_prefix']}…" if key_row["key_prefix"] else None,
+                "tier": key_row["tier"],
+                "rate_limit": key_row["rate_limit"],
+                "message": "This key cannot be revealed. Rotate it to generate a new API key shown once.",
+            }
+
+        await write_audit_log(
+            action="api_key.reveal",
+            outcome="success",
+            actor={"type": "user", "user_id": user["id"], "email": req.email},
+            target_type="api_key",
+            conn=conn,
+        )
     return {"api_key": key_row["key"], "tier": key_row["tier"], "rate_limit": key_row["rate_limit"]}
 
 
 @router.post("/rotate-key")
 async def rotate_key(req: LoginRequest, _ip=Depends(check_ip_rate_limit)) -> dict:
     """Generate a new API key (invalidates old one). Requires password re-verification."""
+    _check_failed_attempts(req.email, "key-rotate")
     async with get_connection() as conn:
         user = await conn.fetchrow(
             "SELECT id, email, name, password_hash, is_verified FROM users WHERE email = $1",
@@ -267,11 +407,20 @@ async def rotate_key(req: LoginRequest, _ip=Depends(check_ip_rate_limit)) -> dic
     if not user or not _verify_password(req.password, user["password_hash"]):
         if bcrypt:
             bcrypt.checkpw(req.password.encode(), _DUMMY_HASH.encode())
-        raise HTTPException(status_code=401, detail="Invalid email or password.")
+        await _raise_auth_failure(req.email, "key-rotate", "api_key.rotate")
     if not user["is_verified"]:
+        await write_audit_log(
+            action="api_key.rotate",
+            outcome="failure",
+            actor={"type": "user", "user_id": user["id"], "email": user["email"], "name": user["name"]},
+            target_type="user",
+            target_id=user["id"],
+        )
         raise HTTPException(status_code=403, detail="Verify your email before rotating an API key.")
+    _reset_failed_attempts(req.email, "key-rotate")
 
     new_key = f"cg_{secrets.token_urlsafe(32)}"
+    new_key_hash = hash_api_key(new_key)
 
     async with get_connection() as conn:
         # Get current tier
@@ -287,12 +436,24 @@ async def rotate_key(req: LoginRequest, _ip=Depends(check_ip_rate_limit)) -> dic
             "UPDATE api_keys SET is_active = false WHERE user_id = $1",
             user["id"],
         )
+        await conn.execute(
+            "UPDATE user_sessions SET revoked_at = NOW() WHERE user_id = $1 AND revoked_at IS NULL",
+            user["id"],
+        )
 
         # Create new key
         await conn.execute(
-            """INSERT INTO api_keys (key, name, email, tier, rate_limit, is_active, user_id)
-               VALUES ($1, $2, $3, $4, $5, true, $6)""",
-            new_key, user["name"], user["email"], tier, rate_limit, user["id"],
+            """INSERT INTO api_keys (key_hash, key_prefix, name, email, tier, rate_limit, is_active, user_id)
+               VALUES ($1, $2, $3, $4, $5, $6, true, $7)""",
+            new_key_hash, api_key_prefix(new_key), user["name"], user["email"], tier, rate_limit, user["id"],
+        )
+        await write_audit_log(
+            action="api_key.rotate",
+            outcome="success",
+            actor={"type": "user", "user_id": user["id"], "email": user["email"], "name": user["name"]},
+            target_type="api_key",
+            metadata={"key_prefix": api_key_prefix(new_key), "tier": tier},
+            conn=conn,
         )
 
     return {"api_key": new_key, "tier": tier, "rate_limit": rate_limit}
@@ -307,7 +468,7 @@ async def list_team_keys(_auth: dict = Depends(validate_api_key)) -> dict:
     async with get_connection() as conn:
         keys = await conn.fetch(
             """
-            SELECT id, name, email, tier, created_at, last_used_at, key
+            SELECT id, name, email, tier, created_at, last_used_at, key, key_prefix
             FROM api_keys
             WHERE user_id = $1 AND is_active = true
             ORDER BY created_at ASC
@@ -325,7 +486,11 @@ async def list_team_keys(_auth: dict = Depends(validate_api_key)) -> dict:
                 "tier": row["tier"],
                 "created_at": row["created_at"].isoformat() if row["created_at"] else None,
                 "last_used_at": row["last_used_at"].isoformat() if row["last_used_at"] else None,
-                "masked_key": f"{row['key'][:10]}…{row['key'][-4:]}" if row["key"] else None,
+                "masked_key": (
+                    f"{row['key'][:10]}…{row['key'][-4:]}"
+                    if row["key"]
+                    else f"{row['key_prefix']}…" if row["key_prefix"] else None
+                ),
             }
             for row in keys
         ],
@@ -350,17 +515,27 @@ async def create_team_key(req: TeamKeyCreateRequest, _auth: dict = Depends(valid
                 detail="You have used all named access seats on this plan. Add seats or upgrade to issue another key.",
             )
         new_key = f"cg_{secrets.token_urlsafe(32)}"
+        new_key_hash = hash_api_key(new_key)
         await conn.execute(
             """
-            INSERT INTO api_keys (key, name, email, tier, rate_limit, is_active, user_id)
-            VALUES ($1, $2, $3, $4, $5, true, $6)
+            INSERT INTO api_keys (key_hash, key_prefix, name, email, tier, rate_limit, is_active, user_id)
+            VALUES ($1, $2, $3, $4, $5, $6, true, $7)
             """,
-            new_key,
+            new_key_hash,
+            api_key_prefix(new_key),
             req.name,
             req.email,
             _auth["tier"],
             get_tier_config(_auth["tier"])["rate"],
             user_id,
+        )
+        await write_audit_log(
+            action="api_key.create",
+            outcome="success",
+            actor=actor_from_auth(_auth),
+            target_type="api_key",
+            metadata={"key_prefix": api_key_prefix(new_key), "tier": _auth["tier"]},
+            conn=conn,
         )
 
     return {
@@ -388,6 +563,15 @@ async def revoke_team_key(key_id: int, _auth: dict = Depends(validate_api_key)) 
             key_id,
             user_id,
         )
+        if result != "UPDATE 0":
+            await write_audit_log(
+                action="api_key.revoke",
+                outcome="success",
+                actor=actor_from_auth(_auth),
+                target_type="api_key",
+                target_id=key_id,
+                conn=conn,
+            )
     if result == "UPDATE 0":
         raise HTTPException(status_code=404, detail="Access key not found.")
     return {"revoked": True}
@@ -407,17 +591,18 @@ class ResetPasswordRequest(BaseModel):
 
 
 MAX_RESET_ATTEMPTS = 5
+RESET_TOKEN_BYTES = 32
 
 
 @router.post("/forgot-password")
 async def forgot_password(req: ForgotPasswordRequest, _ip=Depends(check_ip_rate_limit)) -> dict:
-    """Generate a 6-digit reset code and email it via Resend."""
+    """Generate a high-entropy reset token and email it via Resend."""
     # Always return success to avoid email enumeration
     async with get_connection() as conn:
         user = await conn.fetchrow("SELECT id FROM users WHERE email = $1", req.email)
 
     if not user:
-        return {"message": "If that email is registered, a reset code has been sent."}
+        return {"message": "If that email is registered, a reset token has been sent."}
 
     async with get_connection() as conn:
         recent_count = await conn.fetchval(
@@ -426,22 +611,22 @@ async def forgot_password(req: ForgotPasswordRequest, _ip=Depends(check_ip_rate_
             req.email,
         )
     if recent_count and recent_count >= 3:
-        return {"message": "If that email is registered, a reset code has been sent."}
+        return {"message": "If that email is registered, a reset token has been sent."}
 
-    code = f"{secrets.randbelow(1_000_000):06d}"
+    reset_token = secrets.token_urlsafe(RESET_TOKEN_BYTES)
     expires_at = datetime.now(timezone.utc) + timedelta(minutes=15)
 
     async with get_connection() as conn:
         await conn.execute(
             """INSERT INTO password_reset_tokens (token, email, expires_at)
                VALUES ($1, $2, $3)""",
-            code, req.email, expires_at,
+            reset_token, req.email, expires_at,
         )
 
     # Send email (best-effort)
-    await _send_reset_email(req.email, code)
+    await _send_reset_email(req.email, reset_token)
 
-    return {"message": "If that email is registered, a reset code has been sent."}
+    return {"message": "If that email is registered, a reset token has been sent."}
 
 
 @router.post("/verify-email")
@@ -493,7 +678,7 @@ async def resend_verification(req: ResendVerificationRequest, _ip=Depends(check_
 
 @router.post("/reset-password")
 async def reset_password(req: ResetPasswordRequest, _ip=Depends(check_ip_rate_limit)) -> dict:
-    """Validate reset code and update password."""
+    """Validate reset token and update password."""
     async with get_connection() as conn:
         # Check for too many failed attempts in the last 15 minutes
         attempt_count = await conn.fetchval(
@@ -503,7 +688,7 @@ async def reset_password(req: ResetPasswordRequest, _ip=Depends(check_ip_rate_li
             req.email, MAX_RESET_ATTEMPTS,
         )
         if attempt_count and attempt_count > 0:
-            raise HTTPException(status_code=429, detail="Too many attempts. Request a new code.")
+            raise HTTPException(status_code=429, detail="Too many attempts. Request a new token.")
 
         token_row = await conn.fetchrow(
             """SELECT id, expires_at, used, attempts FROM password_reset_tokens
@@ -523,7 +708,7 @@ async def reset_password(req: ResetPasswordRequest, _ip=Depends(check_ip_rate_li
                    )""",
                 req.email,
             )
-            raise HTTPException(status_code=400, detail="Invalid or expired reset code.")
+            raise HTTPException(status_code=400, detail="Invalid or expired reset token.")
 
         new_hash = _hash_password(req.new_password)
 
@@ -533,6 +718,15 @@ async def reset_password(req: ResetPasswordRequest, _ip=Depends(check_ip_rate_li
                 new_hash, req.email,
             )
             await conn.execute(
+                """
+                UPDATE user_sessions
+                SET revoked_at = NOW()
+                WHERE user_id = (SELECT id FROM users WHERE email = $1)
+                  AND revoked_at IS NULL
+                """,
+                req.email,
+            )
+            await conn.execute(
                 "UPDATE password_reset_tokens SET used = true WHERE id = $1",
                 token_row["id"],
             )
@@ -540,8 +734,8 @@ async def reset_password(req: ResetPasswordRequest, _ip=Depends(check_ip_rate_li
     return {"message": "Password has been reset. You can now log in."}
 
 
-async def _send_reset_email(email: str, code: str) -> None:
-    """Send password reset code via Resend. Fails silently."""
+async def _send_reset_email(email: str, reset_token: str) -> None:
+    """Send password reset token via Resend. Fails silently."""
     if not settings.resend_api_key:
         logger.warning("RESEND_API_KEY not set — skipping password reset email")
         return
@@ -550,8 +744,8 @@ async def _send_reset_email(email: str, code: str) -> None:
 
     from_email = settings.enquiry_from_email or "noreply@caregist.co.uk"
     body = (
-        f"Your CareGist password reset code is: {code}\n\n"
-        f"This code expires in 15 minutes. If you didn't request this, ignore this email.\n\n"
+        f"Your CareGist password reset token is: {reset_token}\n\n"
+        f"This token expires in 15 minutes. If you didn't request this, ignore this email.\n\n"
         f"— The CareGist Team"
     )
 
@@ -563,7 +757,7 @@ async def _send_reset_email(email: str, code: str) -> None:
                 json={
                     "from": from_email,
                     "to": [email],
-                    "subject": "Your CareGist password reset code",
+                    "subject": "Your CareGist password reset token",
                     "text": body,
                 },
                 timeout=10,

@@ -2,16 +2,157 @@
 
 from __future__ import annotations
 
+import base64
+import json
+import os
 import sys
+from collections.abc import Mapping
+from pathlib import Path
+from typing import Any
+from urllib.parse import urlparse
 
 from pydantic_settings import BaseSettings
+
+
+AWS_SECRET_ID_ENV = "AWS_SECRETS_MANAGER_SECRET_ID"
+AWS_REGION_ENV = "AWS_REGION"
+
+SECRET_ENV_NAMES = {
+    "database_url": "DATABASE_URL",
+    "api_master_key": "API_MASTER_KEY",
+    "stripe_secret_key": "STRIPE_SECRET_KEY",
+    "stripe_webhook_secret": "STRIPE_WEBHOOK_SECRET",
+    "resend_api_key": "RESEND_API_KEY",
+    "caregist_to_support_token": "CAREGIST_TO_SUPPORT_TOKEN",
+    "support_internal_token": "SUPPORT_INTERNAL_TOKEN",
+    "webhook_secret_key": "WEBHOOK_SECRET_KEY",
+    "redis_url": "REDIS_URL",
+}
+REQUIRED_PRODUCTION_SECRETS = (
+    "database_url",
+    "api_master_key",
+    "support_internal_token",
+    "stripe_secret_key",
+    "stripe_webhook_secret",
+)
+
+
+class AwsSecretsManagerSecretLoader:
+    """Load application secrets from one JSON secret in AWS Secrets Manager."""
+
+    def __init__(self, secret_id: str, region_name: str | None = None):
+        self.secret_id = secret_id
+        self.region_name = region_name
+
+    def load(self) -> dict[str, str]:
+        try:
+            import boto3
+        except ImportError as exc:  # pragma: no cover - exercised only in incomplete deployments
+            raise RuntimeError("boto3 is required to load production secrets from AWS Secrets Manager.") from exc
+
+        client = boto3.client("secretsmanager", region_name=self.region_name)
+        response = client.get_secret_value(SecretId=self.secret_id)
+        raw_secret = response.get("SecretString")
+        if raw_secret is None and response.get("SecretBinary") is not None:
+            raw_secret = base64.b64decode(response["SecretBinary"]).decode("utf-8")
+        if not raw_secret:
+            raise RuntimeError(f"AWS secret {self.secret_id!r} is empty.")
+
+        try:
+            payload = json.loads(raw_secret)
+        except json.JSONDecodeError as exc:
+            raise RuntimeError(f"AWS secret {self.secret_id!r} must be a JSON object.") from exc
+        if not isinstance(payload, dict):
+            raise RuntimeError(f"AWS secret {self.secret_id!r} must be a JSON object.")
+
+        return _normalize_secret_payload(payload)
+
+
+def _is_production(environ: Mapping[str, str] | None = None) -> bool:
+    env = environ or os.environ
+    return env.get("NODE_ENV", "").lower() == "production"
+
+
+def validate_cors_origins(cors_origins: str, *, production: bool) -> None:
+    """Reject wildcard or malformed CORS origins when credentials are enabled."""
+    origins = [origin.strip() for origin in cors_origins.split(",") if origin.strip()]
+    if not origins:
+        raise RuntimeError("FATAL: CORS origins must include at least one explicit origin.")
+
+    for origin in origins:
+        parsed = urlparse(origin)
+        if origin == "*" or "*" in origin:
+            if production:
+                raise RuntimeError("FATAL: CORS wildcard origins are not allowed in production.")
+            continue
+        if parsed.scheme not in {"http", "https"} or not parsed.netloc or parsed.path or parsed.params or parsed.query or parsed.fragment:
+            raise RuntimeError(f"FATAL: Invalid CORS origin: {origin!r}. Use explicit scheme://host[:port] origins.")
+
+
+def _normalize_secret_payload(payload: Mapping[str, Any]) -> dict[str, str]:
+    values: dict[str, str] = {}
+    for field_name, env_name in SECRET_ENV_NAMES.items():
+        value = payload.get(env_name, payload.get(field_name))
+        if value is not None:
+            values[field_name] = str(value)
+    return values
+
+
+def _load_dev_dotenv_secrets(dotenv_path: str | Path = ".env") -> dict[str, str]:
+    path = Path(dotenv_path)
+    if not path.exists():
+        return {}
+    try:
+        from dotenv import dotenv_values
+    except ImportError:
+        return {}
+    return _normalize_secret_payload(dotenv_values(path))
+
+
+def _load_dev_env_secrets(environ: Mapping[str, str]) -> dict[str, str]:
+    return {
+        field_name: environ[env_name]
+        for field_name, env_name in SECRET_ENV_NAMES.items()
+        if environ.get(env_name)
+    }
+
+
+def load_application_secrets(
+    *,
+    environ: Mapping[str, str] | None = None,
+    dotenv_path: str | Path = ".env",
+    secret_loader_cls: type[AwsSecretsManagerSecretLoader] = AwsSecretsManagerSecretLoader,
+) -> dict[str, str]:
+    env = environ or os.environ
+    is_production = _is_production(env)
+    secret_id = env.get(AWS_SECRET_ID_ENV)
+
+    if not secret_id and is_production:
+        raise RuntimeError(f"FATAL: {AWS_SECRET_ID_ENV} must be set in production.")
+
+    values: dict[str, str] = {}
+    if not is_production:
+        values.update(_load_dev_dotenv_secrets(dotenv_path))
+        values.update(_load_dev_env_secrets(env))
+    if secret_id:
+        loader = secret_loader_cls(secret_id, env.get(AWS_REGION_ENV))
+        values.update(loader.load())
+
+    if is_production:
+        missing = [name for name in REQUIRED_PRODUCTION_SECRETS if not values.get(name)]
+        if missing:
+            missing_env_names = ", ".join(SECRET_ENV_NAMES[name] for name in missing)
+            raise RuntimeError(f"FATAL: Missing required production secrets in AWS Secrets Manager: {missing_env_names}")
+        return {name: values.get(name, "") for name in SECRET_ENV_NAMES}
+
+    return values
 
 
 class Settings(BaseSettings):
     database_url: str = "postgresql://caregist:caregist_dev@localhost:5432/caregist"
     api_host: str = "0.0.0.0"
     api_port: int = 8000
-    api_master_key: str
+    api_master_key: str = ""
     cors_origins: str = "http://localhost:3000"
     query_timeout_ms: int = 10000
     stripe_secret_key: str = ""
@@ -32,7 +173,7 @@ class Settings(BaseSettings):
     sentry_dsn: str = ""
     support_platform_url: str = ""
     caregist_to_support_token: str = ""
-    support_internal_token: str
+    support_internal_token: str = ""
     # AES-GCM key for webhook secret encryption. Must be 32 bytes, base64-encoded.
     # If unset, webhook secrets are stored plaintext (dev/legacy mode).
     webhook_secret_key: str = ""
@@ -43,8 +184,15 @@ class Settings(BaseSettings):
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8", "extra": "ignore"}
 
     def validate_production(self) -> None:
+        validate_cors_origins(self.cors_origins, production="localhost" not in self.database_url)
+
         if "pytest" in sys.modules:
             return
+
+        if not self.api_master_key:
+            raise RuntimeError("FATAL: API_MASTER_KEY is required.")
+        if not self.support_internal_token:
+            raise RuntimeError("FATAL: SUPPORT_INTERNAL_TOKEN is required.")
 
         # Stripe environment guard: reject live keys in dev/test
         is_localhost = self.database_url == "postgresql://caregist:caregist_dev@localhost:5432/caregist"
@@ -56,7 +204,7 @@ class Settings(BaseSettings):
             )
 
 
-settings = Settings()
+settings = Settings(**load_application_secrets())
 settings.validate_production()
 
 # --- Tier definitions (single source of truth) ---

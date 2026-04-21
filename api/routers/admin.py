@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field
 from api.config import settings
 from api.database import get_connection
 from api.middleware.auth import validate_api_key
+from api.utils.audit import write_audit_log
 from api.queries.admin import (
     DASHBOARD_STATS,
     PROVIDER_TYPE_DISTRIBUTION,
@@ -50,6 +51,15 @@ async def _audit(conn, *, action: str, entity_type: str, entity_id: int, actor: 
             entity_id,
             actor,
             json.dumps(meta) if meta else None,
+        )
+        await write_audit_log(
+            action=f"admin.{action}",
+            outcome="success",
+            actor={"type": "admin", "name": actor},
+            target_type=entity_type,
+            target_id=entity_id,
+            metadata={key: value for key, value in meta.items() if key != "notes"} or None,
+            conn=conn,
         )
     except Exception as exc:
         logger.warning("Audit log insert failed (action=%s entity=%s/%s): %s", action, entity_type, entity_id, exc)

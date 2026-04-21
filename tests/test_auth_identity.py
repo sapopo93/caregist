@@ -1,13 +1,13 @@
 """Tests for stable auth identity derived from API keys."""
 
 from contextlib import asynccontextmanager
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from fastapi import HTTPException
 
-from api.middleware.auth import validate_api_key
-from api.routers.auth import TeamKeyCreateRequest, create_team_key
+from api.middleware.auth import hash_api_key, validate_api_key
+from api.routers.auth import LoginRequest, TeamKeyCreateRequest, create_team_key, logout_session, reveal_key, rotate_key
 from api.routers.comparisons import _get_user_id
 
 
@@ -17,6 +17,7 @@ async def test_validate_api_key_returns_user_context():
     conn.fetchrow = AsyncMock(
         return_value={
             "id": 7,
+            "key_hash": hash_api_key("cg_test_key"),
             "name": "Alice Example",
             "email": "alice@example.com",
             "user_id": 42,
@@ -50,6 +51,7 @@ async def test_validate_api_key_blocks_unverified_user():
     conn.fetchrow = AsyncMock(
         return_value={
             "id": 7,
+            "key_hash": hash_api_key("cg_test_key"),
             "name": "Alice Example",
             "email": "alice@example.com",
             "user_id": 42,
@@ -92,6 +94,7 @@ async def test_validate_api_key_rejects_key_outside_seat_limit():
     conn.fetchrow = AsyncMock(
         return_value={
             "id": 7,
+            "key_hash": hash_api_key("cg_test_key"),
             "name": "Alice Example",
             "email": "alice@example.com",
             "user_id": 42,
@@ -124,6 +127,7 @@ async def test_validate_api_key_honours_paid_tier_seat_floor_when_subscription_i
     conn.fetchrow = AsyncMock(
         return_value={
             "id": 7,
+            "key_hash": hash_api_key("cg_test_key"),
             "name": "Alice Example",
             "email": "alice@example.com",
             "user_id": 42,
@@ -146,6 +150,91 @@ async def test_validate_api_key_honours_paid_tier_seat_floor_when_subscription_i
 
     assert auth["tier"] == "business"
     conn.fetch.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_validate_api_key_rejects_invalid_hash_match():
+    conn = AsyncMock()
+    conn.fetchrow = AsyncMock(return_value=None)
+
+    @asynccontextmanager
+    async def mock_get_connection():
+        yield conn
+
+    with patch("api.middleware.auth.get_connection", mock_get_connection):
+        with pytest.raises(HTTPException) as exc:
+            await validate_api_key("cg_wrong_key")
+
+    assert exc.value.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_valid_active_session_cookie_returns_user_context():
+    conn = AsyncMock()
+    conn.fetchrow = AsyncMock(
+        return_value={
+            "id": 7,
+            "key": None,
+            "key_hash": hash_api_key("cg_backing_key"),
+            "name": "Alice Example",
+            "email": "alice@example.com",
+            "user_id": 42,
+            "tier": "starter",
+            "is_active": True,
+            "is_verified": True,
+            "active_keys": 1,
+            "subscription_max_users": 3,
+        }
+    )
+    conn.execute = AsyncMock()
+
+    @asynccontextmanager
+    async def mock_get_connection():
+        yield conn
+
+    with patch("api.middleware.auth.get_connection", mock_get_connection), \
+         patch("api.middleware.auth.check_rate_limit", AsyncMock(return_value={"burst_remaining": 1, "daily_remaining": 2, "rolling_7d_remaining": 3, "monthly_remaining": 4})):
+        auth = await validate_api_key(api_key=None, caregist_session="cs_active_session")
+
+    assert auth["key_id"] == 7
+    assert auth["user_id"] == 42
+    assert auth["tier"] == "starter"
+    assert auth["api_key"] is None
+
+
+@pytest.mark.asyncio
+async def test_revoked_session_cookie_is_rejected():
+    conn = AsyncMock()
+    conn.fetchrow = AsyncMock(return_value=None)
+
+    @asynccontextmanager
+    async def mock_get_connection():
+        yield conn
+
+    with patch("api.middleware.auth.get_connection", mock_get_connection):
+        with pytest.raises(HTTPException) as exc:
+            await validate_api_key(api_key=None, caregist_session="cs_revoked_session")
+
+    assert exc.value.status_code == 401
+    assert "session" in exc.value.detail.lower()
+
+
+@pytest.mark.asyncio
+async def test_logout_revokes_presented_session_cookie():
+    conn = AsyncMock()
+    conn.execute = AsyncMock()
+
+    @asynccontextmanager
+    async def mock_get_connection():
+        yield conn
+
+    with patch("api.routers.auth.get_connection", mock_get_connection):
+        response = await logout_session(caregist_session="cs_active_session", response=MagicMock())
+
+    assert response == {"logged_out": True}
+    query, token_hash = conn.execute.await_args.args
+    assert "UPDATE user_sessions SET revoked_at" in query
+    assert token_hash == hash_api_key("cs_active_session")
 
 
 @pytest.mark.asyncio
@@ -208,3 +297,62 @@ async def test_create_team_key_uses_paid_tier_capacity_when_subscription_row_is_
 
     assert result["email"] == "ops@example.com"
     conn.execute.assert_awaited()
+    args = next(call.args for call in conn.execute.await_args_list if "key_hash" in call.args[0])
+    assert "key_hash" in args[0]
+    assert args[1] != result["api_key"]
+    assert args[1] == hash_api_key(result["api_key"])
+    audit_args = next(call.args for call in conn.execute.await_args_list if "INSERT INTO audit_log" in call.args[0])
+    assert audit_args[1] == "api_key.create"
+    assert result["api_key"] not in repr(audit_args)
+
+
+@pytest.mark.asyncio
+async def test_reveal_key_does_not_return_hashed_key():
+    conn = AsyncMock()
+    conn.fetchrow = AsyncMock(
+        side_effect=[
+            {"id": 42, "password_hash": "salted:unused", "is_verified": True},
+            {"key": None, "key_prefix": "cg_secret_", "tier": "free", "rate_limit": 2},
+        ]
+    )
+
+    @asynccontextmanager
+    async def mock_get_connection():
+        yield conn
+
+    with patch("api.routers.auth.get_connection", mock_get_connection), \
+         patch("api.routers.auth._verify_password", return_value=True):
+        result = await reveal_key(LoginRequest(email="alice@example.com", password="password123"))
+
+    assert result["api_key"] is None
+    assert result["masked_key"] == "cg_secret_…"
+    assert "Rotate" in result["message"] or "rotate" in result["message"]
+
+
+@pytest.mark.asyncio
+async def test_rotate_key_stores_hash_and_returns_new_key_once():
+    conn = AsyncMock()
+    conn.fetchrow = AsyncMock(
+        side_effect=[
+            {"id": 42, "email": "alice@example.com", "name": "Alice", "password_hash": "salted:unused", "is_verified": True},
+            {"tier": "starter", "rate_limit": 10},
+        ]
+    )
+    conn.execute = AsyncMock()
+
+    @asynccontextmanager
+    async def mock_get_connection():
+        yield conn
+
+    with patch("api.routers.auth.get_connection", mock_get_connection), \
+         patch("api.routers.auth._verify_password", return_value=True):
+        result = await rotate_key(LoginRequest(email="alice@example.com", password="password123"))
+
+    insert_call = next(call.args for call in conn.execute.await_args_list if "key_hash" in call.args[0])
+    assert "key_hash" in insert_call[0]
+    assert insert_call[1] == hash_api_key(result["api_key"])
+    assert insert_call[1] != result["api_key"]
+    assert result["tier"] == "starter"
+    audit_args = next(call.args for call in conn.execute.await_args_list if "INSERT INTO audit_log" in call.args[0])
+    assert audit_args[1] == "api_key.rotate"
+    assert result["api_key"] not in repr(audit_args)

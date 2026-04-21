@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 import logging
+import time
 from datetime import datetime, timezone
 from typing import Any
 
@@ -14,16 +16,48 @@ from pydantic import BaseModel, Field
 from api.database import get_connection
 from api.middleware.internal_auth import validate_internal_token
 from api.services.pipeline_health import get_pipeline_health
+from api.utils.audit import write_audit_log
 from api.utils.email_queue import process_email_queue
 
 logger = logging.getLogger("caregist.internal")
 router = APIRouter(prefix="/internal", tags=["internal"])
+
+REMEDIATION_RATE_LIMIT = 10
+REMEDIATION_RATE_WINDOW_SECONDS = 60
+_remediation_request_times: list[float] = []
+_remediation_inflight_fingerprints: set[str] = set()
+_remediation_locks: dict[str, asyncio.Lock] = {}
 
 
 class InternalRemediationRequest(BaseModel):
     action: str = Field(min_length=3)
     tenantId: str
     payload: dict[str, Any] = Field(default_factory=dict)
+
+
+def _canonical_remediation_payload(request: InternalRemediationRequest) -> str:
+    return json.dumps(
+        {
+            "action": request.action,
+            "tenantId": request.tenantId,
+            "payload": request.payload,
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+
+
+def _remediation_fingerprint(request: InternalRemediationRequest) -> str:
+    return hashlib.sha256(_canonical_remediation_payload(request).encode("utf-8")).hexdigest()
+
+
+def _check_remediation_rate_limit(now: float | None = None) -> None:
+    current = now if now is not None else time.monotonic()
+    cutoff = current - REMEDIATION_RATE_WINDOW_SECONDS
+    _remediation_request_times[:] = [ts for ts in _remediation_request_times if ts > cutoff]
+    if len(_remediation_request_times) >= REMEDIATION_RATE_LIMIT:
+        raise HTTPException(status_code=429, detail="Too many remediation requests.")
+    _remediation_request_times.append(current)
 
 
 async def _complete_task(task_id: str, result: dict[str, Any]) -> None:
@@ -290,7 +324,7 @@ ACTION_HANDLERS = {
 }
 
 
-async def _run_internal_task(task_id: str, action: str, payload: dict[str, Any]) -> None:
+async def _run_internal_task(task_id: str, action: str, payload: dict[str, Any], fingerprint: str | None = None) -> None:
     try:
         async with get_connection() as conn:
             await conn.execute(
@@ -305,9 +339,28 @@ async def _run_internal_task(task_id: str, action: str, payload: dict[str, Any])
         await asyncio.sleep(0)
         result = await handler(payload)
         await _complete_task(task_id, result)
+        await write_audit_log(
+            action="internal.remediation.execute",
+            outcome="success",
+            actor={"type": "internal", "name": "support-platform"},
+            target_type="internal_task",
+            target_id=task_id,
+            metadata={"remediation_action": action},
+        )
     except Exception as exc:
         logger.exception("Internal remediation task failed: %s", exc)
         await _fail_task(task_id, str(exc))
+        await write_audit_log(
+            action="internal.remediation.execute",
+            outcome="failure",
+            actor={"type": "internal", "name": "support-platform"},
+            target_type="internal_task",
+            target_id=task_id,
+            metadata={"remediation_action": action},
+        )
+    finally:
+        if fingerprint:
+            _remediation_inflight_fingerprints.discard(fingerprint)
 
 
 @router.get("/diagnostics")
@@ -399,32 +452,68 @@ async def internal_remediate(
     x_idempotency_key: str | None = Header(default=None, alias="X-Idempotency-Key"),
     _auth=Depends(validate_internal_token),
 ) -> dict[str, str]:
-    async with get_connection() as conn:
-        if x_idempotency_key:
-            existing = await conn.fetchrow(
+    _check_remediation_rate_limit()
+    fingerprint = _remediation_fingerprint(request)
+    lock = _remediation_locks.setdefault(fingerprint, asyncio.Lock())
+    async with lock:
+        async with get_connection() as conn:
+            if x_idempotency_key:
+                existing = await conn.fetchrow(
+                    """
+                    SELECT id, status
+                    FROM internal_tasks
+                    WHERE idempotency_key = $1
+                    """,
+                    x_idempotency_key,
+                )
+                if existing:
+                    return {"taskId": str(existing["id"]), "status": existing["status"]}
+            else:
+                existing = await conn.fetchrow(
+                    """
+                    SELECT id, status
+                    FROM internal_tasks
+                    WHERE action = $1
+                      AND tenant_id = $2
+                      AND payload = $3::jsonb
+                      AND status IN ('pending', 'running')
+                    ORDER BY created_at DESC
+                    LIMIT 1
+                    """,
+                    request.action,
+                    request.tenantId,
+                    json.dumps(request.payload),
+                )
+                if existing:
+                    return {"taskId": str(existing["id"]), "status": existing["status"]}
+
+            row = await conn.fetchrow(
                 """
-                SELECT id, status
-                FROM internal_tasks
-                WHERE idempotency_key = $1
+                INSERT INTO internal_tasks (action, tenant_id, status, payload, idempotency_key)
+                VALUES ($1, $2, 'pending', $3::jsonb, $4)
+                RETURNING id
                 """,
+                request.action,
+                request.tenantId,
+                json.dumps(request.payload),
                 x_idempotency_key,
             )
-            if existing:
-                return {"taskId": str(existing["id"]), "status": existing["status"]}
-
-        row = await conn.fetchrow(
-            """
-            INSERT INTO internal_tasks (action, tenant_id, status, payload, idempotency_key)
-            VALUES ($1, $2, 'pending', $3::jsonb, $4)
-            RETURNING id
-            """,
-            request.action,
-            request.tenantId,
-            json.dumps(request.payload),
-            x_idempotency_key,
-        )
+            await write_audit_log(
+                action="internal.remediation.queue",
+                outcome="success",
+                actor={"type": "internal", "name": "support-platform"},
+                target_type="internal_task",
+                target_id=row["id"],
+                metadata={
+                    "remediation_action": request.action,
+                    "tenant_id": request.tenantId,
+                    "payload_keys": sorted(request.payload.keys()),
+                },
+                conn=conn,
+            )
     task_id = str(row["id"])
-    background_tasks.add_task(_run_internal_task, task_id, request.action, request.payload)
+    _remediation_inflight_fingerprints.add(fingerprint)
+    background_tasks.add_task(_run_internal_task, task_id, request.action, request.payload, fingerprint)
     return {"taskId": task_id, "status": "pending"}
 
 

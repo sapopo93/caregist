@@ -46,6 +46,30 @@ async def test_health_endpoint_returns_degraded_snapshot():
 
 
 @pytest.mark.asyncio
+async def test_security_headers_include_hsts_in_production():
+    with patch("api.main._is_local", False):
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="https://test") as client:
+            response = await client.get("/api/v1/health")
+
+    assert response.headers["X-Content-Type-Options"] == "nosniff"
+    assert response.headers["X-Frame-Options"] == "DENY"
+    assert response.headers["Referrer-Policy"] == "strict-origin-when-cross-origin"
+    assert response.headers["Permissions-Policy"] == "camera=(), microphone=(), geolocation=()"
+    assert response.headers["Strict-Transport-Security"] == "max-age=31536000; includeSubDomains"
+
+
+@pytest.mark.asyncio
+async def test_security_headers_leave_local_without_hsts():
+    with patch("api.main._is_local", True):
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get("/api/v1/health")
+
+    assert response.headers["X-Content-Type-Options"] == "nosniff"
+    assert "Strict-Transport-Security" not in response.headers
+    assert "Content-Security-Policy" not in response.headers
+
+
+@pytest.mark.asyncio
 async def test_readiness_endpoint_returns_503_when_pipeline_not_ready():
     conn = AsyncMock()
 

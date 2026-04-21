@@ -131,6 +131,9 @@ async def test_moderate_claim_reject(patched_db):
 
     assert resp.status_code == 200
     assert resp.json()["message"] == "Claim rejected."
+    audit_args = next(call.args for call in mock_conn.execute.await_args_list if "INSERT INTO audit_log" in call.args[0])
+    assert audit_args[1] == "admin.claim.rejected"
+    assert "Could not verify association" not in repr(audit_args)
 
 
 @pytest.mark.asyncio

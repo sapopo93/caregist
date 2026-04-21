@@ -18,6 +18,7 @@ from api.config import (
     settings,
 )
 from api.database import get_connection
+from api.utils.audit import actor_from_auth, write_audit_log
 
 logger = logging.getLogger("caregist.billing")
 router = APIRouter(prefix="/api/v1/billing", tags=["billing"])
@@ -71,6 +72,20 @@ class CheckoutRequest(BaseModel):
     email: EmailStr
     tier: str  # "alerts-pro", "starter", "pro", or "business"
     extra_seats: int = Field(0, ge=0, le=50)
+
+    model_config = {"extra": "forbid"}
+
+
+def _require_billing_user_id(auth: dict) -> int:
+    user_id = auth.get("user_id")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Authenticated user account required.")
+    return int(user_id)
+
+
+def _verify_request_email(req_email: str, account_email: str) -> None:
+    if req_email.strip().casefold() != account_email.strip().casefold():
+        raise HTTPException(status_code=403, detail="Checkout is only available for the authenticated account.")
 
 
 def _normalize_extra_seats(tier: str, extra_seats: int) -> int:
@@ -130,6 +145,7 @@ async def _persist_subscription_state(
 @router.post("/checkout")
 async def create_checkout(req: CheckoutRequest, _auth: dict = Depends(validate_api_key)) -> dict:
     """Create a Stripe Checkout session for upgrading."""
+    user_id = _require_billing_user_id(_auth)
     if not _auth.get("is_verified", False):
         raise HTTPException(status_code=403, detail="Verify your email before starting billing.")
     if not settings.stripe_secret_key:
@@ -161,10 +177,11 @@ async def create_checkout(req: CheckoutRequest, _auth: dict = Depends(validate_a
 
     # Find or create Stripe customer
     async with get_connection() as conn:
-        user = await conn.fetchrow("SELECT id, stripe_customer_id FROM users WHERE email = $1", req.email)
+        user = await conn.fetchrow("SELECT id, email, stripe_customer_id FROM users WHERE id = $1", user_id)
 
     if not user:
-        raise HTTPException(status_code=404, detail="User not found. Register first.")
+        raise HTTPException(status_code=401, detail="Authenticated user account required.")
+    _verify_request_email(req.email, user["email"])
 
     # Prevent double-charge: reject if user already has an active paid subscription
     async with get_connection() as conn:
@@ -219,11 +236,20 @@ async def create_checkout(req: CheckoutRequest, _auth: dict = Depends(validate_a
                 stripe_price_id=price_id,
                 extra_seats=extra_seats,
             )
+            await write_audit_log(
+                action="billing.subscription.update",
+                outcome="success",
+                actor=actor_from_auth(_auth),
+                target_type="subscription",
+                target_id=subscription_id,
+                metadata={"tier": tier, "extra_seats": extra_seats},
+                conn=conn,
+            )
         return {"updated": True, "tier": tier, "extra_seats": extra_seats}
 
     customer_id = user["stripe_customer_id"]
     if not customer_id:
-        customer = stripe.Customer.create(email=req.email)
+        customer = stripe.Customer.create(email=user["email"])
         customer_id = customer.id
         async with get_connection() as conn:
             await conn.execute(
@@ -243,6 +269,16 @@ async def create_checkout(req: CheckoutRequest, _auth: dict = Depends(validate_a
         cancel_url=f"{settings.app_url}/pricing",
         metadata={"user_id": str(user["id"]), "tier": tier, "extra_seats": str(extra_seats), "price_id": price_id},
     )
+    async with get_connection() as conn:
+        await write_audit_log(
+            action="billing.checkout.create",
+            outcome="success",
+            actor=actor_from_auth(_auth),
+            target_type="checkout_session",
+            target_id=session.id,
+            metadata={"tier": tier, "extra_seats": extra_seats},
+            conn=conn,
+        )
 
     stripe_mode = "test" if settings.stripe_secret_key.startswith("sk_test_") else "live"
     return {"checkout_url": session.url, "session_id": session.id, "stripe_mode": stripe_mode}
@@ -256,6 +292,8 @@ class ProfileCheckoutRequest(BaseModel):
     tier: str
     email: EmailStr
 
+    model_config = {"extra": "forbid"}
+
 
 @router.post("/profile-checkout")
 async def create_profile_checkout(
@@ -263,6 +301,7 @@ async def create_profile_checkout(
     _auth: dict = Depends(validate_api_key),
 ) -> dict:
     """Create a Stripe Checkout session for a provider listing tier upgrade."""
+    user_id = _require_billing_user_id(_auth)
     if not settings.stripe_secret_key:
         raise HTTPException(status_code=503, detail="Billing not configured.")
 
@@ -279,9 +318,10 @@ async def create_profile_checkout(
         raise HTTPException(status_code=503, detail=f"Checkout for the {req.tier} profile tier is not yet configured.")
 
     async with get_connection() as conn:
-        user = await conn.fetchrow("SELECT id, stripe_customer_id FROM users WHERE email = $1", req.email)
+        user = await conn.fetchrow("SELECT id, email, stripe_customer_id FROM users WHERE id = $1", user_id)
     if not user:
-        raise HTTPException(status_code=404, detail="User not found. Register first.")
+        raise HTTPException(status_code=401, detail="Authenticated user account required.")
+    _verify_request_email(req.email, user["email"])
 
     async with get_connection() as conn:
         provider = await conn.fetchrow(
@@ -301,7 +341,7 @@ async def create_profile_checkout(
 
     customer_id = user["stripe_customer_id"]
     if not customer_id:
-        customer = stripe.Customer.create(email=req.email)
+        customer = stripe.Customer.create(email=user["email"])
         customer_id = customer.id
         async with get_connection() as conn:
             await conn.execute(
@@ -323,6 +363,16 @@ async def create_profile_checkout(
             "tier": req.tier,
         },
     )
+    async with get_connection() as conn:
+        await write_audit_log(
+            action="billing.profile_checkout.create",
+            outcome="success",
+            actor=actor_from_auth(_auth),
+            target_type="checkout_session",
+            target_id=session.id,
+            metadata={"provider_id": str(provider["id"]), "slug": req.slug, "tier": req.tier},
+            conn=conn,
+        )
 
     return {"checkout_url": session.url, "session_id": session.id}
 
@@ -456,6 +506,15 @@ async def _handle_checkout_completed(conn, session: dict) -> None:
         stripe_price_id=price_id,
         extra_seats=extra_seats,
     )
+    await write_audit_log(
+        action="billing.subscription.activate",
+        outcome="success",
+        actor={"type": "system", "name": "stripe"},
+        target_type="subscription",
+        target_id=subscription_id,
+        metadata={"user_id": int(user_id), "tier": tier, "extra_seats": extra_seats},
+        conn=conn,
+    )
 
     if customer_id:
         await conn.execute(
@@ -508,6 +567,15 @@ async def _handle_subscription_updated(conn, subscription: dict) -> None:
         stripe_price_id=price_id,
         extra_seats=extra_seats,
     )
+    await write_audit_log(
+        action="billing.subscription.update",
+        outcome="success",
+        actor={"type": "system", "name": "stripe"},
+        target_type="subscription",
+        target_id=sub_id,
+        metadata={"user_id": int(sub_row["user_id"]), "tier": tier, "status": status, "extra_seats": extra_seats},
+        conn=conn,
+    )
 
     logger.info("Subscription %s updated: tier=%s status=%s", sub_id, tier, status)
 
@@ -528,6 +596,15 @@ async def _handle_subscription_deleted(conn, subscription: dict) -> None:
             "free",
             "canceled",
             extra_seats=0,
+        )
+        await write_audit_log(
+            action="billing.subscription.cancel",
+            outcome="success",
+            actor={"type": "system", "name": "stripe"},
+            target_type="subscription",
+            target_id=sub_id,
+            metadata={"user_id": int(sub_row["user_id"]), "tier": "free"},
+            conn=conn,
         )
         logger.info("Subscription %s canceled, user downgraded to free", sub_id)
 
@@ -561,5 +638,14 @@ async def _handle_profile_checkout_completed(conn, session: dict) -> None:
     )
     if result == "UPDATE 0":
         raise RuntimeError(f"profile checkout completed for unknown provider slug: {slug!r}")
+    await write_audit_log(
+        action="billing.profile_subscription.activate",
+        outcome="success",
+        actor={"type": "system", "name": "stripe"},
+        target_type="provider",
+        target_id=slug,
+        metadata={"tier": tier, "subscription_id": subscription_id},
+        conn=conn,
+    )
 
     logger.info("Provider %s upgraded to profile tier %s (subscription: %s)", slug, tier, subscription_id)

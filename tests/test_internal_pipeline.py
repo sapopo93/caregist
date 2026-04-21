@@ -1,12 +1,31 @@
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from fastapi import HTTPException
 from httpx import ASGITransport, AsyncClient
 
 from api.main import app
+from api.routers.internal import (
+    InternalRemediationRequest,
+    _remediation_inflight_fingerprints,
+    _remediation_locks,
+    _remediation_request_times,
+    internal_remediate,
+)
+
+
+@pytest.fixture(autouse=True)
+def clear_remediation_guards():
+    _remediation_request_times.clear()
+    _remediation_inflight_fingerprints.clear()
+    _remediation_locks.clear()
+    yield
+    _remediation_request_times.clear()
+    _remediation_inflight_fingerprints.clear()
+    _remediation_locks.clear()
 
 
 @pytest.mark.asyncio
@@ -70,3 +89,100 @@ async def test_internal_pipeline_endpoint_returns_snapshot_and_recent_runs():
     assert payload["status"] == "healthy"
     assert payload["ledger"]["totalNewRegistrationEvents"] == 123
     assert payload["recentRuns"][0]["runType"] == "feed_cycle"
+
+
+@pytest.mark.asyncio
+async def test_internal_remediate_legitimate_request_queues_task():
+    conn = AsyncMock()
+    conn.fetchrow = AsyncMock(side_effect=[None, {"id": "task-1"}])
+    background_tasks = MagicMock()
+
+    @asynccontextmanager
+    async def mock_get_connection():
+        yield conn
+
+    with patch("api.routers.internal.get_connection", mock_get_connection):
+        response = await internal_remediate(
+            InternalRemediationRequest(
+                action="caregist:refresh_profile_projection",
+                tenantId="tenant-1",
+                payload={"providerId": "1-123"},
+            ),
+            background_tasks,
+            _auth={"scope": "internal"},
+        )
+
+    assert response == {"taskId": "task-1", "status": "pending"}
+    background_tasks.add_task.assert_called_once()
+    audit_args = next(call.args for call in conn.execute.await_args_list if "INSERT INTO audit_log" in call.args[0])
+    assert audit_args[1] == "internal.remediation.queue"
+    assert "1-123" not in repr(audit_args)
+
+
+@pytest.mark.asyncio
+async def test_internal_remediate_duplicate_payload_reuses_existing_task():
+    conn = AsyncMock()
+    conn.fetchrow = AsyncMock(
+        side_effect=[
+            None,
+            {"id": "task-1"},
+            {"id": "task-1", "status": "pending"},
+        ]
+    )
+    first_background_tasks = MagicMock()
+    second_background_tasks = MagicMock()
+    request = InternalRemediationRequest(
+        action="caregist:refresh_profile_projection",
+        tenantId="tenant-1",
+        payload={"providerId": "1-123"},
+    )
+
+    @asynccontextmanager
+    async def mock_get_connection():
+        yield conn
+
+    with patch("api.routers.internal.get_connection", mock_get_connection):
+        first = await internal_remediate(request, first_background_tasks, _auth={"scope": "internal"})
+        _remediation_inflight_fingerprints.clear()
+        second = await internal_remediate(request, second_background_tasks, _auth={"scope": "internal"})
+
+    assert first == {"taskId": "task-1", "status": "pending"}
+    assert second == {"taskId": "task-1", "status": "pending"}
+    first_background_tasks.add_task.assert_called_once()
+    second_background_tasks.add_task.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_internal_remediate_repeated_rapid_requests_are_limited(monkeypatch):
+    monkeypatch.setattr("api.routers.internal.REMEDIATION_RATE_LIMIT", 2)
+    conn = AsyncMock()
+    conn.fetchrow = AsyncMock(side_effect=[None, {"id": "task-1"}, None, {"id": "task-2"}])
+
+    @asynccontextmanager
+    async def mock_get_connection():
+        yield conn
+
+    with patch("api.routers.internal.get_connection", mock_get_connection):
+        for idx in range(2):
+            await internal_remediate(
+                InternalRemediationRequest(
+                    action="caregist:refresh_profile_projection",
+                    tenantId="tenant-1",
+                    payload={"providerId": f"1-{idx}"},
+                ),
+                MagicMock(),
+                _auth={"scope": "internal"},
+            )
+
+        with pytest.raises(HTTPException) as exc:
+            await internal_remediate(
+                InternalRemediationRequest(
+                    action="caregist:refresh_profile_projection",
+                    tenantId="tenant-1",
+                    payload={"providerId": "1-999"},
+                ),
+                MagicMock(),
+                _auth={"scope": "internal"},
+            )
+
+    assert exc.value.status_code == 429
