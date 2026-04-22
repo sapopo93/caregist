@@ -152,6 +152,60 @@ async def test_business_seat_update_keeps_business_when_client_tier_is_stale(mon
     assert persist_call[8] == 12
 
 
+@pytest.mark.asyncio
+async def test_business_seat_update_does_not_require_configured_business_price(monkeypatch):
+    monkeypatch.setattr(settings, "stripe_secret_key", "sk_test_checkout")
+    monkeypatch.setattr(settings, "stripe_price_starter", "price_starter")
+    monkeypatch.setattr(settings, "stripe_price_pro", "price_pro")
+    monkeypatch.setattr(settings, "stripe_price_business", "")
+    monkeypatch.setattr(settings, "stripe_price_pro_seat", "price_team_seat")
+    monkeypatch.setitem(PRICE_TO_TIER, "price_starter", "starter")
+    monkeypatch.setitem(PRICE_TO_TIER, "price_pro", "pro")
+    monkeypatch.delitem(PRICE_TO_TIER, "price_business", raising=False)
+    monkeypatch.setitem(PRICE_TO_TIER, "price_team_seat", "pro-seat")
+
+    conn = AsyncMock()
+    conn.fetchrow = AsyncMock(
+        side_effect=[
+            {"id": 42, "email": "alice@example.com", "stripe_customer_id": "cus_123"},
+            {
+                "tier": "business",
+                "status": "active",
+                "stripe_subscription_id": "sub_business",
+                "stripe_price_id": "price_live_business",
+                "extra_seats": 0,
+            },
+        ]
+    )
+    conn.execute = AsyncMock()
+
+    @asynccontextmanager
+    async def mock_get_connection():
+        yield conn
+
+    subscription = {
+        "items": {
+            "data": [
+                {"id": "si_base", "price": {"id": "price_live_business"}, "quantity": 1},
+            ]
+        }
+    }
+
+    with patch("api.routers.billing.get_connection", mock_get_connection), \
+         patch("api.routers.billing.stripe.Subscription.retrieve", return_value=subscription), \
+         patch("api.routers.billing.stripe.Subscription.modify") as modify:
+        result = await create_checkout(
+            CheckoutRequest(email="alice@example.com", tier="business", extra_seats=1),
+            {"user_id": 42, "email": "alice@example.com", "is_verified": True, "tier": "business"},
+        )
+
+    assert result == {"updated": True, "tier": "business", "extra_seats": 1}
+    modify.assert_called_once()
+    assert modify.call_args.kwargs["items"] == [{"price": "price_team_seat", "quantity": 1}]
+    persist_call = next(call.args for call in conn.execute.await_args_list if "INSERT INTO subscriptions" in call.args[0])
+    assert persist_call[3] == "price_live_business"
+
+
 @pytest.mark.parametrize(
     "payload",
     [
