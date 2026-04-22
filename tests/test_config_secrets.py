@@ -2,7 +2,7 @@
 
 import pytest
 
-from api.config import Settings, load_application_secrets, validate_cors_origins
+from api.config import Settings, _normalize_secret_payload, load_application_secrets, validate_cors_origins
 
 
 class FakeSecretLoader:
@@ -13,7 +13,7 @@ class FakeSecretLoader:
         self.region_name = region_name
 
     def load(self):
-        return self.payload
+        return _normalize_secret_payload(self.payload)
 
 
 def test_successful_secret_resolution_from_aws():
@@ -39,6 +39,39 @@ def test_successful_secret_resolution_from_aws():
     assert secrets["support_internal_token"] == "support"
     assert secrets["stripe_secret_key"] == "sk_live_123"
     assert secrets["stripe_webhook_secret"] == "whsec_123"
+
+
+def test_secret_resolution_includes_stripe_price_aliases_from_aws():
+    FakeSecretLoader.payload = {
+        "DATABASE_URL": "postgresql://prod",
+        "API_MASTER_KEY": "master",
+        "SUPPORT_INTERNAL_TOKEN": "support",
+        "STRIPE_SECRET_KEY": "sk_live_123",
+        "STRIPE_WEBHOOK_SECRET": "whsec_123",
+        "STRIPE_PRICE_ALERTS_PRO_MONTHLY": "price_alerts",
+        "STRIPE_PRICE_DATA_STARTER_MONTHLY": "price_starter",
+        "STRIPE_PRICE_DATA_PRO_MONTHLY": "price_pro",
+        "STRIPE_PRICE_DATA_BUSINESS_MONTHLY": "price_business",
+        "STRIPE_PRICE_PROVIDER_PRO_LISTING_MONTHLY": "price_profile_premium",
+        "STRIPE_PRICE_SPONSORED_LISTING_MONTHLY": "price_profile_sponsored",
+        "STRIPE_PRICE_PRO_SEAT": "price_seat",
+    }
+
+    secrets = load_application_secrets(
+        environ={
+            "NODE_ENV": "production",
+            "AWS_SECRETS_MANAGER_SECRET_ID": "caregist/prod/api",
+        },
+        secret_loader_cls=FakeSecretLoader,
+    )
+
+    assert secrets["stripe_price_alerts_pro"] == "price_alerts"
+    assert secrets["stripe_price_starter"] == "price_starter"
+    assert secrets["stripe_price_pro"] == "price_pro"
+    assert secrets["stripe_price_business"] == "price_business"
+    assert secrets["stripe_price_profile_premium"] == "price_profile_premium"
+    assert secrets["stripe_price_profile_sponsored"] == "price_profile_sponsored"
+    assert secrets["stripe_price_pro_seat"] == "price_seat"
 
 
 def test_missing_required_secret_in_production_fails_startup():

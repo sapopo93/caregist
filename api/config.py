@@ -22,11 +22,29 @@ SECRET_ENV_NAMES = {
     "api_master_key": "API_MASTER_KEY",
     "stripe_secret_key": "STRIPE_SECRET_KEY",
     "stripe_webhook_secret": "STRIPE_WEBHOOK_SECRET",
+    "stripe_price_alerts_pro": "STRIPE_PRICE_ALERTS_PRO",
+    "stripe_price_starter": "STRIPE_PRICE_STARTER",
+    "stripe_price_pro": "STRIPE_PRICE_PRO",
+    "stripe_price_pro_seat": "STRIPE_PRICE_PRO_SEAT",
+    "stripe_price_business": "STRIPE_PRICE_BUSINESS",
+    "stripe_price_enterprise": "STRIPE_PRICE_ENTERPRISE",
+    "stripe_price_profile_enhanced": "STRIPE_PRICE_PROFILE_ENHANCED",
+    "stripe_price_profile_premium": "STRIPE_PRICE_PROFILE_PREMIUM",
+    "stripe_price_profile_sponsored": "STRIPE_PRICE_PROFILE_SPONSORED",
     "resend_api_key": "RESEND_API_KEY",
     "caregist_to_support_token": "CAREGIST_TO_SUPPORT_TOKEN",
     "support_internal_token": "SUPPORT_INTERNAL_TOKEN",
     "webhook_secret_key": "WEBHOOK_SECRET_KEY",
     "redis_url": "REDIS_URL",
+}
+SECRET_ENV_ALIASES = {
+    "stripe_price_alerts_pro": ("STRIPE_PRICE_ALERTS_PRO_MONTHLY",),
+    "stripe_price_starter": ("STRIPE_PRICE_DATA_STARTER_MONTHLY",),
+    "stripe_price_pro": ("STRIPE_PRICE_DATA_PRO_MONTHLY",),
+    "stripe_price_business": ("STRIPE_PRICE_DATA_BUSINESS_MONTHLY",),
+    "stripe_price_profile_enhanced": ("STRIPE_PRICE_PROVIDER_ENHANCED_LISTING_MONTHLY",),
+    "stripe_price_profile_premium": ("STRIPE_PRICE_PROVIDER_PRO_LISTING_MONTHLY",),
+    "stripe_price_profile_sponsored": ("STRIPE_PRICE_SPONSORED_LISTING_MONTHLY",),
 }
 REQUIRED_PRODUCTION_SECRETS = (
     "database_url",
@@ -89,10 +107,18 @@ def validate_cors_origins(cors_origins: str, *, production: bool) -> None:
             raise RuntimeError(f"FATAL: Invalid CORS origin: {origin!r}. Use explicit scheme://host[:port] origins.")
 
 
+def _lookup_secret_value(payload: Mapping[str, Any], field_name: str, env_name: str) -> Any:
+    for key in (env_name, *SECRET_ENV_ALIASES.get(field_name, ()), field_name):
+        value = payload.get(key)
+        if value is not None:
+            return value
+    return None
+
+
 def _normalize_secret_payload(payload: Mapping[str, Any]) -> dict[str, str]:
     values: dict[str, str] = {}
     for field_name, env_name in SECRET_ENV_NAMES.items():
-        value = payload.get(env_name, payload.get(field_name))
+        value = _lookup_secret_value(payload, field_name, env_name)
         if value is not None:
             values[field_name] = str(value)
     return values
@@ -110,11 +136,7 @@ def _load_dev_dotenv_secrets(dotenv_path: str | Path = ".env") -> dict[str, str]
 
 
 def _load_dev_env_secrets(environ: Mapping[str, str]) -> dict[str, str]:
-    return {
-        field_name: environ[env_name]
-        for field_name, env_name in SECRET_ENV_NAMES.items()
-        if environ.get(env_name)
-    }
+    return _normalize_secret_payload(environ)
 
 
 def load_application_secrets(
