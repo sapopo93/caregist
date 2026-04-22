@@ -72,6 +72,11 @@ export default function DashboardPage() {
       .then((res) => res.json())
       .then((data) => {
         setSubscription(data);
+        if (data?.tier) {
+          setTier(data.tier);
+          localStorage.setItem("caregist_tier", data.tier);
+          window.dispatchEvent(new Event("caregist_auth_change"));
+        }
         setSeatDraft(data?.entitlements?.extra_seats || 0);
       })
       .catch(() => setLoadError(true));

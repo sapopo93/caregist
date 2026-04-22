@@ -15,6 +15,7 @@ from api.config import (
     max_tier,
     get_subscription_entitlements,
     get_tier_config,
+    get_tier_rank,
     settings,
 )
 from api.database import get_connection
@@ -98,6 +99,20 @@ def _normalize_extra_seats(tier: str, extra_seats: int) -> int:
     return extra_seats
 
 
+def _base_price_for_tier(tier: str) -> str:
+    price_map = {
+        "alerts-pro": settings.stripe_price_alerts_pro,
+        "starter": settings.stripe_price_starter,
+        "pro": settings.stripe_price_pro,
+        "business": settings.stripe_price_business,
+    }
+    price_id = price_map.get(tier)
+    if not price_id:
+        logger.error("Stripe checkout price missing for tier=%s", tier)
+        raise HTTPException(status_code=503, detail=f"Checkout for the {tier} plan is not yet configured. Contact support@caregist.co.uk.")
+    return price_id
+
+
 async def _persist_subscription_state(
     conn,
     user_id: int,
@@ -162,18 +177,9 @@ async def create_checkout(req: CheckoutRequest, _auth: dict = Depends(validate_a
             )
         raise HTTPException(status_code=400, detail=f"Invalid tier: {req.tier}. Choose 'alerts-pro', 'starter', 'pro', or 'business'.")
 
-    price_map = {
-        "alerts-pro": settings.stripe_price_alerts_pro,
-        "starter": settings.stripe_price_starter,
-        "pro": settings.stripe_price_pro,
-        "business": settings.stripe_price_business,
-    }
-    price_id = price_map.get(tier)
-    if not price_id:
-        logger.error("Stripe checkout price missing for tier=%s", tier)
-        raise HTTPException(status_code=503, detail=f"Checkout for the {tier} plan is not yet configured. Contact support@caregist.co.uk.")
+    price_id = _base_price_for_tier(tier)
 
-    extra_seats = _normalize_extra_seats(tier, req.extra_seats)
+    requested_extra_seats = req.extra_seats
 
     # Find or create Stripe customer
     async with get_connection() as conn:
@@ -202,6 +208,11 @@ async def create_checkout(req: CheckoutRequest, _auth: dict = Depends(validate_a
                 status_code=409,
                 detail=f"Your account already has an active {existing_sub['tier']} subscription. Contact support to change plans.",
             )
+        existing_tier = _normalize_checkout_tier(existing_sub["tier"] or "")
+        if requested_extra_seats and get_tier_rank(existing_tier) > get_tier_rank(tier):
+            tier = existing_tier
+            price_id = _base_price_for_tier(tier)
+        extra_seats = _normalize_extra_seats(tier, requested_extra_seats)
         subscription = stripe.Subscription.retrieve(subscription_id)
         items = subscription.get("items", {}).get("data", [])
         base_item = next((item for item in items if _is_base_plan_price(item.get("price", {}).get("id"))), None)
@@ -224,7 +235,7 @@ async def create_checkout(req: CheckoutRequest, _auth: dict = Depends(validate_a
             subscription_id,
             items=updated_items,
             proration_behavior="create_prorations",
-            metadata={"user_id": str(user["id"]), "tier": req.tier, "extra_seats": str(extra_seats)},
+            metadata={"user_id": str(user["id"]), "tier": tier, "extra_seats": str(extra_seats)},
         )
         async with get_connection() as conn:
             await _persist_subscription_state(
@@ -246,6 +257,8 @@ async def create_checkout(req: CheckoutRequest, _auth: dict = Depends(validate_a
                 conn=conn,
             )
         return {"updated": True, "tier": tier, "extra_seats": extra_seats}
+
+    extra_seats = _normalize_extra_seats(tier, requested_extra_seats)
 
     customer_id = user["stripe_customer_id"]
     if not customer_id:

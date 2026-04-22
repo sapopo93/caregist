@@ -9,7 +9,7 @@ from fastapi import HTTPException
 from pydantic import ValidationError
 
 from api.config import settings
-from api.routers.billing import CheckoutRequest, ProfileCheckoutRequest, create_checkout, create_profile_checkout
+from api.routers.billing import PRICE_TO_TIER, CheckoutRequest, ProfileCheckoutRequest, create_checkout, create_profile_checkout
 
 
 @pytest.mark.asyncio
@@ -93,6 +93,63 @@ async def test_checkout_rejects_another_account_email_without_enumerating(monkey
     assert "bob@example.com" not in exc.value.detail
     assert "not found" not in exc.value.detail.lower()
     create_session.assert_not_called()
+
+
+@pytest.mark.parametrize("stale_tier", ["starter", "pro"])
+@pytest.mark.asyncio
+async def test_business_seat_update_keeps_business_when_client_tier_is_stale(monkeypatch, stale_tier):
+    monkeypatch.setattr(settings, "stripe_secret_key", "sk_test_checkout")
+    monkeypatch.setattr(settings, "stripe_price_starter", "price_starter")
+    monkeypatch.setattr(settings, "stripe_price_pro", "price_pro")
+    monkeypatch.setattr(settings, "stripe_price_business", "price_business")
+    monkeypatch.setattr(settings, "stripe_price_pro_seat", "price_team_seat")
+    monkeypatch.setitem(PRICE_TO_TIER, "price_starter", "starter")
+    monkeypatch.setitem(PRICE_TO_TIER, "price_pro", "pro")
+    monkeypatch.setitem(PRICE_TO_TIER, "price_business", "business")
+    monkeypatch.setitem(PRICE_TO_TIER, "price_team_seat", "pro-seat")
+
+    conn = AsyncMock()
+    conn.fetchrow = AsyncMock(
+        side_effect=[
+            {"id": 42, "email": "alice@example.com", "stripe_customer_id": "cus_123"},
+            {"tier": "business", "status": "active", "stripe_subscription_id": "sub_business", "extra_seats": 0},
+        ]
+    )
+    conn.execute = AsyncMock()
+
+    @asynccontextmanager
+    async def mock_get_connection():
+        yield conn
+
+    subscription = {
+        "items": {
+            "data": [
+                {"id": "si_base", "price": {"id": "price_business"}, "quantity": 1},
+            ]
+        }
+    }
+
+    with patch("api.routers.billing.get_connection", mock_get_connection), \
+         patch("api.routers.billing.stripe.Subscription.retrieve", return_value=subscription), \
+        patch("api.routers.billing.stripe.Subscription.modify") as modify:
+        result = await create_checkout(
+            CheckoutRequest(email="alice@example.com", tier=stale_tier, extra_seats=2),
+            {"user_id": 42, "email": "alice@example.com", "is_verified": True, "tier": stale_tier},
+        )
+
+    assert result == {"updated": True, "tier": "business", "extra_seats": 2}
+    modify.assert_called_once()
+    kwargs = modify.call_args.kwargs
+    assert kwargs["items"] == [
+        {"id": "si_base", "price": "price_business", "quantity": 1},
+        {"price": "price_team_seat", "quantity": 2},
+    ]
+    assert kwargs["metadata"]["tier"] == "business"
+    persist_call = next(call.args for call in conn.execute.await_args_list if "INSERT INTO subscriptions" in call.args[0])
+    assert persist_call[4] == "business"
+    assert persist_call[6] == 10
+    assert persist_call[7] == 2
+    assert persist_call[8] == 12
 
 
 @pytest.mark.parametrize(

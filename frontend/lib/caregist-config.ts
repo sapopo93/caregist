@@ -272,6 +272,9 @@ export const PLAN_NEXT_STEP: Record<string, string> = {
   "data-pro": "Data Business adds webhooks, full field access, higher export limits, more monitors, and operational onboarding.",
   "data-business": "Enterprise adds custom limits, procurement support, security review, and contract terms.",
   enterprise: "For custom implementation, procurement support, data-sharing terms, and security review.",
+  starter: "Data Pro adds more saved filters, more digests, team seats, wider exports, and stronger monitoring.",
+  pro: "Data Business adds webhooks, full field access, higher export limits, more monitors, and operational onboarding.",
+  business: "Enterprise adds custom limits, procurement support, security review, and contract terms.",
 };
 
 export const PLAN_LIMIT_SUMMARY: Record<string, string> = {
