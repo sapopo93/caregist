@@ -203,6 +203,70 @@ async def test_valid_active_session_cookie_returns_user_context():
 
 
 @pytest.mark.asyncio
+async def test_valid_session_cookie_wins_over_stale_header_key():
+    session_row = {
+        "id": 7,
+        "key": None,
+        "key_hash": hash_api_key("cg_backing_key"),
+        "name": "Alice Example",
+        "email": "alice@example.com",
+        "user_id": 42,
+        "tier": "business",
+        "is_active": True,
+        "is_verified": True,
+        "active_keys": 1,
+        "subscription_max_users": 10,
+    }
+    conn = AsyncMock()
+    conn.fetchrow = AsyncMock(side_effect=[None, session_row])
+    conn.execute = AsyncMock()
+
+    @asynccontextmanager
+    async def mock_get_connection():
+        yield conn
+
+    with patch("api.middleware.auth.get_connection", mock_get_connection), \
+         patch("api.middleware.auth.check_rate_limit", AsyncMock(return_value={"burst_remaining": 1, "daily_remaining": 2, "rolling_7d_remaining": 3, "monthly_remaining": 4})):
+        auth = await validate_api_key(api_key="cg_stale_key", caregist_session="cs_active_session")
+
+    assert auth["user_id"] == 42
+    assert auth["tier"] == "business"
+    assert auth["api_key"] is None
+
+
+@pytest.mark.asyncio
+async def test_legacy_api_key_session_cookie_still_authenticates():
+    key_row = {
+        "id": 7,
+        "key": None,
+        "key_hash": hash_api_key("cg_legacy_cookie_key"),
+        "name": "Alice Example",
+        "email": "alice@example.com",
+        "user_id": 42,
+        "tier": "starter",
+        "is_active": True,
+        "is_verified": True,
+        "active_keys": 1,
+        "subscription_max_users": 3,
+    }
+    conn = AsyncMock()
+    conn.fetchrow = AsyncMock(side_effect=[None, key_row])
+    conn.execute = AsyncMock()
+
+    @asynccontextmanager
+    async def mock_get_connection():
+        yield conn
+
+    with patch("api.middleware.auth.get_connection", mock_get_connection), \
+         patch("api.middleware.auth.check_rate_limit", AsyncMock(return_value={"burst_remaining": 1, "daily_remaining": 2, "rolling_7d_remaining": 3, "monthly_remaining": 4})):
+        auth = await validate_api_key(api_key=None, caregist_session="cg_legacy_cookie_key")
+
+    assert auth["user_id"] == 42
+    assert auth["tier"] == "starter"
+    assert auth["api_key"] == "cg_legacy_cookie_key"
+
+
+@pytest.mark.asyncio
 async def test_revoked_session_cookie_is_rejected():
     conn = AsyncMock()
     conn.fetchrow = AsyncMock(return_value=None)

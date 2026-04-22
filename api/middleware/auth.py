@@ -26,6 +26,10 @@ def api_key_prefix(api_key: str) -> str:
     return api_key[:10]
 
 
+def _cookie_value(value: str | None) -> str | None:
+    return value if isinstance(value, str) and value else None
+
+
 def _row_value(row, key: str, default=None):
     try:
         return row[key]
@@ -232,16 +236,38 @@ async def _validate_session(session_token: str) -> dict:
     return await _auth_from_key_row(row, rate_limit_key=session_token_hash)
 
 
+async def _validate_session_or_legacy_key(session_token: str) -> dict:
+    """Validate a revocable session cookie, with fallback for legacy key cookies."""
+    try:
+        return await _validate_session(session_token)
+    except HTTPException as session_exc:
+        if session_token.startswith("cs_"):
+            raise
+        try:
+            return await _validate_key(session_token)
+        except HTTPException:
+            raise session_exc
+
+
 async def validate_api_key(
     api_key: str | None = Security(api_key_header),
     caregist_session: str | None = Cookie(default=None),
 ) -> dict:
     """Validate API key from X-API-Key header or caregist_session cookie."""
+    session_cookie = _cookie_value(caregist_session)
     if api_key:
-        return await _validate_key(api_key)
-    if caregist_session:
-        return await _validate_session(caregist_session)
-    if not api_key and not caregist_session:
+        try:
+            return await _validate_key(api_key)
+        except HTTPException as key_exc:
+            if session_cookie:
+                try:
+                    return await _validate_session_or_legacy_key(session_cookie)
+                except HTTPException:
+                    pass
+            raise key_exc
+    if session_cookie:
+        return await _validate_session_or_legacy_key(session_cookie)
+    if not api_key and not session_cookie:
         raise HTTPException(status_code=401, detail="Missing API key. Pass X-API-Key header or log in.")
 
 
@@ -251,10 +277,19 @@ async def validate_optional_api_key(
     caregist_session: str | None = Cookie(default=None),
 ) -> dict:
     """Return authenticated metadata when a key is present, else a free guest tier."""
+    session_cookie = _cookie_value(caregist_session)
     if api_key:
-        return await _validate_key(api_key)
-    if caregist_session:
-        return await _validate_session(caregist_session)
+        try:
+            return await _validate_key(api_key)
+        except HTTPException as key_exc:
+            if session_cookie:
+                try:
+                    return await _validate_session_or_legacy_key(session_cookie)
+                except HTTPException:
+                    pass
+            raise key_exc
+    if session_cookie:
+        return await _validate_session_or_legacy_key(session_cookie)
 
     guest_key = f"guest:{_client_identifier(request)}"
     remaining = await check_rate_limit(guest_key, "free")
