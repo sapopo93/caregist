@@ -11,11 +11,13 @@ function LoginForm() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showResetBanner, setShowResetBanner] = useState(false);
+  const [showSessionExpiredBanner, setShowSessionExpiredBanner] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
     setShowResetBanner(params.get("reset") === "success");
+    setShowSessionExpiredBanner(params.get("session") === "expired");
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -78,6 +80,12 @@ function LoginForm() {
       {showResetBanner && (
         <div className="bg-cream border border-green-500 rounded-lg p-3 mb-4 text-sm text-green-700">
           Password reset successful. You can now log in with your new password.
+        </div>
+      )}
+
+      {showSessionExpiredBanner && (
+        <div className="bg-cream border border-clay rounded-lg p-3 mb-4 text-sm text-bark">
+          Your session expired. Log in again to continue.
         </div>
       )}
 

@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 import { trackEvent } from "@/lib/analytics";
+import { clearBrowserAuthState, isAuthExpiredResponse } from "@/lib/auth-session";
 import { getProviderHref, getProviderPathKey } from "@/lib/provider-path";
 
 type FeedFilters = {
@@ -81,6 +83,7 @@ export default function NewRegistrationFeedPanel({
   tier: string;
   upgradeHref: string;
 }) {
+  const router = useRouter();
   const [filters, setFilters] = useState<FeedFilters>(EMPTY_FILTERS);
   const [sortBy, setSortBy] = useState<SortBy>("effective_date");
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
@@ -97,6 +100,11 @@ export default function NewRegistrationFeedPanel({
   const [digestLoading, setDigestLoading] = useState(false);
   const [exportLoading, setExportLoading] = useState<"" | "csv" | "xlsx">("");
 
+  async function handleExpiredSession() {
+    await clearBrowserAuthState();
+    router.push("/login?session=expired");
+  }
+
   async function loadFeed(
     nextPage = page,
     nextFilters = filters,
@@ -111,6 +119,10 @@ export default function NewRegistrationFeedPanel({
         { credentials: "include" },
       );
       const data = await res.json();
+      if (isAuthExpiredResponse(res.status, data?.detail)) {
+        await handleExpiredSession();
+        return;
+      }
       if (!res.ok) {
         setError(data.detail || "Could not load the new registration feed.");
         setEvents([]);
@@ -139,6 +151,14 @@ export default function NewRegistrationFeedPanel({
         return;
       }
       const data = await res.json();
+      if (isAuthExpiredResponse(res.status, data?.detail)) {
+        await handleExpiredSession();
+        return;
+      }
+      if (!res.ok) {
+        setSavedFilters([]);
+        return;
+      }
       setSavedFilters(Array.isArray(data?.filters) ? data.filters : []);
     } catch {
       setSavedFilters([]);
@@ -155,6 +175,14 @@ export default function NewRegistrationFeedPanel({
         return;
       }
       const data = await res.json();
+      if (isAuthExpiredResponse(res.status, data?.detail)) {
+        await handleExpiredSession();
+        return;
+      }
+      if (!res.ok) {
+        setDigest(null);
+        return;
+      }
       setDigest(data?.subscription || null);
     } catch {
       setDigest(null);
@@ -176,6 +204,10 @@ export default function NewRegistrationFeedPanel({
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
+        if (isAuthExpiredResponse(res.status, data?.detail)) {
+          await handleExpiredSession();
+          return;
+        }
         setError(data.detail || `Could not export ${format.toUpperCase()}.`);
         return;
       }
@@ -206,6 +238,10 @@ export default function NewRegistrationFeedPanel({
         body: JSON.stringify({ name: savedFilterName.trim(), filters }),
       });
       const data = await res.json();
+      if (isAuthExpiredResponse(res.status, data?.detail)) {
+        await handleExpiredSession();
+        return;
+      }
       if (!res.ok) {
         setSavedFilterError(data.detail || "Could not save this feed view.");
         return;
@@ -221,10 +257,17 @@ export default function NewRegistrationFeedPanel({
   }
 
   async function handleDeleteSavedFilter(filterId: number) {
-    await fetch(`/api/v1/feed/new-registrations/saved-filters/${filterId}`, {
+    const res = await fetch(`/api/v1/feed/new-registrations/saved-filters/${filterId}`, {
       method: "DELETE",
       credentials: "include",
     });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      if (isAuthExpiredResponse(res.status, data?.detail)) {
+        await handleExpiredSession();
+      }
+      return;
+    }
     setSavedFilters((current) => current.filter((item) => item.id !== filterId));
   }
 
@@ -238,6 +281,10 @@ export default function NewRegistrationFeedPanel({
         body: JSON.stringify({ active, filters }),
       });
       const data = await res.json();
+      if (isAuthExpiredResponse(res.status, data?.detail)) {
+        await handleExpiredSession();
+        return;
+      }
       if (!res.ok) {
         setError(data.detail || "Could not update weekly digest settings.");
         return;
