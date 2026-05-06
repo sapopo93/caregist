@@ -50,13 +50,19 @@ services:
       - key: STRIPE_PRICE_ALERTS_PRO
         sync: false
       - key: STRIPE_PRICE_STARTER
-        value: price_1TFvyt4mijLHzRRkyouYDBqo
+        value: price_1TKfJR4mijLHzRRkdvSTxZ3X
       - key: STRIPE_PRICE_PRO
-        value: price_1TFw1h4mijLHzRRkiGDF4P8X
+        value: price_1TKfUW4mijLHzRRk1rbw4bGr
       - key: STRIPE_PRICE_PRO_SEAT
         sync: false
       - key: STRIPE_PRICE_BUSINESS
-        value: price_1TFw3p4mijLHzRRkTuNDsac0
+        value: price_1TKfbM4mijLHzRRkL4Cns1iG
+      - key: STRIPE_PRICE_PROFILE_ENHANCED
+        value: price_1TLLSp4mijLHzRRkz3VftZAY
+      - key: STRIPE_PRICE_PROFILE_PREMIUM
+        value: price_1TLLVR4mijLHzRRk31nuVhr5
+      - key: STRIPE_PRICE_PROFILE_SPONSORED
+        value: price_1TLLgq4mijLHzRRkmNufCgiD
       - key: STRIPE_PRICE_ENTERPRISE
         sync: false
       - key: RESEND_API_KEY

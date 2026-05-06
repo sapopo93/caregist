@@ -6,7 +6,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from incremental_update import ChangesFetchError, fetch_changes, fetch_recent_via_list_scan, resolve_since
+from incremental_update import ChangesFetchError, fetch_changes, fetch_recent_via_list_scan, normalize_database_url, resolve_since
 
 
 def test_fetch_changes_raises_on_non_200_response():
@@ -30,6 +30,17 @@ def test_fetch_changes_returns_none_on_410():
     with patch("incremental_update.requests.get", return_value=response):
         result = fetch_changes("https://api.service.cqc.org.uk/public/v1", "key", "2026-04-01T00:00:00", 0)
     assert result is None
+
+
+def test_normalize_database_url_rewrites_neon_pooler_hosts():
+    assert normalize_database_url(
+        "postgresql://user:pass@ep-example-123-pooler.eu-west-2.aws.neon.tech/db?sslmode=require"
+    ) == (
+        "postgresql://user:pass@ep-example-123.eu-west-2.aws.neon.tech/db?sslmode=require"
+    )
+    assert normalize_database_url(
+        "postgresql://user:pass@db.example.com/app"
+    ) == "postgresql://user:pass@db.example.com/app"
 
 
 def test_fetch_recent_via_list_scan_returns_new_ids(tmp_path, monkeypatch):
@@ -97,6 +108,31 @@ def test_fetch_recent_via_list_scan_skips_old_registrations(tmp_path, monkeypatc
         )
 
     assert result == []
+
+
+def test_fetch_recent_via_list_scan_does_not_cache_failed_detail_fetches(tmp_path, monkeypatch):
+    """A transient detail failure must not poison the cache for later retries."""
+    import incremental_update as iu
+
+    cache = tmp_path / "_locations_list.ndjson"
+    cache.write_text("")
+    monkeypatch.setattr(iu, "LOCATIONS_LIST_CACHE", cache)
+
+    list_page = Mock(status_code=200)
+    list_page.json.return_value = {
+        "total": 1,
+        "locations": [{"locationId": "LOC-RETRY-1", "locationName": "Retry Me", "postalCode": "E1 1AA"}],
+    }
+    detail_resp = Mock(status_code=503)
+    detail_resp.json.return_value = {}
+
+    with patch("incremental_update.requests.get", side_effect=[list_page, detail_resp, detail_resp, detail_resp]):
+        result = fetch_recent_via_list_scan(
+            "https://api.service.cqc.org.uk/public/v1", "key", "2026-04-01T00:00:00", 0
+        )
+
+    assert result == []
+    assert cache.read_text() == ""
 
 
 def test_resolve_since_prefers_latest_completed_incremental_run():

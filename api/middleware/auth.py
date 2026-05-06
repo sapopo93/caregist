@@ -37,6 +37,14 @@ def _row_value(row, key: str, default=None):
         return default
 
 
+def _row_has_key(row, key: str) -> bool:
+    try:
+        row[key]
+        return True
+    except (KeyError, TypeError):
+        return False
+
+
 def _client_identifier(request: Request) -> str:
     """Build a stable identifier for anonymous traffic rate limiting."""
     forwarded_for = request.headers.get("x-forwarded-for", "")
@@ -110,7 +118,7 @@ async def _auth_from_key_row(row, *, rate_limit_key: str, api_key: str | None = 
     remaining = await check_rate_limit(rate_limit_key, tier)
 
     import asyncio
-    asyncio.create_task(_update_last_used(row["key_hash"] or "", api_key or ""))
+    asyncio.create_task(_update_last_used(_row_value(row, "key_hash") or "", api_key or ""))
 
     return {
         "key_id": row["id"],
@@ -185,7 +193,10 @@ async def _validate_key(api_key: str) -> dict:
     if stored_hash:
         if not secrets.compare_digest(stored_hash, api_key_hash):
             raise HTTPException(status_code=401, detail="Invalid API key.")
-    elif not stored_key or not secrets.compare_digest(stored_key, api_key):
+    elif stored_key:
+        if not secrets.compare_digest(stored_key, api_key):
+            raise HTTPException(status_code=401, detail="Invalid API key.")
+    elif _row_has_key(row, "key_hash") or _row_has_key(row, "key"):
         raise HTTPException(status_code=401, detail="Invalid API key.")
 
     return await _auth_from_key_row(row, rate_limit_key=api_key_hash, api_key=api_key)

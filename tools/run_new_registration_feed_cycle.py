@@ -14,6 +14,7 @@ import asyncio
 import os
 import sys
 from pathlib import Path
+from urllib.parse import urlsplit, urlunsplit
 
 import asyncpg
 
@@ -26,13 +27,27 @@ from api.services.new_registration_feed import (
 FEED_CYCLE_LOCK_ID = 802451202
 
 
+def normalize_database_url(url: str) -> str:
+    """Prefer a direct Postgres host for lock-based cron jobs."""
+    parts = urlsplit(url)
+    hostname = parts.hostname or ""
+    if "-pooler." not in hostname:
+        return url
+
+    direct_host = hostname.replace("-pooler.", ".", 1)
+    if not parts.netloc:
+        return url
+    direct_netloc = parts.netloc.replace(hostname, direct_host, 1)
+    return urlunsplit((parts.scheme, direct_netloc, parts.path, parts.query, parts.fragment))
+
+
 def resolve_database_url(cli_value: str | None) -> str | None:
     if cli_value:
-        return cli_value
+        return normalize_database_url(cli_value)
 
     database_url = os.getenv("DATABASE_URL")
     if database_url:
-        return database_url
+        return normalize_database_url(database_url)
 
     env_path = Path(__file__).resolve().parent.parent / ".env"
     if not env_path.exists():
@@ -40,7 +55,7 @@ def resolve_database_url(cli_value: str | None) -> str | None:
 
     for line in env_path.read_text(encoding="utf-8").splitlines():
         if line.startswith("DATABASE_URL="):
-            return line.split("=", 1)[1].strip()
+            return normalize_database_url(line.split("=", 1)[1].strip())
 
     return None
 

@@ -17,12 +17,14 @@ import argparse
 import json
 import os
 import re
+import sys
 import time
 import unicodedata
 from collections import Counter
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlsplit, urlunsplit
 
 import psycopg2
 import psycopg2.extras
@@ -78,13 +80,33 @@ def get_api_key() -> str | None:
 def get_database_url() -> str | None:
     url = os.getenv("DATABASE_URL")
     if url:
-        return url
+        return normalize_database_url(url)
     env_path = Path(".env")
     if env_path.exists():
         for line in env_path.read_text().splitlines():
             if line.startswith("DATABASE_URL="):
-                return line.split("=", 1)[1].strip()
+                return normalize_database_url(line.split("=", 1)[1].strip())
     return None
+
+
+def normalize_database_url(url: str) -> str:
+    """Prefer a direct Postgres host for lock-based cron jobs.
+
+    Neon `-pooler` endpoints use PgBouncer transaction pooling. Session-level
+    advisory locks can be orphaned there across commits, which blocks future
+    incremental runs. For standalone job runners, connect to the direct host
+    instead.
+    """
+    parts = urlsplit(url)
+    hostname = parts.hostname or ""
+    if "-pooler." not in hostname:
+        return url
+
+    direct_host = hostname.replace("-pooler.", ".", 1)
+    if not parts.netloc:
+        return url
+    direct_netloc = parts.netloc.replace(hostname, direct_host, 1)
+    return urlunsplit((parts.scheme, direct_netloc, parts.path, parts.query, parts.fragment))
 
 
 def api_headers(api_key: str | None) -> dict[str, str]:
@@ -257,12 +279,11 @@ def fetch_recent_via_list_scan(
 
     # Step 4: Fetch details for each candidate, filter by registrationDate >= since
     matched_ids: list[str] = []
-    new_stubs_to_cache: list[dict] = []
+    confirmed_stubs_to_cache: list[dict] = []
     stub_by_id = {str(s.get("locationId") or s.get("id", "")): s for s in all_stubs}
 
     for i, loc_id in enumerate(candidate_ids):
         detail = fetch_location_detail(base_url, api_key, loc_id)
-        new_stubs_to_cache.append(stub_by_id.get(loc_id, {"locationId": loc_id}))
         if detail is None:
             continue
         reg_date = parse_any_date(detail.get("registrationDate"))
@@ -275,14 +296,17 @@ def fetch_recent_via_list_scan(
             if reg_date is not None:
                 if hasattr(reg_date, "tzinfo") and reg_date.tzinfo is not None:
                     reg_date = reg_date.replace(tzinfo=None)
+                confirmed_stubs_to_cache.append(stub_by_id.get(loc_id, {"locationId": loc_id}))
                 if reg_date >= since_dt:
                     matched_ids.append(loc_id)
         if (i + 1) % 50 == 0:
             print(f"  Fetched {i + 1}/{len(candidate_ids)} candidate details, {len(matched_ids)} matched so far...")
         time.sleep(sleep)
 
-    # Step 5: Update cache with all newly seen IDs (so next run won't re-process them)
-    _append_to_locations_cache(new_stubs_to_cache)
+    # Step 5: Update cache only for IDs whose detail lookup succeeded and yielded
+    # a usable registration date. This avoids permanently hiding candidates after
+    # a transient fetch error or incomplete upstream payload.
+    _append_to_locations_cache(confirmed_stubs_to_cache)
     print(f"  List scan complete: {len(matched_ids)} new registrations since {since}")
     return matched_ids
 
@@ -584,7 +608,7 @@ def main() -> int:
         print("ERROR: CQC_API_KEY not set.", file=sys.stderr)
         return 1
 
-    database_url = args.database_url or get_database_url()
+    database_url = normalize_database_url(args.database_url) if args.database_url else get_database_url()
     if not database_url and not args.dry_run:
         print("ERROR: DATABASE_URL not set.")
         return 1
