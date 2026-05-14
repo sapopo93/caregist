@@ -70,6 +70,9 @@ cd frontend && npm ci && cd ..
 ## Step 4 — Restart the API
 
 ```bash
+# Preferred: use PM2 (ecosystem.config.cjs already pins --workers 1)
+pm2 restart caregist-api
+
 # If using systemd
 sudo systemctl restart caregist-api
 
@@ -78,8 +81,14 @@ supervisorctl restart caregist-api
 
 # If running manually (dev/staging)
 pkill -f "uvicorn api.main:app"
-nohup uvicorn api.main:app --host 0.0.0.0 --port 8000 --workers 2 > /var/log/caregist/api.log 2>&1 &
+nohup uvicorn api.main:app --host 0.0.0.0 --port 8000 --workers 1 > /var/log/caregist/api.log 2>&1 &
 ```
+
+> **Why `--workers 1`?** Caregist uses in-memory token buckets for rate limiting. Running
+> multiple workers would give each worker its own independent bucket, effectively multiplying
+> the allowed burst rate by the worker count. A single worker eliminates this drift entirely
+> without requiring Redis. See [docs/scaling.md](../docs/scaling.md) for the scaling path
+> when load eventually warrants more than one worker.
 
 Verify API is up:
 ```bash
@@ -166,16 +175,7 @@ Configure these in `/etc/cron.d/caregist`:
 5 * * * * www-data cd /home/caregist/CareGist && /home/caregist/CareGist/.venv/bin/python3 tools/run_new_registration_feed_cycle.py >> /var/log/caregist/feed-cycle.log 2>&1
 
 # Flush queued emails — every 10 minutes
-*/10 * * * * www-data cd /home/caregist/CareGist && /home/caregist/CareGist/.venv/bin/python3 tools/flush_email_queue.py >> /var/log/caregist/email-flush.log 2>&1
-
-# Pipeline watchdog — every 15 minutes with deduplicated email alerts
-*/15 * * * * www-data cd /home/caregist/CareGist && /home/caregist/CareGist/.venv/bin/python3 tools/check_new_registration_pipeline.py --notify >> /var/log/caregist/pipeline-watchdog.log 2>&1
-
-# Monitor alerts — daily at 08:00
-0 8 * * * www-data cd /home/caregist/CareGist && /home/caregist/CareGist/.venv/bin/python3 tools/send_monitor_alerts.py >> /var/log/caregist/monitor-alerts.log 2>&1
-
-# Weekly movers digest — Mondays at 07:00
-0 7 * * 1 www-data cd /home/caregist/CareGist && /home/caregist/CareGist/.venv/bin/python3 tools/send_weekly_movers.py >> /var/log/caregist/weekly-movers.log 2>&1
+*/10 * * * * www-data cd /home/caregist/CareGist && /home/caregist/CareGist/.venv/bin/python3 tools/flush_email_queue.py >> /var/log/caregist/email-queue.log 2>&1
 ```
 
 ---
@@ -184,39 +184,24 @@ Configure these in `/etc/cron.d/caregist`:
 
 The production `.env` must contain all of these. Never commit it to git.
 
-```
-DATABASE_URL=postgresql://...
-API_MASTER_KEY=<secure random>
-SUPPORT_INTERNAL_TOKEN=<secure random>
-CORS_ORIGINS=https://caregist.co.uk
-APP_URL=https://caregist.co.uk
-CQC_API_KEY=<cqc subscription key>
+See `.env.example` for the full list. Key variables:
 
-STRIPE_SECRET_KEY=sk_live_...
-STRIPE_WEBHOOK_SECRET=whsec_...
-STRIPE_PRICE_ALERTS_PRO=price_...
-STRIPE_PRICE_STARTER=price_...
-STRIPE_PRICE_PRO=price_...
-STRIPE_PRICE_BUSINESS=price_...
-STRIPE_PRICE_PRO_SEAT=price_...
-STRIPE_PRICE_PROFILE_ENHANCED=price_...
-STRIPE_PRICE_PROFILE_PREMIUM=price_...
-STRIPE_PRICE_PROFILE_SPONSORED=price_...
+| Variable | Notes |
+|---|---|
+| `DATABASE_URL` | PostgreSQL connection string |
+| `API_MASTER_KEY` | Internal master key — rotate if exposed |
+| `STRIPE_SECRET_KEY` | Live key (`sk_live_...`) in production |
+| `STRIPE_WEBHOOK_SECRET` | From Stripe dashboard webhook config |
+| `RESEND_API_KEY` | Transactional email |
+| `SENTRY_DSN` | Error tracking |
+| `WEBHOOK_SECRET_KEY` | AES-256-GCM 32-byte base64 key |
 
-RESEND_API_KEY=re_...
-ENQUIRY_FROM_EMAIL=noreply@caregist.co.uk
-PIPELINE_ALERT_EMAIL=ops@caregist.co.uk
-SENTRY_DSN=https://...@sentry.io/...
-```
+`REDIS_URL` must **not** be set. Caregist runs single-worker uvicorn with in-memory rate
+limiting. Setting `REDIS_URL` will cause a hard startup failure. See
+[docs/scaling.md](../docs/scaling.md) if you need to reintroduce Redis.
 
 Frontend `.env.local`:
-```
-API_URL=http://localhost:8000
-NEXT_PUBLIC_API_URL=https://caregist.co.uk
-API_KEY=<same as API_MASTER_KEY or a dedicated frontend key>
-```
-
-Do not set `NEXT_PUBLIC_API_KEY` in production. That exposes a privileged backend key to the browser bundle and creates split-brain key rotation risk between client and server config.
+- `API_URL`, `API_KEY`, `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_SUPPORT_PLATFORM_URL`
 
 ---
 
@@ -225,33 +210,8 @@ Do not set `NEXT_PUBLIC_API_KEY` in production. That exposes a privileged backen
 If the deploy fails or causes errors:
 
 ```bash
-# Roll back code
-git log --oneline -10       # Find the last good commit
-git checkout <commit-hash>
-
-# Restart services (steps 4 and 5 above)
-
-# If a migration caused issues — restore from database backup
-# (Neon: restore from branch, RDS: restore from snapshot)
+cd /home/caregist/CareGist
+git log --oneline -10          # find previous good SHA
+git checkout <previous-sha>
+pm2 restart caregist-api
 ```
-
----
-
-## Troubleshooting
-
-**API fails to start — "API_MASTER_KEY is still the default"**
-- `.env` on the server is missing `API_MASTER_KEY` or has the placeholder value
-- Set a secure random value: `python3 -c "import secrets; print(secrets.token_urlsafe(32))"`
-
-**API fails to start — "FATAL: Live Stripe secret key in local development"**
-- The server's DATABASE_URL matches the localhost default
-- Check DATABASE_URL in server `.env` is pointing to production Neon, not localhost
-
-**Frontend 500 errors on load**
-- Check `API_URL` in frontend `.env.local` points to the running API
-- Verify API health: `curl http://localhost:8000/api/v1/health`
-
-**Webhook deliveries failing**
-- Check `webhook_delivery_log` for error details
-- Verify Stripe webhook secret matches the endpoint in the Stripe dashboard
-- Check Stripe Dashboard → Webhooks → endpoint → recent events
