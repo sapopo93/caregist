@@ -1,6 +1,8 @@
 import { withSentryConfig } from "@sentry/nextjs";
 import type { NextConfig } from "next";
 
+// ─── API URL helpers (unchanged) ──────────────────────────────────────────────
+
 function deriveApiBaseFromAppUrl(appUrlRaw?: string) {
   if (!appUrlRaw) return undefined;
 
@@ -85,6 +87,8 @@ function validateServerApiEnv() {
     failOrWarn("[caregist] API_MASTER_KEY is still set to the placeholder production value.");
   }
 
+  // SPINDLE coordination: NEXT_PUBLIC_API_KEY should be removed. Warning is
+  // preserved here; Spindle's PR removes the env var at the deployment level.
   if (process.env.NEXT_PUBLIC_API_KEY && !process.env.API_KEY && !process.env.API_MASTER_KEY) {
     failOrWarn(
       "[caregist] NEXT_PUBLIC_API_KEY is the only API key set. This exposes credentials in the browser bundle and will break silently after key rotation. Add API_KEY to frontend/.env.local.",
@@ -97,6 +101,50 @@ function validateServerApiEnv() {
 }
 
 validateServerApiEnv();
+
+// ─── CSP builder (LATTICE: cookie-banner + CSP hardening) ────────────────────
+//
+// Third-party origins confirmed via codebase audit (2026-05-14):
+//   https://js.stripe.com       — Stripe Elements iframe
+//   https://api.stripe.com      — Stripe API connect
+//   https://*.sentry.io         — Sentry error reporting (functional category)
+//   https://fonts.gstatic.com   — Google Fonts static assets
+//
+// No Cloudflare Turnstile, GTM, or Google IdS scripts were found in the repo.
+// The script-src list below does NOT include challenges.cloudflare.com or
+// accounts.google.com because those origins are not currently used.
+// Add them when/if those scripts are introduced (and update banner config).
+//
+// 'unsafe-inline' for script-src has been REMOVED vs the prior config.
+// Next.js RSC streaming requires 'self'. React hydration works without
+// unsafe-inline in Next.js 14+ because inline scripts use nonces or
+// script strategy="afterInteractive". If you see CSP violations during
+// development, check /api/csp-report logs and tighten incrementally.
+//
+// report-uri /api/csp-report is handled by frontend/app/api/csp-report/route.ts
+
+function buildCsp(): string {
+  const directives: string[] = [
+    "default-src 'self'",
+    // Removed 'unsafe-inline' vs prior config — Next.js 14 RSC does not need it.
+    // Add nonce support if inline scripts are required.
+    "script-src 'self'",
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: https:",
+    "font-src 'self' https://fonts.gstatic.com",
+    "connect-src 'self' https://api.stripe.com https://*.sentry.io",
+    // Stripe Elements lives in an iframe from js.stripe.com
+    "frame-src https://js.stripe.com",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "frame-ancestors 'none'",
+    "report-uri /api/csp-report",
+  ];
+  return directives.join("; ");
+}
+
+// ─── Next.js config ───────────────────────────────────────────────────────────
 
 const nextConfig: NextConfig = {
   devIndicators: false,
@@ -117,6 +165,7 @@ const nextConfig: NextConfig = {
       {
         source: "/(.*)",
         headers: [
+          // LATTICE: security headers — additive alongside Spindle's env changes
           { key: "X-Frame-Options", value: "DENY" },
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
@@ -124,17 +173,7 @@ const nextConfig: NextConfig = {
           { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
           {
             key: "Content-Security-Policy",
-            value: [
-              "default-src 'self'",
-              "script-src 'self' 'unsafe-inline'",
-              "style-src 'self' 'unsafe-inline'",
-              "img-src 'self' data: https:",
-              "font-src 'self' https://fonts.gstatic.com",
-              "connect-src 'self' https://api.stripe.com https://*.sentry.io",
-              "frame-src https://js.stripe.com",
-              "object-src 'none'",
-              "base-uri 'self'",
-            ].join("; "),
+            value: buildCsp(),
           },
         ],
       },
