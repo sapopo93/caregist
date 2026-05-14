@@ -29,6 +29,9 @@ function LoginForm() {
       const res = await fetch("/api/v1/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        // credentials:include so the browser stores the HttpOnly cookie
+        // that the backend sets on the Set-Cookie response header.
+        credentials: "include",
         body: JSON.stringify({ email, password }),
       });
 
@@ -39,11 +42,11 @@ function LoginForm() {
         return;
       }
 
-      localStorage.setItem("caregist_user", JSON.stringify(data.user));
-      localStorage.setItem("caregist_tier", data.tier);
-      window.dispatchEvent(new Event("caregist_auth_change"));
+      // Auth state is now carried entirely by the HttpOnly caregist_session
+      // cookie — no localStorage writes.
 
       const params = new URLSearchParams(window.location.search);
+      const next = params.get("next");
       const upgrade = params.get("upgrade");
       const providerTier = params.get("provider_tier");
 
@@ -65,6 +68,11 @@ function LoginForm() {
         return;
       }
 
+      if (next) {
+        router.push(decodeURIComponent(next));
+        return;
+      }
+
       router.push(upgrade ? `/pricing?highlight=${upgrade}` : "/dashboard");
     } catch {
       setError("Something went wrong. Please try again.");
@@ -74,32 +82,34 @@ function LoginForm() {
   };
 
   return (
-    <div className="max-w-md mx-auto px-6 py-16">
-      <h1 className="text-3xl font-bold text-center mb-8">Log in</h1>
+    <div className="min-h-screen flex items-center justify-center bg-cream">
+      <form
+        onSubmit={handleSubmit}
+        className="bg-white p-8 rounded-2xl shadow-sm border border-stone/30 w-full max-w-sm space-y-5"
+      >
+        <h1 className="text-2xl font-semibold text-graphite">Log in</h1>
 
-      {showResetBanner && (
-        <div className="bg-cream border border-green-500 rounded-lg p-3 mb-4 text-sm text-green-700">
-          Password reset successful. You can now log in with your new password.
-        </div>
-      )}
+        {showResetBanner && (
+          <p className="text-sm text-green-700 bg-green-50 rounded-lg px-4 py-2">
+            Password reset successful. You can now log in with your new password.
+          </p>
+        )}
 
-      {showSessionExpiredBanner && (
-        <div className="bg-cream border border-clay rounded-lg p-3 mb-4 text-sm text-bark">
-          Your session expired. Log in again to continue.
-        </div>
-      )}
+        {showSessionExpiredBanner && (
+          <p className="text-sm text-amber-700 bg-amber-50 rounded-lg px-4 py-2">
+            Your session expired. Log in again to continue.
+          </p>
+        )}
 
-      {error && (
-        <div className="bg-cream border border-alert rounded-lg p-3 mb-4 text-sm text-alert">
-          {error}
-        </div>
-      )}
+        {error && (
+          <p className="text-sm text-red-600 bg-red-50 rounded-lg px-4 py-2">{error}</p>
+        )}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-bark mb-1">Email</label>
+          <label className="block text-sm font-medium text-graphite mb-1">
+            Email
+          </label>
           <input
-            id="email"
             type="email"
             required
             value={email}
@@ -107,32 +117,38 @@ function LoginForm() {
             className="w-full px-4 py-3 rounded-lg border border-stone bg-cream focus:ring-2 focus:ring-clay focus:outline-none"
           />
         </div>
+
         <div>
-          <label htmlFor="password" className="block text-sm font-medium text-bark mb-1">Password</label>
+          <label className="block text-sm font-medium text-graphite mb-1">
+            Password
+          </label>
           <input
-            id="password"
             type="password"
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="w-full px-4 py-3 rounded-lg border border-stone bg-cream focus:ring-2 focus:ring-clay focus:outline-none"
           />
-          <div className="text-right mt-1">
-            <Link href="/forgot-password" className="text-sm text-clay underline">Forgot password?</Link>
-          </div>
+          <Link href="/forgot-password" className="text-xs text-clay hover:underline mt-1 inline-block">
+            Forgot password?
+          </Link>
         </div>
+
         <button
           type="submit"
           disabled={loading}
-          className="w-full py-3 bg-clay text-white rounded-lg font-medium hover:bg-bark transition-colors disabled:opacity-50"
+          className="w-full bg-clay text-white py-3 rounded-lg font-medium hover:bg-clay/90 transition disabled:opacity-50"
         >
           {loading ? "Logging in..." : "Log In"}
         </button>
-      </form>
 
-      <p className="text-center text-sm text-dusk mt-6">
-        Don&apos;t have an account? <Link href="/signup" className="text-clay underline">Sign up</Link>
-      </p>
+        <p className="text-sm text-center text-stone">
+          Don&apos;t have an account?{" "}
+          <Link href="/signup" className="text-clay hover:underline">
+            Sign up
+          </Link>
+        </p>
+      </form>
     </div>
   );
 }
