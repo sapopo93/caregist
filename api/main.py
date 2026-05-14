@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import os
 from contextlib import asynccontextmanager
 
 try:
@@ -45,8 +46,78 @@ async def _email_drain_loop() -> None:
             _log.warning("Email drain loop error: %s", exc)
 
 
+def _verify_webhook_encryption_at_boot() -> None:
+    """Fail-fast if WEBHOOK_SECRET_KEY is missing or plaintext webhook secrets exist.
+
+    This check runs in production only; dev/test/CI can run without prod-grade
+    encryption.  Additive alongside Cinder's REDIS_URL check — does not replace it.
+    """
+    import logging as _logging
+    _log = _logging.getLogger("caregist.startup")
+
+    env = os.environ.get("ENV", os.environ.get("NODE_ENV", "dev")).lower()
+    if env not in ("production", "prod"):
+        return
+
+    if not os.environ.get("WEBHOOK_SECRET_KEY"):
+        raise RuntimeError(
+            "WEBHOOK_SECRET_KEY is required in production. "
+            "Generate with `openssl rand -base64 32` and set in the production env file. "
+            "See PR description for rotation procedure."
+        )
+
+    # DB-level check: signing_secret_encrypted column must exist and all rows
+    # that have a plaintext secret must also have the encrypted version populated.
+    try:
+        import psycopg2
+        conn = psycopg2.connect(os.environ["DATABASE_URL"])
+        conn.autocommit = True
+        try:
+            with conn.cursor() as cur:
+                # Verify migration 030 has run
+                cur.execute(
+                    "SELECT EXISTS ("
+                    "  SELECT 1 FROM information_schema.columns"
+                    "  WHERE table_name = 'webhook_subscriptions'"
+                    "    AND column_name = 'signing_secret_encrypted'"
+                    ");"
+                )
+                col_exists = cur.fetchone()[0]
+                if not col_exists:
+                    raise RuntimeError(
+                        "webhook_subscriptions.signing_secret_encrypted column is missing. "
+                        "Run migration 030 before starting the API: "
+                        "psql $DATABASE_URL -f db/migrations/030_encrypt_webhook_signing_secrets.sql"
+                    )
+
+                cur.execute(
+                    "SELECT count(*) FROM webhook_subscriptions "
+                    "WHERE secret IS NOT NULL "
+                    "  AND (signing_secret_encrypted IS NULL "
+                    "       OR length(signing_secret_encrypted) = 0);"
+                )
+                plaintext_count = cur.fetchone()[0]
+                if plaintext_count > 0:
+                    raise RuntimeError(
+                        f"{plaintext_count} webhook subscription(s) still have plaintext signing "
+                        "secrets with no encrypted counterpart. "
+                        "Run migration 030 before starting the API: "
+                        "WEBHOOK_SECRET_KEY=<key> psql $DATABASE_URL "
+                        "-f db/migrations/030_encrypt_webhook_signing_secrets.sql"
+                    )
+        finally:
+            conn.close()
+    except RuntimeError:
+        raise
+    except Exception as e:
+        raise RuntimeError(f"Failed to verify webhook encryption state: {e}") from e
+
+    _log.info("WEBHOOK encryption verified: all webhook signing secrets are encrypted.")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    _verify_webhook_encryption_at_boot()
     await init_pool()
     billing.init_stripe()
     drain_task = asyncio.create_task(_email_drain_loop())
@@ -121,23 +192,12 @@ app.include_router(groups.router)
 app.include_router(provider_profile.router)
 app.include_router(providers.router)
 app.include_router(feed.router)
-app.include_router(regions.router)
-app.include_router(subscribe.router)
-app.include_router(comparisons.router)
-app.include_router(api_applications.router)
-app.include_router(public_tools.router)
 app.include_router(region_stats.router)
-app.include_router(city_pages.router)
+app.include_router(regions.router)
 app.include_router(sitemaps.router)
-app.include_router(webhooks.router, prefix="/api/v1")
-
-
-if __name__ == "__main__":
-    import uvicorn
-
-    uvicorn.run(
-        "api.main:app",
-        host=settings.api_host,
-        port=settings.api_port,
-        reload=False,
-    )
+app.include_router(subscribe.router)
+app.include_router(api_applications.router)
+app.include_router(comparisons.router)
+app.include_router(city_pages.router)
+app.include_router(public_tools.router)
+app.include_router(webhooks.router)
