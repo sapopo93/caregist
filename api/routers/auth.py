@@ -111,7 +111,7 @@ class RegisterRequest(BaseModel):
 
 
 class LoginRequest(BaseModel):
-    email: EmailStr
+    email: str = Field(..., min_length=1, max_length=255)
     password: str
 
 
@@ -148,6 +148,40 @@ async def _get_key_capacity(conn, user_id: int, tier: str | None = None) -> tupl
     subscription_max = int(row["max_users"] or 1)
     tier_max = get_max_users(tier or "free")
     return active_keys, max(subscription_max, tier_max)
+
+
+def _login_identifier(value: str) -> str:
+    return value.strip().casefold()
+
+
+def _row_value(row, key: str, default=None):
+    try:
+        return row[key]
+    except (KeyError, IndexError, TypeError):
+        return default
+
+
+async def _fetch_user_for_login(conn, identifier: str, columns: str = "id, email, name, password_hash, is_verified"):
+    """Fetch a user by email or an unambiguous email local-part username."""
+    if "@" in identifier:
+        return await conn.fetchrow(
+            f"SELECT {columns} FROM users WHERE lower(email) = $1",
+            identifier,
+        )
+
+    rows = await conn.fetch(
+        f"""
+        SELECT {columns}
+        FROM users
+        WHERE lower(split_part(email, '@', 1)) = $1
+        ORDER BY created_at ASC
+        LIMIT 2
+        """,
+        identifier,
+    )
+    if len(rows) != 1:
+        return None
+    return rows[0]
 
 
 @router.post("/register")
@@ -238,19 +272,17 @@ async def _create_session(conn, *, user_id: int, api_key_id: int, response: Resp
 @router.post("/login")
 async def login(req: LoginRequest, response: Response, _ip=Depends(check_ip_rate_limit)) -> dict:
     """Login and retrieve API key."""
-    _check_failed_attempts(req.email, "login")
+    identifier = _login_identifier(req.email)
+    _check_failed_attempts(identifier, "login")
     async with get_connection() as conn:
-        user = await conn.fetchrow(
-            "SELECT id, email, name, password_hash, is_verified FROM users WHERE email = $1",
-            req.email,
-        )
+        user = await _fetch_user_for_login(conn, identifier)
 
     if not user:
         if bcrypt:
             bcrypt.checkpw(req.password.encode(), _DUMMY_HASH.encode())
-        await _raise_auth_failure(req.email, "login")
+        await _raise_auth_failure(identifier, "login")
     if not _verify_password(req.password, user["password_hash"]):
-        await _raise_auth_failure(req.email, "login")
+        await _raise_auth_failure(identifier, "login")
     if not user["is_verified"]:
         await write_audit_log(
             action="login",
@@ -260,7 +292,7 @@ async def login(req: LoginRequest, response: Response, _ip=Depends(check_ip_rate
             target_id=user["id"],
         )
         raise HTTPException(status_code=403, detail="Verify your email before logging in.")
-    _reset_failed_attempts(req.email, "login")
+    _reset_failed_attempts(identifier, "login")
 
     # Upgrade legacy SHA-256 hash to bcrypt on successful login
     await _rehash_if_legacy(user["id"], req.password, user["password_hash"])
@@ -328,27 +360,26 @@ async def reveal_key(req: LoginRequest, _ip=Depends(check_ip_rate_limit)) -> dic
     without user interaction. The key is shown once in the response body — callers
     should store it securely and never embed it in client-side code.
     """
-    _check_failed_attempts(req.email, "key-reveal")
+    identifier = _login_identifier(req.email)
+    _check_failed_attempts(identifier, "key-reveal")
     async with get_connection() as conn:
-        user = await conn.fetchrow(
-            "SELECT id, password_hash, is_verified FROM users WHERE email = $1",
-            req.email,
-        )
+        user = await _fetch_user_for_login(conn, identifier, "id, email, password_hash, is_verified")
 
     if not user or not _verify_password(req.password, user["password_hash"]):
         if bcrypt:
             bcrypt.checkpw(req.password.encode(), _DUMMY_HASH.encode())
-        await _raise_auth_failure(req.email, "key-reveal", "api_key.reveal")
+        await _raise_auth_failure(identifier, "key-reveal", "api_key.reveal")
     if not user["is_verified"]:
+        audit_email = _row_value(user, "email", identifier)
         await write_audit_log(
             action="api_key.reveal",
             outcome="failure",
-            actor={"type": "user", "user_id": user["id"], "email": req.email},
+            actor={"type": "user", "user_id": user["id"], "email": audit_email},
             target_type="user",
             target_id=user["id"],
         )
         raise HTTPException(status_code=403, detail="Verify your email before revealing an API key.")
-    _reset_failed_attempts(req.email, "key-reveal")
+    _reset_failed_attempts(identifier, "key-reveal")
 
     async with get_connection() as conn:
         key_row = await conn.fetchrow(
@@ -357,10 +388,11 @@ async def reveal_key(req: LoginRequest, _ip=Depends(check_ip_rate_limit)) -> dic
         )
 
         if not key_row:
+            audit_email = _row_value(user, "email", identifier)
             await write_audit_log(
                 action="api_key.reveal",
                 outcome="failure",
-                actor={"type": "user", "user_id": user["id"], "email": req.email},
+                actor={"type": "user", "user_id": user["id"], "email": audit_email},
                 target_type="user",
                 target_id=user["id"],
                 conn=conn,
@@ -368,10 +400,11 @@ async def reveal_key(req: LoginRequest, _ip=Depends(check_ip_rate_limit)) -> dic
             raise HTTPException(status_code=404, detail="No active API key found.")
 
         if not key_row["key"]:
+            audit_email = _row_value(user, "email", identifier)
             await write_audit_log(
                 action="api_key.reveal",
                 outcome="blocked",
-                actor={"type": "user", "user_id": user["id"], "email": req.email},
+                actor={"type": "user", "user_id": user["id"], "email": audit_email},
                 target_type="api_key",
                 metadata={"key_prefix": key_row["key_prefix"]},
                 conn=conn,
@@ -384,10 +417,11 @@ async def reveal_key(req: LoginRequest, _ip=Depends(check_ip_rate_limit)) -> dic
                 "message": "This key cannot be revealed. Rotate it to generate a new API key shown once.",
             }
 
+        audit_email = _row_value(user, "email", identifier)
         await write_audit_log(
             action="api_key.reveal",
             outcome="success",
-            actor={"type": "user", "user_id": user["id"], "email": req.email},
+            actor={"type": "user", "user_id": user["id"], "email": audit_email},
             target_type="api_key",
             conn=conn,
         )
@@ -397,17 +431,15 @@ async def reveal_key(req: LoginRequest, _ip=Depends(check_ip_rate_limit)) -> dic
 @router.post("/rotate-key")
 async def rotate_key(req: LoginRequest, _ip=Depends(check_ip_rate_limit)) -> dict:
     """Generate a new API key (invalidates old one). Requires password re-verification."""
-    _check_failed_attempts(req.email, "key-rotate")
+    identifier = _login_identifier(req.email)
+    _check_failed_attempts(identifier, "key-rotate")
     async with get_connection() as conn:
-        user = await conn.fetchrow(
-            "SELECT id, email, name, password_hash, is_verified FROM users WHERE email = $1",
-            req.email,
-        )
+        user = await _fetch_user_for_login(conn, identifier)
 
     if not user or not _verify_password(req.password, user["password_hash"]):
         if bcrypt:
             bcrypt.checkpw(req.password.encode(), _DUMMY_HASH.encode())
-        await _raise_auth_failure(req.email, "key-rotate", "api_key.rotate")
+        await _raise_auth_failure(identifier, "key-rotate", "api_key.rotate")
     if not user["is_verified"]:
         await write_audit_log(
             action="api_key.rotate",
@@ -417,7 +449,7 @@ async def rotate_key(req: LoginRequest, _ip=Depends(check_ip_rate_limit)) -> dic
             target_id=user["id"],
         )
         raise HTTPException(status_code=403, detail="Verify your email before rotating an API key.")
-    _reset_failed_attempts(req.email, "key-rotate")
+    _reset_failed_attempts(identifier, "key-rotate")
 
     new_key = f"cg_{secrets.token_urlsafe(32)}"
     new_key_hash = hash_api_key(new_key)

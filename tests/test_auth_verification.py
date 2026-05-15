@@ -214,6 +214,36 @@ async def test_login_sets_revocable_session_and_logout_revokes_it():
 
 
 @pytest.mark.asyncio
+async def test_login_accepts_unambiguous_username_identifier():
+    user = {
+        "id": 1,
+        "email": "alice@example.com",
+        "name": "Alice",
+        "password_hash": "$2b$already-bcrypt",
+        "is_verified": True,
+    }
+    conn = AsyncMock()
+    conn.fetch = AsyncMock(return_value=[user])
+    conn.fetchrow = AsyncMock(
+        return_value={"id": 7, "key": None, "tier": "free", "rate_limit": 2}
+    )
+    conn.execute = AsyncMock()
+
+    @asynccontextmanager
+    async def mock_get_connection():
+        yield conn
+
+    response = FastAPIResponse()
+    with patch("api.routers.auth.get_connection", mock_get_connection), \
+         patch("api.routers.auth._verify_password", return_value=True):
+        login_result = await login(LoginRequest(email="alice", password="SuperSecret123"), response)
+
+    assert login_result["user"]["email"] == "alice@example.com"
+    assert login_result["tier"] == "free"
+    assert "caregist_session=" in response.headers["set-cookie"]
+
+
+@pytest.mark.asyncio
 async def test_reveal_key_blocks_unverified_user():
     conn = AsyncMock()
     conn.fetchrow = AsyncMock(
