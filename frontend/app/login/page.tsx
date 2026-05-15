@@ -97,10 +97,10 @@ function LoginForm() {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-bark mb-1">Email or username</label>
+          <label htmlFor="email" className="block text-sm font-medium text-bark mb-1">Email</label>
           <input
             id="email"
-            type="text"
+            type="email"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
