@@ -1,0 +1,18 @@
+[Unit]
+Description=CareGist Daily Monitor Alerts
+Documentation=https://github.com/sapopo93/caregist
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=caregist
+WorkingDirectory=/home/caregist/CareGist
+ExecStart=/home/caregist/CareGist/.venv/bin/python /home/caregist/CareGist/tools/send_monitor_alerts.py
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=caregist-daily-alerts
+EnvironmentFile=/home/caregist/CareGist/.env
+
+[Install]
+WantedBy=multi-user.target

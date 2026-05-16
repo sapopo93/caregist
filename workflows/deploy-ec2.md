@@ -154,29 +154,56 @@ python3 tools/flush_email_queue.py
 
 ---
 
-## Scheduled Jobs on EC2
+## Scheduled Jobs on EC2 — systemd Timers (preferred)
 
-Configure these in `/etc/cron.d/caregist`:
+Scheduled jobs are now managed via **systemd timers** for reliable log capture via
+`journald`. Unit files live in `deploy/systemd/`. Install them once per host:
 
-```cron
-# Incremental CQC refresh — every 30 minutes
-*/30 * * * * www-data cd /home/caregist/CareGist && /home/caregist/CareGist/.venv/bin/python3 incremental_update.py >> /var/log/caregist/incremental-update.log 2>&1
-
-# Feed cycle — hourly
-5 * * * * www-data cd /home/caregist/CareGist && /home/caregist/CareGist/.venv/bin/python3 tools/run_new_registration_feed_cycle.py >> /var/log/caregist/feed-cycle.log 2>&1
-
-# Flush queued emails — every 10 minutes
-*/10 * * * * www-data cd /home/caregist/CareGist && /home/caregist/CareGist/.venv/bin/python3 tools/flush_email_queue.py >> /var/log/caregist/email-flush.log 2>&1
-
-# Pipeline watchdog — every 15 minutes with deduplicated email alerts
-*/15 * * * * www-data cd /home/caregist/CareGist && /home/caregist/CareGist/.venv/bin/python3 tools/check_new_registration_pipeline.py --notify >> /var/log/caregist/pipeline-watchdog.log 2>&1
-
-# Monitor alerts — daily at 08:00
-0 8 * * * www-data cd /home/caregist/CareGist && /home/caregist/CareGist/.venv/bin/python3 tools/send_monitor_alerts.py >> /var/log/caregist/monitor-alerts.log 2>&1
-
-# Weekly movers digest — Mondays at 07:00
-0 7 * * 1 www-data cd /home/caregist/CareGist && /home/caregist/CareGist/.venv/bin/python3 tools/send_weekly_movers.py >> /var/log/caregist/weekly-movers.log 2>&1
+```bash
+bash scripts/install-systemd-units.sh
 ```
+
+This copies all `.service` and `.timer` files to `/etc/systemd/system/`, reloads the
+daemon, and enables + starts all timers.
+
+### Timer inventory
+
+| Timer unit | Schedule | Replaces cron |
+|---|---|---|
+| `caregist-incremental-update.timer` | every 30 min | `*/30 * * * *` |
+| `caregist-feed-cycle.timer` | :05 past every hour | `5 * * * *` |
+| `caregist-flush-email-queue.timer` | every 10 min | `*/10 * * * *` |
+| `caregist-pipeline-watchdog.timer` | every 15 min | `*/15 * * * *` |
+| `caregist-daily-alerts.timer` | 08:00 daily | `0 8 * * *` |
+| `caregist-weekly-movers.timer` | 07:00 Mondays | `0 7 * * 1` |
+
+### Useful commands
+
+```bash
+# View all CareGist timers and their next trigger
+systemctl list-timers 'caregist-*'
+
+# Tail logs for a specific job
+journalctl -u caregist-incremental-update -f
+journalctl -u caregist-feed-cycle -f
+journalctl -u caregist-pipeline-watchdog -f
+
+# Manually trigger a one-shot run
+sudo systemctl start caregist-incremental-update.service
+```
+
+> **Note:** The legacy `/etc/cron.d/caregist` file is preserved until you have confirmed
+> the timers are running correctly. Once stable, disable it:
+> ```bash
+> sudo mv /etc/cron.d/caregist /etc/cron.d/caregist.disabled
+> ```
+
+---
+
+## Prometheus /metrics
+
+The API exposes a Prometheus-compatible metrics endpoint at `/metrics`.
+See [`workflows/metrics.md`](metrics.md) for scrape config and alerting rules.
 
 ---
 
@@ -226,7 +253,7 @@ If the deploy fails or causes errors:
 
 ```bash
 # Roll back code
-git log --oneline -10       # Find the last good commit
+git log --oneline -10        # Find the last good commit
 git checkout <commit-hash>
 
 # Restart services (steps 4 and 5 above)

@@ -1,0 +1,13 @@
+[Unit]
+Description=CareGist Pipeline Watchdog — every 15 minutes
+Documentation=https://github.com/sapopo93/caregist
+# Replaces: */15 * * * * in /etc/cron.d/caregist
+
+[Timer]
+OnCalendar=*:0/15
+Persistent=true
+AccuracySec=1min
+RandomizedDelaySec=30
+
+[Install]
+WantedBy=timers.target

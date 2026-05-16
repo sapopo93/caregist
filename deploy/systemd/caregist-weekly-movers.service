@@ -1,0 +1,18 @@
+[Unit]
+Description=CareGist Weekly Movers Digest
+Documentation=https://github.com/sapopo93/caregist
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=caregist
+WorkingDirectory=/home/caregist/CareGist
+ExecStart=/home/caregist/CareGist/.venv/bin/python /home/caregist/CareGist/tools/send_weekly_movers.py
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=caregist-weekly-movers
+EnvironmentFile=/home/caregist/CareGist/.env
+
+[Install]
+WantedBy=multi-user.target
