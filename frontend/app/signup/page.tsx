@@ -48,6 +48,10 @@ function SignupForm() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
+  // UK GDPR Art 7: marketing consent is a SEPARATE, OPTIONAL, default-off checkbox.
+  // It must never be bundled with ToS acceptance.
+  const [marketingConsent, setMarketingConsent] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -62,6 +66,12 @@ function SignupForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+
+    if (!agreedToTerms) {
+      setError("You must accept the Terms of Service to create an account.");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -70,7 +80,7 @@ function SignupForm() {
       const res = await fetch("/api/v1/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, name, password }),
+        body: JSON.stringify({ email, name, password, marketing_consent: marketingConsent }),
       });
 
       const data = await res.json();
@@ -153,6 +163,48 @@ function SignupForm() {
             className="w-full px-4 py-3 rounded-lg border border-stone bg-cream focus:ring-2 focus:ring-clay focus:outline-none"
           />
         </div>
+
+        {/* ToS acceptance — required to create an account */}
+        <div className="flex items-start gap-3 pt-1">
+          <input
+            id="terms"
+            type="checkbox"
+            required
+            checked={agreedToTerms}
+            onChange={(e) => setAgreedToTerms(e.target.checked)}
+            className="mt-0.5 h-4 w-4 rounded border-stone text-clay focus:ring-clay"
+          />
+          <label htmlFor="terms" className="text-sm text-bark leading-snug">
+            I have read and agree to the{" "}
+            <Link href="/terms" className="text-clay underline" target="_blank" rel="noopener noreferrer">
+              Terms of Service
+            </Link>{" "}
+            and{" "}
+            <Link href="/privacy" className="text-clay underline" target="_blank" rel="noopener noreferrer">
+              Privacy Policy
+            </Link>
+            . (Required)
+          </label>
+        </div>
+
+        {/*
+          UK GDPR Art 7 — marketing consent MUST be a SEPARATE, optional, default-OFF checkbox.
+          It must not be pre-ticked, and accepting ToS must never imply marketing consent.
+          The label wording must be clear about what the user is opting into.
+        */}
+        <div className="flex items-start gap-3">
+          <input
+            id="marketing_consent"
+            type="checkbox"
+            checked={marketingConsent}
+            onChange={(e) => setMarketingConsent(e.target.checked)}
+            className="mt-0.5 h-4 w-4 rounded border-stone text-clay focus:ring-clay"
+          />
+          <label htmlFor="marketing_consent" className="text-sm text-dusk leading-snug">
+            I&apos;d like to receive product updates and occasional offers from Caregist. (Optional)
+          </label>
+        </div>
+
         <button
           type="submit"
           disabled={loading}
