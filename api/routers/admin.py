@@ -37,7 +37,6 @@ from api.queries.reviews import (
 logger = logging.getLogger("caregist.admin")
 router = APIRouter(prefix="/api/v1/admin", tags=["admin"])
 
-
 async def _audit(conn, *, action: str, entity_type: str, entity_id: int, actor: str, **meta) -> None:
     """Insert one row into admin_audit_log. Never raises — audit failures must not block the action."""
     try:
@@ -64,16 +63,13 @@ async def _audit(conn, *, action: str, entity_type: str, entity_id: int, actor: 
     except Exception as exc:
         logger.warning("Audit log insert failed (action=%s entity=%s/%s): %s", action, entity_type, entity_id, exc)
 
-
 async def require_admin(auth: dict = Depends(validate_api_key)) -> dict:
     """Only allow master key (admin tier) access."""
     if auth.get("tier") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required.")
     return auth
 
-
 # -- Dashboard --
-
 
 @router.get("/stats")
 async def dashboard_stats(_auth: dict = Depends(require_admin)) -> dict:
@@ -97,9 +93,7 @@ async def dashboard_stats(_auth: dict = Depends(require_admin)) -> dict:
         "service_growth": [dict(r) for r in service_growth],
     }
 
-
 # -- Claims moderation --
-
 
 @router.get("/claims")
 async def list_claims(
@@ -125,11 +119,9 @@ async def list_claims(
         "meta": {"total": total, "page": page, "per_page": per_page, "pages": pages},
     }
 
-
 class ClaimAction(BaseModel):
     status: str = Field(..., pattern="^(approved|rejected)$")
     admin_notes: str | None = Field(None, max_length=2000)
-
 
 @router.patch("/claims/{claim_id}")
 async def moderate_claim(
@@ -150,26 +142,24 @@ async def moderate_claim(
                 await conn.execute(MARK_PROVIDER_CLAIMED, row["provider_id"])
             elif req.status == "rejected":
                 await conn.execute(MARK_PROVIDER_UNCLAIMED, row["provider_id"])
+
             await _audit(
                 conn,
                 action=f"claim.{req.status}",
                 entity_type="claim",
                 entity_id=claim_id,
-                actor=auth.get("name", "admin"),
-                provider_id=str(row["provider_id"]),
+                actor=auth["name"],
                 notes=req.admin_notes,
             )
     except HTTPException:
         raise
     except Exception as exc:
-        logger.error("Moderate claim %d failed: %s", claim_id, exc)
-        raise HTTPException(status_code=503, detail="Failed to update claim.")
+        logger.error("Moderate claim failed: %s", exc)
+        raise HTTPException(status_code=503, detail="Failed to moderate claim.")
 
     return {"data": dict(row), "message": f"Claim {req.status}."}
 
-
 # -- Reviews moderation --
-
 
 @router.get("/reviews")
 async def list_reviews_admin(
@@ -195,11 +185,9 @@ async def list_reviews_admin(
         "meta": {"total": total, "page": page, "per_page": per_page, "pages": pages},
     }
 
-
 class ReviewAction(BaseModel):
     status: str = Field(..., pattern="^(approved|rejected)$")
     admin_notes: str | None = Field(None, max_length=2000)
-
 
 @router.patch("/reviews/{review_id}")
 async def moderate_review(
@@ -210,31 +198,29 @@ async def moderate_review(
     """Approve or reject a review."""
     try:
         async with get_connection() as conn:
-            row = await conn.fetchrow(MODERATE_REVIEW, review_id, req.status, req.admin_notes)
+            row = await conn.fetchrow(
+                MODERATE_REVIEW, review_id, req.status, req.admin_notes
+            )
             if not row:
                 raise HTTPException(status_code=404, detail="Review not found.")
-
             await conn.execute(UPDATE_PROVIDER_REVIEW_STATS, row["provider_id"])
             await _audit(
                 conn,
                 action=f"review.{req.status}",
                 entity_type="review",
                 entity_id=review_id,
-                actor=auth.get("name", "admin"),
-                provider_id=str(row["provider_id"]),
+                actor=auth["name"],
                 notes=req.admin_notes,
             )
     except HTTPException:
         raise
     except Exception as exc:
-        logger.error("Moderate review %d failed: %s", review_id, exc)
-        raise HTTPException(status_code=503, detail="Failed to update review.")
+        logger.error("Moderate review failed: %s", exc)
+        raise HTTPException(status_code=503, detail="Failed to moderate review.")
 
     return {"data": dict(row), "message": f"Review {req.status}."}
 
-
 # -- Enquiries management --
-
 
 @router.get("/enquiries")
 async def list_enquiries(
@@ -261,10 +247,8 @@ async def list_enquiries(
         "meta": {"total": total, "page": page, "per_page": per_page, "pages": pages},
     }
 
-
 class EnquiryAction(BaseModel):
     status: str = Field(..., pattern="^(read|responded|converted)$")
-
 
 @router.patch("/enquiries/{enquiry_id}")
 async def update_enquiry(
@@ -275,7 +259,9 @@ async def update_enquiry(
     """Update enquiry status."""
     try:
         async with get_connection() as conn:
-            row = await conn.fetchrow(UPDATE_ENQUIRY_STATUS, enquiry_id, req.status)
+            row = await conn.fetchrow(
+                UPDATE_ENQUIRY_STATUS, enquiry_id, req.status
+            )
             if not row:
                 raise HTTPException(status_code=404, detail="Enquiry not found.")
             await _audit(
@@ -283,19 +269,17 @@ async def update_enquiry(
                 action=f"enquiry.{req.status}",
                 entity_type="enquiry",
                 entity_id=enquiry_id,
-                actor=auth.get("name", "admin"),
+                actor=auth["name"],
             )
     except HTTPException:
         raise
     except Exception as exc:
-        logger.error("Update enquiry %d failed: %s", enquiry_id, exc)
+        logger.error("Update enquiry failed: %s", exc)
         raise HTTPException(status_code=503, detail="Failed to update enquiry.")
 
-    return {"data": dict(row), "message": f"Enquiry marked as {req.status}."}
-
+    return {"data": dict(row), "message": f"Enquiry updated to {req.status}."}
 
 # -- Audit log --
-
 
 @router.get("/audit-log")
 async def list_audit_log(
@@ -329,13 +313,104 @@ async def list_audit_log(
                 entity_type, actor,
             )
     except Exception as exc:
-        logger.error("Audit log query failed: %s", exc)
+        logger.error("List audit log failed: %s", exc)
         raise HTTPException(status_code=503, detail="Failed to load audit log.")
 
+    pages = max(1, (total + per_page - 1) // per_page)
     return {
-        "data": [
-            {**dict(r), "created_at": r["created_at"].isoformat()}
-            for r in rows
-        ],
-        "meta": {"total": total, "page": page, "per_page": per_page},
+        "data": [dict(r) for r in rows],
+        "meta": {"total": total, "page": page, "per_page": per_page, "pages": pages},
     }
+
+# -- User erasure (admin override) --
+
+@router.post("/users/{user_id}/erase")
+async def admin_erase_user(
+    user_id: int,
+    auth: dict = Depends(require_admin),
+) -> dict:
+    """Admin-scope hard erasure override (Art 17 UK DPA).
+
+    Soft-deletes the user account, anonymises their reviews (reviewer_name ->
+    'Former user', reviewer_email -> NULL), revokes sessions, deactivates API
+    keys, and cancels any Stripe subscription.  Does NOT physically delete the
+    users row — audit trail and referential integrity are preserved.
+
+    Audits ACCOUNT_ERASED_BY_ADMIN.
+    """
+    async with get_connection() as conn:
+        user = await conn.fetchrow(
+            "SELECT id, email, name, stripe_customer_id "
+            "FROM users WHERE id = $1 AND deleted_at IS NULL",
+            user_id,
+        )
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found or already erased.")
+
+        async with conn.transaction():
+            await conn.execute(
+                """
+                UPDATE users
+                SET deleted_at = NOW(),
+                    deletion_reason = 'admin_erase',
+                    updated_at = NOW()
+                WHERE id = $1
+                """,
+                user_id,
+            )
+
+            await conn.execute(
+                """
+                UPDATE reviews
+                SET reviewer_name  = 'Former user',
+                    reviewer_email = NULL
+                WHERE reviewer_email = $1
+                """,
+                user["email"],
+            )
+
+            try:
+                await conn.execute(
+                    "UPDATE user_sessions SET revoked_at = NOW() "
+                    "WHERE user_id = $1 AND revoked_at IS NULL",
+                    user_id,
+                )
+            except Exception as sess_exc:  # noqa: BLE001
+                logger.warning("Admin erase: session revocation skipped: %s", sess_exc)
+
+            await conn.execute(
+                "UPDATE api_keys SET is_active = false WHERE user_id = $1",
+                user_id,
+            )
+
+            await write_audit_log(
+                action="ACCOUNT_ERASED_BY_ADMIN",
+                outcome="success",
+                actor={"type": "admin", "name": auth.get("name")},
+                target_type="user",
+                target_id=user_id,
+                metadata={"erased_email_hash": hashlib.sha256(user["email"].encode()).hexdigest()},
+                conn=conn,
+            )
+
+    # Stripe (best-effort)
+    stripe_customer_id = user["stripe_customer_id"]
+    if stripe_customer_id and settings.stripe_secret_key:
+        try:
+            import stripe as _stripe
+            _stripe.api_key = settings.stripe_secret_key
+            subs = _stripe.Subscription.list(
+                customer=stripe_customer_id, status="active", limit=10
+            )
+            for sub in subs.auto_paging_iter():
+                _stripe.Subscription.cancel(sub["id"])
+        except Exception as stripe_exc:  # noqa: BLE001
+            logger.warning("Admin erase Stripe cancellation failed for user %s: %s", user_id, stripe_exc)
+
+    return {
+        "message": f"User {user_id} erased. Reviews redacted to 'Former user'.",
+        "erased_user_id": user_id,
+    }
+
+
+import hashlib  # noqa: E402 — placed here to avoid circular import at module level
