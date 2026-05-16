@@ -1,6 +1,6 @@
 # Data Retention Policy — CareGist
 
-**Data controller:** CareGist Ltd
+**Data controller:** H-Kay Limited
 **Last reviewed:** 2026-05-14
 **Review frequency:** Annual (or on material change to processing activities)
 
@@ -53,7 +53,7 @@ This policy sets out the minimum and maximum retention periods for each category
 
 | Role | Responsibility |
 |------|---------------|
-| Data controller (CareGist Ltd director) | Approve and sign off this policy; ensure resources for implementation |
+| Data controller (H-Kay Limited director) | Approve and sign off this policy; ensure resources for implementation |
 | Engineering lead | Implement and maintain deletion jobs, audit trails, and backup schedules |
 | All staff | Report any suspected retention failure to `privacy@caregist.co.uk` within 24 hours of discovery |
 

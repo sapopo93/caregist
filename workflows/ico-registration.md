@@ -7,6 +7,14 @@ Registration with the Information Commissioner's Office (ICO) is a legal require
 of the Data Protection (Charges and Information) Regulations 2018. Operating without registration
 is a civil offence subject to a fine of up to £4,350.
 
+
+> **Note:** H-Kay Limited is the data controller for ALL THREE products owned by the company:
+> - Caregist (caregist.co.uk)
+> - Regintelia / regintel-v2 (regintelia.co.uk)
+> - Regintel Rota (rota system)
+>
+> ICO registration is a SINGLE filing covering all three. One fee, one registration number. The same reg number gets referenced in each product's privacy policy.
+
 ---
 
 ## Steps
@@ -25,9 +33,9 @@ Select **"Organisation or sole trader"**. Enter the company details:
 
 | Field | Value |
 |-------|-------|
-| Organisation name | CareGist Ltd |
-| Company number | [Company number — from Companies House] |
-| Registered address | [Company registered address] |
+| Organisation name | H-Kay Limited |
+| Company number | 10417923 |
+| Registered address | [Company registered address — registered in Reigate; owner to fill exact street address from Companies House public record] |
 | ICO sector | Technology / Software / Data services |
 | Main contact | [Director name] |
 | Privacy contact email | privacy@caregist.co.uk |
@@ -102,7 +110,7 @@ Once you have your ICO registration number:
 
 ICO registration must be renewed **annually**. Set a recurring calendar event:
 
-- **Title:** ICO registration renewal — CareGist Ltd
+- **Title:** ICO registration renewal — H-Kay Limited
 - **Date:** [Date of registration + 364 days]
 - **Action:** Log in to [https://ico.org.uk/registration](https://ico.org.uk/registration), review processing activities for any changes, pay renewal fee.
 - **Reminder:** 30 days before expiry.
@@ -122,4 +130,4 @@ Failure to renew is the same offence as not registering in the first place.
 
 ---
 
-*This runbook should be completed by the data controller (CareGist Ltd director) before the service takes any user signups.*
+*This runbook should be completed by the data controller (H-Kay Limited director) before the service takes any user signups.*

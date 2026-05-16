@@ -16,9 +16,9 @@ export default function PrivacyPage() {
       <section className="mb-10">
         <h2 className="text-xl font-semibold mb-3">1. Who we are</h2>
         <p className="mb-3">
-          CareGist is operated by <strong>CareGist Ltd</strong>, registered in England and Wales
-          (company number <span className="font-mono">[Company number]</span>), with registered
-          address at <span className="font-mono">[Company registered address]</span>.
+          CareGist is operated by <strong>H-Kay Limited</strong>, registered in England and Wales
+          (company number <span className="font-mono">10417923</span>), with registered
+          address at <span className="font-mono">[Company registered address — registered in Reigate; owner to fill exact street address from Companies House public record]</span>.
         </p>
         <p className="mb-3">
           We are the <strong>data controller</strong> for the personal data described in this
@@ -34,7 +34,7 @@ export default function PrivacyPage() {
           <span className="font-mono">[ICO reg number — owner fills post-registration]</span>.
         </p>
         <p>
-          CareGist Ltd is not required to appoint a Data Protection Officer (DPO) under Article 37
+          H-Kay Limited is not required to appoint a Data Protection Officer (DPO) under Article 37
           of the UK GDPR, as our core activities do not involve large-scale processing of special
           category data or systematic monitoring of individuals at scale.
         </p>
@@ -479,8 +479,8 @@ export default function PrivacyPage() {
       <section className="mb-10">
         <h2 className="text-xl font-semibold mb-3">15. Contact</h2>
         <p className="mb-3">
-          <strong>Data controller:</strong> CareGist Ltd,{" "}
-          <span className="font-mono">[Company registered address]</span>
+          <strong>Data controller:</strong> H-Kay Limited,{" "}
+          <span className="font-mono">[Company registered address — registered in Reigate; owner to fill exact street address from Companies House public record]</span>
         </p>
         <p className="mb-3">
           <strong>Privacy enquiries:</strong>{" "}

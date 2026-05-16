@@ -69,7 +69,7 @@ Score the processing activities against the ICO's nine criteria. A DPIA is manda
 
 | Stakeholder | Role | Date consulted | Outcome |
 |-------------|------|---------------|---------|
-| CareGist Ltd directors | Data controller sign-off | [Date] | [Outcome] |
+| H-Kay Limited directors | Data controller sign-off | [Date] | [Outcome] |
 | Legal counsel | Terms and DPIA review | [Date] | [Outcome] |
 | Engineering lead | Technical controls verification | [Date] | [Outcome] |
 | DPO (if appointed) | Independent review | N/A — DPO not required at current scale | — |
@@ -147,7 +147,7 @@ After mitigations, owner must confirm all residual risks are acceptable. If any 
 
 | Role | Name | Signature | Date |
 |------|------|-----------|------|
-| Data controller (CareGist Ltd director) | [Name] | [Signature] | [Date] |
+| Data controller (H-Kay Limited director) | [Name] | [Signature] | [Date] |
 | Legal counsel | [Name] | [Signature] | [Date] |
 | DPO (if applicable) | N/A | — | — |
 

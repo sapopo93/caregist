@@ -58,8 +58,8 @@ CareGist processes personal data under UK GDPR and the Data Protection Act 2018.
 
 1. **Register with the ICO** — follow `workflows/ico-registration.md`. Fee is £40 (Tier 1) or £60 (Tier 2). Receive registration number within 24 hours.
 2. **Fill privacy policy placeholders** — open `frontend/app/privacy/page.tsx` and replace:
-   - `[Company number]`
-   - `[Company registered address]`
+   - `10417923`
+   - `[Company registered address — registered in Reigate; owner to fill exact street address from Companies House public record]`
    - `[ICO reg number — owner fills post-registration]`
 3. **Complete and sign the DPIA** — `docs/compliance/dpia-template.md`. Get director and (if applicable) legal counsel signatures.
 4. **Schedule annual ICO renewal** — see step 7 of the ICO registration runbook.
