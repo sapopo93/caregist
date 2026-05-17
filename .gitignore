@@ -181,3 +181,11 @@ skills-lock.json
 # Binaries / installers
 # =============================================================================
 docs/*.dmg
+
+# Backup files
+.env.backup.*
+*.bak
+*.backup
+
+# Recovery / debug data dumps
+_locations_list.ndjson.*
