@@ -45,10 +45,66 @@ async def _email_drain_loop() -> None:
             _log.warning("Email drain loop error: %s", exc)
 
 
+async def _verify_webhook_encryption_at_boot() -> None:
+    """Forge boot check: ensure WEBHOOK_SECRET is configured in production."""
+    import logging as _logging
+    _log = _logging.getLogger("caregist.boot")
+    if "localhost" not in settings.database_url:
+        if not getattr(settings, "webhook_secret", None):
+            raise RuntimeError(
+                "BOOT FAILURE: WEBHOOK_SECRET is not set. "
+                "Webhook payloads cannot be verified in production."
+            )
+        _log.info("Boot check passed: webhook encryption configured.")
+
+
+async def _verify_api_keys_at_boot() -> None:
+    """Boot check: fail hard in production if any plaintext API key rows remain.
+
+    After migration 032 is applied all rows should have key_format = 'bcrypt'
+    and key IS NULL. A non-zero count here means the migration has not been run
+    and the deprecated plaintext code path would have been the only defence —
+    which no longer exists after this change.
+    """
+    import logging as _logging
+    _log = _logging.getLogger("caregist.boot")
+    is_prod = "localhost" not in settings.database_url
+    try:
+        from api.database import get_connection
+        async with get_connection() as conn:
+            # key_format column may not exist yet if migration 032 hasn't run;
+            # fall back to checking the raw key column in that case.
+            try:
+                plaintext_count: int = await conn.fetchval(
+                    "SELECT COUNT(*) FROM api_keys WHERE key_format = 'plaintext'"
+                )
+            except Exception:
+                plaintext_count = await conn.fetchval(
+                    "SELECT COUNT(*) FROM api_keys WHERE key IS NOT NULL"
+                )
+        if plaintext_count and plaintext_count > 0:
+            msg = (
+                f"BOOT FAILURE: {plaintext_count} plaintext API key row(s) detected. "
+                "Run db/migrations/032_hash_legacy_api_keys.py before deploying."
+            )
+            if is_prod:
+                raise RuntimeError(msg)
+            else:
+                _log.warning(msg)
+        else:
+            _log.info("Boot check passed: no plaintext API key rows found.")
+    except RuntimeError:
+        raise
+    except Exception as exc:
+        _log.warning("Boot check _verify_api_keys_at_boot skipped (non-fatal): %s", exc)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_pool()
     billing.init_stripe()
+    await _verify_webhook_encryption_at_boot()
+    await _verify_api_keys_at_boot()
     drain_task = asyncio.create_task(_email_drain_loop())
     yield
     drain_task.cancel()
