@@ -1,5 +1,15 @@
 "use client";
 
+/**
+ * Auth state is now carried by the HttpOnly `caregist_session` cookie.
+ * The browser sends it automatically on every credentialed request —
+ * no localStorage is needed or used for auth tokens.
+ *
+ * isAuthExpiredResponse: detect 401s that mean the session is gone.
+ * clearBrowserAuthState: POST to the logout route which revokes the
+ *   server-side session row and clears the cookie via Set-Cookie.
+ */
+
 export function isAuthExpiredResponse(status: number, detail?: string) {
   if (status !== 401) return false;
   const normalized = (detail || "").toLowerCase();
@@ -11,8 +21,9 @@ export function isAuthExpiredResponse(status: number, detail?: string) {
 }
 
 export async function clearBrowserAuthState() {
-  await fetch("/api/v1/auth/session", { method: "DELETE", credentials: "include" }).catch(() => {});
-  localStorage.removeItem("caregist_user");
-  localStorage.removeItem("caregist_tier");
+  // POST to the Next.js Route Handler which calls backend /api/v1/auth/logout
+  // and sets Set-Cookie: caregist_session=; Max-Age=0 to clear the cookie.
+  await fetch("/logout", { method: "POST", credentials: "include" }).catch(() => {});
+  // Dispatch for any in-page listeners that still need to react
   window.dispatchEvent(new Event("caregist_auth_change"));
 }
