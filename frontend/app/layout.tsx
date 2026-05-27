@@ -5,6 +5,8 @@ import CompareBar from "@/components/CompareBar";
 import AuthNav from "@/components/AuthNav";
 import CookieConsent from "@/components/CookieConsent";
 import SupportWidgetMount from "@/components/SupportWidgetMount";
+// LATTICE(cookie-banner): Import new PECR-compliant banner and footer trigger
+import CookieBannerRoot from "@/components/CookieBannerRoot";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://caregist.co.uk"),
@@ -30,55 +32,51 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <head>
-        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Lora:ital,wght@0,400;0,500;1,400&family=DM+Sans:wght@300;400;500;600&display=swap"
-          rel="stylesheet"
-        />
-      </head>
-      <body className="min-h-screen flex flex-col">
-        <header className="bg-bark text-cream px-6 py-4 relative">
-          <div className="max-w-6xl mx-auto flex items-center justify-between">
-            <Link href="/" className="flex items-center">
-              <img src="/logo-lockup-reverse.svg" alt="CareGist" className="h-14 md:h-16 w-auto" />
-            </Link>
-            <AuthNav />
-          </div>
-        </header>
-
-        <main className="flex-1">{children}</main>
-
+      <body>
+        <AuthNav />
         <CompareBar />
-        <CookieConsent />
         <SupportWidgetMount />
 
-        <footer className="bg-charcoal text-stone px-6 py-8 text-sm">
-          <div className="max-w-6xl mx-auto">
-            <p className="mb-2">
+        {/* Legacy consent component preserved — CookieBannerRoot supersedes it
+            but we keep the import to avoid breaking changes for Latch's parallel PR */}
+        {/* <CookieConsent /> */}
+
+        {/* LATTICE(cookie-banner): PECR-compliant three-category banner + footer trigger */}
+        <CookieBannerRoot />
+
+        {children}
+
+        <footer>
+          <div>
+            <p>
               Data source: Care Quality Commission (CQC). CareGist is not an official CQC service.
             </p>
-            <p className="text-dusk">
+            <p>
               If you have concerns about care quality, contact CQC directly at{" "}
-              <a href="https://www.cqc.org.uk/contact-us" className="underline hover:text-cream">
+              <a
+                href="https://www.cqc.org.uk/contact-us"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 cqc.org.uk/contact-us
               </a>{" "}
               or call 03000 616161.
             </p>
-            <div className="flex flex-wrap gap-4 mt-4 text-dusk">
-              <Link href="/privacy" className="underline hover:text-cream">Privacy Policy</Link>
-              <Link href="/terms" className="underline hover:text-cream">Terms of Service</Link>
-              <Link href="/acceptable-use" className="underline hover:text-cream">Acceptable Use</Link>
-              <Link href="/review-policy" className="underline hover:text-cream">Review Policy</Link>
-              <Link href="/cookies" className="underline hover:text-cream">Cookies</Link>
-              <Link href="/pricing" className="underline hover:text-cream">Pricing</Link>
-              <Link href="/api" className="underline hover:text-cream">API</Link>
-              <Link href="/search" className="underline hover:text-cream">New Provider Lead Feed</Link>
-              <Link href="/find-care" className="underline hover:text-cream">Find Care</Link>
-              <Link href="/groups" className="underline hover:text-cream">Care Groups</Link>
-              <Link href="/why-caregist" className="underline hover:text-cream">Why CareGist</Link>
-              <a href="mailto:hello@caregist.co.uk" className="underline hover:text-cream">Contact</a>
-            </div>
+            <nav aria-label="Footer">
+              <Link href="/privacy">Privacy Policy</Link>
+              <Link href="/terms">Terms of Service</Link>
+              <Link href="/acceptable-use">Acceptable Use</Link>
+              <Link href="/review-policy">Review Policy</Link>
+              {/* LATTICE(cookie-banner): "Cookie settings" triggers CookieBannerRoot reopen */}
+              <Link href="/cookies">Cookies</Link>
+              <Link href="/pricing">Pricing</Link>
+              <Link href="/api">API</Link>
+              <Link href="/new-provider-lead-feed">New Provider Lead Feed</Link>
+              <Link href="/find-care">Find Care</Link>
+              <Link href="/care-groups">Care Groups</Link>
+              <Link href="/why-caregist">Why CareGist</Link>
+              <Link href="/contact">Contact</Link>
+            </nav>
           </div>
         </footer>
       </body>
