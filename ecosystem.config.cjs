@@ -3,7 +3,7 @@ module.exports = {
     {
       name: "caregist-api",
       script: "/home/ubuntu/caregist/.venv/bin/uvicorn",
-      args: "api.main:app --host 0.0.0.0 --port 8000 --proxy-headers --forwarded-allow-ips=*",
+      args: "api.main:app --host 127.0.0.1 --port 8000 --proxy-headers --forwarded-allow-ips=*",
       cwd: "/home/ubuntu/caregist",
       interpreter: "none",
       env_file: "/home/ubuntu/caregist/.env",
