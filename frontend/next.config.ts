@@ -52,10 +52,11 @@ function failOrWarn(message: string) {
 }
 
 function validateServerApiEnv() {
+  // F#4 fix: NEXT_PUBLIC_API_KEY is no longer a valid fallback — it bakes the
+  // backend master key into the JS bundle. Only server-only vars are accepted.
   const serverApiKey =
     process.env.API_KEY ||
-    process.env.API_MASTER_KEY ||
-    process.env.NEXT_PUBLIC_API_KEY;
+    process.env.API_MASTER_KEY;
 
   const serverApiBase =
     resolveApiBaseForProduction(process.env.API_URL) ||
@@ -85,13 +86,13 @@ function validateServerApiEnv() {
     failOrWarn("[caregist] API_MASTER_KEY is still set to the placeholder production value.");
   }
 
-  if (process.env.NEXT_PUBLIC_API_KEY && !process.env.API_KEY && !process.env.API_MASTER_KEY) {
-    failOrWarn(
-      "[caregist] NEXT_PUBLIC_API_KEY is the only API key set. This exposes credentials in the browser bundle and will break silently after key rotation. Add API_KEY to frontend/.env.local.",
-    );
-  } else if (process.env.NEXT_PUBLIC_API_KEY) {
-    console.warn(
-      "[caregist] NEXT_PUBLIC_API_KEY is set alongside API_KEY. Remove it to prevent browser bundle exposure.",
+  // Hard-fail (in all environments) if NEXT_PUBLIC_API_KEY is set.
+  // This var is baked into the JS bundle — any site visitor can read it from DevTools.
+  if (process.env.NEXT_PUBLIC_API_KEY) {
+    throw new Error(
+      "[caregist] NEXT_PUBLIC_API_KEY is set. This exposes the backend master key in the browser bundle. " +
+      "Remove it and set API_KEY (no NEXT_PUBLIC_ prefix) in your server environment. " +
+      "If this key was ever deployed, treat it as compromised and rotate immediately."
     );
   }
 }
