@@ -1,7 +1,13 @@
-"""API key authentication middleware."""
+"""API key authentication middleware.
+
+Session cookie validation reads the opaque caregist_session cookie value,
+looks up the sessions table, and resolves to a user_id.
+The bearer-token-in-cookie path has been removed (F#1 fix).
+"""
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import hashlib
 import secrets
@@ -72,17 +78,6 @@ async def _update_last_used(api_key_hash: str, api_key: str) -> None:
         logger.warning("Failed to update last_used_at: %s", exc)
 
 
-async def _update_session_last_seen(session_token_hash: str) -> None:
-    try:
-        async with get_connection() as conn:
-            await conn.execute(
-                "UPDATE user_sessions SET last_seen_at = NOW() WHERE token_hash = $1",
-                session_token_hash,
-            )
-    except Exception as exc:
-        logger.warning("Failed to update session last_seen_at: %s", exc)
-
-
 async def _auth_from_key_row(row, *, rate_limit_key: str, api_key: str | None = None) -> dict:
     if not row["is_active"]:
         raise HTTPException(status_code=403, detail="API key is disabled.")
@@ -102,8 +97,8 @@ async def _auth_from_key_row(row, *, rate_limit_key: str, api_key: str | None = 
                 allowed_rows = await conn.fetch(
                     """
                     SELECT id FROM api_keys
-                    WHERE user_id = $1 AND is_active = true
-                    ORDER BY created_at ASC LIMIT $2
+                     WHERE user_id = $1 AND is_active = true
+                     ORDER BY created_at ASC LIMIT $2
                     """,
                     user_id,
                     max_users,
@@ -117,7 +112,6 @@ async def _auth_from_key_row(row, *, rate_limit_key: str, api_key: str | None = 
 
     remaining = await check_rate_limit(rate_limit_key, tier)
 
-    import asyncio
     asyncio.create_task(_update_last_used(_row_value(row, "key_hash") or "", api_key or ""))
 
     return {
@@ -166,20 +160,20 @@ async def _validate_key(api_key: str) -> dict:
                 COALESCE(u.is_verified, true) AS is_verified,
                 (
                     SELECT COUNT(*)
-                    FROM api_keys ak2
-                    WHERE ak2.user_id = ak.user_id AND ak2.is_active = true
+                      FROM api_keys ak2
+                     WHERE ak2.user_id = ak.user_id AND ak2.is_active = true
                 ) AS active_keys,
                 COALESCE(
                     (SELECT s.max_users
-                     FROM subscriptions s
-                     WHERE s.user_id = ak.user_id
-                     ORDER BY s.created_at DESC
-                     LIMIT 1),
+                       FROM subscriptions s
+                      WHERE s.user_id = ak.user_id
+                      ORDER BY s.created_at DESC
+                      LIMIT 1),
                     1
                 ) AS subscription_max_users
-            FROM api_keys ak
-            LEFT JOIN users u ON u.id = ak.user_id
-            WHERE ak.key_hash = $1 OR ak.key = $2
+              FROM api_keys ak
+              LEFT JOIN users u ON u.id = ak.user_id
+             WHERE ak.key_hash = $1 OR ak.key = $2
             """,
             api_key_hash,
             api_key,
@@ -202,8 +196,23 @@ async def _validate_key(api_key: str) -> dict:
     return await _auth_from_key_row(row, rate_limit_key=api_key_hash, api_key=api_key)
 
 
-async def _validate_session(session_token: str) -> dict:
-    session_token_hash = hash_api_key(session_token)
+async def _validate_session_cookie(session_id: str) -> dict:
+    """Validate an opaque caregist_session cookie value (F#1 compliant path).
+
+    Looks up the sessions table.
+    Verifies expires_at > NOW() AND revoked_at IS NULL.
+    Resolves to the user's active API key for backward-compatible auth dict.
+    """
+    from api.utils.sessions import touch_session, validate_session  # local import avoids circular
+
+    user_id = await validate_session(session_id)
+    if user_id is None:
+        raise HTTPException(status_code=401, detail="Session expired or invalid. Please log in again.")
+
+    # touch last_used_at asynchronously
+    asyncio.create_task(touch_session(session_id))
+
+    # Resolve user's active API key for a consistent auth dict shape
     async with get_connection() as conn:
         row = await conn.fetchrow(
             """
@@ -219,52 +228,42 @@ async def _validate_session(session_token: str) -> dict:
                 COALESCE(u.is_verified, true) AS is_verified,
                 (
                     SELECT COUNT(*)
-                    FROM api_keys ak2
-                    WHERE ak2.user_id = ak.user_id AND ak2.is_active = true
+                      FROM api_keys ak2
+                     WHERE ak2.user_id = ak.user_id AND ak2.is_active = true
                 ) AS active_keys,
                 COALESCE(
                     (SELECT s.max_users
-                     FROM subscriptions s
-                     WHERE s.user_id = ak.user_id
-                     ORDER BY s.created_at DESC
-                     LIMIT 1),
+                       FROM subscriptions s
+                      WHERE s.user_id = ak.user_id
+                      ORDER BY s.created_at DESC
+                      LIMIT 1),
                     1
                 ) AS subscription_max_users
-            FROM user_sessions us
-            JOIN api_keys ak ON ak.id = us.api_key_id
-            LEFT JOIN users u ON u.id = us.user_id
-            WHERE us.token_hash = $1
-              AND us.revoked_at IS NULL
-              AND us.expires_at > NOW()
+              FROM api_keys ak
+              LEFT JOIN users u ON u.id = ak.user_id
+             WHERE ak.user_id = $1 AND ak.is_active = true
+             ORDER BY ak.created_at DESC
+             LIMIT 1
             """,
-            session_token_hash,
+            user_id,
         )
+
     if not row:
-        raise HTTPException(status_code=401, detail="Invalid or expired session.")
+        raise HTTPException(status_code=401, detail="No active API key associated with this session.")
 
-    import asyncio
-    asyncio.create_task(_update_session_last_seen(session_token_hash))
-    return await _auth_from_key_row(row, rate_limit_key=session_token_hash)
-
-
-async def _validate_session_or_legacy_key(session_token: str) -> dict:
-    """Validate a revocable session cookie, with fallback for legacy key cookies."""
-    try:
-        return await _validate_session(session_token)
-    except HTTPException as session_exc:
-        if session_token.startswith("cs_"):
-            raise
-        try:
-            return await _validate_key(session_token)
-        except HTTPException:
-            raise session_exc
+    api_key_hash = _row_value(row, "key_hash") or ""
+    return await _auth_from_key_row(row, rate_limit_key=api_key_hash)
 
 
 async def validate_api_key(
     api_key: str | None = Security(api_key_header),
     caregist_session: str | None = Cookie(default=None),
 ) -> dict:
-    """Validate API key from X-API-Key header or caregist_session cookie."""
+    """Validate API key from X-API-Key header or caregist_session cookie.
+
+    Cookie path (F#1 fix): the cookie value is now an opaque session_id
+    looked up in the sessions table — NOT treated as a bearer token.
+    """
     session_cookie = _cookie_value(caregist_session)
     if api_key:
         try:
@@ -272,12 +271,12 @@ async def validate_api_key(
         except HTTPException as key_exc:
             if session_cookie:
                 try:
-                    return await _validate_session_or_legacy_key(session_cookie)
+                    return await _validate_session_cookie(session_cookie)
                 except HTTPException:
                     pass
             raise key_exc
     if session_cookie:
-        return await _validate_session_or_legacy_key(session_cookie)
+        return await _validate_session_cookie(session_cookie)
     if not api_key and not session_cookie:
         raise HTTPException(status_code=401, detail="Missing API key. Pass X-API-Key header or log in.")
 
@@ -295,12 +294,12 @@ async def validate_optional_api_key(
         except HTTPException as key_exc:
             if session_cookie:
                 try:
-                    return await _validate_session_or_legacy_key(session_cookie)
+                    return await _validate_session_cookie(session_cookie)
                 except HTTPException:
                     pass
             raise key_exc
     if session_cookie:
-        return await _validate_session_or_legacy_key(session_cookie)
+        return await _validate_session_cookie(session_cookie)
 
     guest_key = f"guest:{_client_identifier(request)}"
     remaining = await check_rate_limit(guest_key, "free")
