@@ -16,8 +16,8 @@ Applies pending SQL migrations to the PostgreSQL database in version order. Idem
 ## Prerequisites
 - Python 3.12+, venv activated
 - `.env` with valid `DATABASE_URL`:
-  - Local: `postgresql://user:pass@localhost:5432/caregist`
-  - Neon: `postgresql://...@...eu-west-2.aws.neon.tech/neondb?sslmode=require`
+ - Local: `postgresql://user:pass@localhost:5432/caregist`
+ - Neon: `postgresql://...@...eu-west-2.aws.neon.tech/neondb?sslmode=require`
 - PostgreSQL version 12+
 - Base schema initialized (`db/init.sql` already applied)
 - Superuser or role with CREATE/ALTER TABLE permissions
@@ -51,7 +51,17 @@ python3 db/apply_migrations.py
 ```
 
 ### Pre-Flight Checklist
-- [ ] Database is backed up (Neon: Neon branches, RDS: RDS snapshots)
+
+<!-- Line 54 — UPDATED: backups are now automated via scripts/backup-db.sh (daily cron at 03:00 UTC).
+     The manual "take a Neon snapshot" step has been superseded. The pre-migration check is now:
+     verify that the last automated backup is less than 24 hours old by listing the S3 prefix.
+     See workflows/restore-from-snapshot.md for the full restore procedure if a migration goes wrong.
+-->
+- [ ] **Database backup is current (< 24 h old)** — verify by listing the S3 prefix:
+  ```bash
+  aws s3 ls s3://${BACKUP_S3_BUCKET}/postgres/ --recursive --region eu-west-2 | sort | tail -3
+  ```
+  Confirm the most recent dump timestamp is within the last 24 hours. If it is not, run `scripts/backup-db.sh` manually before proceeding. See `workflows/restore-from-snapshot.md` for the restore procedure if migration recovery is needed.
 - [ ] No ongoing deployments
 - [ ] Downtime window coordinated if needed (migrations typically <1s per file)
 - [ ] `.env` has correct `DATABASE_URL` for production
@@ -92,53 +102,36 @@ asyncio.run(check())
 | 012 | webhook_subscriptions.sql | Creates webhook_subscriptions table (user_id, url, events, delivery_log) |
 | 013 | subscription_seat_entitlements.sql | Adds included_users, extra_seats, max_users, seat_price_gbp to subscriptions |
 | 014 | api_rate_usage_daily.sql | Creates api_rate_usage_daily table (per-day rate limit tracking) |
-| 015 | trusted_event_ledger_new_registration_feed.sql | Creates trusted_event_ledger, feed_saved_filters, feed_digest_subscriptions, feed_digest_delivery_log, webhook_delivery_log |
-| 016 | stripe_event_deduplication.sql | Creates stripe_processed_events table (24h event dedup) |
+| 015 | trusted_event_ledger_new_registration_feed.sql | Creates trusted_event_ledger, feed_saved_filters, feed_digest_subscriptions, feed_digest_delivery_log, webhook_deduplication |
+| 016 | stripe_deduplication.sql | Creates stripe_processed_events table (24h event dedup) |
 | 017 | profile_subscription_id.sql | Adds profile_subscription_id to care_providers |
 
 ## Rollback / Undo
 
 **Important:** Migrations are designed to be forward-only. Rollback requires manual SQL or database restore.
 
-### If a migration fails:
+If a migration fails mid-run:
 1. Check error output (e.g., "relation already exists")
 2. Investigate the failing migration file in `db/migrations/`
 3. **Do not** continue — fix the issue or restore from backup
 4. Once fixed, re-run `apply_migrations.py` (it skips already-applied migrations)
 
-### If you need to roll back entirely:
-1. Restore from database backup
+To restore from backup:
+1. Follow the procedure in `workflows/restore-from-snapshot.md`
 2. Do not attempt to `DELETE FROM schema_migrations` — it will cause sync issues
-
-## Monitoring
-
-Track migration status in production:
-
-```sql
-SELECT 
-  filename,
-  applied_at::date as applied_date,
-  extract(epoch from (NOW() - applied_at))::int as seconds_ago
-FROM schema_migrations
-ORDER BY applied_at DESC;
-```
 
 ## Troubleshooting
 
-**"relation 'care_providers' does not exist"**
-- Base schema (`db/init.sql`) was not applied before migrations
-- Apply `db/init.sql` first, then run migrations
+Track migration status in production:
 
-**"column 'X' already exists"**
-- Migration has already been applied
-- Check `schema_migrations` table
-- Run script again — it will skip already-applied migrations
+- **"relation X already exists"**:
+ - Migration has already been applied
+ - Check `schema_migrations` table
+ - Run script again — it will skip already-applied migrations
 
-**"permission denied for schema 'public'"**
-- Database user does not have CREATE/ALTER permissions
-- Grant permissions: `GRANT CREATE, USAGE ON SCHEMA public TO role_name;`
+- **"permission denied"**:
+ - Database user does not have CREATE/ALTER permissions
+ - Grant permissions: `GRANT CREATE, USAGE ON SCHEMA public TO role_name;`
 
-**Script hangs**
-- Database connection timeout — check `DATABASE_URL`, network connectivity
-- Check if database is under heavy load
-- Use Ctrl+C to cancel, investigate database, retry
+- **Base schema (`db/init.sql`) was not applied before migrations**:
+ - Apply `db/init.sql` first, then run migrations
