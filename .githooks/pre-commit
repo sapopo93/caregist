@@ -1,0 +1,123 @@
+#!/usr/bin/env bash
+# .githooks/pre-commit — secret scanner
+#
+# Blocks commits that contain known credential patterns.
+# POSIX-portable: uses bash + grep -E only.
+# Works on macOS (BSD grep) and Linux (GNU grep).
+#
+# Bypass in emergencies:
+#   git commit --no-verify
+#
+# Install via:
+#   bash scripts/install-hooks.sh
+
+set -euo pipefail
+
+RED='\033[0;31m'
+NC='\033[0m'
+
+BLOCKED=0
+
+# Get list of staged files (NUL-delimited for safety with spaces in names)
+staged_files=$(git diff --cached --name-only -z 2>/dev/null | tr '\0' '\n')
+
+if [ -z "$staged_files" ]; then
+  exit 0
+fi
+
+check_pattern() {
+  local file="$1"
+  local pattern_name="$2"
+  local regex="$3"
+  local content
+
+  # Read staged content (not working-tree content)
+  content=$(git show ":${file}" 2>/dev/null) || return 0
+
+  if printf '%s\n' "$content" | grep -qE "$regex" 2>/dev/null; then
+    printf "${RED}BLOCKED${NC}: %s: %s\n" "$file" "$pattern_name" >&2
+    BLOCKED=1
+  fi
+}
+
+while IFS= read -r file; do
+  [ -z "$file" ] && continue
+
+  # Skip deleted files (they won't exist in the index)
+  git show ":${file}" >/dev/null 2>&1 || continue
+
+  # -----------------------------------------------------------------------
+  # AWS
+  # -----------------------------------------------------------------------
+  check_pattern "$file" "AWS access key (AKIA...)" \
+    'AKIA[0-9A-Z]{16}'
+
+  check_pattern "$file" "AWS secret access key" \
+    'aws_secret_access_key[[:space:]]*=[[:space:]]*[A-Za-z0-9/+]{40}'
+
+  # -----------------------------------------------------------------------
+  # Stripe
+  # -----------------------------------------------------------------------
+  check_pattern "$file" "Stripe live secret key (sk_live_...)" \
+    'sk_live_[0-9a-zA-Z]{24,}'
+
+  check_pattern "$file" "Stripe restricted live key (rk_live_...)" \
+    'rk_live_[0-9a-zA-Z]{24,}'
+
+  check_pattern "$file" "Stripe publishable live key (pk_live_...) [warn: may be intentional on client side]" \
+    'pk_live_[0-9a-zA-Z]{24,}'
+
+  # -----------------------------------------------------------------------
+  # Resend
+  # -----------------------------------------------------------------------
+  check_pattern "$file" "Resend API key (re_...)" \
+    're_[A-Za-z0-9]{16,}'
+
+  # -----------------------------------------------------------------------
+  # Anthropic
+  # -----------------------------------------------------------------------
+  check_pattern "$file" "Anthropic API key (sk-ant-api03-...)" \
+    'sk-ant-api03-[A-Za-z0-9_-]{40,}'
+
+  # -----------------------------------------------------------------------
+  # OpenAI  (must come AFTER Anthropic to avoid double-flagging sk-ant)
+  # -----------------------------------------------------------------------
+  check_pattern "$file" "OpenAI API key (sk-...)" \
+    'sk-(?!ant)[A-Za-z0-9]{40,}'
+
+  # -----------------------------------------------------------------------
+  # JWT
+  # -----------------------------------------------------------------------
+  check_pattern "$file" "JWT token (eyJ...)" \
+    'eyJ[A-Za-z0-9_-]+\.eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+'
+
+  # -----------------------------------------------------------------------
+  # GitHub
+  # -----------------------------------------------------------------------
+  check_pattern "$file" "GitHub PAT classic (ghp_...)" \
+    'ghp_[A-Za-z0-9]{36}'
+
+  check_pattern "$file" "GitHub PAT fine-grained (github_pat_...)" \
+    'github_pat_[A-Za-z0-9_]{82}'
+
+  # -----------------------------------------------------------------------
+  # Slack
+  # -----------------------------------------------------------------------
+  check_pattern "$file" "Slack bot token (xoxb-...)" \
+    'xoxb-[0-9]+-[0-9]+-[A-Za-z0-9]+'
+
+  check_pattern "$file" "Slack webhook URL" \
+    'hooks\.slack\.com/services/[A-Za-z0-9/]+'
+
+done <<EOF
+$staged_files
+EOF
+
+if [ "$BLOCKED" -ne 0 ]; then
+  printf '\n%bPre-commit hook blocked the commit.%b\n' "$RED" "$NC" >&2
+  printf 'Remove the secrets above, then commit again.\n' >&2
+  printf 'Emergency bypass: git commit --no-verify\n' >&2
+  exit 1
+fi
+
+exit 0
