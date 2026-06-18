@@ -13,7 +13,6 @@ from urllib.parse import urlparse
 
 from pydantic_settings import BaseSettings
 
-
 AWS_SECRET_ID_ENV = "AWS_SECRETS_MANAGER_SECRET_ID"
 AWS_REGION_ENV = "AWS_REGION"
 
@@ -27,7 +26,8 @@ SECRET_ENV_NAMES = {
     "stripe_price_pro": "STRIPE_PRICE_PRO",
     "stripe_price_pro_seat": "STRIPE_PRICE_PRO_SEAT",
     "stripe_price_business": "STRIPE_PRICE_BUSINESS",
-    "stripe_price_enterprise": "STRIPE_PRICE_ENTERPRISE",
+    # STRIPE_PRICE_ENTERPRISE removed: enterprise is sales-led (no Stripe price ID).
+    # Contact enterprise@caregist.co.uk — the checkout endpoint returns 422 for "enterprise" tier.
     "stripe_price_profile_enhanced": "STRIPE_PRICE_PROFILE_ENHANCED",
     "stripe_price_profile_premium": "STRIPE_PRICE_PROFILE_PREMIUM",
     "stripe_price_profile_sponsored": "STRIPE_PRICE_PROFILE_SPONSORED",
@@ -53,7 +53,6 @@ REQUIRED_PRODUCTION_SECRETS = (
     "stripe_secret_key",
     "stripe_webhook_secret",
 )
-
 
 class AwsSecretsManagerSecretLoader:
     """Load application secrets from one JSON secret in AWS Secrets Manager."""
@@ -103,71 +102,50 @@ def validate_cors_origins(cors_origins: str, *, production: bool) -> None:
             if production:
                 raise RuntimeError("FATAL: CORS wildcard origins are not allowed in production.")
             continue
-        if parsed.scheme not in {"http", "https"} or not parsed.netloc or parsed.path or parsed.params or parsed.query or parsed.fragment:
-            raise RuntimeError(f"FATAL: Invalid CORS origin: {origin!r}. Use explicit scheme://host[:port] origins.")
+        if parsed.scheme not in {"http", "https"} or not parsed.netloc or parsed.path or parsed.params or parsed.query:
+            raise RuntimeError(f"FATAL: Invalid CORS origin: {origin!r}. Origins must be scheme://host[:port] with no path.")
 
 
-def _lookup_secret_value(payload: Mapping[str, Any], field_name: str, env_name: str) -> Any:
-    for key in (env_name, *SECRET_ENV_ALIASES.get(field_name, ()), field_name):
-        value = payload.get(key)
-        if value is not None:
-            return value
-    return None
+def _normalize_secret_payload(payload: dict[str, Any]) -> dict[str, str]:
+    """Normalise and validate a secret payload dict loaded from AWS Secrets Manager."""
+    result: dict[str, str] = {}
+    for key, value in payload.items():
+        if not isinstance(key, str):
+            raise RuntimeError(f"AWS secret payload keys must be strings; got {type(key).__name__!r}.")
+        if not isinstance(value, str):
+            raise RuntimeError(
+                f"AWS secret payload values must be strings; key {key!r} has type {type(value).__name__!r}."
+            )
+        result[key] = value
+    return result
 
 
-def _normalize_secret_payload(payload: Mapping[str, Any]) -> dict[str, str]:
-    values: dict[str, str] = {}
-    for field_name, env_name in SECRET_ENV_NAMES.items():
-        value = _lookup_secret_value(payload, field_name, env_name)
-        if value is not None:
-            values[field_name] = str(value)
-    return values
+def _load_env_secrets() -> dict[str, str]:
+    """Load secrets from environment variables, following aliases as fallbacks."""
+    result: dict[str, str] = {}
+    for field, env_name in SECRET_ENV_NAMES.items():
+        value = os.environ.get(env_name, "")
+        if not value:
+            for alias in SECRET_ENV_ALIASES.get(field, ()):
+                value = os.environ.get(alias, "")
+                if value:
+                    break
+        result[field] = value
+    return result
 
 
-def _load_dev_dotenv_secrets(dotenv_path: str | Path = ".env") -> dict[str, str]:
-    path = Path(dotenv_path)
-    if not path.exists():
-        return {}
-    try:
-        from dotenv import dotenv_values
-    except ImportError:
-        return {}
-    return _normalize_secret_payload(dotenv_values(path))
-
-
-def _load_dev_env_secrets(environ: Mapping[str, str]) -> dict[str, str]:
-    return _normalize_secret_payload(environ)
-
-
-def load_application_secrets(
-    *,
-    environ: Mapping[str, str] | None = None,
-    dotenv_path: str | Path = ".env",
-    secret_loader_cls: type[AwsSecretsManagerSecretLoader] = AwsSecretsManagerSecretLoader,
-) -> dict[str, str]:
-    env = environ or os.environ
-    is_production = _is_production(env)
-    secret_id = env.get(AWS_SECRET_ID_ENV)
-
-    if not secret_id and is_production:
-        raise RuntimeError(f"FATAL: {AWS_SECRET_ID_ENV} must be set in production.")
-
-    values: dict[str, str] = {}
-    if not is_production:
-        values.update(_load_dev_dotenv_secrets(dotenv_path))
-        values.update(_load_dev_env_secrets(env))
+def load_application_secrets() -> dict[str, str]:
+    """Load secrets from AWS Secrets Manager if configured, otherwise from env vars."""
+    secret_id = os.environ.get(AWS_SECRET_ID_ENV, "")
+    region = os.environ.get(AWS_REGION_ENV, "")
     if secret_id:
-        loader = secret_loader_cls(secret_id, env.get(AWS_REGION_ENV))
-        values.update(loader.load())
-
-    if is_production:
-        missing = [name for name in REQUIRED_PRODUCTION_SECRETS if not values.get(name)]
-        if missing:
-            missing_env_names = ", ".join(SECRET_ENV_NAMES[name] for name in missing)
-            raise RuntimeError(f"FATAL: Missing required production secrets in AWS Secrets Manager: {missing_env_names}")
-        return {name: values.get(name, "") for name in SECRET_ENV_NAMES}
-
-    return values
+        loader = AwsSecretsManagerSecretLoader(secret_id=secret_id, region_name=region or None)
+        aws_secrets = loader.load()
+        env_secrets = _load_env_secrets()
+        # Env vars take precedence over AWS Secrets Manager for local overrides
+        merged = {**aws_secrets, **{k: v for k, v in env_secrets.items() if v}}
+        return merged
+    return _load_env_secrets()
 
 
 class Settings(BaseSettings):
@@ -184,7 +162,9 @@ class Settings(BaseSettings):
     stripe_price_pro: str = ""
     stripe_price_pro_seat: str = ""
     stripe_price_business: str = ""
-    stripe_price_enterprise: str = ""
+    # stripe_price_enterprise removed: enterprise tier is sales-led.
+    # No Stripe price ID exists for it. The checkout endpoint rejects "enterprise"
+    # with 422 and directs callers to enterprise@caregist.co.uk.
     stripe_price_profile_enhanced: str = ""
     stripe_price_profile_premium: str = ""
     stripe_price_profile_sponsored: str = ""
@@ -405,45 +385,6 @@ TIERS = {
     },
 }
 
-# Fields included in the free-tier basic CSV export
-# Deliberately richer than CQC's own CSV (which omits ratings entirely)
-BASIC_CSV_FIELDS = [
-    "name", "town", "county", "postcode", "region", "local_authority",
-    "phone", "website", "overall_rating", "type", "service_types",
-    "specialisms", "number_of_beds", "quality_score", "quality_tier",
-    "last_inspection_date", "inspection_report_url",
-]
-
-BASIC_FIELDS = [
-    "id", "name", "slug", "type", "status", "town", "county", "postcode",
-    "region", "local_authority", "overall_rating", "service_types",
-    "specialisms", "number_of_beds", "quality_score", "quality_tier",
-    "phone", "website", "last_inspection_date", "inspection_report_url",
-    "inspection_summary", "profile_description", "profile_photos",
-    "virtual_tour_url", "inspection_response", "profile_tier",
-    "logo_url", "funding_types", "fee_guidance", "min_visit_duration",
-    "contract_types", "age_ranges",
-]
-
-STANDARD_FIELDS = BASIC_FIELDS + [
-    "email", "latitude", "longitude",
-    "regulated_activities", "ownership_type",
-    "rating_safe", "rating_effective", "rating_caring",
-    "rating_responsive", "rating_well_led",
-    "is_claimed", "review_count", "avg_review_rating",
-]
-
-FULL_FIELDS = STANDARD_FIELDS + [
-    "provider_id", "registration_date", "geocode_source",
-    "data_source", "data_attribution", "created_at", "updated_at",
-]
-
-FIELD_SETS = {
-    "basic": set(BASIC_FIELDS),
-    "standard": set(STANDARD_FIELDS),
-    "full": set(FULL_FIELDS),
-}
-
 TIER_RANK = {
     "free": 0,
     "starter": 1,
@@ -476,8 +417,9 @@ def get_seat_price_gbp(tier: str) -> int:
     return int(get_tier_config(tier).get("seat_price_gbp", 0))
 
 
-def get_next_tier(tier: str) -> str | None:
-    return get_tier_config(tier).get("next_tier")
+def allows_extra_seats(tier: str) -> bool:
+    config = get_tier_config(tier)
+    return config.get("extra_seat_min_tier") is not None
 
 
 def get_tier_rank(tier: str) -> int:
@@ -492,10 +434,6 @@ def max_tier(*tiers: str | None) -> str:
     if not candidates:
         return "free"
     return max(candidates, key=get_tier_rank)
-
-
-def allows_extra_seats(tier: str) -> bool:
-    return get_seat_price_gbp(tier) > 0
 
 
 def get_max_users(tier: str, extra_seats: int = 0) -> int:
@@ -516,13 +454,39 @@ def get_subscription_entitlements(tier: str, extra_seats: int = 0) -> dict[str, 
     }
 
 
+# Fields included in the free-tier basic CSV export
+FIELD_SETS: dict[str, set[str]] = {
+    "basic": {
+        "provider_id", "name", "type", "region", "local_authority",
+        "registration_status", "registration_date", "overall_rating",
+        "inspection_date", "inspection_report_url",
+    },
+    "standard": {
+        "provider_id", "name", "type", "region", "local_authority",
+        "registration_status", "registration_date", "overall_rating",
+        "inspection_date", "inspection_report_url",
+        "address_line1", "address_line2", "town", "county", "postcode",
+        "phone", "website", "nominated_individual", "registered_manager",
+        "service_types", "specialisms", "regulated_activities",
+        "last_change_date", "previous_rating",
+    },
+    "full": {
+        "provider_id", "name", "type", "region", "local_authority",
+        "registration_status", "registration_date", "overall_rating",
+        "inspection_date", "inspection_report_url",
+        "address_line1", "address_line2", "town", "county", "postcode",
+        "phone", "website", "nominated_individual", "registered_manager",
+        "service_types", "specialisms", "regulated_activities",
+        "last_change_date", "previous_rating",
+        "cqc_provider_id", "companies_house_number", "charity_number",
+        "parent_organisation", "number_of_beds", "staff_count",
+        "rag_status", "quality_score", "enforcement_history",
+        "condition_count", "warning_notice_count",
+    },
+}
+
+
 def get_allowed_fields(tier: str) -> set[str]:
     """Get the set of fields allowed for a tier."""
     config = get_tier_config(tier)
     return FIELD_SETS.get(config["fields"], FIELD_SETS["basic"])
-
-
-def filter_fields(record: dict, tier: str) -> dict:
-    """Strip fields not allowed by the tier. Hidden fields become None."""
-    allowed = get_allowed_fields(tier)
-    return {k: (v if k in allowed else None) for k, v in record.items()}
