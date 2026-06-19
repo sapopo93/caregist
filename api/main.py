@@ -19,6 +19,7 @@ from api.logging_config import setup_logging
 # Structured JSON logs in production, human-readable locally
 setup_logging(json_output="localhost" not in settings.database_url)
 from api.routers import admin, analytics, api_applications, auth, billing, city_pages, claims, comparisons, enquiries, feed, groups, health, internal, provider_profile, providers, public_tools, region_stats, regions, reviews, sitemaps, subscribe, webhooks
+from api.routers import metrics as metrics_router
 
 if sentry_sdk and settings.sentry_dsn:
     sentry_sdk.init(
@@ -93,6 +94,11 @@ async def security_headers_middleware(request, call_next):
     return response
 
 
+@app.middleware("http")
+async def prometheus_middleware(request, call_next):
+    return await metrics_router.record_request_metrics(request, call_next)
+
+
 import logging
 
 from fastapi.responses import JSONResponse
@@ -106,7 +112,6 @@ async def global_exception_handler(request, exc):
     if sentry_sdk:
         sentry_sdk.capture_exception(exc)
     return JSONResponse(status_code=500, content={"detail": "Internal server error."})
-
 
 app.include_router(health.router)
 app.include_router(internal.router)
@@ -130,6 +135,7 @@ app.include_router(region_stats.router)
 app.include_router(city_pages.router)
 app.include_router(sitemaps.router)
 app.include_router(webhooks.router, prefix="/api/v1")
+app.include_router(metrics_router.router)
 
 
 if __name__ == "__main__":
