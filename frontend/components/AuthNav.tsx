@@ -36,20 +36,10 @@ export default function AuthNav() {
     router.push("/");
   };
 
-  const navLinks = (
-    <>
-      <Link href="/why-caregist" className="hover:text-amber transition-colors" onClick={() => setMenuOpen(false)}>Why CareGist</Link>
-      <Link href="/search" className="hover:text-amber transition-colors" onClick={() => setMenuOpen(false)}>Lead Feed</Link>
-      <Link href="/api" className="hover:text-amber transition-colors" onClick={() => setMenuOpen(false)}>API</Link>
-      <Link href="/pricing" className="hover:text-amber transition-colors" onClick={() => setMenuOpen(false)}>Pricing</Link>
-    </>
-  );
-
   return (
     <>
-      {/* Desktop nav */}
-      <nav className="hidden md:flex gap-6 text-sm items-center">
-        {navLinks}
+      {/* Desktop auth actions only. Primary site navigation lives in the shared header. */}
+      <nav className="hidden md:flex gap-4 text-sm items-center">
         {user ? (
           <>
             <Link href="/dashboard" className="hover:text-amber transition-colors">Dashboard</Link>
@@ -81,7 +71,6 @@ export default function AuthNav() {
       {/* Mobile menu dropdown */}
       {menuOpen && (
         <div className="md:hidden absolute top-full left-0 right-0 bg-bark border-t border-cream/10 px-6 py-4 flex flex-col gap-3 text-sm z-50">
-          {navLinks}
           {user ? (
             <>
               <Link href="/dashboard" className="hover:text-amber transition-colors" onClick={() => setMenuOpen(false)}>Dashboard</Link>
