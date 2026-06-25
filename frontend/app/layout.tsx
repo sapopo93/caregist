@@ -7,10 +7,11 @@ import AuthNav from "@/components/AuthNav";
 import CompareBar from "@/components/CompareBar";
 import CookieConsent from "@/components/CookieConsent";
 import SupportWidgetMount from "@/components/SupportWidgetMount";
-import { getSiteUrl, getStripePaymentLinkUrl } from "@/lib/site";
+
+const SITE_URL = "https://caregist.co.uk";
 
 export const metadata: Metadata = {
-  metadataBase: new URL(getSiteUrl()),
+  metadataBase: new URL(SITE_URL),
   title: "CareGist | CQC Data, Lead Lists, API & Provider Listings",
   description:
     "Search active CQC providers, request filtered lead lists, buy dataset packs, start new-provider intelligence plans, and upgrade provider listings.",
@@ -33,7 +34,7 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  const stripePaymentLink = getStripePaymentLinkUrl();
+  const stripePaymentLink = process.env.STRIPE_PAYMENT_LINK_URL?.trim() || null;
 
   return (
     <html lang="en">
