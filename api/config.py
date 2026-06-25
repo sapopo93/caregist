@@ -34,6 +34,7 @@ SECRET_ENV_NAMES = {
     "resend_api_key": "RESEND_API_KEY",
     "caregist_to_support_token": "CAREGIST_TO_SUPPORT_TOKEN",
     "support_internal_token": "SUPPORT_INTERNAL_TOKEN",
+    "hermes_internal_token": "HERMES_INTERNAL_TOKEN",
     "webhook_secret_key": "WEBHOOK_SECRET_KEY",
     "redis_url": "REDIS_URL",
 }
@@ -196,6 +197,9 @@ class Settings(BaseSettings):
     support_platform_url: str = ""
     caregist_to_support_token: str = ""
     support_internal_token: str = ""
+    # Optional separate token for Hermes. When unset, Hermes cannot authenticate
+    # as its own actor and must not share the support-platform token.
+    hermes_internal_token: str = ""
     # AES-GCM key for webhook secret encryption. Must be 32 bytes, base64-encoded.
     # If unset, webhook secrets are stored plaintext (dev/legacy mode).
     webhook_secret_key: str = ""

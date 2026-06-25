@@ -110,6 +110,8 @@ async def global_exception_handler(request, exc):
 
 app.include_router(health.router)
 app.include_router(internal.router)
+# Compatibility alias for agent/support integrations that use the public API prefix.
+app.include_router(internal.router, prefix="/api/v1")
 app.include_router(auth.router)
 app.include_router(analytics.router)
 app.include_router(billing.router)
