@@ -1,14 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import DirectorySearchForm from "@/components/directory/DirectorySearchForm";
 import EmailCaptureStrip from "@/components/EmailCaptureStrip";
+import SearchBar from "@/components/SearchBar";
 import TrackEventOnMount from "@/components/TrackEventOnMount";
 import TrustSignal from "@/components/TrustSignal";
-import { getDirectoryFilterOptions, getDirectoryStats } from "@/lib/directory-db";
-import { getStripePaymentLinkUrl } from "@/lib/site";
-
-export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "CareGist | CQC Data Products, Lead Lists, API & Provider Listings",
@@ -154,20 +150,7 @@ const ABOUT_POINTS = [
 ] as const;
 
 export default async function HomePage() {
-  const stripePaymentLink = getStripePaymentLinkUrl();
-  const [optionsResult, statsResult] = await Promise.allSettled([
-    getDirectoryFilterOptions(),
-    getDirectoryStats(),
-  ]);
-
-  const filterOptions = optionsResult.status === "fulfilled" ? optionsResult.value : null;
-  const stats =
-    statsResult.status === "fulfilled"
-      ? statsResult.value
-      : {
-          totalProviders: 55818,
-          totalRegions: 9,
-        };
+  const stripePaymentLink = process.env.STRIPE_PAYMENT_LINK_URL?.trim() || null;
 
   return (
     <div className="bg-parchment">
@@ -220,11 +203,11 @@ export default async function HomePage() {
 
             <div className="mt-10 grid gap-4 sm:grid-cols-3">
               <div className="border-l border-amber/60 pl-4">
-                <p className="text-3xl font-extrabold text-amber">{stats.totalProviders.toLocaleString()}</p>
+                <p className="text-3xl font-extrabold text-amber">56,742</p>
                 <p className="mt-1 text-xs uppercase tracking-[0.14em] text-stone">Active providers</p>
               </div>
               <div className="border-l border-amber/60 pl-4">
-                <p className="text-3xl font-extrabold text-amber">{stats.totalRegions}</p>
+                <p className="text-3xl font-extrabold text-amber">11</p>
                 <p className="mt-1 text-xs uppercase tracking-[0.14em] text-stone">Regions covered</p>
               </div>
               <div className="border-l border-amber/60 pl-4">
@@ -234,13 +217,17 @@ export default async function HomePage() {
             </div>
           </div>
 
-          <DirectorySearchForm
-            action="/search"
-            options={filterOptions}
-            title="Search by name or town"
-            description="Search the CareGist directory by provider name or town, then narrow by region, service type, and rating."
-            submitLabel="Search the directory"
-          />
+          <div className="rounded-3xl border border-white/15 bg-cream p-6 text-charcoal shadow-2xl">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-clay">CQC directory</p>
+            <h2 className="mt-3 text-3xl font-bold text-bark">Search by name, town, or postcode</h2>
+            <p className="mt-3 text-sm leading-6 text-dusk">
+              Start with the public directory, then move into lead lists, intelligence plans, or the API
+              when the workflow becomes recurring.
+            </p>
+            <div className="mt-5">
+              <SearchBar showAdvancedToggle={true} fetchServiceTypes={true} />
+            </div>
+          </div>
         </div>
       </section>
 
