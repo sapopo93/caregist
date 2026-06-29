@@ -81,6 +81,12 @@ app.add_middleware(
 )
 
 
+from api.middleware.request_id import RequestIdMiddleware
+
+# Outermost: bind a request id before anything else runs (F-39).
+app.add_middleware(RequestIdMiddleware)
+
+
 @app.middleware("http")
 async def security_headers_middleware(request, call_next):
     response = await call_next(request)
