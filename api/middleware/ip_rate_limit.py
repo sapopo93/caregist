@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import ipaddress
+import os
 import time
 from collections import defaultdict
 
@@ -19,19 +21,50 @@ _MAX_PUBLIC_PER_MINUTE = 30
 _TRUSTED_PROXY_COUNT = 1
 
 
-def _get_client_ip(request: Request) -> str:
-    """Extract real client IP, respecting X-Forwarded-For behind reverse proxies.
+def _parse_trusted_proxy_cidrs() -> list[ipaddress._BaseNetwork]:
+    """Networks whose connections are allowed to set X-Forwarded-For.
 
-    Takes the entry added by the outermost trusted proxy rather than blindly
-    trusting the first (leftmost) value, which a client can forge.
+    Defaults to RFC1918 private ranges + loopback, where an ALB or internal
+    proxy terminates. Override with TRUSTED_PROXY_CIDRS to match production.
+    An empty override trusts nothing, so the direct peer IP is always used.
     """
+    raw = os.getenv("TRUSTED_PROXY_CIDRS")
+    if raw is None:
+        defaults = ["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "127.0.0.0/8", "::1/128"]
+    else:
+        defaults = [part.strip() for part in raw.split(",") if part.strip()]
+    networks: list[ipaddress._BaseNetwork] = []
+    for cidr in defaults:
+        try:
+            networks.append(ipaddress.ip_network(cidr, strict=False))
+        except ValueError:
+            continue
+    return networks
+
+
+_TRUSTED_PROXY_CIDRS = _parse_trusted_proxy_cidrs()
+
+
+def _is_trusted_proxy(peer: str | None) -> bool:
+    if not peer:
+        return False
+    try:
+        addr = ipaddress.ip_address(peer)
+    except ValueError:
+        return False
+    return any(addr in net for net in _TRUSTED_PROXY_CIDRS)
+
+
+def _get_client_ip(request: Request) -> str:
+    """Extract real client IP, respecting X-Forwarded-For only behind a trusted proxy."""
+    peer = request.client.host if request.client else None
     forwarded = request.headers.get("x-forwarded-for")
-    if forwarded:
-        ips = [ip.strip() for ip in forwarded.split(",")]
-        # Strip the rightmost N entries (added by trusted proxies); take the next one.
-        idx = max(0, len(ips) - _TRUSTED_PROXY_COUNT)
-        return ips[idx]
-    return request.client.host if request.client else "unknown"
+    if forwarded and _is_trusted_proxy(peer):
+        ips = [ip.strip() for ip in forwarded.split(",") if ip.strip()]
+        if ips:
+            idx = max(0, len(ips) - _TRUSTED_PROXY_COUNT)
+            return ips[idx]
+    return peer or "unknown"
 
 
 def _cleanup():

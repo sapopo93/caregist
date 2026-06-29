@@ -4,14 +4,43 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, Response
 from fastapi.responses import JSONResponse
 
 from api.database import get_connection
+from api.metrics import render_latest, set_pending_emails
+from api.middleware.internal_auth import validate_internal_token
 from api.services.pipeline_health import get_pipeline_health
 
 logger = logging.getLogger("caregist.health")
 router = APIRouter(tags=["health"])
+
+
+@router.get("/metrics")
+async def metrics(_auth: dict = Depends(validate_internal_token)) -> Response:
+    """Prometheus metrics endpoint.
+
+    Refreshes the pending-email gauges from the DB, then renders all collectors.
+    A DB hiccup must not break scraping, so gauge refresh failures are swallowed.
+    """
+    try:
+        async with get_connection() as conn:
+            rows = await conn.fetch(
+                "SELECT status, COUNT(*) AS n FROM pending_emails GROUP BY status"
+            )
+        for row in rows:
+            set_pending_emails(row["status"], int(row["n"]))
+    except Exception as exc:
+        logger.warning("Metrics gauge refresh failed: %s", exc)
+
+    body, content_type = render_latest()
+    return Response(content=body, media_type=content_type)
+
+
+@router.get("/api/v1/health/liveness")
+async def liveness_check() -> JSONResponse:
+    """Liveness probe that does not touch external dependencies."""
+    return JSONResponse(status_code=200, content={"status": "alive"})
 
 
 @router.get("/api/v1/health")

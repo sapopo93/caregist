@@ -8,7 +8,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 
 from api.database import get_connection
-from api.middleware.auth import validate_api_key
+from api.middleware.auth import validate_optional_api_key
 from api.middleware.rate_limit import add_rate_limit_headers
 
 logger = logging.getLogger("caregist.groups")
@@ -23,7 +23,7 @@ async def list_groups(
     sort: str = Query("locations"),
     page: int = Query(1, ge=1),
     per_page: int = Query(20, ge=1, le=100),
-    _auth: dict = Depends(validate_api_key),
+    _auth: dict = Depends(validate_optional_api_key),
 ) -> dict:
     """List care groups with aggregate ratings. Sortable by size, quality, or name."""
     add_rate_limit_headers(response, _auth["tier"], _auth["remaining"])
@@ -47,6 +47,8 @@ async def list_groups(
                     f"""SELECT * FROM care_groups
                         WHERE group_name ILIKE '%' || $1 || '%'
                           AND location_count >= $2
+                          AND group_name IS NOT NULL
+                          AND BTRIM(group_name) <> ''
                         ORDER BY {order}
                         LIMIT $3 OFFSET $4""",
                     q, min_locations, per_page, offset,
@@ -54,19 +56,26 @@ async def list_groups(
                 count = await conn.fetchval(
                     """SELECT COUNT(*) FROM care_groups
                        WHERE group_name ILIKE '%' || $1 || '%'
-                         AND location_count >= $2""",
+                         AND location_count >= $2
+                         AND group_name IS NOT NULL
+                         AND BTRIM(group_name) <> ''""",
                     q, min_locations,
                 )
             else:
                 rows = await conn.fetch(
                     f"""SELECT * FROM care_groups
                         WHERE location_count >= $1
+                          AND group_name IS NOT NULL
+                          AND BTRIM(group_name) <> ''
                         ORDER BY {order}
                         LIMIT $2 OFFSET $3""",
                     min_locations, per_page, offset,
                 )
                 count = await conn.fetchval(
-                    "SELECT COUNT(*) FROM care_groups WHERE location_count >= $1",
+                    """SELECT COUNT(*) FROM care_groups
+                       WHERE location_count >= $1
+                         AND group_name IS NOT NULL
+                         AND BTRIM(group_name) <> ''""",
                     min_locations,
                 )
     except Exception as exc:
@@ -94,14 +103,20 @@ async def list_groups(
 async def get_group(
     response: Response,
     slug: str,
-    _auth: dict = Depends(validate_api_key),
+    _auth: dict = Depends(validate_optional_api_key),
 ) -> dict:
     """Get a care group with benchmark data and all locations."""
     add_rate_limit_headers(response, _auth["tier"], _auth["remaining"])
 
     try:
         async with get_connection() as conn:
-            group = await conn.fetchrow("SELECT * FROM care_groups WHERE slug = $1", slug)
+            group = await conn.fetchrow(
+                """SELECT * FROM care_groups
+                   WHERE slug = $1
+                     AND group_name IS NOT NULL
+                     AND BTRIM(group_name) <> ''""",
+                slug,
+            )
             if not group:
                 raise HTTPException(status_code=404, detail="Group not found.")
 

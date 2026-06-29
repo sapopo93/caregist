@@ -4,7 +4,10 @@ from __future__ import annotations
 
 import pytest
 from fastapi import HTTPException
+from starlette.requests import Request
 
+import api.middleware.auth as auth
+import api.middleware.ip_rate_limit as ip_rate_limit
 import api.middleware.rate_limit as rate_limit
 
 
@@ -19,6 +22,37 @@ def reset_rate_limit_state():
     rate_limit._daily_counts.clear()
     rate_limit._rolling_7d_counts.clear()
     rate_limit._monthly_counts.clear()
+
+
+def make_request(*, client_host: str, forwarded_for: str | None = None) -> Request:
+    headers = []
+    if forwarded_for:
+        headers.append((b"x-forwarded-for", forwarded_for.encode()))
+    return Request(
+        {
+            "type": "http",
+            "method": "GET",
+            "path": "/",
+            "headers": headers,
+            "client": (client_host, 12345),
+        }
+    )
+
+
+def test_guest_identifier_ignores_spoofed_forwarded_for_from_untrusted_peer():
+    request = make_request(client_host="203.0.113.10", forwarded_for="198.51.100.1")
+
+    assert auth._client_identifier(request) == "203.0.113.10"
+
+
+def test_trusted_proxy_parser_uses_edge_appended_client_ip():
+    request = make_request(
+        client_host="127.0.0.1",
+        forwarded_for="1.2.3.4, 198.51.100.1",
+    )
+
+    assert ip_rate_limit._get_client_ip(request) == "198.51.100.1"
+    assert auth._client_identifier(request) == "198.51.100.1"
 
 
 @pytest.mark.asyncio

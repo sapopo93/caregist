@@ -46,6 +46,45 @@ async def test_health_endpoint_returns_degraded_snapshot():
 
 
 @pytest.mark.asyncio
+async def test_health_endpoint_does_not_drain_email_queue():
+    conn = AsyncMock()
+
+    @asynccontextmanager
+    async def mock_get_connection():
+        yield conn
+
+    snapshot = {
+        "status": "healthy",
+        "readiness_ok": True,
+        "feed_fresh": True,
+        "checks": {
+            "database": "ok",
+            "incremental_fresh": True,
+            "feed_cycle_fresh": True,
+            "email_backlog_healthy": True,
+            "email_processing_healthy": True,
+            "last_incremental_completed_at": "2026-04-13T09:00:00+00:00",
+            "last_feed_cycle_completed_at": "2026-04-13T09:05:00+00:00",
+            "latest_new_registration_observed_at": "2026-04-13T09:05:00+00:00",
+            "new_registration_events_last_24h": 10,
+            "pending_email_count": 0,
+            "stuck_processing_email_count": 0,
+        },
+    }
+
+    drain = AsyncMock(side_effect=RuntimeError("resend down"))
+    with patch("api.routers.health.get_connection", mock_get_connection), \
+         patch("api.routers.health.get_pipeline_health", new=AsyncMock(return_value=snapshot)), \
+         patch("api.routers.health.process_email_queue", new=drain, create=True):
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get("/api/v1/health")
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "healthy"
+    drain.assert_not_awaited()
+
+
+@pytest.mark.asyncio
 async def test_security_headers_include_hsts_in_production():
     with patch("api.main._is_local", False):
         async with AsyncClient(transport=ASGITransport(app=app), base_url="https://test") as client:
