@@ -55,11 +55,11 @@ def _client_identifier(request: Request) -> str:
     return "unknown"
 
 
-async def _update_last_used(api_key_hash: str, api_key: str) -> None:
+async def _update_last_used(api_key_hash: str) -> None:
     """Fire-and-forget: update last_used_at without blocking the request."""
     try:
         async with get_connection() as conn:
-            await conn.execute("UPDATE api_keys SET last_used_at = NOW() WHERE key_hash = $1 OR key = $2", api_key_hash, api_key)
+            await conn.execute("UPDATE api_keys SET last_used_at = NOW() WHERE key_hash = $1", api_key_hash)
     except Exception as exc:
         logger.warning("Failed to update last_used_at: %s", exc)
 
@@ -75,7 +75,7 @@ async def _update_session_last_seen(session_token_hash: str) -> None:
         logger.warning("Failed to update session last_seen_at: %s", exc)
 
 
-async def _auth_from_key_row(row, *, rate_limit_key: str, api_key: str | None = None) -> dict:
+async def _auth_from_key_row(row, *, rate_limit_key: str) -> dict:
     if not row["is_active"]:
         raise HTTPException(status_code=403, detail="API key is disabled.")
 
@@ -110,7 +110,8 @@ async def _auth_from_key_row(row, *, rate_limit_key: str, api_key: str | None = 
     remaining = await check_rate_limit(rate_limit_key, tier)
 
     import asyncio
-    asyncio.create_task(_update_last_used(row["key_hash"] or "", api_key or ""))
+    if row["key_hash"]:
+        asyncio.create_task(_update_last_used(row["key_hash"]))
 
     return {
         "key_id": row["id"],
@@ -119,7 +120,7 @@ async def _auth_from_key_row(row, *, rate_limit_key: str, api_key: str | None = 
         "user_id": user_id,
         "tier": tier,
         "is_verified": row["is_verified"],
-        "api_key": api_key,
+        "api_key": None,
         "remaining": remaining,
     }
 
@@ -138,7 +139,7 @@ async def _validate_key(api_key: str) -> dict:
             "email": None,
             "user_id": None,
             "tier": tier,
-            "api_key": api_key,
+            "api_key": None,
             "remaining": remaining,
         }
 
@@ -148,7 +149,6 @@ async def _validate_key(api_key: str) -> dict:
             """
             SELECT
                 ak.id,
-                ak.key,
                 ak.key_hash,
                 ak.name,
                 ak.email,
@@ -171,24 +171,19 @@ async def _validate_key(api_key: str) -> dict:
                 ) AS subscription_max_users
             FROM api_keys ak
             LEFT JOIN users u ON u.id = ak.user_id
-            WHERE ak.key_hash = $1 OR ak.key = $2
+            WHERE ak.key_hash = $1
             """,
             api_key_hash,
-            api_key,
         )
 
     if not row:
         raise HTTPException(status_code=401, detail="Invalid API key.")
 
     stored_hash = _row_value(row, "key_hash")
-    stored_key = _row_value(row, "key")
-    if stored_hash:
-        if not secrets.compare_digest(stored_hash, api_key_hash):
-            raise HTTPException(status_code=401, detail="Invalid API key.")
-    elif not stored_key or not secrets.compare_digest(stored_key, api_key):
+    if not stored_hash or not secrets.compare_digest(stored_hash, api_key_hash):
         raise HTTPException(status_code=401, detail="Invalid API key.")
 
-    return await _auth_from_key_row(row, rate_limit_key=api_key_hash, api_key=api_key)
+    return await _auth_from_key_row(row, rate_limit_key=api_key_hash)
 
 
 async def _validate_session(session_token: str) -> dict:
@@ -198,7 +193,6 @@ async def _validate_session(session_token: str) -> dict:
             """
             SELECT
                 ak.id,
-                ak.key,
                 ak.key_hash,
                 ak.name,
                 ak.email,

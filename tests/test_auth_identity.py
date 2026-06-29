@@ -43,6 +43,7 @@ async def test_validate_api_key_returns_user_context():
     assert auth["email"] == "alice@example.com"
     assert auth["user_id"] == 42
     assert auth["tier"] == "starter"
+    assert auth["api_key"] is None
 
 
 @pytest.mark.asyncio
@@ -169,6 +170,36 @@ async def test_validate_api_key_rejects_invalid_hash_match():
 
 
 @pytest.mark.asyncio
+async def test_validate_api_key_rejects_plaintext_legacy_key_without_hash():
+    conn = AsyncMock()
+    conn.fetchrow = AsyncMock(
+        return_value={
+            "id": 7,
+            "key": "cg_legacy_plaintext",
+            "key_hash": None,
+            "name": "Alice Example",
+            "email": "alice@example.com",
+            "user_id": 42,
+            "tier": "starter",
+            "is_active": True,
+            "is_verified": True,
+            "active_keys": 1,
+            "subscription_max_users": 3,
+        }
+    )
+
+    @asynccontextmanager
+    async def mock_get_connection():
+        yield conn
+
+    with patch("api.middleware.auth.get_connection", mock_get_connection):
+        with pytest.raises(HTTPException) as exc:
+            await validate_api_key("cg_legacy_plaintext")
+
+    assert exc.value.status_code == 401
+
+
+@pytest.mark.asyncio
 async def test_valid_active_session_cookie_returns_user_context():
     conn = AsyncMock()
     conn.fetchrow = AsyncMock(
@@ -263,7 +294,7 @@ async def test_legacy_api_key_session_cookie_still_authenticates():
 
     assert auth["user_id"] == 42
     assert auth["tier"] == "starter"
-    assert auth["api_key"] == "cg_legacy_cookie_key"
+    assert auth["api_key"] is None
 
 
 @pytest.mark.asyncio

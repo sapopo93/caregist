@@ -1,0 +1,30 @@
+name: Production Smoke
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "*/30 * * * *"
+
+concurrency:
+  group: production-smoke
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    name: Smoke live directory
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run production smoke
+        env:
+          CAREGIST_APP_URL: https://www.caregist.co.uk
+          CAREGIST_SMOKE_ATTEMPTS: "15"
+          CAREGIST_SMOKE_RETRY_DELAY_SECONDS: "20"
+        run: python tools/verify-deploy.py

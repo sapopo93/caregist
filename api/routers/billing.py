@@ -26,6 +26,7 @@ router = APIRouter(prefix="/api/v1/billing", tags=["billing"])
 
 PRICE_TO_TIER = {}         # B2B data plan prices → tier name
 PRICE_TO_PROFILE_TIER = {}  # Provider listing prices → profile tier name
+BASE_PLAN_TIERS = {"alerts-pro", "starter", "pro", "business"}
 
 
 def init_stripe():
@@ -47,16 +48,16 @@ def init_stripe():
     if settings.stripe_price_profile_enhanced:
         PRICE_TO_PROFILE_TIER[settings.stripe_price_profile_enhanced] = "enhanced"
     if settings.stripe_price_profile_premium:
-        PRICE_TO_PROFILE_TIER[settings.stripe_price_profile_premium] = "premium"
+        PRICE_TO_PROFILE_TIER[settings.stripe_price_profile_premium] = "enhanced"
     if settings.stripe_price_profile_sponsored:
         PRICE_TO_PROFILE_TIER[settings.stripe_price_profile_sponsored] = "sponsored"
 
 
 def _is_base_plan_price(price_id: str | None) -> bool:
-    return PRICE_TO_TIER.get(price_id) in {"starter", "pro", "business"}
+    return PRICE_TO_TIER.get(price_id) in BASE_PLAN_TIERS
 
 
-CHECKOUT_TIERS = {"alerts-pro", "starter", "pro", "business"}
+CHECKOUT_TIERS = BASE_PLAN_TIERS
 CHECKOUT_TIER_ALIASES = {
     "data-starter": "starter",
     "data-pro": "pro",
@@ -311,7 +312,18 @@ async def create_checkout(req: CheckoutRequest, _auth: dict = Depends(validate_a
     return {"checkout_url": session.url, "session_id": session.id, "stripe_mode": stripe_mode}
 
 
-_PROFILE_TIERS = {"enhanced", "premium", "sponsored"}
+_PROFILE_TIERS = {"enhanced", "sponsored"}
+_PROFILE_TIER_ALIASES = {
+    "premium": "enhanced",
+    "provider-pro": "enhanced",
+    "provider_pro": "enhanced",
+    "pro-listing": "enhanced",
+}
+
+
+def _normalize_profile_tier(tier: str) -> str:
+    normalized = "-".join(tier.strip().lower().replace("_", "-").split())
+    return _PROFILE_TIER_ALIASES.get(normalized, normalized)
 
 
 class ProfileCheckoutRequest(BaseModel):
@@ -332,17 +344,17 @@ async def create_profile_checkout(
     if not settings.stripe_secret_key:
         raise HTTPException(status_code=503, detail="Billing not configured.")
 
-    if req.tier not in _PROFILE_TIERS:
+    tier = _normalize_profile_tier(req.tier)
+    if tier not in _PROFILE_TIERS:
         raise HTTPException(status_code=400, detail=f"Invalid profile tier: {req.tier}. Choose from {sorted(_PROFILE_TIERS)}.")
 
     price_map = {
-        "enhanced": settings.stripe_price_profile_enhanced,
-        "premium": settings.stripe_price_profile_premium,
+        "enhanced": settings.stripe_price_profile_enhanced or settings.stripe_price_profile_premium,
         "sponsored": settings.stripe_price_profile_sponsored,
     }
-    price_id = price_map[req.tier]
+    price_id = price_map[tier]
     if not price_id:
-        raise HTTPException(status_code=503, detail=f"Checkout for the {req.tier} profile tier is not yet configured.")
+        raise HTTPException(status_code=503, detail=f"Checkout for the {tier} profile tier is not yet configured.")
 
     async with get_connection() as conn:
         user = await conn.fetchrow("SELECT id, email, stripe_customer_id FROM users WHERE id = $1", user_id)
@@ -365,6 +377,21 @@ async def create_profile_checkout(
         raise HTTPException(status_code=404, detail="Provider not found.")
     if not provider["is_claimed"]:
         raise HTTPException(status_code=403, detail="Provider must be claimed before upgrading the listing.")
+    async with get_connection() as conn:
+        claim = await conn.fetchrow(
+            """
+            SELECT id
+            FROM provider_claims
+            WHERE provider_id = $1
+              AND claimant_email = $2
+              AND status = 'approved'
+            LIMIT 1
+            """,
+            provider["id"],
+            user["email"],
+        )
+    if not claim:
+        raise HTTPException(status_code=403, detail="An approved claim is required before upgrading this listing.")
 
     customer_id = user["stripe_customer_id"]
     if not customer_id:
@@ -387,7 +414,7 @@ async def create_profile_checkout(
             "type": "profile",
             "slug": req.slug,
             "provider_id": str(provider["id"]),
-            "tier": req.tier,
+            "tier": tier,
         },
     )
     async with get_connection() as conn:
@@ -397,7 +424,7 @@ async def create_profile_checkout(
             actor=actor_from_auth(_auth),
             target_type="checkout_session",
             target_id=session.id,
-            metadata={"provider_id": str(provider["id"]), "slug": req.slug, "tier": req.tier},
+            metadata={"provider_id": str(provider["id"]), "slug": req.slug, "tier": tier},
             conn=conn,
         )
 
@@ -515,7 +542,7 @@ async def _handle_checkout_completed(conn, session: dict) -> None:
 
     if not user_id:
         raise RuntimeError("checkout.session.completed missing user_id metadata")
-    if tier not in {"starter", "pro", "business"}:
+    if tier not in BASE_PLAN_TIERS:
         raise RuntimeError(f"checkout.session.completed has invalid tier metadata: {tier!r}")
     if not subscription_id:
         raise RuntimeError("checkout.session.completed missing subscription id")
@@ -564,7 +591,7 @@ async def _handle_subscription_updated(conn, subscription: dict) -> None:
         for item in items:
             item_price_id = item.get("price", {}).get("id")
             mapped = PRICE_TO_TIER.get(item_price_id)
-            if mapped in {"starter", "pro", "business"}:
+            if mapped in BASE_PLAN_TIERS:
                 price_id = item_price_id
             elif mapped == "pro-seat":
                 extra_seats += int(item.get("quantity") or 0)
@@ -647,7 +674,7 @@ async def _handle_subscription_deleted(conn, subscription: dict) -> None:
 async def _handle_profile_checkout_completed(conn, session: dict) -> None:
     """Activate provider listing tier after successful profile checkout."""
     slug = session.get("metadata", {}).get("slug")
-    tier = session.get("metadata", {}).get("tier")
+    tier = _normalize_profile_tier(session.get("metadata", {}).get("tier", ""))
     subscription_id = session.get("subscription")
 
     if not slug or not tier:

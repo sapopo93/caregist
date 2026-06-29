@@ -9,15 +9,24 @@ from fastapi.responses import JSONResponse
 
 from api.database import get_connection
 from api.services.pipeline_health import get_pipeline_health
+from api.utils.email_queue import process_email_queue
 
 logger = logging.getLogger("caregist.health")
 router = APIRouter(tags=["health"])
+
+
+async def _drain_email_queue_for_health() -> None:
+    try:
+        await process_email_queue(batch_size=5)
+    except Exception as exc:
+        logger.warning("Health email queue drain failed: %s", exc)
 
 
 @router.get("/api/v1/health")
 async def health_check() -> JSONResponse:
     """Health check — verifies database connectivity and freshness indicators."""
     try:
+        await _drain_email_queue_for_health()
         async with get_connection() as conn:
             snapshot = await get_pipeline_health(conn)
         return JSONResponse(

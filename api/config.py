@@ -53,6 +53,8 @@ REQUIRED_PRODUCTION_SECRETS = (
     "support_internal_token",
     "stripe_secret_key",
     "stripe_webhook_secret",
+    "webhook_secret_key",
+    "redis_url",
 )
 
 
@@ -220,8 +222,15 @@ class Settings(BaseSettings):
         if not self.support_internal_token:
             raise RuntimeError("FATAL: SUPPORT_INTERNAL_TOKEN is required.")
 
-        # Stripe environment guard: reject live keys in dev/test
         is_localhost = self.database_url == "postgresql://caregist:caregist_dev@localhost:5432/caregist"
+        is_production_db = "localhost" not in self.database_url
+        if is_production_db:
+            if not self.webhook_secret_key:
+                raise RuntimeError("FATAL: WEBHOOK_SECRET_KEY is required in production.")
+            if not self.redis_url:
+                raise RuntimeError("FATAL: REDIS_URL is required in production.")
+
+        # Stripe environment guard: reject live keys in dev/test
         if self.stripe_secret_key.startswith("sk_live_") and is_localhost:
             raise RuntimeError(
                 "FATAL: Live Stripe secret key (sk_live_) detected in local development environment. "
@@ -248,8 +257,8 @@ TIERS = {
         "page_size": 5,
         "fields": "basic",
         "nearby": False,
-        "export": 25,
-        "exports_per_day": 3,
+        "export": 0,
+        "exports_per_day": 0,
         "compare": 0,
         "webhooks": False,
         "monitors": 1,
@@ -272,8 +281,8 @@ TIERS = {
         "page_size": 10,
         "fields": "standard",
         "nearby": False,
-        "export": 500,
-        "exports_per_day": 5,
+        "export": 0,
+        "exports_per_day": 0,
         "compare": 3,
         "webhooks": False,
         "monitors": 50,
@@ -450,11 +459,12 @@ FIELD_SETS = {
 
 TIER_RANK = {
     "free": 0,
-    "starter": 1,
-    "pro": 2,
-    "business": 3,
-    "enterprise": 4,
-    "admin": 5,
+    "alerts-pro": 1,
+    "starter": 2,
+    "pro": 3,
+    "business": 4,
+    "enterprise": 5,
+    "admin": 6,
 }
 
 

@@ -272,3 +272,34 @@ async def test_profile_checkout_rejects_another_account_email_without_enumeratin
     assert "bob@example.com" not in exc.value.detail
     assert "not found" not in exc.value.detail.lower()
     create_session.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_profile_checkout_requires_approved_claim_ownership(monkeypatch):
+    monkeypatch.setattr(settings, "stripe_secret_key", "sk_test_checkout")
+    monkeypatch.setattr(settings, "stripe_price_profile_enhanced", "price_profile_enhanced")
+
+    conn = AsyncMock()
+    conn.fetchrow = AsyncMock(
+        side_effect=[
+            {"id": 42, "email": "alice@example.com", "stripe_customer_id": "cus_123"},
+            {"id": "LOC123", "is_claimed": True, "profile_tier": "claimed"},
+            None,
+        ]
+    )
+
+    @asynccontextmanager
+    async def mock_get_connection():
+        yield conn
+
+    with patch("api.routers.billing.get_connection", mock_get_connection), \
+         patch("api.routers.billing.stripe.checkout.Session.create") as create_session:
+        with pytest.raises(HTTPException) as exc:
+            await create_profile_checkout(
+                ProfileCheckoutRequest(slug="claimed-provider", tier="enhanced", email="alice@example.com"),
+                {"user_id": 42, "email": "alice@example.com", "is_verified": True},
+            )
+
+    assert exc.value.status_code == 403
+    assert "approved claim" in exc.value.detail
+    create_session.assert_not_called()

@@ -23,6 +23,8 @@ def test_successful_secret_resolution_from_aws():
         "support_internal_token": "support",
         "stripe_secret_key": "sk_live_123",
         "stripe_webhook_secret": "whsec_123",
+        "webhook_secret_key": "webhook-key",
+        "redis_url": "rediss://redis.example.com:6380/0",
     }
 
     secrets = load_application_secrets(
@@ -39,6 +41,8 @@ def test_successful_secret_resolution_from_aws():
     assert secrets["support_internal_token"] == "support"
     assert secrets["stripe_secret_key"] == "sk_live_123"
     assert secrets["stripe_webhook_secret"] == "whsec_123"
+    assert secrets["webhook_secret_key"] == "webhook-key"
+    assert secrets["redis_url"] == "rediss://redis.example.com:6380/0"
 
 
 def test_secret_resolution_includes_stripe_price_aliases_from_aws():
@@ -48,6 +52,8 @@ def test_secret_resolution_includes_stripe_price_aliases_from_aws():
         "SUPPORT_INTERNAL_TOKEN": "support",
         "STRIPE_SECRET_KEY": "sk_live_123",
         "STRIPE_WEBHOOK_SECRET": "whsec_123",
+        "WEBHOOK_SECRET_KEY": "webhook-key",
+        "REDIS_URL": "rediss://redis.example.com:6380/0",
         "STRIPE_PRICE_ALERTS_PRO_MONTHLY": "price_alerts",
         "STRIPE_PRICE_DATA_STARTER_MONTHLY": "price_starter",
         "STRIPE_PRICE_DATA_PRO_MONTHLY": "price_pro",
@@ -92,6 +98,25 @@ def test_missing_required_secret_in_production_fails_startup():
         )
 
 
+def test_missing_webhook_encryption_or_redis_secret_in_production_fails_startup():
+    FakeSecretLoader.payload = {
+        "database_url": "postgresql://prod",
+        "api_master_key": "master",
+        "support_internal_token": "support",
+        "stripe_secret_key": "sk_live_123",
+        "stripe_webhook_secret": "whsec_123",
+    }
+
+    with pytest.raises(RuntimeError, match="WEBHOOK_SECRET_KEY|REDIS_URL"):
+        load_application_secrets(
+            environ={
+                "NODE_ENV": "production",
+                "AWS_SECRETS_MANAGER_SECRET_ID": "caregist/prod/api",
+            },
+            secret_loader_cls=FakeSecretLoader,
+        )
+
+
 def test_dev_fallback_works_only_outside_production():
     dev_secrets = load_application_secrets(
         environ={
@@ -126,6 +151,8 @@ def test_valid_explicit_cors_origins_pass():
         database_url="postgresql://prod",
         api_master_key="master",
         support_internal_token="support",
+        webhook_secret_key="webhook-key",
+        redis_url="rediss://redis.example.com:6380/0",
         cors_origins="https://caregist.co.uk,https://app.caregist.co.uk",
     ).validate_production()
 

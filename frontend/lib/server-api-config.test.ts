@@ -1,5 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs";
 
 import { getPublicApiBase, getServerApiBase } from "./server-api-config.ts";
 
@@ -74,5 +75,11 @@ describe("server API config", () => {
         assert.equal(getPublicApiBase(), "https://api.caregist.co.uk");
       },
     );
+  });
+
+  it("does not include a NEXT_PUBLIC_API_KEY server fallback", () => {
+    const source = fs.readFileSync(new URL("./server-api-config.ts", import.meta.url), "utf-8");
+
+    assert.doesNotMatch(source, /NEXT_PUBLIC_API_KEY/);
   });
 });

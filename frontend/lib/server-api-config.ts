@@ -144,14 +144,6 @@ export function getServerApiKey() {
     return rootMasterKey;
   }
 
-  if (process.env.NEXT_PUBLIC_API_KEY) {
-    warnOnce(
-      "server_key",
-      "[caregist] Falling back to NEXT_PUBLIC_API_KEY for server requests. Rotate this key and move it to API_KEY or API_MASTER_KEY.",
-    );
-    return process.env.NEXT_PUBLIC_API_KEY;
-  }
-
   throw new Error("[caregist] API_KEY or API_MASTER_KEY env var is required but not set");
 }
 
