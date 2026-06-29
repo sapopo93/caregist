@@ -7,6 +7,7 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 
 from api import metrics
+from api.config import settings
 from api.main import app
 
 
@@ -23,7 +24,7 @@ async def test_metrics_endpoint_renders_prometheus_text():
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.get(
                 "/metrics",
-                headers={"X-Internal-Token": "test-internal-token-for-pytest"},
+                headers={"X-Internal-Token": settings.support_internal_token},
             )
 
     assert response.status_code == 200
@@ -42,7 +43,7 @@ async def test_request_latency_is_recorded():
         await client.get("/api/v1/health/liveness")
         response = await client.get(
             "/metrics",
-            headers={"X-Internal-Token": "test-internal-token-for-pytest"},
+            headers={"X-Internal-Token": settings.support_internal_token},
         )
 
     # The liveness route shows up in the request histogram with its template label.
