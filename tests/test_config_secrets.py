@@ -184,3 +184,23 @@ def test_wildcard_production_cors_config_fails_startup_validation():
 
     with pytest.raises(RuntimeError, match="CORS wildcard"):
         settings.validate_production()
+
+
+def test_master_keys_includes_primary_and_rotation_window():
+    settings = Settings(
+        database_url="postgresql://localhost/x",
+        api_master_key="new-master",
+        api_master_key_previous="old-master, older-master",
+        support_internal_token="support",
+    )
+    keys = settings.master_keys()
+    assert keys == ("new-master", "old-master", "older-master")
+
+
+def test_master_keys_empty_rotation_is_just_primary():
+    settings = Settings(
+        database_url="postgresql://localhost/x",
+        api_master_key="only-master",
+        support_internal_token="support",
+    )
+    assert settings.master_keys() == ("only-master",)

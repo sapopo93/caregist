@@ -12,6 +12,7 @@ from fastapi.security import APIKeyHeader
 from api.config import get_max_users, get_tier_config, settings
 from api.database import get_connection
 from api.middleware.rate_limit import check_rate_limit
+from api.utils.audit import write_audit_log
 
 logger = logging.getLogger("caregist.auth")
 
@@ -133,10 +134,23 @@ async def _validate_key(api_key: str) -> dict:
     """Core key validation logic — shared by header and cookie auth paths."""
     api_key_hash = hash_api_key(api_key)
 
-    # Master key
-    if secrets.compare_digest(api_key, settings.api_master_key):
+    # Master key — accept any key in the rotation window (F-18). compare_digest
+    # against each so a fresh key can be deployed before the old one is revoked.
+    if any(secrets.compare_digest(api_key, mk) for mk in settings.master_keys()):
         tier = "admin"
         remaining = await check_rate_limit(api_key_hash, tier)
+        # Audit every master-key use so privileged access is reviewable. The key
+        # itself is never logged — only its prefix for correlation.
+        try:
+            await write_audit_log(
+                action="auth.master_key.use",
+                outcome="success",
+                actor={"type": "master", "name": "master"},
+                target_type="master_key",
+                metadata={"key_prefix": api_key_prefix(api_key)},
+            )
+        except Exception as exc:  # never block auth on an audit failure
+            logger.warning("Master-key audit log failed: %s", exc)
         return {
             "key_id": None,
             "name": "master",

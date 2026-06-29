@@ -20,6 +20,7 @@ AWS_REGION_ENV = "AWS_REGION"
 SECRET_ENV_NAMES = {
     "database_url": "DATABASE_URL",
     "api_master_key": "API_MASTER_KEY",
+    "api_master_key_previous": "API_MASTER_KEY_PREVIOUS",
     "stripe_secret_key": "STRIPE_SECRET_KEY",
     "stripe_webhook_secret": "STRIPE_WEBHOOK_SECRET",
     "stripe_price_alerts_pro": "STRIPE_PRICE_ALERTS_PRO",
@@ -178,6 +179,15 @@ class Settings(BaseSettings):
     api_host: str = "0.0.0.0"
     api_port: int = 8000
     api_master_key: str = ""
+    # Optional comma-separated additional master keys, valid during a rotation
+    # window so a new key can be deployed before the old one is revoked (F-18).
+    api_master_key_previous: str = ""
+
+    def master_keys(self) -> tuple[str, ...]:
+        """All currently-valid master keys (primary + rotation overlap)."""
+        keys = [self.api_master_key]
+        keys.extend(part.strip() for part in self.api_master_key_previous.split(",") if part.strip())
+        return tuple(key for key in keys if key)
     cors_origins: str = "http://localhost:3000"
     query_timeout_ms: int = 10000
     stripe_secret_key: str = ""
