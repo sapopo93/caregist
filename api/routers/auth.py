@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import logging
 import secrets
@@ -75,6 +76,57 @@ async def _raise_auth_failure(email: str, action: str, audit_action: str | None 
     raise HTTPException(status_code=401, detail=GENERIC_AUTH_FAILURE)
 
 
+MIN_PASSWORD_LENGTH = 12
+
+# A small deny-list of obviously weak passwords that satisfy the length/class
+# rules but are trivially guessable. Not exhaustive — defence in depth alongside
+# the character-class check below.
+_COMMON_PASSWORDS = frozenset(
+    {
+        "password1234",
+        "password12345",
+        "qwertyuiop12",
+        "123456789012",
+        "aaaaaaaaaaaa",
+        "letmein12345",
+        "welcome12345",
+        "admin1234567",
+        "iloveyou1234",
+        "caregist1234",
+    }
+)
+
+
+def _validate_password_strength(password: str) -> None:
+    """Reject weak passwords (F-22).
+
+    Requires at least MIN_PASSWORD_LENGTH characters and at least three of the
+    four character classes (lower, upper, digit, symbol), and rejects a small
+    deny-list of common passwords. Raises HTTPException(400) on failure.
+    """
+    if len(password) < MIN_PASSWORD_LENGTH:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Password must be at least {MIN_PASSWORD_LENGTH} characters.",
+        )
+    classes = sum(
+        bool(check)
+        for check in (
+            any(c.islower() for c in password),
+            any(c.isupper() for c in password),
+            any(c.isdigit() for c in password),
+            any(not c.isalnum() for c in password),
+        )
+    )
+    if classes < 3:
+        raise HTTPException(
+            status_code=400,
+            detail="Password must include at least three of: lowercase, uppercase, digits, symbols.",
+        )
+    if password.lower() in _COMMON_PASSWORDS:
+        raise HTTPException(status_code=400, detail="Password is too common. Choose a stronger one.")
+
+
 def _hash_password(password: str) -> str:
     if bcrypt:
         return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
@@ -107,7 +159,7 @@ async def _rehash_if_legacy(user_id: int, password: str, stored: str) -> None:
 class RegisterRequest(BaseModel):
     email: EmailStr
     name: str = Field(..., max_length=255)
-    password: str = Field(..., min_length=8)
+    password: str = Field(..., min_length=MIN_PASSWORD_LENGTH)
 
 
 class LoginRequest(BaseModel):
@@ -153,6 +205,7 @@ async def _get_key_capacity(conn, user_id: int, tier: str | None = None) -> tupl
 @router.post("/register")
 async def register(req: RegisterRequest, _ip=Depends(check_ip_rate_limit)) -> dict:
     """Register a new user, provision free-tier access, and send verification email."""
+    _validate_password_strength(req.password)
     async with get_connection() as conn:
         existing = await conn.fetchrow("SELECT id FROM users WHERE email = $1", req.email)
         if existing:
@@ -214,7 +267,7 @@ def _set_session_cookie(response: Response, api_key: str, *, is_prod: bool) -> N
         value=api_key,
         httponly=True,
         secure=is_prod,
-        samesite="lax",
+        samesite="strict",
         path="/",
         max_age=30 * 24 * 3600,  # 30 days
     )
@@ -587,22 +640,27 @@ class ForgotPasswordRequest(BaseModel):
 class ResetPasswordRequest(BaseModel):
     email: EmailStr
     token: str
-    new_password: str = Field(..., min_length=8)
+    new_password: str = Field(..., min_length=MIN_PASSWORD_LENGTH)
 
 
 MAX_RESET_ATTEMPTS = 5
 RESET_TOKEN_BYTES = 32
+# Minimum wall-clock duration for /forgot-password so the registered and
+# unregistered paths are indistinguishable by timing (F-24).
+FORGOT_PASSWORD_MIN_SECONDS = 0.5
 
 
-@router.post("/forgot-password")
-async def forgot_password(req: ForgotPasswordRequest, _ip=Depends(check_ip_rate_limit)) -> dict:
-    """Generate a high-entropy reset token and email it via Resend."""
-    # Always return success to avoid email enumeration
+async def _forgot_password_inner(req: ForgotPasswordRequest) -> None:
+    """Issue a reset token if the email is registered. No-op otherwise.
+
+    Kept separate from the public handler so the handler can clamp the total
+    response time regardless of which branch runs (F-24).
+    """
     async with get_connection() as conn:
         user = await conn.fetchrow("SELECT id FROM users WHERE email = $1", req.email)
 
     if not user:
-        return {"message": "If that email is registered, a reset token has been sent."}
+        return
 
     async with get_connection() as conn:
         recent_count = await conn.fetchval(
@@ -611,20 +669,43 @@ async def forgot_password(req: ForgotPasswordRequest, _ip=Depends(check_ip_rate_
             req.email,
         )
     if recent_count and recent_count >= 3:
-        return {"message": "If that email is registered, a reset token has been sent."}
+        return
 
     reset_token = secrets.token_urlsafe(RESET_TOKEN_BYTES)
+    token_hash = hash_api_key(reset_token)
     expires_at = datetime.now(timezone.utc) + timedelta(minutes=15)
 
     async with get_connection() as conn:
+        # Invalidate any prior unused tokens so only the newest can be redeemed
+        # (F-23: prevents brute-forcing older outstanding tokens).
         await conn.execute(
-            """INSERT INTO password_reset_tokens (token, email, expires_at)
+            "UPDATE password_reset_tokens SET used = true WHERE email = $1 AND used = false",
+            req.email,
+        )
+        await conn.execute(
+            """INSERT INTO password_reset_tokens (token_hash, email, expires_at)
                VALUES ($1, $2, $3)""",
-            reset_token, req.email, expires_at,
+            token_hash, req.email, expires_at,
         )
 
-    # Send email (best-effort)
+    # Send email (best-effort) with the raw token; only its hash is persisted.
     await _send_reset_email(req.email, reset_token)
+
+
+@router.post("/forgot-password")
+async def forgot_password(req: ForgotPasswordRequest, _ip=Depends(check_ip_rate_limit)) -> dict:
+    """Generate a high-entropy reset token and email it via Resend.
+
+    Always returns the same message and clamps to a minimum duration so the
+    registered and unregistered paths cannot be distinguished by timing (F-24).
+    """
+    start = time.monotonic()
+    try:
+        await _forgot_password_inner(req)
+    finally:
+        elapsed = time.monotonic() - start
+        if elapsed < FORGOT_PASSWORD_MIN_SECONDS:
+            await asyncio.sleep(FORGOT_PASSWORD_MIN_SECONDS - elapsed)
 
     return {"message": "If that email is registered, a reset token has been sent."}
 
@@ -679,6 +760,8 @@ async def resend_verification(req: ResendVerificationRequest, _ip=Depends(check_
 @router.post("/reset-password")
 async def reset_password(req: ResetPasswordRequest, _ip=Depends(check_ip_rate_limit)) -> dict:
     """Validate reset token and update password."""
+    _validate_password_strength(req.new_password)
+    candidate_hash = hash_api_key(req.token)
     async with get_connection() as conn:
         # Check for too many failed attempts in the last 15 minutes
         attempt_count = await conn.fetchval(
@@ -690,24 +773,31 @@ async def reset_password(req: ResetPasswordRequest, _ip=Depends(check_ip_rate_li
         if attempt_count and attempt_count > 0:
             raise HTTPException(status_code=429, detail="Too many attempts. Request a new token.")
 
+        # Fetch the single outstanding token for this email (forgot-password
+        # invalidates older ones), then compare hashes in constant time (F-23).
         token_row = await conn.fetchrow(
-            """SELECT id, expires_at, used, attempts FROM password_reset_tokens
-               WHERE email = $1 AND token = $2
+            """SELECT id, token_hash, expires_at, used, attempts FROM password_reset_tokens
+               WHERE email = $1 AND used = false
                ORDER BY created_at DESC LIMIT 1""",
-            req.email, req.token,
+            req.email,
         )
 
-        if not token_row or token_row["used"] or token_row["expires_at"] < datetime.now(timezone.utc):
-            # Increment attempt counter on the most recent token for this email
-            await conn.execute(
-                """UPDATE password_reset_tokens SET attempts = attempts + 1
-                   WHERE id = (
-                       SELECT id FROM password_reset_tokens
-                       WHERE email = $1 AND used = false
-                       ORDER BY created_at DESC LIMIT 1
-                   )""",
-                req.email,
-            )
+        stored_hash = token_row["token_hash"] if token_row else None
+        token_matches = bool(stored_hash) and secrets.compare_digest(stored_hash, candidate_hash)
+
+        if (
+            not token_row
+            or not token_matches
+            or token_row["used"]
+            or token_row["expires_at"] < datetime.now(timezone.utc)
+        ):
+            # Increment the attempt counter on the specific token being tried,
+            # not "whichever is newest" — closes the brute-force gap in F-23.
+            if token_row:
+                await conn.execute(
+                    "UPDATE password_reset_tokens SET attempts = attempts + 1 WHERE id = $1",
+                    token_row["id"],
+                )
             raise HTTPException(status_code=400, detail="Invalid or expired reset token.")
 
         new_hash = _hash_password(req.new_password)

@@ -8,6 +8,7 @@ import pytest
 from fastapi import HTTPException
 from fastapi.responses import Response as FastAPIResponse
 
+from api.middleware.auth import hash_api_key
 from api.routers.auth import (
     ForgotPasswordRequest,
     LoginRequest,
@@ -70,6 +71,56 @@ async def test_register_requires_email_verification_and_sends_email():
     assert response["verification_required"] is True
     assert "verify your email" in response["message"].lower()
     send_email.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_register_rejects_weak_password():
+    # Long enough but only two character classes -> rejected (F-22).
+    conn = AsyncMock()
+    conn.fetchrow = AsyncMock(return_value=None)
+    conn.execute = AsyncMock()
+
+    @asynccontextmanager
+    async def mock_get_connection():
+        yield conn
+
+    with patch("api.routers.auth.get_connection", mock_get_connection):
+        with pytest.raises(HTTPException) as exc:
+            await register(
+                RegisterRequest(
+                    email="weak@example.com",
+                    name="Weak",
+                    password="alllowercaseletters",
+                )
+            )
+    assert exc.value.status_code == 400
+    # The user lookup never ran — we reject before touching the DB.
+    conn.fetchrow.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_forgot_password_unknown_email_is_silent_and_issues_no_token():
+    conn = AsyncMock()
+    conn.fetchrow = AsyncMock(return_value=None)  # email not registered
+    conn.fetchval = AsyncMock(return_value=0)
+    conn.execute = AsyncMock()
+
+    @asynccontextmanager
+    async def mock_get_connection():
+        yield conn
+
+    with patch("api.routers.auth.get_connection", mock_get_connection), \
+         patch("api.routers.auth.FORGOT_PASSWORD_MIN_SECONDS", 0), \
+         patch("api.routers.auth._send_reset_email", AsyncMock()) as send_email:
+        response = await forgot_password(ForgotPasswordRequest(email="ghost@example.com"))
+
+    # Same generic message as the registered path (no enumeration oracle, F-24).
+    assert "if that email is registered" in response["message"].lower()
+    send_email.assert_not_awaited()
+    assert not any(
+        "INSERT INTO password_reset_tokens" in call.args[0]
+        for call in conn.execute.await_args_list
+    )
 
 
 @pytest.mark.asyncio
@@ -195,6 +246,7 @@ async def test_login_sets_revocable_session_and_logout_revokes_it():
 
     assert login_result["tier"] == "free"
     assert "caregist_session=" in response.headers["set-cookie"]
+    assert "samesite=strict" in response.headers["set-cookie"].lower()
     insert_call = next(call.args for call in conn.execute.await_args_list if "INSERT INTO user_sessions" in call.args[0])
     assert "INSERT INTO user_sessions" in insert_call[0]
     assert insert_call[2] == 1
@@ -322,18 +374,31 @@ async def test_forgot_password_generates_high_entropy_reset_token():
         yield conn
 
     with patch("api.routers.auth.get_connection", mock_get_connection), \
+         patch("api.routers.auth.FORGOT_PASSWORD_MIN_SECONDS", 0), \
          patch("api.routers.auth._send_reset_email", AsyncMock()) as send_email:
         response = await forgot_password(ForgotPasswordRequest(email="alice@example.com"))
 
     assert "reset" in response["message"].lower()
-    insert_call = conn.execute.await_args.args
-    token = insert_call[1]
-    assert "INSERT INTO password_reset_tokens" in insert_call[0]
-    assert len(token) >= 43
-    assert not token.isdigit()
-    assert set(token) <= set("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_")
+    # The raw token is emailed to the user; only its hash is persisted (F-23).
+    insert_call = next(
+        call.args for call in conn.execute.await_args_list
+        if "INSERT INTO password_reset_tokens" in call.args[0]
+    )
+    stored_hash = insert_call[1]
+    assert len(stored_hash) == 64  # SHA-256 hex
+    assert set(stored_hash) <= set("0123456789abcdef")
     assert RESET_TOKEN_BYTES == 32
-    send_email.assert_awaited_once_with("alice@example.com", token)
+    # Prior outstanding tokens for the email are invalidated.
+    assert any(
+        "UPDATE password_reset_tokens SET used = true" in call.args[0]
+        and "used = false" in call.args[0]
+        for call in conn.execute.await_args_list
+    )
+    send_email.assert_awaited_once()
+    emailed_email, emailed_token = send_email.await_args.args
+    assert emailed_email == "alice@example.com"
+    assert len(emailed_token) >= 43
+    assert hash_api_key(emailed_token) == stored_hash
 
 
 @pytest.mark.asyncio
@@ -343,6 +408,7 @@ async def test_reset_password_accepts_valid_token_and_marks_used():
     conn.fetchrow = AsyncMock(
         return_value={
             "id": 9,
+            "token_hash": hash_api_key("strong-reset-token"),
             "expires_at": datetime.now(timezone.utc) + timedelta(minutes=10),
             "used": False,
             "attempts": 0,
@@ -375,7 +441,16 @@ async def test_reset_password_accepts_valid_token_and_marks_used():
 async def test_reset_password_rejects_expired_or_invalid_token():
     conn = AsyncMock()
     conn.fetchval = AsyncMock(return_value=0)
-    conn.fetchrow = AsyncMock(return_value=None)
+    # An outstanding token exists, but the supplied token does not hash to it.
+    conn.fetchrow = AsyncMock(
+        return_value={
+            "id": 9,
+            "token_hash": hash_api_key("the-real-token"),
+            "expires_at": datetime.now(timezone.utc) + timedelta(minutes=10),
+            "used": False,
+            "attempts": 0,
+        }
+    )
     conn.execute = AsyncMock()
 
     @asynccontextmanager
@@ -394,5 +469,39 @@ async def test_reset_password_rejects_expired_or_invalid_token():
 
     assert exc.value.status_code == 400
     assert "Invalid or expired reset token" in exc.value.detail
-    query = conn.execute.await_args.args[0]
-    assert "UPDATE password_reset_tokens SET attempts = attempts + 1" in query
+    # The attempt counter increments on the specific token row being tried (F-23).
+    increment = next(
+        call.args for call in conn.execute.await_args_list
+        if "attempts = attempts + 1" in call.args[0]
+    )
+    assert "WHERE id = $1" in increment[0]
+    assert increment[1] == 9
+
+
+@pytest.mark.asyncio
+async def test_reset_password_rejects_when_no_outstanding_token():
+    conn = AsyncMock()
+    conn.fetchval = AsyncMock(return_value=0)
+    conn.fetchrow = AsyncMock(return_value=None)
+    conn.execute = AsyncMock()
+
+    @asynccontextmanager
+    async def mock_get_connection():
+        yield conn
+
+    with patch("api.routers.auth.get_connection", mock_get_connection):
+        with pytest.raises(HTTPException) as exc:
+            await reset_password(
+                ResetPasswordRequest(
+                    email="nobody@example.com",
+                    token="whatever-token",
+                    new_password="NewSecret123",
+                )
+            )
+
+    assert exc.value.status_code == 400
+    # No token row -> nothing to increment, no information leaked.
+    assert not any(
+        "attempts = attempts + 1" in call.args[0]
+        for call in conn.execute.await_args_list
+    )
