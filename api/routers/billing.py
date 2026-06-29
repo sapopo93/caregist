@@ -160,6 +160,24 @@ async def _persist_subscription_state(
         "UPDATE api_keys SET tier = $1, rate_limit = $2 WHERE user_id = $3 AND is_active = true",
         tier, rate_limit, user_id,
     )
+    # F-17: if a downgrade dropped the seat allowance below the number of active
+    # keys, deactivate the excess (newest first, keeping the original/primary
+    # key) so old keys can't outlive the seats the customer is paying for.
+    max_users = int(entitlements["max_users"])
+    await conn.execute(
+        """
+        UPDATE api_keys
+        SET is_active = false
+        WHERE id IN (
+            SELECT id FROM api_keys
+            WHERE user_id = $1 AND is_active = true
+            ORDER BY created_at ASC, id ASC
+            OFFSET $2
+        )
+        """,
+        user_id,
+        max_users,
+    )
 
 
 @router.post("/checkout")
