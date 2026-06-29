@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS care_providers (
   id VARCHAR(20) PRIMARY KEY,
   provider_id VARCHAR(20),
   name VARCHAR(255) NOT NULL,
-  slug VARCHAR(300) UNIQUE,
+  slug VARCHAR(300) UNIQUE NOT NULL,  -- F-33: matches migration 025's invariant on fresh deploys
   type VARCHAR(100),
   status VARCHAR(20),
   registration_date DATE,

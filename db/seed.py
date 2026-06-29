@@ -130,7 +130,37 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--csv", default=DEFAULT_CSV, help="Path to directory_providers.csv")
     parser.add_argument("--database-url", default=None, help="PostgreSQL connection URL")
     parser.add_argument("--truncate", action="store_true", help="Truncate table before loading")
+    parser.add_argument(
+        "--i-understand",
+        action="store_true",
+        help="Required to --truncate a non-local database (destructive).",
+    )
     return parser.parse_args()
+
+
+def _is_local_database(database_url: str) -> bool:
+    """True only for localhost / 127.0.0.1 / docker-style hosts."""
+    from urllib.parse import urlparse
+
+    try:
+        host = (urlparse(database_url).hostname or "").lower()
+    except ValueError:
+        return False
+    return host in {"localhost", "127.0.0.1", "::1", "db", "postgres"}
+
+
+def guard_truncate(database_url: str, *, i_understand: bool) -> None:
+    """Refuse a destructive truncate of a remote DB without explicit confirmation (F-32).
+
+    Raises SystemExit when the guard blocks the operation.
+    """
+    if _is_local_database(database_url):
+        return
+    if not i_understand:
+        raise SystemExit(
+            "Refusing to --truncate a non-local database without --i-understand. "
+            "This deletes ALL providers, claims, reviews and enquiries."
+        )
 
 
 def main() -> int:
@@ -152,6 +182,9 @@ def main() -> int:
     if not csv_path.exists():
         print(f"CSV not found: {csv_path}", file=sys.stderr)
         return 1
+
+    if args.truncate:
+        guard_truncate(database_url, i_understand=args.i_understand)
 
     seed(database_url, csv_path, truncate=args.truncate)
     return 0
