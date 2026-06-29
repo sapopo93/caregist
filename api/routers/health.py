@@ -4,10 +4,11 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Response
 from fastapi.responses import JSONResponse
 
 from api.database import get_connection
+from api.metrics import render_latest, set_pending_emails
 from api.middleware.rate_limit import redis_health
 from api.services.pipeline_health import get_pipeline_health
 from api.utils.email_queue import process_email_queue
@@ -21,6 +22,27 @@ async def _drain_email_queue_for_health() -> None:
         await process_email_queue(batch_size=5)
     except Exception as exc:
         logger.warning("Health email queue drain failed: %s", exc)
+
+
+@router.get("/metrics")
+async def metrics() -> Response:
+    """Prometheus metrics endpoint (F-47).
+
+    Refreshes the pending-email gauges from the DB, then renders all collectors.
+    A DB hiccup must not break scraping, so gauge refresh failures are swallowed.
+    """
+    try:
+        async with get_connection() as conn:
+            rows = await conn.fetch(
+                "SELECT status, COUNT(*) AS n FROM pending_emails GROUP BY status"
+            )
+        for row in rows:
+            set_pending_emails(row["status"], int(row["n"]))
+    except Exception as exc:
+        logger.warning("Metrics gauge refresh failed: %s", exc)
+
+    body, content_type = render_latest()
+    return Response(content=body, media_type=content_type)
 
 
 @router.get("/api/v1/health/liveness")

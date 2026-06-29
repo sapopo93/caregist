@@ -81,9 +81,12 @@ app.add_middleware(
 )
 
 
+from api.metrics import MetricsMiddleware
 from api.middleware.request_id import RequestIdMiddleware
 
-# Outermost: bind a request id before anything else runs (F-39).
+# Record request latency/volume for /metrics (F-47), then bind a request id
+# (F-39) as the outermost layer.
+app.add_middleware(MetricsMiddleware)
 app.add_middleware(RequestIdMiddleware)
 
 

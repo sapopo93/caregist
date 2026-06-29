@@ -70,6 +70,8 @@ async def deliver_webhook(url: str, secret: str, payload: dict, *, return_metada
     last_status_code: int | None = None
     last_error_message: str | None = None
 
+    from api.metrics import observe_webhook_delivery
+
     async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
         for attempt, delay in enumerate((*_RETRY_DELAYS, None), start=1):
             try:
@@ -77,6 +79,7 @@ async def deliver_webhook(url: str, secret: str, payload: dict, *, return_metada
                 last_status_code = resp.status_code
                 if resp.status_code < 300:
                     logger.info("Webhook delivered to %s (attempt %d, status %d)", url, attempt, resp.status_code)
+                    observe_webhook_delivery(True)
                     if return_metadata:
                         return True, attempt, resp.status_code, None
                     return True
@@ -93,6 +96,7 @@ async def deliver_webhook(url: str, secret: str, payload: dict, *, return_metada
                 await asyncio.sleep(delay)
 
     logger.error("Webhook to %s failed after %d attempts", url, len(_RETRY_DELAYS) + 1)
+    observe_webhook_delivery(False)
     if return_metadata:
         return False, len(_RETRY_DELAYS) + 1, last_status_code, last_error_message
     return False
