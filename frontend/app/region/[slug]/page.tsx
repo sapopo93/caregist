@@ -8,6 +8,7 @@ import TrustSignal from "@/components/TrustSignal";
 import { searchProviders, getRegionStats } from "@/lib/api";
 import { getProviderHref, getProviderPathKey } from "@/lib/provider-path";
 import Link from "next/link";
+import { headers } from "next/headers";
 import type { Metadata } from "next";
 
 const REGION_MAP: Record<string, string> = {
@@ -42,6 +43,9 @@ export default async function RegionPage({
 }) {
   const { slug } = await params;
   const { page } = await searchParams;
+  // Nonce from the CSP middleware so the JSON-LD script is allowed under the
+  // nonce-based policy (F-21).
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
   const isRegion = slug in REGION_MAP;
 
   // For the 9 known regions, use the search endpoint
@@ -102,7 +106,7 @@ export default async function RegionPage({
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-8">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" nonce={nonce} dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       {/* AEO Block */}
       <section className="bg-parchment border-b border-stone rounded-t-lg px-6 py-4 text-sm text-charcoal leading-relaxed mb-6">
         <p>

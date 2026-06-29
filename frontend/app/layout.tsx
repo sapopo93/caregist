@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { connection } from "next/server";
 
 import "./globals.css";
 
@@ -15,6 +16,9 @@ export const metadata: Metadata = {
   title: "CareGist | CQC Data, Lead Lists, API & Provider Listings",
   description:
     "Search active CQC providers, request filtered lead lists, buy dataset packs, start new-provider intelligence plans, and upgrade provider listings.",
+  icons: {
+    icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
+  },
   openGraph: {
     title: "CareGist | CQC Data, Lead Lists, API & Provider Listings",
     description:
@@ -33,7 +37,8 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  await connection();
   const stripePaymentLink = process.env.STRIPE_PAYMENT_LINK_URL?.trim() || null;
 
   return (

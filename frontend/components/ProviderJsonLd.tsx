@@ -1,4 +1,6 @@
-export default function ProviderJsonLd({
+import { headers } from "next/headers";
+
+export default async function ProviderJsonLd({
   name,
   type,
   address,
@@ -67,9 +69,11 @@ export default function ProviderJsonLd({
     }),
   };
 
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
   return (
     <script
       type="application/ld+json"
+      nonce={nonce}
       dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
     />
   );

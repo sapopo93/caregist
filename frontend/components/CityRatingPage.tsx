@@ -6,6 +6,7 @@ import RatingDistributionBar from "@/components/RatingDistributionBar";
 import EmailCaptureStrip from "@/components/EmailCaptureStrip";
 import TrustSignal from "@/components/TrustSignal";
 import Link from "next/link";
+import { headers } from "next/headers";
 import { getCityProviders } from "@/lib/api";
 
 const RATING_LABELS: Record<string, string> = {
@@ -23,6 +24,7 @@ export default async function CityRatingPage({
   ratingFilter: string | null;
   ratingLabel: string;
 }) {
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
   let results: any = { data: [], meta: { city: slug, total: 0, page: 1, pages: 0, rating_distribution: {} } };
   let error = false;
 
@@ -69,6 +71,7 @@ export default async function CityRatingPage({
     <div className="max-w-6xl mx-auto px-6 py-8">
       <script
         type="application/ld+json"
+        nonce={nonce}
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
