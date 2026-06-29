@@ -1,6 +1,11 @@
 import { withSentryConfig } from "@sentry/nextjs";
 import type { NextConfig } from "next";
 
+const apiDestination =
+  process.env.API_URL ||
+  process.env.NEXT_PUBLIC_API_URL ||
+  (process.env.NODE_ENV === "production" ? "https://api.caregist.co.uk" : "http://localhost:8000");
+
 const nextConfig: NextConfig = {
   devIndicators: false,
   outputFileTracingIncludes: {
@@ -27,6 +32,16 @@ const nextConfig: NextConfig = {
         ],
       },
     ];
+  },
+  async rewrites() {
+    return {
+      fallback: [
+        {
+          source: "/api/:path*",
+          destination: `${apiDestination}/api/:path*`,
+        },
+      ],
+    };
   },
 };
 

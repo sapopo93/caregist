@@ -46,7 +46,7 @@ async def test_health_endpoint_returns_degraded_snapshot():
 
 
 @pytest.mark.asyncio
-async def test_health_endpoint_drains_email_queue_without_failing_health_response():
+async def test_health_endpoint_does_not_drain_email_queue():
     conn = AsyncMock()
 
     @asynccontextmanager
@@ -81,7 +81,7 @@ async def test_health_endpoint_drains_email_queue_without_failing_health_respons
 
     assert response.status_code == 200
     assert response.json()["status"] == "healthy"
-    drain.assert_awaited_once_with(batch_size=5)
+    drain.assert_not_awaited()
 
 
 @pytest.mark.asyncio

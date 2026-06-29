@@ -4,28 +4,21 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import APIRouter, Response
+from fastapi import APIRouter, Depends, Response
 from fastapi.responses import JSONResponse
 
 from api.database import get_connection
 from api.metrics import render_latest, set_pending_emails
+from api.middleware.internal_auth import validate_internal_token
 from api.middleware.rate_limit import redis_health
 from api.services.pipeline_health import get_pipeline_health
-from api.utils.email_queue import process_email_queue
 
 logger = logging.getLogger("caregist.health")
 router = APIRouter(tags=["health"])
 
 
-async def _drain_email_queue_for_health() -> None:
-    try:
-        await process_email_queue(batch_size=5)
-    except Exception as exc:
-        logger.warning("Health email queue drain failed: %s", exc)
-
-
 @router.get("/metrics")
-async def metrics() -> Response:
+async def metrics(_auth: dict = Depends(validate_internal_token)) -> Response:
     """Prometheus metrics endpoint (F-47).
 
     Refreshes the pending-email gauges from the DB, then renders all collectors.
@@ -59,7 +52,6 @@ async def liveness_check() -> JSONResponse:
 async def health_check() -> JSONResponse:
     """Health check — verifies database connectivity and freshness indicators."""
     try:
-        await _drain_email_queue_for_health()
         async with get_connection() as conn:
             snapshot = await get_pipeline_health(conn)
         return JSONResponse(

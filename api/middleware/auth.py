@@ -11,6 +11,8 @@ from fastapi.security import APIKeyHeader
 
 from api.config import get_max_users, settings
 from api.database import get_connection
+from api.metrics import set_request_tier
+from api.middleware.ip_rate_limit import _get_client_ip
 from api.middleware.rate_limit import check_rate_limit
 from api.utils.audit import write_audit_log
 
@@ -44,20 +46,7 @@ def _row_value(row, key: str, default=None):
 
 def _client_identifier(request: Request) -> str:
     """Build a stable identifier for anonymous traffic rate limiting."""
-    forwarded_for = request.headers.get("x-forwarded-for", "")
-    if forwarded_for:
-        client_ip = forwarded_for.split(",")[0].strip()
-        if client_ip:
-            return client_ip
-
-    real_ip = request.headers.get("x-real-ip")
-    if real_ip:
-        return real_ip.strip()
-
-    if request.client and request.client.host:
-        return request.client.host
-
-    return "unknown"
+    return _get_client_ip(request)
 
 
 async def _update_last_used(api_key_hash: str) -> None:
@@ -86,6 +75,7 @@ async def _auth_from_key_row(row, *, rate_limit_key: str) -> dict:
 
     user_id = row["user_id"]
     tier = row["tier"] or "free"
+    set_request_tier(tier)
 
     if user_id and not row["is_verified"]:
         raise HTTPException(status_code=403, detail="Verify your email before using the API.")
@@ -138,6 +128,7 @@ async def _validate_key(api_key: str) -> dict:
     # against each so a fresh key can be deployed before the old one is revoked.
     if any(secrets.compare_digest(api_key, mk) for mk in settings.master_keys()):
         tier = "admin"
+        set_request_tier(tier)
         remaining = await check_rate_limit(api_key_hash, tier)
         # Audit every master-key use so privileged access is reviewable. The key
         # itself is never logged — only its prefix for correlation.
@@ -305,6 +296,7 @@ async def validate_optional_api_key(
 
     guest_key = f"guest:{_client_identifier(request)}"
     remaining = await check_rate_limit(guest_key, "free")
+    set_request_tier("free")
     return {
         "key_id": None,
         "name": "guest",

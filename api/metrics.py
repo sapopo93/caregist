@@ -11,8 +11,11 @@ from __future__ import annotations
 
 import logging
 import time
+from contextvars import ContextVar
 
 logger = logging.getLogger("caregist.metrics")
+
+_REQUEST_TIER: ContextVar[str] = ContextVar("caregist_request_tier", default="unknown")
 
 try:
     from prometheus_client import (
@@ -68,6 +71,11 @@ def observe_request(*, method: str, route: str, tier: str, status: int, duration
         RATE_LIMITED_TOTAL.labels(route, tier).inc()
 
 
+def set_request_tier(tier: str | None) -> None:
+    """Attach the authenticated tier to the current request context."""
+    _REQUEST_TIER.set(tier or "unknown")
+
+
 def observe_webhook_delivery(success: bool) -> None:
     if not _ENABLED:
         return
@@ -100,6 +108,7 @@ class MetricsMiddleware:
 
         start = time.perf_counter()
         status_holder = {"status": 500}
+        token = _REQUEST_TIER.set("unknown")
 
         async def send_wrapper(message):
             if message["type"] == "http.response.start":
@@ -111,13 +120,15 @@ class MetricsMiddleware:
         finally:
             duration = time.perf_counter() - start
             route = _route_label(scope)
+            tier = _REQUEST_TIER.get()
             observe_request(
                 method=scope.get("method", "GET"),
                 route=route,
-                tier="unknown",
+                tier=tier,
                 status=status_holder["status"],
                 duration=duration,
             )
+            _REQUEST_TIER.reset(token)
 
 
 def _route_label(scope) -> str:
