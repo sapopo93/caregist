@@ -7,7 +7,6 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException
 
 from api.database import get_connection
-from api.middleware.auth import validate_api_key
 from api.middleware.ip_rate_limit import check_public_rate_limit
 from api.queries.region_stats import (
     ALL_LOCAL_AUTHORITIES,

@@ -26,10 +26,13 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install pip-audit
+          pip install pip-audit ruff
 
       - name: pip check (dependency resolution)
         run: pip check
+
+      - name: ruff (lint — real-bug ruleset)
+        run: ruff check api/ tools/ db/ tests/
 
       - name: pytest
         env:

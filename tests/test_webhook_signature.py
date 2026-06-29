@@ -1,6 +1,6 @@
 """Round-trip signing/verification test for outbound webhooks (F-43)."""
 
-from unittest.mock import AsyncMock, patch
+from unittest.mock import patch
 
 import pytest
 

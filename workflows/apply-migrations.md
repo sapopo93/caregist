@@ -96,19 +96,47 @@ asyncio.run(check())
 | 016 | stripe_event_deduplication.sql | Creates stripe_processed_events table (24h event dedup) |
 | 017 | profile_subscription_id.sql | Adds profile_subscription_id to care_providers |
 
-## Rollback / Undo
+## Rollback / Undo (forward-only policy — F-30)
 
-**Important:** Migrations are designed to be forward-only. Rollback requires manual SQL or database restore.
+**Policy:** migrations are **forward-only**. We deliberately do not ship
+`_down.sql` files. The recovery path for a bad migration is roll-forward (a new
+migration that corrects it) or, for data loss, point-in-time restore from
+backup (see `DEPLOYMENT_CHECKLIST.md` §4). This is a conscious trade-off: down
+migrations are rarely tested, frequently wrong, and give false confidence.
 
-### If a migration fails:
-1. Check error output (e.g., "relation already exists")
-2. Investigate the failing migration file in `db/migrations/`
-3. **Do not** continue — fix the issue or restore from backup
-4. Once fixed, re-run `apply_migrations.py` (it skips already-applied migrations)
+### Authoring rules that make forward-only safe
+Every migration must be safe to apply against a live database with existing
+data and re-runnable:
+- **Additive first.** Prefer `ADD COLUMN`, `CREATE TABLE/INDEX IF NOT EXISTS`,
+  new constraints over destructive rewrites.
+- **Never hard-fail on historical data.** Add foreign keys / check constraints
+  `NOT VALID` (enforced on new rows immediately; `VALIDATE CONSTRAINT` later in
+  a low-traffic window). See migrations 032 and 035 for the pattern.
+- **Guard destructive/duplicate operations** with `IF NOT EXISTS` /
+  `pg_constraint` existence checks (see 032, 033) so re-runs are no-ops.
+- **Expand/contract for breaking changes.** To change a column: (1) add the new
+  shape, (2) backfill, (3) ship code that writes both, (4) a later migration
+  drops the old shape once nothing references it — never in one step.
+- **Verify before merge.** `tests/integration/test_migrations_apply_cleanly.py`
+  replays the whole chain against a real Postgres in CI; a migration that can't
+  replay cleanly does not merge.
+
+### If a migration fails mid-apply:
+1. The runner applies each file in its own transaction, so a failed file rolls
+   back cleanly and is **not** recorded in `schema_migrations`.
+2. Investigate the failing file in `db/migrations/`; fix forward (edit the file
+   if unreleased, or add a corrective migration if already released elsewhere).
+3. **Do not** continue past the failure. Re-run `apply_migrations.py` once
+   fixed — it skips already-applied files.
 
 ### If you need to roll back entirely:
-1. Restore from database backup
-2. Do not attempt to `DELETE FROM schema_migrations` — it will cause sync issues
+1. Restore from PITR / snapshot to just before the migration window.
+2. Do **not** `DELETE FROM schema_migrations` on a live DB — it desyncs the
+   tracking table from the actual schema.
+
+> **Note:** the per-migration table below is illustrative and may lag the
+> directory. `db/migrations/` is the source of truth; the chain currently runs
+> through `035_pending_emails_dlq.sql`.
 
 ## Monitoring
 

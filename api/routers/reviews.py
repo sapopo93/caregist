@@ -17,7 +17,6 @@ from api.queries.reviews import (
     INSERT_REVIEW,
     LIST_APPROVED_REVIEWS,
     REVIEW_SUMMARY,
-    UPDATE_PROVIDER_REVIEW_STATS,
 )
 
 logger = logging.getLogger("caregist.reviews")

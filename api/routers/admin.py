@@ -8,7 +8,6 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 
-from api.config import settings
 from api.database import get_connection
 from api.middleware.auth import validate_api_key
 from api.utils.audit import write_audit_log

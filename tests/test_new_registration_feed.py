@@ -8,7 +8,6 @@ from httpx import ASGITransport, AsyncClient
 
 from api.main import app
 from api.services.new_registration_feed import (
-    FeedFilters,
     build_weekly_digest_html,
     coerce_json_object,
     deliver_new_registration_event,

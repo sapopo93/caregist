@@ -169,7 +169,7 @@ async def update_profile(
     if not updates:
         raise HTTPException(status_code=400, detail="No fields to update.")
 
-    updates.append(f"profile_updated_at = NOW()")
+    updates.append("profile_updated_at = NOW()")
     sql = f"UPDATE care_providers SET {', '.join(updates)} WHERE slug = ${i}"
     params.append(slug)
 

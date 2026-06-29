@@ -1,6 +1,5 @@
 """Tests for quality_audit.py scoring logic."""
 
-import pytest
 import pandas as pd
 
 from quality_audit import score_row, score_to_tier

@@ -1,6 +1,5 @@
 """Shared test fixtures for API tests."""
 
-import asyncio
 import os
 from unittest.mock import AsyncMock, MagicMock, patch
 

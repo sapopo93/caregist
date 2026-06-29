@@ -9,7 +9,7 @@ import secrets
 from fastapi import Cookie, HTTPException, Request, Security
 from fastapi.security import APIKeyHeader
 
-from api.config import get_max_users, get_tier_config, settings
+from api.config import get_max_users, settings
 from api.database import get_connection
 from api.middleware.rate_limit import check_rate_limit
 from api.utils.audit import write_audit_log

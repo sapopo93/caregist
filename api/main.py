@@ -26,7 +26,7 @@ if sentry_sdk and settings.sentry_dsn:
         traces_sample_rate=0.1,
         profiles_sample_rate=0.1,
         environment="production" if "localhost" not in settings.database_url else "development",
-        release=f"caregist-api@1.0.0",
+        release="caregist-api@1.0.0",
     )
 
 
