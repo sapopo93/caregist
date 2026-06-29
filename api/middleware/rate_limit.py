@@ -40,6 +40,29 @@ async def _get_redis():
     return _redis_client
 
 
+async def redis_health() -> dict:
+    """Lightweight Redis liveness probe for readiness checks (F-25).
+
+    Returns {"configured": bool, "ok": bool}. When Redis is not configured we
+    report ok=True (in-memory fallback is acceptable in dev), so this only fails
+    readiness when a configured Redis is actually unreachable.
+    """
+    if not settings.redis_url:
+        return {"configured": False, "ok": True}
+    try:
+        import redis.asyncio as aioredis
+
+        client = aioredis.from_url(settings.redis_url, decode_responses=True)
+        try:
+            await client.ping()
+        finally:
+            await client.aclose()
+        return {"configured": True, "ok": True}
+    except Exception as exc:
+        logger.warning("Redis health probe failed: %s", exc)
+        return {"configured": True, "ok": False}
+
+
 # Lua script: atomically check all quota windows, then increment only when every
 # window has remaining capacity. Return shape:
 #   {0, daily_remaining, rolling_remaining, monthly_remaining} on success

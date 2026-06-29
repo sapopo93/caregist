@@ -178,3 +178,62 @@ async def test_freshness_endpoint_returns_503_when_feed_stale():
 
     assert response.status_code == 503
     assert response.json()["status"] == "stale"
+
+
+@pytest.mark.asyncio
+async def test_liveness_always_ok():
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.get("/api/v1/health/liveness")
+    assert response.status_code == 200
+    assert response.json()["status"] == "alive"
+
+
+@pytest.mark.asyncio
+async def test_readiness_503_when_redis_unreachable():
+    conn = AsyncMock()
+
+    @asynccontextmanager
+    async def mock_get_connection():
+        yield conn
+
+    snapshot = {
+        "status": "healthy",
+        "readiness_ok": True,
+        "feed_fresh": True,
+        "checks": {"database": "ok"},
+    }
+
+    with patch("api.routers.health.get_connection", mock_get_connection), \
+         patch("api.routers.health.get_pipeline_health", new=AsyncMock(return_value=snapshot)), \
+         patch("api.routers.health.redis_health", new=AsyncMock(return_value={"configured": True, "ok": False})):
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get("/api/v1/health/readiness")
+
+    assert response.status_code == 503
+    assert response.json()["readiness_ok"] is False
+    assert response.json()["redis"] == {"configured": True, "ok": False}
+
+
+@pytest.mark.asyncio
+async def test_readiness_ok_when_db_and_redis_healthy():
+    conn = AsyncMock()
+
+    @asynccontextmanager
+    async def mock_get_connection():
+        yield conn
+
+    snapshot = {
+        "status": "healthy",
+        "readiness_ok": True,
+        "feed_fresh": True,
+        "checks": {"database": "ok"},
+    }
+
+    with patch("api.routers.health.get_connection", mock_get_connection), \
+         patch("api.routers.health.get_pipeline_health", new=AsyncMock(return_value=snapshot)), \
+         patch("api.routers.health.redis_health", new=AsyncMock(return_value={"configured": True, "ok": True})):
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get("/api/v1/health/readiness")
+
+    assert response.status_code == 200
+    assert response.json()["readiness_ok"] is True

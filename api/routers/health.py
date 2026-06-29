@@ -8,6 +8,7 @@ from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
 from api.database import get_connection
+from api.middleware.rate_limit import redis_health
 from api.services.pipeline_health import get_pipeline_health
 from api.utils.email_queue import process_email_queue
 
@@ -20,6 +21,16 @@ async def _drain_email_queue_for_health() -> None:
         await process_email_queue(batch_size=5)
     except Exception as exc:
         logger.warning("Health email queue drain failed: %s", exc)
+
+
+@router.get("/api/v1/health/liveness")
+async def liveness_check() -> JSONResponse:
+    """Liveness probe — always 200 while the process can serve requests.
+
+    No external dependencies are touched, so an orchestrator won't kill the pod
+    just because the DB or Redis is briefly unavailable (that's readiness, F-25).
+    """
+    return JSONResponse(status_code=200, content={"status": "alive"})
 
 
 @router.get("/api/v1/health")
@@ -45,12 +56,15 @@ async def health_check() -> JSONResponse:
 
 @router.get("/api/v1/health/readiness")
 async def readiness_check() -> JSONResponse:
-    """Readiness check for traffic and automation dependencies."""
+    """Readiness check for traffic and automation dependencies (DB + Redis, F-25)."""
     try:
         async with get_connection() as conn:
             snapshot = await get_pipeline_health(conn)
-        status_code = 200 if snapshot["readiness_ok"] else 503
-        return JSONResponse(status_code=status_code, content=snapshot)
+        redis = await redis_health()
+        snapshot["redis"] = redis
+        ready = bool(snapshot["readiness_ok"]) and redis["ok"]
+        snapshot["readiness_ok"] = ready
+        return JSONResponse(status_code=200 if ready else 503, content=snapshot)
     except Exception as exc:
         logger.error("Readiness check failed: %s", exc)
         return JSONResponse(status_code=503, content={"status": "unhealthy"})
