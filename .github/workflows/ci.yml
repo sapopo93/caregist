@@ -41,6 +41,9 @@ jobs:
         # Fail the build on known CVEs in backend deps.
         run: pip-audit --requirement requirements.txt --strict
 
+      - name: Smoke verifier syntax
+        run: python -m py_compile tools/verify-deploy.py
+
   frontend:
     name: Frontend (tsc + tests + build + audit)
     runs-on: ubuntu-latest
@@ -72,6 +75,45 @@ jobs:
           API_KEY: ci_test_api_key
           NEXT_PUBLIC_API_URL: http://localhost:8000
         run: npm run build
+
+      - name: Start built app in degraded mode
+        env:
+          APP_URL: http://127.0.0.1:3100
+          NEXT_PUBLIC_APP_URL: http://127.0.0.1:3100
+          POSTGRES_URL: ""
+          DATABASE_URL: ""
+          DIRECTORY_TOKEN_SECRET: ci_test_directory_secret
+          PORT: "3100"
+        run: |
+          npm run start > /tmp/caregist-smoke.log 2>&1 &
+          echo $! > /tmp/caregist-smoke.pid
+
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:3100/api/health/directory >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+
+          cat /tmp/caregist-smoke.log
+          exit 1
+
+      - name: Degraded-mode smoke test
+        env:
+          CAREGIST_APP_URL: http://127.0.0.1:3100
+          CAREGIST_LEAD_EMAIL: ci-smoke@example.com
+        run: python3 ../tools/verify-deploy.py
+
+      - name: Stop smoke server
+        if: always()
+        run: |
+          if [ -f /tmp/caregist-smoke.pid ]; then
+            kill "$(cat /tmp/caregist-smoke.pid)" || true
+          fi
+
+          if [ -f /tmp/caregist-smoke.log ]; then
+            cat /tmp/caregist-smoke.log
+          fi
 
       - name: npm audit (high/critical only)
         # Transitive dev-tool vulns are common; gate on high+ to catch real risk without noise.
