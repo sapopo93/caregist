@@ -114,8 +114,14 @@ async def test_moderate_claim_approve(patched_db):
 
     assert resp.status_code == 200
     assert resp.json()["message"] == "Claim approved."
-    # Verify MARK_PROVIDER_CLAIMED was called
-    assert mock_conn.execute.called
+    # An admin_audit_log row is written for the action (F-45)...
+    admin_audit = next(
+        call.args for call in mock_conn.execute.await_args_list
+        if "INSERT INTO admin_audit_log" in call.args[0]
+    )
+    assert admin_audit[1] == "claim.approved"
+    # ...with the stable, non-spoofable actor (F-16), not a user-controlled name.
+    assert admin_audit[4] == "master"
 
 
 @pytest.mark.asyncio
@@ -157,8 +163,14 @@ async def test_moderate_review(patched_db):
         }, headers=HEADERS)
 
     assert resp.status_code == 200
-    # Verify review stats were updated
+    # Verify review stats were updated and the action is audited (F-45).
     assert mock_conn.execute.called
+    admin_audit = next(
+        call.args for call in mock_conn.execute.await_args_list
+        if "INSERT INTO admin_audit_log" in call.args[0]
+    )
+    assert admin_audit[1] == "review.approved"
+    assert admin_audit[4] == "master"
 
 
 @pytest.mark.asyncio

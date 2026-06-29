@@ -26,6 +26,29 @@ def _sign_payload(secret: str, payload_json: str) -> str:
     return hmac.new(secret.encode(), payload_json.encode(), hashlib.sha256).hexdigest()  # type: ignore[attr-defined]
 
 
+def verify_signature(secret: str, payload_body: str | bytes, signature_header: str | None) -> bool:
+    """Verify an X-CareGist-Signature header against the raw request body.
+
+    This is the consumer-side counterpart to our signing and is the reference
+    implementation we publish to customers (F-43). Usage in a subscriber:
+
+        body = await request.body()
+        if not verify_signature(my_secret, body, request.headers.get("X-CareGist-Signature")):
+            return 401
+
+    The header format is ``sha256=<hexdigest>``; comparison is constant-time.
+    """
+    if not signature_header:
+        return False
+    scheme, _, provided = signature_header.partition("=")
+    if scheme != "sha256" or not provided:
+        return False
+    if isinstance(payload_body, bytes):
+        payload_body = payload_body.decode("utf-8")
+    expected = _sign_payload(secret, payload_body)
+    return hmac.compare_digest(expected, provided)
+
+
 async def deliver_webhook(url: str, secret: str, payload: dict, *, return_metadata: bool = False):
     """
     Deliver a webhook payload to the given URL.
