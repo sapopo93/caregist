@@ -78,6 +78,9 @@ async def _raise_auth_failure(email: str, action: str, audit_action: str | None 
 
 MIN_PASSWORD_LENGTH = 12
 
+# How long an email-verification token stays valid before a re-send is required.
+EMAIL_VERIFICATION_TTL = timedelta(hours=24)
+
 # A small deny-list of obviously weak passwords that satisfy the length/class
 # rules but are trivially guessable. Not exhaustive — defence in depth alongside
 # the character-class check below.
@@ -143,6 +146,17 @@ def _verify_password(password: str, stored: str) -> bool:
         salt, hashed = stored.split(":", 1)
         return hashlib.sha256(f"{salt}:{password}".encode()).hexdigest() == hashed
     return False
+
+
+def _masked_from_prefix(key_prefix: str | None) -> str | None:
+    """Render a stored key_prefix for display.
+
+    New prefixes already encode an ellipsis (first4…last4, F-50); legacy 10-char
+    prefixes do not, so append one only when it is missing.
+    """
+    if not key_prefix:
+        return None
+    return key_prefix if "…" in key_prefix else f"{key_prefix}…"
 
 
 async def _rehash_if_legacy(user_id: int, password: str, stored: str) -> None:
@@ -218,11 +232,13 @@ async def register(req: RegisterRequest, _ip=Depends(check_ip_rate_limit)) -> di
 
         async with conn.transaction():
             free_entitlements = get_subscription_entitlements("free")
+            verification_expires = datetime.now(timezone.utc) + EMAIL_VERIFICATION_TTL
             user = await conn.fetchrow(
-                """INSERT INTO users (email, name, password_hash, verification_token, is_verified)
-                   VALUES ($1, $2, $3, $4, false)
+                """INSERT INTO users (email, name, password_hash, verification_token,
+                                      verification_token_expires_at, is_verified)
+                   VALUES ($1, $2, $3, $4, $5, false)
                    RETURNING id, email, name""",
-                req.email, req.name, password_hash, verification_token,
+                req.email, req.name, password_hash, verification_token, verification_expires,
             )
 
             await conn.execute(
@@ -431,7 +447,7 @@ async def reveal_key(req: LoginRequest, _ip=Depends(check_ip_rate_limit)) -> dic
             )
             return {
                 "api_key": None,
-                "masked_key": f"{key_row['key_prefix']}…" if key_row["key_prefix"] else None,
+                "masked_key": _masked_from_prefix(key_row["key_prefix"]),
                 "tier": key_row["tier"],
                 "rate_limit": key_row["rate_limit"],
                 "message": "This key cannot be revealed. Rotate it to generate a new API key shown once.",
@@ -542,7 +558,7 @@ async def list_team_keys(_auth: dict = Depends(validate_api_key)) -> dict:
                 "masked_key": (
                     f"{row['key'][:10]}…{row['key'][-4:]}"
                     if row["key"]
-                    else f"{row['key_prefix']}…" if row["key_prefix"] else None
+                    else _masked_from_prefix(row["key_prefix"])
                 ),
             }
             for row in keys
@@ -716,7 +732,9 @@ async def verify_email(req: VerifyEmailRequest, _ip=Depends(check_ip_rate_limit)
     async with get_connection() as conn:
         user = await conn.fetchrow(
             """
-            SELECT id, email
+            SELECT id, email,
+                   (verification_token_expires_at IS NOT NULL
+                    AND verification_token_expires_at < NOW()) AS is_expired
             FROM users
             WHERE verification_token = $1
               AND is_verified = false
@@ -725,11 +743,18 @@ async def verify_email(req: VerifyEmailRequest, _ip=Depends(check_ip_rate_limit)
         )
         if not user:
             raise HTTPException(status_code=400, detail="Invalid or expired verification link.")
+        if user["is_expired"]:
+            # F-51: distinct, actionable error so the client can offer a re-send.
+            raise HTTPException(
+                status_code=410,
+                detail="Verification link has expired. Request a new verification email.",
+            )
         await conn.execute(
             """
             UPDATE users
             SET is_verified = true,
                 verification_token = NULL,
+                verification_token_expires_at = NULL,
                 updated_at = NOW()
             WHERE id = $1
             """,
@@ -749,10 +774,15 @@ async def resend_verification(req: ResendVerificationRequest, _ip=Depends(check_
     if not user or user["is_verified"]:
         return {"message": "If that email is waiting for verification, a new link has been sent."}
 
-    token = user["verification_token"] or secrets.token_urlsafe(32)
-    if not user["verification_token"]:
-        async with get_connection() as conn:
-            await conn.execute("UPDATE users SET verification_token = $1 WHERE email = $2", token, req.email)
+    # Always mint a fresh token with a new expiry window so a previously expired
+    # link can be replaced (F-51).
+    token = secrets.token_urlsafe(32)
+    expires_at = datetime.now(timezone.utc) + EMAIL_VERIFICATION_TTL
+    async with get_connection() as conn:
+        await conn.execute(
+            "UPDATE users SET verification_token = $1, verification_token_expires_at = $2 WHERE email = $3",
+            token, expires_at, req.email,
+        )
     await _send_verification_email(req.email, user["name"] or "there", token)
     return {"message": "If that email is waiting for verification, a new link has been sent."}
 
@@ -824,6 +854,23 @@ async def reset_password(req: ResetPasswordRequest, _ip=Depends(check_ip_rate_li
     return {"message": "Password has been reset. You can now log in."}
 
 
+def _safe_resend_error(resp) -> str:
+    """Sanitised Resend error for logs (F-40).
+
+    Resend error bodies can echo recipient PII (and, on auth failures, hints
+    about the key). Log only the status code and the provider's short message
+    field, never the raw response body.
+    """
+    message = ""
+    try:
+        payload = resp.json()
+        if isinstance(payload, dict):
+            message = str(payload.get("message") or payload.get("name") or "")
+    except Exception:
+        message = ""
+    return f"status={resp.status_code} message={message!r}"
+
+
 async def _send_reset_email(email: str, reset_token: str) -> None:
     """Send password reset token via Resend. Fails silently."""
     if not settings.resend_api_key:
@@ -853,7 +900,7 @@ async def _send_reset_email(email: str, reset_token: str) -> None:
                 timeout=10,
             )
             if resp.status_code >= 400:
-                logger.error("Resend API error %s: %s", resp.status_code, resp.text)
+                logger.error("Resend API error: %s", _safe_resend_error(resp))
     except Exception as exc:
         logger.error("Failed to send reset email: %s", exc)
 
@@ -889,7 +936,7 @@ async def _send_verification_email(email: str, name: str, token: str) -> None:
                 timeout=10,
             )
             if resp.status_code >= 400:
-                logger.error("Resend verification email error %s: %s", resp.status_code, resp.text)
+                logger.error("Resend verification email error: %s", _safe_resend_error(resp))
     except Exception as exc:
         logger.error("Failed to send verification email: %s", exc)
 

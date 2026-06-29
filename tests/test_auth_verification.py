@@ -347,7 +347,9 @@ async def test_rotate_key_blocks_unverified_user():
 @pytest.mark.asyncio
 async def test_verify_email_activates_account():
     conn = AsyncMock()
-    conn.fetchrow = AsyncMock(return_value={"id": 1, "email": "alice@example.com"})
+    conn.fetchrow = AsyncMock(
+        return_value={"id": 1, "email": "alice@example.com", "is_expired": False}
+    )
     conn.execute = AsyncMock()
 
     @asynccontextmanager
@@ -360,6 +362,27 @@ async def test_verify_email_activates_account():
     assert response["email"] == "alice@example.com"
     assert "verified" in response["message"].lower()
     conn.execute.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_verify_email_rejects_expired_token():
+    conn = AsyncMock()
+    conn.fetchrow = AsyncMock(
+        return_value={"id": 1, "email": "alice@example.com", "is_expired": True}
+    )
+    conn.execute = AsyncMock()
+
+    @asynccontextmanager
+    async def mock_get_connection():
+        yield conn
+
+    with patch("api.routers.auth.get_connection", mock_get_connection):
+        with pytest.raises(HTTPException) as exc:
+            await verify_email(VerifyEmailRequest(token="expired-token"))
+
+    assert exc.value.status_code == 410
+    # The account is not activated when the token has expired (F-51).
+    conn.execute.assert_not_awaited()
 
 
 @pytest.mark.asyncio

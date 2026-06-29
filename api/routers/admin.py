@@ -65,6 +65,21 @@ async def _audit(conn, *, action: str, entity_type: str, entity_id: int, actor: 
         logger.warning("Audit log insert failed (action=%s entity=%s/%s): %s", action, entity_type, entity_id, exc)
 
 
+def _admin_actor(auth: dict) -> str:
+    """Return a stable, non-spoofable actor identifier for the audit trail (F-16).
+
+    The API-key ``name`` is user-controlled, so it must not be used as the actor
+    of record. The master key has no key_id/user_id; everything else is keyed by
+    its immutable user_id/key_id. The human-readable name is recorded separately
+    as labelled metadata by callers.
+    """
+    key_id = auth.get("key_id")
+    user_id = auth.get("user_id")
+    if key_id is None and user_id is None:
+        return "master"
+    return f"user:{user_id}/key:{key_id}"
+
+
 async def require_admin(auth: dict = Depends(validate_api_key)) -> dict:
     """Only allow master key (admin tier) access."""
     if auth.get("tier") != "admin":
@@ -141,7 +156,7 @@ async def moderate_claim(
     try:
         async with get_connection() as conn:
             row = await conn.fetchrow(
-                UPDATE_CLAIM_STATUS, claim_id, req.status, auth["name"], req.admin_notes
+                UPDATE_CLAIM_STATUS, claim_id, req.status, _admin_actor(auth), req.admin_notes
             )
             if not row:
                 raise HTTPException(status_code=404, detail="Claim not found.")
@@ -155,7 +170,8 @@ async def moderate_claim(
                 action=f"claim.{req.status}",
                 entity_type="claim",
                 entity_id=claim_id,
-                actor=auth.get("name", "admin"),
+                actor=_admin_actor(auth),
+                key_name=auth.get("name"),
                 provider_id=str(row["provider_id"]),
                 notes=req.admin_notes,
             )
@@ -220,7 +236,8 @@ async def moderate_review(
                 action=f"review.{req.status}",
                 entity_type="review",
                 entity_id=review_id,
-                actor=auth.get("name", "admin"),
+                actor=_admin_actor(auth),
+                key_name=auth.get("name"),
                 provider_id=str(row["provider_id"]),
                 notes=req.admin_notes,
             )
@@ -283,7 +300,8 @@ async def update_enquiry(
                 action=f"enquiry.{req.status}",
                 entity_type="enquiry",
                 entity_id=enquiry_id,
-                actor=auth.get("name", "admin"),
+                actor=_admin_actor(auth),
+                key_name=auth.get("name"),
             )
     except HTTPException:
         raise

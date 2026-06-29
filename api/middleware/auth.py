@@ -23,7 +23,11 @@ def hash_api_key(api_key: str) -> str:
 
 
 def api_key_prefix(api_key: str) -> str:
-    return api_key[:10]
+    # F-50: store only enough to identify a key (scheme + first/last 4), not a
+    # 10-char window of the secret. e.g. "cg_a…z9k2".
+    if len(api_key) <= 8:
+        return api_key
+    return f"{api_key[:4]}…{api_key[-4:]}"
 
 
 def _cookie_value(value: str | None) -> str | None:

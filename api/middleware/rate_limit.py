@@ -518,7 +518,8 @@ def check_export_limit(api_key: str, tier: str) -> None:
 def add_rate_limit_headers(response: Response, tier: str, remaining: dict[str, int]) -> None:
     """Add rate limit headers to a response."""
     config = get_tier_config(tier)
-    response.headers["X-Tier"] = tier
+    # F-41: do not expose the customer's tier to intermediaries / browser
+    # extensions. The numeric limits below are sufficient for client backoff.
     response.headers["X-RateLimit-Limit"] = str(config["rate"])
     response.headers["X-RateLimit-Window"] = f"{config.get('rate_window_seconds', 1)}s"
     response.headers["X-RateLimit-Remaining"] = str(max(0, remaining["burst_remaining"]))
