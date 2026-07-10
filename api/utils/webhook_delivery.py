@@ -12,8 +12,7 @@ from datetime import datetime, timezone
 
 import httpx
 
-from api.config import settings
-from api.utils.crypto import maybe_decrypt
+from api.utils.crypto import decrypt_webhook_secret
 
 logger = logging.getLogger("caregist.webhook_delivery")
 
@@ -91,7 +90,7 @@ async def record_delivery_failure(conn, subscription_id: int, url: str) -> None:
             active = CASE WHEN delivery_failures + 1 >= $2 THEN FALSE ELSE active END
         WHERE id = $1
         RETURNING active, delivery_failures,
-                  (SELECT u.email FROM users u WHERE u.id = webhook_subscriptions.user_id) AS owner_email
+            (SELECT u.email FROM users u WHERE u.id = webhook_subscriptions.user_id) AS owner_email
         """,
         subscription_id,
         _FAILURE_DISABLE_THRESHOLD,
@@ -101,10 +100,10 @@ async def record_delivery_failure(conn, subscription_id: int, url: str) -> None:
         if owner_email:
             from api.utils.email_queue import queue_email  # local import to avoid circular
             html = (
-                f"<p>Your webhook endpoint <strong>{url}</strong> has been automatically disabled "
-                f"after {_FAILURE_DISABLE_THRESHOLD} consecutive delivery failures.</p>"
-                "<p>Please check that the endpoint is reachable and returning a 2xx response, "
-                "then re-enable it from your dashboard.</p>"
+                f" Your webhook endpoint {url} has been automatically disabled "
+                f"after {_FAILURE_DISABLE_THRESHOLD} consecutive delivery failures. "
+                " Please check that the endpoint is reachable and returning a 2xx response, "
+                "then re-enable it from your dashboard. "
             )
             await queue_email(owner_email, "CareGist webhook disabled after repeated failures", html)
         logger.warning(
@@ -124,10 +123,15 @@ async def deliver_to_subscriptions(
     """
     Fetch active webhook subscriptions for a user and deliver the event payload.
     Updates last_delivery_at and delivery_failures in the DB.
+
+    Reads signing_secret_encrypted (BYTEA) and decrypts via AES-GCM.
+    If signing_secret_encrypted is NULL but the legacy plaintext secret column is
+    still populated, raises RuntimeError loudly — this state must not be reached in
+    production because the boot check rejects it.
     """
     rows = await conn.fetch(
         """
-        SELECT id, url, secret
+        SELECT id, url, secret, signing_secret_encrypted
         FROM webhook_subscriptions
         WHERE user_id = $1 AND active = TRUE AND $2 = ANY(events)
         """,
@@ -141,8 +145,25 @@ async def deliver_to_subscriptions(
     full_payload = {"event": event, "timestamp": now.isoformat(), **payload}
 
     for row in rows:
-        secret = maybe_decrypt(row["secret"], settings.webhook_secret_key)
-        success = await deliver_webhook(row["url"], secret, full_payload)
+        encrypted_blob = row["signing_secret_encrypted"]
+        if encrypted_blob:
+            # Normal encrypted path
+            plaintext_secret = decrypt_webhook_secret(bytes(encrypted_blob))
+        else:
+            # Legacy plaintext row — should not exist in production after boot check
+            legacy = row["secret"]
+            if legacy:
+                raise RuntimeError(
+                    f"Webhook subscription {row['id']} has a plaintext signing secret "
+                    "but no encrypted value. Run migration 030 and restart the API. "
+                    "The production boot check should have caught this."
+                )
+            raise RuntimeError(
+                f"Webhook subscription {row['id']} has neither an encrypted nor a "
+                "plaintext signing secret. Data integrity error."
+            )
+
+        success = await deliver_webhook(row["url"], plaintext_secret, full_payload)
         if success:
             await conn.execute(
                 "UPDATE webhook_subscriptions SET last_delivery_at = $1, delivery_failures = 0 WHERE id = $2",

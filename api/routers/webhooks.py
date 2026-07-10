@@ -49,6 +49,7 @@ def _assert_public_url(url: str) -> None:
                 detail="Webhook URL must be a public internet address.",
             )
 
+
 _WEBHOOK_TIERS = {"business", "enterprise", "admin"}
 
 SUPPORTED_EVENTS = ["provider.rating_changed", "feed.new_registration"]
@@ -86,12 +87,12 @@ async def register_webhook(
     user_id = _auth["user_id"]
     url = str(body.url)
     _assert_public_url(url)
-    secret = secrets.token_hex(32)
-    stored_secret = (
-        encrypt_webhook_secret(secret, settings.webhook_secret_key)
-        if settings.webhook_secret_key
-        else secret
-    )
+    plaintext_secret = secrets.token_hex(32)
+
+    # Always encrypt. encrypt_webhook_secret raises RuntimeError if WEBHOOK_SECRET_KEY
+    # is missing or malformed — this propagates as a 500 and is caught at boot time
+    # by _verify_webhook_encryption_at_boot() in api/main.py.
+    encrypted_blob = encrypt_webhook_secret(plaintext_secret)
 
     async with get_connection() as conn:
         existing = await conn.fetchval(
@@ -103,11 +104,12 @@ async def register_webhook(
 
         row = await conn.fetchrow(
             """
-            INSERT INTO webhook_subscriptions (user_id, url, secret, events, filter_config)
-            VALUES ($1, $2, $3, $4, $5::jsonb)
+            INSERT INTO webhook_subscriptions
+                (user_id, url, secret, signing_secret_encrypted, events, filter_config)
+            VALUES ($1, $2, NULL, $3, $4, $5::jsonb)
             RETURNING id, created_at
             """,
-            user_id, url, stored_secret, body.events, json.dumps(body.filters),
+            user_id, url, encrypted_blob, body.events, json.dumps(body.filters),
         )
 
     logger.info("Webhook registered for user %d: %s", user_id, url)
@@ -121,7 +123,7 @@ async def register_webhook(
         "url": url,
         "events": body.events,
         "filters": body.filters,
-        "secret": secret,
+        "secret": plaintext_secret,
         "note": "Store this secret securely — it will not be shown again. Use it to verify the X-CareGist-Signature header on incoming requests.",
         "created_at": row["created_at"].isoformat(),
     }
