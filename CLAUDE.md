@@ -326,3 +326,7 @@ Intermediate files prefixed with `_` (e.g., `_providers_list.ndjson`, `_provider
 - Taxonomy fields (service types, specialisms, regulated activities) are pipe-delimited (`|`)
 - `locationId` is the primary key for deduplication and record identity
 - The extract stage is resumable via `checkpoint.json`
+
+<!-- stripe-projects-cli managed:claude-md:start -->
+look at AGENTS.md for your rules
+<!-- stripe-projects-cli managed:claude-md:end -->

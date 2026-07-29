@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { PROVIDER_TIERS } from "@/lib/caregist-config";
+import { getProviderHref } from "@/lib/provider-path";
 
 export default function ProviderDashboardPage({ params }: { params: Promise<{ slug: string }> }) {
   const router = useRouter();
@@ -186,7 +187,7 @@ export default function ProviderDashboardPage({ params }: { params: Promise<{ sl
     <div className="max-w-3xl mx-auto px-6 py-12">
       <div className="flex items-center justify-between mb-2">
         <h1 className="text-3xl font-bold">Manage Listing</h1>
-        <Link href={`/provider/${slug}`} className="text-sm text-clay underline">
+        <Link href={getProviderHref(provider)} className="text-sm text-clay underline">
           View public page
         </Link>
       </div>

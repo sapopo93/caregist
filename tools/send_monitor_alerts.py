@@ -4,7 +4,7 @@ Per-user provider monitor rating-change alerts.
 
 For each user with monitored providers (provider_monitors table), finds providers
 whose rating changed since the user's last alert was sent, then queues an email
-via pending_emails. Gated to Pro+ tier only.
+via pending_emails. Gated to Alerts Pro and data Pro+ tiers.
 
 Usage:
     python3 tools/send_monitor_alerts.py             # Send all pending alerts
@@ -24,7 +24,7 @@ import traceback
 # ── Config ──
 
 APP_URL = os.environ.get("APP_URL", "https://caregist.co.uk")
-ALERT_TIERS = {"pro", "business", "enterprise"}
+ALERT_TIERS = {"alerts-pro", "pro", "business", "enterprise"}
 WEBHOOK_TIERS = {"business", "enterprise"}
 
 RATING_ORDER = {"Outstanding": 1, "Good": 2, "Requires Improvement": 3, "Inadequate": 4}
@@ -151,12 +151,13 @@ def run(dry_run: bool = False) -> None:
     conn = get_connection(db_url)
     cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
-    # Find all monitors for Pro+ users that have had rating changes since last alert
+    # Find all monitors for paid alert tiers that have had rating changes since last alert
     cur.execute("""
         SELECT
             pm.id          AS monitor_id,
             pm.user_id,
             pm.provider_id,
+            pm.created_at,
             pm.last_alert_sent_at,
             u.email,
             u.name         AS user_name,
@@ -188,14 +189,14 @@ def run(dry_run: bool = False) -> None:
         watermark = m["last_alert_sent_at"]
         cur.execute("""
             SELECT
-                prh.provider_id,
-                prh.previous_rating,
-                prh.new_rating,
-                prh.changed_at
-            FROM provider_rating_history prh
-            WHERE prh.provider_id = %(provider_id)s
-              AND prh.changed_at > %(watermark)s
-            ORDER BY prh.changed_at DESC
+                rc.provider_id,
+                rc.old_rating AS previous_rating,
+                rc.new_rating,
+                rc.detected_at AS changed_at
+            FROM rating_changes rc
+            WHERE rc.provider_id = %(provider_id)s
+              AND rc.detected_at > %(watermark)s
+            ORDER BY rc.detected_at DESC
             LIMIT 1
         """, {
             "provider_id": m["provider_id"],

@@ -1,0 +1,14 @@
+*
+!vercel.json
+!requirements.txt
+!api
+!api/**
+!tools
+!tools/**
+!db
+!db/**
+!frontend
+!frontend/**
+
+frontend/.next
+frontend/node_modules

@@ -4,14 +4,15 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "node scripts/verify-directory-fallback.js && next build",
     "start": "next start",
     "test": "node --experimental-strip-types --test \"lib/**/*.test.ts\""
   },
   "dependencies": {
-    "@sentry/nextjs": "^9.47.1",
+    "@sentry/nextjs": "^10.62.0",
     "@tailwindcss/typography": "^0.5.19",
     "@types/leaflet": "^1.9.21",
+    "@vercel/postgres": "^0.10.0",
     "leaflet": "^1.9.4",
     "next": "^15.0.0",
     "react": "^19.0.0",
@@ -23,5 +24,10 @@
     "@types/react": "^19.0.0",
     "tailwindcss": "^4.0.0",
     "typescript": "^5.0.0"
+  },
+  "overrides": {
+    "next": {
+      "postcss": "8.5.16"
+    }
   }
 }

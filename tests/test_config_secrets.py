@@ -2,7 +2,14 @@
 
 import pytest
 
-from api.config import Settings, _normalize_secret_payload, load_application_secrets, validate_cors_origins
+from api.config import (
+    AwsSecretsManagerSecretLoader,
+    Settings,
+    _normalize_secret_payload,
+    load_application_secrets,
+    redis_required_in_production,
+    validate_cors_origins,
+)
 
 
 class FakeSecretLoader:
@@ -141,6 +148,40 @@ def test_dev_fallback_works_only_outside_production():
             dotenv_path="/tmp/caregist-missing-test-env",
             secret_loader_cls=FakeSecretLoader,
         )
+
+
+def test_vercel_production_loads_direct_environment_without_aws():
+    class UnexpectedAwsLoader(AwsSecretsManagerSecretLoader):
+        def __init__(self, *_args, **_kwargs):
+            raise AssertionError("Vercel production must not load AWS Secrets Manager")
+
+    secrets = load_application_secrets(
+        environ={
+            "NODE_ENV": "production",
+            "VERCEL": "1",
+            "AWS_SECRETS_MANAGER_SECRET_ID": "retired/aws/secret",
+            "DATABASE_URL": "postgresql://stale",
+            "PROD_DATABASE_URL": "postgresql://vercel-production",
+            "API_KEY": "master",
+            "SUPPORT_INTERNAL_TOKEN": "support",
+            "STRIPE_SECRET_KEY": "rk_live_123",
+            "STRIPE_WEBHOOK_SECRET": "whsec_123",
+            "WEBHOOK_SECRET_KEY": "webhook-key",
+        },
+        dotenv_path="/tmp/caregist-missing-test-env",
+        secret_loader_cls=UnexpectedAwsLoader,
+    )
+
+    assert secrets["database_url"] == "postgresql://vercel-production"
+    assert secrets["api_master_key"] == "master"
+    assert secrets["stripe_webhook_secret"] == "whsec_123"
+    assert secrets["redis_url"] == ""
+
+
+def test_vercel_uses_database_quota_fallback_without_redis():
+    assert redis_required_in_production({"VERCEL": "1"}) is False
+    assert redis_required_in_production({"VERCEL_ENV": "production"}) is False
+    assert redis_required_in_production({}) is True
 
 
 def test_valid_explicit_cors_origins_pass():

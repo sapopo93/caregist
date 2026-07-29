@@ -1,0 +1,137 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e3]:
+      - link "CareGist" [ref=e4] [cursor=pointer]:
+        - /url: /
+        - img "CareGist" [ref=e5]
+      - generic [ref=e6]:
+        - navigation [ref=e7]:
+          - link "Products" [ref=e8] [cursor=pointer]:
+            - /url: /#products
+          - link "Who it's for" [ref=e9] [cursor=pointer]:
+            - /url: /#positioning
+          - link "About" [ref=e10] [cursor=pointer]:
+            - /url: /why-caregist
+          - link "Search" [ref=e11] [cursor=pointer]:
+            - /url: /search
+          - link "Pricing" [ref=e12] [cursor=pointer]:
+            - /url: /pricing
+          - link "API" [ref=e13] [cursor=pointer]:
+            - /url: /api
+          - link "Get a lead list" [ref=e14] [cursor=pointer]:
+            - /url: /lead-list
+          - link "Buy dataset" [ref=e15] [cursor=pointer]:
+            - /url: /lead-list
+        - navigation [ref=e16]:
+          - link "Log In" [ref=e17] [cursor=pointer]:
+            - /url: /login
+          - link "Sign Up" [ref=e18] [cursor=pointer]:
+            - /url: /signup
+  - main [ref=e19]:
+    - generic [ref=e400]:
+      - link "Back to search" [ref=e401] [cursor=pointer]:
+        - /url: /search
+      - generic [ref=e402]:
+        - generic [ref=e403]:
+          - generic [ref=e404]:
+            - paragraph [ref=e405]: Social Care Org
+            - heading "London Care (East London)" [level=1] [ref=e406]
+            - paragraph [ref=e407]: Unit 6, Textile House, 33 Chatham Place, London, E9 6PE
+          - generic [ref=e408]: Good
+        - generic [ref=e409]:
+          - generic [ref=e410]:
+            - paragraph [ref=e411]: Inspection
+            - paragraph [ref=e412]: "Last inspection: 27 March 2023"
+          - generic [ref=e413]:
+            - paragraph [ref=e414]: Phone
+            - paragraph [ref=e415]: 02089 868425
+          - generic [ref=e416]:
+            - paragraph [ref=e417]: Beds
+            - paragraph [ref=e418]: Not published
+        - generic [ref=e419]:
+          - generic [ref=e420]:
+            - generic [ref=e421]:
+              - heading "CQC ratings" [level=2] [ref=e422]
+              - generic [ref=e423]:
+                - generic [ref=e424]
+                - generic [ref=e427]
+                - generic [ref=e430]
+                - generic [ref=e433]
+                - generic [ref=e436]
+            - generic [ref=e439]:
+              - heading "Service profile" [level=2] [ref=e440]
+              - paragraph [ref=e441]: Service types
+              - generic [ref=e443]: Homecare Agencies
+              - paragraph [ref=e444]: Specialisms
+              - list [ref=e445]:
+                - listitem [ref=e446]: Caring For Adults Over 65 Yrs
+                - listitem [ref=e447]: Caring For Adults Under 65 Yrs
+                - listitem [ref=e448]: Caring For Children
+                - listitem [ref=e449]: Dementia
+                - listitem [ref=e450]: Mental Health Conditions
+                - listitem [ref=e451]: Physical Disabilities
+                - listitem [ref=e452]: Sensory Impairment
+                - listitem [ref=e453]: Substance Misuse Problems
+          - generic [ref=e454]:
+            - generic [ref=e455]:
+              - heading "Contact" [level=2] [ref=e456]
+              - generic [ref=e457]:
+                - paragraph [ref=e458]: "Region: London"
+                - paragraph [ref=e459]: "Local authority: Hackney"
+                - paragraph [ref=e460]
+                - paragraph [ref=e462]
+                - paragraph [ref=e464]
+            - generic [ref=e466]:
+              - paragraph [ref=e467]: Monetisation
+              - heading "Want this segment as a CSV?" [level=2] [ref=e468]
+              - paragraph [ref=e469]: Request a filtered lead list for this provider's region and service type, or send buyers to the Stripe link for the wider dataset.
+              - generic [ref=e470]:
+                - link "Get a lead list" [ref=e471] [cursor=pointer]:
+                  - /url: /lead-list?region=London&service_type=Homecare+Agencies&rating=Good
+                - link "Buy full dataset / regional pack" [ref=e472] [cursor=pointer]:
+                  - /url: /lead-list
+  - generic [ref=e373]:
+    - paragraph [ref=e375]:
+      - text: We use cookies for site functionality and to analyse traffic. Read our
+      - link "cookie policy" [ref=e376] [cursor=pointer]:
+        - /url: /cookies
+      - text: .
+    - generic [ref=e377]:
+      - button "Accept all" [ref=e378]
+      - button "Essential only" [ref=e379]
+  - contentinfo [ref=e380]:
+    - generic [ref=e381]:
+      - paragraph [ref=e382]: "Data source: Care Quality Commission (CQC). CareGist is not an official CQC service."
+      - paragraph [ref=e383]:
+        - text: If you have concerns about care quality, contact CQC directly at
+        - link "cqc.org.uk/contact-us" [ref=e384] [cursor=pointer]:
+          - /url: https://www.cqc.org.uk/contact-us
+        - text: or call 03000 616161.
+      - generic [ref=e385]:
+        - link "Privacy Policy" [ref=e386] [cursor=pointer]:
+          - /url: /privacy
+        - link "Terms of Service" [ref=e387] [cursor=pointer]:
+          - /url: /terms
+        - link "Acceptable Use" [ref=e388] [cursor=pointer]:
+          - /url: /acceptable-use
+        - link "Review Policy" [ref=e389] [cursor=pointer]:
+          - /url: /review-policy
+        - link "Cookies" [ref=e390] [cursor=pointer]:
+          - /url: /cookies
+        - link "Search" [ref=e391] [cursor=pointer]:
+          - /url: /search
+        - link "Find Care" [ref=e392] [cursor=pointer]:
+          - /url: /find-care
+        - link "Care Groups" [ref=e393] [cursor=pointer]:
+          - /url: /groups
+        - link "Pricing" [ref=e394] [cursor=pointer]:
+          - /url: /pricing
+        - link "API" [ref=e395] [cursor=pointer]:
+          - /url: /api
+        - link "Why CareGist" [ref=e396] [cursor=pointer]:
+          - /url: /why-caregist
+        - link "Get a lead list" [ref=e397] [cursor=pointer]:
+          - /url: /lead-list
+        - link "Contact" [ref=e398] [cursor=pointer]:
+          - /url: mailto:hello@caregist.co.uk
+  - alert [ref=e399]: London Care (East London)

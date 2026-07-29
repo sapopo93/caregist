@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import asyncio
+import os
+from collections.abc import Mapping
 from contextlib import asynccontextmanager
 
 try:
@@ -18,7 +20,7 @@ from api.logging_config import setup_logging
 
 # Structured JSON logs in production, human-readable locally
 setup_logging(json_output="localhost" not in settings.database_url)
-from api.routers import admin, analytics, api_applications, auth, billing, city_pages, claims, comparisons, enquiries, feed, groups, health, internal, provider_profile, providers, public_tools, region_stats, regions, reviews, sitemaps, subscribe, webhooks
+from api.routers import admin, analytics, api_applications, auth, billing, city_pages, claims, comparisons, cron, enquiries, feed, groups, health, internal, provider_profile, providers, public_tools, region_stats, regions, reviews, sitemaps, subscribe, webhooks
 
 if sentry_sdk and settings.sentry_dsn:
     sentry_sdk.init(
@@ -45,17 +47,24 @@ async def _email_drain_loop() -> None:
             _log.warning("Email drain loop error: %s", exc)
 
 
+def should_start_email_drain(environ: Mapping[str, str] | None = None) -> bool:
+    """Long-running workers are replaced by Vercel Cron in serverless runtimes."""
+    env = environ or os.environ
+    return env.get("VERCEL") != "1"
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_pool()
     billing.init_stripe()
-    drain_task = asyncio.create_task(_email_drain_loop())
+    drain_task = asyncio.create_task(_email_drain_loop()) if should_start_email_drain() else None
     yield
-    drain_task.cancel()
-    try:
-        await drain_task
-    except asyncio.CancelledError:
-        pass
+    if drain_task is not None:
+        drain_task.cancel()
+        try:
+            await drain_task
+        except asyncio.CancelledError:
+            pass
     await close_pool()
 
 
@@ -118,6 +127,7 @@ async def global_exception_handler(request, exc):
 
 
 app.include_router(health.router)
+app.include_router(cron.router)
 app.include_router(internal.router)
 # Compatibility alias for agent/support integrations that use the public API prefix.
 app.include_router(internal.router, prefix="/api/v1")

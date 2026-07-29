@@ -947,7 +947,7 @@ class DeleteAccountRequest(BaseModel):
 
 
 @router.delete("/delete-account")
-async def delete_account(req: DeleteAccountRequest) -> dict:
+async def delete_account(req: DeleteAccountRequest, _ip=Depends(check_ip_rate_limit)) -> dict:
     """Delete user account and anonymize associated data (GDPR right to erasure)."""
     async with get_connection() as conn:
         user = await conn.fetchrow(

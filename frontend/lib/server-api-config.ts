@@ -12,7 +12,7 @@ function deriveApiBaseFromAppUrl(appUrlRaw: string): string | undefined {
   try {
     const appUrl = new URL(appUrlRaw.startsWith("http") ? appUrlRaw : `https://${appUrlRaw}`);
     if (appUrl.hostname === "caregist.co.uk" || appUrl.hostname === "www.caregist.co.uk") {
-      return `${appUrl.protocol}//api.caregist.co.uk`;
+      return appUrl.origin;
     }
   } catch {
     return undefined;
@@ -103,6 +103,17 @@ function readRootEnvVar(key: string): string | undefined {
 }
 
 export function getServerApiBase() {
+  // Vercel Services injects this private, deployment-aware binding. Internal
+  // calls bypass Deployment Protection and never leave the deployment.
+  if (process.env.CAREGIST_BACKEND_URL) return process.env.CAREGIST_BACKEND_URL;
+  // Every Vercel deployment contains the FastAPI compatibility function. Use
+  // that exact deployment so previews and pre-promotion candidates never call
+  // the retired api.caregist.co.uk host or the currently promoted release.
+  if (process.env.VERCEL_URL) {
+    return new URL(
+      process.env.VERCEL_URL.startsWith("http") ? process.env.VERCEL_URL : `https://${process.env.VERCEL_URL}`,
+    ).origin;
+  }
   const configuredApiUrl = resolveConfiguredApiBase(process.env.API_URL, "server_base");
   if (configuredApiUrl) return configuredApiUrl;
   if (process.env.NEXT_PUBLIC_API_URL) {
@@ -148,6 +159,9 @@ export function getServerApiKey() {
 }
 
 export function getPublicApiBase() {
+  // Browser journeys always use the current site origin. This keeps auth
+  // cookies first-party and routes API calls through the Vercel Python function.
+  if (typeof window !== "undefined") return window.location.origin;
   const configuredPublicApiUrl = resolveConfiguredApiBase(process.env.NEXT_PUBLIC_API_URL, "public_base");
   if (configuredPublicApiUrl) return configuredPublicApiUrl;
   const configuredApiUrl = resolveConfiguredApiBase(process.env.API_URL, "public_base");

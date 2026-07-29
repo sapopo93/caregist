@@ -16,10 +16,15 @@ export async function GET(
     return new NextResponse("Invalid sitemap page", { status: 400 });
   }
 
-  const apiBase = getPublicApiBase();
-  const res = await fetch(`${apiBase}/api/v1/sitemaps/providers?offset=${page * PAGE_SIZE}&limit=${PAGE_SIZE}`, {
-    next: { revalidate: 86400 },
-  });
+  let res: Response;
+  try {
+    const apiBase = getPublicApiBase();
+    res = await fetch(`${apiBase}/api/v1/sitemaps/providers?offset=${page * PAGE_SIZE}&limit=${PAGE_SIZE}`, {
+      next: { revalidate: 86400 },
+    });
+  } catch {
+    return new NextResponse("Provider sitemap unavailable", { status: 503 });
+  }
 
   if (!res.ok) {
     return new NextResponse("Provider sitemap unavailable", { status: 503 });

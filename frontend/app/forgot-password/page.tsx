@@ -88,6 +88,7 @@ export default function ForgotPasswordPage() {
             <input
               id="email"
               type="email"
+              autoComplete="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -109,6 +110,8 @@ export default function ForgotPasswordPage() {
             <input
               id="code"
               type="text"
+              autoComplete="one-time-code"
+              inputMode="numeric"
               required
               maxLength={6}
               pattern="\d{6}"
@@ -123,6 +126,7 @@ export default function ForgotPasswordPage() {
             <input
               id="new-password"
               type="password"
+              autoComplete="new-password"
               required
               minLength={8}
               value={newPassword}

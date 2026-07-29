@@ -9,16 +9,16 @@ export default function PrivacyPage() {
   return (
     <div className="max-w-3xl mx-auto px-6 py-12">
       <h1 className="text-3xl font-bold mb-2">Privacy Policy</h1>
-      <p className="text-dusk text-sm mb-8">Last updated: 28 March 2026</p>
+      <p className="text-dusk text-sm mb-8">Last updated: 29 July 2026</p>
 
       <div className="prose prose-sm text-charcoal space-y-6" style={{ fontFamily: "Lora" }}>
 
         <section>
           <h2 className="text-xl font-bold text-bark mt-8 mb-3">1. Who we are</h2>
           <p>
-            CareGist is a trading name of H-Kay Limited, registered in England and Wales
-            (company number 10417923), with registered address at C/O Bilberry Accountants Ltd,
-            Castle Court, 41 London Road, Reigate, England, RH2 9RJ.
+            CareGist is a product and online service operated by H-Kay Limited, registered in
+            England and Wales (company number 10417923), with registered address at C/O Bilberry
+            Accountants Ltd, Castle Court, 41 London Road, Reigate, England, RH2 9RJ.
           </p>
           <p>
             We are the data controller for the personal data described in this policy.
@@ -42,6 +42,7 @@ export default function PrivacyPage() {
             <li><strong>Enquiry forms:</strong> name, email, phone number, message content, and care requirements you submit when contacting a care provider through our platform</li>
             <li><strong>Reviews:</strong> name, email, review text, star rating, and relationship to the care provider. Reviews you submit may be published publicly on our website together with the name you provide and your relationship to the care provider.</li>
             <li><strong>Provider claims:</strong> name, email, phone, role, and proof of association with the care provider</li>
+            <li><strong>Lead-list requests:</strong> email address and the region, service type, rating, or opportunity filters you request</li>
           </ul>
 
           <h3 className="text-lg font-semibold text-bark mt-4 mb-2">2.2 Data we collect automatically</h3>
@@ -142,6 +143,8 @@ export default function PrivacyPage() {
               <tr><td className="p-2 border-b border-stone">Enquiry form data</td><td className="p-2 border-b border-stone">12 months, then anonymised</td></tr>
               <tr><td className="p-2 border-b border-stone">Reviews</td><td className="p-2 border-b border-stone">Published indefinitely; deleted on request</td></tr>
               <tr><td className="p-2 border-b border-stone">Provider claims</td><td className="p-2 border-b border-stone">Duration of the claim, then 12 months</td></tr>
+              <tr><td className="p-2 border-b border-stone">Lead-list requests</td><td className="p-2 border-b border-stone">12 months, then deleted or anonymised</td></tr>
+              <tr><td className="p-2 border-b border-stone">Export access tokens</td><td className="p-2 border-b border-stone">90 days after expiry</td></tr>
               <tr><td className="p-2 border-b border-stone">Billing records</td><td className="p-2 border-b border-stone">7 years (HMRC requirement)</td></tr>
               <tr><td className="p-2 border-b border-stone">Care provider directory data</td><td className="p-2 border-b border-stone">Refreshed weekly from CQC; superseded data deleted</td></tr>
             </tbody>

@@ -48,7 +48,7 @@ Run these commands from the repo root:
 
 ```bash
 sed -n '1,60p' import_to_db.sql | psql "$POSTGRES_URL"
-psql "$POSTGRES_URL" -f db/migrations/030_directory_public_mvp.sql
+psql "$POSTGRES_URL" -f db/migrations/037_directory_public_mvp.sql
 psql "$POSTGRES_URL" -f directory_providers.sql
 ```
 

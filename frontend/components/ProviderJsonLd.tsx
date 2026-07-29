@@ -1,4 +1,5 @@
 import { headers } from "next/headers";
+import { getProviderHref } from "@/lib/provider-path";
 
 export default async function ProviderJsonLd({
   name,
@@ -38,7 +39,7 @@ export default async function ProviderJsonLd({
     "@context": "https://schema.org",
     "@type": ["LocalBusiness", "MedicalOrganization"],
     name,
-    url: `https://caregist.co.uk/provider/${slug}`,
+    url: `https://caregist.co.uk${getProviderHref({ slug })}`,
     ...(type && { additionalType: type }),
     address: {
       "@type": "PostalAddress",

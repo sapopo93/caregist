@@ -1,0 +1,94 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e3]:
+      - link "CareGist" [ref=e4] [cursor=pointer]:
+        - /url: /
+        - img "CareGist" [ref=e5]
+      - generic [ref=e6]:
+        - navigation [ref=e7]:
+          - link "Products" [ref=e8] [cursor=pointer]:
+            - /url: /#products
+          - link "Who it's for" [ref=e9] [cursor=pointer]:
+            - /url: /#positioning
+          - link "About" [ref=e10] [cursor=pointer]:
+            - /url: /why-caregist
+          - link "Search" [ref=e11] [cursor=pointer]:
+            - /url: /search
+          - link "Pricing" [ref=e12] [cursor=pointer]:
+            - /url: /pricing
+          - link "API" [ref=e13] [cursor=pointer]:
+            - /url: /api
+          - link "Get a lead list" [ref=e14] [cursor=pointer]:
+            - /url: /lead-list
+          - link "Buy dataset" [ref=e15] [cursor=pointer]:
+            - /url: /lead-list
+        - navigation [ref=e16]:
+          - link "Log In" [ref=e17] [cursor=pointer]:
+            - /url: /login
+          - link "Sign Up" [ref=e18] [cursor=pointer]:
+            - /url: /signup
+  - main [ref=e19]:
+    - generic [ref=e20]:
+      - heading "Start Data Pro" [level=1] [ref=e21]
+      - paragraph [ref=e22]: Data Pro is for small teams using CareGist as a recurring new-provider sales workflow.
+      - paragraph [ref=e23]: We'll ask you to verify your email before you log in or start billing.
+      - generic [ref=e24]:
+        - generic [ref=e25]:
+          - generic [ref=e26]: Name
+          - textbox "Name" [ref=e27]
+        - generic [ref=e28]:
+          - generic [ref=e29]: Email
+          - textbox "Email" [ref=e30]
+        - generic [ref=e31]:
+          - generic [ref=e32]: Password
+          - textbox "Password" [ref=e33]
+        - button "Continue to Data-pro" [ref=e34]
+      - paragraph [ref=e35]:
+        - text: Already have an account?
+        - link "Log in" [ref=e36] [cursor=pointer]:
+          - /url: /login
+  - generic [ref=e38]:
+    - paragraph [ref=e40]:
+      - text: We use cookies for site functionality and to analyse traffic. Read our
+      - link "cookie policy" [ref=e41] [cursor=pointer]:
+        - /url: /cookies
+      - text: .
+    - generic [ref=e42]:
+      - button "Accept all" [ref=e43]
+      - button "Essential only" [ref=e44]
+  - contentinfo [ref=e45]:
+    - generic [ref=e46]:
+      - paragraph [ref=e47]: "Data source: Care Quality Commission (CQC). CareGist is not an official CQC service."
+      - paragraph [ref=e48]:
+        - text: If you have concerns about care quality, contact CQC directly at
+        - link "cqc.org.uk/contact-us" [ref=e49] [cursor=pointer]:
+          - /url: https://www.cqc.org.uk/contact-us
+        - text: or call 03000 616161.
+      - generic [ref=e50]:
+        - link "Privacy Policy" [ref=e51] [cursor=pointer]:
+          - /url: /privacy
+        - link "Terms of Service" [ref=e52] [cursor=pointer]:
+          - /url: /terms
+        - link "Acceptable Use" [ref=e53] [cursor=pointer]:
+          - /url: /acceptable-use
+        - link "Review Policy" [ref=e54] [cursor=pointer]:
+          - /url: /review-policy
+        - link "Cookies" [ref=e55] [cursor=pointer]:
+          - /url: /cookies
+        - link "Search" [ref=e56] [cursor=pointer]:
+          - /url: /search
+        - link "Find Care" [ref=e57] [cursor=pointer]:
+          - /url: /find-care
+        - link "Care Groups" [ref=e58] [cursor=pointer]:
+          - /url: /groups
+        - link "Pricing" [ref=e59] [cursor=pointer]:
+          - /url: /pricing
+        - link "API" [ref=e60] [cursor=pointer]:
+          - /url: /api
+        - link "Why CareGist" [ref=e61] [cursor=pointer]:
+          - /url: /why-caregist
+        - link "Get a lead list" [ref=e62] [cursor=pointer]:
+          - /url: /lead-list
+        - link "Contact" [ref=e63] [cursor=pointer]:
+          - /url: mailto:hello@caregist.co.uk
+  - alert [ref=e64]

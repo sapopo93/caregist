@@ -1,6 +1,7 @@
 import { getProvider } from "@/lib/api";
 import ClaimStepper from "@/components/ClaimStepper";
 import TrackEventOnMount from "@/components/TrackEventOnMount";
+import { getProviderHref } from "@/lib/provider-path";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 
@@ -44,7 +45,7 @@ export default async function ClaimPage({ params }: { params: Promise<{ slug: st
           {provider.name} has already been claimed and verified.
         </p>
         <a
-          href={`/provider/${slug}`}
+          href={getProviderHref(provider)}
           className="inline-block px-6 py-3 bg-clay text-white rounded-lg font-medium hover:bg-bark transition-colors"
         >
           View provider

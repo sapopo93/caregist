@@ -32,11 +32,20 @@ def test_free_plan_launch_limits_match_public_pricing():
     assert config["rate"] == 2
     assert config["daily"] == 20
     assert config["rolling_7d"] == 60
-    assert config["export"] == 25
+    assert config["export"] == 0
     assert config["monitors"] == 1
     assert config["feed_rows"] == 10
     assert config["saved_filters"] == 0
     assert config["feed_digests"] == 0
+
+
+def test_alerts_pro_is_alerting_only_not_bulk_export():
+    config = get_tier_config("alerts-pro")
+
+    assert config["monitors"] == 50
+    assert config["export"] == 0
+    assert config["feed_rows"] == 0
+    assert config["feed_api"] is False
 
 
 def test_pro_and_business_seat_entitlements_are_persistable():

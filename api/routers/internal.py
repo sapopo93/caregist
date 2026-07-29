@@ -365,8 +365,21 @@ async def _run_smoke_verification(_: dict[str, Any]) -> dict[str, Any]:
             """
         )
 
-    checks = snapshot.get("checks", {}) if isinstance(snapshot, dict) else {}
-    failures = [name for name, ok in checks.items() if isinstance(ok, bool) and not ok]
+    checks = snapshot.get("checks", []) if isinstance(snapshot, dict) else []
+    if isinstance(checks, list):
+        failures = [
+            str(check.get("name"))
+            for check in checks
+            if isinstance(check, dict)
+            and check.get("name")
+            and check.get("ok") is False
+        ]
+    elif isinstance(checks, dict):
+        # Retain compatibility with snapshots produced before checks became
+        # structured objects.
+        failures = [name for name, ok in checks.items() if isinstance(ok, bool) and not ok]
+    else:
+        failures = ["pipeline_health_contract"]
     readiness_ok = bool(snapshot.get("readiness_ok")) if isinstance(snapshot, dict) else False
     return {
         "action": "caregist:run_smoke_verification",

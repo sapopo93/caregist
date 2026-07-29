@@ -19,8 +19,13 @@ describe("frontend auth middleware source", () => {
     assert.doesNotMatch(catchBlock, /return NextResponse\.next\(\)/);
   });
 
-  it("prefers the server-only API_URL before public API URL", () => {
-    assert.match(source, /process\.env\.API_URL \|\| process\.env\.NEXT_PUBLIC_API_URL/);
+  it("validates sessions against the current Vercel origin", () => {
+    assert.match(source, /const apiUrl = request\.nextUrl\.origin/);
+    assert.doesNotMatch(source, /process\.env\.API_URL\s*\|\|/);
+  });
+
+  it("uses the Node.js middleware runtime required by Vercel Services", () => {
+    assert.match(source, /runtime:\s*["']nodejs["']/);
   });
 
   it("pairs nonce CSP with dynamic rendering so framework scripts receive nonces", () => {

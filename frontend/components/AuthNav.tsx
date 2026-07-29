@@ -4,7 +4,11 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-export default function AuthNav() {
+interface AuthNavProps {
+  stripePaymentLink?: string | null;
+}
+
+export default function AuthNav({ stripePaymentLink = null }: AuthNavProps) {
   const router = useRouter();
   const [user, setUser] = useState<{ name: string } | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -70,7 +74,32 @@ export default function AuthNav() {
 
       {/* Mobile menu dropdown */}
       {menuOpen && (
-        <div className="md:hidden absolute top-full left-0 right-0 bg-bark border-t border-cream/10 px-6 py-4 flex flex-col gap-3 text-sm z-50">
+        <div className="absolute left-0 right-0 top-full z-50 flex flex-col gap-3 border-t border-cream/10 bg-bark px-6 py-4 text-sm shadow-xl md:hidden">
+          <Link href="/search?opportunity=new_90" className="hover:text-amber transition-colors" onClick={() => setMenuOpen(false)}>
+            Opportunity lists
+          </Link>
+          <Link href="/lead-list" className="hover:text-amber transition-colors" onClick={() => setMenuOpen(false)}>
+            Get a lead list
+          </Link>
+          <Link href="/pricing" className="hover:text-amber transition-colors" onClick={() => setMenuOpen(false)}>
+            Pricing
+          </Link>
+          <Link href="/api" className="hover:text-amber transition-colors" onClick={() => setMenuOpen(false)}>
+            API
+          </Link>
+          <Link href="/why-caregist" className="hover:text-amber transition-colors" onClick={() => setMenuOpen(false)}>
+            About
+          </Link>
+          <a
+            href={stripePaymentLink ?? "/lead-list?opportunity=new_90"}
+            target={stripePaymentLink ? "_blank" : undefined}
+            rel={stripePaymentLink ? "noreferrer noopener" : undefined}
+            className="hover:text-amber transition-colors"
+            onClick={() => setMenuOpen(false)}
+          >
+            Get intelligence
+          </a>
+          <div className="my-1 h-px bg-cream/10" />
           {user ? (
             <>
               <Link href="/dashboard" className="hover:text-amber transition-colors" onClick={() => setMenuOpen(false)}>Dashboard</Link>

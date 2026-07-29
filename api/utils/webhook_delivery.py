@@ -5,9 +5,12 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import hmac
+import ipaddress
 import json
 import logging
+import socket
 from datetime import datetime, timezone
+from urllib.parse import urlparse
 
 import httpx
 
@@ -18,6 +21,22 @@ logger = logging.getLogger("caregist.webhook_delivery")
 
 _RETRY_DELAYS = (1, 2, 4)  # seconds between attempts
 _TIMEOUT = 10.0
+
+
+def assert_public_webhook_url(url: str) -> None:
+    """Reject webhook targets that currently resolve to non-public IP space."""
+    parsed = urlparse(url)
+    if parsed.scheme not in {"http", "https"} or not parsed.hostname:
+        raise ValueError("Webhook URL must be an absolute HTTP(S) URL.")
+    try:
+        results = socket.getaddrinfo(parsed.hostname, None)
+    except socket.gaierror as exc:
+        raise ValueError("Webhook URL hostname could not be resolved.") from exc
+
+    for _, _, _, _, sockaddr in results:
+        ip = ipaddress.ip_address(sockaddr[0])
+        if not ip.is_global:
+            raise ValueError("Webhook URL must resolve to public internet addresses.")
 
 
 def _sign_payload(secret: str, payload_json: str) -> str:
@@ -58,6 +77,14 @@ async def deliver_webhook(url: str, secret: str, payload: dict, *, return_metada
     When return_metadata=True, returns a tuple:
     `(success, attempts, response_status, error_message)`.
     """
+    try:
+        assert_public_webhook_url(url)
+    except ValueError as exc:
+        logger.warning("Blocked webhook delivery to non-public URL %s: %s", url, exc)
+        if return_metadata:
+            return False, 0, None, str(exc)
+        return False
+
     payload_json = json.dumps(payload, default=str)
     signature = _sign_payload(secret, payload_json)
     headers = {

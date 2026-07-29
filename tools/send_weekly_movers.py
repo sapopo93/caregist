@@ -462,7 +462,7 @@ def main():
                 # Write first email to file for preview
                 with open("/tmp/movers_preview.html", "w") as f:
                     f.write(html)
-                print(f"  Preview saved to /tmp/movers_preview.html")
+                print("  Preview saved to /tmp/movers_preview.html")
         else:
             # Stagger sends by 2 seconds each to avoid Resend rate limits
             send_after = datetime.now(timezone.utc) + timedelta(seconds=stagger_seconds)

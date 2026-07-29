@@ -266,7 +266,7 @@ async def test_valid_session_cookie_wins_over_stale_header_key():
 
 
 @pytest.mark.asyncio
-async def test_legacy_api_key_session_cookie_still_authenticates():
+async def test_legacy_api_key_session_cookie_is_rejected():
     key_row = {
         "id": 7,
         "key": None,
@@ -290,11 +290,10 @@ async def test_legacy_api_key_session_cookie_still_authenticates():
 
     with patch("api.middleware.auth.get_connection", mock_get_connection), \
          patch("api.middleware.auth.check_rate_limit", AsyncMock(return_value={"burst_remaining": 1, "daily_remaining": 2, "rolling_7d_remaining": 3, "monthly_remaining": 4})):
-        auth = await validate_api_key(api_key=None, caregist_session="cg_legacy_cookie_key")
+        with pytest.raises(HTTPException) as exc:
+            await validate_api_key(api_key=None, caregist_session="cg_legacy_cookie_key")
 
-    assert auth["user_id"] == 42
-    assert auth["tier"] == "starter"
-    assert auth["api_key"] is None
+    assert exc.value.status_code == 401
 
 
 @pytest.mark.asyncio

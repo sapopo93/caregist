@@ -11,7 +11,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from fastapi.responses import StreamingResponse
 
-from api.config import BASIC_CSV_FIELDS, filter_fields, get_next_tier, get_tier_config, settings
+from api.config import BASIC_CSV_FIELDS, filter_fields, get_next_tier, get_tier_config
 from api.database import get_connection
 from api.middleware.auth import validate_api_key, validate_optional_api_key
 from api.middleware.rate_limit import add_rate_limit_headers, check_export_limit
@@ -245,7 +245,7 @@ async def export_providers_csv(
 
     row_limit = config["export"]
     if row_limit == 0:
-        raise HTTPException(status_code=403, detail="CSV export requires an account. Sign up free at /signup")
+        raise HTTPException(status_code=403, detail="CSV export requires a paid plan. Upgrade at /pricing")
     check_export_limit(_auth.get("key_id") or _auth.get("name", "guest"), tier)
 
     # Require at least one filter for free/starter to prevent bulk scraping
@@ -339,7 +339,7 @@ async def export_providers_xlsx(
 
     row_limit = config["export"]
     if row_limit == 0:
-        raise HTTPException(status_code=403, detail="Export requires an account. Sign up free at /signup")
+        raise HTTPException(status_code=403, detail="Export requires a paid plan. Upgrade at /pricing")
     check_export_limit(_auth.get("key_id") or _auth.get("name", "guest"), tier)
 
     if tier in ("free", "starter") and not any([q, region, rating, type, service_type, postcode]):

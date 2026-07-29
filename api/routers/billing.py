@@ -305,7 +305,6 @@ async def create_checkout(req: CheckoutRequest, _auth: dict = Depends(validate_a
 
     session = stripe.checkout.Session.create(
         customer=customer_id,
-        payment_method_types=["card"],
         line_items=[
             {"price": price_id, "quantity": 1},
             *([{"price": settings.stripe_price_pro_seat, "quantity": extra_seats}] if extra_seats else []),
@@ -423,7 +422,6 @@ async def create_profile_checkout(
 
     session = stripe.checkout.Session.create(
         customer=customer_id,
-        payment_method_types=["card"],
         line_items=[{"price": price_id, "quantity": 1}],
         mode="subscription",
         success_url=f"{settings.app_url}/provider-dashboard/{req.slug}?upgraded=1",

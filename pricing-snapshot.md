@@ -1,0 +1,268 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e3]:
+      - link "CareGist" [ref=e4] [cursor=pointer]:
+        - /url: /
+        - img "CareGist" [ref=e5]
+      - generic [ref=e6]:
+        - navigation [ref=e7]:
+          - link "Products" [ref=e8] [cursor=pointer]:
+            - /url: /#products
+          - link "Who it's for" [ref=e9] [cursor=pointer]:
+            - /url: /#positioning
+          - link "About" [ref=e10] [cursor=pointer]:
+            - /url: /why-caregist
+          - link "Search" [ref=e11] [cursor=pointer]:
+            - /url: /search
+          - link "Pricing" [ref=e12] [cursor=pointer]:
+            - /url: /pricing
+          - link "API" [ref=e13] [cursor=pointer]:
+            - /url: /api
+          - link "Get a lead list" [ref=e14] [cursor=pointer]:
+            - /url: /lead-list
+          - link "Buy dataset" [ref=e15] [cursor=pointer]:
+            - /url: /lead-list
+        - navigation [ref=e16]:
+          - link "Log In" [ref=e17] [cursor=pointer]:
+            - /url: /login
+          - link "Sign Up" [ref=e18] [cursor=pointer]:
+            - /url: /signup
+  - main [ref=e19]:
+    - generic [ref=e20]:
+      - generic [ref=e21]:
+        - heading "Pricing for new-provider intelligence and provider visibility" [level=1] [ref=e22]
+        - paragraph [ref=e23]: CareGist tracked an average of 340 newly registered CQC providers per month from January to March 2026. Choose plans for new-provider intelligence on the demand side, or provider visibility on the supply side.
+        - generic [ref=e24]:
+          - link "New-provider intelligence" [ref=e25] [cursor=pointer]:
+            - /url: "#data-plans"
+          - link "Provider visibility" [ref=e26] [cursor=pointer]:
+            - /url: "#provider-plans"
+      - generic [ref=e27]:
+        - heading "New-provider intelligence plans" [level=2] [ref=e28]
+        - paragraph [ref=e29]: Use CareGist to find newly registered CQC providers, monitor registration movement, build lead lists, and export opportunities for sales workflows.
+      - generic [ref=e30]:
+        - paragraph [ref=e31]: Launch pricing
+        - generic [ref=e32]:
+          - generic [ref=e33]:
+            - generic [ref=e34]: Free
+            - generic [ref=e35]: £0
+          - generic [ref=e36]:
+            - generic [ref=e37]: Alerts Pro
+            - generic [ref=e38]: £49 + VAT/mo
+          - generic [ref=e39]:
+            - generic [ref=e40]: Data Starter
+            - generic [ref=e41]: £99 + VAT/mo
+          - generic [ref=e42]:
+            - generic [ref=e43]: Data Pro
+            - generic [ref=e44]: £199 + VAT/mo
+          - generic [ref=e45]:
+            - generic [ref=e46]: Data Business
+            - generic [ref=e47]: £499 + VAT/mo
+          - generic [ref=e48]:
+            - generic [ref=e49]: Enterprise
+            - generic [ref=e50]: Contact
+        - paragraph [ref=e51]: Free is basic provider lookup and limited evaluation. Alerts Pro is for provider watchlists and rating-change monitoring. Data Starter, Data Pro, and Data Business are the core new-provider intelligence plans for recurring feeds, saved filters, weekly digests, CRM exports, API access, and webhooks.
+      - generic [ref=e52]:
+        - generic [ref=e53]:
+          - generic [ref=e54]:
+            - generic [ref=e55]
+            - generic [ref=e60]
+          - list [ref=e62]:
+            - listitem [ref=e63]: ✓ Search CQC-registered providers
+            - listitem [ref=e64]: ✓ Browse profiles, ratings, and inspection dates
+            - listitem [ref=e65]: ✓ Evaluate search results before upgrading
+            - listitem [ref=e66]: ✓ 1 provider watchlist
+            - listitem [ref=e67]: ✓ Basic fields only
+          - paragraph [ref=e68]: No recurring feed workflow, saved feed views, weekly digests, or API access.
+          - generic [ref=e69]:
+            - paragraph [ref=e70]: Why upgrade next
+            - paragraph [ref=e71]: Alerts Pro adds saved monitoring, provider watchlists, and weekly alert workflows.
+          - link "Start free" [ref=e73] [cursor=pointer]:
+            - /url: /signup
+        - generic [ref=e74]:
+          - generic [ref=e75]:
+            - generic [ref=e76]
+            - generic [ref=e81]
+          - list [ref=e84]:
+            - listitem [ref=e85]: ✓ Everything in Free
+            - listitem [ref=e86]: ✓ Provider watchlists and rating-change alerts
+            - listitem [ref=e87]: ✓ Saved monitoring views
+            - listitem [ref=e88]: ✓ Weekly alert digest
+            - listitem [ref=e89]: ✓ Ideal for monitoring existing accounts and local markets
+          - paragraph [ref=e90]: Monitoring and watchlists only. New-provider intelligence feed starts with Data Starter.
+          - generic [ref=e91]:
+            - paragraph [ref=e92]: Why upgrade next
+            - paragraph
+          - link "Start Alerts Pro" [ref=e94] [cursor=pointer]:
+            - /url: /signup?plan=alerts-pro
+        - generic [ref=e95]:
+          - generic [ref=e96]:
+            - generic [ref=e97]
+            - generic [ref=e102]
+          - list [ref=e105]:
+            - listitem [ref=e106]: ✓ Everything in Alerts Pro
+            - listitem [ref=e107]: ✓ New registration feed
+            - listitem [ref=e108]: ✓ 3 saved feed filters
+            - listitem [ref=e109]: ✓ 1 weekly feed digest
+            - listitem [ref=e110]: "✓ CSV and Excel export: 500 rows"
+            - listitem [ref=e111]: ✓ 15 provider watchlists with alerts
+            - listitem [ref=e112]: ✓ Phone, coordinates, and specialisms where available
+          - paragraph [ref=e113]: Core new-provider intelligence plan for light weekly usage.
+          - generic [ref=e114]:
+            - paragraph [ref=e115]: Why upgrade next
+            - paragraph
+          - link "Start Data Starter" [ref=e117] [cursor=pointer]:
+            - /url: /signup?plan=data-starter
+        - generic [ref=e118]:
+          - generic [ref=e119]:
+            - generic [ref=e120]
+            - generic [ref=e125]
+          - list [ref=e128]:
+            - listitem [ref=e129]: ✓ Everything in Data Starter
+            - listitem [ref=e130]: ✓ 20 saved feed filters
+            - listitem [ref=e131]: ✓ 10 weekly digests
+            - listitem [ref=e132]: ✓ Compare up to 5 providers
+            - listitem [ref=e133]: "✓ CSV and Excel export: 5,000 rows"
+            - listitem [ref=e134]: ✓ 100 provider monitors with rating-change alerts
+            - listitem [ref=e135]: ✓ 3 named access seats included
+            - listitem [ref=e136]: ✓ Priority support for small-team workflows
+          - paragraph [ref=e137]: Core new-provider intelligence plan for recurring team use.
+          - generic [ref=e138]:
+            - paragraph [ref=e139]: Why upgrade next
+            - paragraph
+          - link "Start Data Pro" [ref=e141] [cursor=pointer]:
+            - /url: /signup?plan=data-pro
+        - generic [ref=e142]:
+          - generic [ref=e143]:
+            - generic [ref=e144]
+            - generic [ref=e149]
+          - list [ref=e152]:
+            - listitem [ref=e153]: ✓ Everything in Data Pro
+            - listitem [ref=e154]: ✓ Webhooks for new registrations and rating changes
+            - listitem [ref=e155]: ✓ Full field access including registration dates and geocode source
+            - listitem [ref=e156]: "✓ CSV and Excel export: 10,000 rows"
+            - listitem [ref=e157]: ✓ 500 provider monitors
+            - listitem [ref=e158]: ✓ 10 named access seats included
+            - listitem [ref=e159]: ✓ Operational onboarding support
+          - paragraph [ref=e160]: Core new-provider intelligence plan for commercial delivery.
+          - generic [ref=e161]:
+            - paragraph [ref=e162]: Why upgrade next
+            - paragraph
+          - link "Start Data Business" [ref=e164] [cursor=pointer]:
+            - /url: /signup?plan=data-business
+        - generic [ref=e165]:
+          - generic [ref=e166]:
+            - generic [ref=e167]
+            - generic [ref=e171]
+          - list [ref=e174]:
+            - listitem [ref=e175]: ✓ Everything in Data Business
+            - listitem [ref=e176]: ✓ Custom rate limits and export volumes
+            - listitem [ref=e177]: ✓ Procurement and framework support
+            - listitem [ref=e178]: ✓ Commissioner and ICS packaging
+            - listitem [ref=e179]: ✓ Security review, SLA, and dedicated support
+            - listitem [ref=e180]: ✓ Custom data feeds and white-label options
+          - generic [ref=e181]:
+            - paragraph [ref=e182]: Talk to us
+            - paragraph [ref=e183]: For custom implementation, procurement support, data-sharing terms, and security review.
+          - link "Contact sales" [ref=e185] [cursor=pointer]:
+            - /url: mailto:enterprise@caregist.co.uk?subject=Enterprise+enquiry
+      - generic [ref=e186]:
+        - generic [ref=e187]:
+          - heading "Provider visibility plans" [level=2] [ref=e188]
+          - paragraph [ref=e189]: Provider visibility plans are for care providers that want to improve how they appear to families, partners, and local-market searches.
+          - paragraph [ref=e190]:
+            - text: First,
+            - link "find your provider page" [ref=e191] [cursor=pointer]:
+              - /url: /search
+            - text: and claim it free.
+        - generic [ref=e192]:
+          - generic [ref=e193]: ✓
+          - generic [ref=e194]:
+            - paragraph [ref=e195]: Claiming your listing is always free
+            - paragraph [ref=e196]: Every claimed provider gets a verified badge and can publish an inspection response at no cost. Upgrade below for photos, descriptions, virtual tours, and sponsored placement.
+        - generic [ref=e197]:
+          - generic [ref=e198]:
+            - heading "Claimed Listing" [level=3] [ref=e199]
+            - paragraph [ref=e200]: £0
+            - list [ref=e201]
+            - paragraph [ref=e205]: Claiming your listing is always free
+            - link "Claim free" [ref=e206] [cursor=pointer]:
+              - /url: /search
+          - generic [ref=e207]:
+            - generic [ref=e208]: Most popular
+            - heading "Provider Pro Listing" [level=3] [ref=e209]
+            - paragraph [ref=e210]: £99 + VAT/location/mo
+            - list [ref=e211]
+            - paragraph [ref=e217]: Per location pricing
+            - link "Upgrade listing" [ref=e218] [cursor=pointer]:
+              - /url: /signup?provider_tier=enhanced
+          - generic [ref=e219]:
+            - heading "Sponsored Listing" [level=3] [ref=e220]
+            - paragraph [ref=e221]: £149 + VAT/location/mo
+            - list [ref=e222]
+            - paragraph [ref=e227]: Per location pricing
+            - link "Sponsor this location" [ref=e228] [cursor=pointer]:
+              - /url: /signup?provider_tier=sponsored
+          - generic [ref=e229]:
+            - heading "Multi-location / Enterprise" [level=3] [ref=e230]
+            - paragraph [ref=e231]: Contact
+            - list [ref=e232]
+            - paragraph [ref=e237]: For groups and multi-site providers
+            - link "Contact sales" [ref=e238] [cursor=pointer]:
+              - /url: mailto:enterprise@caregist.co.uk?subject=Provider+Enterprise+enquiry
+        - paragraph [ref=e239]: All prices exclude VAT · Provider visibility plans are separate from new-provider intelligence plans · Claim your listing first at no cost
+      - generic [ref=e240]:
+        - paragraph [ref=e241]: Need a custom plan?
+        - paragraph [ref=e242]:
+          - text: Enterprise paths cover large teams, commissioners, data buyers, multi-site groups, and custom integrations.
+          - link "Contact sales" [ref=e243] [cursor=pointer]:
+            - /url: mailto:enterprise@caregist.co.uk
+      - generic [ref=e244]:
+        - paragraph [ref=e245]: All prices exclude VAT. Cancel anytime.
+        - paragraph [ref=e246]: Monthly registration volumes vary. The 340/month figure is calculated from CareGist’s January–March 2026 live-feed average.
+        - paragraph [ref=e247]: "Source: CareGist tracking of CQC public registration movement. CareGist is independent and is not affiliated with or endorsed by the Care Quality Commission."
+  - generic [ref=e249]:
+    - paragraph [ref=e251]:
+      - text: We use cookies for site functionality and to analyse traffic. Read our
+      - link "cookie policy" [ref=e252] [cursor=pointer]:
+        - /url: /cookies
+      - text: .
+    - generic [ref=e253]:
+      - button "Accept all" [ref=e254]
+      - button "Essential only" [ref=e255]
+  - contentinfo [ref=e256]:
+    - generic [ref=e257]:
+      - paragraph [ref=e258]: "Data source: Care Quality Commission (CQC). CareGist is not an official CQC service."
+      - paragraph [ref=e259]:
+        - text: If you have concerns about care quality, contact CQC directly at
+        - link "cqc.org.uk/contact-us" [ref=e260] [cursor=pointer]:
+          - /url: https://www.cqc.org.uk/contact-us
+        - text: or call 03000 616161.
+      - generic [ref=e261]:
+        - link "Privacy Policy" [ref=e262] [cursor=pointer]:
+          - /url: /privacy
+        - link "Terms of Service" [ref=e263] [cursor=pointer]:
+          - /url: /terms
+        - link "Acceptable Use" [ref=e264] [cursor=pointer]:
+          - /url: /acceptable-use
+        - link "Review Policy" [ref=e265] [cursor=pointer]:
+          - /url: /review-policy
+        - link "Cookies" [ref=e266] [cursor=pointer]:
+          - /url: /cookies
+        - link "Search" [ref=e267] [cursor=pointer]:
+          - /url: /search
+        - link "Find Care" [ref=e268] [cursor=pointer]:
+          - /url: /find-care
+        - link "Care Groups" [ref=e269] [cursor=pointer]:
+          - /url: /groups
+        - link "Pricing" [ref=e270] [cursor=pointer]:
+          - /url: /pricing
+        - link "API" [ref=e271] [cursor=pointer]:
+          - /url: /api
+        - link "Why CareGist" [ref=e272] [cursor=pointer]:
+          - /url: /why-caregist
+        - link "Get a lead list" [ref=e273] [cursor=pointer]:
+          - /url: /lead-list
+        - link "Contact" [ref=e274] [cursor=pointer]:
+          - /url: mailto:hello@caregist.co.uk
+  - alert [ref=e275]

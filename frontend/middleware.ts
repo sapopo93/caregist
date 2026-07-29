@@ -79,7 +79,7 @@ export async function middleware(request: NextRequest) {
 
   // Validate the session against the backend API.
   try {
-    const apiUrl = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+    const apiUrl = request.nextUrl.origin;
     const response = await fetch(`${apiUrl}/api/v1/auth/me`, {
       method: "GET",
       headers: {
@@ -100,6 +100,7 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
+  runtime: "nodejs",
   matcher: [
     /*
      * Match /api because it is a public marketing page. Exclude API route

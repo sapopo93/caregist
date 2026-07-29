@@ -34,6 +34,12 @@ jobs:
       - name: ruff (lint — real-bug ruleset)
         run: ruff check api/ tools/ db/ tests/
 
+      - name: Evidence language guard
+        run: python tools/evidence_language_guard.py
+
+      - name: Migration governance
+        run: python tools/check_migration_governance.py
+
       - name: pytest
         env:
           API_MASTER_KEY: ci_test_master_key
@@ -42,7 +48,12 @@ jobs:
 
       - name: pip-audit (vulnerabilities)
         # Fail the build on known CVEs in backend deps.
-        run: pip-audit --requirement requirements.txt --strict
+        run: |
+          pip-audit --requirement requirements.txt --strict
+          pip-audit --requirement requirements-api.txt --strict
+
+      - name: Build production API image
+        run: docker build --tag caregist-api:ci .
 
       - name: Smoke verifier syntax
         run: python -m py_compile tools/verify-deploy.py
@@ -123,7 +134,7 @@ jobs:
           NEXT_PUBLIC_APP_URL: http://127.0.0.1:3100
           POSTGRES_URL: ""
           DATABASE_URL: ""
-          DIRECTORY_TOKEN_SECRET: ci_test_directory_secret
+          DIRECTORY_TOKEN_SECRET: ci_test_directory_secret_32_chars_minimum
           PORT: "3100"
         run: |
           npm run start > /tmp/caregist-smoke.log 2>&1 &

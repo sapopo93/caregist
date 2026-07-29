@@ -1,0 +1,144 @@
+{
+  "manifestVersion": 1,
+  "generatedAt": "2026-06-30",
+  "sourceSpec": "/Users/user/.codex/attachments/381c4250-9644-446d-b64a-b9fa01c31695/pasted-text-1.txt",
+  "assumptions": [
+    "Phase 0 is a required blocker before later event-intelligence work.",
+    "No production or staging migrations were applied during discovery.",
+    "No Stripe live-mode mutation was performed; billing go-live remains gated by APPROVED_BILLING_LIVE.",
+    "CQC API access is treated as optional enrichment because FEATURE_CQC_API is unset and the MLP must run bulk-first."
+  ],
+  "stack": {
+    "backendFramework": "FastAPI",
+    "backendLanguage": "Python",
+    "frontendFramework": "Next.js App Router",
+    "frontendLanguage": "TypeScript",
+    "database": "PostgreSQL with PostGIS",
+    "postgresVersion": "PostgreSQL 17.10",
+    "orm": "none; raw SQL via asyncpg/psycopg2",
+    "migrationTooling": "db/apply_migrations.py applies db/migrations/[0-9][0-9][0-9]_*.sql and records schema_migrations",
+    "deploymentTargets": ["AWS EC2 for API", "Vercel-compatible Next.js frontend per README and CI"]
+  },
+  "phase0": {
+    "wp0_1StackAndSchemaGroundTruth": "complete",
+    "wp0_2NoPulseDiagnosis": "complete",
+    "wp0_3IngestionPathAudit": "complete",
+    "wp0_4TenancyAuthStripeState": "complete",
+    "wp0_5SurfaceMap": "complete"
+  },
+  "liveCounts": {
+    "rating_changes": 0,
+    "provider_monitors": 0,
+    "saved_monitors": "missing",
+    "feed_digest_subscriptions": 1,
+    "webhook_subscriptions": 1,
+    "trusted_event_ledger": 56742,
+    "pipeline_runs": 4305,
+    "care_providers": 56743,
+    "users": 5,
+    "subscriptions": 3
+  },
+  "ingestion": {
+    "currentMechanism": [
+      "extract_cqc.py, clean_cqc.py, quality_audit.py, prepare_directory.py, and run_enriched_pipeline.sh form the CQC ETL path.",
+      "incremental_update.py performs API/list scanning and writes care_providers, rating_changes, and pipeline_runs.",
+      "api/services/new_registration_feed.py projects care_providers registrations into trusted_event_ledger.",
+      "tools/run_new_registration_feed_cycle.py syncs feed events, delivers webhooks, queues digests, and closes pipeline_runs."
+    ],
+    "currentReadModel": "care_providers is the live provider/location table; care_providers.id stores the CQC location id.",
+    "canonicalExistingEventStore": "trusted_event_ledger",
+    "knownGap": "rating_changes is empty, so rating-movement pulse is not active despite new-registration events existing."
+  },
+  "tenancyAuthStripe": {
+    "tenantModel": {
+      "columns": [
+        {"table": "internal_tasks", "column": "tenant_id", "type": "text"}
+      ],
+      "assessment": "No global tenant_id on user, subscription, provider, event, or feed tables. Multi-tenancy is primarily account/user scoped."
+    },
+    "auth": {
+      "publicApiAuth": "X-API-Key with api_keys table, tier limits, key_hash/key_prefix support, and API_MASTER_KEY rotation.",
+      "userAuth": "Email/password sessions via users and user_sessions.",
+      "internalAuth": "SUPPORT_INTERNAL_TOKEN/HERMES_INTERNAL_TOKEN for internal routes."
+    },
+    "stripe": {
+      "secretKeyMode": "live-configured in local .env; do not mutate without APPROVED_BILLING_LIVE",
+      "webhookVerification": "api/routers/billing.py verifies Stripe webhook signatures and stripe_processed_events deduplicates events.",
+      "configuredPriceAliases": [
+        "STRIPE_PRICE_ALERTS_PRO_MONTHLY",
+        "STRIPE_PRICE_DATA_STARTER_MONTHLY",
+        "STRIPE_PRICE_DATA_PRO_MONTHLY",
+        "STRIPE_PRICE_DATA_BUSINESS_MONTHLY",
+        "STRIPE_PRICE_PROVIDER_PRO_LISTING_MONTHLY",
+        "STRIPE_PRICE_SPONSORED_LISTING_MONTHLY"
+      ],
+      "missingCanonicalPriceNames": [
+        "STRIPE_PRICE_ALERTS_PRO",
+        "STRIPE_PRICE_STARTER",
+        "STRIPE_PRICE_PRO",
+        "STRIPE_PRICE_BUSINESS",
+        "STRIPE_PRICE_PROFILE_ENHANCED",
+        "STRIPE_PRICE_PROFILE_PREMIUM",
+        "STRIPE_PRICE_PROFILE_SPONSORED"
+      ]
+    }
+  },
+  "schema": {
+    "tables": {
+      "admin_audit_log": "id:bigint, action:text, entity_type:text, entity_id:integer, actor:text, metadata:jsonb, created_at:timestamp with time zone",
+      "analytics_events": "id:bigint, event_type:character varying, event_source:character varying, user_id:integer, email:character varying, provider_id:character varying, meta:jsonb, ip_address:inet, user_agent:text, created_at:timestamp with time zone",
+      "api_applications": "id:integer, company_name:character varying, contact_name:character varying, contact_email:character varying, use_case:text, expected_volume:character varying, status:character varying, created_at:timestamp with time zone, reviewed_at:timestamp with time zone",
+      "api_keys": "id:integer, key:character varying, name:character varying, email:character varying, tier:character varying, rate_limit:integer, is_active:boolean, created_at:timestamp without time zone, last_used_at:timestamp without time zone, user_id:integer, key_hash:character, key_prefix:character varying",
+      "api_rate_usage_daily": "api_key:character varying, usage_date:date, request_count:integer, updated_at:timestamp with time zone",
+      "audit_log": "id:bigint, action:text, outcome:text, actor_type:text, actor_user_id:bigint, actor_key_id:bigint, actor_email:text, actor_name:text, target_type:text, target_id:text, metadata:jsonb, created_at:timestamp with time zone",
+      "care_providers": "id:character varying, provider_id:character varying, name:character varying, slug:character varying, type:character varying, status:character varying, registration_date:date, address_line1:character varying, address_line2:character varying, town:character varying, county:character varying, postcode:character varying, region:character varying, local_authority:character varying, country:character varying, latitude:numeric, longitude:numeric, geom:geometry, phone:character varying, website:character varying, email:character varying, overall_rating:character varying, rating_safe:character varying, rating_effective:character varying, rating_caring:character varying, rating_responsive:character varying, rating_well_led:character varying, last_inspection_date:date, inspection_report_url:character varying, service_types:text, specialisms:text, regulated_activities:text, number_of_beds:integer, ownership_type:character varying, quality_score:integer, quality_tier:character varying, meta_title:character varying, meta_description:text, geocode_source:character varying, data_source:character varying, data_attribution:character varying, created_at:timestamp without time zone, updated_at:timestamp without time zone, last_updated:timestamp without time zone, is_claimed:boolean, claimed_at:timestamp without time zone, review_count:integer, avg_review_rating:numeric, enquiry_count:integer, inspection_summary:text, profile_description:text, profile_photos:jsonb, virtual_tour_url:text, inspection_response:text, profile_tier:character varying, profile_updated_at:timestamp with time zone, group_name:text, logo_url:text, funding_types:ARRAY, fee_guidance:text, min_visit_duration:text, contract_types:ARRAY, age_ranges:ARRAY, profile_completeness:integer, profile_subscription_id:text",
+      "email_subscribers": "id:integer, email:character varying, source:character varying, postcode:character varying, meta:jsonb, unsubscribed_at:timestamp with time zone, created_at:timestamp with time zone",
+      "enquiries": "id:integer, provider_id:character varying, status:character varying, enquirer_name:character varying, enquirer_email:character varying, enquirer_phone:character varying, relationship:character varying, care_type:character varying, urgency:character varying, message:text, created_at:timestamp without time zone, read_at:timestamp without time zone",
+      "export_access_tokens": "token:text, lead_id:bigint, region:text, service_type:text, rating:text, created_at:timestamp with time zone, expires_at:timestamp with time zone, last_downloaded_at:timestamp with time zone",
+      "feed_digest_delivery_log": "id:integer, subscription_id:integer, digest_key:text, event_count:integer, pending_email_id:integer, created_at:timestamp with time zone",
+      "feed_digest_subscriptions": "id:integer, user_id:integer, email:character varying, feed_type:text, filters:jsonb, frequency:text, active:boolean, unsubscribe_token:text, created_at:timestamp with time zone, updated_at:timestamp with time zone",
+      "geography_columns": "f_table_catalog:name, f_table_schema:name, f_table_name:name, f_geography_column:name, coord_dimension:integer, srid:integer, type:text",
+      "geometry_columns": "f_table_catalog:character varying, f_table_schema:name, f_table_name:name, f_geometry_column:name, coord_dimension:integer, srid:integer, type:character varying",
+      "internal_tasks": "id:uuid, action:text, tenant_id:text, status:text, payload:jsonb, result:jsonb, error:text, created_at:timestamp with time zone, started_at:timestamp with time zone, completed_at:timestamp with time zone, idempotency_key:text",
+      "leads": "id:bigint, email:text, region:text, service_type:text, rating:text, created_at:timestamp with time zone",
+      "password_reset_tokens": "id:integer, token:text, email:character varying, expires_at:timestamp with time zone, used:boolean, attempts:integer, created_at:timestamp with time zone",
+      "pending_emails": "id:integer, to_email:character varying, subject:character varying, html_body:text, status:character varying, attempts:integer, send_after:timestamp with time zone, created_at:timestamp with time zone, sent_at:timestamp with time zone, processing_started_at:timestamp with time zone, idempotency_key:text",
+      "pipeline_alert_log": "id:bigint, alert_key:text, severity:text, details:jsonb, created_at:timestamp with time zone",
+      "pipeline_runs": "id:integer, run_type:character varying, started_at:timestamp without time zone, completed_at:timestamp without time zone, records_added:integer, records_updated:integer, records_deactivated:integer, status:character varying, error_message:text",
+      "postcode_cache": "postcode:character varying, latitude:numeric, longitude:numeric, cached_at:timestamp with time zone",
+      "provider_claims": "id:integer, provider_id:character varying, status:character varying, claimant_name:character varying, claimant_email:character varying, claimant_phone:character varying, claimant_role:character varying, organisation_name:character varying, proof_of_association:text, admin_notes:text, created_at:timestamp without time zone, reviewed_at:timestamp without time zone, reviewed_by:character varying, fast_track:boolean, submitted_at:timestamp with time zone",
+      "provider_monitors": "id:integer, user_id:integer, provider_id:character varying, created_at:timestamp with time zone, last_alert_sent_at:timestamp with time zone",
+      "provider_rating_history": "id:integer, provider_id:character varying, overall_rating:character varying, inspection_date:date, report_url:character varying, recorded_at:timestamp with time zone",
+      "rating_changes": "id:integer, provider_id:character varying, provider_name:text, slug:text, town:text, postcode:character varying, region:text, old_rating:character varying, new_rating:character varying, inspection_date:date, detected_at:timestamp with time zone",
+      "reviews": "id:integer, provider_id:character varying, status:character varying, rating:smallint, title:character varying, body:text, reviewer_name:character varying, reviewer_email:character varying, relationship:character varying, visit_date:date, admin_notes:text, created_at:timestamp without time zone, moderated_at:timestamp without time zone",
+      "saved_comparisons": "id:integer, user_id:integer, share_token:character varying, slug_list:ARRAY, title:character varying, created_at:timestamp with time zone",
+      "saved_feed_filters": "id:integer, user_id:integer, feed_type:text, name:character varying, filters:jsonb, created_at:timestamp with time zone, updated_at:timestamp with time zone",
+      "schema_migrations": "filename:text, applied_at:timestamp without time zone",
+      "spatial_ref_sys": "srid:integer, auth_name:character varying, auth_srid:integer, srtext:character varying, proj4text:character varying",
+      "stripe_processed_events": "event_id:text, processed_at:timestamp with time zone",
+      "subscriptions": "id:integer, user_id:integer, stripe_subscription_id:character varying, stripe_price_id:character varying, tier:character varying, status:character varying, current_period_end:timestamp without time zone, created_at:timestamp without time zone, updated_at:timestamp without time zone, included_users:integer, extra_seats:integer, max_users:integer, seat_price_gbp:integer",
+      "trusted_event_ledger": "id:bigint, entity_type:text, entity_id:text, provider_id:character varying, location_id:character varying, event_type:text, effective_date:date, observed_at:timestamp with time zone, old_value:jsonb, new_value:jsonb, source:text, confidence_score:numeric, dedupe_key:text, metadata:jsonb, created_at:timestamp with time zone",
+      "user_sessions": "id:uuid, token_hash:character, user_id:integer, api_key_id:integer, created_at:timestamp with time zone, last_seen_at:timestamp with time zone, expires_at:timestamp with time zone, revoked_at:timestamp with time zone",
+      "users": "id:integer, email:character varying, name:character varying, password_hash:character varying, stripe_customer_id:character varying, is_verified:boolean, verification_token:character varying, created_at:timestamp without time zone, updated_at:timestamp without time zone",
+      "webhook_delivery_log": "id:bigint, subscription_id:integer, event_type:text, event_dedupe_key:text, payload:jsonb, attempt_count:integer, response_status:integer, last_error:text, last_attempt_at:timestamp with time zone, delivered_at:timestamp with time zone, created_at:timestamp with time zone",
+      "webhook_subscriptions": "id:integer, user_id:integer, url:text, secret:text, events:ARRAY, active:boolean, created_at:timestamp with time zone, last_delivery_at:timestamp with time zone, delivery_failures:integer, filter_config:jsonb",
+      "weekly_digest_log": "id:integer, week_key:character varying, subscriber_count:integer, emails_queued:integer, changes_count:integer, created_at:timestamp with time zone"
+    }
+  },
+  "apiSurfaces": [
+    "/api/v1/health", "/api/v1/health/liveness", "/api/v1/health/readiness", "/api/v1/health/freshness", "/metrics",
+    "/api/v1/auth/*", "/api/v1/providers/*", "/api/v1/feed/new-registrations*", "/api/v1/billing/*", "/api/v1/webhooks",
+    "/api/v1/admin/*", "/api/v1/groups*", "/api/v1/regions*", "/api/v1/cities*", "/api/v1/tools/radius-search",
+    "/internal/*", "/api/v1/internal/*"
+  ],
+  "frontendSurfaces": [
+    "/", "/search", "/provider/[slug]", "/provider-dashboard/[slug]", "/dashboard", "/admin", "/groups", "/groups/[slug]",
+    "/find-care", "/compare", "/pricing", "/region/[slug]", "/services/[slug]", "/sample-report", "/lead-list",
+    "/login", "/signup", "/forgot-password", "/verify-email", "/api/export", "/api/leads/request", "/api/health/directory"
+  ],
+  "blockersAndGates": [
+    "G1: Applying event-intelligence migrations to staging/production requires APPROVED_MIGRATION.",
+    "G2: Stripe live productisation requires APPROVED_BILLING_LIVE.",
+    "The full MLP requires at least two dated CQC extracts or a fixture-backed diff engine; live historical backfill is not proven by Phase 0."
+  ]
+}

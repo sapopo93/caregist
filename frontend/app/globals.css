@@ -23,12 +23,12 @@
 
 @layer base {
   body {
-    font-family: 'DM Sans', system-ui, sans-serif;
+    font-family: var(--font-dm-sans), system-ui, sans-serif;
     background-color: var(--color-parchment);
     color: var(--color-charcoal);
   }
   h1, h2, h3 {
-    font-family: 'Playfair Display', Georgia, serif;
+    font-family: var(--font-playfair-display), Georgia, serif;
     color: var(--color-bark);
   }
 }

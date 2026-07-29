@@ -8,6 +8,7 @@ import pytest
 from fastapi import HTTPException
 from fastapi.responses import Response as FastAPIResponse
 
+from api.middleware.ip_rate_limit import check_ip_rate_limit
 from api.middleware.auth import hash_api_key
 from api.routers.auth import (
     ForgotPasswordRequest,
@@ -25,6 +26,7 @@ from api.routers.auth import (
     reveal_key,
     reset_password,
     rotate_key,
+    router,
     verify_email,
 )
 
@@ -39,6 +41,18 @@ def clear_failed_auth_attempts():
     _failed_auth_attempts.clear()
     yield
     _failed_auth_attempts.clear()
+
+
+def test_delete_account_route_uses_ip_rate_limit():
+    route = next(
+        route
+        for route in router.routes
+        if getattr(route, "path", None) == "/api/v1/auth/delete-account"
+        and "DELETE" in getattr(route, "methods", set())
+    )
+
+    dependency_calls = {dependency.call for dependency in route.dependant.dependencies}
+    assert check_ip_rate_limit in dependency_calls
 
 
 @pytest.mark.asyncio

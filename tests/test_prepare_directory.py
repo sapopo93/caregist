@@ -1,9 +1,9 @@
 """Tests for prepare_directory.py output generation."""
 
-import pytest
 
 from prepare_directory import (
     generate_slug,
+    geocode_from_postcode,
     meta_title,
     meta_description,
     normalize_rating,
@@ -150,3 +150,46 @@ class TestInspectionUrl:
 
     def test_empty(self):
         assert inspection_url("", None) is None
+
+
+class _FakeResponse:
+    status_code = 200
+
+    def json(self):
+        return {
+            "result": {
+                "latitude": 51.501,
+                "longitude": -0.141,
+            }
+        }
+
+
+class _FakePostcodeCache:
+    def __init__(self, initial=None):
+        self.initial = initial or {}
+        self.set_calls = []
+
+    def get(self, postcode):
+        return self.initial.get(postcode)
+
+    def set(self, postcode, latitude, longitude):
+        self.set_calls.append((postcode, latitude, longitude))
+
+
+def test_geocode_from_postcode_uses_cache_before_http(monkeypatch):
+    cache = _FakePostcodeCache({"SW1A 1AA": (51.501, -0.141)})
+
+    def fail_get(*args, **kwargs):
+        raise AssertionError("postcodes.io should not be called on cache hit")
+
+    monkeypatch.setattr("prepare_directory.requests.get", fail_get)
+
+    assert geocode_from_postcode("SW1A 1AA", cache=cache) == (51.501, -0.141)
+
+
+def test_geocode_from_postcode_writes_successful_http_result_to_cache(monkeypatch):
+    cache = _FakePostcodeCache()
+    monkeypatch.setattr("prepare_directory.requests.get", lambda *args, **kwargs: _FakeResponse())
+
+    assert geocode_from_postcode("SW1A 1AA", cache=cache) == (51.501, -0.141)
+    assert cache.set_calls == [("SW1A 1AA", 51.501, -0.141)]

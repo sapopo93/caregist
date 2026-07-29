@@ -47,14 +47,16 @@ Applied 17 migrations in 23.4s
 ssh ubuntu@caregist-api.example.com
 cd /home/caregist/CareGist
 source .venv/bin/activate
-python3 db/apply_migrations.py
+python3 db/apply_migrations.py --target staging
+python3 db/apply_migrations.py --target production --confirm-production-backup
 ```
 
 ### Pre-Flight Checklist
 - [ ] Database is backed up (Neon: Neon branches, RDS: RDS snapshots)
 - [ ] No ongoing deployments
 - [ ] Downtime window coordinated if needed (migrations typically <1s per file)
-- [ ] `.env` has correct `DATABASE_URL` for production
+- [ ] `.env` or the process environment has distinct `STAGING_DATABASE_URL` and `PROD_DATABASE_URL`
+- [ ] Staging migrations have completed before production
 
 ### Post-Flight Verification
 ```bash
@@ -63,7 +65,7 @@ python3 -c "
 import asyncpg
 import asyncio
 async def check():
-    conn = await asyncpg.connect(open('.env').read().split('DATABASE_URL=')[1].split()[0])
+    conn = await asyncpg.connect(open('.env').read().split('PROD_DATABASE_URL=')[1].split()[0])
     count = await conn.fetchval('SELECT COUNT(*) FROM schema_migrations')
     files = await conn.fetch('SELECT filename, applied_at FROM schema_migrations ORDER BY applied_at DESC LIMIT 3')
     print(f'Total migrations: {count}')

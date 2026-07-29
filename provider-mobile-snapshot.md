@@ -1,0 +1,77 @@
+- generic [active] [ref=e1] [box=0,0,390,3177]:
+  - banner [ref=e2] [box=0,0,390,229]:
+    - generic [ref=e3] [box=24,16,342,196]:
+      - link "CareGist" [ref=e4] [cursor=pointer] [box=24,16,205,48]:
+        - /url: /
+        - img "CareGist" [ref=e5] [box=24,16,205,48]
+      - generic [ref=e6] [box=24,80,342,132]:
+        - navigation [ref=e7] [box=24,80,342,76]:
+          - link "Products" [ref=e8] [cursor=pointer] [box=24,80,60,20]:
+            - /url: /#products
+          - link "Who it's for" [ref=e9] [cursor=pointer] [box=104,80,75,20]:
+            - /url: /#positioning
+          - link "About" [ref=e10] [cursor=pointer] [box=198,80,41,20]:
+            - /url: /why-caregist
+          - link "Search" [ref=e11] [cursor=pointer] [box=259,80,46,20]:
+            - /url: /search
+          - link "Pricing" [ref=e12] [cursor=pointer] [box=24,128,45,20]:
+            - /url: /pricing
+          - link "API" [ref=e13] [cursor=pointer] [box=89,128,21,20]:
+            - /url: /api
+          - link "Get a lead list" [ref=e14] [cursor=pointer] [box=130,128,90,20]:
+            - /url: /lead-list
+          - link "Buy dataset" [ref=e15] [cursor=pointer] [box=241,120,113,36]:
+            - /url: /lead-list
+        - button "Open menu" [ref=e16] [box=326,172,40,40]:
+          - img [ref=e17] [box=334,180,24,24]
+  - main [ref=e19] [box=0,229,390,2632]:
+    - generic [ref=e20] [box=0,229,390,2632]:
+      - link "Back to search" [ref=e21] [cursor=pointer] [box=24,273,98,19]:
+        - /url: /search
+      - generic [ref=e22] [box=24,309,342,2512]:
+        - generic [ref=e23] [box=57,342,276,228]:
+          - generic [ref=e24] [box=57,342,276,174]
+          - generic [ref=e28] [box=57,532,71,38]: Good
+        - generic [ref=e29] [box=57,594,276,266]:
+          - generic [ref=e30] [box=57,594,276,78]
+          - generic [ref=e33] [box=57,688,276,78]
+          - generic [ref=e36] [box=57,782,276,78]
+        - generic [ref=e39] [box=57,892,276,1896]:
+          - generic [ref=e40] [box=57,892,276,1210]
+          - generic [ref=e74] [box=57,2126,276,662]
+  - contentinfo [ref=e93] [box=0,2861,390,316]:
+    - generic [ref=e94] [box=24,2893,342,252]:
+      - paragraph [ref=e95] [box=24,2893,342,40]: "Data source: Care Quality Commission (CQC). CareGist is not an official CQC service."
+      - paragraph [ref=e96] [box=24,2941,342,60]:
+        - text: If you have concerns about care quality, contact CQC directly at
+        - link "cqc.org.uk/contact-us" [ref=e97] [cursor=pointer] [box=128,2962,145,19]:
+          - /url: https://www.cqc.org.uk/contact-us
+        - text: or call 03000 616161.
+      - generic [ref=e98] [box=24,3017,342,128]:
+        - link "Privacy Policy" [ref=e99] [cursor=pointer] [box=24,3017,89,20]:
+          - /url: /privacy
+        - link "Terms of Service" [ref=e100] [cursor=pointer] [box=129,3017,108,20]:
+          - /url: /terms
+        - link "Acceptable Use" [ref=e101] [cursor=pointer] [box=253,3017,102,20]:
+          - /url: /acceptable-use
+        - link "Review Policy" [ref=e102] [cursor=pointer] [box=24,3053,87,20]:
+          - /url: /review-policy
+        - link "Cookies" [ref=e103] [cursor=pointer] [box=127,3053,52,20]:
+          - /url: /cookies
+        - link "Search" [ref=e104] [cursor=pointer] [box=195,3053,45,20]:
+          - /url: /search
+        - link "Find Care" [ref=e105] [cursor=pointer] [box=255,3053,62,20]:
+          - /url: /find-care
+        - link "Care Groups" [ref=e106] [cursor=pointer] [box=24,3089,82,20]:
+          - /url: /groups
+        - link "Pricing" [ref=e107] [cursor=pointer] [box=122,3089,44,20]:
+          - /url: /pricing
+        - link "API" [ref=e108] [cursor=pointer] [box=182,3089,21,20]:
+          - /url: /api
+        - link "Why CareGist" [ref=e109] [cursor=pointer] [box=218,3089,90,20]:
+          - /url: /why-caregist
+        - link "Get a lead list" [ref=e110] [cursor=pointer] [box=24,3125,89,20]:
+          - /url: /lead-list
+        - link "Contact" [ref=e111] [cursor=pointer] [box=129,3125,53,20]:
+          - /url: mailto:hello@caregist.co.uk
+  - alert [ref=e112] [box=-1,-1,1,1]

@@ -5,9 +5,6 @@
 *.swo
 
 # Local secrets and runtime env files
-.env
-.env.*
-!.env.example
 frontend/.env.local
 frontend/.env.*.local
 
@@ -42,6 +39,7 @@ frontend/.vercel/
 
 # Generated data dumps and local caches
 *.csv
+!frontend/data/directory-fallback-full.csv
 *.ndjson
 *.sqlite
 *.sqlite-shm
@@ -107,3 +105,13 @@ skills-lock.json
 *.docx
 *.ods
 docs/*.dmg
+
+.projects/cache
+.projects/vault
+.projects/state.test.json
+.projects/state.local.test.json
+.env
+.env.*
+!.env.example
+.projects/
+.projects.corrupt-20260630-124914/

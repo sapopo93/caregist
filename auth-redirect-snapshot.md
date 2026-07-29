@@ -1,0 +1,91 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e3]:
+      - link "CareGist" [ref=e4] [cursor=pointer]:
+        - /url: /
+        - img "CareGist" [ref=e5]
+      - generic [ref=e6]:
+        - navigation [ref=e7]:
+          - link "Products" [ref=e8] [cursor=pointer]:
+            - /url: /#products
+          - link "Who it's for" [ref=e9] [cursor=pointer]:
+            - /url: /#positioning
+          - link "About" [ref=e10] [cursor=pointer]:
+            - /url: /why-caregist
+          - link "Search" [ref=e11] [cursor=pointer]:
+            - /url: /search
+          - link "Pricing" [ref=e12] [cursor=pointer]:
+            - /url: /pricing
+          - link "API" [ref=e13] [cursor=pointer]:
+            - /url: /api
+          - link "Get a lead list" [ref=e14] [cursor=pointer]:
+            - /url: /lead-list
+          - link "Buy dataset" [ref=e15] [cursor=pointer]:
+            - /url: /lead-list
+        - navigation [ref=e16]:
+          - link "Log In" [ref=e17] [cursor=pointer]:
+            - /url: /login
+          - link "Sign Up" [ref=e18] [cursor=pointer]:
+            - /url: /signup
+  - main [ref=e19]:
+    - generic [ref=e20]:
+      - heading "Log in" [level=1] [ref=e21]
+      - generic [ref=e22]:
+        - generic [ref=e23]:
+          - generic [ref=e24]: Email
+          - textbox "Email" [ref=e25]
+        - generic [ref=e26]:
+          - generic [ref=e27]: Password
+          - textbox "Password" [ref=e28]
+          - link "Forgot password?" [ref=e30] [cursor=pointer]:
+            - /url: /forgot-password
+        - button "Log In" [ref=e31]
+      - paragraph [ref=e32]:
+        - text: Don't have an account?
+        - link "Sign up" [ref=e33] [cursor=pointer]:
+          - /url: /signup
+  - generic [ref=e35]:
+    - paragraph [ref=e37]:
+      - text: We use cookies for site functionality and to analyse traffic. Read our
+      - link "cookie policy" [ref=e38] [cursor=pointer]:
+        - /url: /cookies
+      - text: .
+    - generic [ref=e39]:
+      - button "Accept all" [ref=e40]
+      - button "Essential only" [ref=e41]
+  - contentinfo [ref=e42]:
+    - generic [ref=e43]:
+      - paragraph [ref=e44]: "Data source: Care Quality Commission (CQC). CareGist is not an official CQC service."
+      - paragraph [ref=e45]:
+        - text: If you have concerns about care quality, contact CQC directly at
+        - link "cqc.org.uk/contact-us" [ref=e46] [cursor=pointer]:
+          - /url: https://www.cqc.org.uk/contact-us
+        - text: or call 03000 616161.
+      - generic [ref=e47]:
+        - link "Privacy Policy" [ref=e48] [cursor=pointer]:
+          - /url: /privacy
+        - link "Terms of Service" [ref=e49] [cursor=pointer]:
+          - /url: /terms
+        - link "Acceptable Use" [ref=e50] [cursor=pointer]:
+          - /url: /acceptable-use
+        - link "Review Policy" [ref=e51] [cursor=pointer]:
+          - /url: /review-policy
+        - link "Cookies" [ref=e52] [cursor=pointer]:
+          - /url: /cookies
+        - link "Search" [ref=e53] [cursor=pointer]:
+          - /url: /search
+        - link "Find Care" [ref=e54] [cursor=pointer]:
+          - /url: /find-care
+        - link "Care Groups" [ref=e55] [cursor=pointer]:
+          - /url: /groups
+        - link "Pricing" [ref=e56] [cursor=pointer]:
+          - /url: /pricing
+        - link "API" [ref=e57] [cursor=pointer]:
+          - /url: /api
+        - link "Why CareGist" [ref=e58] [cursor=pointer]:
+          - /url: /why-caregist
+        - link "Get a lead list" [ref=e59] [cursor=pointer]:
+          - /url: /lead-list
+        - link "Contact" [ref=e60] [cursor=pointer]:
+          - /url: mailto:hello@caregist.co.uk
+  - alert [ref=e61]

@@ -38,8 +38,10 @@ SECRET_ENV_NAMES = {
     "hermes_internal_token": "HERMES_INTERNAL_TOKEN",
     "webhook_secret_key": "WEBHOOK_SECRET_KEY",
     "redis_url": "REDIS_URL",
+    "cron_secret": "CRON_SECRET",
 }
 SECRET_ENV_ALIASES = {
+    "api_master_key": ("API_KEY",),
     "stripe_price_alerts_pro": ("STRIPE_PRICE_ALERTS_PRO_MONTHLY",),
     "stripe_price_starter": ("STRIPE_PRICE_DATA_STARTER_MONTHLY",),
     "stripe_price_pro": ("STRIPE_PRICE_DATA_PRO_MONTHLY",),
@@ -93,6 +95,16 @@ class AwsSecretsManagerSecretLoader:
 def _is_production(environ: Mapping[str, str] | None = None) -> bool:
     env = environ or os.environ
     return env.get("NODE_ENV", "").lower() == "production"
+
+
+def redis_required_in_production(environ: Mapping[str, str] | None = None) -> bool:
+    """Return whether production must have shared Redis configured.
+
+    Vercel can use the existing durable database quota path when Redis is not
+    attached; its process-local limiter still protects short burst windows.
+    """
+    env = environ or os.environ
+    return env.get("VERCEL") != "1" and not env.get("VERCEL_ENV")
 
 
 def validate_cors_origins(cors_origins: str, *, production: bool) -> None:
@@ -151,24 +163,42 @@ def load_application_secrets(
 ) -> dict[str, str]:
     env = environ or os.environ
     is_production = _is_production(env)
+    is_vercel = env.get("VERCEL") == "1"
     secret_id = env.get(AWS_SECRET_ID_ENV)
 
-    if not secret_id and is_production:
+    if not secret_id and is_production and not is_vercel:
         raise RuntimeError(f"FATAL: {AWS_SECRET_ID_ENV} must be set in production.")
 
     values: dict[str, str] = {}
     if not is_production:
         values.update(_load_dev_dotenv_secrets(dotenv_path))
         values.update(_load_dev_env_secrets(env))
-    if secret_id:
+    elif is_vercel:
+        # Vercel supplies production secrets directly to the function runtime.
+        # Prefer the explicitly scoped production database URL when both the
+        # legacy DATABASE_URL and PROD_DATABASE_URL are present.
+        values.update(_load_dev_env_secrets(env))
+        if env.get("PROD_DATABASE_URL"):
+            values["database_url"] = env["PROD_DATABASE_URL"]
+    # Vercel is the authoritative runtime now. Ignore the retired AWS secret
+    # identifier if it still exists in project metadata; trying to resolve it
+    # would make every serverless invocation fail before the app can start.
+    if secret_id and not is_vercel:
         loader = secret_loader_cls(secret_id, env.get(AWS_REGION_ENV))
         values.update(loader.load())
 
     if is_production:
-        missing = [name for name in REQUIRED_PRODUCTION_SECRETS if not values.get(name)]
+        required_secrets = REQUIRED_PRODUCTION_SECRETS
+        if is_vercel:
+            # Quotas already use the durable DB fallback when Redis is absent.
+            # Redis remains recommended, but must not prevent a Vercel function
+            # from starting before a managed Redis integration is attached.
+            required_secrets = tuple(name for name in required_secrets if name != "redis_url")
+        missing = [name for name in required_secrets if not values.get(name)]
         if missing:
             missing_env_names = ", ".join(SECRET_ENV_NAMES[name] for name in missing)
-            raise RuntimeError(f"FATAL: Missing required production secrets in AWS Secrets Manager: {missing_env_names}")
+            source = "Vercel environment" if is_vercel else "AWS Secrets Manager"
+            raise RuntimeError(f"FATAL: Missing required production secrets in {source}: {missing_env_names}")
         return {name: values.get(name, "") for name in SECRET_ENV_NAMES}
 
     return values
@@ -218,6 +248,8 @@ class Settings(BaseSettings):
     # Optional Redis URL for shared burst rate limiting across workers.
     # When unset, burst limiting falls back to the process-local in-memory dict.
     redis_url: str = ""
+    # Vercel Cron sends this value as an Authorization bearer token.
+    cron_secret: str = ""
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8", "extra": "ignore"}
 
@@ -237,7 +269,7 @@ class Settings(BaseSettings):
         if is_production_db:
             if not self.webhook_secret_key:
                 raise RuntimeError("FATAL: WEBHOOK_SECRET_KEY is required in production.")
-            if not self.redis_url:
+            if not self.redis_url and redis_required_in_production():
                 raise RuntimeError("FATAL: REDIS_URL is required in production.")
 
         # Stripe environment guard: reject live keys in dev/test

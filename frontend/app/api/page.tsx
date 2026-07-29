@@ -78,7 +78,7 @@ const API_TIERS = [
   {
     name: "Alerts Pro",
     price: "£49 + VAT/mo",
-    features: "Provider monitoring and rating-change alerts · saved watchlists · CSV export for monitored providers · 5 req/sec · 200/day",
+    features: "Provider monitoring and rating-change alerts · saved watchlists · weekly alert digest · 5 req/sec · 200/day",
     recommended: false,
   },
   {

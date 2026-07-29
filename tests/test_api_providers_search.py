@@ -5,6 +5,7 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 
 from api.main import app
+from api.queries.providers import build_search_query
 
 
 @pytest.fixture
@@ -122,3 +123,11 @@ async def test_public_provider_detail_resolves_by_slug_or_id(patched_db, lookup_
     query, query_key = mock_conn.fetchrow.await_args.args
     assert "slug = $1 OR id = $1" in query
     assert query_key == lookup_key
+
+
+def test_relevance_search_promotes_sponsored_profiles_before_quality_sort():
+    query = build_search_query("relevance")
+
+    order_clause = query.split("ORDER BY", 1)[1]
+    assert "profile_tier = 'sponsored'" in order_clause
+    assert order_clause.index("profile_tier") < order_clause.index("quality_score")

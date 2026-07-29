@@ -61,6 +61,7 @@ async def test_checkout_accepts_display_alias_and_uses_canonical_stripe_tier(mon
     kwargs = create_session.call_args.kwargs
     assert kwargs["line_items"] == [{"price": "price_pro", "quantity": 1}]
     assert kwargs["mode"] == "subscription"
+    assert "payment_method_types" not in kwargs
     assert kwargs["metadata"]["tier"] == "pro"
     assert kwargs["metadata"]["price_id"] == "price_pro"
     audit_args = next(call.args for call in conn.execute.await_args_list if "INSERT INTO audit_log" in call.args[0])
@@ -93,6 +94,41 @@ async def test_checkout_rejects_another_account_email_without_enumerating(monkey
     assert "bob@example.com" not in exc.value.detail
     assert "not found" not in exc.value.detail.lower()
     create_session.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_profile_checkout_uses_dynamic_payment_methods(monkeypatch):
+    monkeypatch.setattr(settings, "stripe_secret_key", "sk_test_checkout")
+    monkeypatch.setattr(settings, "stripe_price_profile_enhanced", "price_profile_enhanced")
+    monkeypatch.setattr(settings, "app_url", "https://caregist.co.uk")
+
+    conn = AsyncMock()
+    conn.fetchrow = AsyncMock(
+        side_effect=[
+            {"id": 42, "email": "alice@example.com", "stripe_customer_id": "cus_123"},
+            {"id": "LOC123", "is_claimed": True, "profile_tier": "claimed"},
+            {"id": 1},
+        ]
+    )
+
+    @asynccontextmanager
+    async def mock_get_connection():
+        yield conn
+
+    created_session = SimpleNamespace(url="https://checkout.stripe.test/profile", id="cs_profile_123")
+
+    with patch("api.routers.billing.get_connection", mock_get_connection), \
+         patch("api.routers.billing.stripe.checkout.Session.create", return_value=created_session) as create_session:
+        result = await create_profile_checkout(
+            ProfileCheckoutRequest(slug="claimed-provider", tier="enhanced", email="alice@example.com"),
+            {"user_id": 42, "email": "alice@example.com", "is_verified": True},
+        )
+
+    assert result["checkout_url"] == "https://checkout.stripe.test/profile"
+    kwargs = create_session.call_args.kwargs
+    assert kwargs["line_items"] == [{"price": "price_profile_enhanced", "quantity": 1}]
+    assert kwargs["mode"] == "subscription"
+    assert "payment_method_types" not in kwargs
 
 
 @pytest.mark.parametrize("stale_tier", ["starter", "pro"])

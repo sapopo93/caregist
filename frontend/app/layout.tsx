@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { DM_Sans, Playfair_Display } from "next/font/google";
 import { connection } from "next/server";
 
 import "./globals.css";
@@ -11,18 +12,32 @@ import SupportWidgetMount from "@/components/SupportWidgetMount";
 
 const SITE_URL = "https://caregist.co.uk";
 
+const dmSans = DM_Sans({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600"],
+  variable: "--font-dm-sans",
+  display: "swap",
+});
+
+const playfairDisplay = Playfair_Display({
+  subsets: ["latin"],
+  weight: ["700", "800"],
+  variable: "--font-playfair-display",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: "CareGist | CQC Data, Lead Lists, API & Provider Listings",
+  title: "CareGist | Search UK CQC Care Providers",
   description:
-    "Search active CQC providers, request filtered lead lists, buy dataset packs, start new-provider intelligence plans, and upgrade provider listings.",
+    "Track CQC market movement, new registrations, Inadequate providers, Requires Improvement providers, and care-sector opportunity lists.",
   icons: {
     icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
   },
   openGraph: {
-    title: "CareGist | CQC Data, Lead Lists, API & Provider Listings",
+    title: "CareGist | Search UK CQC Care Providers",
     description:
-      "Search active CQC providers, request filtered lead lists, buy dataset packs, start new-provider intelligence plans, and upgrade provider listings.",
+      "Track CQC market movement, new registrations, Inadequate providers, Requires Improvement providers, and care-sector opportunity lists.",
     siteName: "CareGist",
     type: "website",
     locale: "en_GB",
@@ -30,9 +45,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "CareGist | CQC Data, Lead Lists, API & Provider Listings",
+    title: "CareGist | Search UK CQC Care Providers",
     description:
-      "Search active CQC providers, request filtered lead lists, buy dataset packs, start new-provider intelligence plans, and upgrade provider listings.",
+      "Track CQC market movement, new registrations, Inadequate providers, Requires Improvement providers, and care-sector opportunity lists.",
     images: ["/twitter-image"],
   },
 };
@@ -42,34 +57,30 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const stripePaymentLink = process.env.STRIPE_PAYMENT_LINK_URL?.trim() || null;
 
   return (
-    <html lang="en">
+    <html lang="en" className={`${dmSans.variable} ${playfairDisplay.variable}`}>
       <head>
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Lora:ital,wght@0,400;0,500;1,400&family=DM+Sans:wght@300;400;500;600&display=swap"
-          rel="stylesheet"
-        />
       </head>
       <body className="flex min-h-screen flex-col">
-        <header className="border-b border-stone bg-bark px-6 py-4 text-cream">
-          <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4">
+        <header className="relative border-b border-stone bg-bark px-6 py-4 text-cream">
+          <div className="mx-auto flex max-w-6xl items-center justify-between gap-4">
             <Link href="/" className="flex items-center">
               <img src="/logo-lockup-reverse.svg" alt="CareGist" className="h-12 w-auto md:h-14" />
             </Link>
 
-            <div className="flex flex-wrap items-center justify-end gap-4">
-              <nav className="flex flex-wrap items-center gap-5 text-sm font-medium">
-                <Link href="/#products" className="hover:text-amber">
-                  Products
+            <div className="flex items-center justify-end gap-3">
+              <Link
+                href="/search?opportunity=new_90"
+                className="rounded-full bg-amber px-4 py-2 text-sm font-semibold text-charcoal transition hover:bg-cream md:hidden"
+              >
+                Lists
+              </Link>
+              <nav className="hidden items-center gap-5 text-sm font-medium md:flex">
+                <Link href="/search?opportunity=new_90" className="hover:text-amber">
+                  Opportunity lists
                 </Link>
-                <Link href="/#positioning" className="hover:text-amber">
-                  Who it's for
-                </Link>
-                <Link href="/why-caregist" className="hover:text-amber">
-                  About
-                </Link>
-                <Link href="/search" className="hover:text-amber">
-                  Search
+                <Link href="/lead-list" className="hover:text-amber">
+                  Lead lists
                 </Link>
                 <Link href="/pricing" className="hover:text-amber">
                   Pricing
@@ -77,19 +88,19 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 <Link href="/api" className="hover:text-amber">
                   API
                 </Link>
-                <Link href="/lead-list" className="hover:text-amber">
-                  Get a lead list
+                <Link href="/why-caregist" className="hover:text-amber">
+                  About
                 </Link>
                 <a
-                  href={stripePaymentLink ?? "/lead-list"}
+                  href={stripePaymentLink ?? "/lead-list?opportunity=new_90"}
                   target={stripePaymentLink ? "_blank" : undefined}
                   rel={stripePaymentLink ? "noreferrer noopener" : undefined}
                   className="rounded-full bg-amber px-4 py-2 text-sm font-semibold text-charcoal transition hover:bg-cream"
                 >
-                  Buy dataset
+                  Get intelligence
                 </a>
               </nav>
-              <AuthNav />
+              <AuthNav stripePaymentLink={stripePaymentLink} />
             </div>
           </div>
         </header>
@@ -103,7 +114,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <footer className="bg-charcoal px-6 py-8 text-sm text-stone">
           <div className="mx-auto max-w-6xl">
             <p className="mb-2">
-              Data source: Care Quality Commission (CQC). CareGist is not an official CQC service.
+              CareGist is a product operated by H-Kay Limited. Data source: Care Quality Commission
+              (CQC). CareGist is not an official CQC service.
             </p>
             <p className="text-dusk">
               If you have concerns about care quality, contact CQC directly at{" "}
@@ -129,7 +141,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 Cookies
               </Link>
               <Link href="/search" className="underline hover:text-cream">
-                Search
+                Opportunity lists
               </Link>
               <Link href="/find-care" className="underline hover:text-cream">
                 Find Care
@@ -147,7 +159,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 Why CareGist
               </Link>
               <Link href="/lead-list" className="underline hover:text-cream">
-                Get a lead list
+                Get intelligence
               </Link>
               <a href="mailto:hello@caregist.co.uk" className="underline hover:text-cream">
                 Contact

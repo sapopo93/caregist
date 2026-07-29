@@ -40,7 +40,7 @@ describe("server API config", () => {
         VERCEL_URL: undefined,
       },
       () => {
-        assert.equal(getPublicApiBase(), "https://api.caregist.co.uk");
+        assert.equal(getPublicApiBase(), "https://caregist.co.uk");
       },
     );
   });
@@ -56,7 +56,7 @@ describe("server API config", () => {
         VERCEL_URL: undefined,
       },
       () => {
-        assert.equal(getServerApiBase(), "https://api.caregist.co.uk");
+        assert.equal(getServerApiBase(), "https://caregist.co.uk");
       },
     );
   });
@@ -72,7 +72,34 @@ describe("server API config", () => {
         VERCEL_URL: undefined,
       },
       () => {
-        assert.equal(getPublicApiBase(), "https://api.caregist.co.uk");
+        assert.equal(getPublicApiBase(), "https://caregist.co.uk");
+      },
+    );
+  });
+
+  it("uses the current Vercel deployment instead of a retired configured API host", () => {
+    withEnv(
+      {
+        CAREGIST_BACKEND_URL: undefined,
+        API_URL: "https://api.caregist.co.uk",
+        NEXT_PUBLIC_API_URL: "https://api.caregist.co.uk",
+        VERCEL_URL: "caregist-candidate.vercel.app",
+      },
+      () => {
+        assert.equal(getServerApiBase(), "https://caregist-candidate.vercel.app");
+      },
+    );
+  });
+
+  it("uses the private Vercel service binding for server-side API calls", () => {
+    withEnv(
+      {
+        CAREGIST_BACKEND_URL: "https://backend.internal.vercel",
+        API_URL: "https://api.caregist.co.uk",
+        VERCEL_URL: "caregist-candidate.vercel.app",
+      },
+      () => {
+        assert.equal(getServerApiBase(), "https://backend.internal.vercel");
       },
     );
   });
@@ -81,5 +108,12 @@ describe("server API config", () => {
     const source = fs.readFileSync(new URL("./server-api-config.ts", import.meta.url), "utf-8");
 
     assert.doesNotMatch(source, /NEXT_PUBLIC_API_KEY/);
+  });
+
+  it("does not proxy unmatched API routes to the retired backend", () => {
+    const source = fs.readFileSync(new URL("../next.config.ts", import.meta.url), "utf-8");
+
+    assert.doesNotMatch(source, /api\.caregist\.co\.uk/);
+    assert.doesNotMatch(source, /destination:\s*`\$\{apiDestination\}/);
   });
 });

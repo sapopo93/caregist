@@ -6,10 +6,15 @@ const BASE = "https://caregist.co.uk";
 const PAGE_SIZE = 50000;
 
 export async function GET() {
-  const apiBase = getPublicApiBase();
-  const res = await fetch(`${apiBase}/api/v1/sitemaps/providers/count`, {
-    next: { revalidate: 86400 },
-  });
+  let res: Response;
+  try {
+    const apiBase = getPublicApiBase();
+    res = await fetch(`${apiBase}/api/v1/sitemaps/providers/count`, {
+      next: { revalidate: 86400 },
+    });
+  } catch {
+    return new NextResponse("Provider sitemap index unavailable", { status: 503 });
+  }
 
   if (!res.ok) {
     return new NextResponse("Provider sitemap index unavailable", { status: 503 });

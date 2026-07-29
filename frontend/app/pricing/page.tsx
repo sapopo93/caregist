@@ -73,8 +73,8 @@ export default function PricingPage() {
           ))}
         </div>
         <p className="font-mono text-xs text-dusk mt-4 pt-4 border-t border-white/10">
-          Free is basic provider lookup and limited evaluation. Alerts Pro is for fresh new-provider
-          alerts without heavy exports. Data Starter, Data Pro, and Data Business are the core
+          Free is basic provider lookup and limited evaluation. Alerts Pro is for provider watchlists
+          and rating-change monitoring. Data Starter, Data Pro, and Data Business are the core
           new-provider intelligence plans for recurring feeds, saved filters, weekly digests, CRM
           exports, API access, and webhooks.
         </p>

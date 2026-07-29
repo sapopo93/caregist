@@ -14,8 +14,10 @@ from api.routers.internal import (
     _remediation_inflight_fingerprints,
     _remediation_locks,
     _remediation_request_times,
+    _run_smoke_verification,
     internal_remediate,
 )
+from tools.check_new_registration_pipeline import _build_alert_body, _derive_alert_keys
 
 
 @pytest.fixture(autouse=True)
@@ -126,6 +128,67 @@ async def test_internal_pipeline_endpoint_is_available_under_api_v1_alias():
 
     assert response.status_code == 200
     assert response.json()["status"] == "healthy"
+
+
+@pytest.mark.asyncio
+async def test_smoke_verification_consumes_real_pipeline_check_list_shape():
+    conn = AsyncMock()
+    conn.fetchrow = AsyncMock(
+        side_effect=[
+            {"connected": 1},
+            {"active_providers": 125, "pending_emails": 2},
+        ]
+    )
+
+    @asynccontextmanager
+    async def mock_get_connection():
+        yield conn
+
+    snapshot = {
+        "status": "degraded",
+        "readiness_ok": True,
+        "feed_fresh": False,
+        "checks": [
+            {"name": "pipeline_runs_table", "ok": True, "details": {"present": True}},
+            {
+                "name": "new_registration_feed_freshness",
+                "ok": False,
+                "details": {"latestObservedAt": None, "slaHours": 168},
+            },
+        ],
+    }
+
+    with patch("api.routers.internal.get_connection", mock_get_connection), patch(
+        "api.routers.internal.get_pipeline_health",
+        new=AsyncMock(return_value=snapshot),
+    ):
+        result = await _run_smoke_verification({})
+
+    assert result["ok"] is False
+    assert result["failedChecks"] == ["new_registration_feed_freshness"]
+    assert result["activeProviders"] == 125
+    assert result["pendingEmails"] == 2
+
+
+def test_pipeline_alert_helpers_consume_real_pipeline_check_list_shape():
+    snapshot = {
+        "status": "degraded",
+        "readiness_ok": True,
+        "feed_fresh": False,
+        "checks": [
+            {"name": "recent_pipeline_run", "ok": True, "details": {"latestStatus": "completed"}},
+            {
+                "name": "new_registration_feed_freshness",
+                "ok": False,
+                "details": {"latestObservedAt": "2026-07-20T09:00:00+00:00", "slaHours": 168},
+            },
+        ],
+    }
+
+    assert _derive_alert_keys(snapshot) == ["new_registration_feed_freshness"]
+    body = _build_alert_body(snapshot)
+    assert "new_registration_feed_freshness: FAILED" in body
+    assert "latestObservedAt=2026-07-20T09:00:00+00:00" in body
 
 
 @pytest.mark.asyncio

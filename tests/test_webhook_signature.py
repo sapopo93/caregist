@@ -48,7 +48,8 @@ async def test_delivered_payload_passes_published_verifier():
             captured["headers"] = headers
             return _Resp()
 
-    with patch.object(webhook_delivery.httpx, "AsyncClient", _Client):
+    with patch.object(webhook_delivery, "assert_public_webhook_url"), \
+         patch.object(webhook_delivery.httpx, "AsyncClient", _Client):
         ok = await deliver_webhook("https://sub.example.com/hook", secret, payload)
 
     assert ok is True
@@ -56,3 +57,22 @@ async def test_delivered_payload_passes_published_verifier():
     assert verify_signature(
         secret, captured["body"], captured["headers"]["X-CareGist-Signature"]
     )
+
+
+@pytest.mark.asyncio
+async def test_deliver_webhook_blocks_private_destination_before_http():
+    class _Client:
+        def __init__(self, *a, **k):
+            raise AssertionError("HTTP client must not be opened for blocked destinations")
+
+    with patch.object(webhook_delivery.httpx, "AsyncClient", _Client):
+        result = await deliver_webhook(
+            "http://127.0.0.1/internal",
+            "whsec_blocked",
+            {"event": "provider.rating_changed"},
+            return_metadata=True,
+        )
+
+    assert result[0] is False
+    assert result[1] == 0
+    assert "public" in result[3]

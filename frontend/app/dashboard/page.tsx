@@ -175,7 +175,7 @@ export default function DashboardPage() {
   const tierInfo: Record<string, { limit: string; features: string; cta: string; next: string }> = {
     free: {
       limit: PLAN_LIMIT_SUMMARY.free,
-      features: "Built for evaluation: browse providers, test the data, sample exports, and monitor one provider.",
+      features: "Built for evaluation: browse providers, test the data, and monitor one provider.",
       cta: PLAN_PRIMARY_CTA.free,
       next: PLAN_NEXT_STEP.free,
     },

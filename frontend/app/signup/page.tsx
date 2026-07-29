@@ -8,7 +8,7 @@ import { trackEvent } from "@/lib/analytics";
 const PLAN_COPY: Record<string, { title: string; body: string }> = {
   free: {
     title: "Start with Free",
-    body: "Built for evaluation: test the dashboard, sample exports, and one provider watchlist before moving into a paid workflow.",
+    body: "Built for evaluation: test the dashboard, browse provider data, and monitor one provider before moving into a paid workflow.",
   },
   "alerts-pro": {
     title: "Start Alerts Pro",
@@ -124,6 +124,7 @@ function SignupForm() {
           <input
             id="name"
             type="text"
+            autoComplete="name"
             required
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -135,6 +136,7 @@ function SignupForm() {
           <input
             id="email"
             type="email"
+            autoComplete="email"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -146,6 +148,7 @@ function SignupForm() {
           <input
             id="password"
             type="password"
+            autoComplete="new-password"
             required
             minLength={8}
             value={password}

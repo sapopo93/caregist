@@ -76,3 +76,27 @@ async def test_xlsx_export_includes_total_count_header(patched_db):
     assert resp.status_code == 200
     assert resp.headers["x-total-count"] == "1"
     assert resp.headers["content-disposition"] == "attachment; filename=caregist_export.xlsx"
+
+
+@pytest.mark.asyncio
+async def test_free_tier_csv_export_is_denied_before_querying_database(mock_conn):
+    app.dependency_overrides[validate_api_key] = lambda: {
+        "tier": "free",
+        "remaining": {
+            "burst_remaining": 1,
+            "daily_remaining": 20,
+            "rolling_7d_remaining": 60,
+            "monthly_remaining": 300,
+        },
+        "user_id": 1,
+        "email": "free@example.com",
+    }
+    try:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            resp = await client.get("/api/v1/providers/export.csv?region=London", headers=HEADERS)
+    finally:
+        app.dependency_overrides = {}
+
+    assert resp.status_code == 403
+    assert "requires a paid plan" in resp.json()["detail"]
+    mock_conn.fetch.assert_not_awaited()

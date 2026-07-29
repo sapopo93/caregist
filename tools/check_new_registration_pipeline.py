@@ -16,6 +16,7 @@ import asyncpg
 from api.services.pipeline_health import get_pipeline_health
 
 ALERT_SUPPRESSION_HOURS = 6
+SLO_BREACH_ALERT_KEY = "new_registration_ingestion_slo_breach"
 
 
 def _load_env_file() -> None:
@@ -94,41 +95,116 @@ def _send_email(subject: str, body: str) -> None:
         pass
 
 
+def _check_entries(snapshot: dict) -> list[dict]:
+    checks = snapshot.get("checks", [])
+    if isinstance(checks, list):
+        return [check for check in checks if isinstance(check, dict)]
+    if isinstance(checks, dict):
+        return [
+            {"name": name, "ok": ok, "details": {}}
+            for name, ok in checks.items()
+            if isinstance(ok, bool)
+        ]
+    return []
+
+
 def _build_alert_body(snapshot: dict) -> str:
-    checks = snapshot["checks"]
+    check_lines: list[str] = []
+    for check in _check_entries(snapshot):
+        name = str(check.get("name") or "unnamed_check")
+        state = "OK" if check.get("ok") is True else "FAILED"
+        raw_details = check.get("details")
+        details = raw_details if isinstance(raw_details, dict) else {}
+        detail_text = ", ".join(f"{key}={value}" for key, value in details.items())
+        check_lines.append(f"- {name}: {state}" + (f" ({detail_text})" if detail_text else ""))
+
     return (
         "CareGist new-registration pipeline degraded.\n\n"
-        f"Overall status: {snapshot['status']}\n"
-        f"Readiness OK: {snapshot['readiness_ok']}\n"
-        f"Feed fresh: {snapshot['feed_fresh']}\n"
-        f"Last incremental: {checks['last_incremental_completed_at']}\n"
-        f"Last feed cycle: {checks['last_feed_cycle_completed_at']}\n"
-        f"Latest feed observed_at: {checks['latest_new_registration_observed_at']}\n"
-        f"New registration events last 24h: {checks['new_registration_events_last_24h']}\n"
-        f"Pending emails: {checks['pending_email_count']}\n"
-        f"Stuck processing emails: {checks['stuck_processing_email_count']}\n"
+        f"Overall status: {snapshot.get('status', 'unknown')}\n"
+        f"Readiness OK: {snapshot.get('readiness_ok', False)}\n"
+        f"Feed fresh: {snapshot.get('feed_fresh', False)}\n"
+        "Checks:\n"
+        + ("\n".join(check_lines) if check_lines else "- pipeline_health_contract: FAILED (no checks returned)")
+        + "\n"
     )
 
 
 def _derive_alert_keys(snapshot: dict) -> list[str]:
-    checks = snapshot["checks"]
-    keys: list[str] = []
-    if not checks["incremental_fresh"]:
-        keys.append("incremental_stale")
-    if not checks["feed_cycle_fresh"]:
-        keys.append("feed_cycle_stale")
-    if not checks["email_backlog_healthy"]:
-        keys.append("email_backlog")
-    if not checks["email_processing_healthy"]:
-        keys.append("email_processing_stuck")
+    keys = [
+        str(check["name"])
+        for check in _check_entries(snapshot)
+        if check.get("name") and check.get("ok") is False
+    ]
     if not keys:
         keys.append("pipeline_degraded")
     return keys
 
 
+async def _fetch_ingestion_slo_breach(conn) -> dict | None:
+    row = await conn.fetchrow(
+        """
+        WITH recent_incremental AS (
+            SELECT COALESCE(records_added, 0) AS records_added
+            FROM pipeline_runs
+            WHERE run_type = 'incremental'
+              AND status = 'completed'
+            ORDER BY completed_at DESC NULLS LAST
+            LIMIT 5
+        ),
+        alert_window AS (
+            SELECT COUNT(*) AS unavailable_alerts
+            FROM pipeline_alert_log
+            WHERE alert_key = 'changes_endpoint_unavailable'
+              AND created_at >= NOW() - INTERVAL '7 days'
+        )
+        SELECT
+            MAX(cp.registration_date) AS latest_registration_date,
+            COALESCE(MAX(cp.registration_date) < NOW() - INTERVAL '7 days', TRUE) AS registration_stale,
+            (SELECT unavailable_alerts FROM alert_window) AS unavailable_alerts,
+            (
+                SELECT COUNT(*) = 5 AND BOOL_AND(records_added = 0)
+                FROM recent_incremental
+            ) AS last_five_incrementals_zero
+        FROM care_providers cp
+        """
+    )
+    if row is None or int(row["unavailable_alerts"] or 0) == 0:
+        return None
+
+    registration_stale = bool(row["registration_stale"])
+    last_five_incrementals_zero = bool(row["last_five_incrementals_zero"])
+    if not registration_stale and not last_five_incrementals_zero:
+        return None
+
+    return {
+        "alert_key": SLO_BREACH_ALERT_KEY,
+        "latest_registration_date": (
+            row["latest_registration_date"].isoformat()
+            if row["latest_registration_date"] is not None
+            else None
+        ),
+        "registration_stale": registration_stale,
+        "changes_endpoint_unavailable_alerts_last_7d": int(row["unavailable_alerts"] or 0),
+        "last_five_incrementals_zero": last_five_incrementals_zero,
+    }
+
+
 async def check_pipeline(database_url: str, *, notify: bool) -> int:
     conn = await asyncpg.connect(database_url)
     try:
+        slo_breach = await _fetch_ingestion_slo_breach(conn)
+        if slo_breach is not None:
+            message = (
+                "SLO BREACH: new CQC registration ingestion is stale while "
+                "/changes/location is unavailable.\n"
+                f"{json.dumps(slo_breach, indent=2)}"
+            )
+            print(message, file=sys.stderr)
+            if notify and await _should_send_alert(conn, SLO_BREACH_ALERT_KEY):
+                _send_email("CareGist pipeline alert: new registration ingestion SLO breach", message)
+                await _log_alert(conn, SLO_BREACH_ALERT_KEY, "error", slo_breach)
+            return 1
+
         snapshot = await get_pipeline_health(conn)
         print(json.dumps(snapshot, indent=2))
         if snapshot["readiness_ok"] and snapshot["status"] == "healthy":
