@@ -1,6 +1,7 @@
 import "server-only";
 
 import { access, readFile } from "node:fs/promises";
+import { join } from "node:path";
 
 export interface DirectoryFileProvider {
   id: string;
@@ -64,10 +65,13 @@ const SELECTED_COLUMNS = [
   "meta_description",
 ] as const;
 
-const FALLBACK_DATASET_URL = new URL("../data/directory-fallback-full.csv", import.meta.url);
+// Keep filesystem calls on primitive paths. Turbopack can evaluate module URL
+// objects in a different VM realm, which Node rejects even before readFile runs.
+// The frontend service root is the working directory locally and on Vercel.
+const FALLBACK_DATASET_PATH = join(process.cwd(), "data", "directory-fallback-full.csv");
 
 let providersPromise: Promise<DirectoryFileProvider[]> | null = null;
-let datasetPathPromise: Promise<URL> | null = null;
+let datasetPathPromise: Promise<string> | null = null;
 
 function parseCsvLine(line: string): string[] {
   const values: string[] = [];
@@ -124,11 +128,11 @@ function asNullableNumber(value: string | undefined): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-async function resolveDatasetPath(): Promise<URL> {
+async function resolveDatasetPath(): Promise<string> {
   if (!datasetPathPromise) {
     datasetPathPromise = (async () => {
-      await access(FALLBACK_DATASET_URL);
-      return FALLBACK_DATASET_URL;
+      await access(FALLBACK_DATASET_PATH);
+      return FALLBACK_DATASET_PATH;
     })();
   }
 
