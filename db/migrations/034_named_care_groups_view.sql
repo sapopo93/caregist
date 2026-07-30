@@ -42,7 +42,7 @@ BEGIN
     COUNT(*) FILTER (WHERE overall_rating = 'Requires Improvement') as ri_count,
     COUNT(*) FILTER (WHERE overall_rating = 'Inadequate') as inadequate_count,
     COUNT(*) FILTER (WHERE overall_rating = 'Not Yet Inspected' OR overall_rating IS NULL) as not_inspected_count,
-    ROUND(AVG(quality_score)::numeric, 1) as avg_quality_score,
+    ROUND(AVG(data_completeness_score)::numeric, 1) as avg_data_completeness_score,
     ROUND(
       (COUNT(*) FILTER (WHERE overall_rating IN ('Outstanding', 'Good'))::numeric /
        NULLIF(COUNT(*) FILTER (WHERE overall_rating IS NOT NULL AND overall_rating != 'Not Yet Inspected'), 0)) * 100, 1

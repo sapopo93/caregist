@@ -38,7 +38,8 @@ def patched_db(mock_conn):
         "user_id": 1,
         "email": "ops@caregist.co.uk",
     }
-    with patch("api.routers.reviews.get_connection", mock_get_connection):
+    with patch("api.routers.reviews.get_connection", mock_get_connection), \
+         patch("api.routers.reviews.settings.review_submissions_enabled", True):
         yield mock_conn
     app.dependency_overrides = {}
 

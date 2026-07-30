@@ -183,6 +183,8 @@ async def _persist_subscription_state(
 @router.post("/checkout")
 async def create_checkout(req: CheckoutRequest, _auth: dict = Depends(validate_api_key)) -> dict:
     """Create a Stripe Checkout session for upgrading."""
+    if not settings.billing_checkout_enabled:
+        raise HTTPException(status_code=503, detail="Billing checkout is awaiting Human Gate approval.")
     user_id = _require_billing_user_id(_auth)
     if not _auth.get("is_verified", False):
         raise HTTPException(status_code=403, detail="Verify your email before starting billing.")
@@ -357,6 +359,8 @@ async def create_profile_checkout(
     _auth: dict = Depends(validate_api_key),
 ) -> dict:
     """Create a Stripe Checkout session for a provider listing tier upgrade."""
+    if not settings.billing_checkout_enabled:
+        raise HTTPException(status_code=503, detail="Billing checkout is awaiting Human Gate approval.")
     user_id = _require_billing_user_id(_auth)
     if not settings.stripe_secret_key:
         raise HTTPException(status_code=503, detail="Billing not configured.")

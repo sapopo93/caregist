@@ -108,6 +108,7 @@ describe("server API config", () => {
     const source = fs.readFileSync(new URL("./server-api-config.ts", import.meta.url), "utf-8");
 
     assert.doesNotMatch(source, /NEXT_PUBLIC_API_KEY/);
+    assert.doesNotMatch(source, /readFileSync|process\.cwd|readRootEnvVar/);
   });
 
   it("does not proxy unmatched API routes to the retired backend", () => {

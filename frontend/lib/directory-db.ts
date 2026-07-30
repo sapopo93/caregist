@@ -1,4 +1,5 @@
 import { randomBytes } from "node:crypto";
+import { canonicalizeServiceCounts, canonicalServices, resolveServiceAliases } from "@/lib/service-taxonomy";
 
 import { createPool } from "@vercel/postgres";
 
@@ -181,7 +182,7 @@ function buildOpportunityClause(opportunity: DirectoryOpportunity | "") {
 function buildWhereClause(
   filters: Pick<DirectorySearchParams, "query" | "region" | "serviceType" | "rating" | "opportunity">,
 ) {
-  const params: Array<string | number> = [];
+  const params: Array<string | number | string[]> = [];
   const clauses = ["status = 'ACTIVE'"];
   const searchVector =
     "to_tsvector('english', coalesce(name,'') || ' ' || coalesce(town,'') || ' ' || coalesce(county,'') || ' ' || coalesce(region,'') || ' ' || coalesce(service_types,'') || ' ' || coalesce(specialisms,''))";
@@ -213,12 +214,14 @@ function buildWhereClause(
   }
 
   if (filters.serviceType) {
-    params.push(filters.serviceType);
+    params.push(resolveServiceAliases(filters.serviceType));
     clauses.push(
       `EXISTS (
         SELECT 1
         FROM unnest(string_to_array(coalesce(service_types, ''), '|')) AS service_type
-        WHERE btrim(service_type) = $${params.length}
+        WHERE lower(btrim(service_type)) = ANY(
+          SELECT lower(alias) FROM unnest($${params.length}::text[]) AS alias
+        )
       )`,
     );
   }
@@ -339,10 +342,7 @@ export async function getDirectoryFilterOptions(): Promise<DirectoryFilterOption
 
     return {
       regions: normalizeOptions(regionsRes.rows.map((row) => row.region), DEFAULT_REGION_OPTIONS),
-      serviceTypes: normalizeOptions(
-        serviceTypesRes.rows.map((row) => row.service_type),
-        DEFAULT_SERVICE_TYPE_OPTIONS,
-      ),
+      serviceTypes: canonicalServices().map((entry) => entry.slug),
       ratings: sortRatings(
         normalizeOptions(ratingsRes.rows.map((row) => row.overall_rating), DEFAULT_RATING_OPTIONS),
       ),
@@ -354,7 +354,7 @@ export async function getDirectoryFilterOptions(): Promise<DirectoryFilterOption
     } catch {
       return {
         regions: DEFAULT_REGION_OPTIONS,
-        serviceTypes: DEFAULT_SERVICE_TYPE_OPTIONS,
+        serviceTypes: canonicalServices().map((entry) => entry.slug),
         ratings: DEFAULT_RATING_OPTIONS,
       };
     }
@@ -376,10 +376,10 @@ export async function getDirectoryServiceTypeCounts(): Promise<DirectoryServiceT
       `,
     );
 
-    return result.rows;
+    return canonicalizeServiceCounts(result.rows);
   } catch (error) {
     rethrowUnexpectedDatabaseError(error);
-    return getFallbackServiceTypeCounts();
+    return canonicalizeServiceCounts(await getFallbackServiceTypeCounts());
   }
 }
 

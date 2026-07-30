@@ -37,7 +37,8 @@ def patched_db(mock_conn):
         "user_id": 1,
         "email": "ops@caregist.co.uk",
     }
-    with patch("api.routers.providers.get_connection", mock_get_connection):
+    with patch("api.routers.providers.get_connection", mock_get_connection), \
+         patch("api.routers.providers.settings.directory_export_delivery_enabled", True):
         yield mock_conn
     app.dependency_overrides = {}
 
@@ -60,8 +61,8 @@ async def test_xlsx_export_includes_total_count_header(patched_db):
             "service_types": "Care home service with nursing",
             "specialisms": "Dementia",
             "number_of_beds": 25,
-            "quality_score": 82,
-            "quality_tier": "GOOD",
+            "data_completeness_score": 82,
+            "data_completeness_tier": "GOOD",
             "phone": "01202000000",
             "website": "https://example.com",
             "last_inspection_date": "2025-01-01",
@@ -92,11 +93,32 @@ async def test_free_tier_csv_export_is_denied_before_querying_database(mock_conn
         "email": "free@example.com",
     }
     try:
-        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-            resp = await client.get("/api/v1/providers/export.csv?region=London", headers=HEADERS)
+        with patch("api.routers.providers.settings.directory_export_delivery_enabled", True):
+            async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+                resp = await client.get("/api/v1/providers/export.csv?region=London", headers=HEADERS)
     finally:
         app.dependency_overrides = {}
 
     assert resp.status_code == 403
     assert "requires a paid plan" in resp.json()["detail"]
+    mock_conn.fetch.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_export_delivery_fails_closed_before_querying_database(mock_conn):
+    app.dependency_overrides[validate_api_key] = lambda: {
+        "tier": "business",
+        "remaining": {},
+        "user_id": 1,
+        "email": "ops@caregist.co.uk",
+    }
+    try:
+        with patch("api.routers.providers.settings.directory_export_delivery_enabled", False):
+            async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+                resp = await client.get("/api/v1/providers/export.csv?region=London", headers=HEADERS)
+    finally:
+        app.dependency_overrides = {}
+
+    assert resp.status_code == 503
+    assert "Human Gate" in resp.json()["detail"]
     mock_conn.fetch.assert_not_awaited()

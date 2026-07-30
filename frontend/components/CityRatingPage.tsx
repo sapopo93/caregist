@@ -69,20 +69,20 @@ export default async function CityRatingPage({
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-8">
-      <script
+      {!error && <script
         type="application/ld+json"
         nonce={nonce}
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
+      />}
 
       {/* AEO Block */}
-      <section className="bg-parchment border-b border-stone rounded-t-lg px-6 py-4 text-sm text-charcoal leading-relaxed mb-6">
+      {!error && <section className="bg-parchment border-b border-stone rounded-t-lg px-6 py-4 text-sm text-charcoal leading-relaxed mb-6">
         <p>{aeo}</p>
-      </section>
+      </section>}
 
       <h1 className="text-3xl font-bold mb-2">{h1}</h1>
       <div className="flex items-center justify-between mb-6">
-        <p className="text-dusk">{total.toLocaleString()} providers</p>
+        <p className="text-dusk">{error ? "Provider count unavailable" : `${total.toLocaleString()} providers`}</p>
         <div className="flex gap-3 items-center print:hidden">
           <ExportCSVButton exportUrl={`/api/v1/providers/export.csv?q=${encodeURIComponent(city)}${ratingFilter ? `&rating=${encodeURIComponent(ratingFilter)}` : ""}`} />
           <PrintButton />

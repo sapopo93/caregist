@@ -36,6 +36,8 @@ async def submit_enquiry(
     _auth: dict = Depends(validate_api_key),
 ) -> dict:
     """Submit an enquiry about a care provider."""
+    if not settings.enquiries_enabled:
+        raise HTTPException(status_code=503, detail="Provider enquiries are not currently accepting submissions.")
     if req.urgency and req.urgency not in VALID_URGENCIES:
         raise HTTPException(status_code=422, detail=f"Invalid urgency. Choose from: {', '.join(VALID_URGENCIES)}")
 

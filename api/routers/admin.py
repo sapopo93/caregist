@@ -8,6 +8,7 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 
+from api.config import settings
 from api.database import get_connection
 from api.middleware.auth import validate_api_key
 from api.utils.audit import write_audit_log
@@ -20,6 +21,7 @@ from api.queries.admin import (
 )
 from api.queries.claims import (
     COUNT_CLAIMS,
+    GET_CLAIM_APPROVAL_READINESS,
     LIST_CLAIMS,
     MARK_PROVIDER_CLAIMED,
     MARK_PROVIDER_UNCLAIMED,
@@ -145,6 +147,21 @@ class ClaimAction(BaseModel):
     admin_notes: str | None = Field(None, max_length=2000)
 
 
+def _claim_is_approval_ready(row, moderator: str) -> bool:
+    return bool(
+        row
+        and row["status"] == "pending"
+        and row["identity_status"] == "verified"
+        and row["authority_status"] == "verified"
+        and row["account_email_verified"]
+        and row["has_current_identity_evidence"]
+        and row["has_current_authority_evidence"]
+        and row["verification_expires_at"] is not None
+        and row["identity_verified_by"] != moderator
+        and row["authority_verified_by"] != moderator
+    )
+
+
 @router.patch("/claims/{claim_id}")
 async def moderate_claim(
     claim_id: int,
@@ -152,10 +169,22 @@ async def moderate_claim(
     auth: dict = Depends(require_admin),
 ) -> dict:
     """Approve or reject a provider claim."""
+    if req.status == "approved" and not settings.provider_claims_enabled:
+        raise HTTPException(status_code=503, detail="Provider claim activation is awaiting Human Gate approval.")
+    moderator = _admin_actor(auth)
     try:
         async with get_connection() as conn:
+            if req.status == "approved":
+                readiness = await conn.fetchrow(GET_CLAIM_APPROVAL_READINESS, claim_id)
+                if not readiness:
+                    raise HTTPException(status_code=404, detail="Claim not found.")
+                if not _claim_is_approval_ready(readiness, moderator):
+                    raise HTTPException(
+                        status_code=409,
+                        detail="Claim lacks current identity/authority evidence or independent moderation.",
+                    )
             row = await conn.fetchrow(
-                UPDATE_CLAIM_STATUS, claim_id, req.status, _admin_actor(auth), req.admin_notes
+                UPDATE_CLAIM_STATUS, claim_id, req.status, moderator, req.admin_notes
             )
             if not row:
                 raise HTTPException(status_code=404, detail="Claim not found.")
@@ -169,7 +198,7 @@ async def moderate_claim(
                 action=f"claim.{req.status}",
                 entity_type="claim",
                 entity_id=claim_id,
-                actor=_admin_actor(auth),
+                actor=moderator,
                 key_name=auth.get("name"),
                 provider_id=str(row["provider_id"]),
                 notes=req.admin_notes,
@@ -223,6 +252,8 @@ async def moderate_review(
     auth: dict = Depends(require_admin),
 ) -> dict:
     """Approve or reject a review."""
+    if req.status == "approved" and not settings.review_publication_enabled:
+        raise HTTPException(status_code=503, detail="Review publication is awaiting Human Gate approval.")
     try:
         async with get_connection() as conn:
             row = await conn.fetchrow(MODERATE_REVIEW, review_id, req.status, req.admin_notes)

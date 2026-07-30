@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 from api.database import get_connection
+from api.config import settings
 from api.middleware.auth import validate_api_key
 
 logger = logging.getLogger("caregist.profile")
@@ -94,6 +95,14 @@ async def update_profile(
         )
     if not claim:
         raise HTTPException(status_code=403, detail="You don't have an approved claim for this provider.")
+
+    if not settings.remote_provider_media_enabled and (
+        req.photos is not None or req.logo_url is not None or req.virtual_tour_url is not None
+    ):
+        raise HTTPException(
+            status_code=503,
+            detail="Remote provider media is disabled pending upload, moderation, and privacy controls.",
+        )
 
     tier = provider["profile_tier"]
 

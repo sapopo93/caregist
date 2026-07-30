@@ -24,7 +24,7 @@ _TSVECTOR = """to_tsvector('english',
 SEARCH_SELECT = """
 SELECT id, provider_id, name, slug, type, status, town, county, postcode,
        region, local_authority, overall_rating, service_types, specialisms,
-       number_of_beds, quality_score, quality_tier, latitude, longitude, phone,
+       number_of_beds, data_completeness_score, data_completeness_tier, latitude, longitude, phone,
        is_claimed, profile_tier, review_count, avg_review_rating
 FROM care_providers
 """
@@ -33,7 +33,7 @@ FROM care_providers
 SEARCH_SELECT_RANKED = f"""
 SELECT id, provider_id, name, slug, type, status, town, county, postcode,
        region, local_authority, overall_rating, service_types, specialisms,
-       number_of_beds, quality_score, quality_tier, latitude, longitude, phone,
+       number_of_beds, data_completeness_score, data_completeness_tier, latitude, longitude, phone,
        is_claimed, profile_tier, review_count, avg_review_rating,
        ts_rank({_TSVECTOR}, plainto_tsquery('english', coalesce($1, ''))) AS rank
 FROM care_providers
@@ -46,7 +46,11 @@ WHERE UPPER(status) = 'ACTIVE'
   AND ($2::text IS NULL OR region = ANY(string_to_array($2, ',')))
   AND ($3::text IS NULL OR overall_rating = ANY(string_to_array($3, ',')))
   AND ($4::text IS NULL OR type = $4)
-  AND ($5::text IS NULL OR service_types ILIKE '%' || $5 || '%')
+  AND ($5::text[] IS NULL OR EXISTS (
+        SELECT 1
+        FROM unnest(string_to_array(COALESCE(service_types, ''), '|')) AS service_label
+        WHERE LOWER(BTRIM(service_label)) = ANY($5)
+      ))
   AND ($6::text IS NULL OR postcode ILIKE $6 || '%')
 """
 
@@ -57,7 +61,11 @@ WHERE UPPER(status) = 'ACTIVE'
   AND ($2::text IS NULL OR region = ANY(string_to_array($2, ',')))
   AND ($3::text IS NULL OR overall_rating = ANY(string_to_array($3, ',')))
   AND ($4::text IS NULL OR type = $4)
-  AND ($5::text IS NULL OR service_types ILIKE '%' || $5 || '%')
+  AND ($5::text[] IS NULL OR EXISTS (
+        SELECT 1
+        FROM unnest(string_to_array(COALESCE(service_types, ''), '|')) AS service_label
+        WHERE LOWER(BTRIM(service_label)) = ANY($5)
+      ))
   AND ($6::text IS NULL OR postcode ILIKE $6 || '%')
 """
 
@@ -75,17 +83,17 @@ def _promote_sponsored(order: str) -> str:
 
 # Whitelisted sort options to prevent SQL injection
 SORT_OPTIONS = {
-    "relevance": _promote_sponsored("quality_score DESC, name ASC"),
+    "relevance": _promote_sponsored("name ASC"),
     "name": _promote_sponsored("name ASC"),
     "name_desc": _promote_sponsored("name DESC"),
     "rating": _promote_sponsored("CASE overall_rating WHEN 'Outstanding' THEN 1 WHEN 'Good' THEN 2 WHEN 'Requires Improvement' THEN 3 WHEN 'Inadequate' THEN 4 ELSE 5 END ASC, name ASC"),
     "beds": _promote_sponsored("number_of_beds DESC NULLS LAST, name ASC"),
-    "quality": _promote_sponsored("quality_score DESC, name ASC"),
+    "quality": _promote_sponsored("CASE overall_rating WHEN 'Outstanding' THEN 1 WHEN 'Good' THEN 2 WHEN 'Requires Improvement' THEN 3 WHEN 'Inadequate' THEN 4 ELSE 5 END ASC, name ASC"),
     "newest": _promote_sponsored("registration_date DESC NULLS LAST, name ASC"),
 }
 
 # When a text query is present, relevance sort uses ts_rank
-SORT_RELEVANCE_RANKED = _promote_sponsored("rank DESC, quality_score DESC, name ASC")
+SORT_RELEVANCE_RANKED = _promote_sponsored("rank DESC, name ASC")
 
 DEFAULT_SORT = "relevance"
 
@@ -167,7 +175,7 @@ LIMIT 1
 NEARBY_QUERY = """
 SELECT id, provider_id, name, slug, type, status, town, county, postcode,
        region, overall_rating, service_types, specialisms, number_of_beds,
-       quality_score, quality_tier, latitude, longitude, phone,
+       data_completeness_score, data_completeness_tier, latitude, longitude, phone,
        ST_Distance(geom::geography, ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography) / 1000.0 AS distance_km
 FROM care_providers
 WHERE geom IS NOT NULL

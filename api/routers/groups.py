@@ -24,12 +24,12 @@ async def list_groups(
     per_page: int = Query(20, ge=1, le=100),
     _auth: dict = Depends(validate_optional_api_key),
 ) -> dict:
-    """List care groups with aggregate ratings. Sortable by size, quality, or name."""
+    """List care groups with aggregate ratings. Sortable by size, CQC rating coverage, or name."""
     add_rate_limit_headers(response, _auth["tier"], _auth["remaining"])
 
     sort_map = {
         "locations": "location_count DESC",
-        "quality": "avg_quality_score DESC NULLS LAST",
+        "quality": "pct_good_or_outstanding DESC NULLS LAST",
         "name": "group_name ASC",
         "pct_good": "pct_good_or_outstanding DESC NULLS LAST",
     }
@@ -122,7 +122,7 @@ async def get_group(
             # Get all locations for this group
             locations = await conn.fetch(
                 """SELECT id, name, slug, type, town, county, postcode, region,
-                          overall_rating, quality_score, quality_tier, number_of_beds,
+                          overall_rating, data_completeness_score, data_completeness_tier, number_of_beds,
                           service_types, last_inspection_date, phone
                    FROM care_providers
                    WHERE provider_id = $1
@@ -133,7 +133,7 @@ async def get_group(
             # National benchmarks for comparison
             national = await conn.fetchrow(
                 """SELECT
-                     ROUND(AVG(quality_score)::numeric, 1) as avg_quality_score,
+                     ROUND(AVG(data_completeness_score)::numeric, 1) as avg_data_completeness_score,
                      ROUND((COUNT(*) FILTER (WHERE overall_rating IN ('Outstanding','Good'))::numeric /
                             NULLIF(COUNT(*) FILTER (WHERE overall_rating IS NOT NULL AND overall_rating != 'Not Yet Inspected'), 0)) * 100, 1
                      ) as pct_good_or_outstanding
@@ -163,7 +163,7 @@ async def get_group(
             **g,
             "locations": location_data,
             "benchmark": {
-                "national_avg_quality": float(national["avg_quality_score"]) if national["avg_quality_score"] else None,
+                "national_avg_data_completeness": float(national["avg_data_completeness_score"]) if national["avg_data_completeness_score"] else None,
                 "national_pct_good": float(national["pct_good_or_outstanding"]) if national["pct_good_or_outstanding"] else None,
             },
         },

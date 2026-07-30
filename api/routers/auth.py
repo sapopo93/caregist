@@ -973,7 +973,28 @@ async def delete_account(req: DeleteAccountRequest, _ip=Depends(check_ip_rate_li
             )
             # Anonymize claims
             await conn.execute(
-                "UPDATE provider_claims SET claimant_name = '[deleted]', claimant_email = '[deleted]', claimant_phone = NULL WHERE claimant_email = $1",
+                """UPDATE provider_claims
+                   SET claimant_name = '[deleted]', claimant_email = '[deleted]',
+                       claimant_phone = NULL, claimant_role = NULL,
+                       organisation_name = NULL, proof_of_association = '[deleted]',
+                       admin_notes = NULL
+                   WHERE claimant_email = $1""",
+                req.email,
+            )
+            # Remove queued correspondence and anonymize analytics/audit copies.
+            await conn.execute("DELETE FROM pending_emails WHERE to_email = $1", req.email)
+            await conn.execute(
+                """UPDATE analytics_events
+                   SET email = NULL, ip_address = NULL, user_agent = NULL, meta = '{}'::jsonb
+                   WHERE user_id = $1 OR email = $2""",
+                user_id,
+                req.email,
+            )
+            await conn.execute(
+                """UPDATE audit_log
+                   SET actor_email = NULL, actor_name = '[deleted]'
+                   WHERE actor_user_id = $1 OR actor_email = $2""",
+                user_id,
                 req.email,
             )
             # Delete API keys, subscriptions, then user (cascade should handle but be explicit)

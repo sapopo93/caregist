@@ -1,8 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { getProviderHref } from "@/lib/provider-path";
-
 const DIMENSION_LABELS: Record<string, string> = {
   rating_safe: "Safe",
   rating_effective: "Effective",
@@ -24,8 +21,6 @@ const RATING_COLOR: Record<string, string> = {
   "Requires Improvement": "#C44444",
   Inadequate: "#8B0000",
 };
-
-const NATIONAL_AVG_QUALITY = 74;
 
 const VISIT_QUESTIONS: Record<string, string[]> = {
   rating_safe: [
@@ -60,29 +55,10 @@ interface Props {
 }
 
 export default function CareGistAssessment({ provider }: Props) {
-  const [nearbyData, setNearbyData] = useState<{ rank: number; total: number; topAlternative: any } | null>(null);
-
-  const qualityScore = provider.quality_score;
+  const dataCompletenessScore = provider.data_completeness_score;
   const hasRatings = provider.overall_rating && provider.overall_rating !== "Not Yet Inspected";
 
-  useEffect(() => {
-    if (provider.latitude && provider.longitude) {
-      fetch(`/api/v1/providers/nearby/search?lat=${provider.latitude}&lon=${provider.longitude}&radius_km=8&per_page=50`)
-        .then((r) => r.ok ? r.json() : null)
-        .then((data) => {
-          if (!data?.data) return;
-          const nearby = data.data.filter((p: any) => p.id !== provider.id && p.quality_score);
-          const allWithSelf = [...nearby, { ...provider, quality_score: qualityScore }]
-            .sort((a: any, b: any) => (b.quality_score || 0) - (a.quality_score || 0));
-          const rank = allWithSelf.findIndex((p: any) => p.id === provider.id) + 1;
-          const topAlt = nearby.find((p: any) => p.id !== provider.id && p.quality_score > (qualityScore || 0));
-          setNearbyData({ rank, total: allWithSelf.length, topAlternative: topAlt || null });
-        })
-        .catch(() => {});
-    }
-  }, [provider.latitude, provider.longitude, provider.id, qualityScore]);
-
-  if (!hasRatings && !qualityScore) return null;
+  if (!hasRatings && !dataCompletenessScore) return null;
 
   // Data Confidence Index — degrades as inspection ages
   const dataConfidence = (() => {
@@ -129,8 +105,6 @@ export default function CareGistAssessment({ provider }: Props) {
   // Always add a general question
   questions.push("Can I visit at different times of day to see the home in its normal routine?");
 
-  const aboveAvg = qualityScore && qualityScore > NATIONAL_AVG_QUALITY;
-
   return (
     <div className="bg-white border-2 border-clay/30 rounded-xl p-6 mb-6 print:border print:border-stone" id="assessment">
       {/* Header */}
@@ -142,30 +116,25 @@ export default function CareGistAssessment({ provider }: Props) {
         </div>
       </div>
 
-      {/* Quality Verdict */}
-      {qualityScore && (
+      {/* Public-record completeness — never a care-quality verdict or rank. */}
+      {dataCompletenessScore && (
         <div className="bg-parchment rounded-lg p-5 mb-4">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-sm font-semibold text-bark">Quality Score</span>
-            <span className="text-2xl font-bold" style={{ color: qualityScore >= 80 ? "#4A5E45" : qualityScore >= 60 ? "#D4943A" : "#C44444" }}>
-              {qualityScore}<span className="text-sm text-dusk font-normal">/100</span>
+            <span className="text-sm font-semibold text-bark">Data Completeness Score</span>
+            <span className="text-2xl font-bold" style={{ color: dataCompletenessScore >= 80 ? "#4A5E45" : dataCompletenessScore >= 60 ? "#D4943A" : "#C44444" }}>
+              {dataCompletenessScore}<span className="text-sm text-dusk font-normal">/100</span>
             </span>
           </div>
           <div className="w-full bg-stone/30 rounded-full h-3 mb-2">
             <div
               className="h-3 rounded-full transition-all"
               style={{
-                width: `${qualityScore}%`,
-                backgroundColor: qualityScore >= 80 ? "#4A5E45" : qualityScore >= 60 ? "#D4943A" : "#C44444",
+                width: `${dataCompletenessScore}%`,
+                backgroundColor: dataCompletenessScore >= 80 ? "#4A5E45" : dataCompletenessScore >= 60 ? "#D4943A" : "#C44444",
               }}
             />
           </div>
-          <div className="flex justify-between text-xs text-dusk">
-            <span>National average: {NATIONAL_AVG_QUALITY}/100</span>
-            <span className={aboveAvg ? "text-moss font-semibold" : "text-alert font-semibold"}>
-              {aboveAvg ? "Above average" : "Below average"}
-            </span>
-          </div>
+          <p className="text-xs text-dusk">Measures how many public directory fields are populated. It is not a CQC rating, care-quality measure, recommendation, or local rank.</p>
         </div>
       )}
 
@@ -198,20 +167,6 @@ export default function CareGistAssessment({ provider }: Props) {
         )}
         <p className="text-[10px] text-dusk mt-1">Data confidence reflects inspection recency, not the quality of care provided.</p>
       </div>
-
-      {/* Local Rank */}
-      {nearbyData && (
-        <div className="bg-parchment rounded-lg p-4 mb-4 flex items-center justify-between">
-          <div>
-            <span className="text-sm font-semibold text-bark">Local Rank</span>
-            <p className="text-xs text-dusk mt-0.5">Within 5 miles of {provider.postcode}</p>
-          </div>
-          <div className="text-right">
-            <span className="text-2xl font-bold text-clay">#{nearbyData.rank}</span>
-            <span className="text-sm text-dusk"> of {nearbyData.total}</span>
-          </div>
-        </div>
-      )}
 
       {/* Dimension Breakdown */}
       {hasRatings && (
@@ -267,10 +222,6 @@ export default function CareGistAssessment({ provider }: Props) {
             {strongest && strongest.rating === "Outstanding" && (
               <li className="text-xs text-charcoal">Outstanding in {strongest.label}</li>
             )}
-            {aboveAvg && <li className="text-xs text-charcoal">Above national average quality</li>}
-            {nearbyData && nearbyData.rank <= 3 && (
-              <li className="text-xs text-charcoal">Top 3 locally</li>
-            )}
             {provider.number_of_beds > 0 && (
               <li className="text-xs text-charcoal">{provider.number_of_beds} beds</li>
             )}
@@ -287,12 +238,6 @@ export default function CareGistAssessment({ provider }: Props) {
               const days = Math.floor((Date.now() - new Date(provider.last_inspection_date).getTime()) / 86400000);
               return days > 730 ? <li className="text-xs text-charcoal">Not inspected in {Math.floor(days / 365)} years</li> : null;
             })()}
-            {!aboveAvg && qualityScore && (
-              <li className="text-xs text-charcoal">Below national average</li>
-            )}
-            {nearbyData && nearbyData.rank > nearbyData.total * 0.7 && (
-              <li className="text-xs text-charcoal">Lower half locally</li>
-            )}
           </ul>
         </div>
       </div>
@@ -309,22 +254,6 @@ export default function CareGistAssessment({ provider }: Props) {
               </li>
             ))}
           </ol>
-        </div>
-      )}
-
-      {/* Top Alternative */}
-      {nearbyData?.topAlternative && (
-        <div className="bg-parchment rounded-lg p-4 mb-4">
-          <p className="text-xs font-semibold text-dusk mb-1">Highest-rated alternative nearby</p>
-          <a
-            href={getProviderHref(nearbyData.topAlternative)}
-            className="text-sm font-semibold text-clay hover:text-bark"
-          >
-            {nearbyData.topAlternative.name}
-          </a>
-          <span className="text-xs text-dusk ml-2">
-            {nearbyData.topAlternative.overall_rating} · Score: {nearbyData.topAlternative.quality_score}/100
-          </span>
         </div>
       )}
 

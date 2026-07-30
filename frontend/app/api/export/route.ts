@@ -23,6 +23,13 @@ function buildFilename(scope: { region: string; serviceType: string; rating: str
 }
 
 export async function GET(request: NextRequest) {
+  if (process.env.DIRECTORY_EXPORT_DELIVERY_ENABLED !== "true") {
+    return NextResponse.json(
+      { error: "Export delivery is awaiting Human Gate approval." },
+      { status: 503, headers: { "Cache-Control": "private, no-store" } },
+    );
+  }
+
   const token = request.nextUrl.searchParams.get("token")?.trim();
 
   if (!token) {

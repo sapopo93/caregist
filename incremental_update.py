@@ -14,19 +14,27 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import csv
+import hashlib
+import io
+import json
 import os
 import re
 import sys
 import time
 import unicodedata
 from collections import Counter
+from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
+from urllib.parse import urljoin, urlparse
 
 import psycopg2
+from psycopg2.extras import Json
 import requests
 
+from api.services.provider_state_events import ProviderStateEvent, build_provider_state_events
 from cqc_common import normalize_whitespace, parse_any_date, to_float
 
 try:
@@ -46,15 +54,153 @@ def _make_slug(name: str, town: str, location_id: str) -> str:
     return base
 
 DEFAULT_BASE_URL = "https://api.service.cqc.org.uk/public/v1"
+DEFAULT_DATA_PAGE_URL = "https://www.cqc.org.uk/about-us/transparency/using-cqc-data"
 DEFAULT_SLEEP = 0.15
 DEFAULT_LOOKBACK_DAYS = 7
 INCREMENTAL_UPDATE_LOCK_ID = 802451201
 DEFAULT_MAX_RETRIES = 3
 RETRYABLE_STATUS_CODES = {408, 429, 500, 502, 503, 504}
+MIN_EXPECTED_ACTIVE_LOCATIONS = 50_000
+MAX_ACTIVE_COUNT_DROP_RATIO = 0.05
+_CQC_ID_RE = re.compile(r"^(?:1-\d{5,12}|[A-Z][A-Z0-9-]{1,19})$")
 
 
 class ChangesFetchError(RuntimeError):
     """Raised when the CQC changes API cannot be fetched reliably."""
+
+
+@dataclass(frozen=True)
+class CqcActiveSnapshot:
+    source_uri: str
+    source_published_at: str
+    retrieved_at: datetime
+    checksum_sha256: str
+    location_ids: frozenset[str]
+
+
+def _request_with_retries(
+    url: str,
+    *,
+    headers: dict[str, str],
+    params: dict[str, Any] | None = None,
+    timeout: int = 90,
+) -> requests.Response:
+    """GET an authoritative CQC resource with bounded retry/backoff."""
+    last_error: Exception | None = None
+    for attempt in range(1, DEFAULT_MAX_RETRIES + 1):
+        try:
+            response = requests.get(url, headers=headers, params=params, timeout=timeout)
+            if response.status_code == 200:
+                return response
+            if response.status_code not in RETRYABLE_STATUS_CODES:
+                raise ChangesFetchError(f"CQC resource returned {response.status_code}: {url}")
+            last_error = ChangesFetchError(f"CQC resource returned {response.status_code}: {url}")
+        except requests.RequestException as exc:
+            last_error = exc
+        if attempt < DEFAULT_MAX_RETRIES:
+            time.sleep(attempt)
+    raise ChangesFetchError(f"Unable to fetch CQC resource {url}: {last_error}")
+
+
+def fetch_active_location_snapshot(
+    data_page_url: str = DEFAULT_DATA_PAGE_URL,
+    *,
+    min_expected: int = MIN_EXPECTED_ACTIVE_LOCATIONS,
+) -> CqcActiveSnapshot:
+    """Download and validate CQC's current active-location directory CSV.
+
+    CQC removed the changes endpoint. Its public directory CSV is the bounded,
+    authoritative active-location set used to discover additions and candidate
+    deactivations. Individual API details are still fetched before any write.
+    """
+    headers = {"Accept": "text/html,text/csv", "User-Agent": "CareGist-Reconciler/1.0"}
+    page = _request_with_retries(data_page_url, headers=headers)
+    match = re.search(
+        r'href=["\']([^"\']*CQC_directory\.csv(?:\?[^"\']*)?)["\']',
+        page.text,
+        flags=re.IGNORECASE,
+    )
+    if not match:
+        raise ChangesFetchError("Current CQC directory CSV link was not found on the official data page.")
+
+    source_uri = urljoin(data_page_url, match.group(1))
+    parsed_uri = urlparse(source_uri)
+    if parsed_uri.scheme != "https" or not parsed_uri.hostname or not parsed_uri.hostname.endswith("cqc.org.uk"):
+        raise ChangesFetchError("Refusing non-CQC or non-HTTPS directory source URI.")
+
+    csv_response = _request_with_retries(source_uri, headers=headers)
+    content = csv_response.content
+    if not content:
+        raise ChangesFetchError("CQC directory CSV was empty.")
+
+    decoded = content.decode("utf-8-sig")
+    lines = decoded.splitlines()
+    header_index = next(
+        (index for index, line in enumerate(lines) if line.startswith("Name,Also known as,Address,")),
+        None,
+    )
+    if header_index is None:
+        raise ChangesFetchError("CQC directory CSV header was not recognised.")
+
+    preamble = "\n".join(lines[:header_index])
+    published_match = re.search(r"produced on\s+([^,\r\n]+)", preamble, flags=re.IGNORECASE)
+    if not published_match:
+        raise ChangesFetchError("CQC directory publication date was not found.")
+    try:
+        source_published_at = datetime.strptime(
+            published_match.group(1).strip(), "%d %B %Y"
+        ).date().isoformat()
+    except ValueError as exc:
+        raise ChangesFetchError("CQC directory publication date was invalid.") from exc
+
+    reader = csv.DictReader(io.StringIO("\n".join(lines[header_index:])))
+    id_column = "CQC Location ID (for office use only)"
+    if not reader.fieldnames or id_column not in reader.fieldnames:
+        raise ChangesFetchError("CQC directory location ID column was missing.")
+
+    ids: list[str] = []
+    for row in reader:
+        location_id = (row.get(id_column) or "").strip()
+        if location_id:
+            if not _CQC_ID_RE.fullmatch(location_id):
+                raise ChangesFetchError(f"Invalid CQC location ID in snapshot: {location_id[:40]}")
+            ids.append(location_id)
+
+    unique_ids = frozenset(ids)
+    if len(unique_ids) != len(ids):
+        raise ChangesFetchError("CQC directory contains duplicate location IDs.")
+    if len(unique_ids) < min_expected:
+        raise ChangesFetchError(
+            f"CQC directory contains only {len(unique_ids)} locations; expected at least {min_expected}."
+        )
+
+    return CqcActiveSnapshot(
+        source_uri=source_uri,
+        source_published_at=source_published_at,
+        retrieved_at=datetime.now(timezone.utc),
+        checksum_sha256=hashlib.sha256(content).hexdigest(),
+        location_ids=unique_ids,
+    )
+
+
+def build_snapshot_reconciliation(
+    snapshot: CqcActiveSnapshot,
+    *,
+    db_ids: frozenset[str],
+    db_active_ids: frozenset[str],
+) -> dict[str, frozenset[str]]:
+    """Return deterministic detail-fetch sets for a full authoritative pass."""
+    if db_active_ids:
+        drop_ratio = len(db_active_ids - snapshot.location_ids) / len(db_active_ids)
+        if drop_ratio > MAX_ACTIVE_COUNT_DROP_RATIO:
+            raise ChangesFetchError(
+                f"Snapshot would remove {drop_ratio:.1%} of active locations; refusing reconciliation."
+            )
+    return {
+        "new_ids": snapshot.location_ids - db_ids,
+        "candidate_deactivation_ids": db_active_ids - snapshot.location_ids,
+        "detail_ids": snapshot.location_ids | (db_active_ids - snapshot.location_ids),
+    }
 
 
 def get_api_key() -> str | None:
@@ -282,7 +428,16 @@ def create_pipeline_run(cur) -> int:
     return int(cur.fetchone()[0])
 
 
-def complete_pipeline_run(cur, run_id: int, *, inserted: int = 0, updated: int = 0) -> None:
+def complete_pipeline_run(
+    cur,
+    run_id: int,
+    *,
+    inserted: int = 0,
+    updated: int = 0,
+    snapshot: CqcActiveSnapshot | None = None,
+    active_before: int | None = None,
+    active_after: int | None = None,
+) -> None:
     cur.execute(
         """
         UPDATE pipeline_runs
@@ -290,10 +445,28 @@ def complete_pipeline_run(cur, run_id: int, *, inserted: int = 0, updated: int =
             status = 'completed',
             records_added = %s,
             records_updated = %s,
+            source_uri = %s,
+            source_published_at = %s,
+            source_retrieved_at = %s,
+            source_checksum_sha256 = %s,
+            source_record_count = %s,
+            active_records_before = %s,
+            active_records_after = %s,
             error_message = NULL
         WHERE id = %s
         """,
-        (inserted, updated, run_id),
+        (
+            inserted,
+            updated,
+            snapshot.source_uri if snapshot else None,
+            snapshot.source_published_at if snapshot else None,
+            snapshot.retrieved_at if snapshot else None,
+            snapshot.checksum_sha256 if snapshot else None,
+            len(snapshot.location_ids) if snapshot else None,
+            active_before,
+            active_after,
+            run_id,
+        ),
     )
 
 
@@ -447,11 +620,17 @@ def upsert_provider(cur, record: dict[str, Any]) -> str:
     if "id" not in safe_record:
         return "skipped"
 
+    existing_columns = (
+        "id", "provider_id", "overall_rating", "status", "ownership_type",
+        "name", "slug", "town", "postcode", "region", "registration_date",
+        "last_inspection_date", "last_updated",
+    )
     cur.execute(
-        "SELECT id, overall_rating, name, slug, town, postcode, region FROM care_providers WHERE id = %s",
+        f"SELECT {', '.join(existing_columns)} FROM care_providers WHERE id = %s",
         (safe_record["id"],),
     )
-    existing = cur.fetchone()
+    existing_row = cur.fetchone()
+    existing = dict(zip(existing_columns, existing_row)) if existing_row else None
 
     # Generate slug for new inserts; never overwrite an existing slug on update
     if not existing and not safe_record.get("slug"):
@@ -474,41 +653,12 @@ def upsert_provider(cur, record: dict[str, Any]) -> str:
     now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
 
     if existing:
-        old_rating = existing[1]
-        new_rating = safe_record.get("overall_rating")
-
-        # Detect rating change and log it
-        if (new_rating and old_rating and new_rating != old_rating
-                and old_rating not in ("", "Not Yet Inspected")
-                and new_rating not in ("", "Not Yet Inspected")):
-            try:
-                cur.execute(
-                    """INSERT INTO rating_changes
-                       (provider_id, provider_name, slug, town, postcode, region, old_rating, new_rating, inspection_date)
-                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)""",
-                    (safe_record["id"], existing[2] or safe_record.get("name"),
-                     existing[3] or safe_record.get("slug"),
-                     existing[4] or safe_record.get("town"),
-                     existing[5] or safe_record.get("postcode"),
-                     existing[6] or safe_record.get("region"),
-                     old_rating, new_rating,
-                     safe_record.get("last_inspection_date")),
-                )
-                # Also log to rating history
-                cur.execute(
-                    """INSERT INTO provider_rating_history (provider_id, overall_rating, inspection_date)
-                       VALUES (%s, %s, %s) ON CONFLICT (provider_id, inspection_date) DO NOTHING""",
-                    (safe_record["id"], new_rating, safe_record.get("last_inspection_date")),
-                )
-            except Exception as exc:
-                print(f"  Warning: Failed to log rating change for {safe_record['id']}: {exc}")
-
         set_clause = ", ".join(f"{c} = %s" for c in cols)
         cur.execute(
             f"UPDATE care_providers SET {set_clause}, updated_at = %s WHERE id = %s",
             vals + [now, safe_record["id"]],
         )
-        return "updated"
+        action = "updated"
     else:
         cols_str = ", ".join(cols + ["updated_at", "created_at"])
         placeholders = ", ".join(["%s"] * (len(cols) + 2))
@@ -516,7 +666,98 @@ def upsert_provider(cur, record: dict[str, Any]) -> str:
             f"INSERT INTO care_providers ({cols_str}) VALUES ({placeholders})",
             vals + [now, now],
         )
-        return "inserted"
+        action = "inserted"
+
+    current = dict(existing or {})
+    current.update(safe_record)
+    events = build_provider_state_events(existing, current)
+    for event in events:
+        inserted = _insert_trusted_provider_event(cur, event, current)
+        if inserted and event.event_type == "rating_changed":
+            _project_rating_change(cur, event, current)
+
+    return action
+
+
+def _insert_trusted_provider_event(
+    cur,
+    event: ProviderStateEvent,
+    current: dict[str, Any],
+) -> bool:
+    source_observed_at = _parse_watermark_datetime(current.get("last_updated"))
+    def json_value(value: Any) -> Json:
+        return Json(value, dumps=lambda obj: json.dumps(obj, default=str))
+    cur.execute(
+        """
+        INSERT INTO trusted_event_ledger (
+          entity_type, entity_id, provider_id, location_id, event_type,
+          effective_date, old_value, new_value, source, confidence_score,
+          dedupe_key, metadata, source_observed_at
+        )
+        VALUES (
+          'care_provider', %s, %s, %s, %s,
+          %s, %s, %s, 'cqc_api', 1.0000,
+          %s, %s, %s
+        )
+        ON CONFLICT (dedupe_key) DO NOTHING
+        RETURNING id
+        """,
+        (
+            event.location_id,
+            event.provider_id,
+            event.location_id,
+            event.event_type,
+            event.effective_date,
+            json_value(event.old_value),
+            json_value(event.new_value),
+            event.dedupe_key,
+            json_value(event.metadata),
+            source_observed_at,
+        ),
+    )
+    return cur.fetchone() is not None
+
+
+def _project_rating_change(
+    cur,
+    event: ProviderStateEvent,
+    current: dict[str, Any],
+) -> None:
+    cur.execute(
+        """
+        INSERT INTO rating_changes (
+          provider_id, provider_name, slug, town, postcode, region,
+          old_rating, new_rating, inspection_date, event_dedupe_key
+        )
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        ON CONFLICT (event_dedupe_key) DO NOTHING
+        """,
+        (
+            event.location_id,
+            current.get("name"),
+            current.get("slug"),
+            current.get("town"),
+            current.get("postcode"),
+            current.get("region"),
+            event.old_value,
+            event.new_value,
+            current.get("last_inspection_date"),
+            event.dedupe_key,
+        ),
+    )
+    if current.get("last_inspection_date"):
+        cur.execute(
+            """
+            INSERT INTO provider_rating_history (provider_id, overall_rating, inspection_date)
+            VALUES (%s, %s, %s)
+            ON CONFLICT (provider_id, inspection_date) DO NOTHING
+            """,
+            (
+                event.location_id,
+                event.new_value,
+                current.get("last_inspection_date"),
+            ),
+        )
 
 
 def parse_args() -> argparse.Namespace:
@@ -526,6 +767,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--sleep", type=float, default=DEFAULT_SLEEP, help="Sleep between API calls")
     parser.add_argument("--dry-run", action="store_true", help="Show changes without writing to DB")
     parser.add_argument("--database-url", help="PostgreSQL connection URL")
+    parser.add_argument(
+        "--data-page-url",
+        default=DEFAULT_DATA_PAGE_URL,
+        help="Official CQC page containing the current directory CSV link",
+    )
     return parser.parse_args()
 
 
@@ -546,6 +792,8 @@ def main() -> int:
     cur = None
     run_id: int | None = None
     lock_acquired = False
+    snapshot: CqcActiveSnapshot | None = None
+    active_before: int | None = None
 
     try:
         if database_url:
@@ -555,14 +803,20 @@ def main() -> int:
 
         since = args.since
         db_known_ids = frozenset()
+        db_active_ids = frozenset()
         if cur is not None:
             since = resolve_since(cur, since)
-            cur.execute("SELECT id FROM care_providers")
-            db_known_ids = frozenset(str(r[0]) for r in cur.fetchall() if r and r[0])
+            cur.execute("SELECT id, status FROM care_providers")
+            db_rows = cur.fetchall()
+            db_known_ids = frozenset(str(r[0]) for r in db_rows if r and r[0])
+            db_active_ids = frozenset(
+                str(r[0]) for r in db_rows if r and r[0] and str(r[1]).upper() == "ACTIVE"
+            )
+            active_before = len(db_active_ids)
         elif not since:
             since = (datetime.now(timezone.utc) - timedelta(days=DEFAULT_LOOKBACK_DAYS)).strftime("%Y-%m-%dT%H:%M:%S")
 
-        if cur is not None:
+        if cur is not None and not args.dry_run:
             lock_acquired = acquire_run_lock(cur)
             if not lock_acquired:
                 conn.rollback()
@@ -576,7 +830,7 @@ def main() -> int:
         used_list_scan_fallback = False
         changed_ids = fetch_changes(args.base_url, api_key, since, args.sleep)
         if changed_ids is None:
-            print("WARNING: /changes/location endpoint unavailable (404/410). Falling back to location list scan.")
+            print("WARNING: /changes/location endpoint unavailable (404/410). Using full CQC snapshot reconciliation.")
             used_list_scan_fallback = True
             if cur is None:
                 raise RuntimeError("Database baseline is required for list-scan fallback.")
@@ -592,14 +846,23 @@ def main() -> int:
                     conn.commit()
                 except Exception as alert_exc:
                     print(f"  (Could not log alert: {alert_exc})")
-            changed_ids = fetch_recent_via_list_scan(
-                args.base_url,
-                api_key,
-                since,
-                args.sleep,
-                db_known_ids=db_known_ids,
+            snapshot = fetch_active_location_snapshot(args.data_page_url)
+            reconciliation = build_snapshot_reconciliation(
+                snapshot,
+                db_ids=db_known_ids,
+                db_active_ids=db_active_ids,
             )
-            print(f"List scan found {len(changed_ids)} potentially new/changed locations")
+            changed_ids = sorted(reconciliation["detail_ids"])
+            print(
+                "Snapshot reconciliation: "
+                f"source_active={len(snapshot.location_ids)} "
+                f"new={len(reconciliation['new_ids'])} "
+                f"candidate_deactivations={len(reconciliation['candidate_deactivation_ids'])} "
+                f"details_to_verify={len(changed_ids)}"
+            )
+            if args.dry_run:
+                print("DRY RUN — no provider records or pipeline watermarks were changed.")
+                return 0
         else:
             print(f"Found {len(changed_ids)} changed locations")
 
@@ -625,10 +888,6 @@ def main() -> int:
                 results["clean_failed"] += 1
                 continue
 
-            if used_list_scan_fallback and not should_process_list_scan_record(cleaned, since):
-                results["stale_skipped"] += 1
-                continue
-
             records.append(cleaned)
 
             if (i + 1) % 50 == 0:
@@ -637,8 +896,12 @@ def main() -> int:
 
         print(f"Fetched {len(records)} valid records ({results['fetch_failed']} fetch failures)")
 
-        if changed_ids and not records and (results.get("fetch_failed", 0) or results.get("clean_failed", 0)):
-            raise RuntimeError("All changed records failed to fetch or clean.")
+        if results.get("fetch_failed", 0) or results.get("clean_failed", 0):
+            raise RuntimeError(
+                "CQC reconciliation was incomplete: "
+                f"fetch_failed={results.get('fetch_failed', 0)}, "
+                f"clean_failed={results.get('clean_failed', 0)}. No records were committed."
+            )
 
         if args.dry_run:
             print(f"\nDRY RUN — would upsert {len(records)} records:")
@@ -684,14 +947,31 @@ def main() -> int:
                 cur.execute("UPDATE care_providers SET slug = %s WHERE id = %s", (slug, row_id))
             print("  Slug backfill complete.")
 
+        cur.execute("SELECT COUNT(*) FROM care_providers WHERE UPPER(status) = 'ACTIVE'")
+        active_after = int(cur.fetchone()[0])
         complete_pipeline_run(
             cur,
             run_id,
             inserted=results.get("inserted", 0),
             updated=results.get("updated", 0),
+            snapshot=snapshot,
+            active_before=active_before,
+            active_after=active_after,
         )
         conn.commit()
 
+    except KeyboardInterrupt:
+        if conn is not None:
+            conn.rollback()
+        if cur is not None and run_id is not None:
+            try:
+                fail_pipeline_run(cur, run_id, "Interrupted before commit")
+                conn.commit()
+            except Exception:
+                if conn is not None:
+                    conn.rollback()
+        print("Update interrupted before commit.", file=sys.stderr)
+        return 130
     except Exception as exc:
         if conn is not None:
             conn.rollback()

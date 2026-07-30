@@ -12,6 +12,29 @@ from api.config import settings
 from api.routers.billing import PRICE_TO_TIER, CheckoutRequest, ProfileCheckoutRequest, create_checkout, create_profile_checkout
 
 
+@pytest.fixture(autouse=True)
+def _enable_checkout_for_endpoint_unit_tests():
+    with patch("api.routers.billing.settings.billing_checkout_enabled", True):
+        yield
+
+
+@pytest.mark.asyncio
+async def test_checkout_fails_closed_before_any_billing_mutation():
+    with patch("api.routers.billing.settings.billing_checkout_enabled", False), \
+         patch("api.routers.billing.get_connection") as get_connection, \
+         patch("api.routers.billing.stripe.checkout.Session.create") as create_session:
+        with pytest.raises(HTTPException) as exc:
+            await create_checkout(
+                CheckoutRequest(email="alice@example.com", tier="starter"),
+                {"user_id": 42, "email": "alice@example.com", "is_verified": True},
+            )
+
+    assert exc.value.status_code == 503
+    assert "Human Gate" in exc.value.detail
+    get_connection.assert_not_called()
+    create_session.assert_not_called()
+
+
 @pytest.mark.asyncio
 async def test_free_tier_checkout_is_rejected_without_stripe_or_db(monkeypatch):
     monkeypatch.setattr(settings, "stripe_secret_key", "sk_test_checkout")

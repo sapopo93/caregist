@@ -39,8 +39,8 @@ CREATE TABLE IF NOT EXISTS care_providers (
   regulated_activities TEXT,
   number_of_beds INT,
   ownership_type VARCHAR(50),
-  quality_score INT,
-  quality_tier VARCHAR(20),
+  data_completeness_score INT,
+  data_completeness_tier VARCHAR(20),
   meta_title VARCHAR(300),
   meta_description TEXT,
   geocode_source VARCHAR(20),
@@ -56,7 +56,7 @@ CREATE INDEX IF NOT EXISTS idx_postcode ON care_providers (postcode);
 CREATE INDEX IF NOT EXISTS idx_region ON care_providers (region);
 CREATE INDEX IF NOT EXISTS idx_local_authority ON care_providers (local_authority);
 CREATE INDEX IF NOT EXISTS idx_overall_rating ON care_providers (overall_rating);
-CREATE INDEX IF NOT EXISTS idx_quality_tier ON care_providers (quality_tier);
+CREATE INDEX IF NOT EXISTS idx_data_completeness_tier ON care_providers (data_completeness_tier);
 CREATE INDEX IF NOT EXISTS idx_status ON care_providers (status);
 CREATE INDEX IF NOT EXISTS idx_slug ON care_providers (slug);
 CREATE INDEX IF NOT EXISTS idx_type ON care_providers (type);

@@ -412,8 +412,8 @@ def main() -> int:
         "regulated_activities",
         "number_of_beds",
         "ownership_type",
-        "quality_score",
-        "quality_tier",
+        "data_completeness_score",
+        "data_completeness_tier",
         "meta_title",
         "meta_description",
         "geocode_source",
@@ -460,11 +460,11 @@ def main() -> int:
 
         slug = generate_slug(name, town or "", location_id, used_slugs)
 
-        quality_score = parse_int(record.get("qualityScore"))
-        quality_tier = clean_value(record.get("qualityTier")) or "SPARSE"
-        if quality_tier not in tier_counts:
-            tier_counts[quality_tier] = 0
-        tier_counts[quality_tier] += 1
+        data_completeness_score = parse_int(record.get("dataCompletenessScore"))
+        data_completeness_tier = clean_value(record.get("dataCompletenessTier")) or "SPARSE"
+        if data_completeness_tier not in tier_counts:
+            tier_counts[data_completeness_tier] = 0
+        tier_counts[data_completeness_tier] += 1
 
         out_row = {
             "id": location_id,
@@ -500,8 +500,8 @@ def main() -> int:
             "regulated_activities": clean_value(record.get("regulatedActivities")),
             "number_of_beds": parse_int(record.get("numberOfBeds")),
             "ownership_type": clean_value(record.get("ownershipType")),
-            "quality_score": quality_score,
-            "quality_tier": quality_tier,
+            "data_completeness_score": data_completeness_score,
+            "data_completeness_tier": data_completeness_tier,
             "meta_title": meta_title(name, town, service_types=clean_value(record.get("serviceTypes")), provider_type=provider_type),
             "meta_description": meta_description(
                 name,

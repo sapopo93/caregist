@@ -27,7 +27,7 @@ function buildCsp(nonce: string): string {
     "default-src 'self'",
     scriptSrc,
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-    "img-src 'self' data: https:",
+    "img-src 'self' data:",
     "font-src 'self' https://fonts.gstatic.com",
     "connect-src 'self' https://api.stripe.com https://*.sentry.io",
     "frame-src https://js.stripe.com",
@@ -47,7 +47,7 @@ function withCsp(response: NextResponse, nonce: string): NextResponse {
  * Middleware: attaches a nonce-based CSP to every response (F-21) and enforces
  * authentication on protected routes (F-2).
  */
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
   // One nonce per request; forwarded to the app so Next applies it to its
@@ -100,7 +100,6 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  runtime: "nodejs",
   matcher: [
     /*
      * Match /api because it is a public marketing page. Exclude API route
@@ -115,5 +114,5 @@ export const config = {
      */
     "/api",
     "/((?!api/|_next/static|_next/image|favicon.ico|public).*)",
-  ],
+  ]
 };

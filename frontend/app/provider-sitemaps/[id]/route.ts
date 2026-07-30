@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 
 import { getProviderHref } from "@/lib/provider-path";
-import { getPublicApiBase } from "@/lib/server-api-config";
+import { getServerApiBase } from "@/lib/server-api-config";
 
 const BASE = "https://caregist.co.uk";
-const PAGE_SIZE = 50000;
+const PAGE_SIZE = 5000;
 
 export async function GET(
   _request: Request,
@@ -12,13 +12,13 @@ export async function GET(
 ) {
   const { id } = await params;
   const page = Number(id);
-  if (!Number.isFinite(page) || page < 0) {
+  if (!Number.isSafeInteger(page) || page < 0) {
     return new NextResponse("Invalid sitemap page", { status: 400 });
   }
 
   let res: Response;
   try {
-    const apiBase = getPublicApiBase();
+    const apiBase = getServerApiBase();
     res = await fetch(`${apiBase}/api/v1/sitemaps/providers?offset=${page * PAGE_SIZE}&limit=${PAGE_SIZE}`, {
       next: { revalidate: 86400 },
     });
@@ -31,6 +31,9 @@ export async function GET(
   }
 
   const payload = await res.json();
+  if (!Array.isArray(payload.data) || payload.data.length === 0) {
+    return new NextResponse("Provider sitemap page not found", { status: 404 });
+  }
   const urls = (payload.data || [])
     .map((row: { id?: string | null; slug?: string | null; updated_at?: string | null }) => `
       <url>

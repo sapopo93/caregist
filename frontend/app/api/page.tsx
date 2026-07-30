@@ -28,8 +28,8 @@ const SAMPLE_JSON = `{
     "postcode": "BH1 1AA",
     "region": "South West",
     "service_types": "Care home service with nursing",
-    "quality_score": 82,
-    "quality_tier": "GOOD",
+    "data_completeness_score": 82,
+    "data_completeness_tier": "GOOD",
     "latitude": 50.7192,
     "longitude": -1.8808,
     "phone": "01202 000000"

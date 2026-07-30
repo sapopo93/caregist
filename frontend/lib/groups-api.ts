@@ -18,14 +18,14 @@ export type PublicGroup = {
   ri_count: number;
   inadequate_count: number;
   not_inspected_count: number;
-  avg_quality_score?: number | null;
+  avg_data_completeness_score?: number | null;
   pct_good_or_outstanding?: number | null;
   total_beds?: number | null;
   regions?: string[];
   provider_types?: string[];
   locations?: unknown[];
   benchmark?: {
-    national_avg_quality?: number | null;
+    national_avg_data_completeness?: number | null;
     national_pct_good?: number | null;
   };
   latest_inspection?: string | null;

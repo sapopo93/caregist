@@ -22,6 +22,9 @@ export function getSiteUrl(): string {
 }
 
 export function getStripePaymentLinkUrl(): string | null {
+  if (process.env.BILLING_CHECKOUT_ENABLED !== "true") {
+    return null;
+  }
   const value = process.env.STRIPE_PAYMENT_LINK_URL?.trim();
   return value ? value : null;
 }

@@ -237,8 +237,8 @@ async def _revalidate_report_schema(_: dict[str, Any]) -> dict[str, Any]:
             "name",
             "slug",
             "overall_rating",
-            "quality_score",
-            "quality_tier",
+            "data_completeness_score",
+            "data_completeness_tier",
             "profile_tier",
             "profile_completeness",
         }

@@ -6,6 +6,8 @@ retention pruning tool against a real Postgres schema.
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
 from tests.integration.conftest import apply_full_schema
@@ -78,5 +80,39 @@ async def test_retention_prune_deletes_only_old_rows(fresh_db):
         assert await conn.fetchval(
             "SELECT COUNT(*) FROM pending_emails WHERE status = 'failed'"
         ) == 1
+    finally:
+        await conn.close()
+
+
+async def test_legacy_claim_proof_is_removed_and_unverified_activation_suspended(fresh_db):
+    conn = await asyncpg.connect(fresh_db)
+    try:
+        await apply_full_schema(conn)
+        await conn.execute(
+            """
+            INSERT INTO care_providers (id, name, slug, status, is_claimed, claimed_at)
+            VALUES ('LEGACY1', 'Legacy Provider', 'legacy-provider', 'ACTIVE', TRUE, NOW());
+
+            INSERT INTO provider_claims (
+              provider_id, status, claimant_name, claimant_email, proof_of_association
+            ) VALUES (
+              'LEGACY1', 'approved', 'Legacy Claimant', 'legacy@example.com',
+              'raw document and authority details'
+            );
+            """
+        )
+
+        migration = (
+            Path(__file__).resolve().parents[2] / "db/migrations/042_claim_evidence_minimisation.sql"
+        ).read_text(encoding="utf-8")
+        await conn.execute(migration)
+
+        claim = await conn.fetchrow(
+            "SELECT status, proof_of_association, decision_reason_code FROM provider_claims WHERE provider_id = 'LEGACY1'"
+        )
+        assert claim["status"] == "suspended"
+        assert claim["proof_of_association"] == "[legacy evidence removed; reverification required]"
+        assert claim["decision_reason_code"] == "reverification_required"
+        assert await conn.fetchval("SELECT is_claimed FROM care_providers WHERE id = 'LEGACY1'") is False
     finally:
         await conn.close()

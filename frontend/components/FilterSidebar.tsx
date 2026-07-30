@@ -2,6 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { canonicalServices } from "@/lib/service-taxonomy";
 
 const REGIONS = [
   "South East", "London", "North West", "East", "West Midlands",
@@ -12,23 +13,11 @@ const RATINGS = [
   "Outstanding", "Good", "Requires Improvement", "Inadequate", "Not Yet Inspected",
 ];
 
-const FALLBACK_SERVICE_TYPES = [
-  "Homecare Agencies", "Residential Homes", "Nursing Homes",
-  "Doctors/Gps", "Dentist", "Supported Living",
-];
-
-const SERVICE_TYPE_LABELS: Record<string, string> = {
-  "Homecare Agencies": "Home Care",
-  "Residential Homes": "Care Homes",
-  "Nursing Homes": "Nursing Homes",
-  "Doctors/Gps": "GP Surgeries",
-  "Dentist": "Dental Practices",
-  "Supported Living": "Supported Living",
-  "Community Services - Healthcare": "Community Healthcare",
-  "Hospitals - Mental Health/Capacity": "Mental Health",
-  "Hospital": "Hospitals",
-  "Hospice": "Hospices",
-};
+const SERVICES = canonicalServices();
+const FALLBACK_SERVICE_TYPES = SERVICES.map((entry) => entry.slug);
+const SERVICE_TYPE_LABELS: Record<string, string> = Object.fromEntries(
+  SERVICES.map((entry) => [entry.slug, entry.name]),
+);
 
 const SORT_OPTIONS = [
   { value: "relevance", label: "Relevance" },
@@ -36,7 +25,6 @@ const SORT_OPTIONS = [
   { value: "name_desc", label: "Name (Z-A)" },
   { value: "rating", label: "Best Rating" },
   { value: "beds", label: "Most Beds" },
-  { value: "quality", label: "Data Quality" },
   { value: "newest", label: "Newest" },
 ];
 

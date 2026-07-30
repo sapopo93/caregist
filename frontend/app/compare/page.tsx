@@ -110,7 +110,7 @@ export default async function ComparePage({
         <CompareRow label="Phone" cols={ordered.map((p: any) => p.phone || "-")} highlight />
         <CompareRow label="Beds" cols={ordered.map((p: any) => (p.number_of_beds > 0 ? String(p.number_of_beds) : "-"))} />
         <CompareRow label="Ownership" cols={ordered.map((p: any) => p.ownership_type || "-")} highlight />
-        <CompareRow label="Quality Score" cols={ordered.map((p: any) => p.quality_score ? `${p.quality_score}/100` : "-")} />
+        <CompareRow label="Data Completeness" cols={ordered.map((p: any) => p.data_completeness_score ? `${p.data_completeness_score}/100` : "-")} />
         <CompareRow label="Last Inspection" cols={ordered.map((p: any) => p.last_inspection_date || "-")} highlight />
 
         {/* Overall rating row */}

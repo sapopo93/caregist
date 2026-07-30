@@ -1,7 +1,6 @@
 import "server-only";
 
 import { access, readFile } from "node:fs/promises";
-import path from "node:path";
 
 export interface DirectoryFileProvider {
   id: string;
@@ -65,15 +64,10 @@ const SELECTED_COLUMNS = [
   "meta_description",
 ] as const;
 
-const FALLBACK_DATASET_CANDIDATES = [
-  path.join(process.cwd(), "data", "directory-fallback-full.csv"),
-  path.join(process.cwd(), "directory_providers.csv"),
-  path.join(process.cwd(), "..", "directory_providers.csv"),
-  path.join(process.cwd(), "..", "..", "directory_providers.csv"),
-];
+const FALLBACK_DATASET_URL = new URL("../data/directory-fallback-full.csv", import.meta.url);
 
 let providersPromise: Promise<DirectoryFileProvider[]> | null = null;
-let datasetPathPromise: Promise<string> | null = null;
+let datasetPathPromise: Promise<URL> | null = null;
 
 function parseCsvLine(line: string): string[] {
   const values: string[] = [];
@@ -130,19 +124,11 @@ function asNullableNumber(value: string | undefined): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-async function resolveDatasetPath(): Promise<string> {
+async function resolveDatasetPath(): Promise<URL> {
   if (!datasetPathPromise) {
     datasetPathPromise = (async () => {
-      for (const candidate of FALLBACK_DATASET_CANDIDATES) {
-        try {
-          await access(candidate);
-          return candidate;
-        } catch {
-          continue;
-        }
-      }
-
-      throw new Error("No packaged directory fallback CSV is available for fallback reads.");
+      await access(FALLBACK_DATASET_URL);
+      return FALLBACK_DATASET_URL;
     })();
   }
 

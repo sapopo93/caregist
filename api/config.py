@@ -250,6 +250,23 @@ class Settings(BaseSettings):
     redis_url: str = ""
     # Vercel Cron sends this value as an Authorization bearer token.
     cron_secret: str = ""
+    # Human Gate control: provider claims remain disabled until identity,
+    # authority, moderation, privacy, and operational approvals are recorded.
+    provider_claims_enabled: bool = False
+    # Personal-data intake and user-controlled remote media remain fail-closed
+    # until the associated Human Gate privacy/moderation decisions are approved.
+    enquiries_enabled: bool = False
+    review_submissions_enabled: bool = False
+    remote_provider_media_enabled: bool = False
+    # Commercial mutations remain disabled until Human Gate 1 plus the
+    # applicable finance/legal approvals are recorded. Stripe webhook intake
+    # remains available so already-created state can still be reconciled.
+    billing_checkout_enabled: bool = False
+    outbound_communications_enabled: bool = False
+    monitoring_activation_enabled: bool = False
+    outbound_delivery_enabled: bool = False
+    directory_export_delivery_enabled: bool = False
+    review_publication_enabled: bool = False
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8", "extra": "ignore"}
 
@@ -465,14 +482,14 @@ TIERS = {
 BASIC_CSV_FIELDS = [
     "name", "town", "county", "postcode", "region", "local_authority",
     "phone", "website", "overall_rating", "type", "service_types",
-    "specialisms", "number_of_beds", "quality_score", "quality_tier",
+    "specialisms", "number_of_beds", "data_completeness_score", "data_completeness_tier",
     "last_inspection_date", "inspection_report_url",
 ]
 
 BASIC_FIELDS = [
     "id", "name", "slug", "type", "status", "town", "county", "postcode",
     "region", "local_authority", "overall_rating", "service_types",
-    "specialisms", "number_of_beds", "quality_score", "quality_tier",
+    "specialisms", "number_of_beds", "data_completeness_score", "data_completeness_tier",
     "phone", "website", "last_inspection_date", "inspection_report_url",
     "inspection_summary", "profile_description", "profile_photos",
     "virtual_tour_url", "inspection_response", "profile_tier",

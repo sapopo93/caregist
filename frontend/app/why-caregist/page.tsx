@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 
 const STATS = [
   { value: "National", label: "CQC-registered provider coverage", source: "CQC Public Register" },
-  { value: "Daily", label: "Data refresh from the CQC register", source: "CareGist pipeline" },
+  { value: "Dated", label: "Published source watermark and freshness", source: "CareGist pipeline" },
   { value: "Dashboard", label: "Search, export, and monitoring workflows", source: "CareGist product" },
   { value: "Grouped", label: "Care organisations normalised for benchmarking", source: "CareGist analysis" },
 ];
@@ -32,13 +32,7 @@ const VALUE_TABLE = [
 export default function WhyCareGistPage() {
   return (
     <div className="max-w-4xl mx-auto px-6 py-12">
-      <div className="rounded-xl overflow-hidden mb-8 h-48 relative">
-        <img
-          src="https://images.unsplash.com/photo-1516549655169-df83a0774514?w=900&q=40&auto=format"
-          alt="Care operations and data workflow"
-          className="w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-parchment/40 to-transparent" />
+      <div className="rounded-xl mb-8 h-48 bg-gradient-to-br from-bark via-moss to-clay" aria-hidden="true">
       </div>
 
       <div className="text-center mb-12">
@@ -143,7 +137,7 @@ export default function WhyCareGistPage() {
             <li>Group benchmarking across normalised care organisations</li>
             <li>Regional quality trends and rating distribution</li>
             <li>Monitoring and exports for market visibility</li>
-            <li>Enriched CSV exports with quality scores and CQC report links</li>
+            <li>Enriched CSV exports with data-completeness fields and CQC report links</li>
             <li>Enterprise contact path for procurement-heavy rollouts</li>
           </ul>
         </div>

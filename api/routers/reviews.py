@@ -42,6 +42,8 @@ async def submit_review(
     _auth: dict = Depends(validate_api_key),
 ) -> dict:
     """Submit a review for a provider."""
+    if not settings.review_submissions_enabled:
+        raise HTTPException(status_code=503, detail="Review submissions are not currently accepting submissions.")
     if req.relationship and req.relationship not in VALID_RELATIONSHIPS:
         raise HTTPException(status_code=422, detail=f"Invalid relationship. Choose from: {', '.join(VALID_RELATIONSHIPS)}")
 

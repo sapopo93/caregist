@@ -61,6 +61,24 @@ describe("page contracts", () => {
     assert.ok(tokenLookup < catchBlockStart);
   });
 
+  it("commercial directory routes fail closed until Human Gate approval", () => {
+    const exportSource = readAppFile("app/api/export/route.ts");
+    const leadSource = readAppFile("app/api/leads/request/route.ts");
+
+    assert.match(exportSource, /DIRECTORY_EXPORT_DELIVERY_ENABLED/);
+    assert.match(exportSource, /status:\s*503/);
+    assert.match(leadSource, /DIRECTORY_LEAD_INTAKE_ENABLED/);
+    assert.match(leadSource, /hold[\s\S]*human-gate/);
+  });
+
+  it("direct Stripe payment links remain hidden until billing approval", () => {
+    const siteSource = readAppFile("lib/site.ts");
+    const layoutSource = readAppFile("app/layout.tsx");
+
+    assert.match(siteSource, /BILLING_CHECKOUT_ENABLED/);
+    assert.match(layoutSource, /BILLING_CHECKOUT_ENABLED/);
+  });
+
   it("opportunity lead requests use signed stateless export tokens", () => {
     const source = readAppFile("app/api/leads/request/route.ts");
     const opportunityBranch = source.indexOf("if (normalized.opportunity)");

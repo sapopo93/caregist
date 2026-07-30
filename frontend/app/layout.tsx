@@ -54,7 +54,9 @@ export const metadata: Metadata = {
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   await connection();
-  const stripePaymentLink = process.env.STRIPE_PAYMENT_LINK_URL?.trim() || null;
+  const stripePaymentLink = process.env.BILLING_CHECKOUT_ENABLED === "true"
+    ? process.env.STRIPE_PAYMENT_LINK_URL?.trim() || null
+    : null;
 
   return (
     <html lang="en" className={`${dmSans.variable} ${playfairDisplay.variable}`}>
@@ -114,8 +116,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <footer className="bg-charcoal px-6 py-8 text-sm text-stone">
           <div className="mx-auto max-w-6xl">
             <p className="mb-2">
-              CareGist is a product operated by H-Kay Limited. Data source: Care Quality Commission
-              (CQC). CareGist is not an official CQC service.
+              Data source: Care Quality Commission (CQC). CareGist is not an official CQC service.
             </p>
             <p className="text-dusk">
               If you have concerns about care quality, contact CQC directly at{" "}
@@ -139,6 +140,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               </Link>
               <Link href="/cookies" className="underline hover:text-cream">
                 Cookies
+              </Link>
+              <Link href="/data-status" className="underline hover:text-cream">
+                Data Status
               </Link>
               <Link href="/search" className="underline hover:text-cream">
                 Opportunity lists

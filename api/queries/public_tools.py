@@ -2,7 +2,7 @@
 
 NEARBY_PUBLIC_QUERY = """
 SELECT id, name, slug, type, town, postcode, overall_rating,
-       quality_tier, service_types, last_inspection_date,
+       data_completeness_tier, service_types, last_inspection_date,
        ST_Distance(geom::geography, ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography) / 1609.34 AS distance_miles
 FROM care_providers
 WHERE geom IS NOT NULL

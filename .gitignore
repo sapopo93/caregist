@@ -106,12 +106,14 @@ skills-lock.json
 *.ods
 docs/*.dmg
 
+.projects.corrupt-20260630-124914/
+
 .projects/cache
 .projects/vault
 .projects/state.test.json
 .projects/state.local.test.json
 .env
 .env.*
-!.env.example
 .projects/
-.projects.corrupt-20260630-124914/
+.projects.corrupt-*/
+!.env.example

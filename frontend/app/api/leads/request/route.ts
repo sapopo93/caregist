@@ -61,6 +61,12 @@ async function redirectWithStatelessToken(
 }
 
 export async function POST(request: NextRequest) {
+  if (process.env.DIRECTORY_LEAD_INTAKE_ENABLED !== "true") {
+    const holdUrl = new URL("/lead-list", request.url);
+    holdUrl.searchParams.set("hold", "human-gate");
+    return NextResponse.redirect(holdUrl, 303);
+  }
+
   const formData = await request.formData();
   const input = {
     email: String(formData.get("email") ?? ""),

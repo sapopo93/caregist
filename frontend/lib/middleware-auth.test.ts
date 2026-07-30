@@ -2,8 +2,8 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 
-describe("frontend auth middleware source", () => {
-  const source = fs.readFileSync(new URL("../middleware.ts", import.meta.url), "utf-8");
+describe("frontend auth proxy source", () => {
+  const source = fs.readFileSync(new URL("../proxy.ts", import.meta.url), "utf-8");
   const rootLayoutSource = fs.readFileSync(new URL("../app/layout.tsx", import.meta.url), "utf-8");
   const cityRatingPages = [
     "../app/care-homes/[slug]/page.tsx",
@@ -24,8 +24,9 @@ describe("frontend auth middleware source", () => {
     assert.doesNotMatch(source, /process\.env\.API_URL\s*\|\|/);
   });
 
-  it("uses the Node.js middleware runtime required by Vercel Services", () => {
-    assert.match(source, /runtime:\s*["']nodejs["']/);
+  it("uses the Next 16 proxy convention with its required Node.js runtime", () => {
+    assert.match(source, /export async function proxy\(/);
+    assert.doesNotMatch(source, /runtime:\s*["']/);
   });
 
   it("pairs nonce CSP with dynamic rendering so framework scripts receive nonces", () => {
@@ -39,7 +40,7 @@ describe("frontend auth middleware source", () => {
     assert.match(rootLayoutSource, /await connection\(\)/);
   });
 
-  it("applies CSP middleware to the public /api page", () => {
+  it("applies CSP proxy to the public /api page", () => {
     assert.match(source, /matcher:\s*\[[\s\S]*"\/api"/);
   });
 

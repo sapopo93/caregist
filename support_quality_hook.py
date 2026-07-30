@@ -64,11 +64,11 @@ def _post_json(path: str, payload: dict[str, Any]) -> dict[str, Any] | None:
 
 def _build_checks(report: dict[str, Any]) -> list[dict[str, Any]]:
     total_records = int(report.get("total_records", 0))
-    quality_tiers = report.get("quality_tiers", {})
+    data_completeness_tiers = report.get("data_completeness_tiers", {})
     issues = report.get("issues", {})
 
-    complete_pct = float(quality_tiers.get("COMPLETE", {}).get("pct", 0.0))
-    good_pct = float(quality_tiers.get("GOOD", {}).get("pct", 0.0))
+    complete_pct = float(data_completeness_tiers.get("COMPLETE", {}).get("pct", 0.0))
+    good_pct = float(data_completeness_tiers.get("GOOD", {}).get("pct", 0.0))
     good_or_better = complete_pct + good_pct
     failed_api_calls = int(issues.get("failed_api_calls", 0))
     invalid_coordinates = int(issues.get("invalid_coordinates", 0))
@@ -100,18 +100,18 @@ def _build_checks(report: dict[str, Any]) -> list[dict[str, Any]]:
 
 def _product_metrics(report: dict[str, Any]) -> dict[str, Any]:
     total_records = int(report.get("total_records", 0))
-    quality_tiers = report.get("quality_tiers", {})
+    data_completeness_tiers = report.get("data_completeness_tiers", {})
     issues = report.get("issues", {})
 
-    complete_pct = float(quality_tiers.get("COMPLETE", {}).get("pct", 0.0))
-    good_pct = float(quality_tiers.get("GOOD", {}).get("pct", 0.0))
+    complete_pct = float(data_completeness_tiers.get("COMPLETE", {}).get("pct", 0.0))
+    good_pct = float(data_completeness_tiers.get("GOOD", {}).get("pct", 0.0))
     invalid_coordinates = int(issues.get("invalid_coordinates", 0))
     geocoding_coverage = 100.0 if total_records <= 0 else max(0.0, ((total_records - invalid_coordinates) / total_records) * 100)
 
     return {
         "totalProviders": total_records,
         "geocodingCoveragePct": round(geocoding_coverage, 2),
-        "qualityScoreCoveragePct": round(complete_pct + good_pct, 2),
+        "dataCompletenessScoreCoveragePct": round(complete_pct + good_pct, 2),
         "failedApiCalls": int(issues.get("failed_api_calls", 0)),
         "listingCompleteness": round(complete_pct + good_pct, 2),
         "searchRelevance": round(complete_pct + good_pct, 2),
@@ -150,7 +150,7 @@ def main() -> int:
             "requiredInputs": [
                 {"name": "pipeline_output_present", "present": int(report.get("total_records", 0)) > 0},
                 {"name": "generated_at_present", "present": bool(str(report.get("generated_at", "")).strip())},
-                {"name": "quality_tiers_present", "present": bool(report.get("quality_tiers"))},
+                {"name": "data_completeness_tiers_present", "present": bool(report.get("data_completeness_tiers"))},
             ],
             "productMetrics": metrics,
         },

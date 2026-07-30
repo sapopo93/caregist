@@ -1,14 +1,19 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
 from unittest.mock import Mock, patch
 
 import pytest
 
+from api.services.provider_state_events import ProviderStateEvent
 from incremental_update import (
+    _insert_trusted_provider_event,
     ALLOWED_COLUMNS,
+    CqcActiveSnapshot,
     ChangesFetchError,
+    build_snapshot_reconciliation,
+    fetch_active_location_snapshot,
     fetch_changes,
     fetch_recent_via_list_scan,
     resolve_since,
@@ -37,6 +42,68 @@ def test_fetch_changes_returns_none_on_410():
     with patch("incremental_update.requests.get", return_value=response):
         result = fetch_changes("https://api.service.cqc.org.uk/public/v1", "key", "2026-04-01T00:00:00", 0)
     assert result is None
+
+
+def test_active_snapshot_discovers_and_validates_official_csv():
+    page = Mock(
+        status_code=200,
+        text='<a href="/system/files/2026-07/29_July_2026_CQC_directory.csv">CSV</a>',
+        content=b"page",
+    )
+    csv_body = (
+        "CQC Locations data,,,\n"
+        "This data was produced on 29 July 2026,,,\n"
+        "Name,Also known as,Address,Postcode,Phone number,Service's website (if available),Service types,Date of latest check,Specialisms/services,Provider name,Local authority,Region,Location URL,CQC Location ID (for office use only),CQC Provider ID (for office use only)\n"
+        "One,,Address,AA1 1AA,,,Homecare,,,,London,London,url,1-12345,1-99999\n"
+        "Two,,Address,AA1 1AB,,,Homecare,,,,London,London,url,1-12346,1-99999\n"
+    ).encode()
+    csv_response = Mock(status_code=200, text=csv_body.decode(), content=csv_body)
+
+    with patch("incremental_update._request_with_retries", side_effect=[page, csv_response]):
+        snapshot = fetch_active_location_snapshot(min_expected=2)
+
+    assert snapshot.source_published_at == "2026-07-29"
+    assert snapshot.source_uri == "https://www.cqc.org.uk/system/files/2026-07/29_July_2026_CQC_directory.csv"
+    assert snapshot.location_ids == frozenset({"1-12345", "1-12346"})
+    assert len(snapshot.checksum_sha256) == 64
+
+
+def test_snapshot_reconciliation_includes_all_source_and_deactivation_candidates():
+    snapshot = CqcActiveSnapshot(
+        source_uri="https://www.cqc.org.uk/current.csv",
+        source_published_at="2026-07-29",
+        retrieved_at=datetime(2026, 7, 30, tzinfo=timezone.utc),
+        checksum_sha256="a" * 64,
+        location_ids=frozenset({"1-10000", "1-10001", "1-10002"}),
+    )
+
+    with patch("incremental_update.MAX_ACTIVE_COUNT_DROP_RATIO", 0.5):
+        plan = build_snapshot_reconciliation(
+            snapshot,
+            db_ids=frozenset({"1-10000", "1-10001", "1-99999"}),
+            db_active_ids=frozenset({"1-10000", "1-10001", "1-99999"}),
+        )
+
+    assert plan["new_ids"] == frozenset({"1-10002"})
+    assert plan["candidate_deactivation_ids"] == frozenset({"1-99999"})
+    assert plan["detail_ids"] == frozenset({"1-10000", "1-10001", "1-10002", "1-99999"})
+
+
+def test_snapshot_reconciliation_rejects_large_active_count_drop():
+    snapshot = CqcActiveSnapshot(
+        source_uri="https://www.cqc.org.uk/current.csv",
+        source_published_at="2026-07-29",
+        retrieved_at=datetime(2026, 7, 30, tzinfo=timezone.utc),
+        checksum_sha256="a" * 64,
+        location_ids=frozenset({"1-10000"}),
+    )
+
+    with pytest.raises(ChangesFetchError, match="refusing reconciliation"):
+        build_snapshot_reconciliation(
+            snapshot,
+            db_ids=frozenset({"1-10000", "1-10001"}),
+            db_active_ids=frozenset({"1-10000", "1-10001"}),
+        )
 
 
 def test_fetch_recent_via_list_scan_returns_ids_missing_from_database(monkeypatch):
@@ -151,3 +218,27 @@ def test_completion_summary_is_not_emitted_from_finally_block():
     summary_line = next(line for line in source.splitlines() if 'print("\\nIncremental update complete:")' in line)
 
     assert summary_line.startswith("    print(")
+
+
+def test_trusted_event_insert_uses_source_time_and_conflict_safe_return():
+    cur = Mock()
+    cur.fetchone.return_value = (42,)
+    event = ProviderStateEvent(
+        event_type="status_changed",
+        location_id="LOC1",
+        provider_id="PROV1",
+        effective_date=date(2026, 7, 29),
+        old_value="ACTIVE",
+        new_value="INACTIVE",
+        dedupe_key="status_changed:LOC1:abc",
+        metadata={"source_last_updated": "2026-07-29T08:00:00Z"},
+    )
+
+    assert _insert_trusted_provider_event(
+        cur,
+        event,
+        {"last_updated": "2026-07-29T08:00:00Z"},
+    )
+    sql, params = cur.execute.call_args.args
+    assert "ON CONFLICT (dedupe_key) DO NOTHING" in sql
+    assert params[-1] == datetime(2026, 7, 29, 8, 0, tzinfo=timezone.utc)

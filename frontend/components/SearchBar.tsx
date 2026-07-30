@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { canonicalServices } from "@/lib/service-taxonomy";
 
 const REGIONS = [
   "South East", "London", "North West", "East", "West Midlands",
@@ -33,6 +34,7 @@ export default function SearchBar({
   showAdvancedToggle?: boolean;
   fetchServiceTypes?: boolean;
 }) {
+  const serviceLabels = new Map(canonicalServices().map((entry) => [entry.slug, entry.name]));
   const [query, setQuery] = useState(defaultValue);
   const [advanced, setAdvanced] = useState(
     !!(defaultRegion || defaultRating || defaultServiceType || defaultPostcode)
@@ -82,7 +84,7 @@ export default function SearchBar({
   // Fallback service types if API call fails
   const displayTypes = serviceTypes.length > 0
     ? serviceTypes
-    : ["Homecare Agencies", "Residential Homes", "Nursing Homes", "Doctors/Gps", "Dentist", "Supported Living"];
+    : canonicalServices().map((entry) => entry.slug);
 
   return (
     <form onSubmit={handleSubmit} className="w-full max-w-2xl">
@@ -185,7 +187,7 @@ export default function SearchBar({
               className="w-full px-3 py-2 rounded-lg border border-stone bg-cream text-charcoal text-sm"
             >
               <option value="">All types</option>
-              {displayTypes.map((s) => <option key={s} value={s}>{s}</option>)}
+              {displayTypes.map((s) => <option key={s} value={s}>{serviceLabels.get(s) || s}</option>)}
             </select>
           </div>
           <div>

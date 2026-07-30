@@ -46,8 +46,8 @@ async def test_public_search_works_without_api_key(patched_db):
             "service_types": "Residential Homes",
             "specialisms": "Dementia",
             "number_of_beds": 25,
-            "quality_score": 82,
-            "quality_tier": "GOOD",
+            "data_completeness_score": 82,
+            "data_completeness_tier": "GOOD",
             "phone": "01202000000",
             "website": "https://example.com",
             "last_inspection_date": "2025-01-01",
@@ -97,8 +97,8 @@ async def test_public_provider_detail_resolves_by_slug_or_id(patched_db, lookup_
         "service_types": "Residential Homes",
         "specialisms": "Dementia",
         "number_of_beds": 25,
-        "quality_score": 82,
-        "quality_tier": "GOOD",
+        "data_completeness_score": 82,
+        "data_completeness_tier": "GOOD",
         "phone": "01202000000",
         "website": "https://example.com",
         "last_inspection_date": "2025-01-01",
@@ -125,9 +125,17 @@ async def test_public_provider_detail_resolves_by_slug_or_id(patched_db, lookup_
     assert query_key == lookup_key
 
 
-def test_relevance_search_promotes_sponsored_profiles_before_quality_sort():
+def test_relevance_search_never_uses_data_completeness_as_quality_rank():
     query = build_search_query("relevance")
 
     order_clause = query.split("ORDER BY", 1)[1]
     assert "profile_tier = 'sponsored'" in order_clause
-    assert order_clause.index("profile_tier") < order_clause.index("quality_score")
+    assert "data_completeness_score" not in order_clause
+
+
+def test_legacy_quality_sort_uses_cqc_rating_not_completeness():
+    query = build_search_query("quality")
+
+    order_clause = query.split("ORDER BY", 1)[1]
+    assert "CASE overall_rating" in order_clause
+    assert "data_completeness_score" not in order_clause

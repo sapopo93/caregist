@@ -16,8 +16,8 @@ interface Provider {
   service_types: string;
   phone: string;
   number_of_beds: number | null;
-  quality_score: number | null;
-  quality_tier: string;
+  data_completeness_score: number | null;
+  data_completeness_tier: string;
   last_inspection_date: string | null;
   is_claimed?: boolean;
   review_count?: number;
@@ -72,9 +72,9 @@ export default function ProviderCard({ provider }: { provider: Provider }) {
             <span className="text-clay">{provider.avg_review_rating} stars ({provider.review_count})</span>
           )}
           <span className="ml-auto flex items-center gap-2">
-            {provider.quality_score && (
-              <span className="text-xs font-mono font-bold" style={{ color: provider.quality_score >= 80 ? "#4A5E45" : provider.quality_score >= 60 ? "#D4943A" : "#C44444" }}>
-                {provider.quality_score}/100
+            {provider.data_completeness_score && (
+              <span className="text-xs font-mono font-bold" style={{ color: provider.data_completeness_score >= 80 ? "#4A5E45" : provider.data_completeness_score >= 60 ? "#D4943A" : "#C44444" }}>
+                Data {provider.data_completeness_score}/100
               </span>
             )}
             <span
@@ -82,7 +82,7 @@ export default function ProviderCard({ provider }: { provider: Provider }) {
               style={{ backgroundColor: confColor }}
               title={`Data confidence: ${confidence}% — based on inspection recency`}
             />
-            <span className="text-xs bg-parchment px-2 py-0.5 rounded">{provider.quality_tier}</span>
+            <span className="text-xs bg-parchment px-2 py-0.5 rounded" title="Public-record field completeness, not care quality">{provider.data_completeness_tier}</span>
           </span>
         </div>
       </div>

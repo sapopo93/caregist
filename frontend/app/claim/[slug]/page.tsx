@@ -1,6 +1,4 @@
 import { getProvider } from "@/lib/api";
-import ClaimStepper from "@/components/ClaimStepper";
-import TrackEventOnMount from "@/components/TrackEventOnMount";
 import { getProviderHref } from "@/lib/provider-path";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
@@ -56,12 +54,19 @@ export default async function ClaimPage({ params }: { params: Promise<{ slug: st
 
   return (
     <div className="max-w-2xl mx-auto px-6 py-12">
-      <TrackEventOnMount eventType="provider_claim_start" eventSource="claim_page" meta={{ slug }} />
-      <ClaimStepper
-        slug={slug}
-        providerName={provider.name}
-        providerId={provider.id}
-      />
+      <div className="rounded-xl border border-stone bg-white p-8">
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-clay">Controlled hold</p>
+        <h1 className="mt-2 text-2xl font-bold text-bark">Claims are not currently accepting submissions</h1>
+        <p className="mt-4 text-dusk">
+          The listing for <strong>{provider.name}</strong> is available to view, but CareGist has not yet activated its provider identity and authority verification process.
+        </p>
+        <p className="mt-3 text-sm text-dusk">
+          No claim, fast-track review, payment, or profile-control right is created from this page.
+        </p>
+        <a href={getProviderHref(provider)} className="mt-6 inline-block rounded-lg bg-clay px-6 py-3 font-medium text-white hover:bg-bark">
+          View provider record
+        </a>
+      </div>
     </div>
   );
 }

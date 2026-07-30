@@ -1,12 +1,8 @@
-import fs from "node:fs";
-import path from "node:path";
-
 const DEV_API_BASE = "http://localhost:8000";
 
 let hasWarnedServerApiBase = false;
 let hasWarnedPublicApiBase = false;
 let hasWarnedServerApiKey = false;
-let rootEnvCache: Record<string, string> | null = null;
 
 function deriveApiBaseFromAppUrl(appUrlRaw: string): string | undefined {
   try {
@@ -76,32 +72,6 @@ function warnOnce(flag: "server_base" | "server_key" | "public_base", message: s
   }
 }
 
-function readRootEnvVar(key: string): string | undefined {
-  if (typeof window !== "undefined") return undefined;
-  if (rootEnvCache) return rootEnvCache[key];
-
-  rootEnvCache = {};
-  const candidates = [
-    path.resolve(process.cwd(), ".env"),
-    path.resolve(process.cwd(), "..", ".env"),
-  ];
-
-  for (const envPath of candidates) {
-    if (!fs.existsSync(envPath)) continue;
-    for (const line of fs.readFileSync(envPath, "utf-8").split(/\r?\n/)) {
-      const trimmed = line.trim();
-      if (!trimmed || trimmed.startsWith("#") || !trimmed.includes("=")) continue;
-      const [rawKey, ...rest] = trimmed.split("=");
-      const rawValue = rest.join("=");
-      if (rawKey && !(rawKey in rootEnvCache)) {
-        rootEnvCache[rawKey] = rawValue.trim().replace(/^['"]|['"]$/g, "");
-      }
-    }
-  }
-
-  return rootEnvCache[key];
-}
-
 export function getServerApiBase() {
   // Vercel Services injects this private, deployment-aware binding. Internal
   // calls bypass Deployment Protection and never leave the deployment.
@@ -122,11 +92,6 @@ export function getServerApiBase() {
     warnOnce("server_base", "[caregist] API_URL env var is not set — falling back to NEXT_PUBLIC_API_URL");
     return process.env.NEXT_PUBLIC_API_URL;
   }
-  const rootApiUrl = readRootEnvVar("API_URL");
-  if (rootApiUrl) {
-    warnOnce("server_base", "[caregist] API_URL env var is not set in frontend config — falling back to repo root .env");
-    return rootApiUrl;
-  }
   const derivedApiBase = deriveApiBaseFromConfiguredAppUrl();
   if (derivedApiBase) {
     warnOnce("server_base", "[caregist] API_URL env var is not set — deriving API host from app URL");
@@ -141,18 +106,6 @@ export function getServerApiKey() {
   if (process.env.API_MASTER_KEY) {
     warnOnce("server_key", "[caregist] API_KEY env var is not set — falling back to API_MASTER_KEY");
     return process.env.API_MASTER_KEY;
-  }
-
-  const rootApiKey = readRootEnvVar("API_KEY");
-  if (rootApiKey) {
-    warnOnce("server_key", "[caregist] API_KEY env var is not set in frontend config — falling back to repo root .env");
-    return rootApiKey;
-  }
-
-  const rootMasterKey = readRootEnvVar("API_MASTER_KEY");
-  if (rootMasterKey) {
-    warnOnce("server_key", "[caregist] API_KEY env var is not set — falling back to API_MASTER_KEY from repo root .env");
-    return rootMasterKey;
   }
 
   throw new Error("[caregist] API_KEY or API_MASTER_KEY env var is required but not set");

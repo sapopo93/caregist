@@ -106,18 +106,18 @@ export default async function RegionPage({
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-8">
-      <script type="application/ld+json" nonce={nonce} dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      {!error && <script type="application/ld+json" nonce={nonce} dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />}
       {/* AEO Block */}
-      <section className="bg-parchment border-b border-stone rounded-t-lg px-6 py-4 text-sm text-charcoal leading-relaxed mb-6">
+      {!error && <section className="bg-parchment border-b border-stone rounded-t-lg px-6 py-4 text-sm text-charcoal leading-relaxed mb-6">
         <p>
           There are {totalProviders.toLocaleString()} CQC-registered care providers in {displayName}.
           {pctGood !== undefined && <> {pctGood}% are rated Good or Outstanding.</>}
         </p>
-      </section>
+      </section>}
 
       <h1 className="text-3xl font-bold mb-2">CQC care providers in {displayName}</h1>
       <div className="flex items-center justify-between mb-6">
-        <p className="text-dusk">{totalProviders.toLocaleString()} providers</p>
+        <p className="text-dusk">{error ? "Provider count unavailable" : `${totalProviders.toLocaleString()} providers`}</p>
         <div className="flex gap-3 items-center print:hidden">
           <ExportCSVButton exportUrl={`/api/v1/providers/export.csv?${isRegion ? `region=${encodeURIComponent(REGION_MAP[slug])}` : `q=${encodeURIComponent(displayName)}`}`} />
           <PrintButton />

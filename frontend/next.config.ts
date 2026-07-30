@@ -23,7 +23,7 @@ const nextConfig: NextConfig = {
           { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
           { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
           // Content-Security-Policy is set per-request (with a nonce) in
-          // middleware.ts so script-src can drop 'unsafe-inline' (F-21).
+          // proxy.ts so script-src can drop 'unsafe-inline' (F-21).
         ],
       },
     ];
