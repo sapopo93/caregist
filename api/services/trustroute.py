@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import logging
 from dataclasses import dataclass
 from typing import Any
@@ -13,6 +14,14 @@ from api.database import get_connection
 
 logger = logging.getLogger("caregist.trustroute")
 MAX_ATTEMPTS = 8
+
+
+def _payload_object(value: object) -> dict[str, Any]:
+    """Normalize asyncpg's default JSONB text codec at the HTTP boundary."""
+    decoded = json.loads(value) if isinstance(value, str) else value
+    if not isinstance(decoded, dict):
+        raise ValueError("TrustRoute outbox payload must be a JSON object.")
+    return decoded
 
 
 @dataclass(frozen=True)
@@ -97,7 +106,7 @@ async def drain_trustroute_outbox(config: TrustRouteConfig) -> dict[str, int | b
                 "source_event_id": event["source_event_id"],
                 "event_type": event["event_type"],
                 "occurred_at": event["occurred_at"].isoformat(),
-                "payload": event["payload"],
+                "payload": _payload_object(event["payload"]),
             }
             try:
                 response = await client.post("/api/v1/integrations/caregist/events", headers=headers, json=body)
