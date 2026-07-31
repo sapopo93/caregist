@@ -39,6 +39,7 @@ SECRET_ENV_NAMES = {
     "webhook_secret_key": "WEBHOOK_SECRET_KEY",
     "redis_url": "REDIS_URL",
     "cron_secret": "CRON_SECRET",
+    "trustroute_api_key": "TRUSTROUTE_API_KEY",
 }
 SECRET_ENV_ALIASES = {
     "api_master_key": ("API_KEY",),
@@ -250,6 +251,11 @@ class Settings(BaseSettings):
     redis_url: str = ""
     # Vercel Cron sends this value as an Authorization bearer token.
     cron_secret: str = ""
+    trustroute_sync_enabled: bool = False
+    trustroute_base_url: str = ""
+    trustroute_organization_id: str = ""
+    trustroute_api_key: str = ""
+    trustroute_sync_batch_size: int = 25
     # Human Gate control: provider claims remain disabled until identity,
     # authority, moderation, privacy, and operational approvals are recorded.
     provider_claims_enabled: bool = False
@@ -280,6 +286,12 @@ class Settings(BaseSettings):
             raise RuntimeError("FATAL: API_MASTER_KEY is required.")
         if not self.support_internal_token:
             raise RuntimeError("FATAL: SUPPORT_INTERNAL_TOKEN is required.")
+        if self.trustroute_sync_enabled:
+            TrustRouteConfig = __import__("api.services.trustroute", fromlist=["TrustRouteConfig"]).TrustRouteConfig
+            TrustRouteConfig(
+                True, self.trustroute_base_url, self.trustroute_organization_id,
+                self.trustroute_api_key, self.trustroute_sync_batch_size,
+            ).validate()
 
         is_localhost = self.database_url == "postgresql://caregist:caregist_dev@localhost:5432/caregist"
         is_production_db = "localhost" not in self.database_url

@@ -8,6 +8,7 @@ from fastapi import APIRouter, Header, HTTPException
 
 from api.config import settings
 from api.utils.email_queue import process_email_queue
+from api.services.trustroute import TrustRouteConfig, drain_trustroute_outbox
 from tools.run_new_registration_feed_cycle import run_cycle as run_feed_cycle
 
 router = APIRouter(prefix="/api/v1/cron", tags=["cron"])
@@ -31,4 +32,17 @@ async def drain_email_queue(authorization: str | None = Header(default=None)) ->
 async def run_registration_feed_cycle(authorization: str | None = Header(default=None)) -> dict[str, int | bool]:
     _require_cron_secret(authorization)
     result = await run_feed_cycle(settings.database_url, skip_digests=False)
+    return {"ok": True, **result}
+
+
+@router.get("/trustroute-sync")
+async def sync_trustroute(authorization: str | None = Header(default=None)) -> dict[str, int | bool]:
+    _require_cron_secret(authorization)
+    result = await drain_trustroute_outbox(TrustRouteConfig(
+        settings.trustroute_sync_enabled,
+        settings.trustroute_base_url,
+        settings.trustroute_organization_id,
+        settings.trustroute_api_key,
+        settings.trustroute_sync_batch_size,
+    ))
     return {"ok": True, **result}

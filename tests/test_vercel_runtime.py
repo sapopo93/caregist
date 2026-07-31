@@ -53,6 +53,7 @@ def test_vercel_services_route_backend_paths_to_fastapi():
     crons = {item["path"]: item["schedule"] for item in config["crons"]}
     assert crons["/api/v1/cron/email-queue"] == "*/5 * * * *"
     assert crons["/api/v1/cron/feed-cycle"] == "15 * * * *"
+    assert crons["/api/v1/cron/trustroute-sync"] == "*/5 * * * *"
 
     ignore_rules = (Path(__file__).parents[1] / ".vercelignore").read_text(encoding="utf-8")
     for required_rule in (

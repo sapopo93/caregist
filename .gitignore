@@ -117,3 +117,4 @@ docs/*.dmg
 .projects/
 .projects.corrupt-*/
 !.env.example
+.vercel
