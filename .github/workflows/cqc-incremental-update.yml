@@ -32,7 +32,20 @@ name: CQC incremental update
 #    in unpushed local commits (main differs by ~400 lines). Scheduling this
 #    against main today would run the superseded list-scan path.
 #
-# The pre-flight below enforces both: it refuses to run unless the script
+# 3. A DRY RUN IS NOT READ-ONLY. In incremental_update.py the insert into
+#    pipeline_alert_log is guarded by `if cur is not None` and NOT by
+#    `not args.dry_run`, so every dry run commits a 'changes_endpoint_unavailable'
+#    row. That table already holds 3,286 rows, all of them that one alert. Fix
+#    before scheduling:
+#
+#        - if cur is not None:
+#        + if cur is not None and not args.dry_run:
+#
+#    and consider deduplicating the existing rows. This workflow no longer runs
+#    a dry run for sizing, so it does not add to the pile, but anyone invoking
+#    --dry-run by hand still does.
+#
+# The pre-flight below enforces 1 and 2: it refuses to run unless the script
 # supports sharding and the projected duration fits the budget. Add the
 # `schedule:` trigger once a dispatched run passes pre-flight and completes.
 
@@ -74,6 +87,16 @@ env:
   BUDGET_HOURS: "5.0"
   # Conservative per-call cost: measured mean latency plus runner margin.
   ASSUMED_LATENCY_S: "0.28"
+  # Checkout, dependency install and the run's own snapshot download. The
+  # snapshot alone measured 4.7s; the rest is install time.
+  FIXED_OVERHEAD_S: "300"
+  # fetch_location_detail retries with escalating backoff on transient
+  # failures. Over tens of thousands of calls that is not negligible, and
+  # omitting it was how the first version of this gate understated the run.
+  RETRY_FACTOR: "1.15"
+  # Locations present in the CQC snapshot but not yet in our directory, so the
+  # real workload slightly exceeds our stored active count.
+  SNAPSHOT_MARGIN: "1.10"
 
 jobs:
   update:
@@ -134,40 +157,54 @@ jobs:
           echo "sleep=$SLEEP dry_run=$DRY shard=$INDEX/$SHARDS"
 
       # Blocker 1: size the real workload and refuse if it cannot finish.
-      - name: Pre-flight — project the run duration
+      #
+      # This gate is STRICTLY READ-ONLY and does not execute the pipeline. An
+      # earlier version ran `incremental_update.py --dry-run` to size the work,
+      # which was wrong twice over:
+      #
+      #   * that dry run reaches an INSERT into pipeline_alert_log that is
+      #     guarded only by `if cur is not None`, never by `not args.dry_run`,
+      #     so the gate committed a row to production on every execution. That
+      #     table already holds 3,286 rows, all 'changes_endpoint_unavailable'.
+      #   * it measured only detail-fetch time, ignoring checkout, install,
+      #     snapshot download and retry backoff, so it understated the run.
+      #
+      # A SELECT against care_providers gives the same sizing without touching
+      # anything, and the projection now carries explicit overhead and retry terms.
+      - name: Pre-flight — project the run duration (read-only)
         id: preflight
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          CQC_API_KEY: ${{ secrets.CQC_API_KEY }}
-          IN_SINCE: ${{ inputs.since }}
           SLEEP: ${{ steps.params.outputs.sleep }}
           SHARDS: ${{ steps.params.outputs.shard_count }}
-          INDEX: ${{ steps.params.outputs.shard_index }}
         run: |
-          set -o pipefail
-          ARGS="--dry-run --shard-count $SHARDS --shard-index $INDEX"
-          [ -n "$IN_SINCE" ] && ARGS="$ARGS --since $IN_SINCE"
-          python incremental_update.py $ARGS 2>&1 | tee preflight.log
-          DETAILS=$(grep -oE 'details_to_verify=[0-9]+' preflight.log | tail -1 | cut -d= -f2)
-          if [ -z "$DETAILS" ]; then
-            DETAILS=$(grep -oE '[0-9]+ (potentially new/changed|changed) locations' preflight.log | tail -1 | grep -oE '^[0-9]+')
-          fi
-          if [ -z "$DETAILS" ]; then
-            echo "::error::Pre-flight could not determine how many details this run would verify"; exit 1
-          fi
-          echo "details=$DETAILS" >> "$GITHUB_OUTPUT"
-          DETAILS="$DETAILS" python - <<'PY'
-          import os
-          details = int(os.environ["DETAILS"])
+          python - <<'PY'
+          import os, psycopg2
+
+          # SELECT only. This step must never mutate production.
+          with psycopg2.connect(os.environ["DATABASE_URL"]) as conn, conn.cursor() as cur:
+              cur.execute("SELECT count(*) FROM care_providers WHERE upper(status) = 'ACTIVE'")
+              active = cur.fetchone()[0]
+
+          shards = int(os.environ["SHARDS"])
+          details = int(active * float(os.environ["SNAPSHOT_MARGIN"]) / shards)
           per_call = float(os.environ["SLEEP"]) + float(os.environ["ASSUMED_LATENCY_S"])
-          hours = details * per_call / 3600
+          overhead = float(os.environ["FIXED_OVERHEAD_S"])
+          retry = float(os.environ["RETRY_FACTOR"])
+          hours = (overhead + details * per_call * retry) / 3600
           budget = float(os.environ["BUDGET_HOURS"])
-          print(f"details={details} per_call={per_call:.3f}s projected={hours:.2f}h budget={budget}h")
+
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as fh:
+              fh.write(f"details={details}\n")
+
+          print(f"active_locations={active} shards={shards} details_this_shard={details}")
+          print(f"per_call={per_call:.3f}s retry_factor={retry} overhead={overhead:.0f}s")
+          print(f"projected={hours:.2f}h budget={budget}h")
           if hours > budget:
-              print(f"::error::Projected {hours:.2f}h exceeds the {budget}h budget. The job would "
-                    f"be killed at 6h having committed nothing. Raise --shard-count or lower --sleep.")
+              print(f"::error::Projected {hours:.2f}h exceeds the {budget}h budget. The job would be "
+                    f"killed at 6h having committed nothing. Raise shard_count or lower sleep.")
               raise SystemExit(1)
-          print(f"::notice::Projected {hours:.2f}h, within budget.")
+          print(f"::notice::Projected {hours:.2f}h for shard, within {budget}h budget.")
           PY
 
       - name: Run incremental update
