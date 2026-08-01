@@ -1,0 +1,94 @@
+name: CQC incremental update
+
+# Detects CQC rating changes, new registrations and deactivations, and writes
+# them to the production directory.
+#
+# Why GitHub Actions and not Vercel Cron: a full reconciliation verifies ~58k
+# location details paced at 0.15s, which takes hours. That does not fit a
+# serverless function, and the existing hourly `feed-cycle` cron only handles
+# NEW REGISTRATIONS — it never detects rating changes. Without this workflow
+# `rating_changes` stays empty and the change-detection product has nothing to
+# report, which is exactly the state found on 2026-08-01.
+#
+# Note: CQC's /changes/location endpoint now returns 404, so every run falls
+# back to full snapshot reconciliation. That is why this is weekly, not daily.
+
+on:
+  schedule:
+    # Sundays 02:15 UTC — outside the hourly feed-cycle at :15 past.
+    - cron: "15 2 * * 0"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Report changes without writing to the database"
+        type: boolean
+        default: true
+      since:
+        description: "ISO date to fetch changes from (default: last pipeline run)"
+        type: string
+        required: false
+
+permissions:
+  contents: read
+
+# Never let two reconciliations write concurrently.
+concurrency:
+  group: cqc-incremental-update
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350 # under the 6h job ceiling, above a ~4h full run
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install pipeline dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+
+      - name: Verify credentials are present
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          CQC_API_KEY: ${{ secrets.CQC_API_KEY }}
+        run: |
+          # Presence only. Never echo a value.
+          test -n "$DATABASE_URL" || { echo "::error::DATABASE_URL secret is not set"; exit 1; }
+          test -n "$CQC_API_KEY" || { echo "::error::CQC_API_KEY secret is not set"; exit 1; }
+          echo "credentials present"
+
+      - name: Run incremental update
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          CQC_API_KEY: ${{ secrets.CQC_API_KEY }}
+        run: |
+          ARGS=""
+          if [ "${{ inputs.dry_run }}" = "true" ]; then ARGS="$ARGS --dry-run"; fi
+          if [ -n "${{ inputs.since }}" ]; then ARGS="$ARGS --since ${{ inputs.since }}"; fi
+          echo "running with:${ARGS:- (scheduled full reconciliation, writes enabled)}"
+          python incremental_update.py $ARGS
+
+      - name: Report pipeline outcome
+        if: always()
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          python - <<'PY'
+          import os, psycopg2
+          with psycopg2.connect(os.environ["DATABASE_URL"]) as c, c.cursor() as cur:
+              cur.execute("SELECT count(*) FROM rating_changes")
+              print("rating_changes rows:", cur.fetchone()[0])
+              cur.execute("SELECT count(*) FROM care_providers")
+              print("care_providers rows:", cur.fetchone()[0])
+              cur.execute(
+                  "SELECT run_type, status, started_at FROM pipeline_runs "
+                  "ORDER BY started_at DESC LIMIT 3"
+              )
+              for row in cur.fetchall():
+                  print("recent run:", row)
+          PY
