@@ -32,29 +32,23 @@ name: CQC incremental update
 #    in unpushed local commits (main differs by ~400 lines). Scheduling this
 #    against main today would run the superseded list-scan path.
 #
-# 3. A DRY RUN IS NOT READ-ONLY, in two places. Both write to production.
+# 3. ON MAIN ONLY, A DRY RUN IS NOT READ-ONLY. The unpushed rewrite is clean;
+#    this is one more reason not to schedule against main.
 #
-#    a) pipeline_runs. On the version currently on main the run-creation block
-#       is guarded only by `if cur is not None`, so --dry-run takes the advisory
-#       lock, INSERTs a pipeline_runs row and COMMITS it. If the process then
-#       dies, that row is stuck in 'running' forever. This was demonstrated on
-#       2026-08-01: a dry run against the main-version script created run 5011,
-#       lost its connection and left the row stuck; it has since been closed.
-#       The unpushed rewrite already fixes this with `and not args.dry_run` —
-#       another reason not to schedule against main.
+#    Main guards both the run-creation block and the pipeline_alert_log insert
+#    with a bare `if cur is not None`, so --dry-run takes the advisory lock,
+#    INSERTs a pipeline_runs row, commits it, and logs an alert. If the process
+#    then dies the run row is stuck in 'running' forever. Demonstrated on
+#    2026-08-01: a dry run against the main-version script created run 5011,
+#    lost its database connection and left the row stuck. That row has since
+#    been closed. pipeline_alert_log holds 3,286 rows, all
+#    'changes_endpoint_unavailable', accumulated the same way; they are worth
+#    deduplicating.
 #
-#    b) pipeline_alert_log. In BOTH versions the alert insert is guarded only by
-#       `if cur is not None`, so every dry run commits a
-#       'changes_endpoint_unavailable' row. That table holds 3,286 rows, all of
-#       them that one alert. Still needs fixing:
-#
-#           - if cur is not None:
-#           + if cur is not None and not args.dry_run:
-#
-#       and the existing rows are worth deduplicating.
-#
-#    This workflow no longer runs a dry run for sizing, so it adds to neither
-#    pile, but anyone invoking --dry-run by hand still does.
+#    The rewrite guards both with `and not args.dry_run`. Verified empirically
+#    on 2026-08-02 by running the rewrite's --dry-run against an isolated Neon
+#    branch: pipeline_runs delta 0, pipeline_alert_log delta 0. Its dry run is
+#    genuinely read-only, so no fix is outstanding there.
 #
 #    Note the script also holds one idle Postgres connection from before the
 #    snapshot download through the entire multi-hour detail loop. On Neon,
