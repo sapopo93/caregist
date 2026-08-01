@@ -32,18 +32,35 @@ name: CQC incremental update
 #    in unpushed local commits (main differs by ~400 lines). Scheduling this
 #    against main today would run the superseded list-scan path.
 #
-# 3. A DRY RUN IS NOT READ-ONLY. In incremental_update.py the insert into
-#    pipeline_alert_log is guarded by `if cur is not None` and NOT by
-#    `not args.dry_run`, so every dry run commits a 'changes_endpoint_unavailable'
-#    row. That table already holds 3,286 rows, all of them that one alert. Fix
-#    before scheduling:
+# 3. A DRY RUN IS NOT READ-ONLY, in two places. Both write to production.
 #
-#        - if cur is not None:
-#        + if cur is not None and not args.dry_run:
+#    a) pipeline_runs. On the version currently on main the run-creation block
+#       is guarded only by `if cur is not None`, so --dry-run takes the advisory
+#       lock, INSERTs a pipeline_runs row and COMMITS it. If the process then
+#       dies, that row is stuck in 'running' forever. This was demonstrated on
+#       2026-08-01: a dry run against the main-version script created run 5011,
+#       lost its connection and left the row stuck; it has since been closed.
+#       The unpushed rewrite already fixes this with `and not args.dry_run` —
+#       another reason not to schedule against main.
 #
-#    and consider deduplicating the existing rows. This workflow no longer runs
-#    a dry run for sizing, so it does not add to the pile, but anyone invoking
-#    --dry-run by hand still does.
+#    b) pipeline_alert_log. In BOTH versions the alert insert is guarded only by
+#       `if cur is not None`, so every dry run commits a
+#       'changes_endpoint_unavailable' row. That table holds 3,286 rows, all of
+#       them that one alert. Still needs fixing:
+#
+#           - if cur is not None:
+#           + if cur is not None and not args.dry_run:
+#
+#       and the existing rows are worth deduplicating.
+#
+#    This workflow no longer runs a dry run for sizing, so it adds to neither
+#    pile, but anyone invoking --dry-run by hand still does.
+#
+#    Note the script also holds one idle Postgres connection from before the
+#    snapshot download through the entire multi-hour detail loop. On Neon,
+#    which suspends idle computes, that connection can be dropped mid-run —
+#    the likely cause of the 5011 failure above, and a real risk to a long
+#    unsharded run that only commits at the end.
 #
 # The pre-flight below enforces 1 and 2: it refuses to run unless the script
 # supports sharding and the projected duration fits the budget. Add the
