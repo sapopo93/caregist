@@ -56,22 +56,41 @@ Both drill branches deleted; `branches list` confirms zero remaining.
 
 **Verdict: restore works.** Recovery within the retention window is proven, not assumed.
 
-## Known limits — these are the real risk
+## Recovery window — fixed on 1 August 2026
 
-1. **The recovery window is 6 hours.** `history_retention_seconds` is 21,600 on both
-   projects. This is the Neon **Free plan** ceiling — an API call setting 86,400 is
-   accepted and silently clamped back to 6h. Corruption or deletion discovered more than
-   six hours later is **unrecoverable**, because there is no second copy anywhere.
-2. **There is still no automated backup.** Branch restore depends entirely on Neon's
+Both projects were running `history_retention_seconds = 21600`, a **6-hour** recovery
+window. Anything discovered more than six hours late was unrecoverable, because no second
+copy exists anywhere.
+
+This was **not** a plan limit. The owning organisation (`org-muddy-brook-84822640`) was
+already on the paid **Launch** plan, which supports 7 days. The 6 hours was simply the
+default carried from project creation — the capability was paid for and unused.
+
+Raised to **7 days** (604,800s) on both projects at no additional cost:
+
+```bash
+curl -X PATCH "https://console.neon.tech/api/v2/projects/$PROJECT_ID" \
+  -H "Authorization: Bearer $NEON_TOKEN" -H "Content-Type: application/json" \
+  -d '{"project":{"history_retention_seconds":604800}}'
+```
+
+Note `neonctl projects update` has **no** history-retention flag; it accepts and silently
+ignores one, reporting success while changing nothing. Use the REST API and verify after.
+
+## Remaining limits
+
+1. **There is still no automated backup.** Branch restore depends entirely on Neon's
    retained history. It is not a backup: it does not survive account loss, billing
    suspension, or a provider-side incident.
-3. **No restore has been performed under incident conditions** — this drill was planned,
+2. **No restore has been performed under incident conditions** — this drill was planned,
    unhurried, and run against a healthy database.
+3. **Both projects sit in `aws-eu-west-2` (London).** For LeadGen SA, a South African
+   consumer-lead business, that is a POPIA cross-border transfer requiring a documented
+   s.72 basis. Logical separation is not residency.
 
-### Recommended fix, in order
+### Next, in order
 
-1. Upgrade both projects to a Neon paid plan to raise retention to 7+ days. This is the
-   single highest-value spend available and requires a purchase decision.
-2. Add a scheduled logical dump to encrypted object storage for a copy that survives
+1. Add a scheduled logical dump to encrypted object storage for a copy that survives
    provider loss. CareGist already depends on `boto3`; no new vendor is required.
+2. Document the LeadGen SA transfer basis, or relocate that data plane.
 3. Repeat this drill quarterly and append evidence here, with the date and the operator.
