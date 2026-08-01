@@ -1,22 +1,42 @@
 name: CQC incremental update
 
-# Detects CQC rating changes, new registrations and deactivations, and writes
-# them to the production directory.
+# Detects CQC rating changes, new registrations and deactivations.
 #
-# Why GitHub Actions and not Vercel Cron: a full reconciliation verifies ~58k
-# location details paced at 0.15s, which takes hours. That does not fit a
-# serverless function, and the existing hourly `feed-cycle` cron only handles
-# NEW REGISTRATIONS — it never detects rating changes. Without this workflow
-# `rating_changes` stays empty and the change-detection product has nothing to
-# report, which is exactly the state found on 2026-08-01.
+# ┌─────────────────────────────────────────────────────────────────────────┐
+# │ THE SCHEDULE IS DELIBERATELY NOT ENABLED YET. See "Before scheduling".  │
+# └─────────────────────────────────────────────────────────────────────────┘
 #
-# Note: CQC's /changes/location endpoint now returns 404, so every run falls
-# back to full snapshot reconciliation. That is why this is weekly, not daily.
+# WHY THIS EXISTS
+# The hourly `feed-cycle` Vercel cron only syncs NEW REGISTRATIONS. Nothing has
+# ever run incremental_update.py on a schedule, so `rating_changes` was empty on
+# 2026-08-01 and the weekly digest had been reporting "0 CQC rating changes this
+# week" since 6 July.
+#
+# WHY NOT VERCEL CRON
+# CQC's /changes/location endpoint now returns 404, so a run must reconcile the
+# full directory — ~58k locations, one HTTP call each. That is hours of work and
+# cannot run in a serverless function.
+#
+# BEFORE SCHEDULING — two blockers, both real
+#
+# 1. RUNTIME. Measured CQC detail latency (2026-08-01, 10 samples): median
+#    0.163s, mean 0.222s. A single unsharded run of ~58k details projects to
+#    ~5.1h on median and ~6.0h on mean. GitHub kills any job at 6h, and the
+#    script commits only after every detail is fetched — so a killed job writes
+#    NOTHING and leaves a `pipeline_runs` row stuck in 'running'. A weekly
+#    schedule would burn hours and achieve nothing. The workload must be sharded
+#    (~4 shards ≈ 1.5h each) before a schedule is safe.
+#
+# 2. CODE VERSION. The snapshot-reconciliation rewrite that handles the 404
+#    correctly — and any --shard-count support — is NOT on main. It exists only
+#    in unpushed local commits (main differs by ~400 lines). Scheduling this
+#    against main today would run the superseded list-scan path.
+#
+# The pre-flight below enforces both: it refuses to run unless the script
+# supports sharding and the projected duration fits the budget. Add the
+# `schedule:` trigger once a dispatched run passes pre-flight and completes.
 
 on:
-  schedule:
-    # Sundays 02:15 UTC — outside the hourly feed-cycle at :15 past.
-    - cron: "15 2 * * 0"
   workflow_dispatch:
     inputs:
       dry_run:
@@ -27,19 +47,40 @@ on:
         description: "ISO date to fetch changes from (default: last pipeline run)"
         type: string
         required: false
+      sleep:
+        description: "Seconds between CQC API calls (lower = faster, more API load)"
+        type: string
+        default: "0.08"
+      shard_count:
+        description: "Split the workload into N shards (4 recommended for a full run)"
+        type: string
+        default: "4"
+      shard_index:
+        description: "Which shard to process, 0-based"
+        type: string
+        default: "0"
 
 permissions:
   contents: read
 
-# Never let two reconciliations write concurrently.
+# Never let two reconciliations write concurrently. The script also takes a
+# database advisory lock, but that only releases when its connection dies.
 concurrency:
   group: cqc-incremental-update
   cancel-in-progress: false
 
+env:
+  # Refuse to start work that cannot finish inside GitHub's 6h hard kill.
+  BUDGET_HOURS: "5.0"
+  # Conservative per-call cost: measured mean latency plus runner margin.
+  ASSUMED_LATENCY_S: "0.28"
+
 jobs:
   update:
     runs-on: ubuntu-latest
-    timeout-minutes: 350 # under the 6h job ceiling, above a ~4h full run
+    # Below the 6h hard kill, so our own timeout fires first with a clear
+    # message rather than an opaque cancellation.
+    timeout-minutes: 330
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
@@ -62,15 +103,87 @@ jobs:
           test -n "$CQC_API_KEY" || { echo "::error::CQC_API_KEY secret is not set"; exit 1; }
           echo "credentials present"
 
-      - name: Run incremental update
+      # Blocker 2: refuse to run a version of the pipeline that predates the
+      # 404-aware rewrite, rather than silently reconciling with superseded code.
+      - name: Pre-flight — check the pipeline supports sharding
+        run: |
+          if ! python incremental_update.py --help 2>&1 | grep -q -- "--shard-count"; then
+            echo "::error::incremental_update.py on this branch has no --shard-count support."
+            echo "::error::The snapshot-reconciliation rewrite is not on main yet; push it before scheduling."
+            exit 1
+          fi
+          echo "pipeline supports sharding"
+
+      - name: Resolve run parameters
+        id: params
+        env:
+          IN_SLEEP: ${{ inputs.sleep }}
+          IN_DRY: ${{ inputs.dry_run }}
+          IN_SHARDS: ${{ inputs.shard_count }}
+          IN_INDEX: ${{ inputs.shard_index }}
+        run: |
+          SLEEP="${IN_SLEEP:-0.08}"
+          # A scheduled run, once enabled, has no inputs and must write.
+          DRY="${IN_DRY:-false}"
+          SHARDS="${IN_SHARDS:-4}"
+          INDEX="${IN_INDEX:-0}"
+          for v in "sleep=$SLEEP" "shard_count=$SHARDS" "shard_index=$INDEX"; do
+            echo "$v" >> "$GITHUB_OUTPUT"
+          done
+          echo "dry=$DRY" >> "$GITHUB_OUTPUT"
+          echo "sleep=$SLEEP dry_run=$DRY shard=$INDEX/$SHARDS"
+
+      # Blocker 1: size the real workload and refuse if it cannot finish.
+      - name: Pre-flight — project the run duration
+        id: preflight
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           CQC_API_KEY: ${{ secrets.CQC_API_KEY }}
+          IN_SINCE: ${{ inputs.since }}
+          SLEEP: ${{ steps.params.outputs.sleep }}
+          SHARDS: ${{ steps.params.outputs.shard_count }}
+          INDEX: ${{ steps.params.outputs.shard_index }}
         run: |
-          ARGS=""
-          if [ "${{ inputs.dry_run }}" = "true" ]; then ARGS="$ARGS --dry-run"; fi
-          if [ -n "${{ inputs.since }}" ]; then ARGS="$ARGS --since ${{ inputs.since }}"; fi
-          echo "running with:${ARGS:- (scheduled full reconciliation, writes enabled)}"
+          set -o pipefail
+          ARGS="--dry-run --shard-count $SHARDS --shard-index $INDEX"
+          [ -n "$IN_SINCE" ] && ARGS="$ARGS --since $IN_SINCE"
+          python incremental_update.py $ARGS 2>&1 | tee preflight.log
+          DETAILS=$(grep -oE 'details_to_verify=[0-9]+' preflight.log | tail -1 | cut -d= -f2)
+          if [ -z "$DETAILS" ]; then
+            DETAILS=$(grep -oE '[0-9]+ (potentially new/changed|changed) locations' preflight.log | tail -1 | grep -oE '^[0-9]+')
+          fi
+          if [ -z "$DETAILS" ]; then
+            echo "::error::Pre-flight could not determine how many details this run would verify"; exit 1
+          fi
+          echo "details=$DETAILS" >> "$GITHUB_OUTPUT"
+          DETAILS="$DETAILS" python - <<'PY'
+          import os
+          details = int(os.environ["DETAILS"])
+          per_call = float(os.environ["SLEEP"]) + float(os.environ["ASSUMED_LATENCY_S"])
+          hours = details * per_call / 3600
+          budget = float(os.environ["BUDGET_HOURS"])
+          print(f"details={details} per_call={per_call:.3f}s projected={hours:.2f}h budget={budget}h")
+          if hours > budget:
+              print(f"::error::Projected {hours:.2f}h exceeds the {budget}h budget. The job would "
+                    f"be killed at 6h having committed nothing. Raise --shard-count or lower --sleep.")
+              raise SystemExit(1)
+          print(f"::notice::Projected {hours:.2f}h, within budget.")
+          PY
+
+      - name: Run incremental update
+        if: steps.params.outputs.dry == 'false'
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          CQC_API_KEY: ${{ secrets.CQC_API_KEY }}
+          IN_SINCE: ${{ inputs.since }}
+          SLEEP: ${{ steps.params.outputs.sleep }}
+          SHARDS: ${{ steps.params.outputs.shard_count }}
+          INDEX: ${{ steps.params.outputs.shard_index }}
+          DETAILS: ${{ steps.preflight.outputs.details }}
+        run: |
+          echo "reconciling $DETAILS locations (shard $INDEX/$SHARDS) at --sleep $SLEEP"
+          ARGS="--sleep $SLEEP --shard-count $SHARDS --shard-index $INDEX"
+          [ -n "$IN_SINCE" ] && ARGS="$ARGS --since $IN_SINCE"
           python incremental_update.py $ARGS
 
       - name: Report pipeline outcome
@@ -91,4 +204,13 @@ jobs:
               )
               for row in cur.fetchall():
                   print("recent run:", row)
+              # A job killed mid-loop leaves this behind; surface it loudly so a
+              # stuck run is never mistaken for a healthy one.
+              cur.execute(
+                  "SELECT count(*) FROM pipeline_runs WHERE status='running' "
+                  "AND started_at < now() - interval '7 hours'"
+              )
+              stale = cur.fetchone()[0]
+              if stale:
+                  print(f"::warning::{stale} pipeline_runs row(s) stuck in 'running' for over 7h")
           PY
