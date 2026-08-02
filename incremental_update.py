@@ -834,7 +834,7 @@ def main() -> int:
             used_list_scan_fallback = True
             if cur is None:
                 raise RuntimeError("Database baseline is required for list-scan fallback.")
-            if cur is not None:
+            if cur is not None and not args.dry_run:
                 try:
                     cur.execute(
                         """
