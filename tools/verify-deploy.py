@@ -200,12 +200,20 @@ def verify_provider_page() -> None:
     print_ok("PROVIDER", f"/provider/{PROVIDER_SLUG} rendered {EXPECTED_PROVIDER!r}")
 
 
-def verify_export_requires_token() -> None:
+def verify_export_requires_token() -> bool:
     response = fetch("/api/export")
+    if response.status == 503:
+        assert_true(
+            "Human Gate" in response.body or "awaiting" in response.body,
+            "disabled export response did not explain the governance gate",
+        )
+        print_ok("EXPORT_GUARD", "export delivery is fail-closed with HTTP 503")
+        return False
     assert_true(response.status == 401, f"/api/export without token returned HTTP {response.status}")
     assert_true("Export token required" in response.body, "unauthenticated export response did not explain the token requirement")
 
     print_ok("EXPORT_GUARD", "anonymous export access is blocked with HTTP 401")
+    return True
 
 
 def verify_export_with_token(token: str) -> None:
@@ -248,12 +256,23 @@ def verify_lead_capture_and_export() -> None:
         headers={"Content-Type": "application/x-www-form-urlencoded"},
     )
 
+    if response.status == 503:
+        assert_true(
+            "Human Gate" in response.body or "awaiting" in response.body,
+            "disabled lead response did not explain the governance gate",
+        )
+        print_ok("LEAD_GUARD", "lead intake is fail-closed with HTTP 503")
+        return
     assert_true(response.status == 303, f"/api/leads/request returned HTTP {response.status}")
     location = response.headers.get("location", "")
     assert_true(location, "lead request redirect did not include a Location header")
 
     parsed = urlparse(location)
     params = parse_qs(parsed.query)
+    if response.status == 303 and (params.get("hold") or [""])[0] == "human-gate":
+        assert_true(parsed.path == "/lead-list", f"lead hold redirected to unexpected path {parsed.path!r}")
+        print_ok("LEAD_GUARD", "lead intake is fail-closed behind the Human Gate redirect")
+        return
     token = (params.get("token") or [""])[0]
     mode = (params.get("mode") or [""])[0]
 
@@ -279,12 +298,14 @@ def main() -> int:
                 verify_provider_sitemap()
             verify_search()
             verify_provider_page()
-            verify_export_requires_token()
+            exports_enabled = verify_export_requires_token()
 
             if LEAD_EMAIL:
                 verify_lead_capture_and_export()
-            elif EXPORT_TOKEN:
+            elif EXPORT_TOKEN and exports_enabled:
                 verify_export_with_token(EXPORT_TOKEN)
+            elif not exports_enabled:
+                print("EXPORT: SKIPPED - delivery is governance-gated")
             else:
                 print("EXPORT: SKIPPED - set CAREGIST_LEAD_EMAIL for a full lead/export smoke, or CAREGIST_EXPORT_TOKEN to verify a pre-issued token")
 

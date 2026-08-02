@@ -91,3 +91,37 @@ def test_backend_binding_accepts_stale_signal_for_observability(verifier, monkey
     )
 
     verifier.verify_backend_binding()
+
+
+def test_export_guard_accepts_governance_disabled_state(verifier, monkeypatch):
+    monkeypatch.setattr(
+        verifier,
+        "fetch",
+        lambda _path: verifier.Response(503, {"content-type": "application/json"}, "Export delivery is awaiting Human Gate approval."),
+    )
+
+    assert verifier.verify_export_requires_token() is False
+
+
+def test_export_guard_reports_enabled_token_boundary(verifier, monkeypatch):
+    monkeypatch.setattr(
+        verifier,
+        "fetch",
+        lambda _path: verifier.Response(401, {"content-type": "application/json"}, "Export token required"),
+    )
+
+    assert verifier.verify_export_requires_token() is True
+
+
+def test_lead_smoke_accepts_human_gate_redirect(verifier, monkeypatch):
+    monkeypatch.setattr(
+        verifier,
+        "fetch",
+        lambda *_args, **_kwargs: verifier.Response(
+            303,
+            {"location": "http://caregist.test/lead-list?hold=human-gate"},
+            "",
+        ),
+    )
+
+    verifier.verify_lead_capture_and_export()
