@@ -33,4 +33,5 @@ jobs:
           CAREGIST_EXPECTED_GIT_SHA: ${{ github.event.deployment.sha }}
           CAREGIST_SMOKE_ATTEMPTS: "12"
           CAREGIST_SMOKE_RETRY_DELAY_SECONDS: "15"
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
         run: python tools/verify-deploy.py

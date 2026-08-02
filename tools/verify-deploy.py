@@ -43,15 +43,19 @@ RETRY_DELAY_SECONDS = max(0.0, float(os.getenv("CAREGIST_SMOKE_RETRY_DELAY_SECON
 REQUIRE_DATABASE = os.getenv("CAREGIST_REQUIRE_DATABASE", "").strip().lower() in {"1", "true", "yes"}
 EXPECTED_GIT_SHA = os.getenv("CAREGIST_EXPECTED_GIT_SHA", "").strip().lower()
 SKIP_BACKEND_PATHS = os.getenv("CAREGIST_SKIP_BACKEND_PATHS", "").strip().lower() in {"1", "true", "yes"}
+VERCEL_AUTOMATION_BYPASS_SECRET = os.getenv("VERCEL_AUTOMATION_BYPASS_SECRET", "").strip()
 
 REDIRECT_OPENER = build_opener(NoRedirectHandler)
 
 
 def fetch(path: str, *, method: str = "GET", data: bytes | None = None, headers: dict[str, str] | None = None) -> Response:
+    request_headers = dict(headers or {})
+    if VERCEL_AUTOMATION_BYPASS_SECRET:
+        request_headers["x-vercel-protection-bypass"] = VERCEL_AUTOMATION_BYPASS_SECRET
     request = Request(
         urljoin(f"{BASE_URL}/", path.lstrip("/")),
         data=data,
-        headers=headers or {},
+        headers=request_headers,
         method=method,
     )
 

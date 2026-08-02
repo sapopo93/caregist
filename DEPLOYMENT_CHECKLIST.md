@@ -74,6 +74,7 @@ Create production secrets in the Vercel project secret store and approved connec
 Checklist:
 
 - [ ] Confirm Vercel production and preview environments receive only their scoped secret references.
+- [ ] Store a dedicated Vercel automation-bypass secret in GitHub as `VERCEL_AUTOMATION_BYPASS_SECRET`; do not disable preview protection for smoke tests.
 - [ ] Confirm the backend can read the secret in staging.
 - [ ] Confirm `WEBHOOK_SECRET_KEY` decodes to exactly 32 bytes for AES-GCM.
 - [ ] Confirm no production secret is present in tracked files.
