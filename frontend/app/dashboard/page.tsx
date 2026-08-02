@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import DeleteAccountButton from "@/components/DeleteAccountButton";
 import NewRegistrationFeedPanel from "@/components/NewRegistrationFeedPanel";
 import { trackEvent } from "@/lib/analytics";
+import { clearBrowserAuthState, isAuthExpiredResponse } from "@/lib/auth-session";
 import { PLAN_LIMIT_SUMMARY, PLAN_NEXT_STEP, PLAN_PRIMARY_CTA } from "@/lib/caregist-config";
 
 type CountDatum = {
@@ -54,11 +55,14 @@ export default function DashboardPage() {
   const [keyLoading, setKeyLoading] = useState(false);
   const [copied, setCopied] = useState(false);
 
+  const handleExpiredSession = async () => {
+    await clearBrowserAuthState();
+    setUser(null);
+    router.push("/login?session=expired");
+  };
+
   const handleLogout = async () => {
-    await fetch("/api/v1/auth/session", { method: "DELETE", credentials: "include" }).catch(() => {});
-    localStorage.removeItem("caregist_user");
-    localStorage.removeItem("caregist_tier");
-    window.dispatchEvent(new Event("caregist_auth_change"));
+    await clearBrowserAuthState();
     router.push("/");
   };
 
@@ -69,8 +73,17 @@ export default function DashboardPage() {
     setTier(t);
 
     fetch("/api/v1/billing/subscription", { credentials: "include" })
-      .then((res) => res.json())
+      .then(async (res) => {
+        const data = await res.json();
+        if (isAuthExpiredResponse(res.status, data?.detail)) {
+          await handleExpiredSession();
+          return null;
+        }
+        if (!res.ok) throw new Error(data?.detail || "Could not load subscription.");
+        return data;
+      })
       .then((data) => {
+        if (!data) return;
         setSubscription(data);
         if (data?.tier) {
           setTier(data.tier);
@@ -81,16 +94,38 @@ export default function DashboardPage() {
       })
       .catch(() => setLoadError(true));
     fetch("/api/v1/auth/team-keys", { credentials: "include" })
-      .then((res) => res.json())
-      .then((data) => setTeamKeys(Array.isArray(data?.keys) ? data.keys : []))
+      .then(async (res) => {
+        const data = await res.json();
+        if (isAuthExpiredResponse(res.status, data?.detail)) {
+          await handleExpiredSession();
+          return null;
+        }
+        if (!res.ok) throw new Error(data?.detail || "Could not load team keys.");
+        return data;
+      })
+      .then((data) => {
+        if (!data) return;
+        setTeamKeys(Array.isArray(data?.keys) ? data.keys : []);
+      })
       .catch(() => { setTeamKeys([]); setLoadError(true); });
   }, []);
 
   useEffect(() => {
     if (tier !== "business" && tier !== "enterprise") return;
     fetch("/api/v1/webhooks", { credentials: "include" })
-      .then((res) => res.json())
-      .then((data) => setWebhooks(Array.isArray(data?.webhooks) ? data.webhooks : []))
+      .then(async (res) => {
+        const data = await res.json();
+        if (isAuthExpiredResponse(res.status, data?.detail)) {
+          await handleExpiredSession();
+          return null;
+        }
+        if (!res.ok) throw new Error(data?.detail || "Could not load webhooks.");
+        return data;
+      })
+      .then((data) => {
+        if (!data) return;
+        setWebhooks(Array.isArray(data?.webhooks) ? data.webhooks : []);
+      })
       .catch(() => { setWebhooks([]); setLoadError(true); });
   }, [tier]);
 
@@ -105,7 +140,15 @@ export default function DashboardPage() {
     fetch("/api/v1/providers/analytics", { credentials: "include" })
       .then(async (res) => {
         const data = await res.json();
+        if (isAuthExpiredResponse(res.status, data?.detail)) {
+          await handleExpiredSession();
+          return null;
+        }
         if (!res.ok) throw new Error(data.detail || "Could not load provider analytics.");
+        return data;
+      })
+      .then((data) => {
+        if (!data) return;
         setProviderAnalytics({
           provider_types: Array.isArray(data.provider_types) ? data.provider_types : [],
           service_types: Array.isArray(data.service_types) ? data.service_types : [],

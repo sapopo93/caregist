@@ -89,6 +89,10 @@ app.add_middleware(
     allow_headers=["X-API-Key", "Content-Type", "Accept", "Cookie"],
 )
 
+from api.metrics import MetricsMiddleware
+
+app.add_middleware(MetricsMiddleware)
+
 
 from api.metrics import MetricsMiddleware
 from api.middleware.request_id import RequestIdMiddleware

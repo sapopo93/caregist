@@ -28,7 +28,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urljoin, urlparse, urlsplit, urlunsplit
 
 import psycopg2
 from psycopg2.extras import Json
@@ -218,13 +218,25 @@ def get_api_key() -> str | None:
 def get_database_url() -> str | None:
     url = os.getenv("DATABASE_URL")
     if url:
-        return url
+        return normalize_database_url(url)
     env_path = Path(".env")
     if env_path.exists():
         for line in env_path.read_text().splitlines():
             if line.startswith("DATABASE_URL="):
-                return line.split("=", 1)[1].strip()
+                return normalize_database_url(line.split("=", 1)[1].strip())
     return None
+
+
+def normalize_database_url(url: str) -> str:
+    """Use Neon's direct endpoint for session-locking maintenance jobs."""
+    parts = urlsplit(url)
+    hostname = parts.hostname or ""
+    if "-pooler." not in hostname or not parts.netloc:
+        return url
+
+    direct_host = hostname.replace("-pooler.", ".", 1)
+    direct_netloc = parts.netloc.replace(hostname, direct_host, 1)
+    return urlunsplit((parts.scheme, direct_netloc, parts.path, parts.query, parts.fragment))
 
 
 def api_headers(api_key: str | None) -> dict[str, str]:
@@ -783,7 +795,7 @@ def main() -> int:
         print("ERROR: CQC_API_KEY not set.", file=sys.stderr)
         return 1
 
-    database_url = args.database_url or get_database_url()
+    database_url = normalize_database_url(args.database_url) if args.database_url else get_database_url()
     if not database_url and not args.dry_run:
         print("ERROR: DATABASE_URL not set.")
         return 1

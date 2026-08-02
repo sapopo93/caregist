@@ -16,9 +16,19 @@ from incremental_update import (
     fetch_active_location_snapshot,
     fetch_changes,
     fetch_recent_via_list_scan,
+    normalize_database_url,
     resolve_since,
     should_process_list_scan_record,
 )
+
+
+def test_normalize_database_url_rewrites_neon_pooler_hosts():
+    assert normalize_database_url(
+        "postgresql://user:pass@ep-example-123-pooler.eu-west-2.aws.neon.tech/db?sslmode=require"
+    ) == "postgresql://user:pass@ep-example-123.eu-west-2.aws.neon.tech/db?sslmode=require"
+    assert normalize_database_url(
+        "postgresql://user:pass@db.example.com/app"
+    ) == "postgresql://user:pass@db.example.com/app"
 
 
 def test_fetch_changes_raises_on_non_200_response():
