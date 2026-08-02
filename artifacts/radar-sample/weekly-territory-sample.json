@@ -1,0 +1,351 @@
+{
+  "as_of_date": "2026-02-20",
+  "events": [
+    {
+      "effective_date": "2026-02-18",
+      "event_type": "new_registration",
+      "local_authority": "Gloucestershire",
+      "location_id": "1-26563133382",
+      "location_name": "Rodley House",
+      "new_value": {
+        "registrationDate": "2026-02-18",
+        "registrationStatus": "Registered"
+      },
+      "old_value": null,
+      "provider_id": "1-18986016007",
+      "provider_name": "Agincare (Somerset) Limited",
+      "region": "South West",
+      "source_date": "2026-02-18",
+      "source_note": "Derived from location.registrationDate in the mirrored public CQC snapshot; no live API call was made.",
+      "source_path": "/Users/user/CareGist/_locations_detail.ndjson",
+      "source_url": "https://api.service.cqc.org.uk/public/v1/locations/1-26563133382",
+      "territory": "Gloucestershire"
+    },
+    {
+      "effective_date": "2026-02-18",
+      "event_type": "new_registration",
+      "local_authority": "Gloucestershire",
+      "location_id": "1-26563133403",
+      "location_name": "Grevill House",
+      "new_value": {
+        "registrationDate": "2026-02-18",
+        "registrationStatus": "Registered"
+      },
+      "old_value": null,
+      "provider_id": "1-18986016007",
+      "provider_name": "Agincare (Somerset) Limited",
+      "region": "South West",
+      "source_date": "2026-02-18",
+      "source_note": "Derived from location.registrationDate in the mirrored public CQC snapshot; no live API call was made.",
+      "source_path": "/Users/user/CareGist/_locations_detail.ndjson",
+      "source_url": "https://api.service.cqc.org.uk/public/v1/locations/1-26563133403",
+      "territory": "Gloucestershire"
+    },
+    {
+      "effective_date": "2026-02-18",
+      "event_type": "new_registration",
+      "local_authority": "Gloucestershire",
+      "location_id": "1-26563133431",
+      "location_name": "Paternoster House",
+      "new_value": {
+        "registrationDate": "2026-02-18",
+        "registrationStatus": "Registered"
+      },
+      "old_value": null,
+      "provider_id": "1-18986016007",
+      "provider_name": "Agincare (Somerset) Limited",
+      "region": "South West",
+      "source_date": "2026-02-18",
+      "source_note": "Derived from location.registrationDate in the mirrored public CQC snapshot; no live API call was made.",
+      "source_path": "/Users/user/CareGist/_locations_detail.ndjson",
+      "source_url": "https://api.service.cqc.org.uk/public/v1/locations/1-26563133431",
+      "territory": "Gloucestershire"
+    },
+    {
+      "effective_date": "2026-02-18",
+      "event_type": "new_registration",
+      "local_authority": "Gloucestershire",
+      "location_id": "1-26563612989",
+      "location_name": "Henlow Court",
+      "new_value": {
+        "registrationDate": "2026-02-18",
+        "registrationStatus": "Registered"
+      },
+      "old_value": null,
+      "provider_id": "1-18986016007",
+      "provider_name": "Agincare (Somerset) Limited",
+      "region": "South West",
+      "source_date": "2026-02-18",
+      "source_note": "Derived from location.registrationDate in the mirrored public CQC snapshot; no live API call was made.",
+      "source_path": "/Users/user/CareGist/_locations_detail.ndjson",
+      "source_url": "https://api.service.cqc.org.uk/public/v1/locations/1-26563612989",
+      "territory": "Gloucestershire"
+    },
+    {
+      "effective_date": "2026-02-18",
+      "event_type": "new_registration",
+      "local_authority": "Gloucestershire",
+      "location_id": "1-26563613346",
+      "location_name": "The Coombs",
+      "new_value": {
+        "registrationDate": "2026-02-18",
+        "registrationStatus": "Registered"
+      },
+      "old_value": null,
+      "provider_id": "1-18986016007",
+      "provider_name": "Agincare (Somerset) Limited",
+      "region": "South West",
+      "source_date": "2026-02-18",
+      "source_note": "Derived from location.registrationDate in the mirrored public CQC snapshot; no live API call was made.",
+      "source_path": "/Users/user/CareGist/_locations_detail.ndjson",
+      "source_url": "https://api.service.cqc.org.uk/public/v1/locations/1-26563613346",
+      "territory": "Gloucestershire"
+    }
+  ],
+  "generated_at": "2026-02-20T00:00:00+00:00",
+  "selected_territory": "Gloucestershire",
+  "selection_rule": "Choose the local authority with the highest count of supported events in the latest seven-day window ending on the newest source date in the snapshot (20/02/2026); break ties alphabetically by territory name.",
+  "source_paths": {
+    "locations_detail": "/Users/user/CareGist/_locations_detail.ndjson",
+    "providers_detail": "/Users/user/CareGist/_providers_detail.ndjson"
+  },
+  "summary": {
+    "new_registration_events": 5,
+    "rating_change_events": 0,
+    "rating_change_reason": "No supported rating-change events fell inside the selected window. Supported event types in the window: {'new_registration': 82}.",
+    "skipped_locations_without_supported_events": 118552
+  },
+  "territory_counts": [
+    {
+      "count": 5,
+      "territory": "Gloucestershire"
+    },
+    {
+      "count": 3,
+      "territory": "Bradford"
+    },
+    {
+      "count": 3,
+      "territory": "Brighton and Hove"
+    },
+    {
+      "count": 3,
+      "territory": "Essex"
+    },
+    {
+      "count": 3,
+      "territory": "Hampshire"
+    },
+    {
+      "count": 3,
+      "territory": "Kensington and Chelsea"
+    },
+    {
+      "count": 3,
+      "territory": "Suffolk"
+    },
+    {
+      "count": 3,
+      "territory": "Westminster"
+    },
+    {
+      "count": 2,
+      "territory": "Birmingham"
+    },
+    {
+      "count": 2,
+      "territory": "Bournemouth, Christchurch and Poole"
+    },
+    {
+      "count": 2,
+      "territory": "Hounslow"
+    },
+    {
+      "count": 2,
+      "territory": "Kirklees"
+    },
+    {
+      "count": 2,
+      "territory": "Middlesbrough"
+    },
+    {
+      "count": 2,
+      "territory": "North Yorkshire"
+    },
+    {
+      "count": 2,
+      "territory": "York"
+    },
+    {
+      "count": 1,
+      "territory": "Barnet"
+    },
+    {
+      "count": 1,
+      "territory": "Brent"
+    },
+    {
+      "count": 1,
+      "territory": "Bristol, City of"
+    },
+    {
+      "count": 1,
+      "territory": "Calderdale"
+    },
+    {
+      "count": 1,
+      "territory": "Cambridgeshire"
+    },
+    {
+      "count": 1,
+      "territory": "Cheshire West and Chester"
+    },
+    {
+      "count": 1,
+      "territory": "Coventry"
+    },
+    {
+      "count": 1,
+      "territory": "Croydon"
+    },
+    {
+      "count": 1,
+      "territory": "Cumberland"
+    },
+    {
+      "count": 1,
+      "territory": "Derbyshire"
+    },
+    {
+      "count": 1,
+      "territory": "Hackney"
+    },
+    {
+      "count": 1,
+      "territory": "Hammersmith and Fulham"
+    },
+    {
+      "count": 1,
+      "territory": "Havering"
+    },
+    {
+      "count": 1,
+      "territory": "Herefordshire, County of"
+    },
+    {
+      "count": 1,
+      "territory": "Hertfordshire"
+    },
+    {
+      "count": 1,
+      "territory": "Isle of Wight"
+    },
+    {
+      "count": 1,
+      "territory": "Kent"
+    },
+    {
+      "count": 1,
+      "territory": "Lancashire"
+    },
+    {
+      "count": 1,
+      "territory": "Leeds"
+    },
+    {
+      "count": 1,
+      "territory": "Lincolnshire"
+    },
+    {
+      "count": 1,
+      "territory": "Manchester"
+    },
+    {
+      "count": 1,
+      "territory": "Medway"
+    },
+    {
+      "count": 1,
+      "territory": "Milton Keynes"
+    },
+    {
+      "count": 1,
+      "territory": "North East Lincolnshire"
+    },
+    {
+      "count": 1,
+      "territory": "Northumberland"
+    },
+    {
+      "count": 1,
+      "territory": "Oldham"
+    },
+    {
+      "count": 1,
+      "territory": "Oxfordshire"
+    },
+    {
+      "count": 1,
+      "territory": "Portsmouth"
+    },
+    {
+      "count": 1,
+      "territory": "Redcar and Cleveland"
+    },
+    {
+      "count": 1,
+      "territory": "Richmond upon Thames"
+    },
+    {
+      "count": 1,
+      "territory": "Salford"
+    },
+    {
+      "count": 1,
+      "territory": "Southampton"
+    },
+    {
+      "count": 1,
+      "territory": "Southend-on-Sea"
+    },
+    {
+      "count": 1,
+      "territory": "Staffordshire"
+    },
+    {
+      "count": 1,
+      "territory": "Stockport"
+    },
+    {
+      "count": 1,
+      "territory": "Swindon"
+    },
+    {
+      "count": 1,
+      "territory": "Telford and Wrekin"
+    },
+    {
+      "count": 1,
+      "territory": "Tower Hamlets"
+    },
+    {
+      "count": 1,
+      "territory": "Waltham Forest"
+    },
+    {
+      "count": 1,
+      "territory": "Warwickshire"
+    },
+    {
+      "count": 1,
+      "territory": "West Sussex"
+    },
+    {
+      "count": 1,
+      "territory": "Windsor and Maidenhead"
+    }
+  ],
+  "window_end": "2026-02-20",
+  "window_start": "2026-02-14",
+  "zero_event_reason": null
+}
