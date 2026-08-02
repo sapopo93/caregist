@@ -17,7 +17,7 @@
       "region": "South West",
       "source_date": "2026-02-18",
       "source_note": "Derived from location.registrationDate in the mirrored public CQC snapshot; no live API call was made.",
-      "source_path": "/Users/user/CareGist/_locations_detail.ndjson",
+      "source_path": "_locations_detail.ndjson",
       "source_url": "https://api.service.cqc.org.uk/public/v1/locations/1-26563133382",
       "territory": "Gloucestershire"
     },
@@ -37,7 +37,7 @@
       "region": "South West",
       "source_date": "2026-02-18",
       "source_note": "Derived from location.registrationDate in the mirrored public CQC snapshot; no live API call was made.",
-      "source_path": "/Users/user/CareGist/_locations_detail.ndjson",
+      "source_path": "_locations_detail.ndjson",
       "source_url": "https://api.service.cqc.org.uk/public/v1/locations/1-26563133403",
       "territory": "Gloucestershire"
     },
@@ -57,7 +57,7 @@
       "region": "South West",
       "source_date": "2026-02-18",
       "source_note": "Derived from location.registrationDate in the mirrored public CQC snapshot; no live API call was made.",
-      "source_path": "/Users/user/CareGist/_locations_detail.ndjson",
+      "source_path": "_locations_detail.ndjson",
       "source_url": "https://api.service.cqc.org.uk/public/v1/locations/1-26563133431",
       "territory": "Gloucestershire"
     },
@@ -77,7 +77,7 @@
       "region": "South West",
       "source_date": "2026-02-18",
       "source_note": "Derived from location.registrationDate in the mirrored public CQC snapshot; no live API call was made.",
-      "source_path": "/Users/user/CareGist/_locations_detail.ndjson",
+      "source_path": "_locations_detail.ndjson",
       "source_url": "https://api.service.cqc.org.uk/public/v1/locations/1-26563612989",
       "territory": "Gloucestershire"
     },
@@ -97,7 +97,7 @@
       "region": "South West",
       "source_date": "2026-02-18",
       "source_note": "Derived from location.registrationDate in the mirrored public CQC snapshot; no live API call was made.",
-      "source_path": "/Users/user/CareGist/_locations_detail.ndjson",
+      "source_path": "_locations_detail.ndjson",
       "source_url": "https://api.service.cqc.org.uk/public/v1/locations/1-26563613346",
       "territory": "Gloucestershire"
     }
@@ -106,8 +106,8 @@
   "selected_territory": "Gloucestershire",
   "selection_rule": "Choose the local authority with the highest count of supported events in the latest seven-day window ending on the newest source date in the snapshot (20/02/2026); break ties alphabetically by territory name.",
   "source_paths": {
-    "locations_detail": "/Users/user/CareGist/_locations_detail.ndjson",
-    "providers_detail": "/Users/user/CareGist/_providers_detail.ndjson"
+    "locations_detail": "_locations_detail.ndjson",
+    "providers_detail": "_providers_detail.ndjson"
   },
   "summary": {
     "new_registration_events": 5,

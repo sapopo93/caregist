@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from collections import Counter
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
@@ -28,6 +29,7 @@ DEFAULT_OUTPUT_DIR = Path("artifacts/radar-sample")
 DEFAULT_LOCATIONS_SOURCE = Path("_locations_detail.ndjson")
 DEFAULT_PROVIDERS_SOURCE = Path("_providers_detail.ndjson")
 CQC_PROFILE_URL = "https://api.service.cqc.org.uk/public/v1/locations/{location_id}"
+REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 
 
 @dataclass(frozen=True)
@@ -118,7 +120,9 @@ def load_provider_names(path: Path) -> dict[str, str]:
 
 
 def _source_path_text(path: Path) -> str:
-    return str(path.resolve())
+    # Persist paths relative to the repository so generated evidence is portable
+    # across developer machines and CI workspaces.
+    return Path(os.path.relpath(path.resolve(), REPOSITORY_ROOT)).as_posix()
 
 
 
@@ -136,46 +140,45 @@ def _territory_name(row: dict[str, Any]) -> str | None:
 
 
 
-def _current_rating_report_date(row: dict[str, Any]) -> date | None:
-    current = row.get("currentRatings")
-    if not isinstance(current, dict):
-        return None
-    overall = current.get("overall")
-    if not isinstance(overall, dict):
-        return None
-    return _parse_date(overall.get("reportDate"))
+def _rating_sequence(row: dict[str, Any]) -> list[tuple[date, str]]:
+    """Return one valid overall rating per report date in chronological order.
 
+    Later historic entries replace earlier entries for a duplicate date. The
+    current rating is authoritative for its report date and therefore replaces
+    any historic value recorded for that same date.
+    """
 
-
-def _historic_ratings(row: dict[str, Any]) -> list[tuple[date, str, int, dict[str, Any]]]:
+    by_report_date: dict[date, str] = {}
     historic = row.get("historicRatings")
-    if not isinstance(historic, list):
-        return []
-    parsed: list[tuple[date, str, int, dict[str, Any]]] = []
-    for index, item in enumerate(historic):
-        if not isinstance(item, dict):
-            continue
-        report_date = _parse_date(item.get("reportDate"))
-        overall = item.get("overall")
-        rating = str(overall.get("rating") or "").strip() if isinstance(overall, dict) else ""
-        if report_date is None or not rating:
-            continue
-        parsed.append((report_date, rating, index, item))
-    parsed.sort(key=lambda entry: (entry[0], entry[2]))
-    return parsed
+    if isinstance(historic, list):
+        for item in historic:
+            if not isinstance(item, dict):
+                continue
+            report_date = _parse_date(item.get("reportDate"))
+            overall = item.get("overall")
+            rating = str(overall.get("rating") or "").strip() if isinstance(overall, dict) else ""
+            if report_date is not None and rating:
+                by_report_date[report_date] = rating
+
+    current = row.get("currentRatings")
+    current_overall = current.get("overall") if isinstance(current, dict) else None
+    if isinstance(current_overall, dict):
+        report_date = _parse_date(current_overall.get("reportDate"))
+        rating = str(current_overall.get("rating") or "").strip()
+        if report_date is not None and rating:
+            by_report_date[report_date] = rating
+
+    return sorted(by_report_date.items())
 
 
 
 def latest_source_date(locations: Iterable[dict[str, Any]]) -> date | None:
     latest: date | None = None
     for row in locations:
-        for candidate in (
-            _parse_date(row.get("registrationDate")),
-            _current_rating_report_date(row),
-        ):
+        for candidate in (_parse_date(row.get("registrationDate")),):
             if candidate is not None and (latest is None or candidate > latest):
                 latest = candidate
-        for report_date, _rating, _index, _item in _historic_ratings(row):
+        for report_date, _rating in _rating_sequence(row):
             if latest is None or report_date > latest:
                 latest = report_date
     return latest
@@ -240,13 +243,13 @@ def _rating_change_events(
     if not provider_id or not location_id or not provider_name or not territory or not location_name:
         return []
 
-    entries = _historic_ratings(row)
+    entries = _rating_sequence(row)
     if len(entries) < 2:
         return []
 
     events: list[TerritoryEvent] = []
     previous_rating: str | None = None
-    for report_date, rating, _index, _item in entries:
+    for report_date, rating in entries:
         if previous_rating is not None and previous_rating != rating and window_start <= report_date <= window_end:
             events.append(
                 TerritoryEvent(
@@ -263,7 +266,10 @@ def _rating_change_events(
                     new_value=rating,
                     source_path=_source_path_text(source_path),
                     source_url=_source_url(location_id),
-                    source_note="Derived from consecutive historicRatings[].overall.rating values ordered by reportDate; no live API call was made.",
+                    source_note=(
+                        "Derived from normalized historicRatings[].overall and currentRatings.overall values ordered by "
+                        "reportDate; currentRatings.overall is authoritative for duplicate dates; no live API call was made."
+                    ),
                 )
             )
         previous_rating = rating
@@ -385,7 +391,7 @@ def render_markdown(bundle: SampleBundle) -> str:
             f"**Supported rating changes:** {len(rating_events)}",
             "",
             "### Why this territory",
-            f"It has the highest supported event count in the latest seven-day window. Ties are broken alphabetically, and the window is anchored to the newest source date found in the mirrored snapshot.",
+            "It has the highest supported event count in the latest seven-day window. Ties are broken alphabetically, and the window is anchored to the newest source date found in the mirrored snapshot.",
         ]
     )
 
@@ -433,7 +439,7 @@ def render_markdown(bundle: SampleBundle) -> str:
                 "",
                 "### Rating changes",
                 "0 supported rating-change events in this seven-day window.",
-                "Reason: no local `historicRatings` comparison produced a changed rating dated inside the selected window.",
+                "Reason: no normalized historic/current rating sequence produced a changed rating dated inside the selected window.",
             ]
         )
 

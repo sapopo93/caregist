@@ -9,8 +9,11 @@ from tools.generate_radar_territory_sample import (
     SampleBundle,
     build_sample,
     collect_events,
+    latest_source_date,
+    render_json,
     render_markdown,
     select_territory,
+    write_outputs,
 )
 
 
@@ -132,6 +135,114 @@ def test_event_ordering_is_deterministic_by_date_then_provider_then_location():
     assert [event.location_name for event in events] == ["Alpha House", "Beta House"]
 
 
+def test_current_rating_completes_historical_to_current_transition():
+    rows = [
+        {
+            **_registration_row("P1", "L1", "Alpha House", "2025-01-01"),
+            "historicRatings": [
+                {"reportDate": "2025-12-01", "overall": {"rating": "Good"}},
+            ],
+            "currentRatings": {
+                "overall": {"reportDate": "2026-02-20", "rating": "Requires improvement"}
+            },
+        }
+    ]
+
+    events, skipped = collect_events(
+        rows,
+        provider_names=_provider_names(),
+        source_path=Path("_locations_detail.ndjson"),
+        window_start=WINDOW_START,
+        window_end=WINDOW_END,
+    )
+
+    assert skipped == 0
+    assert len(events) == 1
+    assert events[0].event_type == "rating_changed"
+    assert events[0].effective_date == WINDOW_END
+    assert events[0].old_value == "Good"
+    assert events[0].new_value == "Requires improvement"
+
+
+def test_current_rating_overrides_historic_rating_for_duplicate_date():
+    rows = [
+        {
+            **_registration_row("P1", "L1", "Alpha House", "2025-01-01"),
+            "historicRatings": [
+                {"reportDate": "2025-12-01", "overall": {"rating": "Good"}},
+                {"reportDate": "2026-02-20", "overall": {"rating": "Outstanding"}},
+            ],
+            "currentRatings": {
+                "overall": {"reportDate": "2026-02-20", "rating": "Requires improvement"}
+            },
+        }
+    ]
+
+    events, _ = collect_events(
+        rows,
+        provider_names=_provider_names(),
+        source_path=Path("_locations_detail.ndjson"),
+        window_start=WINDOW_START,
+        window_end=WINDOW_END,
+    )
+
+    assert [(event.old_value, event.new_value) for event in events] == [
+        ("Good", "Requires improvement")
+    ]
+
+
+def test_duplicate_dates_and_repeated_ratings_do_not_emit_false_transitions():
+    rows = [
+        {
+            **_registration_row("P1", "L1", "Alpha House", "2025-01-01"),
+            "historicRatings": [
+                {"reportDate": "2025-12-01", "overall": {"rating": "Good"}},
+                {"reportDate": "2025-12-01", "overall": {"rating": "Outstanding"}},
+                {"reportDate": "2026-02-18", "overall": {"rating": "Outstanding"}},
+            ],
+            "currentRatings": {
+                "overall": {"reportDate": "2026-02-20", "rating": "Outstanding"}
+            },
+        }
+    ]
+
+    events, skipped = collect_events(
+        rows,
+        provider_names=_provider_names(),
+        source_path=Path("_locations_detail.ndjson"),
+        window_start=WINDOW_START,
+        window_end=WINDOW_END,
+    )
+
+    assert events == []
+    assert skipped == 1
+
+
+def test_missing_ratings_are_excluded_from_sequence_and_latest_date():
+    rows = [
+        {
+            **_registration_row("P1", "L1", "Alpha House", "2025-01-01"),
+            "historicRatings": [
+                {"reportDate": "2026-02-18", "overall": {}},
+                {"reportDate": "invalid", "overall": {"rating": "Good"}},
+            ],
+            "currentRatings": {"overall": {"reportDate": "2026-02-20"}},
+        }
+    ]
+
+    events, skipped = collect_events(
+        rows,
+        provider_names=_provider_names(),
+        source_path=Path("_locations_detail.ndjson"),
+        window_start=WINDOW_START,
+        window_end=WINDOW_END,
+    )
+
+    assert events == []
+    assert skipped == 1
+    assert latest_source_date(rows) == date(2025, 1, 1)
+
+
 def test_zero_event_handling_renders_explicit_empty_window(tmp_path: Path):
     locations = tmp_path / "locations.ndjson"
     providers = tmp_path / "providers.ndjson"
@@ -202,3 +313,14 @@ def test_build_sample_is_deterministic_for_identical_inputs(tmp_path: Path):
 
     assert first == second
     assert first.generated_at.isoformat() == "2026-02-20T00:00:00+00:00"
+    assert not Path(first.source_paths["locations_detail"]).is_absolute()
+    assert not Path(first.events[0].source_path).is_absolute()
+    assert render_json(first) == render_json(second)
+
+    first_output = tmp_path / "first"
+    second_output = tmp_path / "second"
+    first_markdown, first_json = write_outputs(first, first_output)
+    second_markdown, second_json = write_outputs(second, second_output)
+
+    assert first_markdown.read_bytes() == second_markdown.read_bytes()
+    assert first_json.read_bytes() == second_json.read_bytes()
