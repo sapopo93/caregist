@@ -1,7 +1,15 @@
-# CareGist Production Readiness Status
+# CareGist Production Readiness Status — Historical Record
+
+> **Historical only — superseded 2026-08-02.** The readiness assessment below
+> describes a 2026-06-29 code snapshot and must not be used as a current launch,
+> investor, legal, security, or operational claim. CareGist is currently **NO-GO**:
+> the authoritative CQC watermark, four-shard production reconciliation, seven-day
+> Neon PITR/restore drill, exact-SHA deployment proof, alert-channel tests, and
+> external legal/privacy/VAT/IP approvals are not all evidenced. See
+> `DEPLOYMENT_CHECKLIST.md` for the current release gates.
 
 **Date:** 2026-06-29  
-**Code status:** READY for staging and controlled production deploy after CI passes  
+**Historical code status (2026-06-29):** READY for staging and controlled production deploy after CI passes
 **Deployment status:** NO-GO until the external infrastructure gates below are complete  
 **Current score:** 95/100 for the codebase, not yet scored for live infrastructure
 
@@ -79,4 +87,4 @@ Latest local gates run on 2026-06-29:
 
 ## Release Decision
 
-The codebase is production-ready from a local correctness/security gate perspective. The live service is not production-ready until the infrastructure checklist in `DEPLOYMENT_CHECKLIST.md` is complete and evidenced.
+The 2026-06-29 assessment considered the codebase locally ready. That statement is retained only for audit history and is superseded by the NO-GO notice above. The current release decision must come from evidenced gates in `DEPLOYMENT_CHECKLIST.md`.

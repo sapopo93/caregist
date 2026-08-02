@@ -41,6 +41,8 @@ TIMEOUT_SECONDS = float(os.getenv("CAREGIST_SMOKE_TIMEOUT_SECONDS", "20"))
 ATTEMPTS = max(1, int(os.getenv("CAREGIST_SMOKE_ATTEMPTS", "1")))
 RETRY_DELAY_SECONDS = max(0.0, float(os.getenv("CAREGIST_SMOKE_RETRY_DELAY_SECONDS", "10")))
 REQUIRE_DATABASE = os.getenv("CAREGIST_REQUIRE_DATABASE", "").strip().lower() in {"1", "true", "yes"}
+EXPECTED_GIT_SHA = os.getenv("CAREGIST_EXPECTED_GIT_SHA", "").strip().lower()
+SKIP_BACKEND_PATHS = os.getenv("CAREGIST_SKIP_BACKEND_PATHS", "").strip().lower() in {"1", "true", "yes"}
 
 REDIRECT_OPENER = build_opener(NoRedirectHandler)
 
@@ -79,9 +81,15 @@ def print_ok(label: str, detail: str) -> None:
     print(f"{label}: OK - {detail}")
 
 
+def response_diagnostic(response: Response) -> str:
+    body = " ".join(response.body.split())[:300]
+    request_id = response.headers.get("x-request-id") or response.headers.get("x-vercel-id") or "missing"
+    return f"HTTP {response.status}; requestId={request_id}; body={body!r}"
+
+
 def verify_health() -> None:
     response = fetch("/api/health/directory")
-    assert_true(response.status == 200, f"/api/health/directory returned HTTP {response.status}")
+    assert_true(response.status == 200, f"/api/health/directory failed: {response_diagnostic(response)}")
 
     try:
       payload = json.loads(response.body)
@@ -96,12 +104,18 @@ def verify_health() -> None:
     notification_mode = capabilities.get("notificationMode")
     database_available = capabilities.get("databaseAvailable")
     database_reason = capabilities.get("databaseReason")
+    release_git_sha = str((payload.get("release") or {}).get("gitSha") or "").lower()
 
     assert_true(status in {"ok", "degraded"}, f"health status was {status!r}")
     assert_true(operating_mode in {"database", "fallback"}, f"unexpected operatingMode {operating_mode!r}")
     assert_true(read_mode in {"database", "full-dataset-fallback"}, f"unexpected readMode {read_mode!r}")
     assert_true(write_mode in {"database", "stateless-token"}, f"unexpected writeMode {write_mode!r}")
     assert_true(notification_mode in {"email", "log-only"}, f"unexpected notificationMode {notification_mode!r}")
+    if EXPECTED_GIT_SHA:
+        assert_true(
+            release_git_sha == EXPECTED_GIT_SHA,
+            f"deployed Git SHA {release_git_sha!r} did not match tested SHA {EXPECTED_GIT_SHA!r}",
+        )
 
     if REQUIRE_DATABASE:
         assert_true(database_available is True, f"databaseAvailable was {database_available!r} ({database_reason})")
@@ -118,9 +132,48 @@ def verify_health() -> None:
                 f"writeMode={write_mode}",
                 f"notificationMode={notification_mode}",
                 f"databaseReason={database_reason}",
+                f"gitSha={release_git_sha or 'missing'}",
             ]
         ),
     )
+
+
+def verify_data_status() -> None:
+    response = fetch("/data-status")
+    assert_true(response.status == 200, f"/data-status failed: {response_diagnostic(response)}")
+    assert_true("data status" in unescape(response.body).lower(), "/data-status did not render its status heading")
+    print_ok("DATA_STATUS", "/data-status rendered")
+
+
+def verify_backend_binding() -> None:
+    response = fetch("/api/v1/health/freshness")
+    assert_true(
+        response.status in {200, 503},
+        f"backend freshness binding failed: {response_diagnostic(response)}",
+    )
+    try:
+        payload = json.loads(response.body)
+    except json.JSONDecodeError as error:
+        raise SmokeFailure(f"backend freshness binding returned invalid JSON: {error}") from error
+
+    status = payload.get("status")
+    assert_true(status in {"healthy", "stale"}, f"backend freshness returned unexpected status {status!r}")
+    backend_sha = str((payload.get("release") or {}).get("git_sha") or "").lower()
+    if EXPECTED_GIT_SHA:
+        assert_true(
+            backend_sha == EXPECTED_GIT_SHA,
+            f"backend Git SHA {backend_sha!r} did not match tested SHA {EXPECTED_GIT_SHA!r}",
+        )
+    print_ok("BACKEND_BINDING", f"freshnessStatus={status} gitSha={backend_sha or 'missing'}")
+
+
+def verify_provider_sitemap() -> None:
+    response = fetch("/provider-sitemap-index.xml")
+    assert_true(response.status == 200, f"provider sitemap failed: {response_diagnostic(response)}")
+    content_type = response.headers.get("content-type", "")
+    assert_true("xml" in content_type, f"provider sitemap returned unexpected Content-Type {content_type!r}")
+    assert_true("<sitemapindex" in response.body, "provider sitemap response did not contain a sitemap index")
+    print_ok("PROVIDER_SITEMAP", "provider sitemap index rendered")
 
 
 def verify_search() -> None:
@@ -217,6 +270,13 @@ def main() -> int:
     for attempt in range(1, ATTEMPTS + 1):
         try:
             verify_health()
+            verify_data_status()
+            if SKIP_BACKEND_PATHS:
+                print("BACKEND_BINDING: SKIPPED - frontend-only degraded smoke has no backend service")
+                print("PROVIDER_SITEMAP: SKIPPED - frontend-only degraded smoke has no backend service")
+            else:
+                verify_backend_binding()
+                verify_provider_sitemap()
             verify_search()
             verify_provider_page()
             verify_export_requires_token()

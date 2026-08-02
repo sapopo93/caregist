@@ -1,8 +1,17 @@
 # CareGist — Technical Completion Report
 
+> **Historical and unaudited — superseded 2026-08-02.** This April 2026 report is
+> retained for provenance. Its readiness, freshness, provider-count, accuracy,
+> operational, billing, hosting, and revenue statements must not be presented as
+> current facts. CareGist is currently **NO-GO** pending the release evidence in
+> `DEPLOYMENT_CHECKLIST.md`, including an authoritative CQC watermark, recovery
+> drill, exact-SHA deployment proof, alert tests, and external legal/privacy/VAT/IP
+> approvals. Capability descriptions below often mean code exists, not that the
+> capability is approved, enabled, monitored, or proven in production.
+
 **Prepared for:** Prospective investors
 **Date:** 4 April 2026
-**Status:** Product deployed. Live at caregist.co.uk. Ready for first customers.
+**Historical status recorded on 4 April 2026:** Product deployed. Live at caregist.co.uk. Ready for first customers. **This status is superseded and is not a current readiness claim.**
 
 ---
 

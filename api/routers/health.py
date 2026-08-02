@@ -10,6 +10,7 @@ from fastapi.responses import JSONResponse
 from api.database import get_connection
 from api.metrics import render_latest, set_pending_emails
 from api.middleware.internal_auth import validate_internal_token
+from api.release import release_metadata
 from api.middleware.rate_limit import redis_health
 from api.services.pipeline_health import get_pipeline_health
 
@@ -45,7 +46,19 @@ async def liveness_check() -> JSONResponse:
     No external dependencies are touched, so an orchestrator won't kill the pod
     just because the DB or Redis is briefly unavailable (that's readiness, F-25).
     """
-    return JSONResponse(status_code=200, content={"status": "alive"})
+    return JSONResponse(
+        status_code=200,
+        content={"status": "alive", "release": release_metadata()},
+    )
+
+
+@router.get("/api/v1/version")
+async def version_check() -> JSONResponse:
+    """Publish the immutable release identity used by deployment smoke tests."""
+    return JSONResponse(
+        status_code=200,
+        content={"application": "caregist-api", "version": "1.0.0", "release": release_metadata()},
+    )
 
 
 @router.get("/api/v1/health")
@@ -54,6 +67,7 @@ async def health_check() -> JSONResponse:
     try:
         async with get_connection() as conn:
             snapshot = await get_pipeline_health(conn)
+        snapshot["release"] = release_metadata()
         return JSONResponse(
             status_code=200,
             content=snapshot,
@@ -76,6 +90,7 @@ async def readiness_check() -> JSONResponse:
             snapshot = await get_pipeline_health(conn)
         redis = await redis_health()
         snapshot["redis"] = redis
+        snapshot["release"] = release_metadata()
         ready = bool(snapshot["readiness_ok"]) and redis["ok"]
         snapshot["readiness_ok"] = ready
         return JSONResponse(status_code=200 if ready else 503, content=snapshot)
@@ -103,6 +118,7 @@ async def freshness_check() -> JSONResponse:
                 "units": snapshot.get("units"),
                 "generated_at": snapshot.get("generated_at"),
                 "checks": snapshot["checks"],
+                "release": release_metadata(),
             },
         )
     except Exception as exc:

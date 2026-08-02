@@ -4,6 +4,7 @@ import { canIssueDirectoryAccessTokens } from "@/lib/directory-access-token";
 import { getDirectoryDatabaseStatus } from "@/lib/directory-db";
 import { hasDirectoryFallbackDataset } from "@/lib/directory-file-store";
 import { canSendLeadNotifications } from "@/lib/directory-lead-notify";
+import { releaseGitSha } from "@/lib/release";
 
 export const runtime = "nodejs";
 
@@ -28,6 +29,7 @@ export async function GET() {
   return NextResponse.json({
     status,
     checkedAt: new Date().toISOString(),
+    release: { gitSha: releaseGitSha() },
     capabilities: {
       operatingMode,
       readMode,

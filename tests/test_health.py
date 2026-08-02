@@ -36,13 +36,15 @@ async def test_health_endpoint_returns_degraded_snapshot():
         },
     }
 
-    with patch("api.routers.health.get_connection", mock_get_connection), \
+    with patch.dict("os.environ", {"CAREGIST_RELEASE_SHA": "a" * 40}), \
+         patch("api.routers.health.get_connection", mock_get_connection), \
          patch("api.routers.health.get_pipeline_health", new=AsyncMock(return_value=snapshot)):
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.get("/api/v1/health")
 
     assert response.status_code == 200
     assert response.json()["status"] == "degraded"
+    assert response.json()["release"] == {"git_sha": "a" * 40}
 
 
 @pytest.mark.asyncio
@@ -186,6 +188,30 @@ async def test_liveness_always_ok():
         response = await client.get("/api/v1/health/liveness")
     assert response.status_code == 200
     assert response.json()["status"] == "alive"
+
+
+@pytest.mark.asyncio
+async def test_version_publishes_validated_release_sha():
+    with patch.dict("os.environ", {"CAREGIST_RELEASE_SHA": "B" * 40}):
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get("/api/v1/version")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "application": "caregist-api",
+        "version": "1.0.0",
+        "release": {"git_sha": "b" * 40},
+    }
+
+
+@pytest.mark.asyncio
+async def test_version_does_not_reflect_invalid_release_value():
+    with patch.dict("os.environ", {"CAREGIST_RELEASE_SHA": "not-a-sha<script>"}, clear=False):
+        with patch("api.release._SHA_ENV_KEYS", ("CAREGIST_RELEASE_SHA",)):
+            async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+                response = await client.get("/api/v1/version")
+
+    assert response.json()["release"] == {"git_sha": "unknown"}
 
 
 @pytest.mark.asyncio

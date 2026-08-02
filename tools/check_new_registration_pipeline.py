@@ -15,8 +15,8 @@ import asyncpg
 
 from api.services.pipeline_health import get_pipeline_health
 
-ALERT_SUPPRESSION_HOURS = 6
 SLO_BREACH_ALERT_KEY = "new_registration_ingestion_slo_breach"
+WATCHDOG_ALERT_PREFIX = "freshness_watchdog:"
 
 
 def _load_env_file() -> None:
@@ -37,36 +37,66 @@ def _alert_email_to() -> str:
         os.environ.get("PIPELINE_ALERT_EMAIL")
         or os.environ.get("MONITOR_ALERT_FAILURE_EMAIL")
         or os.environ.get("ENQUIRY_FROM_EMAIL")
-        or "hello@caregist.co.uk"
+        or "ops@caregist.co.uk"
     )
 
 
-async def _should_send_alert(conn, alert_key: str) -> bool:
-    existing = await conn.fetchval(
+def _watchdog_alert_key(alert_key: str) -> str:
+    return f"{WATCHDOG_ALERT_PREFIX}{alert_key}"
+
+
+async def _is_new_or_resolved_alert(conn, alert_key: str) -> bool:
+    existing = await conn.fetchrow(
         """
-        SELECT id
-        FROM pipeline_alert_log
+        SELECT resolved_at
+        FROM pipeline_alert_state
         WHERE alert_key = $1
-          AND created_at >= NOW() - make_interval(hours => $2)
-        ORDER BY created_at DESC
-        LIMIT 1
         """,
-        alert_key,
-        ALERT_SUPPRESSION_HOURS,
+        _watchdog_alert_key(alert_key),
     )
-    return existing is None
+    return existing is None or existing["resolved_at"] is not None
 
 
-async def _log_alert(conn, alert_key: str, severity: str, details: dict) -> None:
+async def _record_alert(conn, alert_key: str, severity: str, details: dict) -> None:
     await conn.execute(
         """
-        INSERT INTO pipeline_alert_log (alert_key, severity, details)
-        VALUES ($1, $2, $3::jsonb)
+        INSERT INTO pipeline_alert_state (
+          alert_key, severity, details, first_seen_at, last_seen_at,
+          occurrence_count, resolved_at
+        )
+        VALUES ($1, $2, $3::jsonb, NOW(), NOW(), 1, NULL)
+        ON CONFLICT (alert_key) DO UPDATE
+        SET severity = EXCLUDED.severity,
+            details = EXCLUDED.details,
+            last_seen_at = NOW(),
+            occurrence_count = pipeline_alert_state.occurrence_count + 1,
+            resolved_at = NULL
         """,
-        alert_key,
+        _watchdog_alert_key(alert_key),
         severity,
-        json.dumps(details),
+        json.dumps({**details, "source": "freshness_watchdog"}),
     )
+
+
+async def _resolve_watchdog_alerts(conn) -> None:
+    await conn.execute(
+        """
+        UPDATE pipeline_alert_state
+        SET resolved_at = NOW(), last_seen_at = NOW()
+        WHERE alert_key LIKE $1
+          AND resolved_at IS NULL
+        """,
+        f"{WATCHDOG_ALERT_PREFIX}%",
+    )
+
+
+async def _notify_and_record(conn, alert_key: str, subject: str, body: str, details: dict) -> None:
+    should_notify = await _is_new_or_resolved_alert(conn, alert_key)
+    if should_notify:
+        # Record only after successful delivery so a transient Resend failure is
+        # retried by the next watchdog invocation rather than silently suppressed.
+        _send_email(subject, body)
+    await _record_alert(conn, alert_key, "error", details)
 
 
 def _send_email(subject: str, body: str) -> None:
@@ -152,10 +182,10 @@ async def _fetch_ingestion_slo_breach(conn) -> dict | None:
             LIMIT 5
         ),
         alert_window AS (
-            SELECT COUNT(*) AS unavailable_alerts
-            FROM pipeline_alert_log
+            SELECT COALESCE(SUM(occurrence_count), 0) AS unavailable_alerts
+            FROM pipeline_alert_state
             WHERE alert_key = 'changes_endpoint_unavailable'
-              AND created_at >= NOW() - INTERVAL '7 days'
+              AND last_seen_at >= NOW() - INTERVAL '7 days'
         )
         SELECT
             MAX(cp.registration_date) AS latest_registration_date,
@@ -200,22 +230,33 @@ async def check_pipeline(database_url: str, *, notify: bool) -> int:
                 f"{json.dumps(slo_breach, indent=2)}"
             )
             print(message, file=sys.stderr)
-            if notify and await _should_send_alert(conn, SLO_BREACH_ALERT_KEY):
-                _send_email("CareGist pipeline alert: new registration ingestion SLO breach", message)
-                await _log_alert(conn, SLO_BREACH_ALERT_KEY, "error", slo_breach)
+            if notify:
+                await _notify_and_record(
+                    conn,
+                    SLO_BREACH_ALERT_KEY,
+                    "CareGist pipeline alert: new registration ingestion SLO breach",
+                    message,
+                    slo_breach,
+                )
             return 1
 
         snapshot = await get_pipeline_health(conn)
         print(json.dumps(snapshot, indent=2))
         if snapshot["readiness_ok"] and snapshot["status"] == "healthy":
+            if notify:
+                await _resolve_watchdog_alerts(conn)
             return 0
 
         if notify:
             body = _build_alert_body(snapshot)
             for alert_key in _derive_alert_keys(snapshot):
-                if await _should_send_alert(conn, alert_key):
-                    _send_email(f"CareGist pipeline alert: {alert_key}", body)
-                    await _log_alert(conn, alert_key, "error", snapshot)
+                await _notify_and_record(
+                    conn,
+                    alert_key,
+                    f"CareGist pipeline alert: {alert_key}",
+                    body,
+                    snapshot,
+                )
         return 1
     finally:
         await conn.close()
