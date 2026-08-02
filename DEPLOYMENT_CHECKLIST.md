@@ -4,6 +4,19 @@
 **Purpose:** Deployment-owner checklist for taking the hardened codebase from staging to production.
 **Rule:** Do not send public production traffic until every required item is complete and evidenced.
 
+## Current Release-State Snapshot (2026-07-30)
+
+Verified against the live site and this repo's git history. Supersedes stale TODOs below where they conflict.
+
+- **Deploy drift**: production (`https://www.caregist.co.uk`) is serving commit `91601e1`. The working branch `codex/caregist-remediation-20260630` is 2 commits ahead (`f8ea4e3`, `d84de3e`) and has never been merged to `main`; `main` itself is stale (ahead 23 / behind 14 vs `origin/main`). Migrations 038-042 and the billing/export/lead-intake fail-closed gates exist on the branch but are **not** in what's deployed.
+- **`.github/workflows/ci.yml`** (lint, migration governance, pytest, pip-audit, real-Postgres migration replay, frontend build/test/audit) only triggers on push to `main` or PRs — it has never run against this remediation work because it lives on unmerged side branches.
+- **Readiness vs. freshness are intentionally separate signals**: `readiness_ok` (traffic-serving gate) checks that `pipeline_runs`/`trusted_event_ledger` tables are reachable; it must NOT depend on feed freshness, or an upstream CQC publishing lag would take fully-working routes (search, groups, pricing) offline along with the stale feed. `freshness_ok` and the dedicated `/api/v1/health/freshness` endpoint already exist for that signal and are what monitoring/alerting should watch. Production currently shows `readiness_ok: true, feed_fresh: false` (latest event 2026-06-01, outside the 168h SLA) — that combination is correct behavior, not a bug. The real gap here is **observability**: nothing currently pages on-call when `/freshness` goes stale (see "Monitoring And Alerts" below) — wire an alert on that endpoint rather than coupling it into readiness.
+- **`/data-status` 404**: the page (`frontend/app/data-status/page.tsx`) genuinely does not exist at deployed commit `91601e1` — pure deploy drift, resolves on shipping current HEAD.
+- **`/provider-sitemap-index.xml` 503**: NOT a backend/data problem — `GET /api/v1/sitemaps/providers/count` returns a healthy `{"total":56742}` when hit directly. The frontend route's own `getServerApiBase()` call is failing before it reaches that healthy backend. The deployment does build with the multi-service architecture (`services/backend/fastapi` + `services/frontend/*` lambdas present per `vercel inspect`), so the `CAREGIST_BACKEND_URL` service binding *should* be auto-injected — but something in that resolution path is not working at runtime. Needs a Vercel function-log capture during a live request (session log-tailing didn't catch it in the available window) or a temporary debug log statement on a preview deploy to pin down exactly where the fetch fails.
+- **Backups/PITR**: real tooling (`scripts/backup-db.sh`, `terraform/{kms,s3,ebs,iam}.tf`, restore runbooks) exists only on the separate, unmerged branch `origin/prod-ready/terraform-backups-kms` — never merged, never run. Section 4 below remains entirely aspirational until that branch is reviewed, merged, and a restore drill is actually executed.
+- **Migration numbering "collision"**: the duplicate `034_*.sql` pair is intentionally allowlisted in `tools/check_migration_governance.py` (`LEGACY_DUPLICATE_MIGRATIONS`) — checker passes clean. Not a real gap.
+- **Governance flags**: only 3 of 9 documented flags (`BILLING_CHECKOUT_ENABLED`, `DIRECTORY_EXPORT_DELIVERY_ENABLED`, `DIRECTORY_LEAD_INTAKE_ENABLED`) have actual code-level gates; all fail-closed (default `false`) and present on HEAD but absent from `91601e1`. The other 6 documented flags have no corresponding feature code yet.
+
 ## 0. Release Gate
 
 ### Required Before Production

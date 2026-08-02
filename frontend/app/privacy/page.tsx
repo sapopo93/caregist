@@ -8,25 +8,27 @@ export const metadata: Metadata = {
 export default function PrivacyPage() {
   return (
     <div className="max-w-3xl mx-auto px-6 py-12">
-      <h1 className="text-3xl font-bold mb-2">Privacy status</h1>
-      <p className="text-dusk text-sm mb-6">Last updated: 30 July 2026</p>
+      <h1 className="text-3xl font-bold mb-2">Privacy Notice</h1>
+      <p className="text-dusk text-sm mb-6">Last updated: 1 August 2026</p>
 
-      <div className="rounded-xl border border-amber-400 bg-amber-50 p-4 text-sm text-amber-950 mb-8">
-        <strong>Controlled pre-launch notice.</strong> The legal operator and data controller,
-        processor register, transfer mechanisms, lawful-basis assessment and UK Country Pack
-        still require Human Gate approval. Personal-data intake features remain disabled. This
-        page records the implemented controls; it is not a claim of legal approval.
+      <div className="rounded-xl border border-stone bg-mist p-4 text-sm text-charcoal mb-8">
+        Personal-data intake features (provider claims, reviews and enquiries) remain disabled.
+        This notice describes the controls actually implemented today.
       </div>
 
       <div className="prose prose-sm text-charcoal space-y-6" style={{ fontFamily: "Lora" }}>
         <section>
-          <h2 className="text-xl font-bold text-bark mt-8 mb-3">1. Controller status</h2>
+          <h2 className="text-xl font-bold text-bark mt-8 mb-3">1. Who controls your data</h2>
           <p>
-            Existing project materials name H-Kay Limited (company number 10417923) and another
-            possible operator. CareGist will not identify a contracting party or controller until
-            authority, brand and intellectual-property rights are evidenced at Human Gate 1.
+            CareGist is operated by <strong>H-Kay Limited</strong>, registered in England and Wales
+            under company number <strong>10417923</strong>, registered office C/O Bilberry
+            Accountants Ltd, Castle Court, 41 London Road, Reigate, England, RH2 9RJ. H-Kay Limited
+            is the data controller for personal data processed through CareGist.
+          </p>
+          <p>
             Privacy questions and rights requests may be sent to{" "}
             <a href="mailto:privacy@caregist.co.uk" className="text-clay underline">privacy@caregist.co.uk</a>.
+            You may also complain to the UK Information Commissioner&apos;s Office at ico.org.uk.
           </p>
         </section>
 
@@ -62,13 +64,13 @@ export default function PrivacyPage() {
         </section>
 
         <section>
-          <h2 className="text-xl font-bold text-bark mt-8 mb-3">4. Purposes and legal review</h2>
+          <h2 className="text-xl font-bold text-bark mt-8 mb-3">4. Purposes and lawful bases</h2>
           <p>
-            Account operation and requested service access are intended to rely on contract;
-            security, abuse prevention and business-directory operation are candidates for
-            legitimate interests. Those conclusions are not approved until the controller is
-            confirmed and the relevant legitimate-interests assessment and record of processing
-            are signed. CareGist does not make solely automated decisions producing legal or
+            Account operation, subscription and requested service access rely on performance of a
+            contract with you. Security, abuse prevention and operation of the business directory
+            rely on our legitimate interests in running a secure and accurate service; the
+            legitimate-interests assessment and record of processing are maintained by the
+            controller. CareGist does not make solely automated decisions producing legal or
             similarly significant effects.
           </p>
         </section>
@@ -110,12 +112,12 @@ export default function PrivacyPage() {
         </section>
 
         <section>
-          <h2 className="text-xl font-bold text-bark mt-8 mb-3">8. Before activation</h2>
+          <h2 className="text-xl font-bold text-bark mt-8 mb-3">8. Features not yet active</h2>
           <p>
-            The confirmed controller must approve the information asset register, lawful bases,
-            CQC-field assessment, processor and transfer register, rights workflow, breach process,
-            retention schedule and just-in-time notices. No outreach, publishing change, billing,
-            export delivery, paid monitoring or provider-claim activation is authorised by this notice.
+            Provider claims, reviews and enquiries collect personal data and remain switched off at
+            the route boundary until their moderation, safeguarding and lawful-basis controls are
+            approved. Outbound marketing is not authorised by this notice: no direct-marketing
+            outreach is carried out on the basis described here.
           </p>
         </section>
       </div>
