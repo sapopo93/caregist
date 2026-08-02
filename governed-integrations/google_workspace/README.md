@@ -1,6 +1,6 @@
 # Governed Google Workspace integration candidate
 
-**Status:** Policy implementation tested; no OAuth, credentials, Google API calls or Workspace mutations have occurred.
+**Status:** Policy implementation tested; live authorisation remains blocked. No OAuth, credentials, Google API calls or Workspace mutations have occurred.
 
 ## Founder-authorised target
 
@@ -18,6 +18,13 @@ Use two independently revocable grants:
 2. **Mailbox grant:** `https://www.googleapis.com/auth/gmail.readonly`
 
 Docs, Sheets and Slides API methods accept `drive.file`, avoiding account-wide document scopes. Folder IDs are also checked by `WorkspacePolicy`; OAuth and application policy must both permit the operation.
+
+Creation is authorised by exact action, not by a generic mutation permission:
+
+- Drive: `upload`, `create-folder`
+- Docs, Sheets and Slides: `create`
+
+Before any creation, the target parent and its ancestry are fetched and checked. The target must exist, have an explicit non-trashed state, use the Drive folder MIME type and resolve into an assigned folder without missing metadata, cycles or excessive traversal. Allowlisting a parent ID does not bypass its metadata checks.
 
 The mailbox grant remains a separate activation gate because `gmail.readonly` is a Google restricted scope and mailbox content can contain personal, confidential and regulated data.
 
@@ -37,7 +44,7 @@ cd /Users/user/CareGist
 python3 -m pytest governed-integrations/google_workspace/tests/test_policy.py -q
 ```
 
-Expected verified result: `13 passed`.
+The command must pass before integration. The exact count can change as denial-path coverage is extended.
 
 ## Remaining activation prerequisites
 
@@ -47,9 +54,9 @@ Expected verified result: `13 passed`.
 4. Integrate the tested policy into the Hermes Workspace adapter.
 5. Run synthetic and then live read-back tests against non-sensitive test files.
 6. Independently review the implementation with no Critical/High findings.
-7. Activate the `drive.file` documents grant first.
+7. Keep `drive.file` blocked until the privacy/security review is recorded and the adapter enforces this policy at every call site.
 8. Resolve the restricted-scope/privacy/AI-provider assessment before activating `gmail.readonly`.
-9. Create the first NotebookLM notebook using public sources only; verify citations before any output enters `company-os`.
+9. Keep NotebookLM authorisation blocked until the same review is complete; then create the first notebook using public sources only and verify citations before any output enters `company-os`.
 
 ## Official scope evidence
 
