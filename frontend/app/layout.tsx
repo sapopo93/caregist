@@ -54,9 +54,6 @@ export const metadata: Metadata = {
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   await connection();
-  const stripePaymentLink = process.env.BILLING_CHECKOUT_ENABLED === "true"
-    ? process.env.STRIPE_PAYMENT_LINK_URL?.trim() || null
-    : null;
 
   return (
     <html lang="en" className={`${dmSans.variable} ${playfairDisplay.variable}`}>
@@ -93,16 +90,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 <Link href="/why-caregist" className="hover:text-amber">
                   About
                 </Link>
-                <a
-                  href={stripePaymentLink ?? "/lead-list?opportunity=new_90"}
-                  target={stripePaymentLink ? "_blank" : undefined}
-                  rel={stripePaymentLink ? "noreferrer noopener" : undefined}
+                <Link
+                  href="/lead-list?opportunity=new_90"
                   className="rounded-full bg-amber px-4 py-2 text-sm font-semibold text-charcoal transition hover:bg-cream"
                 >
                   Get intelligence
-                </a>
+                </Link>
               </nav>
-              <AuthNav stripePaymentLink={stripePaymentLink} />
+              <AuthNav />
             </div>
           </div>
         </header>

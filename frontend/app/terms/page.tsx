@@ -1,15 +1,19 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Terms of Service | CareGist",
-  description: "Terms of service for CareGist, operated by H-Kay Limited.",
+  title: "Business Terms | CareGist",
+  description: "Draft business terms for CareGist, operated by H-Kay Limited.",
 };
 
 export default function TermsPage() {
   return (
     <div className="max-w-3xl mx-auto px-6 py-12">
-      <h1 className="text-3xl font-bold mb-2">Terms of Service</h1>
-      <p className="text-dusk text-sm mb-6">Version 1.0 &middot; In force from 1 August 2026</p>
+      <h1 className="text-3xl font-bold mb-2">Business Terms</h1>
+      <p className="text-dusk text-sm mb-3">Draft version 1.1 &middot; Updated 2 August 2026</p>
+      <div className="rounded-xl border border-stone bg-mist p-4 text-sm text-charcoal mb-8">
+        These terms are awaiting solicitor approval. Paid self-service checkout is unavailable and
+        this draft is not presented as an operative paid contract.
+      </div>
 
       <div className="prose prose-sm text-charcoal space-y-6" style={{ fontFamily: "Lora" }}>
         <section>
@@ -19,11 +23,13 @@ export default function TermsPage() {
             and Wales under company number <strong>10417923</strong>, whose registered office is
             C/O Bilberry Accountants Ltd, Castle Court, 41 London Road, Reigate, England, RH2 9RJ
             (&quot;we&quot;, &quot;us&quot;, &quot;CareGist&quot;). These terms form the contract
-            between us and the person or organisation subscribing (&quot;you&quot;).
+            between us and the business or organisation subscribing (&quot;you&quot;).
           </p>
           <p>
-            By creating an account or subscribing you accept these terms. If you are agreeing on
-            behalf of an organisation, you confirm you are authorised to bind it.
+            Paid plans are offered only for business use. Consumer self-service purchasing is not
+            supported. Before any paid Checkout Session can be created, an authenticated user must
+            separately confirm that they are acting for a business and are authorised to bind it to
+            the exact approved version of these terms.
           </p>
         </section>
 
@@ -61,8 +67,9 @@ export default function TermsPage() {
           <p>
             Paid plans are Alerts Pro (&pound;49/month), Data Starter (&pound;99/month), Data Pro
             (&pound;199/month), Data Business (&pound;499/month) and Enterprise (priced by
-            agreement). Prices are per month and are stated <strong>exclusive of VAT</strong>. VAT
-            will be added at the prevailing rate where it applies to the supply.
+            agreement). The operative VAT presentation, invoice requirements and tax treatment are
+            awaiting accountant confirmation. Paid checkout remains unavailable until those details
+            are approved and reflected consistently in Stripe and the pricing journey.
           </p>
           <p>
             Each plan carries limits on request rate, daily and monthly volume, result fields,
@@ -83,12 +90,6 @@ export default function TermsPage() {
             You may cancel at any time from your account or by emailing billing@caregist.co.uk.
             Cancellation takes effect at the end of the paid period; access continues until then
             and the subscription does not renew. We do not pro-rate part-months.
-          </p>
-          <p>
-            If you are a consumer contracting outside your trade or profession, you have 14 days to
-            cancel for a refund under the Consumer Contracts Regulations 2013. Because access is
-            immediate, by subscribing you ask us to begin at once and accept that we may deduct a
-            proportionate charge for the period used. This does not affect your other legal rights.
           </p>
           <p>
             We may change prices or plan limits on 30 days&apos; notice by email. If a change is to
@@ -161,9 +162,6 @@ export default function TermsPage() {
             period. We provide the service &quot;as is&quot; to the fullest extent the law allows,
             and give no warranty that source information is accurate, current or complete.
           </p>
-          <p>
-            If you are a consumer, your statutory rights are not affected by this section.
-          </p>
         </section>
 
         <section>
@@ -181,8 +179,8 @@ export default function TermsPage() {
           <h2 className="text-xl font-bold text-bark mt-8 mb-3">12. Complaints, law and jurisdiction</h2>
           <p>
             Please raise any complaint with hello@caregist.co.uk and we will respond within 14 days.
-            These terms are governed by the law of England and Wales, and the courts of England and
-            Wales have exclusive jurisdiction.
+            These business terms are governed by the law of England and Wales. Any jurisdiction
+            clause in the operative version remains subject to solicitor approval.
           </p>
           <p>
             You can contact us at H-Kay Limited, C/O Bilberry Accountants Ltd, Castle Court, 41

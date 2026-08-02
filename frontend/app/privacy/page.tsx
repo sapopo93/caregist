@@ -9,11 +9,11 @@ export default function PrivacyPage() {
   return (
     <div className="max-w-3xl mx-auto px-6 py-12">
       <h1 className="text-3xl font-bold mb-2">Privacy Notice</h1>
-      <p className="text-dusk text-sm mb-6">Last updated: 1 August 2026</p>
+      <p className="text-dusk text-sm mb-6">Last updated: 2 August 2026</p>
 
       <div className="rounded-xl border border-stone bg-mist p-4 text-sm text-charcoal mb-8">
-        Personal-data intake features (provider claims, reviews and enquiries) remain disabled.
-        This notice describes the controls actually implemented today.
+        Paid checkout, provider claims, reviews, enquiries, exports, outreach and monitoring
+        activation remain fail-closed. External processor and transfer approvals are release gates.
       </div>
 
       <div className="prose prose-sm text-charcoal space-y-6" style={{ fontFamily: "Lora" }}>
@@ -36,13 +36,13 @@ export default function PrivacyPage() {
           <h2 className="text-xl font-bold text-bark mt-8 mb-3">2. Processing currently implemented</h2>
           <ul className="list-disc pl-6 space-y-1">
             <li><strong>Accounts:</strong> name, email address and a salted password hash; verification and security records.</li>
-            <li><strong>Security and API operation:</strong> request timestamps, endpoints, rate-limit counters, IP address and user agent.</li>
+            <li><strong>Security and API operation:</strong> request timestamps, endpoints, rate-limit counters, minimised IP evidence and user agent.</li>
             <li><strong>Browser storage:</strong> the signed-in user&apos;s id, name and email plus the displayed tier may be held in local storage; no password, API key or session secret is intentionally stored there.</li>
             <li><strong>CQC directory:</strong> organisation/location identifiers, names, business addresses, published phone numbers and websites, registration/rating/service fields and source timestamps.</li>
           </ul>
           <p>
-            Enquiries, review submissions, provider claims, Lead-list requests, Export access
-            tokens, checkout and export delivery are disabled by default pending approval. If a
+            Enquiries, review submissions, provider claims, lead-list requests, export access
+            tokens, paid checkout, monitoring activation and export delivery are disabled by default pending approval. If a
             gate is later approved, this notice and the processing record must be updated before
             collection begins.
           </p>
@@ -78,10 +78,22 @@ export default function PrivacyPage() {
         <section>
           <h2 className="text-xl font-bold text-bark mt-8 mb-3">5. Recipients and transfers</h2>
           <p>
-            The production processor inventory, data-processing agreements, hosting locations and
-            any international-transfer mechanism must be verified before personal-data intake or
-            billing is enabled. CareGist does not claim that a provider is a processor, that a DPA
-            is signed, or that a transfer safeguard applies without documentary evidence.
+            CareGist currently uses or is configured to use the following suppliers. This list
+            describes the technical role; it does not mark the processor agreement, hosting
+            location, transfer assessment or safeguard as approved.
+          </p>
+          <ul className="list-disc pl-6 space-y-1">
+            <li><strong>Neon:</strong> PostgreSQL hosting for accounts, operational records, audit evidence and CQC-derived data.</li>
+            <li><strong>Vercel:</strong> application hosting, request routing, deployment logs and service diagnostics.</li>
+            <li><strong>Stripe:</strong> payment customers, Checkout Sessions, subscriptions, invoices and webhook events; new checkout remains disabled.</li>
+            <li><strong>Resend:</strong> transactional email delivery and delivery-failure handling where an approved email path is active.</li>
+            <li><strong>Sentry:</strong> application error diagnostics when a DSN is configured, subject to data-minimisation controls.</li>
+            <li><strong>Redis:</strong> shared rate-limit and short-lived operational state when configured; it is not the system of record.</li>
+          </ul>
+          <p>
+            The controlled processor register must record each supplier&apos;s contract, sub-processors,
+            retention, hosting regions and UK transfer mechanism. Paid checkout and new personal-data
+            intake cannot be enabled until the relevant entries and transfer assessment are approved.
           </p>
         </section>
 
@@ -91,6 +103,8 @@ export default function PrivacyPage() {
             <tbody>
               <tr><td className="p-2 border-b border-stone">Analytics and request metadata</td><td className="p-2 border-b border-stone">90 days</td></tr>
               <tr><td className="p-2 border-b border-stone">Audit records</td><td className="p-2 border-b border-stone">2 years by default, subject to approved legal requirements</td></tr>
+              <tr><td className="p-2 border-b border-stone">B2B contract acceptance evidence</td><td className="p-2 border-b border-stone">For the contract term and the approved limitation/accounting period; the final schedule is a legal gate</td></tr>
+              <tr><td className="p-2 border-b border-stone">Stripe subscription and invoice records</td><td className="p-2 border-b border-stone">According to the approved accounting and statutory retention schedule</td></tr>
               <tr><td className="p-2 border-b border-stone">Sent email queue rows</td><td className="p-2 border-b border-stone">30 days; failed rows remain in the controlled dead-letter process</td></tr>
               <tr><td className="p-2 border-b border-stone">Enquiries and rejected review identity</td><td className="p-2 border-b border-stone">Anonymised after 12 months if those features are approved</td></tr>
               <tr><td className="p-2 border-b border-stone">Closed provider claims</td><td className="p-2 border-b border-stone">Identity and evidence fingerprint anonymised after 12 months</td></tr>

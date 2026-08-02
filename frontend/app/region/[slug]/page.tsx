@@ -209,8 +209,8 @@ export default async function RegionPage({
       <div className="mt-8">
         <EmailCaptureStrip
           source={`region_${slug}`}
-          heading={`Get weekly alerts for ${displayName}`}
-          subheading="Rating changes and new inspections, delivered to your inbox."
+          heading={`Request product updates for ${displayName}`}
+          subheading="Rating-change alerts are not yet active; register interest for availability updates."
         />
       </div>
 

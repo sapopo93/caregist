@@ -4,11 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-interface AuthNavProps {
-  stripePaymentLink?: string | null;
-}
-
-export default function AuthNav({ stripePaymentLink = null }: AuthNavProps) {
+export default function AuthNav() {
   const router = useRouter();
   const [user, setUser] = useState<{ name: string } | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -91,9 +87,7 @@ export default function AuthNav({ stripePaymentLink = null }: AuthNavProps) {
             About
           </Link>
           <a
-            href={stripePaymentLink ?? "/lead-list?opportunity=new_90"}
-            target={stripePaymentLink ? "_blank" : undefined}
-            rel={stripePaymentLink ? "noreferrer noopener" : undefined}
+            href="/lead-list?opportunity=new_90"
             className="hover:text-amber transition-colors"
             onClick={() => setMenuOpen(false)}
           >

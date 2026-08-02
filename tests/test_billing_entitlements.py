@@ -18,6 +18,8 @@ async def test_get_subscription_uses_higher_key_tier_when_subscription_row_is_st
             "max_users": 1,
             "seat_price_gbp": 0,
             "stripe_subscription_id": None,
+            "cancel_at_period_end": False,
+            "current_period_end": None,
         }
     )
 
@@ -31,3 +33,5 @@ async def test_get_subscription_uses_higher_key_tier_when_subscription_row_is_st
     assert result["tier"] == "business"
     assert result["entitlements"]["included_users"] == 10
     assert result["entitlements"]["max_users"] == 10
+    assert result["cancel_at_period_end"] is False
+    assert result["current_period_end"] is None

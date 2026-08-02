@@ -7,7 +7,6 @@ import DirectorySearchForm from "@/components/directory/DirectorySearchForm";
 import { getDirectoryOpportunity } from "@/lib/directory-constants";
 import { getDirectoryFilterOptions, searchDirectoryProviders } from "@/lib/directory-db";
 import { parseDirectorySearchParams } from "@/lib/directory-filters";
-import { getStripePaymentLinkUrl } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
 
@@ -24,7 +23,6 @@ export default async function SearchPage({
 }) {
   const rawParams = await searchParams;
   const filters = parseDirectorySearchParams(rawParams);
-  const stripePaymentLink = getStripePaymentLinkUrl();
   const opportunity = getDirectoryOpportunity(filters.opportunity);
   const leadParams = new URLSearchParams();
   if (filters.region) leadParams.set("region", filters.region);
@@ -146,9 +144,7 @@ export default async function SearchPage({
               beyond one filtered opportunity segment.
             </p>
             <a
-              href={stripePaymentLink ?? "/lead-list"}
-              target={stripePaymentLink ? "_blank" : undefined}
-              rel={stripePaymentLink ? "noreferrer noopener" : undefined}
+              href="/lead-list"
               className="mt-5 inline-flex rounded-full border border-clay px-4 py-2 text-sm font-semibold text-clay hover:bg-parchment"
             >
               Request wider access

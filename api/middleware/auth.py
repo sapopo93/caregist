@@ -247,16 +247,22 @@ async def validate_api_key(
     session_cookie = _cookie_value(caregist_session)
     if api_key:
         try:
-            return await _validate_key(api_key)
+            auth = await _validate_key(api_key)
+            auth["auth_method"] = "api_key"
+            return auth
         except HTTPException as key_exc:
             if session_cookie:
                 try:
-                    return await _validate_session(session_cookie)
+                    auth = await _validate_session(session_cookie)
+                    auth["auth_method"] = "session"
+                    return auth
                 except HTTPException:
                     pass
             raise key_exc
     if session_cookie:
-        return await _validate_session(session_cookie)
+        auth = await _validate_session(session_cookie)
+        auth["auth_method"] = "session"
+        return auth
     if not api_key and not session_cookie:
         raise HTTPException(status_code=401, detail="Missing API key. Pass X-API-Key header or log in.")
 

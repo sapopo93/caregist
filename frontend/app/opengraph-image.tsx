@@ -31,13 +31,13 @@ export default function OpenGraphImage() {
             The intelligence layer for UK care-provider data
           </div>
           <div style={{ fontSize: 28, lineHeight: 1.3, color: "#E8E0D0" }}>
-            Daily-refreshed regulatory data for dashboard, exports, monitoring, and API workflows.
+            Regulatory data with a published reconciliation status and controlled workflow access.
           </div>
         </div>
         <div style={{ display: "flex", gap: 18, fontSize: 24, color: "#E8E0D0" }}>
           <span>National provider coverage</span>
-          <span>Daily refresh cadence</span>
-          <span>Dashboard + exports + API</span>
+          <span>Published data status</span>
+          <span>Governance-gated workflows</span>
         </div>
       </div>
     ),

@@ -231,6 +231,11 @@ class Settings(BaseSettings):
     stripe_price_profile_enhanced: str = ""
     stripe_price_profile_premium: str = ""
     stripe_price_profile_sponsored: str = ""
+    # Exact solicitor-approved B2B terms version accepted at paid checkout.
+    # Empty means no self-service checkout can proceed even if its feature flag is enabled.
+    b2b_terms_version: str = ""
+    b2b_terms_sha256: str = ""
+    b2b_evidence_hash_key: str = ""
     default_page_size: int = 20
     app_url: str = "http://localhost:3000"
     resend_api_key: str = ""

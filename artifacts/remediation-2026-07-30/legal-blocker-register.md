@@ -9,30 +9,42 @@ named Human Gate decision. It does not mean legal advice was supplied.
 | Brand/IP authority | No executed assignment/licence inspected | RED — document required |
 | CQC database rights | OGL commercial reuse and attribution evidenced | AMBER — field-level personal-data and presentation review still required |
 | CQC personal data | OGL expressly excludes personal-data rights; public directory excludes known manager names | RED — LIA/ROPA and qualified review required before broader use |
-| Privacy notice | False processor/LIA/weekly-refresh claims removed; controlled status page matches gates/retention | AMBER — operative notice awaits confirmed controller and processor register |
-| Terms | Operative Terms of Service v1.0 published 2026-08-01, naming H-Kay Limited | AMBER — **published without qualified legal review**; retains that status until a solicitor signs off |
-| VAT | Terms state prices exclusive of VAT with VAT added where applicable, which is correct either way. H-Kay's actual registration status is still unconfirmed and is an entity-level fact, not a CareGist one | AMBER — confirm with Bilberry Accountants; if registered, invoices must show the VAT number and rate |
+| Privacy notice | Feature-state and supplier disclosures now match the fail-closed implementation | RED — processor register, retention, transfer assessment, LIA/ROPA and qualified approval remain required |
+| Terms | Draft B2B terms v1.1 identify H-Kay Limited and block consumer self-service | RED — no paid terms version is approved or configured; solicitor approval remains mandatory |
+| VAT | No VAT registration, invoice or tax-treatment position is inferred in the paid journey | RED — Bilberry/accountant evidence is required before Stripe tax and invoice presentation can be configured |
 | Country Pack | v0.3 sourced baseline created | AMBER — qualified approval required to become production-effective |
 | Provider claims | Identity/authority/evidence/moderation controls built; intake false by default | RED — procedure, approvers and activation decision required |
 | Reviews/enquiries | Intake false; review policy labelled draft; retention built | RED — safeguarding/moderation/lawful-basis approval required |
-| Exports/billing | **Checkout enabled 2026-08-01** on the founder's explicit instruction, following the entity decision and publication of operative terms. Export delivery remains false | AMBER — activated by Human Gate without qualified finance/legal sign-off; terms unreviewed (see below) |
+| Exports/billing | Checkout, monitoring activation, export delivery and lead intake are fail-closed. Checkout additionally requires an exact approved B2B terms version and immutable acceptance evidence | RED — legal, privacy, VAT, Stripe staging, cancellation and release evidence required before activation |
 | Outreach/marketing | No action taken; ICO channel rules recorded | RED — LIA/consent/suppression/channel plan required |
 
 Human Gate 1 can approve internal proof work only. It cannot silently convert any
 RED item to production approval; named qualified owners must provide the evidence.
 
-## Unreviewed on publication — 1 August 2026
+## External evidence register
 
-Terms of Service v1.0 and the Privacy Notice were drafted in-house and published on the
-founder's explicit instruction, without qualified legal review. A solicitor should be
-pointed at these specifically:
+Sensitive originals belong in the controlled document system, not this repository. A gate may
+move only when all evidence columns are populated and independently verified.
+
+| Deliverable | Controlled document ID | Approver | Approval date | Version | SHA-256 | Status |
+|---|---|---|---|---|---|---|
+| Approved B2B terms and liability/cancellation position | pending | pending solicitor | pending | pending | pending | RED |
+| Privacy notice, processor register, LIA/ROPA and transfer assessment | pending | pending privacy/legal approver | pending | pending | pending | RED |
+| Acceptable-use, OGL/enrichment and controller/customer/DPA position | pending | pending solicitor | pending | pending | pending | RED |
+| Country Pack and claims/reviews/enquiries/moderation/outreach controls | pending | pending solicitor/safeguarding owner | pending | pending | pending | RED |
+| H-Kay VAT status, invoice and reconciliation controls | pending | pending accountant | pending | pending | pending | RED |
+| CareGist brand/IP assignment or licence to H-Kay Limited | pending | pending corporate approver | pending | pending | pending | RED |
+
+## Unreviewed draft issues — 2 August 2026
+
+The B2B terms draft and Privacy Notice were drafted in-house without qualified legal
+review. Paid checkout is blocked. A solicitor should be pointed at these specifically:
 
 1. **Liability cap** — fees paid in the preceding 12 months. Untested against the
    Unfair Contract Terms Act 1977 and, for any consumer subscriber, the Consumer Rights
    Act 2015.
-2. **Consumer cancellation** — the Consumer Contracts Regulations 2013 14-day right with
-   an immediate-performance waiver and proportionate deduction. Correct in outline; the
-   wording has not been reviewed, and B2B/B2C classification of subscribers is unsettled.
+2. **B2B-only boundary** — consumer self-service is blocked in code and the draft contains
+   no consumer cooling-off waiver; the complete sales and support journey still needs review.
 3. **VAT** — H-Kay's registration status is unconfirmed. If registered, invoices must
    carry the VAT number and rate, and the price presentation may need revisiting.
 4. **Brand/IP authority** — no executed assignment or licence of the CareGist brand to

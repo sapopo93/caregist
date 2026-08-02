@@ -30,6 +30,8 @@ type ProviderAnalytics = {
 };
 
 const CHART_COLORS = ["#C1784F", "#4A5E45", "#D4943A", "#6B4C35", "#7E9B79", "#8C7E6A", "#2B2520", "#C44444"];
+const CHECKOUT_ENABLED = process.env.NEXT_PUBLIC_BILLING_CHECKOUT_ENABLED === "true";
+const B2B_TERMS_VERSION = process.env.NEXT_PUBLIC_B2B_TERMS_VERSION || "";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -48,6 +50,9 @@ export default function DashboardPage() {
   const [seatDraft, setSeatDraft] = useState(0);
   const [seatLoading, setSeatLoading] = useState(false);
   const [seatError, setSeatError] = useState("");
+  const [businessUseConfirmed, setBusinessUseConfirmed] = useState(false);
+  const [cancelLoading, setCancelLoading] = useState(false);
+  const [cancelError, setCancelError] = useState("");
   const [loadError, setLoadError] = useState(false);
   const [newKeyName, setNewKeyName] = useState("");
   const [newKeyEmail, setNewKeyEmail] = useState("");
@@ -257,6 +262,10 @@ export default function DashboardPage() {
 
   async function handleSeatUpdate() {
     if (!supportsSeatCheckout || !user) return;
+    if (!CHECKOUT_ENABLED || !B2B_TERMS_VERSION || !businessUseConfirmed) {
+      setSeatError("Paid changes are unavailable or require B2B authority confirmation.");
+      return;
+    }
     setSeatLoading(true);
     setSeatError("");
     void trackEvent("seat_addon_interaction", "dashboard_team_card", { tier, extra_seats: seatDraft });
@@ -266,7 +275,13 @@ export default function DashboardPage() {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: user.email, tier, extra_seats: seatDraft }),
+        body: JSON.stringify({
+          email: user.email,
+          tier,
+          extra_seats: seatDraft,
+          terms_version: B2B_TERMS_VERSION,
+          business_use_confirmed: businessUseConfirmed,
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -291,6 +306,31 @@ export default function DashboardPage() {
       setSeatError("Could not update seats.");
     } finally {
       setSeatLoading(false);
+    }
+  }
+
+  async function handleCancellation() {
+    setCancelLoading(true);
+    setCancelError("");
+    try {
+      const res = await fetch("/api/v1/billing/subscription/cancel", {
+        method: "POST",
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setCancelError(data.detail || "Could not schedule cancellation.");
+        return;
+      }
+      setSubscription((current: any) => ({
+        ...current,
+        cancel_at_period_end: true,
+        current_period_end: data.current_period_end,
+      }));
+    } catch {
+      setCancelError("Could not schedule cancellation. Email support@caregist.co.uk for help.");
+    } finally {
+      setCancelLoading(false);
     }
   }
 
@@ -386,6 +426,27 @@ export default function DashboardPage() {
             {info.cta}
           </Link>
         </div>
+        {subscription?.stripe_subscription_id && tier !== "free" && (
+          <div className="mt-4 border-t border-stone pt-4 text-sm">
+            {subscription.cancel_at_period_end ? (
+              <p className="text-dusk">
+                Cancellation scheduled{subscription.current_period_end
+                  ? ` for ${new Date(subscription.current_period_end).toLocaleDateString("en-GB")}`
+                  : " for the end of the current billing period"}.
+              </p>
+            ) : (
+              <button
+                onClick={() => void handleCancellation()}
+                disabled={cancelLoading}
+                className="text-clay underline disabled:opacity-50"
+              >
+                {cancelLoading ? "Scheduling cancellation..." : "Cancel at period end"}
+              </button>
+            )}
+            <p className="mt-1 text-xs text-dusk">You may also cancel by emailing support@caregist.co.uk.</p>
+            {cancelError && <p className="mt-2 text-xs text-alert">{cancelError}</p>}
+          </div>
+        )}
       </div>
 
       <ProviderAnalyticsSection
@@ -493,12 +554,28 @@ export default function DashboardPage() {
                 />
                 <button
                   onClick={() => void handleSeatUpdate()}
-                  disabled={seatLoading}
+                  disabled={seatLoading || !CHECKOUT_ENABLED || !businessUseConfirmed}
                   className="px-4 py-2 bg-clay text-white rounded-lg text-sm hover:bg-bark transition-colors disabled:opacity-50"
                 >
                   {seatLoading ? "Updating..." : "Update seats"}
                 </button>
               </div>
+              {CHECKOUT_ENABLED && B2B_TERMS_VERSION ? (
+                <label className="mb-2 flex items-start gap-2 text-xs text-dusk">
+                  <input
+                    type="checkbox"
+                    checked={businessUseConfirmed}
+                    onChange={(event) => setBusinessUseConfirmed(event.target.checked)}
+                    className="mt-0.5"
+                  />
+                  <span>
+                    I am acting for a business and can bind it to the{" "}
+                    <Link href="/terms" className="text-clay underline">current B2B terms</Link>.
+                  </span>
+                </label>
+              ) : (
+                <p className="mb-2 text-xs text-alert">Paid subscription changes are currently unavailable.</p>
+              )}
               <p className="text-xs text-dusk">
                 Add named access seats without moving to a different plan immediately. This updates your current subscription quantity.
               </p>

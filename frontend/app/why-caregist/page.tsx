@@ -95,7 +95,7 @@ export default function WhyCareGistPage() {
       <div className="bg-moss/10 border border-moss/20 rounded-xl p-8 mb-10 text-center">
         <h2 className="text-2xl font-bold text-bark mb-3">Our commitment to accuracy</h2>
         <p className="text-sm text-charcoal max-w-xl mx-auto mb-4">
-          We are careful about what we claim. We do not describe CareGist as live occupancy, live pricing, or real-time source data. We state what the implementation supports today: daily refresh, monitoring, exports, and workflow-ready access to cleaned regulatory data.
+          We do not describe CareGist as live occupancy, live pricing, real-time source data, or an active alert service. The Data Status page publishes the reconciliation watermark actually held; paid monitoring, exports, and delivery remain unavailable until their evidence gates pass.
         </p>
         <p className="text-xs text-dusk">
           CareGist is built on CQC data published under the Open Government Licence v3.0. Crown copyright and database right. CareGist is not affiliated with or endorsed by the Care Quality Commission.
@@ -114,7 +114,7 @@ export default function WhyCareGistPage() {
         <div className="bg-cream border border-stone rounded-lg p-5">
           <h3 className="font-bold text-bark mb-2">CareTech teams and product builders</h3>
           <ul className="space-y-2 text-sm text-charcoal">
-            <li>Daily-refreshed provider data through dashboard, exports, and API</li>
+            <li>Provider data with the reconciled source date published on Data Status</li>
             <li>Stable access layer over the public register</li>
             <li>Geospatial search, coordinates, local authority, and quality fields</li>
             <li>Faster path to usable care data without rebuilding a cleaning pipeline</li>
@@ -124,7 +124,7 @@ export default function WhyCareGistPage() {
         <div className="bg-cream border border-stone rounded-lg p-5">
           <h3 className="font-bold text-bark mb-2">Care groups and operators</h3>
           <ul className="space-y-2 text-sm text-charcoal">
-            <li>Monitor local markets and rating changes continuously</li>
+            <li>Search local markets now; monitoring remains gated pending production evidence</li>
             <li>Benchmark group portfolios using the same cleaned dataset</li>
             <li>Export shortlists and regional views into operating workflows</li>
             <li>Use dashboard-first access without needing internal engineering support</li>

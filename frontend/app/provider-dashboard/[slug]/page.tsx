@@ -6,6 +6,9 @@ import Link from "next/link";
 import { PROVIDER_TIERS } from "@/lib/caregist-config";
 import { getProviderHref } from "@/lib/provider-path";
 
+const CHECKOUT_ENABLED = process.env.NEXT_PUBLIC_BILLING_CHECKOUT_ENABLED === "true";
+const B2B_TERMS_VERSION = process.env.NEXT_PUBLIC_B2B_TERMS_VERSION || "";
+
 export default function ProviderDashboardPage({ params }: { params: Promise<{ slug: string }> }) {
   const router = useRouter();
   const [slug, setSlug] = useState("");
@@ -17,6 +20,7 @@ export default function ProviderDashboardPage({ params }: { params: Promise<{ sl
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [upgradeBannerTier, setUpgradeBannerTier] = useState<string | null>(null);
+  const [businessUseConfirmed, setBusinessUseConfirmed] = useState(false);
 
   // Form state
   const [description, setDescription] = useState("");
@@ -64,6 +68,14 @@ export default function ProviderDashboardPage({ params }: { params: Promise<{ sl
   }, [params, router]);
 
   async function handleUpgrade(tier: string) {
+    if (!CHECKOUT_ENABLED || !B2B_TERMS_VERSION) {
+      setError("Paid listing checkout is currently unavailable.");
+      return;
+    }
+    if (!businessUseConfirmed) {
+      setError("Confirm business use and authority after reviewing the B2B terms.");
+      return;
+    }
     if (!userEmail) {
       setError("Could not determine your account email. Please log out and log in again.");
       return;
@@ -75,7 +87,13 @@ export default function ProviderDashboardPage({ params }: { params: Promise<{ sl
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ slug, tier, email: userEmail }),
+        body: JSON.stringify({
+          slug,
+          tier,
+          email: userEmail,
+          terms_version: B2B_TERMS_VERSION,
+          business_use_confirmed: businessUseConfirmed,
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || "Failed to start checkout.");
@@ -193,6 +211,25 @@ export default function ProviderDashboardPage({ params }: { params: Promise<{ sl
       </div>
       <p className="text-dusk mb-8">{provider.name}</p>
 
+      {CHECKOUT_ENABLED && B2B_TERMS_VERSION ? (
+        <label className="mb-6 flex max-w-2xl items-start gap-2 rounded-lg border border-stone bg-cream p-4 text-sm text-dusk">
+          <input
+            type="checkbox"
+            checked={businessUseConfirmed}
+            onChange={(event) => setBusinessUseConfirmed(event.target.checked)}
+            className="mt-1"
+          />
+          <span>
+            I am purchasing for a business and have authority to bind it to the{" "}
+            <Link href="/terms" className="text-clay underline">current B2B terms</Link>.
+          </span>
+        </label>
+      ) : (
+        <p className="mb-6 rounded-lg border border-stone bg-cream p-4 text-sm text-dusk">
+          Paid provider upgrades are unavailable while legal, privacy, finance, and release gates remain open.
+        </p>
+      )}
+
       {upgradeBannerTier && (
         <div className="bg-clay/10 border border-clay rounded-lg p-6 mb-6 flex items-center justify-between gap-4">
           <div>
@@ -204,7 +241,7 @@ export default function ProviderDashboardPage({ params }: { params: Promise<{ sl
           <div className="flex gap-3 shrink-0">
             <button
               onClick={() => void handleUpgrade(upgradeBannerTier)}
-              disabled={upgrading === upgradeBannerTier}
+              disabled={upgrading === upgradeBannerTier || !CHECKOUT_ENABLED || !businessUseConfirmed}
               className="px-5 py-2 bg-clay text-white rounded-lg text-sm font-medium hover:bg-bark transition-colors disabled:opacity-50"
             >
               {upgrading === upgradeBannerTier ? "Redirecting..." : "Upgrade now"}
@@ -317,7 +354,7 @@ export default function ProviderDashboardPage({ params }: { params: Promise<{ sl
                   <p className="text-xs text-dusk">{t.photos} photos{t.virtualTour ? " + tour" : ""}</p>
                   <button
                     onClick={() => handleUpgrade(t.tier)}
-                    disabled={upgrading !== null}
+                    disabled={upgrading !== null || !CHECKOUT_ENABLED || !businessUseConfirmed}
                     className="mt-auto px-3 py-2 bg-clay text-white rounded-lg text-xs font-medium hover:bg-bark transition-colors disabled:opacity-50"
                   >
                     {upgrading === t.tier ? "Redirecting…" : "Get started"}

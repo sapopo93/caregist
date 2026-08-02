@@ -7,7 +7,7 @@ import ReviewsSection from "@/components/ReviewsSection";
 import { getProviderReviews } from "@/lib/api";
 import { getDirectoryProvider } from "@/lib/directory-db";
 import { getProviderHref } from "@/lib/provider-path";
-import { getSiteUrl, getStripePaymentLinkUrl } from "@/lib/site";
+import { getSiteUrl } from "@/lib/site";
 
 const ratingDimensions = [
   { key: "rating_safe", label: "Safe" },
@@ -65,7 +65,6 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function ProviderPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const stripePaymentLink = getStripePaymentLinkUrl();
   let provider = null;
 
   try {
@@ -254,9 +253,7 @@ export default async function ProviderPage({ params }: { params: Promise<{ slug:
                   Get a lead list
                 </Link>
                 <a
-                  href={stripePaymentLink ?? "/lead-list"}
-                  target={stripePaymentLink ? "_blank" : undefined}
-                  rel={stripePaymentLink ? "noreferrer noopener" : undefined}
+                  href="/lead-list"
                   className="rounded-full border border-clay px-4 py-2 text-center text-sm font-semibold text-clay hover:bg-parchment"
                 >
                   Request wider access

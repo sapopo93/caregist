@@ -33,6 +33,8 @@ const UPGRADE_BOX_TITLE: Record<string, string> = {
 };
 
 export default function PricingPage() {
+  const checkoutEnabled = process.env.BILLING_CHECKOUT_ENABLED === "true";
+  const termsVersion = process.env.B2B_TERMS_VERSION?.trim() || "";
   return (
     <div className="max-w-6xl mx-auto px-6 py-16">
       <div className="text-center mb-12">
@@ -137,7 +139,12 @@ export default function PricingPage() {
                   Contact sales
                 </TrackedLink>
               ) : (
-                <PricingCTA tier={tier.tier} isFreeTier={i === 0} />
+                <PricingCTA
+                  tier={tier.tier}
+                  isFreeTier={i === 0}
+                  checkoutEnabled={checkoutEnabled}
+                  termsVersion={termsVersion}
+                />
               )}
             </div>
           </div>
