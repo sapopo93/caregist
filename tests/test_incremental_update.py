@@ -1,24 +1,34 @@
 from __future__ import annotations
 
+import json
+import uuid
 from datetime import date, datetime, timezone
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 import pytest
 
 from api.services.provider_state_events import ProviderStateEvent
 from incremental_update import (
+    _finalize_batch,
     _insert_trusted_provider_event,
+    _prepare_batch,
     ALLOWED_COLUMNS,
     CqcActiveSnapshot,
     ChangesFetchError,
+    build_snapshot_manifest,
     build_snapshot_reconciliation,
+    checkpoint_slices,
     fetch_active_location_snapshot,
     fetch_changes,
     fetch_recent_via_list_scan,
     normalize_database_url,
+    partition_location_ids,
     resolve_since,
     should_process_list_scan_record,
+    shard_for_location,
+    validate_shard_coordinates,
 )
 
 
@@ -29,6 +39,108 @@ def test_normalize_database_url_rewrites_neon_pooler_hosts():
     assert normalize_database_url(
         "postgresql://user:pass@db.example.com/app"
     ) == "postgresql://user:pass@db.example.com/app"
+
+
+@pytest.mark.parametrize("shard_count", [1, 2, 4, 17])
+def test_shard_partition_is_deterministic_exhaustive_and_disjoint(shard_count):
+    location_ids = [f"1-{number:05d}" for number in range(1000, 1137)]
+    first = partition_location_ids(location_ids, shard_count)
+    second = partition_location_ids(list(reversed(location_ids)), shard_count)
+
+    assert first == second
+    assert sorted(item for shard in first for item in shard) == sorted(location_ids)
+    assert sum(len(set(shard)) for shard in first) == len(location_ids)
+    assert all(shard_for_location(item, shard_count) == index for index, shard in enumerate(first) for item in shard)
+
+
+@pytest.mark.parametrize("shard_count,shard_index", [(0, None), (-1, None), (4, -1), (4, 4)])
+def test_invalid_shard_coordinates_are_rejected(shard_count, shard_index):
+    with pytest.raises(ValueError):
+        validate_shard_coordinates(shard_count, shard_index)
+
+
+def test_snapshot_manifest_is_sorted_and_deterministic():
+    snapshot = CqcActiveSnapshot(
+        source_uri="https://www.cqc.org.uk/current.csv",
+        source_published_at="2026-08-01",
+        retrieved_at=datetime(2026, 8, 2, tzinfo=timezone.utc),
+        checksum_sha256="a" * 64,
+        location_ids=frozenset({"1-10002", "1-10000", "1-10001"}),
+    )
+    batch_id = uuid.UUID("12345678-1234-5678-9234-567812345678")
+
+    first = build_snapshot_manifest(snapshot, batch_id, 4)
+    second = build_snapshot_manifest(snapshot, batch_id, 4)
+
+    assert first == second
+    assert first["locationIds"] == ["1-10000", "1-10001", "1-10002"]
+    assert len(first["manifestChecksumSha256"]) == 64
+
+
+def test_prepare_dry_run_performs_database_reads_without_writes(tmp_path, monkeypatch):
+    snapshot = CqcActiveSnapshot(
+        source_uri="https://www.cqc.org.uk/current.csv",
+        source_published_at="2026-08-01",
+        retrieved_at=datetime(2026, 8, 2, tzinfo=timezone.utc),
+        checksum_sha256="a" * 64,
+        location_ids=frozenset({"1-10000"}),
+    )
+    monkeypatch.setattr("incremental_update.fetch_active_location_snapshot", lambda *_args, **_kwargs: snapshot)
+    cursor = Mock()
+    cursor.fetchall.return_value = []
+    manifest_path = tmp_path / "manifest.json"
+    args = SimpleNamespace(
+        batch_id="12345678-1234-5678-9234-567812345678",
+        snapshot_manifest=str(manifest_path),
+        shard_count=4,
+        data_page_url="https://www.cqc.org.uk/data",
+        dry_run=True,
+    )
+
+    assert _prepare_batch(args, Mock(), cursor) == 0
+    assert not manifest_path.exists()
+    assert all(str(call.args[0]).lstrip().upper().startswith("SELECT") for call in cursor.execute.call_args_list)
+
+
+def test_checkpoint_resume_starts_at_persisted_offset_without_overlap():
+    location_ids = [f"LOC-{index}" for index in range(10)]
+
+    checkpoints = list(checkpoint_slices(location_ids, start_offset=6, checkpoint_size=3))
+
+    assert checkpoints == [(6, ["LOC-6", "LOC-7", "LOC-8"]), (9, ["LOC-9"])]
+    assert [item for _, batch in checkpoints for item in batch] == location_ids[6:]
+
+
+def test_finalizer_fails_closed_when_shard_coverage_is_incomplete(tmp_path):
+    snapshot = CqcActiveSnapshot(
+        source_uri="https://www.cqc.org.uk/current.csv",
+        source_published_at="2026-08-01",
+        retrieved_at=datetime(2026, 8, 2, tzinfo=timezone.utc),
+        checksum_sha256="a" * 64,
+        location_ids=frozenset({"1-10000", "1-10001"}),
+    )
+    batch_id = uuid.UUID("12345678-1234-5678-9234-567812345678")
+    manifest = build_snapshot_manifest(snapshot, batch_id, 2)
+    manifest_path = tmp_path / "manifest.json"
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    cursor = Mock()
+    cursor.fetchone.return_value = (
+        2,
+        2,
+        manifest["manifestChecksumSha256"],
+        manifest["sourceChecksumSha256"],
+    )
+    cursor.fetchall.return_value = []
+    args = SimpleNamespace(
+        batch_id=str(batch_id),
+        snapshot_manifest=str(manifest_path),
+        dry_run=False,
+    )
+
+    with pytest.raises(ChangesFetchError, match="coverage is incomplete"):
+        _finalize_batch(args, Mock(), cursor)
+
+    assert all(str(call.args[0]).lstrip().upper().startswith("SELECT") for call in cursor.execute.call_args_list)
 
 
 def test_fetch_changes_raises_on_non_200_response():
@@ -223,11 +335,12 @@ def test_upsert_allows_last_updated_watermark_column():
     assert "last_updated" in ALLOWED_COLUMNS
 
 
-def test_completion_summary_is_not_emitted_from_finally_block():
+def test_cli_requires_explicit_batch_phase_and_has_no_global_run_lock():
     source = Path("incremental_update.py").read_text(encoding="utf-8")
-    summary_line = next(line for line in source.splitlines() if 'print("\\nIncremental update complete:")' in line)
 
-    assert summary_line.startswith("    print(")
+    assert 'choices=("prepare", "shard", "finalize", "abort"), required=True' in source
+    assert "INCREMENTAL_UPDATE_LOCK_ID" not in source
+    assert "acquire_run_lock" not in source
 
 
 def test_trusted_event_insert_uses_source_time_and_conflict_safe_return():
