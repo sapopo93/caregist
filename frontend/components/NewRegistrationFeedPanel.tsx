@@ -495,9 +495,9 @@ export default function NewRegistrationFeedPanel({
                     return (
                       <tr key={`${providerKey || event.id || event.name}-${event.effective_date}`} className="border-t border-stone">
                         <td className="px-4 py-3">
-                          <Link href={getProviderHref(providerRef)} className="font-medium text-bark underline-offset-4 hover:underline">
+                          <a href={getProviderHref(providerRef)} className="font-medium text-bark underline-offset-4 hover:underline">
                             {event.name}
-                          </Link>
+                          </a>
                           <div className="text-xs text-dusk mt-1">{event.town || "Unknown town"} · {event.postcode || "No postcode"}</div>
                         </td>
                         <td className="px-4 py-3 text-dusk">{event.service_types || "—"}</td>

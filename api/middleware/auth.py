@@ -72,7 +72,13 @@ async def _update_session_last_seen(session_token_hash: str) -> None:
         logger.warning("Failed to update session last_seen_at: %s", exc)
 
 
-async def _auth_from_key_row(row, *, rate_limit_key: str, api_key: str | None = None) -> dict:
+async def _auth_from_key_row(
+    row,
+    *,
+    rate_limit_key: str,
+    api_key: str | None = None,
+    consume_rate_limit: bool = True,
+) -> dict:
     if not row["is_active"]:
         raise HTTPException(status_code=403, detail="API key is disabled.")
 
@@ -105,7 +111,11 @@ async def _auth_from_key_row(row, *, rate_limit_key: str, api_key: str | None = 
                     detail="This access key is outside your plan seat limit. Revoke extra keys or upgrade your plan.",
                 )
 
-    remaining = await check_rate_limit(rate_limit_key, tier)
+    # Account and billing routes must remain reachable after a customer has
+    # exhausted their metered product allowance. Identity, verification,
+    # active-key and seat checks still run; only product-quota consumption is
+    # skipped for those routes.
+    remaining = await check_rate_limit(rate_limit_key, tier) if consume_rate_limit else {}
 
     import asyncio
     asyncio.create_task(_update_last_used(_row_value(row, "key_hash") or "", api_key or ""))
@@ -122,7 +132,7 @@ async def _auth_from_key_row(row, *, rate_limit_key: str, api_key: str | None = 
     }
 
 
-async def _validate_key(api_key: str) -> dict:
+async def _validate_key(api_key: str, *, consume_rate_limit: bool = True) -> dict:
     """Core key validation logic — shared by header and cookie auth paths."""
     api_key_hash = hash_api_key(api_key)
 
@@ -130,7 +140,7 @@ async def _validate_key(api_key: str) -> dict:
     if secrets.compare_digest(api_key, settings.api_master_key):
         tier = "admin"
         set_request_tier(tier)
-        remaining = await check_rate_limit(api_key_hash, tier)
+        remaining = await check_rate_limit(api_key_hash, tier) if consume_rate_limit else {}
         return {
             "key_id": None,
             "name": "master",
@@ -190,10 +200,15 @@ async def _validate_key(api_key: str) -> dict:
     elif _row_has_key(row, "key_hash") or _row_has_key(row, "key"):
         raise HTTPException(status_code=401, detail="Invalid API key.")
 
-    return await _auth_from_key_row(row, rate_limit_key=api_key_hash, api_key=api_key)
+    return await _auth_from_key_row(
+        row,
+        rate_limit_key=api_key_hash,
+        api_key=api_key,
+        consume_rate_limit=consume_rate_limit,
+    )
 
 
-async def _validate_session(session_token: str) -> dict:
+async def _validate_session(session_token: str, *, consume_rate_limit: bool = True) -> dict:
     session_token_hash = hash_api_key(session_token)
     async with get_connection() as conn:
         row = await conn.fetchrow(
@@ -235,18 +250,26 @@ async def _validate_session(session_token: str) -> dict:
 
     import asyncio
     asyncio.create_task(_update_session_last_seen(session_token_hash))
-    return await _auth_from_key_row(row, rate_limit_key=session_token_hash)
+    return await _auth_from_key_row(
+        row,
+        rate_limit_key=session_token_hash,
+        consume_rate_limit=consume_rate_limit,
+    )
 
 
-async def _validate_session_or_legacy_key(session_token: str) -> dict:
+async def _validate_session_or_legacy_key(
+    session_token: str,
+    *,
+    consume_rate_limit: bool = True,
+) -> dict:
     """Validate a revocable session cookie, with fallback for legacy key cookies."""
     try:
-        return await _validate_session(session_token)
+        return await _validate_session(session_token, consume_rate_limit=consume_rate_limit)
     except HTTPException as session_exc:
         if session_token.startswith("cs_"):
             raise
         try:
-            return await _validate_key(session_token)
+            return await _validate_key(session_token, consume_rate_limit=consume_rate_limit)
         except HTTPException:
             raise session_exc
 
@@ -271,6 +294,39 @@ async def validate_api_key(
         return await _validate_session_or_legacy_key(session_cookie)
     if not api_key and not session_cookie:
         raise HTTPException(status_code=401, detail="Missing API key. Pass X-API-Key header or log in.")
+
+
+async def validate_billing_identity(
+    api_key: str | None = Security(api_key_header),
+    caregist_session: str | None = Cookie(default=None),
+) -> dict:
+    """Authenticate account billing without consuming product allowance."""
+    session_cookie = _cookie_value(caregist_session)
+    if api_key:
+        try:
+            auth = await _validate_key(api_key, consume_rate_limit=False)
+            auth["auth_method"] = "api_key"
+            return auth
+        except HTTPException as key_exc:
+            if session_cookie:
+                try:
+                    auth = await _validate_session_or_legacy_key(
+                        session_cookie,
+                        consume_rate_limit=False,
+                    )
+                    auth["auth_method"] = "session"
+                    return auth
+                except HTTPException:
+                    pass
+            raise key_exc
+    if session_cookie:
+        auth = await _validate_session_or_legacy_key(
+            session_cookie,
+            consume_rate_limit=False,
+        )
+        auth["auth_method"] = "session"
+        return auth
+    raise HTTPException(status_code=401, detail="Missing API key. Pass X-API-Key header or log in.")
 
 
 async def validate_optional_api_key(

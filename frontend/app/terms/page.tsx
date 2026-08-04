@@ -78,7 +78,7 @@ export default function TermsPage() {
         <section>
           <h2 className="text-xl font-bold text-bark mt-8 mb-3">6. Subscriptions and billing</h2>
           <ul className="list-disc pl-6 space-y-1">
-            <li>Paid plans are billed monthly via Stripe. Prices are in GBP and exclude VAT where applicable.</li>
+            <li>Paid plans are billed monthly via Stripe. H-Kay Limited is not currently VAT registered, so displayed GBP prices are the total customer prices and VAT is not charged. If that status changes, pricing and invoice treatment will be updated from the applicable effective date.</li>
             <li>You can upgrade, downgrade, or cancel at any time. Subscription changes are processed through Stripe and reflected in your CareGist entitlements.</li>
             <li>Cancellation reverts your account to the Free tier. No refunds are provided for partial months.</li>
             <li>We may change pricing with 30 days&apos; written notice. Existing subscriptions continue at the old price until renewal.</li>

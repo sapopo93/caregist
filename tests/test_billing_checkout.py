@@ -9,7 +9,31 @@ from fastapi import HTTPException
 from pydantic import ValidationError
 
 from api.config import settings
-from api.routers.billing import PRICE_TO_TIER, CheckoutRequest, ProfileCheckoutRequest, create_checkout, create_profile_checkout
+from api.middleware.auth import validate_billing_identity
+from api.routers.billing import (
+    PRICE_TO_TIER,
+    CheckoutRequest,
+    ProfileCheckoutRequest,
+    create_checkout,
+    create_profile_checkout,
+    router,
+)
+
+
+def test_all_account_billing_routes_use_non_metering_identity_dependency():
+    guarded_paths = {
+        "/api/v1/billing/checkout",
+        "/api/v1/billing/profile-checkout",
+        "/api/v1/billing/subscription",
+    }
+    routes = {route.path: route for route in router.routes if route.path in guarded_paths}
+
+    assert routes.keys() == guarded_paths
+    for route in routes.values():
+        assert any(
+            dependency.call is validate_billing_identity
+            for dependency in route.dependant.dependencies
+        )
 
 
 @pytest.mark.asyncio
@@ -63,6 +87,7 @@ async def test_checkout_accepts_display_alias_and_uses_canonical_stripe_tier(mon
     assert kwargs["mode"] == "subscription"
     assert kwargs["metadata"]["tier"] == "pro"
     assert kwargs["metadata"]["price_id"] == "price_pro"
+    assert kwargs["idempotency_key"] == "caregist-checkout-user-42-pro-0"
     audit_args = next(call.args for call in conn.execute.await_args_list if "INSERT INTO audit_log" in call.args[0])
     assert audit_args[1] == "billing.checkout.create"
     assert "price_pro" not in repr(audit_args)

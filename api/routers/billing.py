@@ -8,7 +8,7 @@ import stripe
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, EmailStr, Field
 
-from api.middleware.auth import validate_api_key
+from api.middleware.auth import validate_billing_identity
 
 from api.config import (
     allows_extra_seats,
@@ -162,7 +162,7 @@ async def _persist_subscription_state(
 
 
 @router.post("/checkout")
-async def create_checkout(req: CheckoutRequest, _auth: dict = Depends(validate_api_key)) -> dict:
+async def create_checkout(req: CheckoutRequest, _auth: dict = Depends(validate_billing_identity)) -> dict:
     """Create a Stripe Checkout session for upgrading."""
     user_id = _require_billing_user_id(_auth)
     if not _auth.get("is_verified", False):
@@ -295,6 +295,7 @@ async def create_checkout(req: CheckoutRequest, _auth: dict = Depends(validate_a
         success_url=f"{settings.app_url}/dashboard?session_id={{CHECKOUT_SESSION_ID}}",
         cancel_url=f"{settings.app_url}/pricing",
         metadata={"user_id": str(user["id"]), "tier": tier, "extra_seats": str(extra_seats), "price_id": price_id},
+        idempotency_key=f"caregist-checkout-user-{user['id']}-{tier}-{extra_seats}",
     )
     async with get_connection() as conn:
         await write_audit_log(
@@ -325,7 +326,7 @@ class ProfileCheckoutRequest(BaseModel):
 @router.post("/profile-checkout")
 async def create_profile_checkout(
     req: ProfileCheckoutRequest,
-    _auth: dict = Depends(validate_api_key),
+    _auth: dict = Depends(validate_billing_identity),
 ) -> dict:
     """Create a Stripe Checkout session for a provider listing tier upgrade."""
     user_id = _require_billing_user_id(_auth)
@@ -389,6 +390,7 @@ async def create_profile_checkout(
             "provider_id": str(provider["id"]),
             "tier": req.tier,
         },
+        idempotency_key=f"caregist-profile-checkout-{provider['id']}-{req.tier}",
     )
     async with get_connection() as conn:
         await write_audit_log(
@@ -405,7 +407,7 @@ async def create_profile_checkout(
 
 
 @router.get("/subscription")
-async def get_subscription(_auth: dict = Depends(validate_api_key)) -> dict:
+async def get_subscription(_auth: dict = Depends(validate_billing_identity)) -> dict:
     """Return the active subscription and plan entitlements for the authenticated user."""
     user_id = _auth.get("user_id")
     if not user_id:

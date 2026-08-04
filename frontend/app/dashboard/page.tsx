@@ -474,8 +474,8 @@ export default function DashboardPage() {
           </p>
           <p className="text-xs text-dusk mb-4">
             {tier === "pro" || tier === "business"
-              ? "Additional named access seats are priced at £15 + VAT / seat / month and provisioned against your current plan entitlements."
-              : "Pro includes 3 named access seats. Additional seats are £15 + VAT / seat / month."}
+              ? "Additional named access seats are £15 per seat per month in total and are provisioned against your current plan entitlements."
+              : "Pro includes 3 named access seats. Additional seats are £15 per seat per month in total."}
           </p>
           {supportsSeatCheckout && (
             <div className="rounded-lg bg-parchment border border-stone p-4 mb-4">
