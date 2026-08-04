@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { trackEvent } from "@/lib/analytics";
+import { normalizePostVerificationPath } from "@/lib/post-verification";
 
 const PLAN_COPY: Record<string, { title: string; body: string }> = {
   free: {
@@ -88,7 +89,9 @@ function SignupForm() {
       } else {
         next = "/login";
       }
-      router.push(`/verify-email?email=${encodeURIComponent(email)}&next=${encodeURIComponent(next)}`);
+      const safeNext = normalizePostVerificationPath(next) || "/login";
+      localStorage.setItem("caregist_post_verify_path", safeNext);
+      router.push(`/verify-email?email=${encodeURIComponent(email)}&next=${encodeURIComponent(safeNext)}`);
     } catch {
       setError("Something went wrong. Please try again.");
     } finally {

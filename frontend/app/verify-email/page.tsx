@@ -3,16 +3,28 @@
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { normalizePostVerificationPath } from "@/lib/post-verification";
 
 function VerifyEmailScreen() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
   const email = searchParams.get("email") || "";
-  const next = searchParams.get("next") || "/login";
+  const requestedNext = searchParams.get("next");
 
   const [message, setMessage] = useState("We sent a verification link to your inbox.");
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [nextPath, setNextPath] = useState("/login");
+
+  useEffect(() => {
+    const storedNext = localStorage.getItem("caregist_post_verify_path");
+    const safeNext =
+      normalizePostVerificationPath(requestedNext) ||
+      normalizePostVerificationPath(storedNext) ||
+      "/login";
+    setNextPath(safeNext);
+    localStorage.setItem("caregist_post_verify_path", safeNext);
+  }, [requestedNext]);
 
   useEffect(() => {
     if (!token) return;
@@ -53,7 +65,10 @@ function VerifyEmailScreen() {
       <p className="text-dusk mb-6">{message}</p>
       {status === "success" && (
         <button
-          onClick={() => router.push(next)}
+          onClick={() => {
+            localStorage.removeItem("caregist_post_verify_path");
+            router.push(nextPath);
+          }}
           className="w-full py-3 bg-clay text-white rounded-lg font-medium hover:bg-bark transition-colors mb-3"
         >
           Continue
@@ -68,7 +83,7 @@ function VerifyEmailScreen() {
           Resend verification email
         </button>
       )}
-      <Link href="/login" className="text-clay underline text-sm">Back to login</Link>
+      <Link href={nextPath} className="text-clay underline text-sm">Back to login</Link>
     </div>
   );
 }
