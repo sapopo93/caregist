@@ -23,6 +23,18 @@
   },
   "rewrites": [
     {
+      "source": "/api/v1/(.*)",
+      "destination": { "service": "backend" }
+    },
+    {
+      "source": "/internal/(.*)",
+      "destination": { "service": "backend" }
+    },
+    {
+      "source": "/metrics",
+      "destination": { "service": "backend" }
+    },
+    {
       "source": "/(.*)",
       "destination": { "service": "frontend" }
     }
