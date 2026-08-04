@@ -9,7 +9,7 @@ Applies pending SQL migrations to the PostgreSQL database in version order. Idem
 ## What It Does
 1. Connects to PostgreSQL via `DATABASE_URL` env var
 2. Checks `schema_migrations` table for applied migrations
-3. Applies any missing migrations from `db/migrations/` in order (001-017)
+3. Applies every missing numbered migration from `db/migrations/` in filename order
 4. Records each migration in `schema_migrations` with timestamp
 5. Reports total applied, previously applied, and errors
 
@@ -38,7 +38,7 @@ Applying migrations...
   ✓ 002_search_hardening.sql (0.8s)
   ...
   ✓ 017_profile_subscription_id.sql (1.2s)
-Applied 17 migrations in 23.4s
+Applied 33 migrations in 23.4s
 ```
 
 ## Running in Production (EC2)
@@ -74,7 +74,7 @@ asyncio.run(check())
 "
 ```
 
-## Migration Files (Current: 17)
+## Migration Files (Current: 33 files, through 046)
 
 | # | File | Changes |
 |---|------|---------|
@@ -95,6 +95,11 @@ asyncio.run(check())
 | 015 | trusted_event_ledger_new_registration_feed.sql | Creates trusted_event_ledger, feed_saved_filters, feed_digest_subscriptions, feed_digest_delivery_log, webhook_delivery_log |
 | 016 | stripe_event_deduplication.sql | Creates stripe_processed_events table (24h event dedup) |
 | 017 | profile_subscription_id.sql | Adds profile_subscription_id to care_providers |
+| 018-029 | operational hardening | Email claims, pipeline logs, password resets, audit logs, idempotency, API-key hashing, and sessions |
+| 034 | named_care_groups_view.sql | Adds the named care-groups view |
+| 044 | expand_analytics_provider_reference.sql | Expands analytics provider references |
+| 045 | signup_purchase_intent.sql | Persists validated signup purchase intent |
+| 046 | billing_operations.sql | Adds durable, idempotent Stripe billing operations |
 
 ## Rollback / Undo
 

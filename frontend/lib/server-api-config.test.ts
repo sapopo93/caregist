@@ -28,6 +28,26 @@ function withEnv(env: Record<string, string | undefined>, fn: () => void) {
 }
 
 describe("server API config", () => {
+  it("uses the deployment-scoped backend binding for Vercel preview rendering", () => {
+    withEnv(
+      {
+        API_URL: undefined,
+        NEXT_PUBLIC_API_URL: undefined,
+        APP_URL: undefined,
+        NEXT_PUBLIC_APP_URL: undefined,
+        CAREGIST_BACKEND_URL: "https://backend.internal.vercel.app",
+        VERCEL_PROJECT_PRODUCTION_URL: "caregist-preview.example.vercel.app",
+        VERCEL_URL: "caregist-branch.example.vercel.app",
+        VERCEL: "1",
+        VERCEL_ENV: "preview",
+      },
+      () => {
+        assert.equal(getServerApiBase(), "https://backend.internal.vercel.app");
+        assert.equal(getPublicApiBase(), "https://backend.internal.vercel.app");
+      },
+    );
+  });
+
   it("derives the public API base from production APP_URL", () => {
     withEnv(
       {

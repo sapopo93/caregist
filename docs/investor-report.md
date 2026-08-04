@@ -126,7 +126,7 @@ Webhook handler processes subscription lifecycle (upgrades, downgrades, cancella
 
 | Component | Technology | Status |
 |-----------|-----------|--------|
-| Database | PostgreSQL 16 + PostGIS | Schema complete, seeded, indexed, 17 migrations applied |
+| Database | PostgreSQL 16 + PostGIS | Schema maintained by 33 numbered migration files through 046 |
 | API | Python FastAPI + asyncpg | Built, containerised, deployable on AWS EC2 |
 | Frontend | Next.js 15 + React 19 + Tailwind CSS 4 | Built, deployable on AWS EC2 |
 | Containers | Docker + docker-compose | One-command local deployment |

@@ -4,6 +4,8 @@ import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { trackEvent } from "@/lib/analytics";
+import { apiErrorMessage } from "@/lib/api-error";
+import { normalizePostVerificationPath } from "@/lib/post-verification";
 
 const PLAN_COPY: Record<string, { title: string; body: string }> = {
   free: {
@@ -70,13 +72,19 @@ function SignupForm() {
       const res = await fetch("/api/v1/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, name, password }),
+        body: JSON.stringify({
+          email,
+          name,
+          password,
+          plan,
+          provider_tier: providerTier || null,
+        }),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.detail || "Registration failed.");
+        setError(apiErrorMessage(data, "Registration failed."));
         return;
       }
 
@@ -88,7 +96,9 @@ function SignupForm() {
       } else {
         next = "/login";
       }
-      router.push(`/verify-email?email=${encodeURIComponent(email)}&next=${encodeURIComponent(next)}`);
+      const safeNext = normalizePostVerificationPath(next) || "/login";
+      localStorage.setItem("caregist_post_verify_path", safeNext);
+      router.push(`/verify-email?email=${encodeURIComponent(email)}&next=${encodeURIComponent(safeNext)}`);
     } catch {
       setError("Something went wrong. Please try again.");
     } finally {

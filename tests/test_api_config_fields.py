@@ -62,3 +62,18 @@ def test_feed_limits_scale_by_plan():
     assert pro["feed_rows"] == 50
     assert pro["saved_filters"] == 20
     assert business["webhooks"] is True
+
+
+def test_commercial_base_prices_match_the_public_monthly_ladder():
+    expected_gbp = {
+        "free": 0,
+        "alerts-pro": 49,
+        "starter": 99,
+        "pro": 199,
+        "business": 499,
+    }
+
+    assert {
+        tier: get_tier_config(tier)["base_price_gbp"]
+        for tier in expected_gbp
+    } == expected_gbp

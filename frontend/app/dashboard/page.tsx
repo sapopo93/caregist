@@ -40,6 +40,9 @@ export default function DashboardPage() {
   const [revealError, setRevealError] = useState("");
   const [tier, setTier] = useState("free");
   const [subscription, setSubscription] = useState<any>(null);
+  const [subscriptionReady, setSubscriptionReady] = useState(false);
+  const [portalLoading, setPortalLoading] = useState(false);
+  const [portalError, setPortalError] = useState("");
   const [webhooks, setWebhooks] = useState<any[]>([]);
   const [teamKeys, setTeamKeys] = useState<any[]>([]);
   const [providerAnalytics, setProviderAnalytics] = useState<ProviderAnalytics | null>(null);
@@ -85,6 +88,7 @@ export default function DashboardPage() {
       .then((data) => {
         if (!data) return;
         setSubscription(data);
+        setSubscriptionReady(true);
         if (data?.tier) {
           setTier(data.tier);
           localStorage.setItem("caregist_tier", data.tier);
@@ -294,6 +298,25 @@ export default function DashboardPage() {
     }
   }
 
+  async function handleBillingPortal() {
+    setPortalLoading(true);
+    setPortalError("");
+    try {
+      const res = await fetch("/api/v1/billing/portal", {
+        method: "POST",
+        credentials: "include",
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.detail || "Could not open billing management.");
+      if (!data.portal_url) throw new Error("Billing management did not return a secure link.");
+      window.location.href = data.portal_url;
+    } catch (error) {
+      setPortalError(error instanceof Error ? error.message : "Could not open billing management.");
+    } finally {
+      setPortalLoading(false);
+    }
+  }
+
   async function handleCreateTeamKey() {
     if (!newKeyName.trim() || !newKeyEmail.trim()) return;
     setKeyLoading(true);
@@ -385,6 +408,17 @@ export default function DashboardPage() {
           >
             {info.cta}
           </Link>
+          {subscription?.stripe_subscription_id && (
+            <button
+              type="button"
+              onClick={() => void handleBillingPortal()}
+              disabled={portalLoading}
+              className="ml-4 text-clay underline text-sm disabled:opacity-50"
+            >
+              {portalLoading ? "Opening billing…" : "Manage billing or cancel"}
+            </button>
+          )}
+          {portalError && <p className="text-alert text-xs mt-2">{portalError}</p>}
         </div>
       </div>
 
@@ -395,7 +429,16 @@ export default function DashboardPage() {
         tier={tier}
       />
 
-      <NewRegistrationFeedPanel tier={tier} upgradeHref={upgradeHref} />
+      {subscriptionReady ? (
+        <NewRegistrationFeedPanel tier={tier} upgradeHref={upgradeHref} />
+      ) : (
+        <section className="bg-cream border border-stone rounded-lg p-6 mb-6">
+          <h2 className="text-2xl font-bold mb-2">New registration feed</h2>
+          <p className="text-dusk text-sm">
+            {loadError ? "The feed is paused until your account plan can be verified." : "Loading your plan and feed access…"}
+          </p>
+        </section>
+      )}
 
       <div className="grid md:grid-cols-2 gap-6 mb-6">
         <div className="bg-cream border border-stone rounded-lg p-6">
@@ -474,8 +517,8 @@ export default function DashboardPage() {
           </p>
           <p className="text-xs text-dusk mb-4">
             {tier === "pro" || tier === "business"
-              ? "Additional named access seats are priced at £15 + VAT / seat / month and provisioned against your current plan entitlements."
-              : "Pro includes 3 named access seats. Additional seats are £15 + VAT / seat / month."}
+              ? "Additional named access seats are £15 per seat per month in total and are provisioned against your current plan entitlements."
+              : "Pro includes 3 named access seats. Additional seats are £15 per seat per month in total."}
           </p>
           {supportsSeatCheckout && (
             <div className="rounded-lg bg-parchment border border-stone p-4 mb-4">

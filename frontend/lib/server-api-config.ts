@@ -1,12 +1,8 @@
-import fs from "node:fs";
-import path from "node:path";
-
 const DEV_API_BASE = "http://localhost:8000";
 
 let hasWarnedServerApiBase = false;
 let hasWarnedPublicApiBase = false;
 let hasWarnedServerApiKey = false;
-let rootEnvCache: Record<string, string> | null = null;
 
 function deriveApiBaseFromAppUrl(appUrlRaw: string): string | undefined {
   try {
@@ -76,33 +72,8 @@ function warnOnce(flag: "server_base" | "server_key" | "public_base", message: s
   }
 }
 
-function readRootEnvVar(key: string): string | undefined {
-  if (typeof window !== "undefined") return undefined;
-  if (rootEnvCache) return rootEnvCache[key];
-
-  rootEnvCache = {};
-  const candidates = [
-    path.resolve(process.cwd(), ".env"),
-    path.resolve(process.cwd(), "..", ".env"),
-  ];
-
-  for (const envPath of candidates) {
-    if (!fs.existsSync(envPath)) continue;
-    for (const line of fs.readFileSync(envPath, "utf-8").split(/\r?\n/)) {
-      const trimmed = line.trim();
-      if (!trimmed || trimmed.startsWith("#") || !trimmed.includes("=")) continue;
-      const [rawKey, ...rest] = trimmed.split("=");
-      const rawValue = rest.join("=");
-      if (rawKey && !(rawKey in rootEnvCache)) {
-        rootEnvCache[rawKey] = rawValue.trim().replace(/^['"]|['"]$/g, "");
-      }
-    }
-  }
-
-  return rootEnvCache[key];
-}
-
 export function getServerApiBase() {
+  if (process.env.CAREGIST_BACKEND_URL) return process.env.CAREGIST_BACKEND_URL;
   const configuredApiUrl = resolveConfiguredApiBase(process.env.API_URL, "server_base");
   if (configuredApiUrl) return configuredApiUrl;
   if (process.env.NEXT_PUBLIC_API_URL) {
@@ -110,11 +81,6 @@ export function getServerApiBase() {
     if (configuredPublicApiUrl) return configuredPublicApiUrl;
     warnOnce("server_base", "[caregist] API_URL env var is not set — falling back to NEXT_PUBLIC_API_URL");
     return process.env.NEXT_PUBLIC_API_URL;
-  }
-  const rootApiUrl = readRootEnvVar("API_URL");
-  if (rootApiUrl) {
-    warnOnce("server_base", "[caregist] API_URL env var is not set in frontend config — falling back to repo root .env");
-    return rootApiUrl;
   }
   const derivedApiBase = deriveApiBaseFromConfiguredAppUrl();
   if (derivedApiBase) {
@@ -132,18 +98,6 @@ export function getServerApiKey() {
     return process.env.API_MASTER_KEY;
   }
 
-  const rootApiKey = readRootEnvVar("API_KEY");
-  if (rootApiKey) {
-    warnOnce("server_key", "[caregist] API_KEY env var is not set in frontend config — falling back to repo root .env");
-    return rootApiKey;
-  }
-
-  const rootMasterKey = readRootEnvVar("API_MASTER_KEY");
-  if (rootMasterKey) {
-    warnOnce("server_key", "[caregist] API_KEY env var is not set — falling back to API_MASTER_KEY from repo root .env");
-    return rootMasterKey;
-  }
-
   if (process.env.NEXT_PUBLIC_API_KEY) {
     warnOnce(
       "server_key",
@@ -156,6 +110,9 @@ export function getServerApiKey() {
 }
 
 export function getPublicApiBase() {
+  if (typeof window === "undefined" && process.env.CAREGIST_BACKEND_URL) {
+    return process.env.CAREGIST_BACKEND_URL;
+  }
   const configuredPublicApiUrl = resolveConfiguredApiBase(process.env.NEXT_PUBLIC_API_URL, "public_base");
   if (configuredPublicApiUrl) return configuredPublicApiUrl;
   const configuredApiUrl = resolveConfiguredApiBase(process.env.API_URL, "public_base");

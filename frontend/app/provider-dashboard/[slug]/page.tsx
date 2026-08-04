@@ -78,6 +78,14 @@ export default function ProviderDashboardPage({ params }: { params: Promise<{ sl
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || "Failed to start checkout.");
+      if (data.updated) {
+        setProvider((current: any) => current ? { ...current, profile_tier: data.tier } : current);
+        setUpgradeBannerTier(null);
+        setSuccess(data.unchanged ? "This is already your active listing plan." : "Your listing plan has been updated.");
+        setUpgrading(null);
+        return;
+      }
+      if (!data.checkout_url) throw new Error("Checkout did not return a secure payment link.");
       window.location.href = data.checkout_url;
     } catch (err: any) {
       setError(err.message);
@@ -309,7 +317,7 @@ export default function ProviderDashboardPage({ params }: { params: Promise<{ sl
             </p>
             {error && <p className="text-alert text-xs mb-3">{error}</p>}
             <div className="grid grid-cols-3 gap-4">
-              {PROVIDER_TIERS.filter((t) => t.tier !== "claimed").map((t, i) => (
+              {PROVIDER_TIERS.filter((t) => t.tier === "enhanced" || t.tier === "sponsored").map((t, i) => (
                 <div key={t.tier} className={`bg-parchment rounded-lg p-4 text-center flex flex-col gap-2 ${i === 0 ? "border-2 border-clay" : "border border-stone"}`}>
                   <p className="font-bold text-bark text-sm">{t.label}</p>
                   <p className="text-xl font-bold text-clay">£{t.priceMonthly}<span className="text-xs text-dusk">/mo</span></p>
@@ -326,6 +334,10 @@ export default function ProviderDashboardPage({ params }: { params: Promise<{ sl
             </div>
             <p className="text-xs text-dusk text-center mt-3">
               <Link href="/pricing#provider-plans" className="underline">See full feature comparison</Link>
+              {" · "}
+              <a href="mailto:enterprise@caregist.co.uk?subject=Provider+Enterprise+enquiry" className="underline">
+                Contact Enterprise sales
+              </a>
             </p>
           </div>
         </>

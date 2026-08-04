@@ -21,7 +21,7 @@ Important: this script does **not** refresh `care_providers` from the upstream C
   - `DATABASE_URL` (Neon or PostgreSQL)
   - `RESEND_API_KEY` (for digest emails)
   - `API_MASTER_KEY` (for internal auth if needed)
-- All 17 migrations applied (`schema_migrations` table)
+- All numbered migrations through `046_billing_operations.sql` applied (`schema_migrations` table)
 
 ## Running Manually
 

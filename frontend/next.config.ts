@@ -58,6 +58,7 @@ function validateServerApiEnv() {
     process.env.NEXT_PUBLIC_API_KEY;
 
   const serverApiBase =
+    process.env.CAREGIST_BACKEND_URL ||
     resolveApiBaseForProduction(process.env.API_URL) ||
     resolveApiBaseForProduction(process.env.NEXT_PUBLIC_API_URL) ||
     process.env.APP_URL ||
@@ -71,17 +72,11 @@ function validateServerApiEnv() {
     );
   }
 
-  if (!serverApiKey) {
-    failOrWarn(
-      "[caregist] Missing API_KEY/API_MASTER_KEY. Server-rendered search and provider pages will fail authentication.",
-    );
-  }
-
-  if (process.env.API_KEY === "dev_key_change_me") {
+  if (serverApiKey && process.env.API_KEY === "dev_key_change_me") {
     failOrWarn("[caregist] API_KEY is still set to the placeholder dev key.");
   }
 
-  if (process.env.API_MASTER_KEY === "change_me_in_production") {
+  if (serverApiKey && process.env.API_MASTER_KEY === "change_me_in_production") {
     failOrWarn("[caregist] API_MASTER_KEY is still set to the placeholder production value.");
   }
 
@@ -102,6 +97,7 @@ const nextConfig: NextConfig = {
   devIndicators: false,
   async rewrites() {
     const apiBase =
+      process.env.CAREGIST_BACKEND_URL ||
       resolveApiBaseForProduction(process.env.NEXT_PUBLIC_API_URL) ||
       resolveApiBaseForProduction(process.env.API_URL) ||
       "http://localhost:8000";

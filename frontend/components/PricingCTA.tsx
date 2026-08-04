@@ -116,23 +116,9 @@ export default function PricingCTA({ tier, isFreeTier }: { tier: string; isFreeT
 
   if (user && isCurrentTier) {
     return (
-      <div className="flex flex-col items-start gap-2">
-        <span className="inline-block text-center py-2.5 px-6 rounded-lg font-medium text-sm bg-moss/15 text-moss border border-moss/30">
-          Current Plan
-        </span>
-        {billingTier && (
-          <>
-            <button
-              onClick={() => void handleUpgrade(billingTier)}
-              disabled={loading}
-              className="inline-block text-center py-2.5 px-6 rounded-lg font-medium text-sm transition-colors border border-clay text-clay hover:bg-clay hover:text-white disabled:opacity-50"
-            >
-              {loading ? "Redirecting..." : ctaLabel}
-            </button>
-            {error && <p className="text-alert text-xs mt-1">{error}</p>}
-          </>
-        )}
-      </div>
+      <span className="inline-block text-center py-2.5 px-6 rounded-lg font-medium text-sm bg-moss/15 text-moss border border-moss/30">
+        Current Plan
+      </span>
     );
   }
 
