@@ -66,4 +66,17 @@ describe("revenue path contracts", () => {
       enterprise: "Contact",
     });
   });
+
+  it("carries retained login plan intent to a stable, focused pricing card", () => {
+    const login = source("app/login/page.tsx");
+    const pricing = source("app/pricing/page.tsx");
+    const retainedFocus = source("components/RetainedPlanFocus.tsx");
+
+    assert.match(login, /\/pricing\?highlight=\$\{upgrade\}/);
+    assert.match(pricing, /id=\{pricingPlanCardId\(tier\.tier\)/);
+    assert.match(pricing, /<RetainedPlanFocus \/>/);
+    assert.match(retainedFocus, /searchParams\.get\("highlight"\)/);
+    assert.match(retainedFocus, /scrollIntoView/);
+    assert.match(retainedFocus, /card\.focus/);
+  });
 });

@@ -1,8 +1,10 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { Suspense } from "react";
 
 import PricingCTA from "@/components/PricingCTA";
 import ProviderListingCTA from "@/components/ProviderListingCTA";
+import RetainedPlanFocus from "@/components/RetainedPlanFocus";
 import TrackedLink from "@/components/TrackedLink";
 import {
   CQC_INDEPENDENCE_LINE,
@@ -14,6 +16,7 @@ import {
   PRICING_LADDER,
   PROVIDER_TIERS,
 } from "@/lib/caregist-config";
+import { pricingPlanCardId } from "@/lib/pricing-plan-path";
 
 export const metadata: Metadata = {
   title: "CareGist Pricing | New Provider Intelligence, Alerts, Data & Listings",
@@ -49,6 +52,9 @@ export default function PricingPage() {
       </div>
 
       <div id="data-plans" className="scroll-mt-8" />
+      <Suspense fallback={null}>
+        <RetainedPlanFocus />
+      </Suspense>
 
       <div className="mb-8">
         <h2 className="text-2xl font-extrabold text-bark mb-2">New-provider intelligence plans</h2>
@@ -84,7 +90,9 @@ export default function PricingPage() {
         {PRICING_LADDER.map((tier, i) => (
           <div
             key={tier.tier}
-            className={`bg-cream border rounded-xl p-6 ${tier.recommended ? "border-2 border-clay shadow-lg ring-2 ring-amber/20" : "border-stone"}`}
+            id={pricingPlanCardId(tier.tier) || undefined}
+            tabIndex={-1}
+            className={`scroll-mt-24 bg-cream border rounded-xl p-6 focus:outline-none focus:ring-4 focus:ring-amber/50 ${tier.recommended ? "border-2 border-clay shadow-lg ring-2 ring-amber/20" : "border-stone"}`}
             style={{ borderLeftWidth: 4, borderLeftColor: tier.color }}
           >
             <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-4">
