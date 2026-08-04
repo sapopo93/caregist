@@ -103,7 +103,6 @@ function readRootEnvVar(key: string): string | undefined {
 }
 
 export function getServerApiBase() {
-  if (process.env.CAREGIST_BACKEND_URL) return process.env.CAREGIST_BACKEND_URL;
   const configuredApiUrl = resolveConfiguredApiBase(process.env.API_URL, "server_base");
   if (configuredApiUrl) return configuredApiUrl;
   if (process.env.NEXT_PUBLIC_API_URL) {
@@ -157,9 +156,6 @@ export function getServerApiKey() {
 }
 
 export function getPublicApiBase() {
-  if (typeof window === "undefined" && process.env.CAREGIST_BACKEND_URL) {
-    return process.env.CAREGIST_BACKEND_URL;
-  }
   const configuredPublicApiUrl = resolveConfiguredApiBase(process.env.NEXT_PUBLIC_API_URL, "public_base");
   if (configuredPublicApiUrl) return configuredPublicApiUrl;
   const configuredApiUrl = resolveConfiguredApiBase(process.env.API_URL, "public_base");

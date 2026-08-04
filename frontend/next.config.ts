@@ -58,7 +58,6 @@ function validateServerApiEnv() {
     process.env.NEXT_PUBLIC_API_KEY;
 
   const serverApiBase =
-    process.env.CAREGIST_BACKEND_URL ||
     resolveApiBaseForProduction(process.env.API_URL) ||
     resolveApiBaseForProduction(process.env.NEXT_PUBLIC_API_URL) ||
     process.env.APP_URL ||
@@ -97,7 +96,6 @@ const nextConfig: NextConfig = {
   devIndicators: false,
   async rewrites() {
     const apiBase =
-      process.env.CAREGIST_BACKEND_URL ||
       resolveApiBaseForProduction(process.env.NEXT_PUBLIC_API_URL) ||
       resolveApiBaseForProduction(process.env.API_URL) ||
       "http://localhost:8000";

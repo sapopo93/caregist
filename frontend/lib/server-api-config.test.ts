@@ -28,19 +28,6 @@ function withEnv(env: Record<string, string | undefined>, fn: () => void) {
 }
 
 describe("server API config", () => {
-  it("prefers the bound Vercel backend service", () => {
-    withEnv(
-      {
-        CAREGIST_BACKEND_URL: "https://internal-backend.example",
-        API_URL: "https://api.caregist.co.uk",
-      },
-      () => {
-        assert.equal(getServerApiBase(), "https://internal-backend.example");
-        assert.equal(getPublicApiBase(), "https://internal-backend.example");
-      },
-    );
-  });
-
   it("derives the public API base from production APP_URL", () => {
     withEnv(
       {
