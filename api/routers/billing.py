@@ -52,10 +52,6 @@ def init_stripe():
         PRICE_TO_PROFILE_TIER[settings.stripe_price_profile_sponsored] = "sponsored"
 
 
-def _is_base_plan_price(price_id: str | None) -> bool:
-    return PRICE_TO_TIER.get(price_id) in {"starter", "pro", "business"}
-
-
 CHECKOUT_TIERS = {"alerts-pro", "starter", "pro", "business"}
 CHECKOUT_TIER_ALIASES = {
     "data-starter": "starter",
@@ -67,6 +63,10 @@ CHECKOUT_TIER_ALIASES = {
 def _normalize_checkout_tier(tier: str) -> str:
     normalized = "-".join(tier.strip().lower().replace("_", "-").split())
     return CHECKOUT_TIER_ALIASES.get(normalized, normalized)
+
+
+def _is_base_plan_price(price_id: str | None) -> bool:
+    return PRICE_TO_TIER.get(price_id) in CHECKOUT_TIERS
 
 
 class CheckoutRequest(BaseModel):
@@ -276,7 +276,10 @@ async def create_checkout(req: CheckoutRequest, _auth: dict = Depends(validate_b
 
     customer_id = user["stripe_customer_id"]
     if not customer_id:
-        customer = stripe.Customer.create(email=user["email"])
+        customer = stripe.Customer.create(
+            email=user["email"],
+            idempotency_key=f"caregist-customer-user-{user['id']}",
+        )
         customer_id = customer.id
         async with get_connection() as conn:
             await conn.execute(
@@ -330,6 +333,8 @@ async def create_profile_checkout(
 ) -> dict:
     """Create a Stripe Checkout session for a provider listing tier upgrade."""
     user_id = _require_billing_user_id(_auth)
+    if not _auth.get("is_verified", False):
+        raise HTTPException(status_code=403, detail="Verify your email before starting billing.")
     if not settings.stripe_secret_key:
         raise HTTPException(status_code=503, detail="Billing not configured.")
 
@@ -354,7 +359,7 @@ async def create_profile_checkout(
     async with get_connection() as conn:
         provider = await conn.fetchrow(
             """
-            SELECT id, is_claimed, profile_tier
+            SELECT id, is_claimed, profile_tier, profile_subscription_id
             FROM care_providers
             WHERE slug = $1 OR id = $1
             ORDER BY CASE WHEN slug = $1 THEN 0 ELSE 1 END
@@ -367,9 +372,27 @@ async def create_profile_checkout(
     if not provider["is_claimed"]:
         raise HTTPException(status_code=403, detail="Provider must be claimed before upgrading the listing.")
 
+    async with get_connection() as conn:
+        approved_claim = await conn.fetchrow(
+            """SELECT id FROM provider_claims
+               WHERE provider_id = $1 AND status = 'approved'
+               AND claimant_email = (SELECT email FROM users WHERE id = $2)""",
+            provider["id"], user_id,
+        )
+    if not approved_claim:
+        raise HTTPException(status_code=403, detail="You don't have an approved claim for this provider.")
+    if provider.get("profile_subscription_id") or provider.get("profile_tier") in _PROFILE_TIERS:
+        raise HTTPException(
+            status_code=409,
+            detail="This provider already has a paid listing subscription. Contact support to change its plan.",
+        )
+
     customer_id = user["stripe_customer_id"]
     if not customer_id:
-        customer = stripe.Customer.create(email=user["email"])
+        customer = stripe.Customer.create(
+            email=user["email"],
+            idempotency_key=f"caregist-customer-user-{user['id']}",
+        )
         customer_id = customer.id
         async with get_connection() as conn:
             await conn.execute(
@@ -403,7 +426,8 @@ async def create_profile_checkout(
             conn=conn,
         )
 
-    return {"checkout_url": session.url, "session_id": session.id}
+    stripe_mode = "test" if settings.stripe_secret_key.startswith("sk_test_") else "live"
+    return {"checkout_url": session.url, "session_id": session.id, "stripe_mode": stripe_mode}
 
 
 @router.get("/subscription")
@@ -493,10 +517,11 @@ async def stripe_webhook(request: Request) -> dict:
             else:
                 logger.info("Unhandled Stripe event: %s", event_type)
 
-            # Expire old dedup entries (keep last 24 h). Non-critical; runs
-            # inside the transaction but the DELETE is cheap.
+            # Retain event IDs across Stripe's retry and manual-redelivery
+            # windows. This keeps a delayed duplicate from mutating an
+            # entitlement twice while still bounding table growth.
             await conn.execute(
-                "DELETE FROM stripe_processed_events WHERE processed_at < NOW() - INTERVAL '24 hours'"
+                "DELETE FROM stripe_processed_events WHERE processed_at < NOW() - INTERVAL '30 days'"
             )
 
     return {"status": "ok"}
@@ -517,7 +542,7 @@ async def _handle_checkout_completed(conn, session: dict) -> None:
 
     if not user_id:
         raise RuntimeError("checkout.session.completed missing user_id metadata")
-    if tier not in {"starter", "pro", "business"}:
+    if tier not in CHECKOUT_TIERS:
         raise RuntimeError(f"checkout.session.completed has invalid tier metadata: {tier!r}")
     if not subscription_id:
         raise RuntimeError("checkout.session.completed missing subscription id")
@@ -566,7 +591,7 @@ async def _handle_subscription_updated(conn, subscription: dict) -> None:
         for item in items:
             item_price_id = item.get("price", {}).get("id")
             mapped = PRICE_TO_TIER.get(item_price_id)
-            if mapped in {"starter", "pro", "business"}:
+            if mapped in CHECKOUT_TIERS:
                 price_id = item_price_id
             elif mapped == "pro-seat":
                 extra_seats += int(item.get("quantity") or 0)

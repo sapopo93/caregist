@@ -297,3 +297,149 @@ async def test_profile_checkout_rejects_another_account_email_without_enumeratin
     assert "bob@example.com" not in exc.value.detail
     assert "not found" not in exc.value.detail.lower()
     create_session.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_profile_checkout_requires_verified_email_before_database_or_stripe(monkeypatch):
+    monkeypatch.setattr(settings, "stripe_secret_key", "sk_test_checkout")
+
+    with patch("api.routers.billing.get_connection") as get_connection, \
+         patch("api.routers.billing.stripe.checkout.Session.create") as create_session:
+        with pytest.raises(HTTPException) as exc:
+            await create_profile_checkout(
+                ProfileCheckoutRequest(slug="claimed-provider", tier="enhanced", email="alice@example.com"),
+                {"user_id": 42, "email": "alice@example.com", "is_verified": False},
+            )
+
+    assert exc.value.status_code == 403
+    assert exc.value.detail == "Verify your email before starting billing."
+    get_connection.assert_not_called()
+    create_session.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_profile_checkout_requires_approved_claim_owned_by_authenticated_user(monkeypatch):
+    monkeypatch.setattr(settings, "stripe_secret_key", "sk_test_checkout")
+    monkeypatch.setattr(settings, "stripe_price_profile_enhanced", "price_profile_enhanced")
+
+    connections = []
+    for fetchrow_result in (
+        {"id": 42, "email": "alice@example.com", "stripe_customer_id": "cus_123"},
+        {"id": "LOC123", "is_claimed": True, "profile_tier": "claimed"},
+        None,
+    ):
+        conn = AsyncMock()
+        conn.fetchrow = AsyncMock(return_value=fetchrow_result)
+        connections.append(conn)
+
+    @asynccontextmanager
+    async def mock_get_connection():
+        yield connections.pop(0)
+
+    with patch("api.routers.billing.get_connection", mock_get_connection), \
+         patch("api.routers.billing.stripe.Customer.create") as create_customer, \
+         patch("api.routers.billing.stripe.checkout.Session.create") as create_session:
+        with pytest.raises(HTTPException) as exc:
+            await create_profile_checkout(
+                ProfileCheckoutRequest(slug="claimed-provider", tier="enhanced", email="alice@example.com"),
+                {"user_id": 42, "email": "alice@example.com", "is_verified": True},
+            )
+
+    assert exc.value.status_code == 403
+    assert exc.value.detail == "You don't have an approved claim for this provider."
+    create_customer.assert_not_called()
+    create_session.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_profile_checkout_rejects_second_paid_subscription(monkeypatch):
+    monkeypatch.setattr(settings, "stripe_secret_key", "sk_test_checkout")
+    monkeypatch.setattr(settings, "stripe_price_profile_sponsored", "price_profile_sponsored")
+
+    connections = []
+    for fetchrow_result in (
+        {"id": 42, "email": "alice@example.com", "stripe_customer_id": "cus_123"},
+        {
+            "id": "LOC123",
+            "is_claimed": True,
+            "profile_tier": "enhanced",
+            "profile_subscription_id": "sub_existing",
+        },
+        {"id": 88},
+    ):
+        conn = AsyncMock()
+        conn.fetchrow = AsyncMock(return_value=fetchrow_result)
+        connections.append(conn)
+
+    @asynccontextmanager
+    async def mock_get_connection():
+        yield connections.pop(0)
+
+    with patch("api.routers.billing.get_connection", mock_get_connection), \
+         patch("api.routers.billing.stripe.checkout.Session.create") as create_session:
+        with pytest.raises(HTTPException) as exc:
+            await create_profile_checkout(
+                ProfileCheckoutRequest(slug="claimed-provider", tier="sponsored", email="alice@example.com"),
+                {"user_id": 42, "email": "alice@example.com", "is_verified": True},
+            )
+
+    assert exc.value.status_code == 409
+    assert "already has a paid listing subscription" in exc.value.detail
+    create_session.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_profile_checkout_safe_test_mode_journey_uses_owned_claim_and_server_price(monkeypatch):
+    monkeypatch.setattr(settings, "stripe_secret_key", "sk_test_checkout")
+    monkeypatch.setattr(settings, "stripe_price_profile_enhanced", "price_profile_enhanced")
+    monkeypatch.setattr(settings, "app_url", "https://preview.caregist.test")
+
+    connections = []
+    for fetchrow_result in (
+        {"id": 42, "email": "alice@example.com", "stripe_customer_id": None},
+        {
+            "id": "LOC123",
+            "is_claimed": True,
+            "profile_tier": "claimed",
+            "profile_subscription_id": None,
+        },
+        {"id": 88},
+        None,
+        None,
+    ):
+        conn = AsyncMock()
+        conn.fetchrow = AsyncMock(return_value=fetchrow_result)
+        connections.append(conn)
+
+    @asynccontextmanager
+    async def mock_get_connection():
+        yield connections.pop(0)
+
+    created_session = SimpleNamespace(url="https://checkout.stripe.test/profile", id="cs_profile_test")
+    created_customer = SimpleNamespace(id="cus_profile_test")
+    with patch("api.routers.billing.get_connection", mock_get_connection), \
+         patch("api.routers.billing.stripe.Customer.create", return_value=created_customer) as create_customer, \
+         patch("api.routers.billing.stripe.checkout.Session.create", return_value=created_session) as create_session:
+        result = await create_profile_checkout(
+            ProfileCheckoutRequest(slug="claimed-provider", tier="enhanced", email="alice@example.com"),
+            {"user_id": 42, "email": "alice@example.com", "is_verified": True},
+        )
+
+    assert result == {
+        "checkout_url": "https://checkout.stripe.test/profile",
+        "session_id": "cs_profile_test",
+        "stripe_mode": "test",
+    }
+    assert create_customer.call_args.kwargs == {
+        "email": "alice@example.com",
+        "idempotency_key": "caregist-customer-user-42",
+    }
+    checkout = create_session.call_args.kwargs
+    assert checkout["line_items"] == [{"price": "price_profile_enhanced", "quantity": 1}]
+    assert checkout["metadata"] == {
+        "type": "profile",
+        "slug": "claimed-provider",
+        "provider_id": "LOC123",
+        "tier": "enhanced",
+    }
+    assert checkout["idempotency_key"] == "caregist-profile-checkout-LOC123-enhanced"

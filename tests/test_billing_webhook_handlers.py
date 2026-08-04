@@ -30,6 +30,7 @@ class _Transaction:
 class _WebhookConn:
     def __init__(self):
         self.delivery_count = 0
+        self.executed_queries: list[tuple] = []
 
     def transaction(self):
         return _Transaction()
@@ -39,6 +40,7 @@ class _WebhookConn:
         return event_id if self.delivery_count == 1 else None
 
     async def execute(self, *args, **kwargs):
+        self.executed_queries.append(args)
         return "DELETE 0"
 
 
@@ -87,6 +89,34 @@ async def test_duplicate_stripe_event_changes_entitlement_once(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_stripe_event_deduplication_covers_delayed_redelivery_window(monkeypatch):
+    conn = _WebhookConn()
+
+    @asynccontextmanager
+    async def mock_get_connection():
+        yield conn
+
+    event = {
+        "id": "evt_delayed_retry",
+        "type": "checkout.session.completed",
+        "data": {"object": {"id": "cs_test_retry"}},
+    }
+    monkeypatch.setattr(billing.settings, "stripe_secret_key", "sk_test_checkout")
+    monkeypatch.setattr(billing.settings, "stripe_webhook_secret", "whsec_test")
+    monkeypatch.setattr(billing, "get_connection", mock_get_connection)
+    monkeypatch.setattr(billing.stripe.Webhook, "construct_event", lambda *args: event)
+    monkeypatch.setattr(billing, "_handle_checkout_completed", AsyncMock())
+
+    await billing.stripe_webhook(_webhook_request())
+
+    cleanup_query = next(
+        call[0] for call in conn.executed_queries
+        if "DELETE FROM stripe_processed_events" in call[0]
+    )
+    assert "INTERVAL '30 days'" in cleanup_query
+
+
+@pytest.mark.asyncio
 async def test_checkout_completed_missing_user_id_raises_for_retry():
     with pytest.raises(RuntimeError, match="missing user_id"):
         await billing._handle_checkout_completed(
@@ -127,3 +157,58 @@ async def test_profile_checkout_missing_metadata_raises_for_retry():
                 "subscription": "sub_123",
             },
         )
+
+
+@pytest.mark.asyncio
+async def test_alerts_pro_checkout_completion_activates_paid_entitlements(monkeypatch):
+    conn = AsyncMock()
+    monkeypatch.setitem(billing.PRICE_TO_TIER, "price_alerts", "alerts-pro")
+
+    await billing._handle_checkout_completed(
+        conn,
+        {
+            "metadata": {
+                "user_id": "123",
+                "tier": "alerts-pro",
+                "extra_seats": "0",
+                "price_id": "price_alerts",
+            },
+            "subscription": "sub_alerts",
+            "customer": "cus_alerts",
+        },
+    )
+
+    subscription_insert = next(
+        call.args for call in conn.execute.await_args_list
+        if "INSERT INTO subscriptions" in call.args[0]
+    )
+    assert subscription_insert[1:6] == (123, "sub_alerts", "price_alerts", "alerts-pro", "active")
+    assert subscription_insert[6:10] == (1, 0, 1, 0)
+    api_key_update = next(
+        call.args for call in conn.execute.await_args_list
+        if "UPDATE api_keys SET tier" in call.args[0]
+    )
+    assert api_key_update[1] == "alerts-pro"
+    assert api_key_update[3] == 123
+
+
+@pytest.mark.asyncio
+async def test_alerts_pro_subscription_update_preserves_entitlements(monkeypatch):
+    conn = AsyncMock()
+    conn.fetchrow = AsyncMock(return_value={"user_id": 123})
+    monkeypatch.setitem(billing.PRICE_TO_TIER, "price_alerts", "alerts-pro")
+
+    await billing._handle_subscription_updated(
+        conn,
+        {
+            "id": "sub_alerts",
+            "status": "active",
+            "items": {"data": [{"price": {"id": "price_alerts"}, "quantity": 1}]},
+        },
+    )
+
+    subscription_insert = next(
+        call.args for call in conn.execute.await_args_list
+        if "INSERT INTO subscriptions" in call.args[0]
+    )
+    assert subscription_insert[1:6] == (123, "sub_alerts", "price_alerts", "alerts-pro", "active")
