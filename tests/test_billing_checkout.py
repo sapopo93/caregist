@@ -14,6 +14,7 @@ from api.routers.billing import (
     PRICE_TO_TIER,
     CheckoutRequest,
     ProfileCheckoutRequest,
+    _handle_checkout_completed,
     create_checkout,
     create_profile_checkout,
     router,
@@ -91,6 +92,66 @@ async def test_checkout_accepts_display_alias_and_uses_canonical_stripe_tier(mon
     audit_args = next(call.args for call in conn.execute.await_args_list if "INSERT INTO audit_log" in call.args[0])
     assert audit_args[1] == "billing.checkout.create"
     assert "price_pro" not in repr(audit_args)
+
+
+@pytest.mark.asyncio
+async def test_alerts_pro_safe_local_purchase_contract_activates_exact_selected_tier(monkeypatch):
+    """Exercise checkout creation through entitlement activation without network or live data."""
+    monkeypatch.setattr(settings, "stripe_secret_key", "sk_test_checkout")
+    monkeypatch.setattr(settings, "stripe_price_alerts_pro", "price_alerts")
+    monkeypatch.setattr(settings, "app_url", "https://preview.caregist.test")
+    monkeypatch.setitem(PRICE_TO_TIER, "price_alerts", "alerts-pro")
+
+    checkout_conn = AsyncMock()
+    checkout_conn.fetchrow = AsyncMock(
+        side_effect=[
+            {"id": 42, "email": "alice@example.com", "stripe_customer_id": "cus_test"},
+            None,
+        ]
+    )
+
+    @asynccontextmanager
+    async def mock_get_connection():
+        yield checkout_conn
+
+    created_session = SimpleNamespace(url="https://checkout.stripe.test/alerts", id="cs_alerts_test")
+    with patch("api.routers.billing.get_connection", mock_get_connection), \
+         patch("api.routers.billing.stripe.checkout.Session.create", return_value=created_session) as create_session:
+        checkout_result = await create_checkout(
+            CheckoutRequest(email="alice@example.com", tier="alerts-pro"),
+            {"user_id": 42, "email": "alice@example.com", "is_verified": True},
+        )
+
+    assert checkout_result["stripe_mode"] == "test"
+    checkout_metadata = create_session.call_args.kwargs["metadata"]
+    assert checkout_metadata == {
+        "user_id": "42",
+        "tier": "alerts-pro",
+        "extra_seats": "0",
+        "price_id": "price_alerts",
+    }
+
+    entitlement_conn = AsyncMock()
+    await _handle_checkout_completed(
+        entitlement_conn,
+        {
+            "metadata": checkout_metadata,
+            "subscription": "sub_alerts_test",
+            "customer": "cus_test",
+        },
+    )
+
+    subscription_insert = next(
+        call.args for call in entitlement_conn.execute.await_args_list
+        if "INSERT INTO subscriptions" in call.args[0]
+    )
+    assert subscription_insert[1:6] == (
+        42,
+        "sub_alerts_test",
+        "price_alerts",
+        "alerts-pro",
+        "active",
+    )
 
 
 @pytest.mark.asyncio
