@@ -79,4 +79,13 @@ describe("revenue path contracts", () => {
     assert.match(retainedFocus, /scrollIntoView/);
     assert.match(retainedFocus, /card\.focus/);
   });
+
+  it("does not spend a Free user's product allowance on unavailable feed controls", () => {
+    const feed = source("components/NewRegistrationFeedPanel.tsx");
+
+    assert.match(
+      feed,
+      /if \(tier === "free"\) \{[\s\S]*?return;[\s\S]*?\}[\s\S]*?void loadSavedFilters\(\);[\s\S]*?void loadDigest\(\);/,
+    );
+  });
 });

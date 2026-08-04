@@ -191,9 +191,17 @@ export default function NewRegistrationFeedPanel({
 
   useEffect(() => {
     void loadFeed(1, EMPTY_FILTERS);
+  }, []);
+
+  useEffect(() => {
+    if (tier === "free") {
+      setSavedFilters([]);
+      setDigest(null);
+      return;
+    }
     void loadSavedFilters();
     void loadDigest();
-  }, []);
+  }, [tier]);
 
   async function handleExport(format: "csv" | "xlsx") {
     setExportLoading(format);
