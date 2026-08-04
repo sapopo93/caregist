@@ -13,7 +13,7 @@ from fastapi.responses import StreamingResponse
 
 from api.config import BASIC_CSV_FIELDS, filter_fields, get_next_tier, get_tier_config, settings
 from api.database import get_connection
-from api.middleware.auth import validate_api_key, validate_optional_api_key
+from api.middleware.auth import validate_api_key, validate_billing_identity, validate_optional_api_key
 from api.middleware.rate_limit import add_rate_limit_headers, check_export_limit
 from api.queries.providers import (
     CQC_ID_LOOKUP,
@@ -548,7 +548,7 @@ async def remove_monitor(
 @router.get("/{slug}/monitor-status")
 async def monitor_status(
     slug: str,
-    _auth: dict = Depends(validate_api_key),
+    _auth: dict = Depends(validate_billing_identity),
 ) -> dict:
     """Check if the current user is monitoring a provider."""
     user_id = _auth.get("user_id")
