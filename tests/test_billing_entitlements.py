@@ -58,3 +58,33 @@ async def test_get_subscription_does_not_collapse_paid_alerts_pro_to_free():
     assert result["tier"] == "alerts-pro"
     assert result["stripe_subscription_id"] == "sub_alerts"
     assert result["entitlements"]["tier"] == "alerts-pro"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("status", ["past_due", "incomplete", "unpaid", "paused", "canceled", "unknown"])
+async def test_get_subscription_fails_closed_for_non_entitled_billing_status(status):
+    conn = AsyncMock()
+    conn.fetchrow = AsyncMock(
+        return_value={
+            "tier": "business",
+            "status": status,
+            "included_users": 10,
+            "extra_seats": 8,
+            "max_users": 18,
+            "seat_price_gbp": 49,
+            "stripe_subscription_id": "sub_business",
+        }
+    )
+
+    @asynccontextmanager
+    async def mock_get_connection():
+        yield conn
+
+    with patch("api.routers.billing.get_connection", mock_get_connection):
+        result = await get_subscription({"user_id": 1, "tier": "business"})
+
+    assert result["tier"] == "free"
+    assert result["status"] == status
+    assert result["stripe_subscription_id"] == "sub_business"
+    assert result["entitlements"]["tier"] == "free"
+    assert result["entitlements"]["extra_seats"] == 0

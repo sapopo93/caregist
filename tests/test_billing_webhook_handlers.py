@@ -163,10 +163,21 @@ async def test_profile_checkout_missing_metadata_raises_for_retry():
 async def test_alerts_pro_checkout_completion_activates_paid_entitlements(monkeypatch):
     conn = AsyncMock()
     monkeypatch.setitem(billing.PRICE_TO_TIER, "price_alerts", "alerts-pro")
+    monkeypatch.setattr(
+        billing.stripe.Subscription,
+        "retrieve",
+        lambda _subscription_id: {
+            "customer": "cus_alerts",
+            "status": "active",
+            "items": {"data": [{"id": "si_alerts", "price": {"id": "price_alerts"}, "quantity": 1}]},
+        },
+    )
 
     await billing._handle_checkout_completed(
         conn,
         {
+            "id": "cs_alerts",
+            "payment_status": "paid",
             "metadata": {
                 "user_id": "123",
                 "tier": "alerts-pro",
@@ -186,10 +197,10 @@ async def test_alerts_pro_checkout_completion_activates_paid_entitlements(monkey
     assert subscription_insert[6:10] == (1, 0, 1, 0)
     api_key_update = next(
         call.args for call in conn.execute.await_args_list
-        if "UPDATE api_keys SET tier" in call.args[0]
+        if "UPDATE api_keys" in call.args[0]
     )
-    assert api_key_update[1] == "alerts-pro"
-    assert api_key_update[3] == 123
+    assert "WHEN 'alerts-pro'" in api_key_update[0]
+    assert api_key_update[1] == 123
 
 
 @pytest.mark.asyncio
@@ -212,6 +223,34 @@ async def test_alerts_pro_subscription_update_preserves_entitlements(monkeypatch
         if "INSERT INTO subscriptions" in call.args[0]
     )
     assert subscription_insert[1:6] == (123, "sub_alerts", "price_alerts", "alerts-pro", "active")
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("status", ["past_due", "incomplete", "unpaid", "paused", "canceled", "unknown"])
+async def test_b2b_subscription_update_revokes_paid_api_key_for_non_entitled_status(monkeypatch, status):
+    conn = AsyncMock()
+    conn.fetchrow = AsyncMock(return_value={"user_id": 123})
+    monkeypatch.setitem(billing.PRICE_TO_TIER, "price_business", "business")
+
+    await billing._handle_subscription_updated(
+        conn,
+        {
+            "id": "sub_business",
+            "status": status,
+            "items": {"data": [{"price": {"id": "price_business"}, "quantity": 1}]},
+        },
+    )
+
+    subscription_insert = next(
+        call.args for call in conn.execute.await_args_list
+        if "INSERT INTO subscriptions" in call.args[0]
+    )
+    assert subscription_insert[4:6] == ("business", status)
+    api_key_update = next(
+        call.args for call in conn.execute.await_args_list
+        if "UPDATE api_keys" in call.args[0]
+    )
+    assert "status IN ('active', 'trialing')" in api_key_update[0]
 
 
 @pytest.mark.asyncio

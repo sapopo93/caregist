@@ -97,4 +97,29 @@ describe("revenue path contracts", () => {
     assert.match(providerDashboard, /profile_tier: data\.tier/);
     assert.match(providerDashboard, /if \(!data\.checkout_url\) throw new Error/);
   });
+
+  it("does not offer a second charge action on the current account plan", () => {
+    const pricingCta = source("components/PricingCTA.tsx");
+    const currentPlanBranch = pricingCta.match(
+      /if \(user && isCurrentTier\) \{([\s\S]*?)if \(user && currentRank < targetRank/,
+    );
+
+    assert.ok(currentPlanBranch);
+    assert.match(currentPlanBranch[1], /Current Plan/);
+    assert.doesNotMatch(currentPlanBranch[1], /handleUpgrade|<button/);
+  });
+
+  it("does not send the provider Enterprise card to unsupported self-serve checkout", () => {
+    const dashboard = source("app/provider-dashboard/[slug]/page.tsx");
+
+    assert.match(dashboard, /t\.tier === "enhanced" \|\| t\.tier === "sponsored"/);
+    assert.match(dashboard, /mailto:enterprise@caregist\.co\.uk/);
+  });
+
+  it("backs the cancel-anytime promise with authenticated billing management", () => {
+    const dashboard = source("app/dashboard/page.tsx");
+
+    assert.match(dashboard, /fetch\("\/api\/v1\/billing\/portal"/);
+    assert.match(dashboard, /Manage billing or cancel/);
+  });
 });

@@ -90,6 +90,28 @@ REQUIRED_PRODUCTION_SECRETS = (
 )
 
 
+def validate_public_stripe_price_ids(values: Mapping[str, Any]) -> None:
+    configured = {
+        field: str(values.get(field) or "").strip()
+        for field in REQUIRED_PUBLIC_STRIPE_PRICE_FIELDS
+    }
+    malformed = [field for field, value in configured.items() if value and not value.startswith("price_")]
+    if malformed:
+        names = ", ".join(SECRET_ENV_NAMES[field] for field in malformed)
+        raise RuntimeError(f"FATAL: Stripe Price IDs must start with 'price_': {names}")
+    reverse: dict[str, list[str]] = {}
+    for field, value in configured.items():
+        if value:
+            reverse.setdefault(value, []).append(field)
+    duplicates = [fields for fields in reverse.values() if len(fields) > 1]
+    if duplicates:
+        names = ", ".join(
+            "/".join(SECRET_ENV_NAMES[field] for field in fields)
+            for fields in duplicates
+        )
+        raise RuntimeError(f"FATAL: Public Stripe plans must use unique Price IDs: {names}")
+
+
 class AwsSecretsManagerSecretLoader:
     """Load application secrets from one JSON secret in AWS Secrets Manager."""
 
@@ -216,6 +238,7 @@ def load_application_secrets(
             missing_env_names = ", ".join(SECRET_ENV_NAMES[name] for name in missing)
             source = "Vercel environment" if is_vercel else "AWS Secrets Manager"
             raise RuntimeError(f"FATAL: Missing required production secrets in {source}: {missing_env_names}")
+        validate_public_stripe_price_ids(values)
         return {name: values.get(name, "") for name in SECRET_ENV_NAMES}
 
     return values

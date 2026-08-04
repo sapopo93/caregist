@@ -174,7 +174,14 @@ async def _validate_key(api_key: str, *, consume_rate_limit: bool = True) -> dic
                     (SELECT s.max_users
                      FROM subscriptions s
                      WHERE s.user_id = ak.user_id
-                     ORDER BY s.created_at DESC
+                       AND s.status IN ('active', 'trialing')
+                     ORDER BY CASE s.tier
+                         WHEN 'business' THEN 4
+                         WHEN 'pro' THEN 3
+                         WHEN 'starter' THEN 2
+                         WHEN 'alerts-pro' THEN 1
+                         ELSE 0
+                     END DESC, s.created_at DESC
                      LIMIT 1),
                     1
                 ) AS subscription_max_users
@@ -232,7 +239,14 @@ async def _validate_session(session_token: str, *, consume_rate_limit: bool = Tr
                     (SELECT s.max_users
                      FROM subscriptions s
                      WHERE s.user_id = ak.user_id
-                     ORDER BY s.created_at DESC
+                       AND s.status IN ('active', 'trialing')
+                     ORDER BY CASE s.tier
+                         WHEN 'business' THEN 4
+                         WHEN 'pro' THEN 3
+                         WHEN 'starter' THEN 2
+                         WHEN 'alerts-pro' THEN 1
+                         ELSE 0
+                     END DESC, s.created_at DESC
                      LIMIT 1),
                     1
                 ) AS subscription_max_users

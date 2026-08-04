@@ -41,6 +41,8 @@ export default function DashboardPage() {
   const [tier, setTier] = useState("free");
   const [subscription, setSubscription] = useState<any>(null);
   const [subscriptionReady, setSubscriptionReady] = useState(false);
+  const [portalLoading, setPortalLoading] = useState(false);
+  const [portalError, setPortalError] = useState("");
   const [webhooks, setWebhooks] = useState<any[]>([]);
   const [teamKeys, setTeamKeys] = useState<any[]>([]);
   const [providerAnalytics, setProviderAnalytics] = useState<ProviderAnalytics | null>(null);
@@ -296,6 +298,25 @@ export default function DashboardPage() {
     }
   }
 
+  async function handleBillingPortal() {
+    setPortalLoading(true);
+    setPortalError("");
+    try {
+      const res = await fetch("/api/v1/billing/portal", {
+        method: "POST",
+        credentials: "include",
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.detail || "Could not open billing management.");
+      if (!data.portal_url) throw new Error("Billing management did not return a secure link.");
+      window.location.href = data.portal_url;
+    } catch (error) {
+      setPortalError(error instanceof Error ? error.message : "Could not open billing management.");
+    } finally {
+      setPortalLoading(false);
+    }
+  }
+
   async function handleCreateTeamKey() {
     if (!newKeyName.trim() || !newKeyEmail.trim()) return;
     setKeyLoading(true);
@@ -387,6 +408,17 @@ export default function DashboardPage() {
           >
             {info.cta}
           </Link>
+          {subscription?.stripe_subscription_id && (
+            <button
+              type="button"
+              onClick={() => void handleBillingPortal()}
+              disabled={portalLoading}
+              className="ml-4 text-clay underline text-sm disabled:opacity-50"
+            >
+              {portalLoading ? "Opening billing…" : "Manage billing or cancel"}
+            </button>
+          )}
+          {portalError && <p className="text-alert text-xs mt-2">{portalError}</p>}
         </div>
       </div>
 

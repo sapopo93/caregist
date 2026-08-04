@@ -123,6 +123,48 @@ def test_missing_required_secret_in_production_fails_startup():
         )
 
 
+def test_duplicate_public_stripe_price_ids_fail_production_startup():
+    FakeSecretLoader.payload = {
+        "database_url": "postgresql://prod",
+        "api_master_key": "master",
+        "support_internal_token": "support",
+        "stripe_secret_key": "sk_live_123",
+        "stripe_webhook_secret": "whsec_123",
+        **PUBLIC_STRIPE_PRICE_FIELDS,
+        "stripe_price_pro": "price_starter",
+    }
+
+    with pytest.raises(RuntimeError, match="unique Price IDs"):
+        load_application_secrets(
+            environ={
+                "NODE_ENV": "production",
+                "AWS_SECRETS_MANAGER_SECRET_ID": "caregist/prod/api",
+            },
+            secret_loader_cls=FakeSecretLoader,
+        )
+
+
+def test_malformed_public_stripe_price_id_fails_production_startup():
+    FakeSecretLoader.payload = {
+        "database_url": "postgresql://prod",
+        "api_master_key": "master",
+        "support_internal_token": "support",
+        "stripe_secret_key": "sk_live_123",
+        "stripe_webhook_secret": "whsec_123",
+        **PUBLIC_STRIPE_PRICE_FIELDS,
+        "stripe_price_pro": "prod_not_a_price",
+    }
+
+    with pytest.raises(RuntimeError, match="must start with 'price_'"):
+        load_application_secrets(
+            environ={
+                "NODE_ENV": "production",
+                "AWS_SECRETS_MANAGER_SECRET_ID": "caregist/prod/api",
+            },
+            secret_loader_cls=FakeSecretLoader,
+        )
+
+
 def test_dev_fallback_works_only_outside_production():
     dev_secrets = load_application_secrets(
         environ={
