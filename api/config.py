@@ -489,11 +489,12 @@ FIELD_SETS = {
 
 TIER_RANK = {
     "free": 0,
-    "starter": 1,
-    "pro": 2,
-    "business": 3,
-    "enterprise": 4,
-    "admin": 5,
+    "alerts-pro": 1,
+    "starter": 2,
+    "pro": 3,
+    "business": 4,
+    "enterprise": 5,
+    "admin": 6,
 }
 
 

@@ -31,3 +31,30 @@ async def test_get_subscription_uses_higher_key_tier_when_subscription_row_is_st
     assert result["tier"] == "business"
     assert result["entitlements"]["included_users"] == 10
     assert result["entitlements"]["max_users"] == 10
+
+
+@pytest.mark.asyncio
+async def test_get_subscription_does_not_collapse_paid_alerts_pro_to_free():
+    conn = AsyncMock()
+    conn.fetchrow = AsyncMock(
+        return_value={
+            "tier": "alerts-pro",
+            "status": "active",
+            "included_users": 1,
+            "extra_seats": 0,
+            "max_users": 1,
+            "seat_price_gbp": 0,
+            "stripe_subscription_id": "sub_alerts",
+        }
+    )
+
+    @asynccontextmanager
+    async def mock_get_connection():
+        yield conn
+
+    with patch("api.routers.billing.get_connection", mock_get_connection):
+        result = await get_subscription({"user_id": 1, "tier": "free"})
+
+    assert result["tier"] == "alerts-pro"
+    assert result["stripe_subscription_id"] == "sub_alerts"
+    assert result["entitlements"]["tier"] == "alerts-pro"
