@@ -5,7 +5,20 @@
       "root": "frontend/",
       "framework": "nextjs",
       "buildCommand": "npm run build",
-      "outputDirectory": ".next"
+      "outputDirectory": ".next",
+      "bindings": [
+        {
+          "type": "service",
+          "service": "backend",
+          "format": "url",
+          "env": "CAREGIST_BACKEND_URL"
+        }
+      ]
+    },
+    "backend": {
+      "root": ".",
+      "framework": "fastapi",
+      "entrypoint": "api.main:app"
     }
   },
   "rewrites": [
