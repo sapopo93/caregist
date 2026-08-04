@@ -7,8 +7,24 @@ import pytest
 from fastapi import HTTPException
 
 from api.middleware.auth import hash_api_key, validate_api_key, validate_billing_identity
-from api.routers.auth import LoginRequest, TeamKeyCreateRequest, create_team_key, logout_session, reveal_key, rotate_key
+from api.routers.auth import LoginRequest, TeamKeyCreateRequest, create_team_key, logout_session, reveal_key, rotate_key, router
 from api.routers.comparisons import _get_user_id
+
+
+def test_dashboard_identity_reads_do_not_consume_product_allowance():
+    guarded_paths = {"/api/v1/auth/me", "/api/v1/auth/team-keys"}
+    routes = {
+        route.path: route
+        for route in router.routes
+        if route.path in guarded_paths and "GET" in route.methods
+    }
+
+    assert routes.keys() == guarded_paths
+    for route in routes.values():
+        assert any(
+            dependency.call is validate_billing_identity
+            for dependency in route.dependant.dependencies
+        )
 
 
 @pytest.mark.asyncio

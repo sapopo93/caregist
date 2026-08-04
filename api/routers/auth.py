@@ -19,7 +19,7 @@ from api.middleware.ip_rate_limit import check_ip_rate_limit
 
 from api.config import get_max_users, get_subscription_entitlements, get_tier_config, settings
 from api.database import get_connection
-from api.middleware.auth import api_key_prefix, hash_api_key, validate_api_key
+from api.middleware.auth import api_key_prefix, hash_api_key, validate_api_key, validate_billing_identity
 from api.utils.audit import actor_from_auth, write_audit_log
 
 logger = logging.getLogger("caregist.auth")
@@ -310,7 +310,7 @@ async def logout_session(
 
 
 @router.get("/me")
-async def get_me(_auth: dict = Depends(validate_api_key)) -> dict:
+async def get_me(_auth: dict = Depends(validate_billing_identity)) -> dict:
     """Return the current user's profile and tier (authenticated via header or cookie)."""
     return {
         "tier": _auth.get("tier"),
@@ -460,7 +460,7 @@ async def rotate_key(req: LoginRequest, _ip=Depends(check_ip_rate_limit)) -> dic
 
 
 @router.get("/team-keys")
-async def list_team_keys(_auth: dict = Depends(validate_api_key)) -> dict:
+async def list_team_keys(_auth: dict = Depends(validate_billing_identity)) -> dict:
     user_id = _auth.get("user_id")
     if not user_id:
         raise HTTPException(status_code=401, detail="User account required.")
