@@ -78,6 +78,14 @@ export default function ProviderDashboardPage({ params }: { params: Promise<{ sl
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || "Failed to start checkout.");
+      if (data.updated) {
+        setProvider((current: any) => current ? { ...current, profile_tier: data.tier } : current);
+        setUpgradeBannerTier(null);
+        setSuccess(data.unchanged ? "This is already your active listing plan." : "Your listing plan has been updated.");
+        setUpgrading(null);
+        return;
+      }
+      if (!data.checkout_url) throw new Error("Checkout did not return a secure payment link.");
       window.location.href = data.checkout_url;
     } catch (err: any) {
       setError(err.message);

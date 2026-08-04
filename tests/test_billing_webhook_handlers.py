@@ -212,3 +212,95 @@ async def test_alerts_pro_subscription_update_preserves_entitlements(monkeypatch
         if "INSERT INTO subscriptions" in call.args[0]
     )
     assert subscription_insert[1:6] == (123, "sub_alerts", "price_alerts", "alerts-pro", "active")
+
+
+@pytest.mark.asyncio
+async def test_profile_subscription_update_reconciles_changed_plan(monkeypatch):
+    conn = AsyncMock()
+    conn.fetchrow = AsyncMock(
+        side_effect=[
+            None,
+            {"id": "LOC123", "slug": "claimed-provider"},
+        ]
+    )
+    monkeypatch.setitem(billing.PRICE_TO_PROFILE_TIER, "price_profile_sponsored", "sponsored")
+
+    await billing._handle_subscription_updated(
+        conn,
+        {
+            "id": "sub_profile",
+            "status": "active",
+            "items": {
+                "data": [
+                    {"price": {"id": "price_profile_sponsored"}, "quantity": 1},
+                ]
+            },
+        },
+    )
+
+    profile_update = next(
+        call.args for call in conn.execute.await_args_list
+        if "UPDATE care_providers SET profile_tier" in call.args[0]
+    )
+    assert profile_update[1:] == ("sponsored", "LOC123", "sub_profile")
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "subscription_status",
+    ["past_due", "incomplete", "incomplete_expired", "unpaid", "paused", "canceled"],
+)
+async def test_profile_subscription_update_downgrades_non_entitled_status_to_claimed(
+    subscription_status,
+):
+    conn = AsyncMock()
+    conn.fetchrow = AsyncMock(
+        side_effect=[
+            None,
+            {"id": "LOC123", "slug": "claimed-provider"},
+        ]
+    )
+
+    await billing._handle_subscription_updated(
+        conn,
+        {
+            "id": "sub_profile",
+            "status": subscription_status,
+            "items": {
+                "data": [
+                    {"price": {"id": "price_unknown_or_stale"}, "quantity": 1},
+                ]
+            },
+        },
+    )
+
+    profile_update = next(
+        call.args for call in conn.execute.await_args_list
+        if "UPDATE care_providers SET profile_tier = 'claimed'" in call.args[0]
+    )
+    assert profile_update[1:] == ("LOC123", "sub_profile")
+
+
+@pytest.mark.asyncio
+async def test_profile_subscription_update_with_unknown_price_raises_for_retry():
+    conn = AsyncMock()
+    conn.fetchrow = AsyncMock(
+        side_effect=[
+            None,
+            {"id": "LOC123", "slug": "claimed-provider"},
+        ]
+    )
+
+    with pytest.raises(RuntimeError, match="cannot map one profile price"):
+        await billing._handle_subscription_updated(
+            conn,
+            {
+                "id": "sub_profile",
+                "status": "active",
+                "items": {
+                    "data": [
+                        {"price": {"id": "price_unknown"}, "quantity": 1},
+                    ]
+                },
+            },
+        )

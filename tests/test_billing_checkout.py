@@ -210,6 +210,7 @@ async def test_business_seat_update_keeps_business_when_client_tier_is_stale(mon
         yield conn
 
     subscription = {
+        "status": "active",
         "items": {
             "data": [
                 {"id": "si_base", "price": {"id": "price_business"}, "quantity": 1},
@@ -233,6 +234,9 @@ async def test_business_seat_update_keeps_business_when_client_tier_is_stale(mon
         {"price": "price_team_seat", "quantity": 2},
     ]
     assert kwargs["metadata"]["tier"] == "business"
+    assert kwargs["proration_behavior"] == "always_invoice"
+    assert kwargs["payment_behavior"] == "error_if_incomplete"
+    assert kwargs["idempotency_key"] == "caregist-subscription-change-sub_business-business-2"
     persist_call = next(call.args for call in conn.execute.await_args_list if "INSERT INTO subscriptions" in call.args[0])
     assert persist_call[4] == "business"
     assert persist_call[6] == 10
@@ -290,6 +294,9 @@ async def test_business_seat_update_does_not_require_configured_business_price(m
     assert result == {"updated": True, "tier": "business", "extra_seats": 1}
     modify.assert_called_once()
     assert modify.call_args.kwargs["items"] == [{"price": "price_team_seat", "quantity": 1}]
+    assert modify.call_args.kwargs["proration_behavior"] == "always_invoice"
+    assert modify.call_args.kwargs["payment_behavior"] == "error_if_incomplete"
+    assert modify.call_args.kwargs["idempotency_key"] == "caregist-subscription-change-sub_business-business-1"
     persist_call = next(call.args for call in conn.execute.await_args_list if "INSERT INTO subscriptions" in call.args[0])
     assert persist_call[3] == "price_live_business"
 
@@ -415,7 +422,74 @@ async def test_profile_checkout_requires_approved_claim_owned_by_authenticated_u
 
 
 @pytest.mark.asyncio
-async def test_profile_checkout_rejects_second_paid_subscription(monkeypatch):
+async def test_profile_checkout_changes_existing_subscription_without_creating_a_second_one(monkeypatch):
+    monkeypatch.setattr(settings, "stripe_secret_key", "sk_test_checkout")
+    monkeypatch.setattr(settings, "stripe_price_profile_enhanced", "price_profile_enhanced")
+    monkeypatch.setattr(settings, "stripe_price_profile_sponsored", "price_profile_sponsored")
+
+    connections = []
+    for fetchrow_result in (
+        {"id": 42, "email": "alice@example.com", "stripe_customer_id": "cus_123"},
+        {
+            "id": "LOC123",
+            "is_claimed": True,
+            "profile_tier": "enhanced",
+            "profile_subscription_id": "sub_existing",
+        },
+        {"id": 88},
+        None,
+    ):
+        conn = AsyncMock()
+        conn.fetchrow = AsyncMock(return_value=fetchrow_result)
+        connections.append(conn)
+
+    @asynccontextmanager
+    async def mock_get_connection():
+        yield connections.pop(0)
+
+    subscription = {
+        "status": "active",
+        "items": {
+            "data": [
+                {"id": "si_profile", "price": {"id": "price_profile_enhanced"}, "quantity": 1},
+            ]
+        }
+    }
+    with patch("api.routers.billing.get_connection", mock_get_connection), \
+         patch("api.routers.billing.stripe.Subscription.retrieve", return_value=subscription) as retrieve, \
+         patch(
+             "api.routers.billing.stripe.Subscription.modify",
+             return_value={"status": "active"},
+         ) as modify, \
+         patch("api.routers.billing.stripe.checkout.Session.create") as create_session:
+        result = await create_profile_checkout(
+            ProfileCheckoutRequest(slug="claimed-provider", tier="sponsored", email="alice@example.com"),
+            {"user_id": 42, "email": "alice@example.com", "is_verified": True},
+        )
+
+    assert result == {"updated": True, "tier": "sponsored", "unchanged": False}
+    retrieve.assert_called_once_with("sub_existing")
+    modify.assert_called_once_with(
+        "sub_existing",
+        items=[{"id": "si_profile", "price": "price_profile_sponsored", "quantity": 1}],
+        proration_behavior="always_invoice",
+        payment_behavior="error_if_incomplete",
+        metadata={
+            "type": "profile",
+            "slug": "claimed-provider",
+            "provider_id": "LOC123",
+            "tier": "sponsored",
+        },
+        idempotency_key="caregist-profile-change-sub_existing-sponsored",
+    )
+    create_session.assert_not_called()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("subscription_status", ["past_due", "incomplete", "unpaid", "canceled"])
+async def test_profile_checkout_refuses_to_change_non_entitled_subscription(
+    monkeypatch, subscription_status
+):
     monkeypatch.setattr(settings, "stripe_secret_key", "sk_test_checkout")
     monkeypatch.setattr(settings, "stripe_price_profile_sponsored", "price_profile_sponsored")
 
@@ -439,7 +513,137 @@ async def test_profile_checkout_rejects_second_paid_subscription(monkeypatch):
         yield connections.pop(0)
 
     with patch("api.routers.billing.get_connection", mock_get_connection), \
-         patch("api.routers.billing.stripe.checkout.Session.create") as create_session:
+         patch(
+             "api.routers.billing.stripe.Subscription.retrieve",
+             return_value={"status": subscription_status, "items": {"data": []}},
+         ), \
+         patch("api.routers.billing.stripe.Subscription.modify") as modify:
+        with pytest.raises(HTTPException) as exc:
+            await create_profile_checkout(
+                ProfileCheckoutRequest(
+                    slug="claimed-provider", tier="sponsored", email="alice@example.com"
+                ),
+                {"user_id": 42, "email": "alice@example.com", "is_verified": True},
+            )
+
+    assert exc.value.status_code == 409
+    assert "not active" in exc.value.detail
+    modify.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_profile_checkout_does_not_grant_tier_if_stripe_returns_non_entitled_status(monkeypatch):
+    monkeypatch.setattr(settings, "stripe_secret_key", "sk_test_checkout")
+    monkeypatch.setattr(settings, "stripe_price_profile_enhanced", "price_profile_enhanced")
+    monkeypatch.setattr(settings, "stripe_price_profile_sponsored", "price_profile_sponsored")
+
+    connections = []
+    for fetchrow_result in (
+        {"id": 42, "email": "alice@example.com", "stripe_customer_id": "cus_123"},
+        {
+            "id": "LOC123",
+            "is_claimed": True,
+            "profile_tier": "enhanced",
+            "profile_subscription_id": "sub_existing",
+        },
+        {"id": 88},
+    ):
+        conn = AsyncMock()
+        conn.fetchrow = AsyncMock(return_value=fetchrow_result)
+        connections.append(conn)
+
+    @asynccontextmanager
+    async def mock_get_connection():
+        yield connections.pop(0)
+
+    subscription = {
+        "status": "active",
+        "items": {
+            "data": [
+                {"id": "si_profile", "price": {"id": "price_profile_enhanced"}, "quantity": 1},
+            ]
+        },
+    }
+    with patch("api.routers.billing.get_connection", mock_get_connection), \
+         patch("api.routers.billing.stripe.Subscription.retrieve", return_value=subscription), \
+         patch(
+             "api.routers.billing.stripe.Subscription.modify",
+             return_value={"status": "past_due"},
+         ):
+        with pytest.raises(RuntimeError, match="non-entitled status"):
+            await create_profile_checkout(
+                ProfileCheckoutRequest(
+                    slug="claimed-provider", tier="sponsored", email="alice@example.com"
+                ),
+                {"user_id": 42, "email": "alice@example.com", "is_verified": True},
+            )
+
+    assert len(connections) == 0
+
+
+@pytest.mark.asyncio
+async def test_profile_checkout_same_paid_tier_is_an_idempotent_noop(monkeypatch):
+    monkeypatch.setattr(settings, "stripe_secret_key", "sk_test_checkout")
+    monkeypatch.setattr(settings, "stripe_price_profile_enhanced", "price_profile_enhanced")
+
+    connections = []
+    for fetchrow_result in (
+        {"id": 42, "email": "alice@example.com", "stripe_customer_id": "cus_123"},
+        {
+            "id": "LOC123",
+            "is_claimed": True,
+            "profile_tier": "enhanced",
+            "profile_subscription_id": "sub_existing",
+        },
+        {"id": 88},
+    ):
+        conn = AsyncMock()
+        conn.fetchrow = AsyncMock(return_value=fetchrow_result)
+        connections.append(conn)
+
+    @asynccontextmanager
+    async def mock_get_connection():
+        yield connections.pop(0)
+
+    with patch("api.routers.billing.get_connection", mock_get_connection), \
+         patch("api.routers.billing.stripe.Subscription.retrieve") as retrieve, \
+         patch("api.routers.billing.stripe.Subscription.modify") as modify:
+        result = await create_profile_checkout(
+            ProfileCheckoutRequest(slug="claimed-provider", tier="enhanced", email="alice@example.com"),
+            {"user_id": 42, "email": "alice@example.com", "is_verified": True},
+        )
+
+    assert result == {"updated": True, "tier": "enhanced", "unchanged": True}
+    retrieve.assert_not_called()
+    modify.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_profile_checkout_fails_closed_for_unlinked_paid_profile(monkeypatch):
+    monkeypatch.setattr(settings, "stripe_secret_key", "sk_test_checkout")
+    monkeypatch.setattr(settings, "stripe_price_profile_sponsored", "price_profile_sponsored")
+
+    connections = []
+    for fetchrow_result in (
+        {"id": 42, "email": "alice@example.com", "stripe_customer_id": "cus_123"},
+        {
+            "id": "LOC123",
+            "is_claimed": True,
+            "profile_tier": "enhanced",
+            "profile_subscription_id": None,
+        },
+        {"id": 88},
+    ):
+        conn = AsyncMock()
+        conn.fetchrow = AsyncMock(return_value=fetchrow_result)
+        connections.append(conn)
+
+    @asynccontextmanager
+    async def mock_get_connection():
+        yield connections.pop(0)
+
+    with patch("api.routers.billing.get_connection", mock_get_connection), \
+         patch("api.routers.billing.stripe.Subscription.modify") as modify:
         with pytest.raises(HTTPException) as exc:
             await create_profile_checkout(
                 ProfileCheckoutRequest(slug="claimed-provider", tier="sponsored", email="alice@example.com"),
@@ -447,8 +651,8 @@ async def test_profile_checkout_rejects_second_paid_subscription(monkeypatch):
             )
 
     assert exc.value.status_code == 409
-    assert "already has a paid listing subscription" in exc.value.detail
-    create_session.assert_not_called()
+    assert "cannot be changed automatically" in exc.value.detail
+    modify.assert_not_called()
 
 
 @pytest.mark.asyncio

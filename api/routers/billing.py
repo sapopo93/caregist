@@ -247,8 +247,10 @@ async def create_checkout(req: CheckoutRequest, _auth: dict = Depends(validate_b
             stripe.Subscription.modify(
                 subscription_id,
                 items=updated_items,
-                proration_behavior="create_prorations",
+                proration_behavior="always_invoice",
+                payment_behavior="error_if_incomplete",
                 metadata={"user_id": str(user["id"]), "tier": tier, "extra_seats": str(extra_seats)},
+                idempotency_key=f"caregist-subscription-change-{subscription_id}-{tier}-{extra_seats}",
             )
         async with get_connection() as conn:
             await _persist_subscription_state(
@@ -318,6 +320,24 @@ async def create_checkout(req: CheckoutRequest, _auth: dict = Depends(validate_b
 _PROFILE_TIERS = {"enhanced", "premium", "sponsored"}
 
 
+def _configured_profile_price_for_tier(tier: str) -> str | None:
+    price_map = {
+        "enhanced": settings.stripe_price_profile_enhanced,
+        "premium": settings.stripe_price_profile_premium,
+        "sponsored": settings.stripe_price_profile_sponsored,
+    }
+    return price_map.get(tier) or None
+
+
+def _find_profile_subscription_item(subscription: dict, current_tier: str) -> dict | None:
+    configured_price_id = _configured_profile_price_for_tier(current_tier)
+    for item in subscription.get("items", {}).get("data", []):
+        item_price_id = item.get("price", {}).get("id")
+        if item_price_id == configured_price_id or PRICE_TO_PROFILE_TIER.get(item_price_id) == current_tier:
+            return item
+    return None
+
+
 class ProfileCheckoutRequest(BaseModel):
     slug: str
     tier: str
@@ -341,12 +361,7 @@ async def create_profile_checkout(
     if req.tier not in _PROFILE_TIERS:
         raise HTTPException(status_code=400, detail=f"Invalid profile tier: {req.tier}. Choose from {sorted(_PROFILE_TIERS)}.")
 
-    price_map = {
-        "enhanced": settings.stripe_price_profile_enhanced,
-        "premium": settings.stripe_price_profile_premium,
-        "sponsored": settings.stripe_price_profile_sponsored,
-    }
-    price_id = price_map[req.tier]
+    price_id = _configured_profile_price_for_tier(req.tier)
     if not price_id:
         raise HTTPException(status_code=503, detail=f"Checkout for the {req.tier} profile tier is not yet configured.")
 
@@ -381,11 +396,70 @@ async def create_profile_checkout(
         )
     if not approved_claim:
         raise HTTPException(status_code=403, detail="You don't have an approved claim for this provider.")
-    if provider.get("profile_subscription_id") or provider.get("profile_tier") in _PROFILE_TIERS:
-        raise HTTPException(
-            status_code=409,
-            detail="This provider already has a paid listing subscription. Contact support to change its plan.",
+    existing_subscription_id = provider.get("profile_subscription_id")
+    existing_tier = provider.get("profile_tier")
+    if existing_subscription_id or existing_tier in _PROFILE_TIERS:
+        if not existing_subscription_id or existing_tier not in _PROFILE_TIERS:
+            raise HTTPException(
+                status_code=409,
+                detail="This provider's paid listing cannot be changed automatically. Contact support.",
+            )
+        if existing_tier == req.tier:
+            return {"updated": True, "tier": req.tier, "unchanged": True}
+
+        subscription = stripe.Subscription.retrieve(existing_subscription_id)
+        if subscription.get("status") not in {"active", "trialing"}:
+            raise HTTPException(
+                status_code=409,
+                detail="This provider's subscription is not active. Resolve its billing status before changing plan.",
+            )
+        base_item = _find_profile_subscription_item(subscription, existing_tier)
+        if not base_item or not base_item.get("id"):
+            raise HTTPException(
+                status_code=409,
+                detail="This provider's Stripe subscription does not match its current plan. Contact support.",
+            )
+
+        changed_subscription = stripe.Subscription.modify(
+            existing_subscription_id,
+            items=[{"id": base_item["id"], "price": price_id, "quantity": 1}],
+            proration_behavior="always_invoice",
+            payment_behavior="error_if_incomplete",
+            metadata={
+                "type": "profile",
+                "slug": req.slug,
+                "provider_id": str(provider["id"]),
+                "tier": req.tier,
+            },
+            idempotency_key=f"caregist-profile-change-{existing_subscription_id}-{req.tier}",
         )
+        if changed_subscription.get("status") not in {"active", "trialing"}:
+            raise RuntimeError(
+                "Stripe returned a non-entitled status after changing the profile subscription"
+            )
+        async with get_connection() as conn:
+            update_result = await conn.execute(
+                "UPDATE care_providers SET profile_tier = $1 WHERE id = $2 AND profile_subscription_id = $3",
+                req.tier, provider["id"], existing_subscription_id,
+            )
+            if update_result == "UPDATE 0":
+                raise RuntimeError(
+                    "Stripe changed the profile subscription, but the local provider link no longer matches"
+                )
+            await write_audit_log(
+                action="billing.profile_subscription.update",
+                outcome="success",
+                actor=actor_from_auth(_auth),
+                target_type="provider",
+                target_id=str(provider["id"]),
+                metadata={
+                    "subscription_id": existing_subscription_id,
+                    "previous_tier": existing_tier,
+                    "tier": req.tier,
+                },
+                conn=conn,
+            )
+        return {"updated": True, "tier": req.tier, "unchanged": False}
 
     customer_id = user["stripe_customer_id"]
     if not customer_id:
@@ -602,7 +676,75 @@ async def _handle_subscription_updated(conn, subscription: dict) -> None:
         "SELECT user_id FROM subscriptions WHERE stripe_subscription_id = $1", sub_id
     )
     if not sub_row:
-        logger.info("Subscription %s updated but no B2B subscription row exists; skipping", sub_id)
+        profile_row = await conn.fetchrow(
+            "SELECT id, slug FROM care_providers WHERE profile_subscription_id = $1",
+            sub_id,
+        )
+        if profile_row:
+            if status not in {"active", "trialing"}:
+                await conn.execute(
+                    "UPDATE care_providers SET profile_tier = 'claimed' WHERE id = $1 AND profile_subscription_id = $2",
+                    profile_row["id"],
+                    sub_id,
+                )
+                await write_audit_log(
+                    action="billing.profile_subscription.update",
+                    outcome="success",
+                    actor={"type": "system", "name": "stripe"},
+                    target_type="provider",
+                    target_id=str(profile_row["id"]),
+                    metadata={
+                        "subscription_id": sub_id,
+                        "tier": "claimed",
+                        "status": status,
+                    },
+                    conn=conn,
+                )
+                logger.warning(
+                    "Profile subscription %s downgraded to claimed for non-entitled status=%s",
+                    sub_id,
+                    status,
+                )
+                return
+
+            profile_items: list[tuple[str, str]] = []
+            profile_unknown_price_ids: list[str] = []
+            for item in items:
+                item_price_id = item.get("price", {}).get("id")
+                mapped_profile_tier = PRICE_TO_PROFILE_TIER.get(item_price_id)
+                if mapped_profile_tier in _PROFILE_TIERS:
+                    profile_items.append((item_price_id, mapped_profile_tier))
+                elif item_price_id:
+                    profile_unknown_price_ids.append(item_price_id)
+            if len(profile_items) != 1 or profile_unknown_price_ids:
+                raise RuntimeError(
+                    f"profile subscription.updated cannot map one profile price for subscription {sub_id}: "
+                    f"mapped_prices={profile_items!r}, unknown_prices={profile_unknown_price_ids!r}"
+                )
+
+            profile_price_id, profile_tier = profile_items[0]
+            await conn.execute(
+                "UPDATE care_providers SET profile_tier = $1 WHERE id = $2 AND profile_subscription_id = $3",
+                profile_tier, profile_row["id"], sub_id,
+            )
+            await write_audit_log(
+                action="billing.profile_subscription.update",
+                outcome="success",
+                actor={"type": "system", "name": "stripe"},
+                target_type="provider",
+                target_id=str(profile_row["id"]),
+                metadata={
+                    "subscription_id": sub_id,
+                    "tier": profile_tier,
+                    "status": status,
+                    "price_id": profile_price_id,
+                },
+                conn=conn,
+            )
+            logger.info("Profile subscription %s updated: tier=%s status=%s", sub_id, profile_tier, status)
+            return
+
+        logger.info("Subscription %s updated but no local subscription row exists; skipping", sub_id)
         return
 
     if unknown_price_ids or not price_id:

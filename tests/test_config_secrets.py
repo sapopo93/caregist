@@ -22,6 +22,27 @@ class FakeSecretLoader:
         return _normalize_secret_payload(self.payload)
 
 
+PUBLIC_STRIPE_PRICE_FIELDS = {
+    "stripe_price_alerts_pro": "price_alerts",
+    "stripe_price_starter": "price_starter",
+    "stripe_price_pro": "price_pro",
+    "stripe_price_pro_seat": "price_seat",
+    "stripe_price_business": "price_business",
+    "stripe_price_profile_enhanced": "price_profile_enhanced",
+    "stripe_price_profile_sponsored": "price_profile_sponsored",
+}
+
+PUBLIC_STRIPE_PRICE_ENV = {
+    "STRIPE_PRICE_ALERTS_PRO": "price_alerts",
+    "STRIPE_PRICE_STARTER": "price_starter",
+    "STRIPE_PRICE_PRO": "price_pro",
+    "STRIPE_PRICE_PRO_SEAT": "price_seat",
+    "STRIPE_PRICE_BUSINESS": "price_business",
+    "STRIPE_PRICE_PROFILE_ENHANCED": "price_profile_enhanced",
+    "STRIPE_PRICE_PROFILE_SPONSORED": "price_profile_sponsored",
+}
+
+
 def test_successful_secret_resolution_from_aws():
     FakeSecretLoader.payload = {
         "database_url": "postgresql://prod",
@@ -29,6 +50,7 @@ def test_successful_secret_resolution_from_aws():
         "support_internal_token": "support",
         "stripe_secret_key": "sk_live_123",
         "stripe_webhook_secret": "whsec_123",
+        **PUBLIC_STRIPE_PRICE_FIELDS,
     }
 
     secrets = load_application_secrets(
@@ -58,6 +80,7 @@ def test_secret_resolution_includes_stripe_price_aliases_from_aws():
         "STRIPE_PRICE_DATA_STARTER_MONTHLY": "price_starter",
         "STRIPE_PRICE_DATA_PRO_MONTHLY": "price_pro",
         "STRIPE_PRICE_DATA_BUSINESS_MONTHLY": "price_business",
+        "STRIPE_PRICE_PROVIDER_ENHANCED_LISTING_MONTHLY": "price_profile_enhanced",
         "STRIPE_PRICE_PROVIDER_PRO_LISTING_MONTHLY": "price_profile_premium",
         "STRIPE_PRICE_SPONSORED_LISTING_MONTHLY": "price_profile_sponsored",
         "STRIPE_PRICE_PRO_SEAT": "price_seat",
@@ -75,6 +98,7 @@ def test_secret_resolution_includes_stripe_price_aliases_from_aws():
     assert secrets["stripe_price_starter"] == "price_starter"
     assert secrets["stripe_price_pro"] == "price_pro"
     assert secrets["stripe_price_business"] == "price_business"
+    assert secrets["stripe_price_profile_enhanced"] == "price_profile_enhanced"
     assert secrets["stripe_price_profile_premium"] == "price_profile_premium"
     assert secrets["stripe_price_profile_sponsored"] == "price_profile_sponsored"
     assert secrets["stripe_price_pro_seat"] == "price_seat"
@@ -86,6 +110,7 @@ def test_missing_required_secret_in_production_fails_startup():
         "api_master_key": "master",
         "support_internal_token": "support",
         "stripe_secret_key": "sk_live_123",
+        **PUBLIC_STRIPE_PRICE_FIELDS,
     }
 
     with pytest.raises(RuntimeError, match="STRIPE_WEBHOOK_SECRET"):
@@ -197,6 +222,7 @@ def test_vercel_production_ignores_preview_database_override():
             "SUPPORT_INTERNAL_TOKEN": "support",
             "STRIPE_SECRET_KEY": "sk_live_123",
             "STRIPE_WEBHOOK_SECRET": "whsec_123",
+            **PUBLIC_STRIPE_PRICE_ENV,
         },
         secret_loader_cls=FakeSecretLoader,
     )
@@ -216,6 +242,7 @@ def test_vercel_production_loads_direct_env_and_requires_all_secrets():
             "SUPPORT_INTERNAL_TOKEN": "support",
             "STRIPE_SECRET_KEY": "sk_live_123",
             "STRIPE_WEBHOOK_SECRET": "whsec_123",
+            **PUBLIC_STRIPE_PRICE_ENV,
         },
         secret_loader_cls=FakeSecretLoader,
     )
@@ -233,7 +260,30 @@ def test_vercel_production_loads_direct_env_and_requires_all_secrets():
                 "API_KEY": "production-master",
                 "SUPPORT_INTERNAL_TOKEN": "support",
                 "STRIPE_SECRET_KEY": "sk_live_123",
+                **PUBLIC_STRIPE_PRICE_ENV,
             },
+            secret_loader_cls=FakeSecretLoader,
+        )
+
+
+@pytest.mark.parametrize("missing_env_name", sorted(PUBLIC_STRIPE_PRICE_ENV))
+def test_vercel_production_fails_closed_when_a_public_checkout_price_is_missing(missing_env_name):
+    environ = {
+        "NODE_ENV": "production",
+        "VERCEL": "1",
+        "VERCEL_ENV": "production",
+        "PROD_DATABASE_URL": "postgresql://production",
+        "API_KEY": "production-master",
+        "SUPPORT_INTERNAL_TOKEN": "support",
+        "STRIPE_SECRET_KEY": "sk_live_123",
+        "STRIPE_WEBHOOK_SECRET": "whsec_123",
+        **PUBLIC_STRIPE_PRICE_ENV,
+    }
+    del environ[missing_env_name]
+
+    with pytest.raises(RuntimeError, match=missing_env_name):
+        load_application_secrets(
+            environ=environ,
             secret_loader_cls=FakeSecretLoader,
         )
 

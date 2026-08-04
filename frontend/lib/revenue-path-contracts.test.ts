@@ -89,4 +89,12 @@ describe("revenue path contracts", () => {
     assert.match(feed, /if \(capabilities\.digest\) void loadDigest\(\)/);
     assert.match(dashboard, /subscriptionReady \? \(/);
   });
+
+  it("handles an in-place provider plan change without navigating to an undefined checkout", () => {
+    const providerDashboard = source("app/provider-dashboard/[slug]/page.tsx");
+
+    assert.match(providerDashboard, /if \(data\.updated\)/);
+    assert.match(providerDashboard, /profile_tier: data\.tier/);
+    assert.match(providerDashboard, /if \(!data\.checkout_url\) throw new Error/);
+  });
 });

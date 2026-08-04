@@ -69,12 +69,24 @@ def runtime_requires_production_secrets(
     return "localhost" not in database_url
 
 
+REQUIRED_PUBLIC_STRIPE_PRICE_FIELDS = (
+    "stripe_price_alerts_pro",
+    "stripe_price_starter",
+    "stripe_price_pro",
+    "stripe_price_pro_seat",
+    "stripe_price_business",
+    "stripe_price_profile_enhanced",
+    "stripe_price_profile_sponsored",
+)
+
+
 REQUIRED_PRODUCTION_SECRETS = (
     "database_url",
     "api_master_key",
     "support_internal_token",
     "stripe_secret_key",
     "stripe_webhook_secret",
+    *REQUIRED_PUBLIC_STRIPE_PRICE_FIELDS,
 )
 
 
