@@ -72,7 +72,13 @@ function SignupForm() {
       const res = await fetch("/api/v1/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, name, password }),
+        body: JSON.stringify({
+          email,
+          name,
+          password,
+          plan,
+          provider_tier: providerTier || null,
+        }),
       });
 
       const data = await res.json();

@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { normalizePostVerificationPath } from "@/lib/post-verification";
+import { resolvePostVerificationPath } from "@/lib/post-verification";
 import { apiErrorMessage } from "@/lib/api-error";
 
 function VerifyEmailScreen() {
@@ -19,10 +19,7 @@ function VerifyEmailScreen() {
 
   useEffect(() => {
     const storedNext = localStorage.getItem("caregist_post_verify_path");
-    const safeNext =
-      normalizePostVerificationPath(requestedNext) ||
-      normalizePostVerificationPath(storedNext) ||
-      "/login";
+    const safeNext = resolvePostVerificationPath(requestedNext, storedNext);
     setNextPath(safeNext);
     localStorage.setItem("caregist_post_verify_path", safeNext);
   }, [requestedNext]);
@@ -38,6 +35,13 @@ function VerifyEmailScreen() {
       .then(async (res) => {
         const data = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(apiErrorMessage(data, "Verification failed."));
+        const serverNext = resolvePostVerificationPath(
+          data.next_path,
+          requestedNext,
+          localStorage.getItem("caregist_post_verify_path"),
+        );
+        setNextPath(serverNext);
+        localStorage.setItem("caregist_post_verify_path", serverNext);
         setMessage(data.message || "Email verified.");
         setStatus("success");
       })

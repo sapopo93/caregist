@@ -123,8 +123,15 @@ CREATE TABLE IF NOT EXISTS users (
   stripe_customer_id VARCHAR(100),
   is_verified BOOLEAN DEFAULT false,
   verification_token VARCHAR(100),
+  signup_intent_type VARCHAR(20),
+  signup_intent_value VARCHAR(40),
   created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
+  updated_at TIMESTAMP DEFAULT NOW(),
+  CONSTRAINT users_signup_purchase_intent_valid CHECK (
+    (signup_intent_type IS NULL AND signup_intent_value IS NULL)
+    OR (signup_intent_type = 'plan' AND signup_intent_value IN ('alerts-pro', 'data-starter', 'data-pro', 'data-business'))
+    OR (signup_intent_type = 'provider_tier' AND signup_intent_value IN ('enhanced', 'sponsored'))
+  )
 );
 
 CREATE INDEX IF NOT EXISTS idx_users_email ON users (email);

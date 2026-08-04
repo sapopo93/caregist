@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { normalizePostVerificationPath } from "./post-verification.ts";
+import { normalizePostVerificationPath, resolvePostVerificationPath } from "./post-verification.ts";
 
 describe("post-verification destination", () => {
   it("preserves the paid plan and provider continuations generated at signup", () => {
@@ -20,5 +20,15 @@ describe("post-verification destination", () => {
     assert.equal(normalizePostVerificationPath("/login?upgrade=enterprise"), null);
     assert.equal(normalizePostVerificationPath("/login?upgrade=data-pro&next=/admin"), null);
   });
-});
 
+  it("uses the server-backed continuation without browser-local state", () => {
+    assert.equal(
+      resolvePostVerificationPath("/login?upgrade=data-business", null, null),
+      "/login?upgrade=data-business",
+    );
+    assert.equal(
+      resolvePostVerificationPath("https://evil.example/steal", null, null),
+      "/login",
+    );
+  });
+});

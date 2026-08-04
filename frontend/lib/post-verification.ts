@@ -43,3 +43,13 @@ export function normalizePostVerificationPath(value: string | null | undefined):
   return null;
 }
 
+/** Select the first allowlisted continuation, defaulting to the normal login. */
+export function resolvePostVerificationPath(
+  ...candidates: Array<string | null | undefined>
+): string {
+  for (const candidate of candidates) {
+    const normalized = normalizePostVerificationPath(candidate);
+    if (normalized) return normalized;
+  }
+  return "/login";
+}

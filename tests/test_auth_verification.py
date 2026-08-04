@@ -7,6 +7,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from fastapi import HTTPException
 from fastapi.responses import Response as FastAPIResponse
+from pydantic import ValidationError
 
 from api.routers.auth import (
     ForgotPasswordRequest,
@@ -25,6 +26,7 @@ from api.routers.auth import (
     reset_password,
     rotate_key,
     verify_email,
+    purchase_intent_continuation,
 )
 
 
@@ -70,6 +72,64 @@ async def test_register_requires_email_verification_and_sends_email():
     assert response["verification_required"] is True
     assert "verify your email" in response["message"].lower()
     send_email.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("request_kwargs", "intent_type", "intent_value"),
+    [
+        ({"plan": "data-pro"}, "plan", "data-pro"),
+        ({"provider_tier": "sponsored"}, "provider_tier", "sponsored"),
+    ],
+)
+async def test_register_persists_structured_purchase_intent(request_kwargs, intent_type, intent_value):
+    conn = AsyncMock()
+    conn.fetchrow = AsyncMock(
+        side_effect=[
+            None,
+            {"id": 7, "email": "buyer@example.com", "name": "Buyer"},
+        ]
+    )
+    conn.execute = AsyncMock()
+    conn.transaction = lambda: _noop_transaction()
+
+    @asynccontextmanager
+    async def mock_get_connection():
+        yield conn
+
+    with patch("api.routers.auth.get_connection", mock_get_connection), \
+         patch("api.routers.auth._send_verification_email", AsyncMock()):
+        await register(
+            RegisterRequest(
+                email="buyer@example.com",
+                name="Buyer",
+                password="SuperSecret123",
+                **request_kwargs,
+            )
+        )
+
+    insert_user = conn.fetchrow.await_args_list[1].args
+    assert "signup_intent_type" in insert_user[0]
+    assert insert_user[5:] == (intent_type, intent_value)
+
+
+def test_register_rejects_multiple_or_unapproved_purchase_intents():
+    with pytest.raises(ValidationError):
+        RegisterRequest(
+            email="buyer@example.com",
+            name="Buyer",
+            password="SuperSecret123",
+            plan="data-pro",
+            provider_tier="enhanced",
+        )
+
+    with pytest.raises(ValidationError):
+        RegisterRequest(
+            email="buyer@example.com",
+            name="Buyer",
+            password="SuperSecret123",
+            plan="https://evil.example/steal",
+        )
 
 
 @pytest.mark.asyncio
@@ -295,7 +355,14 @@ async def test_rotate_key_blocks_unverified_user():
 @pytest.mark.asyncio
 async def test_verify_email_activates_account():
     conn = AsyncMock()
-    conn.fetchrow = AsyncMock(return_value={"id": 1, "email": "alice@example.com"})
+    conn.fetchrow = AsyncMock(
+        return_value={
+            "id": 1,
+            "email": "alice@example.com",
+            "signup_intent_type": None,
+            "signup_intent_value": None,
+        }
+    )
     conn.execute = AsyncMock()
 
     @asynccontextmanager
@@ -306,8 +373,52 @@ async def test_verify_email_activates_account():
         response = await verify_email(VerifyEmailRequest(token="verify-token"))
 
     assert response["email"] == "alice@example.com"
+    assert response["next_path"] == "/login"
     assert "verified" in response["message"].lower()
     conn.execute.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("intent_type", "intent_value", "expected_path"),
+    [
+        ("plan", "alerts-pro", "/login?upgrade=alerts-pro"),
+        ("plan", "data-business", "/login?upgrade=data-business"),
+        ("provider_tier", "enhanced", "/login?provider_tier=enhanced"),
+        ("provider_tier", "sponsored", "/login?provider_tier=sponsored"),
+        ("plan", "https://evil.example/steal", "/login"),
+        ("redirect", "//evil.example", "/login"),
+    ],
+)
+async def test_verify_email_returns_only_allowlisted_server_backed_continuation(
+    intent_type,
+    intent_value,
+    expected_path,
+):
+    conn = AsyncMock()
+    conn.fetchrow = AsyncMock(
+        return_value={
+            "id": 1,
+            "email": "buyer@example.com",
+            "signup_intent_type": intent_type,
+            "signup_intent_value": intent_value,
+        }
+    )
+    conn.execute = AsyncMock()
+
+    @asynccontextmanager
+    async def mock_get_connection():
+        yield conn
+
+    with patch("api.routers.auth.get_connection", mock_get_connection):
+        response = await verify_email(VerifyEmailRequest(token="cross-device-token"))
+
+    assert response["next_path"] == expected_path
+
+
+def test_purchase_intent_continuation_never_accepts_raw_paths():
+    assert purchase_intent_continuation("plan", "/admin") == "/login"
+    assert purchase_intent_continuation("provider_tier", "//evil.example") == "/login"
 
 
 @pytest.mark.asyncio
