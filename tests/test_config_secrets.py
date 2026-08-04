@@ -7,6 +7,7 @@ from api.config import (
     _normalize_secret_payload,
     load_application_secrets,
     runtime_requires_production_secrets,
+    validate_app_url,
     validate_cors_origins,
 )
 
@@ -339,6 +340,7 @@ def test_valid_explicit_cors_origins_pass():
         api_master_key="master",
         support_internal_token="support",
         cors_origins="https://caregist.co.uk,https://app.caregist.co.uk",
+        app_url="https://caregist.co.uk",
     ).validate_production()
 
 
@@ -369,3 +371,31 @@ def test_wildcard_production_cors_config_fails_startup_validation():
 
     with pytest.raises(RuntimeError, match="CORS wildcard"):
         settings.validate_production()
+
+
+@pytest.mark.parametrize(
+    "app_url",
+    [
+        "http://caregist.co.uk",
+        "https://localhost:3000",
+        "https://127.0.0.1",
+        "https://10.0.0.5",
+        "https://caregist.local",
+        "https://caregist.co.uk/checkout",
+        "https://caregist.co.uk?next=checkout",
+        "https://caregist",
+        "",
+    ],
+)
+def test_non_public_production_app_url_fails(app_url):
+    with pytest.raises(RuntimeError, match="APP_URL"):
+        validate_app_url(app_url, production=True)
+
+
+def test_public_https_production_app_url_passes():
+    validate_app_url("https://caregist.co.uk", production=True)
+    validate_app_url("https://www.caregist.co.uk/", production=True)
+
+
+def test_local_development_app_url_remains_allowed():
+    validate_app_url("http://localhost:3000", production=False)

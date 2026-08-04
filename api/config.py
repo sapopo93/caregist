@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import base64
+import ipaddress
 import json
 import os
 import sys
@@ -164,6 +165,40 @@ def validate_cors_origins(cors_origins: str, *, production: bool) -> None:
             raise RuntimeError(f"FATAL: Invalid CORS origin: {origin!r}. Use explicit scheme://host[:port] origins.")
 
 
+def validate_app_url(app_url: str, *, production: bool) -> None:
+    """Require a public HTTPS application origin for production billing redirects."""
+    if not production:
+        return
+
+    parsed = urlparse(app_url.strip())
+    hostname = (parsed.hostname or "").lower().rstrip(".")
+    if (
+        parsed.scheme != "https"
+        or not parsed.netloc
+        or parsed.username
+        or parsed.password
+        or parsed.path not in {"", "/"}
+        or parsed.params
+        or parsed.query
+        or parsed.fragment
+    ):
+        raise RuntimeError(
+            "FATAL: APP_URL must be a public HTTPS origin without a path, query, or credentials in production."
+        )
+
+    if hostname == "localhost" or hostname.endswith((".localhost", ".local")):
+        raise RuntimeError("FATAL: APP_URL must not use a local hostname in production.")
+
+    try:
+        address = ipaddress.ip_address(hostname)
+    except ValueError:
+        if "." not in hostname:
+            raise RuntimeError("FATAL: APP_URL must use a public hostname in production.")
+    else:
+        if not address.is_global:
+            raise RuntimeError("FATAL: APP_URL must not use a local or private address in production.")
+
+
 def _lookup_secret_value(payload: Mapping[str, Any], field_name: str, env_name: str) -> Any:
     for key in (env_name, *SECRET_ENV_ALIASES.get(field_name, ()), field_name):
         value = payload.get(key)
@@ -282,6 +317,7 @@ class Settings(BaseSettings):
     def validate_production(self) -> None:
         production = runtime_requires_production_secrets(self.database_url)
         validate_cors_origins(self.cors_origins, production=production)
+        validate_app_url(self.app_url, production=production)
 
         if "pytest" in sys.modules:
             return
