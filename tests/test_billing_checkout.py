@@ -86,6 +86,8 @@ async def test_checkout_accepts_display_alias_and_uses_canonical_stripe_tier(mon
     kwargs = create_session.call_args.kwargs
     assert kwargs["line_items"] == [{"price": "price_pro", "quantity": 1}]
     assert kwargs["mode"] == "subscription"
+    assert "automatic_tax" not in kwargs
+    assert all("tax_rates" not in item for item in kwargs["line_items"])
     assert kwargs["metadata"]["tier"] == "pro"
     assert kwargs["metadata"]["price_id"] == "price_pro"
     assert kwargs["idempotency_key"] == "caregist-checkout-user-42-pro-0"
@@ -497,6 +499,8 @@ async def test_profile_checkout_safe_test_mode_journey_uses_owned_claim_and_serv
     }
     checkout = create_session.call_args.kwargs
     assert checkout["line_items"] == [{"price": "price_profile_enhanced", "quantity": 1}]
+    assert "automatic_tax" not in checkout
+    assert "tax_rates" not in checkout["line_items"][0]
     assert checkout["metadata"] == {
         "type": "profile",
         "slug": "claimed-provider",
