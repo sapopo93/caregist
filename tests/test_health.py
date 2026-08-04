@@ -39,7 +39,12 @@ async def test_health_endpoint_returns_degraded_snapshot():
     snapshot = {
         "status": "degraded",
         "readiness_ok": False,
+        "freshness_ok": False,
+        "source_fresh": False,
         "feed_fresh": False,
+        "source": {"sourceRunType": "reconciliation", "countsReconciled": False},
+        "units": {"activeLocationRows": 0, "countsReconciled": False},
+        "generated_at": "2026-08-04T09:00:00+00:00",
         "checks": {
             "database": "ok",
             "incremental_fresh": False,
@@ -174,7 +179,12 @@ async def test_freshness_endpoint_returns_503_when_feed_stale():
     snapshot = {
         "status": "degraded",
         "readiness_ok": False,
+        "freshness_ok": False,
+        "source_fresh": False,
         "feed_fresh": False,
+        "source": {"sourceRunType": "reconciliation", "countsReconciled": False},
+        "units": {"activeLocationRows": 0, "countsReconciled": False},
+        "generated_at": "2026-08-04T09:00:00+00:00",
         "checks": {
             "database": "ok",
             "incremental_fresh": False,
@@ -197,3 +207,5 @@ async def test_freshness_endpoint_returns_503_when_feed_stale():
 
     assert response.status_code == 503
     assert response.json()["status"] == "stale"
+    assert response.json()["freshness_ok"] is False
+    assert response.json()["source"]["sourceRunType"] == "reconciliation"

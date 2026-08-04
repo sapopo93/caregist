@@ -1,0 +1,364 @@
+name: CQC reconciliation
+
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: Plan, start a reconciliation, resume an existing batch, or abort it
+        type: choice
+        options: [plan, reconcile, resume, abort]
+        default: plan
+      batch_id:
+        description: Existing batch UUID for resume or abort
+        type: string
+        required: false
+      confirm_phrase:
+        description: Exact production write phrase
+        type: string
+        required: false
+      confirm_source_sha256:
+        description: Approved source SHA-256
+        type: string
+        required: false
+      confirm_source_published_at:
+        description: Approved source publication date (YYYY-MM-DD)
+        type: string
+        required: false
+      confirm_source_count:
+        description: Approved source location count
+        type: string
+        required: false
+      confirm_current_count:
+        description: Approved current active count
+        type: string
+        required: false
+      confirm_intersection_count:
+        description: Approved retained active count
+        type: string
+        required: false
+      confirm_addition_count:
+        description: Approved new location count
+        type: string
+        required: false
+      confirm_reactivation_count:
+        description: Approved reactivation count
+        type: string
+        required: false
+      confirm_deactivation_count:
+        description: Approved deactivation count and absolute ceiling
+        type: string
+        required: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cqc-reconciliation-production
+  cancel-in-progress: false
+
+env:
+  PYTHON_VERSION: "3.12"
+  SHARD_COUNT: "4"
+  CHECKPOINT_SIZE: "250"
+  MANIFEST: cqc-reconciliation-manifest.json
+
+jobs:
+  dry-run:
+    if: inputs.operation == 'plan'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+      - run: python -m pip install -r requirements.txt
+      - name: Build read-only reconciliation evidence
+        env:
+          CQC_READONLY_DATABASE_URL: ${{ secrets.CQC_READONLY_DATABASE_URL }}
+        run: |
+          test -n "$CQC_READONLY_DATABASE_URL"
+          BATCH_ID="$(python -c 'import uuid; print(uuid.uuid4())')"
+          python tools/cqc_reconcile.py --phase prepare --dry-run \
+            --database-url "$CQC_READONLY_DATABASE_URL" --batch-id "$BATCH_ID" \
+            --manifest "$MANIFEST" --shard-count "$SHARD_COUNT" \
+            --max-deactivations 1000000
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: cqc-read-only-plan
+          path: ${{ env.MANIFEST }}
+          if-no-files-found: error
+          retention-days: 7
+
+  prepare:
+    if: inputs.operation == 'reconcile' && inputs.confirm_phrase == 'RECONCILE CQC PRODUCTION'
+    environment: Production
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    outputs:
+      batch_id: ${{ steps.batch.outputs.batch_id }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+      - run: python -m pip install -r requirements.txt
+      - id: batch
+        run: echo "batch_id=$(python -c 'import uuid; print(uuid.uuid4())')" >> "$GITHUB_OUTPUT"
+      - name: Prepare exact approved batch
+        env:
+          DATABASE_URL: ${{ secrets.CQC_PRODUCTION_DATABASE_URL }}
+          CONFIRM_PHRASE: ${{ inputs.confirm_phrase }}
+          CONFIRM_SOURCE_SHA256: ${{ inputs.confirm_source_sha256 }}
+          CONFIRM_SOURCE_PUBLISHED_AT: ${{ inputs.confirm_source_published_at }}
+          CONFIRM_SOURCE_COUNT: ${{ inputs.confirm_source_count }}
+          CONFIRM_CURRENT_COUNT: ${{ inputs.confirm_current_count }}
+          CONFIRM_INTERSECTION_COUNT: ${{ inputs.confirm_intersection_count }}
+          CONFIRM_ADDITION_COUNT: ${{ inputs.confirm_addition_count }}
+          CONFIRM_REACTIVATION_COUNT: ${{ inputs.confirm_reactivation_count }}
+          CONFIRM_DEACTIVATION_COUNT: ${{ inputs.confirm_deactivation_count }}
+        run: |
+          test -n "$DATABASE_URL"
+          python tools/cqc_reconcile.py --phase prepare \
+            --database-url "$DATABASE_URL" --batch-id "${{ steps.batch.outputs.batch_id }}" \
+            --manifest "$MANIFEST" --shard-count "$SHARD_COUNT" \
+            --max-deactivations "$CONFIRM_DEACTIVATION_COUNT" \
+            --confirm-phrase "$CONFIRM_PHRASE" \
+            --confirm-source-sha256 "$CONFIRM_SOURCE_SHA256" \
+            --confirm-source-published-at "$CONFIRM_SOURCE_PUBLISHED_AT" \
+            --confirm-source-count "$CONFIRM_SOURCE_COUNT" \
+            --confirm-current-count "$CONFIRM_CURRENT_COUNT" \
+            --confirm-intersection-count "$CONFIRM_INTERSECTION_COUNT" \
+            --confirm-addition-count "$CONFIRM_ADDITION_COUNT" \
+            --confirm-reactivation-count "$CONFIRM_REACTIVATION_COUNT" \
+            --confirm-deactivation-count "$CONFIRM_DEACTIVATION_COUNT"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: cqc-manifest-${{ steps.batch.outputs.batch_id }}
+          path: ${{ env.MANIFEST }}
+          if-no-files-found: error
+          retention-days: 7
+
+  shards:
+    if: inputs.operation == 'reconcile'
+    needs: prepare
+    environment: Production
+    strategy:
+      fail-fast: false
+      matrix:
+        shard_index: [0, 1, 2, 3]
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+      - run: python -m pip install -r requirements.txt
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: cqc-manifest-${{ needs.prepare.outputs.batch_id }}
+      - name: Stage immutable shard
+        env:
+          DATABASE_URL: ${{ secrets.CQC_PRODUCTION_DATABASE_URL }}
+          CQC_API_KEY: ${{ secrets.CQC_API_KEY }}
+          CONFIRM_PHRASE: ${{ inputs.confirm_phrase }}
+          CONFIRM_SOURCE_SHA256: ${{ inputs.confirm_source_sha256 }}
+          CONFIRM_SOURCE_PUBLISHED_AT: ${{ inputs.confirm_source_published_at }}
+          CONFIRM_SOURCE_COUNT: ${{ inputs.confirm_source_count }}
+          CONFIRM_CURRENT_COUNT: ${{ inputs.confirm_current_count }}
+          CONFIRM_INTERSECTION_COUNT: ${{ inputs.confirm_intersection_count }}
+          CONFIRM_ADDITION_COUNT: ${{ inputs.confirm_addition_count }}
+          CONFIRM_REACTIVATION_COUNT: ${{ inputs.confirm_reactivation_count }}
+          CONFIRM_DEACTIVATION_COUNT: ${{ inputs.confirm_deactivation_count }}
+        run: |
+          test -n "$DATABASE_URL"
+          test -n "$CQC_API_KEY"
+          python tools/cqc_reconcile.py --phase shard \
+            --database-url "$DATABASE_URL" --batch-id "${{ needs.prepare.outputs.batch_id }}" \
+            --manifest "$MANIFEST" --shard-index "${{ matrix.shard_index }}" \
+            --checkpoint-size "$CHECKPOINT_SIZE" \
+            --confirm-phrase "$CONFIRM_PHRASE" \
+            --confirm-source-sha256 "$CONFIRM_SOURCE_SHA256" \
+            --confirm-source-published-at "$CONFIRM_SOURCE_PUBLISHED_AT" \
+            --confirm-source-count "$CONFIRM_SOURCE_COUNT" \
+            --confirm-current-count "$CONFIRM_CURRENT_COUNT" \
+            --confirm-intersection-count "$CONFIRM_INTERSECTION_COUNT" \
+            --confirm-addition-count "$CONFIRM_ADDITION_COUNT" \
+            --confirm-reactivation-count "$CONFIRM_REACTIVATION_COUNT" \
+            --confirm-deactivation-count "$CONFIRM_DEACTIVATION_COUNT"
+
+  finalize:
+    if: inputs.operation == 'reconcile'
+    needs: [prepare, shards]
+    environment: Production
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+      - run: python -m pip install -r requirements.txt
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: cqc-manifest-${{ needs.prepare.outputs.batch_id }}
+      - name: Atomically publish approved snapshot
+        env:
+          DATABASE_URL: ${{ secrets.CQC_PRODUCTION_DATABASE_URL }}
+          CONFIRM_PHRASE: ${{ inputs.confirm_phrase }}
+          CONFIRM_SOURCE_SHA256: ${{ inputs.confirm_source_sha256 }}
+          CONFIRM_SOURCE_PUBLISHED_AT: ${{ inputs.confirm_source_published_at }}
+          CONFIRM_SOURCE_COUNT: ${{ inputs.confirm_source_count }}
+          CONFIRM_CURRENT_COUNT: ${{ inputs.confirm_current_count }}
+          CONFIRM_INTERSECTION_COUNT: ${{ inputs.confirm_intersection_count }}
+          CONFIRM_ADDITION_COUNT: ${{ inputs.confirm_addition_count }}
+          CONFIRM_REACTIVATION_COUNT: ${{ inputs.confirm_reactivation_count }}
+          CONFIRM_DEACTIVATION_COUNT: ${{ inputs.confirm_deactivation_count }}
+        run: |
+          test -n "$DATABASE_URL"
+          python tools/cqc_reconcile.py --phase finalize \
+            --database-url "$DATABASE_URL" --batch-id "${{ needs.prepare.outputs.batch_id }}" \
+            --manifest "$MANIFEST" \
+            --confirm-phrase "$CONFIRM_PHRASE" \
+            --confirm-source-sha256 "$CONFIRM_SOURCE_SHA256" \
+            --confirm-source-published-at "$CONFIRM_SOURCE_PUBLISHED_AT" \
+            --confirm-source-count "$CONFIRM_SOURCE_COUNT" \
+            --confirm-current-count "$CONFIRM_CURRENT_COUNT" \
+            --confirm-intersection-count "$CONFIRM_INTERSECTION_COUNT" \
+            --confirm-addition-count "$CONFIRM_ADDITION_COUNT" \
+            --confirm-reactivation-count "$CONFIRM_REACTIVATION_COUNT" \
+            --confirm-deactivation-count "$CONFIRM_DEACTIVATION_COUNT"
+
+  resume-shards:
+    if: inputs.operation == 'resume' && inputs.confirm_phrase == 'RECONCILE CQC PRODUCTION'
+    environment: Production
+    strategy:
+      fail-fast: false
+      matrix:
+        shard_index: [0, 1, 2, 3]
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+      - run: python -m pip install -r requirements.txt
+      - name: Resume durable shard state
+        env:
+          DATABASE_URL: ${{ secrets.CQC_PRODUCTION_DATABASE_URL }}
+          CQC_API_KEY: ${{ secrets.CQC_API_KEY }}
+          BATCH_ID: ${{ inputs.batch_id }}
+          SHARD_INDEX: ${{ matrix.shard_index }}
+          CONFIRM_PHRASE: ${{ inputs.confirm_phrase }}
+          CONFIRM_SOURCE_SHA256: ${{ inputs.confirm_source_sha256 }}
+          CONFIRM_SOURCE_PUBLISHED_AT: ${{ inputs.confirm_source_published_at }}
+          CONFIRM_SOURCE_COUNT: ${{ inputs.confirm_source_count }}
+          CONFIRM_CURRENT_COUNT: ${{ inputs.confirm_current_count }}
+          CONFIRM_INTERSECTION_COUNT: ${{ inputs.confirm_intersection_count }}
+          CONFIRM_ADDITION_COUNT: ${{ inputs.confirm_addition_count }}
+          CONFIRM_REACTIVATION_COUNT: ${{ inputs.confirm_reactivation_count }}
+          CONFIRM_DEACTIVATION_COUNT: ${{ inputs.confirm_deactivation_count }}
+        run: |
+          test -n "$DATABASE_URL"
+          test -n "$CQC_API_KEY"
+          test -n "$BATCH_ID"
+          python tools/cqc_reconcile.py --phase shard \
+            --database-url "$DATABASE_URL" --batch-id "$BATCH_ID" \
+            --shard-index "$SHARD_INDEX" --checkpoint-size "$CHECKPOINT_SIZE" \
+            --confirm-phrase "$CONFIRM_PHRASE" \
+            --confirm-source-sha256 "$CONFIRM_SOURCE_SHA256" \
+            --confirm-source-published-at "$CONFIRM_SOURCE_PUBLISHED_AT" \
+            --confirm-source-count "$CONFIRM_SOURCE_COUNT" \
+            --confirm-current-count "$CONFIRM_CURRENT_COUNT" \
+            --confirm-intersection-count "$CONFIRM_INTERSECTION_COUNT" \
+            --confirm-addition-count "$CONFIRM_ADDITION_COUNT" \
+            --confirm-reactivation-count "$CONFIRM_REACTIVATION_COUNT" \
+            --confirm-deactivation-count "$CONFIRM_DEACTIVATION_COUNT"
+
+  resume-finalize:
+    if: inputs.operation == 'resume'
+    needs: resume-shards
+    environment: Production
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+      - run: python -m pip install -r requirements.txt
+      - name: Verify and finalize durable batch
+        env:
+          DATABASE_URL: ${{ secrets.CQC_PRODUCTION_DATABASE_URL }}
+          BATCH_ID: ${{ inputs.batch_id }}
+          CONFIRM_PHRASE: ${{ inputs.confirm_phrase }}
+          CONFIRM_SOURCE_SHA256: ${{ inputs.confirm_source_sha256 }}
+          CONFIRM_SOURCE_PUBLISHED_AT: ${{ inputs.confirm_source_published_at }}
+          CONFIRM_SOURCE_COUNT: ${{ inputs.confirm_source_count }}
+          CONFIRM_CURRENT_COUNT: ${{ inputs.confirm_current_count }}
+          CONFIRM_INTERSECTION_COUNT: ${{ inputs.confirm_intersection_count }}
+          CONFIRM_ADDITION_COUNT: ${{ inputs.confirm_addition_count }}
+          CONFIRM_REACTIVATION_COUNT: ${{ inputs.confirm_reactivation_count }}
+          CONFIRM_DEACTIVATION_COUNT: ${{ inputs.confirm_deactivation_count }}
+        run: |
+          test -n "$DATABASE_URL"
+          test -n "$BATCH_ID"
+          python tools/cqc_reconcile.py --phase finalize \
+            --database-url "$DATABASE_URL" --batch-id "$BATCH_ID" \
+            --confirm-phrase "$CONFIRM_PHRASE" \
+            --confirm-source-sha256 "$CONFIRM_SOURCE_SHA256" \
+            --confirm-source-published-at "$CONFIRM_SOURCE_PUBLISHED_AT" \
+            --confirm-source-count "$CONFIRM_SOURCE_COUNT" \
+            --confirm-current-count "$CONFIRM_CURRENT_COUNT" \
+            --confirm-intersection-count "$CONFIRM_INTERSECTION_COUNT" \
+            --confirm-addition-count "$CONFIRM_ADDITION_COUNT" \
+            --confirm-reactivation-count "$CONFIRM_REACTIVATION_COUNT" \
+            --confirm-deactivation-count "$CONFIRM_DEACTIVATION_COUNT"
+
+  abort:
+    if: inputs.operation == 'abort' && inputs.confirm_phrase == 'RECONCILE CQC PRODUCTION'
+    environment: Production
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+      - run: python -m pip install -r requirements.txt
+      - name: Abort durable batch before publication
+        env:
+          DATABASE_URL: ${{ secrets.CQC_PRODUCTION_DATABASE_URL }}
+          BATCH_ID: ${{ inputs.batch_id }}
+          CONFIRM_PHRASE: ${{ inputs.confirm_phrase }}
+          CONFIRM_SOURCE_SHA256: ${{ inputs.confirm_source_sha256 }}
+          CONFIRM_SOURCE_PUBLISHED_AT: ${{ inputs.confirm_source_published_at }}
+          CONFIRM_SOURCE_COUNT: ${{ inputs.confirm_source_count }}
+          CONFIRM_CURRENT_COUNT: ${{ inputs.confirm_current_count }}
+          CONFIRM_INTERSECTION_COUNT: ${{ inputs.confirm_intersection_count }}
+          CONFIRM_ADDITION_COUNT: ${{ inputs.confirm_addition_count }}
+          CONFIRM_REACTIVATION_COUNT: ${{ inputs.confirm_reactivation_count }}
+          CONFIRM_DEACTIVATION_COUNT: ${{ inputs.confirm_deactivation_count }}
+        run: |
+          test -n "$DATABASE_URL"
+          test -n "$BATCH_ID"
+          python tools/cqc_reconcile.py --phase abort \
+            --database-url "$DATABASE_URL" --batch-id "$BATCH_ID" \
+            --confirm-phrase "$CONFIRM_PHRASE" \
+            --confirm-source-sha256 "$CONFIRM_SOURCE_SHA256" \
+            --confirm-source-published-at "$CONFIRM_SOURCE_PUBLISHED_AT" \
+            --confirm-source-count "$CONFIRM_SOURCE_COUNT" \
+            --confirm-current-count "$CONFIRM_CURRENT_COUNT" \
+            --confirm-intersection-count "$CONFIRM_INTERSECTION_COUNT" \
+            --confirm-addition-count "$CONFIRM_ADDITION_COUNT" \
+            --confirm-reactivation-count "$CONFIRM_REACTIVATION_COUNT" \
+            --confirm-deactivation-count "$CONFIRM_DEACTIVATION_COUNT"

@@ -78,16 +78,22 @@ async def readiness_check() -> JSONResponse:
 
 @router.get("/api/v1/health/freshness")
 async def freshness_check() -> JSONResponse:
-    """Freshness check focused on the new-registration wedge SLA."""
+    """Publish the reconciled CQC source watermark and derived-feed freshness."""
     try:
         async with get_connection() as conn:
             snapshot = await get_pipeline_health(conn)
-        status_code = 200 if snapshot["feed_fresh"] else 503
+        freshness_ok = bool(snapshot.get("freshness_ok", snapshot["feed_fresh"]))
+        status_code = 200 if freshness_ok else 503
         return JSONResponse(
             status_code=status_code,
             content={
-                "status": "healthy" if snapshot["feed_fresh"] else "stale",
+                "status": "healthy" if freshness_ok else "stale",
+                "freshness_ok": freshness_ok,
+                "source_fresh": snapshot.get("source_fresh", False),
                 "feed_fresh": snapshot["feed_fresh"],
+                "source": snapshot.get("source"),
+                "units": snapshot.get("units"),
+                "generated_at": snapshot.get("generated_at"),
                 "checks": snapshot["checks"],
             },
         )
