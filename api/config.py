@@ -16,6 +16,7 @@ from pydantic_settings import BaseSettings
 
 AWS_SECRET_ID_ENV = "AWS_SECRETS_MANAGER_SECRET_ID"
 AWS_REGION_ENV = "AWS_REGION"
+CAREGIST_PREVIEW_DATABASE_URL_ENV = "CAREGIST_PREVIEW_DATABASE_URL"
 
 SECRET_ENV_NAMES = {
     "database_url": "DATABASE_URL",
@@ -186,7 +187,12 @@ def load_application_secrets(
         # deployments may intentionally omit live billing/outbound credentials;
         # those features then fail closed at their own API boundary.
         values.update(_load_dev_env_secrets(env))
-        if env.get("PROD_DATABASE_URL"):
+        if env.get("VERCEL_ENV", "").lower() == "preview" and env.get(CAREGIST_PREVIEW_DATABASE_URL_ENV):
+            # A separately provisioned preview resource must take precedence
+            # over the legacy project-wide DATABASE_URL. The prefixed variable
+            # can be connected to Preview only and is ignored in production.
+            values["database_url"] = env[CAREGIST_PREVIEW_DATABASE_URL_ENV]
+        elif env.get("PROD_DATABASE_URL"):
             values["database_url"] = env["PROD_DATABASE_URL"]
     if secret_id and not is_vercel:
         loader = secret_loader_cls(secret_id, env.get(AWS_REGION_ENV))

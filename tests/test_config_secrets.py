@@ -168,6 +168,42 @@ def test_vercel_preview_loads_direct_env_without_live_billing_secrets():
     assert "stripe_secret_key" not in secrets
 
 
+def test_vercel_preview_prefers_isolated_preview_database():
+    secrets = load_application_secrets(
+        environ={
+            "NODE_ENV": "production",
+            "VERCEL": "1",
+            "VERCEL_ENV": "preview",
+            "DATABASE_URL": "postgresql://legacy-preview",
+            "CAREGIST_PREVIEW_DATABASE_URL": "postgresql://isolated-preview",
+            "API_KEY": "preview-master",
+        },
+        secret_loader_cls=FakeSecretLoader,
+    )
+
+    assert secrets["database_url"] == "postgresql://isolated-preview"
+
+
+def test_vercel_production_ignores_preview_database_override():
+    secrets = load_application_secrets(
+        environ={
+            "NODE_ENV": "production",
+            "VERCEL": "1",
+            "VERCEL_ENV": "production",
+            "DATABASE_URL": "postgresql://legacy",
+            "PROD_DATABASE_URL": "postgresql://production",
+            "CAREGIST_PREVIEW_DATABASE_URL": "postgresql://isolated-preview",
+            "API_KEY": "production-master",
+            "SUPPORT_INTERNAL_TOKEN": "support",
+            "STRIPE_SECRET_KEY": "sk_live_123",
+            "STRIPE_WEBHOOK_SECRET": "whsec_123",
+        },
+        secret_loader_cls=FakeSecretLoader,
+    )
+
+    assert secrets["database_url"] == "postgresql://production"
+
+
 def test_vercel_production_loads_direct_env_and_requires_all_secrets():
     secrets = load_application_secrets(
         environ={
