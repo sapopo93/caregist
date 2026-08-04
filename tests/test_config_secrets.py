@@ -2,7 +2,13 @@
 
 import pytest
 
-from api.config import Settings, _normalize_secret_payload, load_application_secrets, validate_cors_origins
+from api.config import (
+    Settings,
+    _normalize_secret_payload,
+    load_application_secrets,
+    runtime_requires_production_secrets,
+    validate_cors_origins,
+)
 
 
 class FakeSecretLoader:
@@ -114,6 +120,84 @@ def test_dev_fallback_works_only_outside_production():
                 "SUPPORT_INTERNAL_TOKEN": "prod-env-support",
             },
             dotenv_path="/tmp/caregist-missing-test-env",
+            secret_loader_cls=FakeSecretLoader,
+        )
+
+
+def test_api_key_alias_is_accepted_for_preview_identity():
+    secrets = load_application_secrets(
+        environ={
+            "NODE_ENV": "development",
+            "API_KEY": "preview-master",
+        },
+        dotenv_path="/tmp/caregist-missing-test-env",
+        secret_loader_cls=FakeSecretLoader,
+    )
+
+    assert secrets["api_master_key"] == "preview-master"
+
+
+def test_vercel_preview_does_not_require_live_production_secrets():
+    assert runtime_requires_production_secrets(
+        "postgresql://preview-db",
+        {"VERCEL_ENV": "preview"},
+    ) is False
+
+
+def test_vercel_production_always_requires_production_secrets():
+    assert runtime_requires_production_secrets(
+        "postgresql://caregist:caregist_dev@localhost:5432/caregist",
+        {"VERCEL_ENV": "production"},
+    ) is True
+
+
+def test_vercel_preview_loads_direct_env_without_live_billing_secrets():
+    secrets = load_application_secrets(
+        environ={
+            "NODE_ENV": "production",
+            "VERCEL": "1",
+            "VERCEL_ENV": "preview",
+            "DATABASE_URL": "postgresql://preview",
+            "API_KEY": "preview-master",
+        },
+        secret_loader_cls=FakeSecretLoader,
+    )
+
+    assert secrets["database_url"] == "postgresql://preview"
+    assert secrets["api_master_key"] == "preview-master"
+    assert "stripe_secret_key" not in secrets
+
+
+def test_vercel_production_loads_direct_env_and_requires_all_secrets():
+    secrets = load_application_secrets(
+        environ={
+            "NODE_ENV": "production",
+            "VERCEL": "1",
+            "VERCEL_ENV": "production",
+            "DATABASE_URL": "postgresql://legacy",
+            "PROD_DATABASE_URL": "postgresql://production",
+            "API_KEY": "production-master",
+            "SUPPORT_INTERNAL_TOKEN": "support",
+            "STRIPE_SECRET_KEY": "sk_live_123",
+            "STRIPE_WEBHOOK_SECRET": "whsec_123",
+        },
+        secret_loader_cls=FakeSecretLoader,
+    )
+
+    assert secrets["database_url"] == "postgresql://production"
+    assert secrets["api_master_key"] == "production-master"
+
+    with pytest.raises(RuntimeError, match="STRIPE_WEBHOOK_SECRET"):
+        load_application_secrets(
+            environ={
+                "NODE_ENV": "production",
+                "VERCEL": "1",
+                "VERCEL_ENV": "production",
+                "DATABASE_URL": "postgresql://production",
+                "API_KEY": "production-master",
+                "SUPPORT_INTERNAL_TOKEN": "support",
+                "STRIPE_SECRET_KEY": "sk_live_123",
+            },
             secret_loader_cls=FakeSecretLoader,
         )
 

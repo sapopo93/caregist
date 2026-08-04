@@ -38,6 +38,7 @@ SECRET_ENV_NAMES = {
     "redis_url": "REDIS_URL",
 }
 SECRET_ENV_ALIASES = {
+    "api_master_key": ("API_KEY",),
     "stripe_price_alerts_pro": ("STRIPE_PRICE_ALERTS_PRO_MONTHLY",),
     "stripe_price_starter": ("STRIPE_PRICE_DATA_STARTER_MONTHLY",),
     "stripe_price_pro": ("STRIPE_PRICE_DATA_PRO_MONTHLY",),
@@ -46,6 +47,27 @@ SECRET_ENV_ALIASES = {
     "stripe_price_profile_premium": ("STRIPE_PRICE_PROVIDER_PRO_LISTING_MONTHLY",),
     "stripe_price_profile_sponsored": ("STRIPE_PRICE_SPONSORED_LISTING_MONTHLY",),
 }
+
+
+def runtime_requires_production_secrets(
+    database_url: str,
+    environ: Mapping[str, str] | None = None,
+) -> bool:
+    """Return whether startup must enforce production-only secret gates.
+
+    Vercel previews are protected, non-production environments and may use a
+    preview database without live billing or outbound credentials. Production
+    remains fail-closed even if its database URL is misconfigured.
+    """
+    env = environ or os.environ
+    vercel_env = env.get("VERCEL_ENV", "").lower()
+    if vercel_env == "production":
+        return True
+    if vercel_env in {"preview", "development"}:
+        return False
+    return "localhost" not in database_url
+
+
 REQUIRED_PRODUCTION_SECRETS = (
     "database_url",
     "api_master_key",
@@ -147,24 +169,35 @@ def load_application_secrets(
 ) -> dict[str, str]:
     env = environ or os.environ
     is_production = _is_production(env)
+    is_vercel = env.get("VERCEL") == "1" or bool(env.get("VERCEL_ENV"))
+    is_vercel_production = env.get("VERCEL_ENV", "").lower() == "production"
+    requires_production_secrets = is_production and (not is_vercel or is_vercel_production)
     secret_id = env.get(AWS_SECRET_ID_ENV)
 
-    if not secret_id and is_production:
+    if not secret_id and requires_production_secrets and not is_vercel:
         raise RuntimeError(f"FATAL: {AWS_SECRET_ID_ENV} must be set in production.")
 
     values: dict[str, str] = {}
     if not is_production:
         values.update(_load_dev_dotenv_secrets(dotenv_path))
         values.update(_load_dev_env_secrets(env))
-    if secret_id:
+    elif is_vercel:
+        # Vercel injects environment values directly into each service. Preview
+        # deployments may intentionally omit live billing/outbound credentials;
+        # those features then fail closed at their own API boundary.
+        values.update(_load_dev_env_secrets(env))
+        if env.get("PROD_DATABASE_URL"):
+            values["database_url"] = env["PROD_DATABASE_URL"]
+    if secret_id and not is_vercel:
         loader = secret_loader_cls(secret_id, env.get(AWS_REGION_ENV))
         values.update(loader.load())
 
-    if is_production:
+    if requires_production_secrets:
         missing = [name for name in REQUIRED_PRODUCTION_SECRETS if not values.get(name)]
         if missing:
             missing_env_names = ", ".join(SECRET_ENV_NAMES[name] for name in missing)
-            raise RuntimeError(f"FATAL: Missing required production secrets in AWS Secrets Manager: {missing_env_names}")
+            source = "Vercel environment" if is_vercel else "AWS Secrets Manager"
+            raise RuntimeError(f"FATAL: Missing required production secrets in {source}: {missing_env_names}")
         return {name: values.get(name, "") for name in SECRET_ENV_NAMES}
 
     return values
@@ -206,9 +239,13 @@ class Settings(BaseSettings):
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8", "extra": "ignore"}
 
     def validate_production(self) -> None:
-        validate_cors_origins(self.cors_origins, production="localhost" not in self.database_url)
+        production = runtime_requires_production_secrets(self.database_url)
+        validate_cors_origins(self.cors_origins, production=production)
 
         if "pytest" in sys.modules:
+            return
+
+        if not production:
             return
 
         if not self.api_master_key:
