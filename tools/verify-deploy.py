@@ -149,7 +149,7 @@ def verify_data_status() -> None:
     print_ok("DATA_STATUS", "/data-status rendered")
 
 
-def verify_backend_binding() -> None:
+def verify_backend_binding() -> int | None:
     response = fetch("/api/v1/health/freshness")
     assert_true(
         response.status in {200, 503},
@@ -162,17 +162,34 @@ def verify_backend_binding() -> None:
 
     status = payload.get("status")
     assert_true(status in {"healthy", "stale"}, f"backend freshness returned unexpected status {status!r}")
+    active_location_count = (payload.get("source") or {}).get("activeLocationCount")
+    assert_true(
+        active_location_count is None or (isinstance(active_location_count, int) and active_location_count >= 0),
+        f"backend freshness returned invalid activeLocationCount {active_location_count!r}",
+    )
     backend_sha = str((payload.get("release") or {}).get("git_sha") or "").lower()
     if EXPECTED_GIT_SHA:
         assert_true(
             backend_sha == EXPECTED_GIT_SHA,
             f"backend Git SHA {backend_sha!r} did not match tested SHA {EXPECTED_GIT_SHA!r}",
         )
-    print_ok("BACKEND_BINDING", f"freshnessStatus={status} gitSha={backend_sha or 'missing'}")
+    print_ok(
+        "BACKEND_BINDING",
+        f"freshnessStatus={status} activeLocationCount={active_location_count!r} gitSha={backend_sha or 'missing'}",
+    )
+    return active_location_count
 
 
-def verify_provider_sitemap() -> None:
+def verify_provider_sitemap(active_location_count: int | None = None) -> None:
     response = fetch("/provider-sitemap-index.xml")
+    if active_location_count == 0:
+        assert_true(
+            response.status == 503 and response.body.strip() == "Provider sitemap index unavailable",
+            "empty preview dataset did not produce the expected fail-closed sitemap response: "
+            f"{response_diagnostic(response)}",
+        )
+        print_ok("PROVIDER_SITEMAP", "empty provider dataset is fail-closed with HTTP 503")
+        return
     assert_true(response.status == 200, f"provider sitemap failed: {response_diagnostic(response)}")
     content_type = response.headers.get("content-type", "")
     assert_true("xml" in content_type, f"provider sitemap returned unexpected Content-Type {content_type!r}")
@@ -180,20 +197,37 @@ def verify_provider_sitemap() -> None:
     print_ok("PROVIDER_SITEMAP", "provider sitemap index rendered")
 
 
-def verify_search() -> None:
+def verify_search(active_location_count: int | None = None) -> None:
     response = fetch(f"/search?{urlencode({'q': SEARCH_QUERY, 'service_type': SERVICE_TYPE})}")
     assert_true(response.status == 200, f"/search returned HTTP {response.status}")
     body = unescape(response.body)
 
     assert_true("temporarily unavailable" not in body, "search rendered the temporary-unavailable fallback")
+    if active_location_count == 0:
+        assert_true(
+            "No providers matched this search." in body,
+            "empty preview dataset did not render the expected zero-result search state",
+        )
+        assert_true(EXPECTED_PROVIDER not in body, "empty preview search unexpectedly rendered the expected provider")
+        print_ok("SEARCH", "empty provider dataset rendered the explicit zero-result state")
+        return
     assert_true("No matching providers found" not in body, "search returned an empty result set")
+    assert_true("No providers matched this search." not in body, "search returned an empty result set")
     assert_true(EXPECTED_PROVIDER in body, f"search did not include expected provider {EXPECTED_PROVIDER!r}")
 
     print_ok("SEARCH", f"found {EXPECTED_PROVIDER!r} for q={SEARCH_QUERY!r} service_type={SERVICE_TYPE!r}")
 
 
-def verify_provider_page() -> None:
+def verify_provider_page(active_location_count: int | None = None) -> None:
     response = fetch(f"/provider/{PROVIDER_SLUG}")
+    if active_location_count == 0:
+        assert_true(
+            response.status == 404,
+            f"empty preview provider lookup did not fail closed with HTTP 404: {response_diagnostic(response)}",
+        )
+        assert_true(EXPECTED_PROVIDER not in unescape(response.body), "empty preview provider page rendered stale provider data")
+        print_ok("PROVIDER", "empty provider dataset returns HTTP 404 without stale provider content")
+        return
     assert_true(response.status == 200, f"/provider/{PROVIDER_SLUG} returned HTTP {response.status}")
     body = unescape(response.body)
 
@@ -297,11 +331,12 @@ def main() -> int:
             if SKIP_BACKEND_PATHS:
                 print("BACKEND_BINDING: SKIPPED - frontend-only degraded smoke has no backend service")
                 print("PROVIDER_SITEMAP: SKIPPED - frontend-only degraded smoke has no backend service")
+                active_location_count = None
             else:
-                verify_backend_binding()
-                verify_provider_sitemap()
-            verify_search()
-            verify_provider_page()
+                active_location_count = verify_backend_binding()
+                verify_provider_sitemap(active_location_count)
+            verify_search(active_location_count)
+            verify_provider_page(active_location_count)
             exports_enabled = verify_export_requires_token()
 
             if LEAD_EMAIL:

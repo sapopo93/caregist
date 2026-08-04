@@ -67,6 +67,38 @@ def test_provider_sitemap_requires_xml_index(verifier, monkeypatch):
     verifier.verify_provider_sitemap()
 
 
+def test_provider_sitemap_accepts_exact_fail_closed_response_for_empty_preview(verifier, monkeypatch):
+    monkeypatch.setattr(
+        verifier,
+        "fetch",
+        lambda _path: verifier.Response(503, {"content-type": "text/plain"}, "Provider sitemap index unavailable"),
+    )
+
+    verifier.verify_provider_sitemap(active_location_count=0)
+
+
+def test_provider_sitemap_rejects_503_when_provider_data_exists(verifier, monkeypatch):
+    monkeypatch.setattr(
+        verifier,
+        "fetch",
+        lambda _path: verifier.Response(503, {"x-vercel-id": "iad1::abc"}, "Provider sitemap index unavailable"),
+    )
+
+    with pytest.raises(verifier.SmokeFailure, match="provider sitemap failed"):
+        verifier.verify_provider_sitemap(active_location_count=1)
+
+
+def test_provider_sitemap_rejects_unexpected_empty_preview_failure(verifier, monkeypatch):
+    monkeypatch.setattr(
+        verifier,
+        "fetch",
+        lambda _path: verifier.Response(503, {"x-vercel-id": "iad1::abc"}, "Database error"),
+    )
+
+    with pytest.raises(verifier.SmokeFailure, match="expected fail-closed sitemap response"):
+        verifier.verify_provider_sitemap(active_location_count=0)
+
+
 def test_binding_failure_retains_request_diagnostics(verifier, monkeypatch):
     monkeypatch.setattr(
         verifier,
@@ -86,11 +118,59 @@ def test_backend_binding_accepts_stale_signal_for_observability(verifier, monkey
         lambda _path: verifier.Response(
             503,
             {"content-type": "application/json"},
-            json.dumps({"status": "stale", "release": {"git_sha": "a" * 40}}),
+            json.dumps(
+                {
+                    "status": "stale",
+                    "release": {"git_sha": "a" * 40},
+                    "source": {"activeLocationCount": 0},
+                }
+            ),
         ),
     )
 
-    verifier.verify_backend_binding()
+    assert verifier.verify_backend_binding() == 0
+
+
+def test_search_accepts_explicit_zero_result_state_for_empty_preview(verifier, monkeypatch):
+    monkeypatch.setattr(
+        verifier,
+        "fetch",
+        lambda _path: verifier.Response(200, {"content-type": "text/html"}, "No providers matched this search."),
+    )
+
+    verifier.verify_search(active_location_count=0)
+
+
+def test_search_rejects_zero_result_state_when_provider_data_exists(verifier, monkeypatch):
+    monkeypatch.setattr(
+        verifier,
+        "fetch",
+        lambda _path: verifier.Response(200, {"content-type": "text/html"}, "No providers matched this search."),
+    )
+
+    with pytest.raises(verifier.SmokeFailure, match="empty result set"):
+        verifier.verify_search(active_location_count=1)
+
+
+def test_provider_page_accepts_404_without_stale_content_for_empty_preview(verifier, monkeypatch):
+    monkeypatch.setattr(
+        verifier,
+        "fetch",
+        lambda _path: verifier.Response(404, {"content-type": "text/html"}, "Not found"),
+    )
+
+    verifier.verify_provider_page(active_location_count=0)
+
+
+def test_provider_page_rejects_stale_content_for_empty_preview(verifier, monkeypatch):
+    monkeypatch.setattr(
+        verifier,
+        "fetch",
+        lambda _path: verifier.Response(404, {"content-type": "text/html"}, "London Care (East London)"),
+    )
+
+    with pytest.raises(verifier.SmokeFailure, match="stale provider data"):
+        verifier.verify_provider_page(active_location_count=0)
 
 
 def test_export_guard_accepts_governance_disabled_state(verifier, monkeypatch):
