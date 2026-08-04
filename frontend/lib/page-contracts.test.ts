@@ -81,6 +81,40 @@ describe("page contracts", () => {
     assert.doesNotMatch(layoutSource, /STRIPE_PAYMENT_LINK_URL/);
   });
 
+  it("keeps provider-result navigation on reliable document requests", () => {
+    const feedSource = readAppFile("components/NewRegistrationFeedPanel.tsx");
+    const cardSource = readAppFile("components/ProviderCard.tsx");
+    const directoryCardSource = readAppFile("components/directory/DirectoryProviderCard.tsx");
+
+    assert.match(feedSource, /<a href=\{getProviderHref\(providerRef\)\}/);
+    assert.match(cardSource, /<a href=\{providerHref\}/);
+    assert.match(directoryCardSource, /<a href=\{href\}/);
+  });
+
+  it("reserves page space for the cookie banner instead of covering actions", () => {
+    const consentSource = readAppFile("components/CookieConsent.tsx");
+    const globalStyles = readAppFile("app/globals.css");
+
+    assert.match(consentSource, /ResizeObserver/);
+    assert.match(consentSource, /--cookie-consent-offset/);
+    assert.match(globalStyles, /padding-bottom:\s*var\(--cookie-consent-offset,\s*0px\)/);
+  });
+
+  it("does not claim to charge VAT while the operator is not VAT registered", () => {
+    const pricingSource = readAppFile("app/pricing/page.tsx");
+    const apiSource = readAppFile("app/api/page.tsx");
+    const configSource = readAppFile("lib/caregist-config.ts");
+    const dashboardSource = readAppFile("app/dashboard/page.tsx");
+    const termsSource = readAppFile("app/terms/page.tsx");
+    const commercialSources = [pricingSource, apiSource, configSource, dashboardSource];
+
+    for (const source of commercialSources) {
+      assert.doesNotMatch(source, /\+\s*VAT|exclude(?:s|d)?\s+VAT/i);
+    }
+    assert.match(pricingSource, /VAT is not currently charged/);
+    assert.match(termsSource, /not currently VAT registered/);
+  });
+
   it("opportunity lead requests use signed stateless export tokens", () => {
     const source = readAppFile("app/api/leads/request/route.ts");
     const opportunityBranch = source.indexOf("if (normalized.opportunity)");

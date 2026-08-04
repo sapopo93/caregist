@@ -10,12 +10,14 @@ from pydantic import ValidationError
 from starlette.requests import Request
 
 from api.config import settings
+from api.middleware.auth import validate_billing_identity
 from api.routers.billing import (
     CheckoutRequest,
     ProfileCheckoutRequest,
     cancel_subscription,
     create_checkout,
     create_profile_checkout,
+    router,
 )
 
 TERMS_VERSION = "b2b-2026-08-02"
@@ -42,6 +44,23 @@ def _browser_auth(**values) -> dict:
         "auth_method": "session",
         **values,
     }
+
+
+def test_all_billing_routes_use_non_metering_identity_dependency():
+    guarded_paths = {
+        "/api/v1/billing/checkout",
+        "/api/v1/billing/profile-checkout",
+        "/api/v1/billing/subscription",
+        "/api/v1/billing/subscription/cancel",
+    }
+    routes = {route.path: route for route in router.routes if route.path in guarded_paths}
+
+    assert routes.keys() == guarded_paths
+    for route in routes.values():
+        assert any(
+            dependency.call is validate_billing_identity
+            for dependency in route.dependant.dependencies
+        )
 
 
 @pytest.fixture(autouse=True)
@@ -145,6 +164,7 @@ async def test_checkout_accepts_display_alias_and_uses_canonical_stripe_tier(mon
     assert "payment_method_types" not in kwargs
     assert kwargs["metadata"]["tier"] == "pro"
     assert kwargs["metadata"]["price_id"] == "price_pro"
+    assert kwargs["idempotency_key"] == "caregist-checkout-user-42"
     audit_args = next(call.args for call in conn.execute.await_args_list if "INSERT INTO audit_log" in call.args[0])
     assert audit_args[1] == "billing.checkout.create"
     assert "price_pro" not in repr(audit_args)
@@ -212,6 +232,7 @@ async def test_profile_checkout_uses_dynamic_payment_methods(monkeypatch):
     assert kwargs["line_items"] == [{"price": "price_profile_enhanced", "quantity": 1}]
     assert kwargs["mode"] == "subscription"
     assert "payment_method_types" not in kwargs
+    assert kwargs["idempotency_key"] == "caregist-profile-checkout-provider-LOC123"
 
 
 @pytest.mark.asyncio

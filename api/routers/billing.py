@@ -11,7 +11,7 @@ import stripe
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, EmailStr, Field
 
-from api.middleware.auth import validate_api_key
+from api.middleware.auth import validate_billing_identity
 from api.middleware.ip_rate_limit import _get_client_ip
 
 from api.config import (
@@ -251,7 +251,7 @@ async def _persist_subscription_state(
 async def create_checkout(
     req: CheckoutRequest,
     request: Request,
-    _auth: dict = Depends(validate_api_key),
+    _auth: dict = Depends(validate_billing_identity),
 ) -> dict:
     """Create a Stripe Checkout session for upgrading."""
     if not settings.billing_checkout_enabled:
@@ -405,7 +405,7 @@ class ProfileCheckoutRequest(BaseModel):
 async def create_profile_checkout(
     req: ProfileCheckoutRequest,
     request: Request,
-    _auth: dict = Depends(validate_api_key),
+    _auth: dict = Depends(validate_billing_identity),
 ) -> dict:
     """Create a Stripe Checkout session for a provider listing tier upgrade."""
     if not settings.billing_checkout_enabled:
@@ -538,7 +538,7 @@ async def create_profile_checkout(
 
 
 @router.get("/subscription")
-async def get_subscription(_auth: dict = Depends(validate_api_key)) -> dict:
+async def get_subscription(_auth: dict = Depends(validate_billing_identity)) -> dict:
     """Return the active subscription and plan entitlements for the authenticated user."""
     user_id = _auth.get("user_id")
     if not user_id:
@@ -582,7 +582,7 @@ def _stripe_period_end(value) -> datetime | None:
 
 
 @router.post("/subscription/cancel")
-async def cancel_subscription(_auth: dict = Depends(validate_api_key)) -> dict:
+async def cancel_subscription(_auth: dict = Depends(validate_billing_identity)) -> dict:
     """Idempotently schedule the authenticated B2B subscription to end at period close."""
     user_id = _require_browser_billing_owner(_auth)
     if not settings.stripe_secret_key:

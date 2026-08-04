@@ -77,25 +77,25 @@ const DELIVERY_SECTIONS = [
 const API_TIERS = [
   {
     name: "Alerts Pro",
-    price: "£49 + VAT/mo",
+    price: "£49/mo",
     features: "Provider monitoring and rating-change alerts · saved watchlists · weekly alert digest · 5 req/sec · 200/day",
     recommended: false,
   },
   {
     name: "Data Starter",
-    price: "£99 + VAT/mo",
+    price: "£99/mo",
     features: "New registration feed · 3 saved filters · weekly digest · 500-row export · 15 monitors · 10 req/sec",
     recommended: false,
   },
   {
     name: "Data Pro",
-    price: "£199 + VAT/mo",
+    price: "£199/mo",
     features: "20 saved filters · 10 digests · 5,000-row export · 100 monitors · 3 included seats · 25 req/sec",
     recommended: true,
   },
   {
     name: "Data Business",
-    price: "£499 + VAT/mo",
+    price: "£499/mo",
     features: "Webhooks for new registrations and rating changes · full fields · 10,000-row export · 500 monitors · 10 included seats · 60 req/sec",
     recommended: false,
   },

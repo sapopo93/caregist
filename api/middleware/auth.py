@@ -69,7 +69,12 @@ async def _update_session_last_seen(session_token_hash: str) -> None:
         logger.warning("Failed to update session last_seen_at: %s", exc)
 
 
-async def _auth_from_key_row(row, *, rate_limit_key: str) -> dict:
+async def _auth_from_key_row(
+    row,
+    *,
+    rate_limit_key: str,
+    consume_rate_limit: bool = True,
+) -> dict:
     if not row["is_active"]:
         raise HTTPException(status_code=403, detail="API key is disabled.")
 
@@ -102,7 +107,11 @@ async def _auth_from_key_row(row, *, rate_limit_key: str) -> dict:
                     detail="This access key is outside your plan seat limit. Revoke extra keys or upgrade your plan.",
                 )
 
-    remaining = await check_rate_limit(rate_limit_key, tier)
+    # Authentication and entitlement checks are also used by account/billing
+    # routes. Those routes must remain reachable after the customer exhausts
+    # their metered data allowance, otherwise they cannot upgrade or manage the
+    # subscription that changes that allowance.
+    remaining = await check_rate_limit(rate_limit_key, tier) if consume_rate_limit else {}
 
     import asyncio
     if row["key_hash"]:
@@ -120,7 +129,7 @@ async def _auth_from_key_row(row, *, rate_limit_key: str) -> dict:
     }
 
 
-async def _validate_key(api_key: str) -> dict:
+async def _validate_key(api_key: str, *, consume_rate_limit: bool = True) -> dict:
     """Core key validation logic — shared by header and cookie auth paths."""
     api_key_hash = hash_api_key(api_key)
 
@@ -129,7 +138,7 @@ async def _validate_key(api_key: str) -> dict:
     if any(secrets.compare_digest(api_key, mk) for mk in settings.master_keys()):
         tier = "admin"
         set_request_tier(tier)
-        remaining = await check_rate_limit(api_key_hash, tier)
+        remaining = await check_rate_limit(api_key_hash, tier) if consume_rate_limit else {}
         # Audit every master-key use so privileged access is reviewable. The key
         # itself is never logged — only its prefix for correlation.
         try:
@@ -192,10 +201,14 @@ async def _validate_key(api_key: str) -> dict:
     if not stored_hash or not secrets.compare_digest(stored_hash, api_key_hash):
         raise HTTPException(status_code=401, detail="Invalid API key.")
 
-    return await _auth_from_key_row(row, rate_limit_key=api_key_hash)
+    return await _auth_from_key_row(
+        row,
+        rate_limit_key=api_key_hash,
+        consume_rate_limit=consume_rate_limit,
+    )
 
 
-async def _validate_session(session_token: str) -> dict:
+async def _validate_session(session_token: str, *, consume_rate_limit: bool = True) -> dict:
     session_token_hash = hash_api_key(session_token)
     async with get_connection() as conn:
         row = await conn.fetchrow(
@@ -236,7 +249,11 @@ async def _validate_session(session_token: str) -> dict:
 
     import asyncio
     asyncio.create_task(_update_session_last_seen(session_token_hash))
-    return await _auth_from_key_row(row, rate_limit_key=session_token_hash)
+    return await _auth_from_key_row(
+        row,
+        rate_limit_key=session_token_hash,
+        consume_rate_limit=consume_rate_limit,
+    )
 
 
 async def validate_api_key(
@@ -265,6 +282,37 @@ async def validate_api_key(
         return auth
     if not api_key and not session_cookie:
         raise HTTPException(status_code=401, detail="Missing API key. Pass X-API-Key header or log in.")
+
+
+async def validate_billing_identity(
+    api_key: str | None = Security(api_key_header),
+    caregist_session: str | None = Cookie(default=None),
+) -> dict:
+    """Authenticate billing/account requests without consuming data quota.
+
+    This preserves all ordinary identity, verification, active-key and seat
+    checks. Billing endpoints apply their own authorization and mutation gates.
+    """
+    session_cookie = _cookie_value(caregist_session)
+    if api_key:
+        try:
+            auth = await _validate_key(api_key, consume_rate_limit=False)
+            auth["auth_method"] = "api_key"
+            return auth
+        except HTTPException as key_exc:
+            if session_cookie:
+                try:
+                    auth = await _validate_session(session_cookie, consume_rate_limit=False)
+                    auth["auth_method"] = "session"
+                    return auth
+                except HTTPException:
+                    pass
+            raise key_exc
+    if session_cookie:
+        auth = await _validate_session(session_cookie, consume_rate_limit=False)
+        auth["auth_method"] = "session"
+        return auth
+    raise HTTPException(status_code=401, detail="Missing API key. Pass X-API-Key header or log in.")
 
 
 async def validate_optional_api_key(

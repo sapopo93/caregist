@@ -225,7 +225,7 @@ export default function PricingPage() {
             </div>
           ))}
         </div>
-        <p className="text-center text-xs text-dusk mt-4">All prices exclude VAT · Provider visibility plans are separate from new-provider intelligence plans · Claim your listing first at no cost</p>
+        <p className="text-center text-xs text-dusk mt-4">Displayed prices are the total monthly prices · VAT is not currently charged · Provider visibility plans are separate from new-provider intelligence plans · Claim your listing first at no cost</p>
       </div>
 
       <div className="text-center mt-10">
@@ -239,7 +239,7 @@ export default function PricingPage() {
       </div>
 
       <div className="text-center mt-6 text-xs text-dusk space-y-1">
-        <p>All prices exclude VAT. Cancel anytime.</p>
+        <p>Displayed prices are the total monthly prices. VAT is not currently charged. Cancel anytime.</p>
         <p>{NEW_REGISTRATION_MONTHLY_AVG_CAVEAT}</p>
         <p>{NEW_REGISTRATION_SOURCE_LINE} {CQC_INDEPENDENCE_LINE}</p>
       </div>

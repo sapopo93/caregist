@@ -1,5 +1,3 @@
-import Link from "next/link";
-
 import type { DirectoryProviderSummary } from "@/lib/directory-db";
 import { getProviderHref } from "@/lib/provider-path";
 
@@ -51,9 +49,9 @@ export default function DirectoryProviderCard({ provider }: { provider: Director
             {provider.type ?? "Care provider"}
           </p>
           <h3 className="mt-2 break-words text-2xl font-bold leading-tight text-bark">
-            <Link href={href} className="hover:text-clay">
+            <a href={href} className="hover:text-clay">
               {provider.name}
-            </Link>
+            </a>
           </h3>
           <p className="mt-2 break-words text-sm text-dusk">{formatLocation(provider)}</p>
         </div>
@@ -87,9 +85,9 @@ export default function DirectoryProviderCard({ provider }: { provider: Director
       </div>
 
       <div className="mt-5">
-        <Link href={href} className="text-sm font-semibold text-clay hover:text-bark">
+        <a href={href} className="text-sm font-semibold text-clay hover:text-bark">
           View provider details
-        </Link>
+        </a>
       </div>
     </article>
   );

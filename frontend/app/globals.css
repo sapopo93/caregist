@@ -26,6 +26,7 @@
     font-family: var(--font-dm-sans), system-ui, sans-serif;
     background-color: var(--color-parchment);
     color: var(--color-charcoal);
+    padding-bottom: var(--cookie-consent-offset, 0px);
   }
   h1, h2, h3 {
     font-family: var(--font-playfair-display), Georgia, serif;

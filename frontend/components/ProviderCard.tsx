@@ -1,7 +1,6 @@
 import RatingBadge from "./RatingBadge";
 import VerifiedBadge from "./VerifiedBadge";
 import CompareButton from "./CompareButton";
-import Link from "next/link";
 import { getProviderHref, getProviderPathKey } from "@/lib/provider-path";
 
 interface Provider {
@@ -51,11 +50,12 @@ export default function ProviderCard({ provider }: { provider: Provider }) {
   const confColor = confidence >= 70 ? "#4A5E45" : confidence >= 40 ? "#D4943A" : "#C44444";
 
   return (
-    <Link href={providerHref}>
-      <div className="bg-cream border border-stone rounded-lg p-5 hover:shadow-md transition-shadow cursor-pointer">
+    <div className="bg-cream border border-stone rounded-lg p-5 hover:shadow-md transition-shadow">
         <div className="flex justify-between items-start mb-2">
           <div className="flex items-center gap-2 min-w-0">
-            <h3 className="text-lg font-semibold text-bark leading-tight truncate">{provider.name}</h3>
+            <h3 className="text-lg font-semibold text-bark leading-tight truncate">
+              <a href={providerHref} className="hover:text-clay">{provider.name}</a>
+            </h3>
             {provider.is_claimed && <VerifiedBadge />}
           </div>
           <div className="flex items-center gap-2 shrink-0">
@@ -85,7 +85,9 @@ export default function ProviderCard({ provider }: { provider: Provider }) {
             <span className="text-xs bg-parchment px-2 py-0.5 rounded" title="Public-record field completeness, not care quality">{provider.data_completeness_tier}</span>
           </span>
         </div>
-      </div>
-    </Link>
+        <a href={providerHref} className="mt-4 inline-flex text-sm font-semibold text-clay hover:text-bark">
+          View provider details
+        </a>
+    </div>
   );
 }

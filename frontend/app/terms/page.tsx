@@ -67,9 +67,10 @@ export default function TermsPage() {
           <p>
             Paid plans are Alerts Pro (&pound;49/month), Data Starter (&pound;99/month), Data Pro
             (&pound;199/month), Data Business (&pound;499/month) and Enterprise (priced by
-            agreement). The operative VAT presentation, invoice requirements and tax treatment are
-            awaiting accountant confirmation. Paid checkout remains unavailable until those details
-            are approved and reflected consistently in Stripe and the pricing journey.
+            agreement). H-Kay Limited is not currently VAT registered, so the displayed prices are
+            the total customer prices and no VAT is charged. If that status changes, CareGist will
+            update its pricing and invoice treatment from the applicable effective date and give
+            existing subscribers any notice required by these terms.
           </p>
           <p>
             Each plan carries limits on request rate, daily and monthly volume, result fields,

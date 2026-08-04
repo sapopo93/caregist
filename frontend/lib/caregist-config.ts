@@ -71,8 +71,8 @@ export const PRICING_LADDER: PricingTier[] = [
     tier: "Alerts Pro",
     forWho: "For teams monitoring providers, watchlists, and rating movement",
     color: "#8b5cf6",
-    price: "\u00A349 + VAT/mo",
-    priceNote: "Cancel anytime",
+    price: "\u00A349/mo",
+    priceNote: "Total price · VAT not currently charged · Cancel anytime",
     includes: [
       "Everything in Free",
       "Provider watchlists and rating-change alerts",
@@ -87,8 +87,8 @@ export const PRICING_LADDER: PricingTier[] = [
     tier: "Data Starter",
     forWho: "For solo sellers building weekly new-provider lists",
     color: "#C8862A",
-    price: "\u00A399 + VAT/mo",
-    priceNote: "Cancel anytime",
+    price: "\u00A399/mo",
+    priceNote: "Total price · VAT not currently charged · Cancel anytime",
     includes: [
       "Everything in Alerts Pro",
       "New registration feed",
@@ -105,8 +105,8 @@ export const PRICING_LADDER: PricingTier[] = [
     tier: "Data Pro",
     forWho: "For small teams using CareGist as a weekly sales workflow",
     color: "#D4943A",
-    price: "\u00A3199 + VAT/mo",
-    priceNote: "Includes 3 named access seats. Extra seats \u00A315 + VAT/mo.",
+    price: "\u00A3199/mo",
+    priceNote: "Total price · Includes 3 named access seats. Extra seats \u00A315/mo.",
     recommended: true,
     includes: [
       "Everything in Data Starter",
@@ -125,8 +125,8 @@ export const PRICING_LADDER: PricingTier[] = [
     tier: "Data Business",
     forWho: "For teams pushing provider intelligence into CRM, outbound, and internal systems",
     color: "#ef4444",
-    price: "\u00A3499 + VAT/mo",
-    priceNote: "Includes 10 named access seats, webhooks, and admin support.",
+    price: "\u00A3499/mo",
+    priceNote: "Total price · Includes 10 named access seats, webhooks, and admin support.",
     includes: [
       "Everything in Data Pro",
       "Webhooks for new registrations and rating changes",
@@ -183,7 +183,7 @@ export const PROVIDER_TIERS = [
   {
     tier: "enhanced" as const,
     label: "Provider Pro Listing",
-    price: "£99 + VAT/location/mo",
+    price: "£99/location/mo",
     priceMonthly: 99,
     priceAnnual: null,
     stripeSlug: "caregist_enhanced_profile",
@@ -203,7 +203,7 @@ export const PROVIDER_TIERS = [
   {
     tier: "sponsored" as const,
     label: "Sponsored Listing",
-    price: "£149 + VAT/location/mo",
+    price: "£149/location/mo",
     priceMonthly: 149,
     priceAnnual: null,
     stripeSlug: "caregist_sponsored_profile",
@@ -243,7 +243,7 @@ export const PROVIDER_TIERS = [
 export type ProviderTierKey = typeof PROVIDER_TIERS[number]["tier"];
 
 // ── Provider Add-on: Extra Team Seat ──
-export const PROVIDER_TEAM_SEAT_PRICE = 15; // £15 + VAT/mo per seat
+export const PROVIDER_TEAM_SEAT_PRICE = 15; // £15/mo total per seat while VAT is not charged
 
 export const PLAN_PRIMARY_CTA: Record<string, string> = {
   free: "Start free",
@@ -303,10 +303,10 @@ export const ADD_ONS: AddOn[] = [
 // ── Launch Pricing ──
 export const LAUNCH_PRICING: LaunchPrice[] = [
   { tier: "Free",       price: "\u00A30",                 color: "#10b981" },
-  { tier: "Alerts Pro", price: "\u00A349 + VAT/mo",       color: "#8b5cf6" },
-  { tier: "Data Starter", price: "\u00A399 + VAT/mo",     color: "#C8862A" },
-  { tier: "Data Pro",   price: "\u00A3199 + VAT/mo",      color: "#D4943A" },
-  { tier: "Data Business", price: "\u00A3499 + VAT/mo",   color: "#ef4444" },
+  { tier: "Alerts Pro", price: "\u00A349/mo",       color: "#8b5cf6" },
+  { tier: "Data Starter", price: "\u00A399/mo",     color: "#C8862A" },
+  { tier: "Data Pro",   price: "\u00A3199/mo",      color: "#D4943A" },
+  { tier: "Data Business", price: "\u00A3499/mo",   color: "#ef4444" },
   { tier: "Enterprise", price: "Contact",                 color: "#64748b" },
 ];
 
