@@ -82,10 +82,11 @@ describe("revenue path contracts", () => {
 
   it("does not spend a Free user's product allowance on unavailable feed controls", () => {
     const feed = source("components/NewRegistrationFeedPanel.tsx");
+    const dashboard = source("app/dashboard/page.tsx");
 
-    assert.match(
-      feed,
-      /if \(tier === "free"\) \{[\s\S]*?return;[\s\S]*?\}[\s\S]*?void loadSavedFilters\(\);[\s\S]*?void loadDigest\(\);/,
-    );
+    assert.match(feed, /if \(!capabilities\.feed\)/);
+    assert.match(feed, /if \(capabilities\.savedFilters\) void loadSavedFilters\(\)/);
+    assert.match(feed, /if \(capabilities\.digest\) void loadDigest\(\)/);
+    assert.match(dashboard, /subscriptionReady \? \(/);
   });
 });

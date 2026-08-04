@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 
 import { trackEvent } from "@/lib/analytics";
 import { clearBrowserAuthState, isAuthExpiredResponse } from "@/lib/auth-session";
+import { feedCapabilitiesForTier } from "@/lib/feed-capabilities";
 import { getProviderHref, getProviderPathKey } from "@/lib/provider-path";
 
 type FeedFilters = {
@@ -99,6 +100,7 @@ export default function NewRegistrationFeedPanel({
   const [digest, setDigest] = useState<any>(null);
   const [digestLoading, setDigestLoading] = useState(false);
   const [exportLoading, setExportLoading] = useState<"" | "csv" | "xlsx">("");
+  const capabilities = feedCapabilitiesForTier(tier);
 
   async function handleExpiredSession() {
     await clearBrowserAuthState();
@@ -190,17 +192,22 @@ export default function NewRegistrationFeedPanel({
   }
 
   useEffect(() => {
+    if (!capabilities.feed) {
+      setEvents([]);
+      setMeta(null);
+      return;
+    }
     void loadFeed(1, EMPTY_FILTERS);
-  }, []);
+  }, [tier]);
 
   useEffect(() => {
-    if (tier === "free") {
+    if (!capabilities.savedFilters && !capabilities.digest) {
       setSavedFilters([]);
       setDigest(null);
       return;
     }
-    void loadSavedFilters();
-    void loadDigest();
+    if (capabilities.savedFilters) void loadSavedFilters();
+    if (capabilities.digest) void loadDigest();
   }, [tier]);
 
   async function handleExport(format: "csv" | "xlsx") {
@@ -308,9 +315,9 @@ export default function NewRegistrationFeedPanel({
 
   const nextPage = meta?.page && meta?.pages && meta.page < meta.pages ? meta.page + 1 : null;
   const previousPage = meta?.page && meta.page > 1 ? meta.page - 1 : null;
-  const hasSavedFilterAccess = tier !== "free";
-  const hasDigestAccess = tier !== "free";
-  const canExport = tier !== "free";
+  const hasSavedFilterAccess = capabilities.savedFilters;
+  const hasDigestAccess = capabilities.digest;
+  const canExport = capabilities.export;
   const supportsWebhooks = tier === "business" || tier === "enterprise";
 
   return (
@@ -328,6 +335,8 @@ export default function NewRegistrationFeedPanel({
           <p className="text-sm text-bark">
             {tier === "free"
               ? "Free is evaluation only. Starter is the first paid tier for recurring feed workflows."
+              : tier === "alerts-pro"
+                ? "Alerts Pro is for monitoring and alerts. Data Starter unlocks the new-registration feed."
               : tier === "starter"
                 ? "Starter gets the first real recurring feed workflow: filtering, exports, saved views, and one digest."
                 : tier === "pro"
@@ -475,6 +484,11 @@ export default function NewRegistrationFeedPanel({
             )}
           </div>
 
+          {!capabilities.feed && (
+            <p className="text-sm text-dusk mb-4">
+              This plan does not include the new-registration feed. Data Starter is the first feed plan.
+            </p>
+          )}
           {error && <p className="text-sm text-alert mb-4">{error}</p>}
 
           <div className="overflow-x-auto border border-stone rounded-lg bg-white">

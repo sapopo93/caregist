@@ -40,6 +40,7 @@ export default function DashboardPage() {
   const [revealError, setRevealError] = useState("");
   const [tier, setTier] = useState("free");
   const [subscription, setSubscription] = useState<any>(null);
+  const [subscriptionReady, setSubscriptionReady] = useState(false);
   const [webhooks, setWebhooks] = useState<any[]>([]);
   const [teamKeys, setTeamKeys] = useState<any[]>([]);
   const [providerAnalytics, setProviderAnalytics] = useState<ProviderAnalytics | null>(null);
@@ -85,6 +86,7 @@ export default function DashboardPage() {
       .then((data) => {
         if (!data) return;
         setSubscription(data);
+        setSubscriptionReady(true);
         if (data?.tier) {
           setTier(data.tier);
           localStorage.setItem("caregist_tier", data.tier);
@@ -395,7 +397,16 @@ export default function DashboardPage() {
         tier={tier}
       />
 
-      <NewRegistrationFeedPanel tier={tier} upgradeHref={upgradeHref} />
+      {subscriptionReady ? (
+        <NewRegistrationFeedPanel tier={tier} upgradeHref={upgradeHref} />
+      ) : (
+        <section className="bg-cream border border-stone rounded-lg p-6 mb-6">
+          <h2 className="text-2xl font-bold mb-2">New registration feed</h2>
+          <p className="text-dusk text-sm">
+            {loadError ? "The feed is paused until your account plan can be verified." : "Loading your plan and feed access…"}
+          </p>
+        </section>
+      )}
 
       <div className="grid md:grid-cols-2 gap-6 mb-6">
         <div className="bg-cream border border-stone rounded-lg p-6">
