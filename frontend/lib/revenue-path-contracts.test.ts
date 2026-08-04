@@ -4,6 +4,8 @@ import { describe, it } from "node:test";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { PRICING_LADDER, PROVIDER_TIERS } from "./caregist-config.ts";
+
 const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 
 function source(path: string): string {
@@ -43,5 +45,25 @@ describe("revenue path contracts", () => {
     assert.doesNotMatch(combined, /\+\s*VAT|exclude(?:s|d)?\s+VAT|ex\s+VAT/i);
     assert.match(combined, /not currently VAT registered/);
     assert.match(combined, /VAT is not currently charged/);
+  });
+
+  it("keeps every checkout-backed public price aligned with the approved monthly ladder", () => {
+    const dataPrices = Object.fromEntries(PRICING_LADDER.map(({ tier, price }) => [tier, price]));
+    assert.deepEqual(dataPrices, {
+      Free: "£0",
+      "Alerts Pro": "£49/mo",
+      "Data Starter": "£99/mo",
+      "Data Pro": "£199/mo",
+      "Data Business": "£499/mo",
+      Enterprise: "Contact us",
+    });
+
+    const providerPrices = Object.fromEntries(PROVIDER_TIERS.map(({ tier, price }) => [tier, price]));
+    assert.deepEqual(providerPrices, {
+      claimed: "£0",
+      enhanced: "£99/location/mo",
+      sponsored: "£149/location/mo",
+      enterprise: "Contact",
+    });
   });
 });
