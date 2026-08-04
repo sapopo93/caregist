@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { trackEvent } from "@/lib/analytics";
+import { apiErrorMessage } from "@/lib/api-error";
 import { normalizePostVerificationPath } from "@/lib/post-verification";
 
 const PLAN_COPY: Record<string, { title: string; body: string }> = {
@@ -77,7 +78,7 @@ function SignupForm() {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.detail || "Registration failed.");
+        setError(apiErrorMessage(data, "Registration failed."));
         return;
       }
 

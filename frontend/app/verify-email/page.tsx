@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { normalizePostVerificationPath } from "@/lib/post-verification";
+import { apiErrorMessage } from "@/lib/api-error";
 
 function VerifyEmailScreen() {
   const router = useRouter();
@@ -36,7 +37,7 @@ function VerifyEmailScreen() {
     })
       .then(async (res) => {
         const data = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(data.detail || "Verification failed.");
+        if (!res.ok) throw new Error(apiErrorMessage(data, "Verification failed."));
         setMessage(data.message || "Email verified.");
         setStatus("success");
       })
