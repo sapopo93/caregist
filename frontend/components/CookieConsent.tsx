@@ -56,9 +56,9 @@ export default function CookieConsent() {
       ref={bannerRef}
       role="dialog"
       aria-label="Cookie choices"
-      className="fixed bottom-0 left-0 right-0 z-50 bg-bark text-cream px-6 py-4 shadow-lg print:hidden"
+      className="fixed bottom-0 left-0 right-0 z-50 bg-bark text-cream px-4 py-2 shadow-lg print:hidden"
     >
-      <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-start sm:items-center gap-4">
+      <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-start sm:items-center gap-3">
         <div className="flex-1 text-sm">
           <p>
             We use cookies for site functionality and to analyse traffic.
