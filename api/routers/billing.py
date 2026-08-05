@@ -83,6 +83,13 @@ class CheckoutRequest(BaseModel):
     model_config = {"extra": "forbid"}
 
 
+class SubscriptionChangeRequest(BaseModel):
+    tier: str  # "alerts-pro", "starter", "pro", or "business"
+    extra_seats: int = Field(0, ge=0, le=50)
+
+    model_config = {"extra": "forbid"}
+
+
 def _require_billing_user_id(auth: dict) -> int:
     user_id = auth.get("user_id")
     if not user_id:
@@ -178,6 +185,32 @@ def _base_price_for_tier(tier: str) -> str:
     return price_id
 
 
+async def _sync_api_key_entitlements(conn, user_id: int, tier: str, entitlements: dict) -> None:
+    rate_limit = get_tier_config(tier)["rate"]
+    await conn.execute(
+        "UPDATE api_keys SET tier = $1, rate_limit = $2 WHERE user_id = $3 AND is_active = true",
+        tier, rate_limit, user_id,
+    )
+    # F-17: if a downgrade dropped the seat allowance below the number of active
+    # keys, deactivate the excess (newest first, keeping the original/primary
+    # key) so old keys can't outlive the seats the customer is paying for.
+    max_users = int(entitlements["max_users"])
+    await conn.execute(
+        """
+        UPDATE api_keys
+        SET is_active = false
+        WHERE id IN (
+            SELECT id FROM api_keys
+            WHERE user_id = $1 AND is_active = true
+            ORDER BY created_at ASC, id ASC
+            OFFSET $2
+        )
+        """,
+        user_id,
+        max_users,
+    )
+
+
 async def _persist_subscription_state(
     conn,
     user_id: int,
@@ -191,7 +224,6 @@ async def _persist_subscription_state(
     current_period_end: datetime | None = None,
 ) -> None:
     entitlements = get_subscription_entitlements(tier, extra_seats)
-    rate_limit = get_tier_config(tier)["rate"]
     await conn.execute(
         """
         INSERT INTO subscriptions (
@@ -223,28 +255,7 @@ async def _persist_subscription_state(
         cancel_at_period_end,
         current_period_end,
     )
-    await conn.execute(
-        "UPDATE api_keys SET tier = $1, rate_limit = $2 WHERE user_id = $3 AND is_active = true",
-        tier, rate_limit, user_id,
-    )
-    # F-17: if a downgrade dropped the seat allowance below the number of active
-    # keys, deactivate the excess (newest first, keeping the original/primary
-    # key) so old keys can't outlive the seats the customer is paying for.
-    max_users = int(entitlements["max_users"])
-    await conn.execute(
-        """
-        UPDATE api_keys
-        SET is_active = false
-        WHERE id IN (
-            SELECT id FROM api_keys
-            WHERE user_id = $1 AND is_active = true
-            ORDER BY created_at ASC, id ASC
-            OFFSET $2
-        )
-        """,
-        user_id,
-        max_users,
-    )
+    await _sync_api_key_entitlements(conn, user_id, tier, entitlements)
 
 
 @router.post("/checkout")
@@ -276,9 +287,9 @@ async def create_checkout(
 
     requested_extra_seats = req.extra_seats
 
-    # Resolve account and paid state together. Existing subscriptions are
-    # intentionally changed through support until a concurrency-safe mutation
-    # ledger is implemented.
+    # Resolve account and paid state together. A separate active subscription
+    # is redirected to POST /subscription/change, which mutates through the
+    # concurrency-safe ledger instead of opening a second Stripe subscription.
     async with get_connection() as conn:
         user = await conn.fetchrow("SELECT id, email, stripe_customer_id FROM users WHERE id = $1", user_id)
 
@@ -302,7 +313,10 @@ async def create_checkout(
     if existing_sub:
         raise HTTPException(
             status_code=409,
-            detail=f"Your account already has an active {existing_sub['tier']} subscription. Contact support to change plans or seats.",
+            detail=(
+                f"Your account already has an active {existing_sub['tier']} subscription. "
+                "Use POST /api/v1/billing/subscription/change to change plans or seats."
+            ),
         )
 
     extra_seats = _normalize_extra_seats(tier, requested_extra_seats)
@@ -657,6 +671,128 @@ async def cancel_subscription(_auth: dict = Depends(validate_billing_identity)) 
         "cancel_at_period_end": True,
         "current_period_end": period_end.isoformat() if period_end else None,
     }
+
+
+@router.post("/subscription/change")
+async def change_subscription(
+    req: SubscriptionChangeRequest,
+    _auth: dict = Depends(validate_billing_identity),
+) -> dict:
+    """Concurrency-safe self-service plan/seat change for an existing subscription.
+
+    Existing subscriptions used to fail closed to "contact support" because
+    two concurrent change requests could otherwise race and silently drop one
+    of them. This uses optimistic locking (`subscriptions.version`) plus an
+    append-only `subscription_mutations` ledger so a lost update is rejected
+    with 409 instead of applied silently.
+    """
+    if not settings.billing_checkout_enabled:
+        raise HTTPException(status_code=503, detail="Billing checkout is awaiting Human Gate approval.")
+    user_id = _require_browser_billing_owner(_auth)
+    if not settings.stripe_secret_key:
+        raise HTTPException(status_code=503, detail="Billing not configured.")
+
+    tier = _normalize_checkout_tier(req.tier)
+    if tier not in CHECKOUT_TIERS:
+        raise HTTPException(status_code=400, detail=f"Invalid tier: {req.tier}. Choose 'alerts-pro', 'starter', 'pro', or 'business'.")
+    extra_seats = _normalize_extra_seats(tier, req.extra_seats)
+
+    async with get_connection() as conn:
+        subscription = await conn.fetchrow(
+            """
+            SELECT s.tier, s.extra_seats, s.version, s.stripe_subscription_id, u.stripe_customer_id
+            FROM subscriptions s
+            JOIN users u ON u.id = s.user_id
+            WHERE s.user_id = $1 AND s.tier != 'free'
+              AND s.stripe_subscription_id IS NOT NULL
+              AND s.status NOT IN ('canceled', 'incomplete_expired')
+            ORDER BY s.created_at DESC LIMIT 1
+            """,
+            user_id,
+        )
+    if not subscription or not subscription["stripe_subscription_id"]:
+        raise HTTPException(status_code=404, detail="No active paid subscription was found to change.")
+
+    subscription_id = subscription["stripe_subscription_id"]
+    current_version = int(subscription["version"])
+    from_tier = subscription["tier"]
+    from_extra_seats = int(subscription["extra_seats"] or 0)
+
+    if tier == from_tier and extra_seats == from_extra_seats:
+        entitlements = get_subscription_entitlements(from_tier, from_extra_seats)
+        return {"tier": from_tier, "extra_seats": from_extra_seats, "entitlements": entitlements, "changed": False}
+
+    stripe_subscription = stripe.Subscription.retrieve(subscription_id)
+    if stripe_subscription.get("customer") != subscription["stripe_customer_id"]:
+        raise HTTPException(status_code=409, detail="Stripe subscription ownership could not be verified.")
+
+    base_price_id = _base_price_for_tier(tier)
+    idempotency_key = f"caregist-change-{user_id}-{subscription_id}-{current_version}-{tier}-{extra_seats}"
+    stripe.Subscription.modify(
+        subscription_id,
+        items=[
+            {"price": base_price_id, "quantity": 1},
+            *([{"price": settings.stripe_price_pro_seat, "quantity": extra_seats}] if extra_seats else []),
+        ],
+        proration_behavior="create_prorations",
+        idempotency_key=idempotency_key,
+    )
+
+    entitlements = get_subscription_entitlements(tier, extra_seats)
+    async with get_connection() as conn:
+        async with conn.transaction():
+            updated = await conn.execute(
+                """
+                UPDATE subscriptions
+                SET tier = $1, extra_seats = $2, included_users = $3, max_users = $4,
+                    seat_price_gbp = $5, stripe_price_id = $6, version = version + 1
+                WHERE user_id = $7 AND stripe_subscription_id = $8 AND version = $9
+                """,
+                tier,
+                extra_seats,
+                entitlements["included_users"],
+                entitlements["max_users"],
+                entitlements["seat_price_gbp"],
+                base_price_id,
+                user_id,
+                subscription_id,
+                current_version,
+            )
+            if updated == "UPDATE 0":
+                raise HTTPException(
+                    status_code=409,
+                    detail="This subscription changed while your request was in flight. Reload and try again.",
+                )
+            await _sync_api_key_entitlements(conn, user_id, tier, entitlements)
+            await conn.execute(
+                """
+                INSERT INTO subscription_mutations (
+                    user_id, stripe_subscription_id, from_tier, from_extra_seats,
+                    to_tier, to_extra_seats, stripe_idempotency_key, status
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'succeeded')
+                ON CONFLICT (stripe_idempotency_key) DO NOTHING
+                """,
+                user_id,
+                subscription_id,
+                from_tier,
+                from_extra_seats,
+                tier,
+                extra_seats,
+                idempotency_key,
+            )
+            await write_audit_log(
+                action="billing.subscription.change",
+                outcome="success",
+                actor=actor_from_auth(_auth),
+                target_type="subscription",
+                target_id=subscription_id,
+                metadata={
+                    "from_tier": from_tier, "from_extra_seats": from_extra_seats,
+                    "to_tier": tier, "to_extra_seats": extra_seats,
+                },
+                conn=conn,
+            )
+    return {"tier": tier, "extra_seats": extra_seats, "entitlements": entitlements, "changed": True}
 
 
 @router.post("/webhook")

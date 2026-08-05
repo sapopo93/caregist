@@ -52,6 +52,7 @@ def test_all_billing_routes_use_non_metering_identity_dependency():
         "/api/v1/billing/profile-checkout",
         "/api/v1/billing/subscription",
         "/api/v1/billing/subscription/cancel",
+        "/api/v1/billing/subscription/change",
     }
     routes = {route.path: route for route in router.routes if route.path in guarded_paths}
 
@@ -266,7 +267,7 @@ async def test_existing_subscription_change_is_fail_closed(monkeypatch):
             )
 
     assert exc.value.status_code == 409
-    assert "Contact support" in exc.value.detail
+    assert "subscription/change" in exc.value.detail
     modify.assert_not_called()
 
 
