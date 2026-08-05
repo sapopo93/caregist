@@ -183,7 +183,14 @@ async def _validate_key(api_key: str, *, consume_rate_limit: bool = True) -> dic
                     (SELECT s.max_users
                      FROM subscriptions s
                      WHERE s.user_id = ak.user_id
-                     ORDER BY s.created_at DESC
+                       AND s.status IN ('active', 'trialing')
+                     ORDER BY CASE s.tier
+                         WHEN 'business' THEN 4
+                         WHEN 'pro' THEN 3
+                         WHEN 'starter' THEN 2
+                         WHEN 'alerts-pro' THEN 1
+                         ELSE 0
+                     END DESC, s.created_at DESC
                      LIMIT 1),
                     1
                 ) AS subscription_max_users
@@ -231,7 +238,14 @@ async def _validate_session(session_token: str, *, consume_rate_limit: bool = Tr
                     (SELECT s.max_users
                      FROM subscriptions s
                      WHERE s.user_id = ak.user_id
-                     ORDER BY s.created_at DESC
+                       AND s.status IN ('active', 'trialing')
+                     ORDER BY CASE s.tier
+                         WHEN 'business' THEN 4
+                         WHEN 'pro' THEN 3
+                         WHEN 'starter' THEN 2
+                         WHEN 'alerts-pro' THEN 1
+                         ELSE 0
+                     END DESC, s.created_at DESC
                      LIMIT 1),
                     1
                 ) AS subscription_max_users
@@ -256,6 +270,28 @@ async def _validate_session(session_token: str, *, consume_rate_limit: bool = Tr
     )
 
 
+async def _validate_session_or_legacy_key(
+    session_token: str,
+    *,
+    consume_rate_limit: bool = True,
+) -> dict:
+    """Validate a revocable session cookie, with fallback for legacy key cookies.
+
+    Not used by validate_billing_identity: a legacy raw-key cookie must never
+    be treated as a browser session there, since billing mutations reject
+    every non-session auth_method (including team API keys).
+    """
+    try:
+        return await _validate_session(session_token, consume_rate_limit=consume_rate_limit)
+    except HTTPException as session_exc:
+        if session_token.startswith("cs_"):
+            raise
+        try:
+            return await _validate_key(session_token, consume_rate_limit=consume_rate_limit)
+        except HTTPException:
+            raise session_exc
+
+
 async def validate_api_key(
     api_key: str | None = Security(api_key_header),
     caregist_session: str | None = Cookie(default=None),
@@ -270,14 +306,14 @@ async def validate_api_key(
         except HTTPException as key_exc:
             if session_cookie:
                 try:
-                    auth = await _validate_session(session_cookie)
+                    auth = await _validate_session_or_legacy_key(session_cookie)
                     auth["auth_method"] = "session"
                     return auth
                 except HTTPException:
                     pass
             raise key_exc
     if session_cookie:
-        auth = await _validate_session(session_cookie)
+        auth = await _validate_session_or_legacy_key(session_cookie)
         auth["auth_method"] = "session"
         return auth
     if not api_key and not session_cookie:
@@ -292,6 +328,10 @@ async def validate_billing_identity(
 
     This preserves all ordinary identity, verification, active-key and seat
     checks. Billing endpoints apply their own authorization and mutation gates.
+
+    Deliberately uses _validate_session (not the legacy-key-cookie fallback):
+    a legacy raw-key cookie must never be treated as a browser session here,
+    since billing mutations reject every non-session auth_method.
     """
     session_cookie = _cookie_value(caregist_session)
     if api_key:
@@ -328,12 +368,12 @@ async def validate_optional_api_key(
         except HTTPException as key_exc:
             if session_cookie:
                 try:
-                    return await _validate_session(session_cookie)
+                    return await _validate_session_or_legacy_key(session_cookie)
                 except HTTPException:
                     pass
             raise key_exc
     if session_cookie:
-        return await _validate_session(session_cookie)
+        return await _validate_session_or_legacy_key(session_cookie)
 
     guest_key = f"guest:{_client_identifier(request)}"
     remaining = await check_rate_limit(guest_key, "free")

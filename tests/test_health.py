@@ -10,6 +10,25 @@ from api.main import app
 
 
 @pytest.mark.asyncio
+async def test_preview_database_failure_starts_explicitly_degraded():
+    with patch("api.main.init_pool", new=AsyncMock(side_effect=RuntimeError("database unavailable"))), \
+         patch("api.main.runtime_requires_production_secrets", return_value=False):
+        from api.main import _initialize_database
+
+        assert await _initialize_database() is False
+
+
+@pytest.mark.asyncio
+async def test_production_database_failure_still_fails_startup():
+    with patch("api.main.init_pool", new=AsyncMock(side_effect=RuntimeError("database unavailable"))), \
+         patch("api.main.runtime_requires_production_secrets", return_value=True):
+        from api.main import _initialize_database
+
+        with pytest.raises(RuntimeError, match="database unavailable"):
+            await _initialize_database()
+
+
+@pytest.mark.asyncio
 async def test_health_endpoint_returns_degraded_snapshot():
     conn = AsyncMock()
 

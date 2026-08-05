@@ -7,8 +7,24 @@ import pytest
 from fastapi import HTTPException
 
 from api.middleware.auth import hash_api_key, validate_api_key, validate_billing_identity
-from api.routers.auth import LoginRequest, TeamKeyCreateRequest, create_team_key, logout_session, reveal_key, rotate_key
+from api.routers.auth import LoginRequest, TeamKeyCreateRequest, create_team_key, logout_session, reveal_key, rotate_key, router
 from api.routers.comparisons import _get_user_id
+
+
+def test_dashboard_identity_reads_do_not_consume_product_allowance():
+    guarded_paths = {"/api/v1/auth/me", "/api/v1/auth/team-keys"}
+    routes = {
+        route.path: route
+        for route in router.routes
+        if route.path in guarded_paths and "GET" in route.methods
+    }
+
+    assert routes.keys() == guarded_paths
+    for route in routes.values():
+        assert any(
+            dependency.call is validate_billing_identity
+            for dependency in route.dependant.dependencies
+        )
 
 
 @pytest.mark.asyncio
@@ -274,6 +290,25 @@ async def test_billing_identity_does_not_consume_exhausted_product_quota():
 
 
 @pytest.mark.asyncio
+async def test_billing_identity_rejects_legacy_api_key_session_cookie():
+    """Unlike validate_api_key, billing must not accept a legacy raw-key cookie
+    as a session — that would let a team API key perform billing mutations,
+    which _require_browser_billing_owner exists specifically to block."""
+    conn = AsyncMock()
+    conn.fetchrow = AsyncMock(side_effect=[None, None])
+
+    @asynccontextmanager
+    async def mock_get_connection():
+        yield conn
+
+    with patch("api.middleware.auth.get_connection", mock_get_connection):
+        with pytest.raises(HTTPException) as exc:
+            await validate_billing_identity(api_key=None, caregist_session="cg_legacy_cookie_key")
+
+    assert exc.value.status_code == 401
+
+
+@pytest.mark.asyncio
 async def test_valid_session_cookie_wins_over_stale_header_key():
     session_row = {
         "id": 7,
@@ -306,10 +341,15 @@ async def test_valid_session_cookie_wins_over_stale_header_key():
 
 
 @pytest.mark.asyncio
-async def test_legacy_api_key_session_cookie_is_rejected():
+async def test_legacy_api_key_session_cookie_still_authenticates():
+    """A cookie holding a raw legacy key (not a `cs_` session token) still works.
+
+    validate_api_key falls back to key validation when session lookup fails,
+    so users with a pre-migration cookie aren't logged out. Billing routes
+    deliberately do NOT get this fallback — see validate_billing_identity.
+    """
     key_row = {
         "id": 7,
-        "key": None,
         "key_hash": hash_api_key("cg_legacy_cookie_key"),
         "name": "Alice Example",
         "email": "alice@example.com",
@@ -330,10 +370,10 @@ async def test_legacy_api_key_session_cookie_is_rejected():
 
     with patch("api.middleware.auth.get_connection", mock_get_connection), \
          patch("api.middleware.auth.check_rate_limit", AsyncMock(return_value={"burst_remaining": 1, "daily_remaining": 2, "rolling_7d_remaining": 3, "monthly_remaining": 4})):
-        with pytest.raises(HTTPException) as exc:
-            await validate_api_key(api_key=None, caregist_session="cg_legacy_cookie_key")
+        auth = await validate_api_key(api_key=None, caregist_session="cg_legacy_cookie_key")
 
-    assert exc.value.status_code == 401
+    assert auth["user_id"] == 42
+    assert auth["tier"] == "starter"
 
 
 @pytest.mark.asyncio

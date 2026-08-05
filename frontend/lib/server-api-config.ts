@@ -108,6 +108,8 @@ export function getServerApiKey() {
     return process.env.API_MASTER_KEY;
   }
 
+  // Deliberately no public-key fallback here: a key meant for the browser
+  // bundle must never be trusted as a server credential.
   throw new Error("[caregist] API_KEY or API_MASTER_KEY env var is required but not set");
 }
 
@@ -115,6 +117,8 @@ export function getPublicApiBase() {
   // Browser journeys always use the current site origin. This keeps auth
   // cookies first-party and routes API calls through the Vercel Python function.
   if (typeof window !== "undefined") return window.location.origin;
+  // Server-side rendering can use the private deployment-aware binding directly.
+  if (process.env.CAREGIST_BACKEND_URL) return process.env.CAREGIST_BACKEND_URL;
   const configuredPublicApiUrl = resolveConfiguredApiBase(process.env.NEXT_PUBLIC_API_URL, "public_base");
   if (configuredPublicApiUrl) return configuredPublicApiUrl;
   const configuredApiUrl = resolveConfiguredApiBase(process.env.API_URL, "public_base");

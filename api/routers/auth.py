@@ -8,19 +8,20 @@ import logging
 import secrets
 import time
 from datetime import datetime, timedelta, timezone
+from typing import Literal
 
 try:
     import bcrypt
 except ImportError:  # pragma: no cover - local fallback when bcrypt is unavailable
     bcrypt = None
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Response
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, model_validator
 
 from api.middleware.ip_rate_limit import check_ip_rate_limit
 
 from api.config import get_max_users, get_subscription_entitlements, get_tier_config, settings
 from api.database import get_connection
-from api.middleware.auth import api_key_prefix, hash_api_key, validate_api_key
+from api.middleware.auth import api_key_prefix, hash_api_key, validate_api_key, validate_billing_identity
 from api.utils.audit import actor_from_auth, write_audit_log
 
 logger = logging.getLogger("caregist.auth")
@@ -174,6 +175,14 @@ class RegisterRequest(BaseModel):
     email: EmailStr
     name: str = Field(..., max_length=255)
     password: str = Field(..., min_length=MIN_PASSWORD_LENGTH)
+    plan: Literal["free", "alerts-pro", "data-starter", "data-pro", "data-business"] = "free"
+    provider_tier: Literal["enhanced", "sponsored"] | None = None
+
+    @model_validator(mode="after")
+    def validate_single_purchase_intent(self) -> "RegisterRequest":
+        if self.provider_tier and self.plan != "free":
+            raise ValueError("Choose either a data plan or a provider listing, not both.")
+        return self
 
 
 class LoginRequest(BaseModel):
@@ -192,6 +201,35 @@ class VerifyEmailRequest(BaseModel):
 
 class ResendVerificationRequest(BaseModel):
     email: EmailStr
+
+
+PLAN_CONTINUATION_PATHS = {
+    "alerts-pro": "/login?upgrade=alerts-pro",
+    "data-starter": "/login?upgrade=data-starter",
+    "data-pro": "/login?upgrade=data-pro",
+    "data-business": "/login?upgrade=data-business",
+}
+PROVIDER_CONTINUATION_PATHS = {
+    "enhanced": "/login?provider_tier=enhanced",
+    "sponsored": "/login?provider_tier=sponsored",
+}
+
+
+def _purchase_intent_for_registration(req: RegisterRequest) -> tuple[str | None, str | None]:
+    if req.provider_tier:
+        return "provider_tier", req.provider_tier
+    if req.plan != "free":
+        return "plan", req.plan
+    return None, None
+
+
+def purchase_intent_continuation(intent_type: str | None, intent_value: str | None) -> str:
+    """Build a same-origin continuation from server-owned enum values only."""
+    if intent_type == "plan":
+        return PLAN_CONTINUATION_PATHS.get(intent_value or "", "/login")
+    if intent_type == "provider_tier":
+        return PROVIDER_CONTINUATION_PATHS.get(intent_value or "", "/login")
+    return "/login"
 
 
 async def _get_key_capacity(conn, user_id: int, tier: str | None = None) -> tuple[int, int]:
@@ -229,16 +267,21 @@ async def register(req: RegisterRequest, _ip=Depends(check_ip_rate_limit)) -> di
         verification_token = secrets.token_urlsafe(32)
         api_key = f"cg_{secrets.token_urlsafe(32)}"
         api_key_hash = hash_api_key(api_key)
+        intent_type, intent_value = _purchase_intent_for_registration(req)
 
         async with conn.transaction():
             free_entitlements = get_subscription_entitlements("free")
             verification_expires = datetime.now(timezone.utc) + EMAIL_VERIFICATION_TTL
             user = await conn.fetchrow(
-                """INSERT INTO users (email, name, password_hash, verification_token,
-                                      verification_token_expires_at, is_verified)
-                   VALUES ($1, $2, $3, $4, $5, false)
+                """INSERT INTO users (
+                       email, name, password_hash, verification_token,
+                       verification_token_expires_at, is_verified,
+                       signup_intent_type, signup_intent_value
+                   )
+                   VALUES ($1, $2, $3, $4, $5, false, $6, $7)
                    RETURNING id, email, name""",
                 req.email, req.name, password_hash, verification_token, verification_expires,
+                intent_type, intent_value,
             )
 
             await conn.execute(
@@ -379,7 +422,7 @@ async def logout_session(
 
 
 @router.get("/me")
-async def get_me(_auth: dict = Depends(validate_api_key)) -> dict:
+async def get_me(_auth: dict = Depends(validate_billing_identity)) -> dict:
     """Return the current user's profile and tier (authenticated via header or cookie)."""
     return {
         "tier": _auth.get("tier"),
@@ -529,7 +572,7 @@ async def rotate_key(req: LoginRequest, _ip=Depends(check_ip_rate_limit)) -> dic
 
 
 @router.get("/team-keys")
-async def list_team_keys(_auth: dict = Depends(validate_api_key)) -> dict:
+async def list_team_keys(_auth: dict = Depends(validate_billing_identity)) -> dict:
     user_id = _auth.get("user_id")
     if not user_id:
         raise HTTPException(status_code=401, detail="User account required.")
@@ -732,7 +775,7 @@ async def verify_email(req: VerifyEmailRequest, _ip=Depends(check_ip_rate_limit)
     async with get_connection() as conn:
         user = await conn.fetchrow(
             """
-            SELECT id, email,
+            SELECT id, email, signup_intent_type, signup_intent_value,
                    (verification_token_expires_at IS NOT NULL
                     AND verification_token_expires_at < NOW()) AS is_expired
             FROM users
@@ -760,7 +803,14 @@ async def verify_email(req: VerifyEmailRequest, _ip=Depends(check_ip_rate_limit)
             """,
             user["id"],
         )
-    return {"message": "Email verified. You can now log in.", "email": user["email"]}
+    return {
+        "message": "Email verified. You can now log in.",
+        "email": user["email"],
+        "next_path": purchase_intent_continuation(
+            user["signup_intent_type"],
+            user["signup_intent_value"],
+        ),
+    }
 
 
 @router.post("/resend-verification")

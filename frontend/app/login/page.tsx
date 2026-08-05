@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { apiErrorMessage } from "@/lib/api-error";
 
 function LoginForm() {
   const router = useRouter();
@@ -35,7 +36,7 @@ function LoginForm() {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.detail || "Login failed.");
+        setError(apiErrorMessage(data, "Login failed."));
         return;
       }
 

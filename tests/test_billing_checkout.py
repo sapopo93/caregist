@@ -11,10 +11,13 @@ from starlette.requests import Request
 
 from api.config import settings
 from api.middleware.auth import validate_billing_identity
+from api.routers import billing as billing_module
 from api.routers.billing import (
+    PRICE_TO_TIER,
     CheckoutRequest,
     ProfileCheckoutRequest,
     cancel_subscription,
+    create_billing_portal,
     create_checkout,
     create_profile_checkout,
     router,
@@ -46,12 +49,50 @@ def _browser_auth(**values) -> dict:
     }
 
 
+class _Transaction:
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, exc_type, exc, traceback):
+        return False
+
+
+def _transactional(conn: AsyncMock) -> AsyncMock:
+    conn.transaction = lambda: _Transaction()
+    return conn
+
+
+@pytest.fixture(autouse=True)
+def isolate_persisted_billing_operations(monkeypatch):
+    """Stub the reservation ledger so unit tests exercise routing, not storage.
+
+    The concurrency-safe mutation ledger (billing_operations) is covered by
+    its own tests; here it would otherwise require a real DB round-trip.
+    """
+    async def reserve(*_args, **kwargs):
+        return {
+            "id": "00000000-0000-0000-0000-000000000001",
+            "request_fingerprint": kwargs["fingerprint"],
+            "stripe_object_id": None,
+            "stripe_object_url": None,
+        }
+
+    async def noop(*_args, **_kwargs):
+        return None
+
+    monkeypatch.setattr(billing_module, "_reserve_billing_operation", reserve)
+    monkeypatch.setattr(billing_module, "_record_operation_object", noop)
+    monkeypatch.setattr(billing_module, "_complete_operation", noop)
+    monkeypatch.setattr(billing_module, "_complete_pending_owner_operations", noop)
+
+
 def test_all_billing_routes_use_non_metering_identity_dependency():
     guarded_paths = {
         "/api/v1/billing/checkout",
         "/api/v1/billing/profile-checkout",
         "/api/v1/billing/subscription",
         "/api/v1/billing/subscription/cancel",
+        "/api/v1/billing/portal",
     }
     routes = {route.path: route for route in router.routes if route.path in guarded_paths}
 
@@ -164,7 +205,7 @@ async def test_checkout_accepts_display_alias_and_uses_canonical_stripe_tier(mon
     assert "payment_method_types" not in kwargs
     assert kwargs["metadata"]["tier"] == "pro"
     assert kwargs["metadata"]["price_id"] == "price_pro"
-    assert kwargs["idempotency_key"] == "caregist-checkout-user-42"
+    assert kwargs["idempotency_key"] == "caregist-checkout-00000000-0000-0000-0000-000000000001"
     audit_args = next(call.args for call in conn.execute.await_args_list if "INSERT INTO audit_log" in call.args[0])
     assert audit_args[1] == "billing.checkout.create"
     assert "price_pro" not in repr(audit_args)
@@ -236,9 +277,13 @@ async def test_profile_checkout_uses_dynamic_payment_methods(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_existing_subscription_change_is_fail_closed(monkeypatch):
+async def test_existing_b2b_same_plan_and_seats_is_noop(monkeypatch):
     monkeypatch.setattr(settings, "stripe_secret_key", "sk_test_checkout")
-    conn = AsyncMock()
+    monkeypatch.setattr(settings, "stripe_price_business", "price_business")
+    monkeypatch.setattr(settings, "stripe_price_pro_seat", "price_team_seat")
+    monkeypatch.setitem(PRICE_TO_TIER, "price_team_seat", "pro-seat")
+
+    conn = _transactional(AsyncMock())
     conn.fetchrow = AsyncMock(
         side_effect=[
             {"id": 42, "email": "alice@example.com", "stripe_customer_id": "cus_123"},
@@ -247,6 +292,70 @@ async def test_existing_subscription_change_is_fail_closed(monkeypatch):
                 "status": "active",
                 "stripe_subscription_id": "sub_business",
                 "stripe_price_id": "price_business",
+                "extra_seats": 3,
+            },
+        ]
+    )
+
+    @asynccontextmanager
+    async def mock_get_connection():
+        yield conn
+
+    with patch("api.routers.billing.get_connection", mock_get_connection), \
+         patch(
+             "api.routers.billing.stripe.Subscription.retrieve",
+             return_value={
+                 "customer": "cus_123",
+                 "status": "active",
+                 "items": {"data": [
+                     {"id": "si_base", "price": {"id": "price_business"}, "quantity": 1},
+                     {"id": "si_seat", "price": {"id": "price_team_seat"}, "quantity": 3},
+                 ]},
+             },
+         ), \
+         patch("api.routers.billing.stripe.Subscription.modify") as modify, \
+         patch(
+             "api.routers.billing._complete_pending_owner_operations",
+             new_callable=AsyncMock,
+         ) as complete_pending:
+        result = await create_checkout(
+            _checkout(email="alice@example.com", tier="business"),
+            _request(),
+            _browser_auth(tier="business"),
+        )
+
+    assert result == {
+        "updated": True,
+        "tier": "business",
+        "extra_seats": 3,
+        "unchanged": True,
+    }
+    modify.assert_not_called()
+    assert any("INSERT INTO subscriptions" in call.args[0] for call in conn.execute.await_args_list)
+    assert any("UPDATE api_keys" in call.args[0] for call in conn.execute.await_args_list)
+    complete_pending.assert_awaited_once_with(
+        conn,
+        owner_type="account",
+        owner_id="42",
+        operation_type="subscription_change",
+        stripe_object_id="sub_business",
+    )
+
+
+@pytest.mark.asyncio
+async def test_existing_b2b_change_revokes_stale_paid_access_when_stripe_is_past_due(monkeypatch):
+    monkeypatch.setattr(settings, "stripe_secret_key", "sk_test_checkout")
+    monkeypatch.setattr(settings, "stripe_price_pro", "price_pro")
+
+    conn = _transactional(AsyncMock())
+    conn.fetchrow = AsyncMock(
+        side_effect=[
+            {"id": 42, "email": "alice@example.com", "stripe_customer_id": "cus_123"},
+            {
+                "tier": "pro",
+                "status": "active",
+                "stripe_subscription_id": "sub_pro",
+                "stripe_price_id": "price_pro",
                 "extra_seats": 0,
             },
         ]
@@ -257,17 +366,25 @@ async def test_existing_subscription_change_is_fail_closed(monkeypatch):
         yield conn
 
     with patch("api.routers.billing.get_connection", mock_get_connection), \
+         patch(
+             "api.routers.billing.stripe.Subscription.retrieve",
+             return_value={
+                 "customer": "cus_123",
+                 "status": "past_due",
+                 "items": {"data": [{"id": "si_base", "price": {"id": "price_pro"}, "quantity": 1}]},
+             },
+         ), \
          patch("api.routers.billing.stripe.Subscription.modify") as modify:
         with pytest.raises(HTTPException) as exc:
             await create_checkout(
-                _checkout(email="alice@example.com", tier="pro", extra_seats=2),
+                _checkout(email="alice@example.com", tier="business"),
                 _request(),
                 _browser_auth(tier="pro"),
             )
 
     assert exc.value.status_code == 409
-    assert "Contact support" in exc.value.detail
     modify.assert_not_called()
+    assert any("UPDATE api_keys" in call.args[0] for call in conn.execute.await_args_list)
 
 
 @pytest.mark.parametrize(
@@ -335,6 +452,27 @@ async def test_cancel_subscription_sets_period_end_with_stable_idempotency_key(m
         idempotency_key="caregist-cancel-42-sub_123",
     )
     assert any("cancel_at_period_end = TRUE" in call.args[0] for call in conn.execute.await_args_list)
+
+
+@pytest.mark.asyncio
+async def test_billing_portal_is_scoped_to_authenticated_customer(monkeypatch):
+    monkeypatch.setattr(settings, "stripe_secret_key", "sk_test_checkout")
+    monkeypatch.setattr(settings, "app_url", "https://caregist.co.uk")
+    conn = AsyncMock()
+    conn.fetchrow = AsyncMock(return_value={"stripe_customer_id": "cus_owned"})
+
+    @asynccontextmanager
+    async def mock_get_connection():
+        yield conn
+
+    with patch("api.routers.billing.get_connection", mock_get_connection), \
+         patch(
+             "api.routers.billing.stripe.billing_portal.Session.create",
+             return_value={"url": "https://billing.stripe.test/session"},
+         ):
+        result = await create_billing_portal(_browser_auth())
+
+    assert result == {"portal_url": "https://billing.stripe.test/session"}
 
 
 def test_profile_checkout_rejects_client_supplied_price():

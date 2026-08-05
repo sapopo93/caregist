@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import base64
+import ipaddress
 import json
 import os
 import sys
@@ -16,6 +17,7 @@ from pydantic_settings import BaseSettings
 
 AWS_SECRET_ID_ENV = "AWS_SECRETS_MANAGER_SECRET_ID"
 AWS_REGION_ENV = "AWS_REGION"
+CAREGIST_PREVIEW_DATABASE_URL_ENV = "CAREGIST_PREVIEW_DATABASE_URL"
 
 SECRET_ENV_NAMES = {
     "database_url": "DATABASE_URL",
@@ -50,6 +52,38 @@ SECRET_ENV_ALIASES = {
     "stripe_price_profile_premium": ("STRIPE_PRICE_PROVIDER_PRO_LISTING_MONTHLY",),
     "stripe_price_profile_sponsored": ("STRIPE_PRICE_SPONSORED_LISTING_MONTHLY",),
 }
+
+
+def runtime_requires_production_secrets(
+    database_url: str,
+    environ: Mapping[str, str] | None = None,
+) -> bool:
+    """Return whether startup must enforce production-only secret gates.
+
+    Vercel previews are protected, non-production environments and may use a
+    preview database without live billing or outbound credentials. Production
+    remains fail-closed even if its database URL is misconfigured.
+    """
+    env = environ or os.environ
+    vercel_env = env.get("VERCEL_ENV", "").lower()
+    if vercel_env == "production":
+        return True
+    if vercel_env in {"preview", "development"}:
+        return False
+    return "localhost" not in database_url
+
+
+REQUIRED_PUBLIC_STRIPE_PRICE_FIELDS = (
+    "stripe_price_alerts_pro",
+    "stripe_price_starter",
+    "stripe_price_pro",
+    "stripe_price_pro_seat",
+    "stripe_price_business",
+    "stripe_price_profile_enhanced",
+    "stripe_price_profile_sponsored",
+)
+
+
 REQUIRED_PRODUCTION_SECRETS = (
     "database_url",
     "api_master_key",
@@ -58,7 +92,30 @@ REQUIRED_PRODUCTION_SECRETS = (
     "stripe_webhook_secret",
     "webhook_secret_key",
     "redis_url",
+    *REQUIRED_PUBLIC_STRIPE_PRICE_FIELDS,
 )
+
+
+def validate_public_stripe_price_ids(values: Mapping[str, Any]) -> None:
+    configured = {
+        field: str(values.get(field) or "").strip()
+        for field in REQUIRED_PUBLIC_STRIPE_PRICE_FIELDS
+    }
+    malformed = [field for field, value in configured.items() if value and not value.startswith("price_")]
+    if malformed:
+        names = ", ".join(SECRET_ENV_NAMES[field] for field in malformed)
+        raise RuntimeError(f"FATAL: Stripe Price IDs must start with 'price_': {names}")
+    reverse: dict[str, list[str]] = {}
+    for field, value in configured.items():
+        if value:
+            reverse.setdefault(value, []).append(field)
+    duplicates = [fields for fields in reverse.values() if len(fields) > 1]
+    if duplicates:
+        names = ", ".join(
+            "/".join(SECRET_ENV_NAMES[field] for field in fields)
+            for fields in duplicates
+        )
+        raise RuntimeError(f"FATAL: Public Stripe plans must use unique Price IDs: {names}")
 
 
 class AwsSecretsManagerSecretLoader:
@@ -123,6 +180,40 @@ def validate_cors_origins(cors_origins: str, *, production: bool) -> None:
             raise RuntimeError(f"FATAL: Invalid CORS origin: {origin!r}. Use explicit scheme://host[:port] origins.")
 
 
+def validate_app_url(app_url: str, *, production: bool) -> None:
+    """Require a public HTTPS application origin for production billing redirects."""
+    if not production:
+        return
+
+    parsed = urlparse(app_url.strip())
+    hostname = (parsed.hostname or "").lower().rstrip(".")
+    if (
+        parsed.scheme != "https"
+        or not parsed.netloc
+        or parsed.username
+        or parsed.password
+        or parsed.path not in {"", "/"}
+        or parsed.params
+        or parsed.query
+        or parsed.fragment
+    ):
+        raise RuntimeError(
+            "FATAL: APP_URL must be a public HTTPS origin without a path, query, or credentials in production."
+        )
+
+    if hostname == "localhost" or hostname.endswith((".localhost", ".local")):
+        raise RuntimeError("FATAL: APP_URL must not use a local hostname in production.")
+
+    try:
+        address = ipaddress.ip_address(hostname)
+    except ValueError:
+        if "." not in hostname:
+            raise RuntimeError("FATAL: APP_URL must use a public hostname in production.")
+    else:
+        if not address.is_global:
+            raise RuntimeError("FATAL: APP_URL must not use a local or private address in production.")
+
+
 def _lookup_secret_value(payload: Mapping[str, Any], field_name: str, env_name: str) -> Any:
     for key in (env_name, *SECRET_ENV_ALIASES.get(field_name, ()), field_name):
         value = payload.get(key)
@@ -163,10 +254,12 @@ def load_application_secrets(
 ) -> dict[str, str]:
     env = environ or os.environ
     is_production = _is_production(env)
-    is_vercel = env.get("VERCEL") == "1"
+    is_vercel = env.get("VERCEL") == "1" or bool(env.get("VERCEL_ENV"))
+    is_vercel_production = env.get("VERCEL_ENV", "").lower() == "production"
+    requires_production_secrets = is_production and (not is_vercel or is_vercel_production)
     secret_id = env.get(AWS_SECRET_ID_ENV)
 
-    if not secret_id and is_production and not is_vercel:
+    if not secret_id and requires_production_secrets and not is_vercel:
         raise RuntimeError(f"FATAL: {AWS_SECRET_ID_ENV} must be set in production.")
 
     values: dict[str, str] = {}
@@ -174,11 +267,16 @@ def load_application_secrets(
         values.update(_load_dev_dotenv_secrets(dotenv_path))
         values.update(_load_dev_env_secrets(env))
     elif is_vercel:
-        # Vercel supplies production secrets directly to the function runtime.
-        # Prefer the explicitly scoped production database URL when both the
-        # legacy DATABASE_URL and PROD_DATABASE_URL are present.
+        # Vercel injects environment values directly into each service. Preview
+        # deployments may intentionally omit live billing/outbound credentials;
+        # those features then fail closed at their own API boundary.
         values.update(_load_dev_env_secrets(env))
-        if env.get("PROD_DATABASE_URL"):
+        if env.get("VERCEL_ENV", "").lower() == "preview" and env.get(CAREGIST_PREVIEW_DATABASE_URL_ENV):
+            # A separately provisioned preview resource must take precedence
+            # over the legacy project-wide DATABASE_URL. The prefixed variable
+            # can be connected to Preview only and is ignored in production.
+            values["database_url"] = env[CAREGIST_PREVIEW_DATABASE_URL_ENV]
+        elif env.get("PROD_DATABASE_URL"):
             values["database_url"] = env["PROD_DATABASE_URL"]
     # Vercel is the authoritative runtime now. Ignore the retired AWS secret
     # identifier if it still exists in project metadata; trying to resolve it
@@ -187,7 +285,7 @@ def load_application_secrets(
         loader = secret_loader_cls(secret_id, env.get(AWS_REGION_ENV))
         values.update(loader.load())
 
-    if is_production:
+    if requires_production_secrets:
         required_secrets = REQUIRED_PRODUCTION_SECRETS
         if is_vercel:
             # Quotas already use the durable DB fallback when Redis is absent.
@@ -199,6 +297,7 @@ def load_application_secrets(
             missing_env_names = ", ".join(SECRET_ENV_NAMES[name] for name in missing)
             source = "Vercel environment" if is_vercel else "AWS Secrets Manager"
             raise RuntimeError(f"FATAL: Missing required production secrets in {source}: {missing_env_names}")
+        validate_public_stripe_price_ids(values)
         return {name: values.get(name, "") for name in SECRET_ENV_NAMES}
 
     return values
@@ -276,9 +375,14 @@ class Settings(BaseSettings):
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8", "extra": "ignore"}
 
     def validate_production(self) -> None:
-        validate_cors_origins(self.cors_origins, production="localhost" not in self.database_url)
+        production = runtime_requires_production_secrets(self.database_url)
+        validate_cors_origins(self.cors_origins, production=production)
+        validate_app_url(self.app_url, production=production)
 
         if "pytest" in sys.modules:
+            return
+
+        if not production:
             return
 
         if not self.api_master_key:

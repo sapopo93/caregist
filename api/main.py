@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import os
 from collections.abc import Mapping
 from contextlib import asynccontextmanager
@@ -14,13 +15,15 @@ except ImportError:  # pragma: no cover - optional observability dependency in l
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from api.config import settings
+from api.config import runtime_requires_production_secrets, settings
 from api.database import close_pool, init_pool
 from api.logging_config import setup_logging
 
 # Structured JSON logs in production, human-readable locally
 setup_logging(json_output="localhost" not in settings.database_url)
 from api.routers import admin, analytics, api_applications, auth, billing, city_pages, claims, comparisons, cron, enquiries, feed, groups, health, internal, provider_profile, providers, public_tools, region_stats, regions, reviews, sitemaps, subscribe, webhooks
+
+_logger = logging.getLogger("caregist.app")
 
 if sentry_sdk and settings.sentry_dsn:
     sentry_sdk.init(
@@ -53,11 +56,32 @@ def should_start_email_drain(environ: Mapping[str, str] | None = None) -> bool:
     return env.get("VERCEL") != "1"
 
 
+async def _initialize_database() -> bool:
+    """Initialize the pool, permitting an explicit degraded preview only.
+
+    Production remains fail-closed. A protected preview can still serve its
+    liveness probe and return honest 503 responses from database-backed health
+    checks when its isolated database credential is absent or invalid.
+    """
+    try:
+        await init_pool()
+        return True
+    except Exception:
+        if runtime_requires_production_secrets(settings.database_url):
+            raise
+        _logger.exception("Preview database unavailable; starting in degraded mode")
+        return False
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    await init_pool()
+    database_ready = await _initialize_database()
     billing.init_stripe()
-    drain_task = asyncio.create_task(_email_drain_loop()) if should_start_email_drain() else None
+    drain_task = (
+        asyncio.create_task(_email_drain_loop())
+        if database_ready and should_start_email_drain()
+        else None
+    )
     yield
     if drain_task is not None:
         drain_task.cancel()
@@ -65,7 +89,8 @@ async def lifespan(app: FastAPI):
             await drain_task
         except asyncio.CancelledError:
             pass
-    await close_pool()
+    if database_ready:
+        await close_pool()
 
 
 _is_local = "localhost" in settings.database_url
@@ -115,11 +140,7 @@ async def security_headers_middleware(request, call_next):
     return response
 
 
-import logging
-
 from fastapi.responses import JSONResponse
-
-_logger = logging.getLogger("caregist.app")
 
 
 @app.exception_handler(Exception)

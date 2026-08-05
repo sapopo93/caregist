@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Literal
 
 import stripe
@@ -18,6 +18,7 @@ from api.config import (
     allows_extra_seats,
     get_subscription_entitlements,
     get_tier_config,
+    get_tier_rank,
     max_tier,
     settings,
 )
@@ -29,7 +30,6 @@ router = APIRouter(prefix="/api/v1/billing", tags=["billing"])
 
 PRICE_TO_TIER = {}         # B2B data plan prices → tier name
 PRICE_TO_PROFILE_TIER = {}  # Provider listing prices → profile tier name
-BASE_PLAN_TIERS = {"alerts-pro", "starter", "pro", "business"}
 
 
 def init_stripe():
@@ -56,11 +56,9 @@ def init_stripe():
         PRICE_TO_PROFILE_TIER[settings.stripe_price_profile_sponsored] = "sponsored"
 
 
-def _is_base_plan_price(price_id: str | None) -> bool:
-    return PRICE_TO_TIER.get(price_id) in BASE_PLAN_TIERS
-
-
-CHECKOUT_TIERS = BASE_PLAN_TIERS
+CHECKOUT_TIERS = {"alerts-pro", "starter", "pro", "business"}
+BASE_PLAN_TIERS = CHECKOUT_TIERS  # kept as an alias for older internal call sites
+ENTITLED_SUBSCRIPTION_STATUSES = {"active", "trialing"}
 CHECKOUT_TIER_ALIASES = {
     "data-starter": "starter",
     "data-pro": "pro",
@@ -73,10 +71,211 @@ def _normalize_checkout_tier(tier: str) -> str:
     return CHECKOUT_TIER_ALIASES.get(normalized, normalized)
 
 
+def _is_base_plan_price(price_id: str | None) -> bool:
+    return PRICE_TO_TIER.get(price_id) in CHECKOUT_TIERS
+
+
+def _request_fingerprint(*state: object) -> str:
+    return hashlib.sha256("\x1f".join(str(value) for value in state).encode()).hexdigest()
+
+
+async def _reserve_billing_operation(
+    conn,
+    *,
+    owner_type: str,
+    owner_id: str,
+    operation_type: str,
+    fingerprint: str,
+    lifetime: timedelta,
+) -> dict:
+    """Create or recover the one pending Stripe operation for a billing owner.
+
+    This is the concurrency-safe mutation ledger: two concurrent requests for
+    the same owner/operation race on a unique partial index instead of both
+    reaching Stripe, so a lost update fails closed (409) instead of silently
+    dropping one of the two changes.
+    """
+    await conn.execute(
+        """
+        UPDATE billing_operations
+        SET status = 'expired', updated_at = NOW()
+        WHERE owner_type = $1 AND owner_id = $2 AND operation_type = $3
+          AND status = 'pending' AND expires_at <= NOW()
+        """,
+        owner_type,
+        owner_id,
+        operation_type,
+    )
+    expires_at = datetime.now(timezone.utc) + lifetime
+    created = await conn.fetchrow(
+        """
+        INSERT INTO billing_operations (
+            owner_type, owner_id, operation_type, request_fingerprint, expires_at
+        )
+        VALUES ($1, $2, $3, $4, $5)
+        ON CONFLICT (owner_type, owner_id, operation_type)
+          WHERE status = 'pending'
+        DO NOTHING
+        RETURNING id, request_fingerprint, stripe_object_id, stripe_object_url, expires_at
+        """,
+        owner_type,
+        owner_id,
+        operation_type,
+        fingerprint,
+        expires_at,
+    )
+    if created:
+        return dict(created)
+    pending = await conn.fetchrow(
+        """
+        SELECT id, request_fingerprint, stripe_object_id, stripe_object_url, expires_at
+        FROM billing_operations
+        WHERE owner_type = $1 AND owner_id = $2 AND operation_type = $3
+          AND status = 'pending'
+        FOR UPDATE
+        """,
+        owner_type,
+        owner_id,
+        operation_type,
+    )
+    if not pending:
+        raise RuntimeError("Could not reserve a billing operation after resolving a concurrent request")
+    if pending["request_fingerprint"] != fingerprint:
+        raise HTTPException(
+            status_code=409,
+            detail="Another billing change is already in progress. Complete it or wait for it to expire.",
+        )
+    return dict(pending)
+
+
+async def _record_operation_object(conn, operation_id: object, *, object_id: str, object_url: str | None = None) -> None:
+    await conn.execute(
+        """
+        UPDATE billing_operations
+        SET stripe_object_id = $1, stripe_object_url = $2, updated_at = NOW()
+        WHERE id = $3 AND status = 'pending'
+        """,
+        object_id,
+        object_url,
+        operation_id,
+    )
+
+
+async def _complete_operation(conn, operation_id: object) -> None:
+    await conn.execute(
+        "UPDATE billing_operations SET status = 'succeeded', updated_at = NOW() WHERE id = $1 AND status = 'pending'",
+        operation_id,
+    )
+
+
+async def _complete_pending_owner_operations(
+    conn,
+    *,
+    owner_type: str,
+    owner_id: str,
+    operation_type: str,
+    stripe_object_id: str,
+) -> None:
+    await conn.execute(
+        """
+        UPDATE billing_operations
+        SET status = 'succeeded', updated_at = NOW()
+        WHERE owner_type = $1 AND owner_id = $2 AND operation_type = $3
+          AND stripe_object_id = $4 AND status = 'pending'
+        """,
+        owner_type,
+        owner_id,
+        operation_type,
+        stripe_object_id,
+    )
+
+
+def _b2b_subscription_state(
+    subscription: dict,
+    *,
+    known_price_id: str | None = None,
+    known_tier: str | None = None,
+    known_seat_price_id: str | None = None,
+) -> tuple[str, str, str, int]:
+    metadata = subscription.get("metadata", {})
+    known_price_id = known_price_id or metadata.get("price_id")
+    known_tier = known_tier or metadata.get("tier")
+    known_seat_price_id = known_seat_price_id or metadata.get("seat_price_id")
+    status = subscription.get("status") or "unknown"
+    base_items: list[tuple[str, str]] = []
+    unknown_price_ids: list[str] = []
+    extra_seats = 0
+    for item in subscription.get("items", {}).get("data", []):
+        item_price_id = item.get("price", {}).get("id")
+        mapped = PRICE_TO_TIER.get(item_price_id)
+        if known_price_id and item_price_id == known_price_id and known_tier in CHECKOUT_TIERS:
+            mapped = known_tier
+        elif known_seat_price_id and item_price_id == known_seat_price_id:
+            mapped = "pro-seat"
+        if mapped in CHECKOUT_TIERS:
+            base_items.append((item_price_id, mapped))
+        elif mapped == "pro-seat":
+            extra_seats += int(item.get("quantity") or 0)
+        elif item_price_id:
+            unknown_price_ids.append(item_price_id)
+    if len(base_items) != 1 or unknown_price_ids:
+        raise RuntimeError(
+            "subscription.updated cannot map base price exactly once: "
+            f"mapped_prices={base_items!r}, unknown_prices={unknown_price_ids!r}"
+        )
+    price_id, tier = base_items[0]
+    return status, price_id, tier, extra_seats
+
+
+_PROFILE_TIERS = {"enhanced", "sponsored"}
+_PROFILE_TIER_ALIASES = {
+    "premium": "enhanced",
+    "provider-pro": "enhanced",
+    "provider_pro": "enhanced",
+    "pro-listing": "enhanced",
+}
+
+
+def _normalize_profile_tier(tier: str) -> str:
+    normalized = "-".join(tier.strip().lower().replace("_", "-").split())
+    return _PROFILE_TIER_ALIASES.get(normalized, normalized)
+
+
+def _profile_subscription_state(
+    subscription: dict,
+    *,
+    known_price_id: str | None = None,
+    known_tier: str | None = None,
+) -> tuple[str, str, str]:
+    metadata = subscription.get("metadata", {})
+    known_price_id = known_price_id or metadata.get("price_id")
+    known_tier = known_tier or metadata.get("tier")
+    status = subscription.get("status") or "unknown"
+    mapped_items: list[tuple[str, str]] = []
+    unknown_price_ids: list[str] = []
+    for item in subscription.get("items", {}).get("data", []):
+        item_price_id = item.get("price", {}).get("id")
+        mapped = PRICE_TO_PROFILE_TIER.get(item_price_id)
+        if known_price_id and item_price_id == known_price_id and known_tier in _PROFILE_TIERS:
+            mapped = known_tier
+        if mapped in _PROFILE_TIERS:
+            mapped_items.append((item_price_id, mapped))
+        elif item_price_id:
+            unknown_price_ids.append(item_price_id)
+    if len(mapped_items) != 1 or unknown_price_ids:
+        raise RuntimeError(
+            "profile subscription.updated cannot map one profile price exactly: "
+            f"mapped_prices={mapped_items!r}, unknown_prices={unknown_price_ids!r}"
+        )
+    price_id, tier = mapped_items[0]
+    return status, price_id, tier
+
+
 class CheckoutRequest(BaseModel):
     email: EmailStr
     tier: str  # "alerts-pro", "starter", "pro", or "business"
-    extra_seats: int = Field(0, ge=0, le=50)
+    # None on an existing-subscription change means "keep the current seat count".
+    extra_seats: int | None = Field(None, ge=0, le=50)
     terms_version: str = Field(min_length=1, max_length=100)
     business_use_confirmed: Literal[True]
 
@@ -253,7 +452,14 @@ async def create_checkout(
     request: Request,
     _auth: dict = Depends(validate_billing_identity),
 ) -> dict:
-    """Create a Stripe Checkout session for upgrading."""
+    """Create a Stripe Checkout session for a new plan, or change an existing one.
+
+    Existing subscriptions used to fail closed to "contact support" for any
+    plan/seat change. This now resolves the change through the same
+    concurrency-safe billing_operations reservation ledger used for new
+    checkout, so a race between two change requests fails one of them closed
+    (409) instead of silently dropping it.
+    """
     if not settings.billing_checkout_enabled:
         raise HTTPException(status_code=503, detail="Billing checkout is awaiting Human Gate approval.")
     _verify_contract_acceptance(req.terms_version, req.business_use_confirmed)
@@ -276,9 +482,6 @@ async def create_checkout(
 
     requested_extra_seats = req.extra_seats
 
-    # Resolve account and paid state together. Existing subscriptions are
-    # intentionally changed through support until a concurrency-safe mutation
-    # ledger is implemented.
     async with get_connection() as conn:
         user = await conn.fetchrow("SELECT id, email, stripe_customer_id FROM users WHERE id = $1", user_id)
 
@@ -299,13 +502,162 @@ async def create_checkout(
             """,
             user["id"],
         )
-    if existing_sub:
-        raise HTTPException(
-            status_code=409,
-            detail=f"Your account already has an active {existing_sub['tier']} subscription. Contact support to change plans or seats.",
-        )
 
-    extra_seats = _normalize_extra_seats(tier, requested_extra_seats)
+    if existing_sub:
+        subscription_id = existing_sub["stripe_subscription_id"]
+        existing_tier = _normalize_checkout_tier(existing_sub["tier"] or "")
+        subscription = stripe.Subscription.retrieve(subscription_id)
+        if subscription.get("customer") != user.get("stripe_customer_id"):
+            raise HTTPException(
+                status_code=409,
+                detail="This subscription is not linked to the authenticated billing customer. Contact support.",
+            )
+        stripe_status = subscription.get("status") or "unknown"
+        if stripe_status not in ENTITLED_SUBSCRIPTION_STATUSES:
+            async with get_connection() as conn:
+                async with conn.transaction():
+                    await _persist_subscription_state(
+                        conn,
+                        int(user["id"]),
+                        subscription_id,
+                        existing_tier,
+                        stripe_status or "unknown",
+                        stripe_price_id=existing_sub.get("stripe_price_id"),
+                        extra_seats=int(existing_sub.get("extra_seats") or 0),
+                    )
+            raise HTTPException(
+                status_code=409,
+                detail="Your Stripe subscription is not active. Resolve its billing status before changing plan.",
+            )
+        stripe_status, source_price_id, source_tier, source_extra_seats = _b2b_subscription_state(
+            subscription,
+            known_price_id=existing_sub.get("stripe_price_id"),
+            known_tier=existing_tier,
+        )
+        if requested_extra_seats and get_tier_rank(source_tier) > get_tier_rank(tier):
+            tier = source_tier
+        desired_extra_seats = (
+            source_extra_seats
+            if requested_extra_seats is None and allows_extra_seats(tier)
+            else int(requested_extra_seats or 0)
+        )
+        if tier == source_tier and desired_extra_seats == source_extra_seats:
+            async with get_connection() as conn:
+                async with conn.transaction():
+                    await _persist_subscription_state(
+                        conn,
+                        int(user["id"]),
+                        subscription_id,
+                        source_tier,
+                        stripe_status,
+                        stripe_price_id=source_price_id,
+                        extra_seats=source_extra_seats,
+                    )
+                    await _complete_pending_owner_operations(
+                        conn,
+                        owner_type="account",
+                        owner_id=str(user["id"]),
+                        operation_type="subscription_change",
+                        stripe_object_id=subscription_id,
+                    )
+            return {"updated": True, "tier": tier, "extra_seats": source_extra_seats, "unchanged": True}
+
+        extra_seats = _normalize_extra_seats(tier, desired_extra_seats)
+        items = subscription.get("items", {}).get("data", [])
+        configured_base_price_id = _configured_base_price_for_tier(tier)
+        base_item = next((item for item in items if item.get("price", {}).get("id") == source_price_id), None)
+        if not base_item or not base_item.get("id"):
+            raise HTTPException(
+                status_code=409,
+                detail="The current Stripe base plan item could not be identified safely. Contact support.",
+            )
+        seat_item = next((item for item in items if PRICE_TO_TIER.get(item.get("price", {}).get("id")) == "pro-seat"), None)
+
+        updated_items: list[dict] = []
+        if configured_base_price_id:
+            updated_items.append({"id": base_item["id"], "price": configured_base_price_id, "quantity": 1})
+        elif tier != source_tier:
+            _base_price_for_tier(tier)
+
+        if seat_item and extra_seats <= 0:
+            updated_items.append({"id": seat_item["id"], "deleted": True})
+        elif seat_item and extra_seats > 0:
+            updated_items.append({"id": seat_item["id"], "price": settings.stripe_price_pro_seat, "quantity": extra_seats})
+        elif extra_seats > 0:
+            updated_items.append({"price": settings.stripe_price_pro_seat, "quantity": extra_seats})
+
+        operation_fingerprint = _request_fingerprint(
+            source_price_id,
+            source_extra_seats,
+            configured_base_price_id or source_price_id,
+            extra_seats,
+        )
+        async with get_connection() as conn:
+            operation = await _reserve_billing_operation(
+                conn,
+                owner_type="account",
+                owner_id=str(user["id"]),
+                operation_type="subscription_change",
+                fingerprint=operation_fingerprint,
+                lifetime=timedelta(minutes=15),
+            )
+            await _record_operation_object(conn, operation["id"], object_id=subscription_id)
+
+        changed_subscription = subscription
+        if updated_items:
+            changed_subscription = stripe.Subscription.modify(
+                subscription_id,
+                items=updated_items,
+                proration_behavior="always_invoice",
+                payment_behavior="error_if_incomplete",
+                metadata={
+                    "user_id": str(user["id"]),
+                    "tier": tier,
+                    "extra_seats": str(extra_seats),
+                    "price_id": configured_base_price_id or source_price_id,
+                    "seat_price_id": settings.stripe_price_pro_seat if extra_seats else "",
+                },
+                idempotency_key=f"caregist-subscription-change-{operation['id']}",
+            )
+        changed_status, changed_price_id, changed_tier, changed_extra_seats = _b2b_subscription_state(
+            changed_subscription,
+            known_price_id=configured_base_price_id or source_price_id,
+            known_tier=tier,
+        )
+        if changed_status not in ENTITLED_SUBSCRIPTION_STATUSES:
+            raise RuntimeError("Stripe returned a non-entitled status after changing the account subscription")
+        if changed_tier != tier or changed_extra_seats != extra_seats:
+            raise RuntimeError("Stripe returned subscription items that do not match the requested account plan change")
+
+        async with get_connection() as conn:
+            async with conn.transaction():
+                await _persist_subscription_state(
+                    conn,
+                    int(user["id"]),
+                    subscription_id,
+                    tier,
+                    changed_status,
+                    stripe_price_id=changed_price_id,
+                    extra_seats=extra_seats,
+                )
+                await write_audit_log(
+                    action="billing.subscription.update",
+                    outcome="success",
+                    actor=actor_from_auth(_auth),
+                    target_type="subscription",
+                    target_id=subscription_id,
+                    metadata={
+                        "tier": tier,
+                        "extra_seats": extra_seats,
+                        "terms_version": req.terms_version,
+                        "terms_sha256": settings.b2b_terms_sha256.strip().lower(),
+                    },
+                    conn=conn,
+                )
+                await _complete_operation(conn, operation["id"])
+        return {"updated": True, "tier": tier, "extra_seats": extra_seats}
+
+    extra_seats = _normalize_extra_seats(tier, int(requested_extra_seats or 0))
     price_id = _base_price_for_tier(tier)
 
     customer_id = user["stripe_customer_id"]
@@ -321,6 +673,24 @@ async def create_checkout(
                 customer_id, user["id"],
             )
 
+    async with get_connection() as conn:
+        operation = await _reserve_billing_operation(
+            conn,
+            owner_type="account",
+            owner_id=str(user["id"]),
+            operation_type="checkout",
+            fingerprint=_request_fingerprint(customer_id, tier, extra_seats, price_id),
+            lifetime=timedelta(minutes=31),
+        )
+    if operation.get("stripe_object_id") and operation.get("stripe_object_url"):
+        stripe_mode = "test" if settings.stripe_secret_key.startswith("sk_test_") else "live"
+        return {
+            "checkout_url": operation["stripe_object_url"],
+            "session_id": operation["stripe_object_id"],
+            "stripe_mode": stripe_mode,
+            "reused": True,
+        }
+
     session = stripe.checkout.Session.create(
         customer=customer_id,
         line_items=[
@@ -330,6 +700,7 @@ async def create_checkout(
         mode="subscription",
         success_url=f"{settings.app_url}/dashboard?session_id={{CHECKOUT_SESSION_ID}}",
         cancel_url=f"{settings.app_url}/pricing",
+        expires_at=int((datetime.now(timezone.utc) + timedelta(minutes=30)).timestamp()),
         metadata={
             "user_id": str(user["id"]), "tier": tier, "extra_seats": str(extra_seats),
             "price_id": price_id, "terms_version": req.terms_version,
@@ -342,11 +713,13 @@ async def create_checkout(
                 "user_id": str(user["id"]),
                 "tier": tier,
                 "extra_seats": str(extra_seats),
+                "price_id": price_id,
+                **({"seat_price_id": settings.stripe_price_pro_seat} if extra_seats else {}),
                 "terms_version": req.terms_version,
                 "terms_sha256": settings.b2b_terms_sha256.strip().lower(),
             },
         },
-        idempotency_key=f"caregist-checkout-user-{user['id']}",
+        idempotency_key=f"caregist-checkout-{operation['id']}",
     )
     try:
         async with get_connection() as conn:
@@ -356,6 +729,12 @@ async def create_checkout(
                 checkout_session_id=session.id,
                 terms_version=req.terms_version,
                 request=request,
+            )
+            await _record_operation_object(
+                conn,
+                operation["id"],
+                object_id=session.id,
+                object_url=session.url,
             )
             await write_audit_log(
                 action="billing.checkout.create",
@@ -375,20 +754,6 @@ async def create_checkout(
 
     stripe_mode = "test" if settings.stripe_secret_key.startswith("sk_test_") else "live"
     return {"checkout_url": session.url, "session_id": session.id, "stripe_mode": stripe_mode}
-
-
-_PROFILE_TIERS = {"enhanced", "sponsored"}
-_PROFILE_TIER_ALIASES = {
-    "premium": "enhanced",
-    "provider-pro": "enhanced",
-    "provider_pro": "enhanced",
-    "pro-listing": "enhanced",
-}
-
-
-def _normalize_profile_tier(tier: str) -> str:
-    normalized = "-".join(tier.strip().lower().replace("_", "-").split())
-    return _PROFILE_TIER_ALIASES.get(normalized, normalized)
 
 
 class ProfileCheckoutRequest(BaseModel):
@@ -488,6 +853,7 @@ async def create_profile_checkout(
         mode="subscription",
         success_url=f"{settings.app_url}/provider-dashboard/{req.slug}?upgraded=1",
         cancel_url=f"{settings.app_url}/provider-dashboard/{req.slug}",
+        expires_at=int((datetime.now(timezone.utc) + timedelta(minutes=30)).timestamp()),
         metadata={
             "type": "profile",
             "slug": req.slug,
@@ -557,13 +923,15 @@ async def get_subscription(_auth: dict = Depends(validate_billing_identity)) -> 
             user_id,
         )
 
-    stored_tier = sub["tier"] if sub else None
-    effective_tier = max_tier(_auth.get("tier", "free"), stored_tier)
-    extra_seats = int(sub["extra_seats"] or 0) if sub else 0
+    status = sub["status"] if sub else "active"
+    entitled = status in ENTITLED_SUBSCRIPTION_STATUSES if sub else True
+    stored_tier = sub["tier"] if sub and entitled else None
+    effective_tier = max_tier(_auth.get("tier", "free"), stored_tier) if entitled else "free"
+    extra_seats = int(sub["extra_seats"] or 0) if sub and entitled else 0
     entitlements = get_subscription_entitlements(effective_tier, extra_seats)
     return {
         "tier": effective_tier,
-        "status": sub["status"] if sub else "active",
+        "status": status,
         "stripe_subscription_id": sub["stripe_subscription_id"] if sub else None,
         "cancel_at_period_end": bool(sub["cancel_at_period_end"]) if sub else False,
         "current_period_end": (
@@ -659,6 +1027,30 @@ async def cancel_subscription(_auth: dict = Depends(validate_billing_identity)) 
     }
 
 
+@router.post("/portal")
+async def create_billing_portal(_auth: dict = Depends(validate_billing_identity)) -> dict:
+    """Open Stripe's customer-owned billing portal for invoices and payment methods."""
+    user_id = _require_browser_billing_owner(_auth)
+    if not _auth.get("is_verified", False):
+        raise HTTPException(status_code=403, detail="Verify your email before managing billing.")
+    if not settings.stripe_secret_key:
+        raise HTTPException(status_code=503, detail="Billing not configured.")
+    async with get_connection() as conn:
+        user = await conn.fetchrow(
+            "SELECT stripe_customer_id FROM users WHERE id = $1",
+            user_id,
+        )
+    if not user or not user.get("stripe_customer_id"):
+        raise HTTPException(status_code=409, detail="No Stripe billing account is linked to this user.")
+    session = stripe.billing_portal.Session.create(
+        customer=user["stripe_customer_id"],
+        return_url=f"{settings.app_url}/dashboard",
+    )
+    if not session.get("url"):
+        raise RuntimeError("Stripe billing portal did not return a secure URL")
+    return {"portal_url": session["url"]}
+
+
 @router.post("/webhook")
 async def stripe_webhook(request: Request) -> dict:
     """Handle Stripe webhook events.
@@ -710,8 +1102,22 @@ async def stripe_webhook(request: Request) -> dict:
                 await _handle_checkout_completed(conn, data)
             elif event_type == "checkout.session.async_payment_succeeded":
                 await _handle_checkout_completed(conn, data)
+            elif event_type == "checkout.session.expired":
+                await conn.execute(
+                    """
+                    UPDATE billing_operations
+                    SET status = 'expired', updated_at = NOW()
+                    WHERE stripe_object_id = $1 AND status = 'pending'
+                      AND operation_type IN ('checkout', 'profile_checkout')
+                    """,
+                    data.get("id"),
+                )
             elif event_type == "customer.subscription.updated":
-                await _handle_subscription_updated(conn, data)
+                subscription_id = data.get("id")
+                if not subscription_id:
+                    raise RuntimeError("customer.subscription.updated missing subscription id")
+                authoritative = stripe.Subscription.retrieve(subscription_id)
+                await _handle_subscription_updated(conn, authoritative)
             elif event_type == "customer.subscription.deleted":
                 await _handle_subscription_deleted(conn, data)
             else:
@@ -719,7 +1125,6 @@ async def stripe_webhook(request: Request) -> dict:
 
             # Retain beyond Stripe's automatic retry horizon so a delayed
             # replay cannot reapply commercial state.
-            # inside the transaction but the DELETE is cheap.
             await conn.execute(
                 "DELETE FROM stripe_processed_events WHERE processed_at < NOW() - INTERVAL '7 days'"
             )
@@ -728,7 +1133,12 @@ async def stripe_webhook(request: Request) -> dict:
 
 
 async def _handle_checkout_completed(conn, session: dict) -> None:
-    """Route completed checkout to B2B or provider profile handler."""
+    """Route completed checkout to B2B or provider profile handler.
+
+    Requires a matching immutable b2b_contract_acceptances row before any
+    entitlement is granted — this is the legal evidence gate; Stripe metadata
+    alone is not trusted as proof of acceptance.
+    """
     session_id = session.get("id")
     metadata = session.get("metadata", {})
     user_id = metadata.get("user_id")
@@ -754,35 +1164,52 @@ async def _handle_checkout_completed(conn, session: dict) -> None:
         raise RuntimeError("checkout.session.completed has no matching immutable B2B acceptance")
     if session.get("payment_status") not in {"paid", "no_payment_required"}:
         raise RuntimeError("checkout session completed before payment became valid")
-    if session.get("metadata", {}).get("type") == "profile":
+    if metadata.get("type") == "profile":
         await _handle_profile_checkout_completed(conn, session)
         return
 
-    tier = session.get("metadata", {}).get("tier")
-    extra_seats = int(session.get("metadata", {}).get("extra_seats", "0") or 0)
+    tier = metadata.get("tier")
+    extra_seats = int(metadata.get("extra_seats", "0") or 0)
     subscription_id = session.get("subscription")
     customer_id = session.get("customer")
-    price_id = session.get("metadata", {}).get("price_id")
+    price_id = metadata.get("price_id")
+    seat_price_id = metadata.get("seat_price_id")
 
-    if tier not in BASE_PLAN_TIERS:
+    if tier not in CHECKOUT_TIERS:
         raise RuntimeError(f"checkout.session.completed has invalid tier metadata: {tier!r}")
     if not subscription_id:
         raise RuntimeError("checkout.session.completed missing subscription id")
-    if price_id and PRICE_TO_TIER.get(price_id) != tier:
+
+    authoritative = stripe.Subscription.retrieve(subscription_id)
+    if authoritative.get("customer") != customer_id:
+        raise RuntimeError("checkout.session.completed subscription customer mismatch")
+    status, actual_price_id, actual_tier, actual_extra_seats = _b2b_subscription_state(
+        authoritative,
+        known_price_id=price_id,
+        known_tier=tier,
+        known_seat_price_id=seat_price_id,
+    )
+    if actual_tier != tier or (price_id and actual_price_id != price_id) or actual_extra_seats != extra_seats:
         raise RuntimeError(
-            f"checkout.session.completed price/tier mismatch: price_id={price_id!r} tier={tier!r}"
+            "checkout.session.completed authoritative subscription does not match its approved metadata"
         )
 
+    # The authoritative Stripe state can race ahead of the just-completed
+    # session (e.g. an immediate downgrade to past_due). Persisting the raw
+    # tier regardless of status would grant paid entitlements to an account
+    # that isn't actually entitled — same class of gap as
+    # _handle_subscription_updated, so it gets the same write-time guard.
+    entitled = status in ENTITLED_SUBSCRIPTION_STATUSES
+    effective_tier = actual_tier if entitled else "free"
+    effective_extra_seats = actual_extra_seats if entitled else 0
     await _persist_subscription_state(
         conn,
         int(user_id),
         subscription_id,
-        tier,
-        "active",
-        stripe_price_id=price_id,
-        extra_seats=extra_seats,
-        cancel_at_period_end=False,
-        current_period_end=None,
+        effective_tier,
+        status,
+        stripe_price_id=actual_price_id,
+        extra_seats=effective_extra_seats,
     )
     await write_audit_log(
         action="billing.subscription.activate",
@@ -790,7 +1217,13 @@ async def _handle_checkout_completed(conn, session: dict) -> None:
         actor={"type": "system", "name": "stripe"},
         target_type="subscription",
         target_id=subscription_id,
-        metadata={"user_id": int(user_id), "tier": tier, "extra_seats": extra_seats},
+        metadata={
+            "user_id": int(user_id),
+            "approved_tier": actual_tier,
+            "effective_tier": effective_tier,
+            "status": status,
+            "extra_seats": effective_extra_seats,
+        },
         conn=conn,
     )
 
@@ -799,71 +1232,82 @@ async def _handle_checkout_completed(conn, session: dict) -> None:
             "UPDATE users SET stripe_customer_id = $1 WHERE id = $2",
             customer_id, int(user_id),
         )
+    await conn.execute(
+        """
+        UPDATE billing_operations
+        SET status = 'succeeded', updated_at = NOW()
+        WHERE stripe_object_id = $1 AND owner_type = 'account'
+          AND operation_type = 'checkout' AND status = 'pending'
+        """,
+        session_id,
+    )
 
-    logger.info("User %s upgraded to %s (subscription: %s)", user_id, tier, subscription_id)
+    logger.info("User %s reconciled to %s/%s (subscription: %s)", user_id, actual_tier, status, subscription_id)
 
 
 async def _handle_subscription_updated(conn, subscription: dict) -> None:
     """Handle subscription changes (upgrade/downgrade)."""
     sub_id = subscription.get("id")
-    status = subscription.get("status")
-    if not status:
-        raise RuntimeError("subscription.updated missing status")
-    price_id = None
-    extra_seats = 0
-    unknown_price_ids: list[str] = []
-    items = subscription.get("items", {}).get("data", [])
-    if items:
-        for item in items:
-            item_price_id = item.get("price", {}).get("id")
-            mapped = PRICE_TO_TIER.get(item_price_id)
-            if mapped in BASE_PLAN_TIERS:
-                price_id = item_price_id
-            elif mapped == "pro-seat":
-                extra_seats += int(item.get("quantity") or 0)
-            elif item_price_id:
-                unknown_price_ids.append(item_price_id)
-
+    status = subscription.get("status") or "unknown"
     sub_row = await conn.fetchrow(
-        "SELECT user_id FROM subscriptions WHERE stripe_subscription_id = $1", sub_id
+        "SELECT user_id, tier, stripe_price_id FROM subscriptions WHERE stripe_subscription_id = $1", sub_id
     )
     if not sub_row:
-        profile = await conn.fetchrow(
-            "SELECT id, profile_tier FROM care_providers WHERE profile_subscription_id = $1",
+        profile_row = await conn.fetchrow(
+            "SELECT id, slug FROM care_providers WHERE profile_subscription_id = $1",
             sub_id,
         )
-        if profile:
-            entitled = status in {"active", "trialing"}
-            metadata_tier = _normalize_profile_tier(subscription.get("metadata", {}).get("tier", ""))
-            if entitled and metadata_tier not in _PROFILE_TIERS:
-                raise RuntimeError(f"profile subscription {sub_id} is active without valid tier metadata")
-            effective_tier = metadata_tier if entitled else "claimed"
+        if profile_row:
+            if status not in ENTITLED_SUBSCRIPTION_STATUSES:
+                await conn.execute(
+                    "UPDATE care_providers SET profile_tier = 'claimed' WHERE id = $1 AND profile_subscription_id = $2",
+                    profile_row["id"],
+                    sub_id,
+                )
+                await write_audit_log(
+                    action="billing.profile_subscription.update",
+                    outcome="success",
+                    actor={"type": "system", "name": "stripe"},
+                    target_type="provider",
+                    target_id=str(profile_row["id"]),
+                    metadata={"subscription_id": sub_id, "tier": "claimed", "status": status},
+                    conn=conn,
+                )
+                logger.warning(
+                    "Profile subscription %s downgraded to claimed for non-entitled status=%s", sub_id, status,
+                )
+                return
+
+            _, profile_price_id, profile_tier = _profile_subscription_state(subscription)
             await conn.execute(
-                "UPDATE care_providers SET profile_tier = %s WHERE id = %s",
-                effective_tier,
-                profile["id"],
+                "UPDATE care_providers SET profile_tier = $1 WHERE id = $2 AND profile_subscription_id = $3",
+                profile_tier, profile_row["id"], sub_id,
             )
             await write_audit_log(
                 action="billing.profile_subscription.update",
                 outcome="success",
                 actor={"type": "system", "name": "stripe"},
-                target_type="subscription",
-                target_id=sub_id,
-                metadata={"provider_id": str(profile["id"]), "tier": effective_tier, "status": status},
+                target_type="provider",
+                target_id=str(profile_row["id"]),
+                metadata={"subscription_id": sub_id, "tier": profile_tier, "status": status, "price_id": profile_price_id},
                 conn=conn,
             )
+            logger.info("Profile subscription %s updated: tier=%s status=%s", sub_id, profile_tier, status)
             return
-        logger.info("Subscription %s updated but no CareGist subscription state exists; skipping", sub_id)
+
+        logger.info("Subscription %s updated but no local subscription row exists; skipping", sub_id)
         return
 
-    if unknown_price_ids or not price_id:
-        raise RuntimeError(
-            f"subscription.updated cannot map base price for subscription {sub_id}: "
-            f"base_price={price_id!r}, unknown_prices={unknown_price_ids!r}"
-        )
-
-    configured_tier = PRICE_TO_TIER[price_id]
-    entitled = status in {"active", "trialing"}
+    status, price_id, configured_tier, extra_seats = _b2b_subscription_state(
+        subscription,
+        known_price_id=sub_row.get("stripe_price_id"),
+        known_tier=_normalize_checkout_tier(sub_row.get("tier") or ""),
+    )
+    # _persist_subscription_state writes `tier` straight onto api_keys, so a
+    # past-due/unpaid/canceled subscription must not keep its paid tier here —
+    # downgrade to free at write time rather than relying on every reader to
+    # re-check status.
+    entitled = status in ENTITLED_SUBSCRIPTION_STATUSES
     tier = configured_tier if entitled else "free"
     effective_extra_seats = extra_seats if entitled else 0
     await _persist_subscription_state(
@@ -900,9 +1344,8 @@ async def _handle_subscription_deleted(conn, subscription: dict) -> None:
     """Downgrade to free on cancellation (B2B) or to claimed on cancellation (profile)."""
     sub_id = subscription.get("id")
 
-    # B2B plan cancellation
     sub_row = await conn.fetchrow(
-        "SELECT user_id FROM subscriptions WHERE stripe_subscription_id = $1", sub_id
+        "SELECT user_id, tier, stripe_price_id FROM subscriptions WHERE stripe_subscription_id = $1", sub_id
     )
     if sub_row:
         await _persist_subscription_state(
@@ -935,8 +1378,9 @@ async def _handle_subscription_deleted(conn, subscription: dict) -> None:
 
 async def _handle_profile_checkout_completed(conn, session: dict) -> None:
     """Activate provider listing tier after successful profile checkout."""
-    slug = session.get("metadata", {}).get("slug")
-    tier = _normalize_profile_tier(session.get("metadata", {}).get("tier", ""))
+    metadata = session.get("metadata", {})
+    slug = metadata.get("slug")
+    tier = _normalize_profile_tier(metadata.get("tier", ""))
     subscription_id = session.get("subscription")
 
     if not slug or not tier:
@@ -963,5 +1407,3 @@ async def _handle_profile_checkout_completed(conn, session: dict) -> None:
         metadata={"tier": tier, "subscription_id": subscription_id},
         conn=conn,
     )
-
-    logger.info("Provider %s upgraded to profile tier %s (subscription: %s)", slug, tier, subscription_id)

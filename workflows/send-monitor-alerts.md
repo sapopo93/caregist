@@ -19,7 +19,7 @@ Sends per-user email alerts when a watched care provider's CQC rating changes. G
   - `DATABASE_URL` (Neon or PostgreSQL)
   - `RESEND_API_KEY` (for alert emails)
   - `ENQUIRY_FROM_EMAIL` (sender address)
-- All 17 migrations applied, including:
+- All numbered migrations through `046_billing_operations.sql` applied, including:
   - Migration 001 (`provider_monitors` table)
   - Migration 006 (`rating_changes` table)
   - Migration 011 (`last_alert_sent_at` column)
