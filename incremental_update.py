@@ -1,36 +1,40 @@
 #!/usr/bin/env python3
-"""
-Incremental update: fetch only changed providers from CQC API and upsert into database.
-
-Uses the CQC /changes/location endpoint to detect changes since last run,
-fetches updated detail records, cleans them, and upserts into PostgreSQL.
+"""Prepare, shard, resume, and finalize an authoritative CQC reconciliation batch.
 
 Usage:
-    python3 incremental_update.py                          # Update since last pipeline run
-    python3 incremental_update.py --since 2026-03-01       # Update since specific date
-    python3 incremental_update.py --dry-run                # Show what would change without writing
+    python3 incremental_update.py --phase prepare --batch-id UUID --shard-count 4 --snapshot-manifest manifest.json
+    python3 incremental_update.py --phase shard --batch-id UUID --shard-count 4 --shard-index 0 --snapshot-manifest manifest.json
+    python3 incremental_update.py --phase finalize --batch-id UUID --shard-count 4 --snapshot-manifest manifest.json
+    python3 incremental_update.py --phase abort --batch-id UUID
 """
 
 from __future__ import annotations
 
 import argparse
+import csv
+import hashlib
+import io
 import json
 import os
 import re
 import sys
 import time
 import unicodedata
+import uuid
+import zlib
 from collections import Counter
+from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlsplit, urlunsplit
+from urllib.parse import urljoin, urlparse, urlsplit, urlunsplit
 
 import psycopg2
-import psycopg2.extras
+from psycopg2.extras import Json
 import requests
 
-from cqc_common import deep_get, first_non_empty, normalize_whitespace, parse_any_date, ensure_list, to_float
+from api.services.provider_state_events import ProviderStateEvent, build_provider_state_events
+from cqc_common import normalize_whitespace, parse_any_date, to_float
 
 try:
     from slugify import slugify as _slugify
@@ -49,20 +53,245 @@ def _make_slug(name: str, town: str, location_id: str) -> str:
     return base
 
 DEFAULT_BASE_URL = "https://api.service.cqc.org.uk/public/v1"
+DEFAULT_DATA_PAGE_URL = "https://www.cqc.org.uk/about-us/transparency/using-cqc-data"
 DEFAULT_SLEEP = 0.15
 DEFAULT_LOOKBACK_DAYS = 7
-INCREMENTAL_UPDATE_LOCK_ID = 802451201
 DEFAULT_MAX_RETRIES = 3
 RETRYABLE_STATUS_CODES = {408, 429, 500, 502, 503, 504}
-
-# ETL intermediate file written by extract_cqc.py — used as the "known IDs" baseline
-LOCATIONS_LIST_CACHE = Path("_locations_list.ndjson")
-# Safety cap: never fetch more than this many detail records in one list-scan fallback run
-LIST_SCAN_MAX_DETAIL_FETCHES = 5000
+MIN_EXPECTED_ACTIVE_LOCATIONS = 50_000
+MAX_ACTIVE_COUNT_DROP_RATIO = 0.05
+DEFAULT_CHECKPOINT_SIZE = 250
+_CQC_ID_RE = re.compile(r"^(?:1-\d{5,12}|[A-Z][A-Z0-9-]{1,19})$")
 
 
 class ChangesFetchError(RuntimeError):
     """Raised when the CQC changes API cannot be fetched reliably."""
+
+
+class ShardAlreadyRunning(ChangesFetchError):
+    """Raised without mutating batch state when another worker owns the shard."""
+
+
+@dataclass(frozen=True)
+class CqcActiveSnapshot:
+    source_uri: str
+    source_published_at: str
+    retrieved_at: datetime
+    checksum_sha256: str
+    location_ids: frozenset[str]
+
+
+def validate_shard_coordinates(shard_count: int, shard_index: int | None = None) -> None:
+    if shard_count < 1:
+        raise ValueError("shard_count must be at least 1")
+    if shard_index is not None and not 0 <= shard_index < shard_count:
+        raise ValueError("shard_index must be between 0 and shard_count - 1")
+
+
+def shard_for_location(location_id: str, shard_count: int) -> int:
+    validate_shard_coordinates(shard_count)
+    return zlib.crc32(location_id.encode("utf-8")) % shard_count
+
+
+def partition_location_ids(location_ids: list[str], shard_count: int) -> list[list[str]]:
+    """Return exhaustive, non-overlapping, deterministic shard partitions."""
+    validate_shard_coordinates(shard_count)
+    partitions: list[list[str]] = [[] for _ in range(shard_count)]
+    for location_id in sorted(location_ids):
+        partitions[shard_for_location(location_id, shard_count)].append(location_id)
+    return partitions
+
+
+def checkpoint_slices(location_ids: list[str], start_offset: int, checkpoint_size: int):
+    """Yield resumable checkpoint boundaries without replaying committed offsets."""
+    if checkpoint_size < 1:
+        raise ValueError("checkpoint_size must be at least 1")
+    if not 0 <= start_offset <= len(location_ids):
+        raise ValueError("start_offset is outside the shard")
+    offset = start_offset
+    while offset < len(location_ids):
+        checkpoint = location_ids[offset : offset + checkpoint_size]
+        yield offset, checkpoint
+        offset += len(checkpoint)
+
+
+def _manifest_payload(snapshot: CqcActiveSnapshot, batch_id: uuid.UUID, shard_count: int) -> dict[str, Any]:
+    validate_shard_coordinates(shard_count)
+    return {
+        "schemaVersion": 1,
+        "batchId": str(batch_id),
+        "sourceUri": snapshot.source_uri,
+        "sourcePublishedAt": snapshot.source_published_at,
+        "sourceRetrievedAt": snapshot.retrieved_at.isoformat(),
+        "sourceChecksumSha256": snapshot.checksum_sha256,
+        "shardCount": shard_count,
+        "locationCount": len(snapshot.location_ids),
+        "locationIds": sorted(snapshot.location_ids),
+    }
+
+
+def manifest_checksum(payload: dict[str, Any]) -> str:
+    canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def build_snapshot_manifest(snapshot: CqcActiveSnapshot, batch_id: uuid.UUID, shard_count: int) -> dict[str, Any]:
+    payload = _manifest_payload(snapshot, batch_id, shard_count)
+    return {**payload, "manifestChecksumSha256": manifest_checksum(payload)}
+
+
+def load_snapshot_manifest(path: Path) -> dict[str, Any]:
+    try:
+        manifest = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ChangesFetchError(f"Unable to load snapshot manifest: {exc}") from exc
+    if not isinstance(manifest, dict):
+        raise ChangesFetchError("Snapshot manifest must be a JSON object.")
+    supplied_checksum = manifest.pop("manifestChecksumSha256", None)
+    calculated_checksum = manifest_checksum(manifest)
+    manifest["manifestChecksumSha256"] = supplied_checksum
+    if supplied_checksum != calculated_checksum:
+        raise ChangesFetchError("Snapshot manifest checksum does not match its contents.")
+    ids = manifest.get("locationIds")
+    if not isinstance(ids, list) or ids != sorted(ids) or len(ids) != len(set(ids)):
+        raise ChangesFetchError("Snapshot manifest location IDs must be sorted and unique.")
+    if manifest.get("locationCount") != len(ids):
+        raise ChangesFetchError("Snapshot manifest location count is inconsistent.")
+    validate_shard_coordinates(int(manifest.get("shardCount", 0)))
+    return manifest
+
+
+def _request_with_retries(
+    url: str,
+    *,
+    headers: dict[str, str],
+    params: dict[str, Any] | None = None,
+    timeout: int = 90,
+) -> requests.Response:
+    """GET an authoritative CQC resource with bounded retry/backoff."""
+    last_error: Exception | None = None
+    for attempt in range(1, DEFAULT_MAX_RETRIES + 1):
+        try:
+            response = requests.get(url, headers=headers, params=params, timeout=timeout)
+            if response.status_code == 200:
+                final_url = response.url if isinstance(getattr(response, "url", None), str) else url
+                if not _is_cqc_https_url(final_url):
+                    raise ChangesFetchError("CQC source redirected outside the approved HTTPS host boundary.")
+                return response
+            if response.status_code not in RETRYABLE_STATUS_CODES:
+                raise ChangesFetchError(f"CQC resource returned {response.status_code}: {url}")
+            last_error = ChangesFetchError(f"CQC resource returned {response.status_code}: {url}")
+        except requests.RequestException as exc:
+            last_error = exc
+        if attempt < DEFAULT_MAX_RETRIES:
+            time.sleep(attempt)
+    raise ChangesFetchError(f"Unable to fetch CQC resource {url}: {last_error}")
+
+
+def _is_cqc_https_url(value: str) -> bool:
+    parsed = urlparse(value)
+    hostname = (parsed.hostname or "").lower()
+    return parsed.scheme == "https" and (hostname == "cqc.org.uk" or hostname.endswith(".cqc.org.uk"))
+
+
+def fetch_active_location_snapshot(
+    data_page_url: str = DEFAULT_DATA_PAGE_URL,
+    *,
+    min_expected: int = MIN_EXPECTED_ACTIVE_LOCATIONS,
+) -> CqcActiveSnapshot:
+    """Download and validate CQC's current active-location directory CSV.
+
+    CQC removed the changes endpoint. Its public directory CSV is the bounded,
+    authoritative active-location set used to discover additions and candidate
+    deactivations. Individual API details are still fetched before any write.
+    """
+    headers = {"Accept": "text/html,text/csv", "User-Agent": "CareGist-Reconciler/1.0"}
+    page = _request_with_retries(data_page_url, headers=headers)
+    match = re.search(
+        r'href=["\']([^"\']*CQC_directory\.csv(?:\?[^"\']*)?)["\']',
+        page.text,
+        flags=re.IGNORECASE,
+    )
+    if not match:
+        raise ChangesFetchError("Current CQC directory CSV link was not found on the official data page.")
+
+    source_uri = urljoin(data_page_url, match.group(1))
+    if not _is_cqc_https_url(source_uri):
+        raise ChangesFetchError("Refusing non-CQC or non-HTTPS directory source URI.")
+
+    csv_response = _request_with_retries(source_uri, headers=headers)
+    content = csv_response.content
+    if not content:
+        raise ChangesFetchError("CQC directory CSV was empty.")
+
+    decoded = content.decode("utf-8-sig")
+    lines = decoded.splitlines()
+    header_index = next(
+        (index for index, line in enumerate(lines) if line.startswith("Name,Also known as,Address,")),
+        None,
+    )
+    if header_index is None:
+        raise ChangesFetchError("CQC directory CSV header was not recognised.")
+
+    preamble = "\n".join(lines[:header_index])
+    published_match = re.search(r"produced on\s+([^,\r\n]+)", preamble, flags=re.IGNORECASE)
+    if not published_match:
+        raise ChangesFetchError("CQC directory publication date was not found.")
+    try:
+        source_published_at = datetime.strptime(
+            published_match.group(1).strip(), "%d %B %Y"
+        ).date().isoformat()
+    except ValueError as exc:
+        raise ChangesFetchError("CQC directory publication date was invalid.") from exc
+
+    reader = csv.DictReader(io.StringIO("\n".join(lines[header_index:])))
+    id_column = "CQC Location ID (for office use only)"
+    if not reader.fieldnames or id_column not in reader.fieldnames:
+        raise ChangesFetchError("CQC directory location ID column was missing.")
+
+    ids: list[str] = []
+    for row in reader:
+        location_id = (row.get(id_column) or "").strip()
+        if location_id:
+            if not _CQC_ID_RE.fullmatch(location_id):
+                raise ChangesFetchError(f"Invalid CQC location ID in snapshot: {location_id[:40]}")
+            ids.append(location_id)
+
+    unique_ids = frozenset(ids)
+    if len(unique_ids) != len(ids):
+        raise ChangesFetchError("CQC directory contains duplicate location IDs.")
+    if len(unique_ids) < min_expected:
+        raise ChangesFetchError(
+            f"CQC directory contains only {len(unique_ids)} locations; expected at least {min_expected}."
+        )
+
+    return CqcActiveSnapshot(
+        source_uri=source_uri,
+        source_published_at=source_published_at,
+        retrieved_at=datetime.now(timezone.utc),
+        checksum_sha256=hashlib.sha256(content).hexdigest(),
+        location_ids=unique_ids,
+    )
+
+
+def build_snapshot_reconciliation(
+    snapshot: CqcActiveSnapshot,
+    *,
+    db_ids: frozenset[str],
+    db_active_ids: frozenset[str],
+) -> dict[str, frozenset[str]]:
+    """Return deterministic detail-fetch sets for a full authoritative pass."""
+    if db_active_ids:
+        drop_ratio = len(db_active_ids - snapshot.location_ids) / len(db_active_ids)
+        if drop_ratio > MAX_ACTIVE_COUNT_DROP_RATIO:
+            raise ChangesFetchError(
+                f"Snapshot would remove {drop_ratio:.1%} of active locations; refusing reconciliation."
+            )
+    return {
+        "new_ids": snapshot.location_ids - db_ids,
+        "candidate_deactivation_ids": db_active_ids - snapshot.location_ids,
+        "detail_ids": snapshot.location_ids | (db_active_ids - snapshot.location_ids),
+    }
 
 
 def get_api_key() -> str | None:
@@ -90,21 +319,13 @@ def get_database_url() -> str | None:
 
 
 def normalize_database_url(url: str) -> str:
-    """Prefer a direct Postgres host for lock-based cron jobs.
-
-    Neon `-pooler` endpoints use PgBouncer transaction pooling. Session-level
-    advisory locks can be orphaned there across commits, which blocks future
-    incremental runs. For standalone job runners, connect to the direct host
-    instead.
-    """
+    """Use Neon's direct endpoint for session-locking maintenance jobs."""
     parts = urlsplit(url)
     hostname = parts.hostname or ""
-    if "-pooler." not in hostname:
+    if "-pooler." not in hostname or not parts.netloc:
         return url
 
     direct_host = hostname.replace("-pooler.", ".", 1)
-    if not parts.netloc:
-        return url
     direct_netloc = parts.netloc.replace(hostname, direct_host, 1)
     return urlunsplit((parts.scheme, direct_netloc, parts.path, parts.query, parts.fragment))
 
@@ -135,6 +356,8 @@ def fetch_changes(base_url: str, api_key: str | None, since: str, sleep: float) 
             resp = None
             for attempt in range(1, DEFAULT_MAX_RETRIES + 1):
                 resp = requests.get(url, headers=headers, params=params, timeout=30)
+                if page == 1:
+                    print(f"  /changes/location response code: {resp.status_code}")
                 if resp.status_code == 200:
                     break
                 if resp.status_code in RETRYABLE_STATUS_CODES and attempt < DEFAULT_MAX_RETRIES:
@@ -163,25 +386,6 @@ def fetch_changes(base_url: str, api_key: str | None, since: str, sleep: float) 
             raise ChangesFetchError(f"Error fetching changes page {page}: {exc}") from exc
 
     return list(set(changed_ids))
-
-
-def _load_known_location_ids() -> frozenset[str]:
-    """Load the set of location IDs seen in the last full ETL run from the cache file."""
-    if not LOCATIONS_LIST_CACHE.exists():
-        return frozenset()
-    ids: set[str] = set()
-    for line in LOCATIONS_LIST_CACHE.read_text(encoding="utf-8").splitlines():
-        line = line.strip()
-        if not line:
-            continue
-        try:
-            item = json.loads(line)
-            loc_id = item.get("locationId") or item.get("id")
-            if loc_id:
-                ids.add(str(loc_id))
-        except json.JSONDecodeError:
-            pass
-    return frozenset(ids)
 
 
 def _fetch_all_cqc_location_stubs(base_url: str, api_key: str | None, sleep: float) -> list[dict]:
@@ -214,101 +418,73 @@ def _fetch_all_cqc_location_stubs(base_url: str, api_key: str | None, sleep: flo
     return all_items
 
 
-def _append_to_locations_cache(new_stubs: list[dict]) -> None:
-    """Append newly discovered location stubs to the ETL cache file."""
-    if not new_stubs:
-        return
-    try:
-        with LOCATIONS_LIST_CACHE.open("a", encoding="utf-8") as fh:
-            for stub in new_stubs:
-                fh.write(json.dumps(stub, ensure_ascii=True) + "\n")
-    except OSError as exc:
-        print(f"  Warning: could not update locations cache: {exc}")
-
-
-def _parse_since_dt(since: str) -> datetime:
-    """Parse the since string to a naive UTC datetime for comparison."""
-    since_clean = since.replace("Z", "+00:00")
-    try:
-        dt = datetime.fromisoformat(since_clean)
-        return dt.replace(tzinfo=None) if dt.tzinfo is not None else dt
-    except ValueError:
-        return datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=DEFAULT_LOOKBACK_DAYS)
-
-
 def fetch_recent_via_list_scan(
-    base_url: str, api_key: str | None, since: str, sleep: float
+    base_url: str,
+    api_key: str | None,
+    since: str,
+    sleep: float,
+    *,
+    db_known_ids: frozenset[str],
 ) -> list[str]:
     """Fallback when /changes/location is unavailable.
 
     Strategy:
-    1. Load the set of known location IDs from _locations_list.ndjson (written by the full ETL).
-    2. Fetch all current location IDs from GET /locations (CQC list endpoint, no date filter).
-    3. Diff: IDs in CQC now but not in the known set are candidates.
-    4. Fetch the detail record for each candidate and filter by registrationDate >= since.
-    5. Append new stubs to the cache so future runs don't re-process them.
+    1. Use care_providers IDs from the database as the known baseline.
+    2. Fetch all current location IDs from GET /locations.
+    3. Return IDs present in CQC but absent from the database.
 
-    The CQC /locations list endpoint returns only (locationId, locationName, postalCode) —
-    no registrationDate, no registrationStatus filter. Date filtering requires detail fetches.
+    Detail fetch, cleaning, date filtering, and upsert are handled by main().
+    No file cache is read or written because the database is the source of truth.
     """
-    since_dt = _parse_since_dt(since)
+    _ = since
+    print(f"  List scan baseline: care_providers table ({len(db_known_ids)} IDs)")
 
-    # Step 1: Load known IDs from ETL cache
-    known_ids = _load_known_location_ids()
-    cache_source = f"ETL cache ({len(known_ids)} IDs)" if known_ids else "no ETL cache found"
-    print(f"  List scan baseline: {cache_source}")
-
-    # Step 2: Fetch all current location IDs from CQC
-    print(f"  Fetching all current CQC location IDs...")
+    print("  Fetching all current CQC location IDs...")
     all_stubs = _fetch_all_cqc_location_stubs(base_url, api_key, sleep)
     all_ids = {str(stub.get("locationId") or stub.get("id", "")) for stub in all_stubs if stub.get("locationId") or stub.get("id")}
-    print(f"  CQC total: {len(all_ids)} | Known from last ETL: {len(known_ids)}")
+    print(f"  CQC total: {len(all_ids)} | Known in database: {len(db_known_ids)}")
 
-    # Step 3: Compute new IDs (in CQC now but not in our last ETL snapshot or care_providers)
-    candidate_ids = sorted(all_ids - known_ids)  # sorted for deterministic order
-    print(f"  Candidates (not in last ETL snapshot): {len(candidate_ids)}")
+    candidate_ids = sorted(all_ids - db_known_ids)
+    print(f"  Candidates (not in care_providers): {len(candidate_ids)}")
 
     if not candidate_ids:
-        print("  No new location IDs found since last ETL run.")
+        print("  No CQC location IDs found outside the database baseline.")
         return []
 
-    if len(candidate_ids) > LIST_SCAN_MAX_DETAIL_FETCHES:
-        print(f"  WARNING: {len(candidate_ids)} candidates exceeds safety cap ({LIST_SCAN_MAX_DETAIL_FETCHES}). "
-              f"Run full ETL to rebuild baseline: ./run_enriched_pipeline.sh")
-        candidate_ids = candidate_ids[:LIST_SCAN_MAX_DETAIL_FETCHES]
+    print(f"  List scan complete: {len(candidate_ids)} IDs require detail processing")
+    return candidate_ids
 
-    # Step 4: Fetch details for each candidate, filter by registrationDate >= since
-    matched_ids: list[str] = []
-    confirmed_stubs_to_cache: list[dict] = []
-    stub_by_id = {str(s.get("locationId") or s.get("id", "")): s for s in all_stubs}
 
-    for i, loc_id in enumerate(candidate_ids):
-        detail = fetch_location_detail(base_url, api_key, loc_id)
-        if detail is None:
-            continue
-        reg_date = parse_any_date(detail.get("registrationDate"))
-        if reg_date:
-            if isinstance(reg_date, str):
-                try:
-                    reg_date = datetime.fromisoformat(reg_date)
-                except ValueError:
-                    reg_date = None
-            if reg_date is not None:
-                if hasattr(reg_date, "tzinfo") and reg_date.tzinfo is not None:
-                    reg_date = reg_date.replace(tzinfo=None)
-                confirmed_stubs_to_cache.append(stub_by_id.get(loc_id, {"locationId": loc_id}))
-                if reg_date >= since_dt:
-                    matched_ids.append(loc_id)
-        if (i + 1) % 50 == 0:
-            print(f"  Fetched {i + 1}/{len(candidate_ids)} candidate details, {len(matched_ids)} matched so far...")
-        time.sleep(sleep)
+def _parse_watermark_datetime(value: Any) -> datetime | None:
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        return value if value.tzinfo else value.replace(tzinfo=timezone.utc)
+    text = str(value).strip()
+    if not text:
+        return None
+    try:
+        parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
+    except ValueError:
+        date_text = parse_any_date(text)
+        if not date_text:
+            return None
+        parsed = datetime.fromisoformat(date_text)
+    return parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
 
-    # Step 5: Update cache only for IDs whose detail lookup succeeded and yielded
-    # a usable registration date. This avoids permanently hiding candidates after
-    # a transient fetch error or incomplete upstream payload.
-    _append_to_locations_cache(confirmed_stubs_to_cache)
-    print(f"  List scan complete: {len(matched_ids)} new registrations since {since}")
-    return matched_ids
+
+def should_process_list_scan_record(record: dict[str, Any], since: str) -> bool:
+    """Return true when a list-scan detail record is new or updated since the watermark."""
+    since_dt = _parse_watermark_datetime(since)
+    if since_dt is None:
+        return False
+
+    for key in ("registration_date", "last_updated"):
+        value_dt = _parse_watermark_datetime(record.get(key))
+        if value_dt is not None and value_dt >= since_dt:
+            return True
+
+    return False
 
 
 def resolve_since(cur, explicit_since: str | None, *, now: datetime | None = None) -> str:
@@ -336,51 +512,6 @@ def resolve_since(cur, explicit_since: str | None, *, now: datetime | None = Non
 
     reference_now = now or datetime.now(timezone.utc)
     return (reference_now - timedelta(days=DEFAULT_LOOKBACK_DAYS)).strftime("%Y-%m-%dT%H:%M:%S")
-
-
-def acquire_run_lock(cur) -> bool:
-    cur.execute("SELECT pg_try_advisory_lock(%s)", (INCREMENTAL_UPDATE_LOCK_ID,))
-    row = cur.fetchone()
-    return bool(row and row[0])
-
-
-def release_run_lock(cur) -> None:
-    cur.execute("SELECT pg_advisory_unlock(%s)", (INCREMENTAL_UPDATE_LOCK_ID,))
-
-
-def create_pipeline_run(cur) -> int:
-    cur.execute(
-        "INSERT INTO pipeline_runs (run_type, started_at, status) VALUES ('incremental', NOW(), 'running') RETURNING id"
-    )
-    return int(cur.fetchone()[0])
-
-
-def complete_pipeline_run(cur, run_id: int, *, inserted: int = 0, updated: int = 0) -> None:
-    cur.execute(
-        """
-        UPDATE pipeline_runs
-        SET completed_at = NOW(),
-            status = 'completed',
-            records_added = %s,
-            records_updated = %s,
-            error_message = NULL
-        WHERE id = %s
-        """,
-        (inserted, updated, run_id),
-    )
-
-
-def fail_pipeline_run(cur, run_id: int, error_message: str) -> None:
-    cur.execute(
-        """
-        UPDATE pipeline_runs
-        SET completed_at = NOW(),
-            status = 'failed',
-            error_message = %s
-        WHERE id = %s
-        """,
-        (error_message[:4000], run_id),
-    )
 
 
 def fetch_location_detail(base_url: str, api_key: str | None, location_id: str) -> dict[str, Any] | None:
@@ -498,6 +629,7 @@ def clean_location(data: dict[str, Any]) -> dict[str, Any] | None:
         "specialisms": "|".join(specialisms),
         "number_of_beds": data.get("numberOfBeds"),
         "ownership_type": normalize_whitespace(data.get("ownershipType", "")),
+        "last_updated": data.get("lastUpdated") or data.get("lastUpdatedDate") or data.get("lastUpdatedTimestamp"),
     }
 
 
@@ -508,6 +640,7 @@ ALLOWED_COLUMNS = frozenset({
     "overall_rating", "rating_safe", "rating_effective", "rating_caring",
     "rating_responsive", "rating_well_led", "last_inspection_date",
     "service_types", "specialisms", "number_of_beds", "ownership_type",
+    "last_updated",
 })
 
 
@@ -518,11 +651,17 @@ def upsert_provider(cur, record: dict[str, Any]) -> str:
     if "id" not in safe_record:
         return "skipped"
 
+    existing_columns = (
+        "id", "provider_id", "overall_rating", "status", "ownership_type",
+        "name", "slug", "town", "postcode", "region", "registration_date",
+        "last_inspection_date", "last_updated",
+    )
     cur.execute(
-        "SELECT id, overall_rating, name, slug, town, postcode, region FROM care_providers WHERE id = %s",
+        f"SELECT {', '.join(existing_columns)} FROM care_providers WHERE id = %s",
         (safe_record["id"],),
     )
-    existing = cur.fetchone()
+    existing_row = cur.fetchone()
+    existing = dict(zip(existing_columns, existing_row, strict=True)) if existing_row else None
 
     # Generate slug for new inserts; never overwrite an existing slug on update
     if not existing and not safe_record.get("slug"):
@@ -545,41 +684,12 @@ def upsert_provider(cur, record: dict[str, Any]) -> str:
     now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
 
     if existing:
-        old_rating = existing[1]
-        new_rating = safe_record.get("overall_rating")
-
-        # Detect rating change and log it
-        if (new_rating and old_rating and new_rating != old_rating
-                and old_rating not in ("", "Not Yet Inspected")
-                and new_rating not in ("", "Not Yet Inspected")):
-            try:
-                cur.execute(
-                    """INSERT INTO rating_changes
-                       (provider_id, provider_name, slug, town, postcode, region, old_rating, new_rating, inspection_date)
-                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)""",
-                    (safe_record["id"], existing[2] or safe_record.get("name"),
-                     existing[3] or safe_record.get("slug"),
-                     existing[4] or safe_record.get("town"),
-                     existing[5] or safe_record.get("postcode"),
-                     existing[6] or safe_record.get("region"),
-                     old_rating, new_rating,
-                     safe_record.get("last_inspection_date")),
-                )
-                # Also log to rating history
-                cur.execute(
-                    """INSERT INTO provider_rating_history (provider_id, overall_rating, inspection_date)
-                       VALUES (%s, %s, %s) ON CONFLICT (provider_id, inspection_date) DO NOTHING""",
-                    (safe_record["id"], new_rating, safe_record.get("last_inspection_date")),
-                )
-            except Exception as exc:
-                print(f"  Warning: Failed to log rating change for {safe_record['id']}: {exc}")
-
         set_clause = ", ".join(f"{c} = %s" for c in cols)
         cur.execute(
             f"UPDATE care_providers SET {set_clause}, updated_at = %s WHERE id = %s",
             vals + [now, safe_record["id"]],
         )
-        return "updated"
+        action = "updated"
     else:
         cols_str = ", ".join(cols + ["updated_at", "created_at"])
         placeholders = ", ".join(["%s"] * (len(cols) + 2))
@@ -587,7 +697,609 @@ def upsert_provider(cur, record: dict[str, Any]) -> str:
             f"INSERT INTO care_providers ({cols_str}) VALUES ({placeholders})",
             vals + [now, now],
         )
-        return "inserted"
+        action = "inserted"
+
+    current = dict(existing or {})
+    current.update(safe_record)
+    events = build_provider_state_events(existing, current)
+    for event in events:
+        inserted = _insert_trusted_provider_event(cur, event, current)
+        if inserted and event.event_type == "rating_changed":
+            _project_rating_change(cur, event, current)
+
+    return action
+
+
+def _insert_trusted_provider_event(
+    cur,
+    event: ProviderStateEvent,
+    current: dict[str, Any],
+) -> bool:
+    source_observed_at = _parse_watermark_datetime(current.get("last_updated"))
+    def json_value(value: Any) -> Json:
+        return Json(value, dumps=lambda obj: json.dumps(obj, default=str))
+    cur.execute(
+        """
+        INSERT INTO trusted_event_ledger (
+          entity_type, entity_id, provider_id, location_id, event_type,
+          effective_date, old_value, new_value, source, confidence_score,
+          dedupe_key, metadata, source_observed_at
+        )
+        VALUES (
+          'care_provider', %s, %s, %s, %s,
+          %s, %s, %s, 'cqc_api', 1.0000,
+          %s, %s, %s
+        )
+        ON CONFLICT (dedupe_key) DO NOTHING
+        RETURNING id
+        """,
+        (
+            event.location_id,
+            event.provider_id,
+            event.location_id,
+            event.event_type,
+            event.effective_date,
+            json_value(event.old_value),
+            json_value(event.new_value),
+            event.dedupe_key,
+            json_value(event.metadata),
+            source_observed_at,
+        ),
+    )
+    return cur.fetchone() is not None
+
+
+def _project_rating_change(
+    cur,
+    event: ProviderStateEvent,
+    current: dict[str, Any],
+) -> None:
+    cur.execute(
+        """
+        INSERT INTO rating_changes (
+          provider_id, provider_name, slug, town, postcode, region,
+          old_rating, new_rating, inspection_date, event_dedupe_key
+        )
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        ON CONFLICT (event_dedupe_key) DO NOTHING
+        """,
+        (
+            event.location_id,
+            current.get("name"),
+            current.get("slug"),
+            current.get("town"),
+            current.get("postcode"),
+            current.get("region"),
+            event.old_value,
+            event.new_value,
+            current.get("last_inspection_date"),
+            event.dedupe_key,
+        ),
+    )
+    if current.get("last_inspection_date"):
+        cur.execute(
+            """
+            INSERT INTO provider_rating_history (provider_id, overall_rating, inspection_date)
+            VALUES (%s, %s, %s)
+            ON CONFLICT (provider_id, inspection_date) DO NOTHING
+            """,
+            (
+                event.location_id,
+                event.new_value,
+                current.get("last_inspection_date"),
+            ),
+        )
+
+
+def _parse_batch_id(value: str | None) -> uuid.UUID:
+    if not value:
+        raise ValueError("--batch-id is required for reconciliation phases")
+    try:
+        parsed = uuid.UUID(value)
+    except ValueError as exc:
+        raise ValueError("--batch-id must be a valid UUID") from exc
+    if str(parsed) != value.lower():
+        raise ValueError("--batch-id must use canonical UUID form")
+    return parsed
+
+
+def _require_manifest_path(value: str | None) -> Path:
+    if not value:
+        raise ValueError("--snapshot-manifest is required for reconciliation phases")
+    return Path(value)
+
+
+def _write_manifest(path: Path, manifest: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_suffix(f"{path.suffix}.tmp")
+    temporary.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    temporary.replace(path)
+
+
+def _record_alert_state(cur, alert_key: str, severity: str, details: dict[str, Any]) -> None:
+    cur.execute(
+        """
+        INSERT INTO pipeline_alert_state (alert_key, severity, details)
+        VALUES (%s, %s, %s)
+        ON CONFLICT (alert_key) DO UPDATE
+        SET severity = EXCLUDED.severity,
+            details = EXCLUDED.details,
+            last_seen_at = NOW(),
+            occurrence_count = pipeline_alert_state.occurrence_count + 1,
+            resolved_at = NULL
+        """,
+        (alert_key, severity, Json(details)),
+    )
+
+
+def _prepare_batch(args: argparse.Namespace, conn, cur) -> int:
+    batch_id = _parse_batch_id(args.batch_id)
+    manifest_path = _require_manifest_path(args.snapshot_manifest)
+    validate_shard_coordinates(args.shard_count)
+    snapshot = fetch_active_location_snapshot(args.data_page_url)
+    manifest = build_snapshot_manifest(snapshot, batch_id, args.shard_count)
+
+    cur.execute("SELECT id, status FROM care_providers")
+    rows = cur.fetchall()
+    active_before = sum(1 for row in rows if row and str(row[1]).upper() == "ACTIVE")
+    build_snapshot_reconciliation(
+        snapshot,
+        db_ids=frozenset(str(row[0]) for row in rows if row and row[0]),
+        db_active_ids=frozenset(
+            str(row[0]) for row in rows if row and row[0] and str(row[1]).upper() == "ACTIVE"
+        ),
+    )
+
+    if args.dry_run:
+        print(
+            f"DRY RUN — validated batch {batch_id}: {len(snapshot.location_ids)} locations, "
+            f"{args.shard_count} shards; no files or database rows were written."
+        )
+        return 0
+
+    cur.execute("SELECT pg_advisory_xact_lock(hashtextextended('cqc-reconciliation-prepare', 0))")
+    cur.execute(
+        """
+        SELECT id FROM reconciliation_batches
+        WHERE status IN ('prepared', 'running')
+        ORDER BY created_at DESC LIMIT 1
+        """
+    )
+    active_batch = cur.fetchone()
+    if active_batch:
+        raise ChangesFetchError(f"Reconciliation batch {active_batch[0]} is still active.")
+
+    cur.execute(
+        "INSERT INTO pipeline_runs (run_type, status) VALUES ('reconciliation', 'running') RETURNING id"
+    )
+    pipeline_run_id = int(cur.fetchone()[0])
+    cur.execute(
+        """
+        INSERT INTO reconciliation_batches (
+          id, pipeline_run_id, source_uri, source_published_at, source_retrieved_at,
+          source_checksum_sha256, manifest_checksum_sha256, location_count,
+          shard_count, status, active_records_before
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, 'prepared', %s)
+        """,
+        (
+            str(batch_id), pipeline_run_id, snapshot.source_uri, snapshot.source_published_at,
+            snapshot.retrieved_at, snapshot.checksum_sha256,
+            manifest["manifestChecksumSha256"], len(snapshot.location_ids),
+            args.shard_count, active_before,
+        ),
+    )
+    conn.commit()
+    try:
+        _write_manifest(manifest_path, manifest)
+    except Exception:
+        cur.execute(
+            "UPDATE reconciliation_batches SET status = 'failed', error_message = %s WHERE id = %s",
+            ("Manifest file could not be published after batch creation", str(batch_id)),
+        )
+        cur.execute(
+            "UPDATE pipeline_runs SET status = 'failed', completed_at = NOW(), error_message = %s WHERE id = %s",
+            ("Manifest file could not be published after batch creation", pipeline_run_id),
+        )
+        conn.commit()
+        raise
+    print(f"Prepared reconciliation batch {batch_id} at {manifest_path}")
+    return 0
+
+
+def _validate_manifest_for_batch(cur, manifest: dict[str, Any], batch_id: uuid.UUID) -> tuple[int, int]:
+    cur.execute(
+        """
+        SELECT shard_count, location_count, manifest_checksum_sha256, source_checksum_sha256
+        FROM reconciliation_batches WHERE id = %s
+        """,
+        (str(batch_id),),
+    )
+    row = cur.fetchone()
+    if not row:
+        raise ChangesFetchError(f"Reconciliation batch {batch_id} does not exist.")
+    shard_count, location_count, stored_checksum, source_checksum = (
+        int(row[0]), int(row[1]), str(row[2]), str(row[3])
+    )
+    if manifest.get("batchId") != str(batch_id):
+        raise ChangesFetchError("Snapshot manifest references a different batch.")
+    if int(manifest.get("shardCount", 0)) != shard_count:
+        raise ChangesFetchError("Snapshot manifest shard count disagrees with the batch.")
+    if int(manifest.get("locationCount", -1)) != location_count:
+        raise ChangesFetchError("Snapshot manifest location count disagrees with the batch.")
+    if manifest.get("manifestChecksumSha256") != stored_checksum:
+        raise ChangesFetchError("Snapshot manifest checksum disagrees with the batch.")
+    if manifest.get("sourceChecksumSha256") != source_checksum:
+        raise ChangesFetchError("Snapshot source checksum disagrees with the batch.")
+    return shard_count, location_count
+
+
+def _run_shard(args: argparse.Namespace, conn, cur, api_key: str | None) -> int:
+    batch_id = _parse_batch_id(args.batch_id)
+    manifest = load_snapshot_manifest(_require_manifest_path(args.snapshot_manifest))
+    shard_count, _ = _validate_manifest_for_batch(cur, manifest, batch_id)
+    validate_shard_coordinates(shard_count, args.shard_index)
+    if args.shard_count != shard_count:
+        raise ChangesFetchError("--shard-count disagrees with the prepared batch.")
+    shard_index = int(args.shard_index)
+    ids = partition_location_ids(manifest["locationIds"], shard_count)[shard_index]
+
+    if args.dry_run:
+        print(f"DRY RUN — shard {shard_index} would process {len(ids)} records; zero writes performed.")
+        return 0
+
+    lock_key = f"cqc-reconciliation:{batch_id}:{shard_index}"
+    cur.execute("SELECT pg_try_advisory_lock(hashtextextended(%s, 0))", (lock_key,))
+    if not cur.fetchone()[0]:
+        raise ShardAlreadyRunning(f"Shard {shard_index} is already running.")
+
+    try:
+        cur.execute(
+            """
+            INSERT INTO reconciliation_shards (
+              batch_id, shard_index, status, manifest_checksum_sha256, expected_count
+            ) VALUES (%s, %s, 'running', %s, %s)
+            ON CONFLICT (batch_id, shard_index) DO NOTHING
+            """,
+            (str(batch_id), shard_index, manifest["manifestChecksumSha256"], len(ids)),
+        )
+        cur.execute(
+            """
+            SELECT status, manifest_checksum_sha256, expected_count, next_offset,
+                   records_inserted, records_updated
+            FROM reconciliation_shards WHERE batch_id = %s AND shard_index = %s
+            FOR UPDATE
+            """,
+            (str(batch_id), shard_index),
+        )
+        shard = cur.fetchone()
+        if not shard:
+            raise ChangesFetchError("Shard state could not be created.")
+        if str(shard[1]) != manifest["manifestChecksumSha256"] or int(shard[2]) != len(ids):
+            raise ChangesFetchError("Existing shard state disagrees with the immutable manifest.")
+        if shard[0] == "completed":
+            print(f"Shard {shard_index} is already complete.")
+            conn.rollback()
+            return 0
+        offset = int(shard[3])
+        totals = Counter(inserted=int(shard[4]), updated=int(shard[5]))
+        cur.execute(
+            "UPDATE reconciliation_shards SET status = 'running', error_message = NULL, updated_at = NOW() WHERE batch_id = %s AND shard_index = %s",
+            (str(batch_id), shard_index),
+        )
+        cur.execute("UPDATE reconciliation_batches SET status = 'running' WHERE id = %s", (str(batch_id),))
+        conn.commit()
+
+        for checkpoint_offset, checkpoint in checkpoint_slices(ids, offset, args.checkpoint_size):
+            if checkpoint_offset != offset:
+                raise ChangesFetchError("Shard checkpoint offset changed unexpectedly.")
+            checkpoint_counts: Counter[str] = Counter()
+            for location_id in checkpoint:
+                detail = fetch_location_detail(args.base_url, api_key, location_id)
+                if detail is None:
+                    raise ChangesFetchError(f"Detail fetch failed for {location_id}")
+                record = clean_location(detail)
+                if record is None:
+                    raise ChangesFetchError(f"Detail cleaning failed for {location_id}")
+                checkpoint_counts[upsert_provider(cur, record)] += 1
+                if record.get("latitude") is not None and record.get("longitude") is not None:
+                    cur.execute(
+                        """
+                        UPDATE care_providers
+                        SET geom = ST_SetSRID(ST_MakePoint(longitude::float, latitude::float), 4326)
+                        WHERE id = %s
+                        """,
+                        (location_id,),
+                    )
+                time.sleep(args.sleep)
+
+            offset += len(checkpoint)
+            totals.update(checkpoint_counts)
+            cur.execute(
+                """
+                UPDATE reconciliation_shards
+                SET next_offset = %s, processed_count = %s, records_inserted = %s,
+                    records_updated = %s, updated_at = NOW()
+                WHERE batch_id = %s AND shard_index = %s
+                """,
+                (offset, offset, totals["inserted"], totals["updated"], str(batch_id), shard_index),
+            )
+            conn.commit()
+            print(f"Shard {shard_index}: committed {offset}/{len(ids)}")
+
+        cur.execute(
+            """
+            UPDATE reconciliation_shards
+            SET status = 'completed', completed_at = NOW(), updated_at = NOW()
+            WHERE batch_id = %s AND shard_index = %s
+            """,
+            (str(batch_id), shard_index),
+        )
+        conn.commit()
+        return 0
+    except Exception as exc:
+        conn.rollback()
+        cur.execute(
+            """
+            UPDATE reconciliation_shards
+            SET status = 'failed', error_message = %s, updated_at = NOW(),
+                fetch_failures = fetch_failures + %s,
+                clean_failures = clean_failures + %s
+            WHERE batch_id = %s AND shard_index = %s
+            """,
+            (
+                str(exc)[:4000], int("fetch" in str(exc).lower()), int("clean" in str(exc).lower()),
+                str(batch_id), shard_index,
+            ),
+        )
+        _record_alert_state(
+            cur, f"reconciliation_shard_failed:{batch_id}:{shard_index}", "error",
+            {"batchId": str(batch_id), "shardIndex": shard_index, "error": str(exc)[:1000]},
+        )
+        conn.commit()
+        raise
+    finally:
+        cur.execute("SELECT pg_advisory_unlock(hashtextextended(%s, 0))", (lock_key,))
+        conn.commit()
+
+
+def _repair_missing_slugs(cur) -> None:
+    cur.execute("SELECT id, name, town FROM care_providers WHERE slug IS NULL OR slug = '' ORDER BY id")
+    missing = cur.fetchall()
+    if not missing:
+        return
+    cur.execute("SELECT slug FROM care_providers WHERE slug IS NOT NULL AND slug != ''")
+    used = {row[0] for row in cur.fetchall()}
+    for location_id, name, town in missing:
+        base = _make_slug(name or "", town or "", location_id)
+        slug = base
+        if slug in used:
+            slug = f"{base}-{_slugify(location_id, separator='-') or location_id.lower()}"
+        used.add(slug)
+        cur.execute("UPDATE care_providers SET slug = %s WHERE id = %s", (slug, location_id))
+
+
+def _finalize_batch(args: argparse.Namespace, conn, cur) -> int:
+    batch_id = _parse_batch_id(args.batch_id)
+    manifest = load_snapshot_manifest(_require_manifest_path(args.snapshot_manifest))
+    shard_count, location_count = _validate_manifest_for_batch(cur, manifest, batch_id)
+    validate_shard_coordinates(shard_count)
+    ids = manifest["locationIds"]
+
+    cur.execute(
+        """
+        SELECT shard_index, status, expected_count, processed_count, records_inserted, records_updated,
+               fetch_failures, clean_failures, manifest_checksum_sha256
+        FROM reconciliation_shards WHERE batch_id = %s ORDER BY shard_index
+        """,
+        (str(batch_id),),
+    )
+    shards = cur.fetchall()
+    expected_partitions = partition_location_ids(ids, shard_count)
+    complete = (
+        len(shards) == shard_count
+        and [int(row[0]) for row in shards] == list(range(shard_count))
+        and all(row[1] == "completed" for row in shards)
+        and all(int(row[2]) == len(expected_partitions[index]) for index, row in enumerate(shards))
+        and all(int(row[3]) == int(row[2]) for row in shards)
+        and sum(int(row[2]) for row in shards) == location_count
+        and all(str(row[8]) == manifest["manifestChecksumSha256"] for row in shards)
+    )
+    if not complete:
+        raise ChangesFetchError("Batch finalization refused: shard coverage is incomplete or inconsistent.")
+
+    batch_select = "SELECT active_records_before, pipeline_run_id FROM reconciliation_batches WHERE id = %s"
+    if not args.dry_run:
+        batch_select += " FOR UPDATE"
+    cur.execute(batch_select, (str(batch_id),))
+    batch = cur.fetchone()
+    active_before, pipeline_run_id = int(batch[0]), int(batch[1])
+    if active_before and max(active_before - location_count, 0) / active_before > MAX_ACTIVE_COUNT_DROP_RATIO:
+        raise ChangesFetchError("Batch finalization refused: active-count drop exceeds the safety threshold.")
+    cur.execute("SELECT COUNT(*) FROM care_providers WHERE id = ANY(%s) AND UPPER(status) = 'ACTIVE'", (ids,))
+    active_covered = int(cur.fetchone()[0])
+    if active_covered != location_count:
+        raise ChangesFetchError(
+            f"Batch finalization refused: {location_count - active_covered} manifest locations are not active."
+        )
+
+    if args.dry_run:
+        print(f"DRY RUN — batch {batch_id} is finalizable; no deactivations or watermarks were written.")
+        conn.rollback()
+        return 0
+
+    cur.execute("SELECT pg_advisory_xact_lock(hashtextextended('cqc-reconciliation-finalizer', 0))")
+    cur.execute(
+        """
+        SELECT source_published_at, source_checksum_sha256
+        FROM pipeline_runs
+        WHERE status = 'completed' AND source_published_at IS NOT NULL
+        ORDER BY source_published_at DESC, completed_at DESC LIMIT 1
+        """
+    )
+    latest_source = cur.fetchone()
+    manifest_date = datetime.fromisoformat(manifest["sourcePublishedAt"]).date()
+    if latest_source:
+        if manifest_date < latest_source[0]:
+            raise ChangesFetchError("Batch finalization refused: source publication would regress the watermark.")
+        if manifest_date == latest_source[0] and manifest["sourceChecksumSha256"] != str(latest_source[1]):
+            raise ChangesFetchError("Batch finalization refused: same-date source checksum conflicts with the watermark.")
+
+    cur.execute(
+        "SELECT id FROM care_providers WHERE UPPER(status) = 'ACTIVE' AND NOT (id = ANY(%s)) ORDER BY id",
+        (ids,),
+    )
+    deactivation_ids = [str(row[0]) for row in cur.fetchall()]
+    for location_id in deactivation_ids:
+        upsert_provider(cur, {"id": location_id, "status": "INACTIVE"})
+    deactivated = len(deactivation_ids)
+    _repair_missing_slugs(cur)
+    cur.execute("SELECT COUNT(*) FROM care_providers WHERE UPPER(status) = 'ACTIVE'")
+    active_after = int(cur.fetchone()[0])
+    if active_after != location_count:
+        raise ChangesFetchError("Final active-location count does not match the authoritative manifest.")
+    inserted = sum(int(row[4]) for row in shards)
+    updated = sum(int(row[5]) for row in shards)
+    cur.execute(
+        """
+        UPDATE reconciliation_batches
+        SET status = 'completed', completed_at = NOW(), active_records_after = %s,
+            records_inserted = %s, records_updated = %s, records_deactivated = %s,
+            error_message = NULL
+        WHERE id = %s
+        """,
+        (active_after, inserted, updated, deactivated, str(batch_id)),
+    )
+    cur.execute(
+        """
+        UPDATE pipeline_runs
+        SET status = 'completed', completed_at = NOW(), records_added = %s,
+            records_updated = %s, source_uri = %s, source_published_at = %s,
+            source_retrieved_at = %s, source_checksum_sha256 = %s,
+            source_record_count = %s, active_records_before = %s,
+            active_records_after = %s, error_message = NULL
+        WHERE id = %s
+        """,
+        (
+            inserted, updated, manifest["sourceUri"], manifest["sourcePublishedAt"],
+            manifest["sourceRetrievedAt"], manifest["sourceChecksumSha256"], location_count,
+            active_before, active_after, pipeline_run_id,
+        ),
+    )
+    cur.execute(
+        """
+        UPDATE pipeline_alert_state SET resolved_at = NOW()
+        WHERE alert_key LIKE %s AND resolved_at IS NULL
+        """,
+        (f"reconciliation_shard_failed:{batch_id}:%",),
+    )
+    conn.commit()
+    print(f"Finalized batch {batch_id}: active={active_after}, deactivated={deactivated}")
+    return 0
+
+
+def _abort_batch(args: argparse.Namespace, conn, cur) -> int:
+    """Close an incomplete batch only after proving that no shard worker still owns a lock."""
+    batch_id = _parse_batch_id(args.batch_id)
+    if args.dry_run:
+        raise ValueError("The abort phase does not support --dry-run.")
+    cur.execute("SELECT pg_advisory_xact_lock(hashtextextended('cqc-reconciliation-finalizer', 0))")
+    cur.execute(
+        "SELECT shard_count, status, pipeline_run_id FROM reconciliation_batches WHERE id = %s FOR UPDATE",
+        (str(batch_id),),
+    )
+    batch = cur.fetchone()
+    if not batch:
+        raise ChangesFetchError(f"Reconciliation batch {batch_id} does not exist.")
+    shard_count, status, pipeline_run_id = int(batch[0]), str(batch[1]), int(batch[2])
+    if status == "completed":
+        raise ChangesFetchError("A completed reconciliation batch cannot be aborted.")
+    held_locks: list[str] = []
+    try:
+        for shard_index in range(shard_count):
+            lock_key = f"cqc-reconciliation:{batch_id}:{shard_index}"
+            cur.execute("SELECT pg_try_advisory_lock(hashtextextended(%s, 0))", (lock_key,))
+            if not cur.fetchone()[0]:
+                raise ShardAlreadyRunning(f"Shard {shard_index} is still running; batch abort refused.")
+            held_locks.append(lock_key)
+        reason = "Workflow ended before every shard completed"
+        cur.execute(
+            """
+            UPDATE reconciliation_shards
+            SET status = 'failed', updated_at = NOW(), error_message = %s
+            WHERE batch_id = %s AND status = 'running'
+            """,
+            (reason, str(batch_id)),
+        )
+        cur.execute(
+            """
+            UPDATE reconciliation_batches
+            SET status = 'failed', completed_at = NOW(), error_message = %s
+            WHERE id = %s
+            """,
+            (reason, str(batch_id)),
+        )
+        cur.execute(
+            """
+            UPDATE pipeline_runs
+            SET status = 'failed', completed_at = NOW(), error_message = %s
+            WHERE id = %s
+            """,
+            (reason, pipeline_run_id),
+        )
+        conn.commit()
+        print(f"Aborted incomplete reconciliation batch {batch_id}")
+        return 0
+    finally:
+        for lock_key in held_locks:
+            cur.execute("SELECT pg_advisory_unlock(hashtextextended(%s, 0))", (lock_key,))
+        conn.commit()
+
+
+def _run_reconciliation_phase(args: argparse.Namespace, api_key: str | None, database_url: str) -> int:
+    if args.checkpoint_size < 1:
+        raise ValueError("--checkpoint-size must be at least 1")
+    conn = psycopg2.connect(database_url)
+    conn.autocommit = False
+    cur = conn.cursor()
+    try:
+        try:
+            if args.phase == "prepare":
+                return _prepare_batch(args, conn, cur)
+            if args.phase == "shard":
+                if args.shard_index is None:
+                    raise ValueError("--shard-index is required for the shard phase")
+                return _run_shard(args, conn, cur, api_key)
+            if args.phase == "finalize":
+                return _finalize_batch(args, conn, cur)
+            if args.phase == "abort":
+                return _abort_batch(args, conn, cur)
+            raise ValueError(f"Unsupported reconciliation phase: {args.phase}")
+        except ShardAlreadyRunning:
+            conn.rollback()
+            raise
+        except Exception as exc:
+            conn.rollback()
+            if not args.dry_run and args.batch_id:
+                cur.execute(
+                    """
+                    UPDATE reconciliation_batches
+                    SET status = 'failed', error_message = %s
+                    WHERE id = %s AND status != 'completed'
+                    """,
+                    (str(exc)[:4000], args.batch_id),
+                )
+                cur.execute(
+                    """
+                    UPDATE pipeline_runs SET status = 'failed', completed_at = NOW(), error_message = %s
+                    WHERE id = (SELECT pipeline_run_id FROM reconciliation_batches WHERE id = %s)
+                    """,
+                    (str(exc)[:4000], args.batch_id),
+                )
+                conn.commit()
+            raise
+    finally:
+        cur.close()
+        conn.close()
 
 
 def parse_args() -> argparse.Namespace:
@@ -597,6 +1309,17 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--sleep", type=float, default=DEFAULT_SLEEP, help="Sleep between API calls")
     parser.add_argument("--dry-run", action="store_true", help="Show changes without writing to DB")
     parser.add_argument("--database-url", help="PostgreSQL connection URL")
+    parser.add_argument("--phase", choices=("prepare", "shard", "finalize", "abort"), required=True)
+    parser.add_argument("--shard-count", type=int, default=1)
+    parser.add_argument("--shard-index", type=int)
+    parser.add_argument("--batch-id")
+    parser.add_argument("--snapshot-manifest")
+    parser.add_argument("--checkpoint-size", type=int, default=DEFAULT_CHECKPOINT_SIZE)
+    parser.add_argument(
+        "--data-page-url",
+        default=DEFAULT_DATA_PAGE_URL,
+        help="Official CQC page containing the current directory CSV link",
+    )
     return parser.parse_args()
 
 
@@ -604,180 +1327,20 @@ def main() -> int:
     args = parse_args()
 
     api_key = get_api_key()
-    if not api_key and not args.dry_run:
+    if not api_key and not args.dry_run and args.phase == "shard":
         print("ERROR: CQC_API_KEY not set.", file=sys.stderr)
         return 1
 
     database_url = normalize_database_url(args.database_url) if args.database_url else get_database_url()
-    if not database_url and not args.dry_run:
-        print("ERROR: DATABASE_URL not set.")
+    if not database_url:
+        print("ERROR: DATABASE_URL is required for reconciliation phases.", file=sys.stderr)
         return 1
-
-    conn = None
-    cur = None
-    run_id: int | None = None
-    lock_acquired = False
 
     try:
-        if database_url:
-            conn = psycopg2.connect(database_url)
-            conn.autocommit = False
-            cur = conn.cursor()
-
-        since = args.since
-        if cur is not None:
-            since = resolve_since(cur, since)
-        elif not since:
-            since = (datetime.now(timezone.utc) - timedelta(days=DEFAULT_LOOKBACK_DAYS)).strftime("%Y-%m-%dT%H:%M:%S")
-
-        if cur is not None:
-            lock_acquired = acquire_run_lock(cur)
-            if not lock_acquired:
-                conn.rollback()
-                print("Another incremental update is already running. Skipping.")
-                return 0
-
-            run_id = create_pipeline_run(cur)
-            conn.commit()
-
-        print(f"Fetching CQC changes since {since}...")
-        changed_ids = fetch_changes(args.base_url, api_key, since, args.sleep)
-        if changed_ids is None:
-            print("WARNING: /changes/location endpoint unavailable (404/410). Falling back to location list scan.")
-            if cur is not None:
-                try:
-                    cur.execute(
-                        """
-                        INSERT INTO pipeline_alert_log (alert_key, severity, details)
-                        VALUES ('changes_endpoint_unavailable', 'warning',
-                                '{"message": "CQC /changes/location returned 404 — falling back to list scan"}'::jsonb)
-                        """,
-                    )
-                    conn.commit()
-                except Exception as alert_exc:
-                    print(f"  (Could not log alert: {alert_exc})")
-            changed_ids = fetch_recent_via_list_scan(args.base_url, api_key, since, args.sleep)
-            print(f"List scan found {len(changed_ids)} potentially new/changed locations")
-        else:
-            print(f"Found {len(changed_ids)} changed locations")
-
-        if not changed_ids:
-            if cur is not None and run_id is not None:
-                complete_pipeline_run(cur, run_id, inserted=0, updated=0)
-                conn.commit()
-            print("No changes to process.")
-            return 0
-
-        # Fetch details and clean
-        results = Counter()
-        records: list[dict[str, Any]] = []
-
-        for i, loc_id in enumerate(changed_ids):
-            detail = fetch_location_detail(args.base_url, api_key, loc_id)
-            if detail is None:
-                results["fetch_failed"] += 1
-                continue
-
-            cleaned = clean_location(detail)
-            if cleaned is None:
-                results["clean_failed"] += 1
-                continue
-
-            records.append(cleaned)
-
-            if (i + 1) % 50 == 0:
-                print(f"  Fetched {i+1}/{len(changed_ids)} details...")
-            time.sleep(args.sleep)
-
-        print(f"Fetched {len(records)} valid records ({results['fetch_failed']} fetch failures)")
-
-        if changed_ids and not records and (results.get("fetch_failed", 0) or results.get("clean_failed", 0)):
-            raise RuntimeError("All changed records failed to fetch or clean.")
-
-        if args.dry_run:
-            print(f"\nDRY RUN — would upsert {len(records)} records:")
-            for r in records[:10]:
-                print(f"  {r['id']} | {r['name'][:40]} | {r['status']} | {r['overall_rating']}")
-            if len(records) > 10:
-                print(f"  ... and {len(records) - 10} more")
-            return 0
-
-        # Upsert into database
-        if conn is None or cur is None:
-            raise RuntimeError("Database connection not available for non-dry-run execution.")
-
-        for record in records:
-            action = upsert_provider(cur, record)
-            results[action] += 1
-
-        # Update geometry for changed records
-        ids = [r["id"] for r in records if r.get("latitude") and r.get("longitude")]
-        if ids:
-            cur.execute("""
-                UPDATE care_providers
-                SET geom = ST_SetSRID(ST_MakePoint(longitude::float, latitude::float), 4326)
-                WHERE id = ANY(%s) AND latitude IS NOT NULL AND longitude IS NOT NULL
-            """, (ids,))
-
-        # Backfill slugs for any providers that ended up with NULL slug (e.g. from a prior
-        # incremental run before slug generation was added). Generates slug from name+town+id
-        # with collision handling against the unique constraint.
-        cur.execute("SELECT id, name, town FROM care_providers WHERE slug IS NULL OR slug = ''")
-        null_slug_rows = cur.fetchall()
-        if null_slug_rows:
-            print(f"  Backfilling slugs for {len(null_slug_rows)} providers with NULL slug...")
-            cur.execute("SELECT slug FROM care_providers WHERE slug IS NOT NULL AND slug != ''")
-            used_slugs = {r[0] for r in cur.fetchall()}
-            for row_id, row_name, row_town in null_slug_rows:
-                base = _make_slug(row_name or "", row_town or "", row_id)
-                slug = base
-                if slug in used_slugs:
-                    id_suffix = _slugify(row_id, separator="-") or row_id.lower()
-                    slug = f"{base}-{id_suffix}"
-                used_slugs.add(slug)
-                cur.execute("UPDATE care_providers SET slug = %s WHERE id = %s", (slug, row_id))
-            print(f"  Slug backfill complete.")
-
-        complete_pipeline_run(
-            cur,
-            run_id,
-            inserted=results.get("inserted", 0),
-            updated=results.get("updated", 0),
-        )
-        conn.commit()
-
-    except Exception as exc:
-        if conn is not None:
-            conn.rollback()
-        if cur is not None and run_id is not None:
-            try:
-                fail_pipeline_run(cur, run_id, str(exc))
-                conn.commit()
-            except Exception:
-                if conn is not None:
-                    conn.rollback()
-        print(f"Update failed: {exc}")
+        return _run_reconciliation_phase(args, api_key, database_url)
+    except (ChangesFetchError, ValueError) as exc:
+        print(f"Reconciliation {args.phase} failed: {exc}", file=sys.stderr)
         return 1
-    finally:
-        if cur is not None and lock_acquired:
-            try:
-                release_run_lock(cur)
-                if conn is not None:
-                    conn.commit()
-            except Exception:
-                if conn is not None:
-                    conn.rollback()
-        if cur is not None:
-            cur.close()
-        if conn is not None:
-            conn.close()
-
-    print(f"\nIncremental update complete:")
-    print(f"  Inserted: {results.get('inserted', 0)}")
-    print(f"  Updated: {results.get('updated', 0)}")
-    print(f"  Fetch failures: {results.get('fetch_failed', 0)}")
-    return 0
-
 
 if __name__ == "__main__":
     raise SystemExit(main())

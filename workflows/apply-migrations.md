@@ -1,33 +1,26 @@
-# Workflow: Apply Database Migrations
+# Apply CareGist database migrations
 
-## Overview
-Applies pending SQL migrations to the PostgreSQL database in version order. Idempotent — safe to run repeatedly.
+`db/apply_migrations.py` applies each numbered SQL file in its own transaction and records its filename in `schema_migrations`. The production policy is forward-only and Neon PITR is the sole recovery mechanism.
 
-## Script Location
-`db/apply_migrations.py`
+- `db/init.sql` has been applied to a new database before numbered migrations.
+- Staging and production use separate Neon projects/resources and distinct credentials.
+- Staging receives the exact migration chain before production.
+- Production has an evidenced seven-day Neon history window and a timestamped pre-migration recovery branch.
+- The release Git SHA, current watermark/batch, counts, operator, approver, and recovery branch ID are recorded before migration.
+- The exact historical `034` pair remains unchanged; every future number is unique.
 
 ## What It Does
 1. Connects to PostgreSQL via `DATABASE_URL` env var
 2. Checks `schema_migrations` table for applied migrations
-3. Applies any missing migrations from `db/migrations/` in order (001-017)
+3. Applies every missing numbered migration from `db/migrations/` in filename order
 4. Records each migration in `schema_migrations` with timestamp
 5. Reports total applied, previously applied, and errors
 
-## Prerequisites
-- Python 3.12+, venv activated
-- `.env` with valid `DATABASE_URL`:
-  - Local: `postgresql://user:pass@localhost:5432/caregist`
-  - Neon: `postgresql://...@...eu-west-2.aws.neon.tech/neondb?sslmode=require`
-- PostgreSQL version 12+
-- Base schema initialized (`db/init.sql` already applied)
-- Superuser or role with CREATE/ALTER TABLE permissions
-
-## Running Locally
+Run the repository gates first:
 
 ```bash
-cd /Users/user/CareGist
-source .venv/bin/activate
-python3 db/apply_migrations.py
+python3 tools/check_migration_governance.py
+pytest tests/integration/test_migrations_apply_cleanly.py -v
 ```
 
 Output:
@@ -37,44 +30,33 @@ Applying migrations...
   ✓ 001_growth_features.sql (2.1s)
   ✓ 002_search_hardening.sql (0.8s)
   ...
-  ✓ 017_profile_subscription_id.sql (1.2s)
-Applied 17 migrations in 23.4s
+  ✓ 047_expand_analytics_provider_reference.sql (0.4s)
+Applied N migrations in NN.Ns
 ```
 
-## Running in Production (EC2)
+## Staging
+
+Expose `STAGING_DATABASE_URL` through the approved secret channel, then run:
 
 ```bash
-ssh ubuntu@caregist-api.example.com
-cd /home/caregist/CareGist
-source .venv/bin/activate
-python3 db/apply_migrations.py
+.venv/bin/python db/apply_migrations.py --target staging
 ```
 
-### Pre-Flight Checklist
-- [ ] Database is backed up (Neon: Neon branches, RDS: RDS snapshots)
-- [ ] No ongoing deployments
-- [ ] Downtime window coordinated if needed (migrations typically <1s per file)
-- [ ] `.env` has correct `DATABASE_URL` for production
+Run schema, billing/webhook replay, reconciliation, and application smoke tests on staging. A passing migration command alone is not release evidence.
 
-### Post-Flight Verification
+## Production
+
+Follow `workflows/neon-pitr-restore-drill.md` to verify the history window and create the pre-migration recovery branch. Then expose `PROD_DATABASE_URL` through the approved secret channel and run:
+
 ```bash
-# Check migrations applied
-python3 -c "
-import asyncpg
-import asyncio
-async def check():
-    conn = await asyncpg.connect(open('.env').read().split('DATABASE_URL=')[1].split()[0])
-    count = await conn.fetchval('SELECT COUNT(*) FROM schema_migrations')
-    files = await conn.fetch('SELECT filename, applied_at FROM schema_migrations ORDER BY applied_at DESC LIMIT 3')
-    print(f'Total migrations: {count}')
-    for f in files:
-        print(f'  - {f[0]} at {f[1]}')
-    await conn.close()
-asyncio.run(check())
-"
+.venv/bin/python db/apply_migrations.py \
+  --target production \
+  --confirm-production-backup
 ```
 
-## Migration Files (Current: 17)
+The confirmation flag records operator intent; it does not create or verify a recovery point. Do not use it until the provider evidence exists.
+
+## Migration Files (Current: 47 files, through 047)
 
 | # | File | Changes |
 |---|------|---------|
@@ -95,50 +77,25 @@ asyncio.run(check())
 | 015 | trusted_event_ledger_new_registration_feed.sql | Creates trusted_event_ledger, feed_saved_filters, feed_digest_subscriptions, feed_digest_delivery_log, webhook_delivery_log |
 | 016 | stripe_event_deduplication.sql | Creates stripe_processed_events table (24h event dedup) |
 | 017 | profile_subscription_id.sql | Adds profile_subscription_id to care_providers |
+| 018-033 | operational hardening | Email claims, pipeline logs, password resets, audit logs, idempotency, API-key hashing, sessions, and the named care-groups view |
+| 035-043 | remediation hardening | Source watermarks, provider-state event integrity, claim authority/evidence controls, reconciliation batches |
+| 044 | b2b_contract_acceptance.sql | Immutable B2B contract evidence and cancel-at-period-end subscription state |
+| 045 | signup_purchase_intent.sql | Persists validated signup purchase intent across email verification |
+| 046 | billing_operations.sql | Adds a durable, idempotent Stripe billing operations reservation ledger |
+| 047 | expand_analytics_provider_reference.sql | Widens analytics_events.provider_id to hold canonical slugs |
 
-## Rollback / Undo
+After migration:
 
-**Important:** Migrations are designed to be forward-only. Rollback requires manual SQL or database restore.
+1. Verify `schema_migrations` contains every expected filename.
+2. Deploy the exact CI-tested SHA with all commercial/governed flags false.
+3. Compare `/api/v1/version` and `/api/health/directory` with that SHA.
+4. Run production smoke, `/data-status`, provider sitemap, auth/tenant, webhook replay, and database invariants.
+5. Run the manual reconciliation and verify its checksum, coverage, counts, and watermark before enabling its schedule.
 
-### If a migration fails:
-1. Check error output (e.g., "relation already exists")
-2. Investigate the failing migration file in `db/migrations/`
-3. **Do not** continue — fix the issue or restore from backup
-4. Once fixed, re-run `apply_migrations.py` (it skips already-applied migrations)
+## Failure and rollback
 
-### If you need to roll back entirely:
-1. Restore from database backup
-2. Do not attempt to `DELETE FROM schema_migrations` — it will cause sync issues
+If a migration file fails, its transaction is rolled back and its filename is not recorded. Stop; do not skip ahead. Fix an unreleased file before retrying, or add a new corrective migration if the faulty file has been released anywhere.
 
-## Monitoring
+For an application defect, disable feature flags first and roll back code only while schema compatibility remains intact. For an isolated schema/data defect, use a new forward-fix migration. Use Neon PITR only for destructive or irrecoverable damage, then perform the complete restored-branch validation and reconciliation before sending traffic.
 
-Track migration status in production:
-
-```sql
-SELECT 
-  filename,
-  applied_at::date as applied_date,
-  extract(epoch from (NOW() - applied_at))::int as seconds_ago
-FROM schema_migrations
-ORDER BY applied_at DESC;
-```
-
-## Troubleshooting
-
-**"relation 'care_providers' does not exist"**
-- Base schema (`db/init.sql`) was not applied before migrations
-- Apply `db/init.sql` first, then run migrations
-
-**"column 'X' already exists"**
-- Migration has already been applied
-- Check `schema_migrations` table
-- Run script again — it will skip already-applied migrations
-
-**"permission denied for schema 'public'"**
-- Database user does not have CREATE/ALTER permissions
-- Grant permissions: `GRANT CREATE, USAGE ON SCHEMA public TO role_name;`
-
-**Script hangs**
-- Database connection timeout — check `DATABASE_URL`, network connectivity
-- Check if database is under heavy load
-- Use Ctrl+C to cancel, investigate database, retry
+Never delete a production `schema_migrations` row to force replay, run a down migration as an ordinary production rollback, or restore over the production branch during a drill.

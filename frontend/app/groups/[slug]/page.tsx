@@ -11,7 +11,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const name = group?.group_name || slug;
   return {
     title: `${name} — CQC Ratings & Benchmarking | CareGist`,
-    description: `${name} operates ${group?.location_count || 0} care locations. ${group?.pct_good_or_outstanding || 0}% rated Good or Outstanding. Average quality score: ${group?.avg_quality_score || "N/A"}/100.`,
+    description: `${name} operates ${group?.location_count || 0} care locations. ${group?.pct_good_or_outstanding || 0}% of rated locations are Good or Outstanding.`,
   };
 }
 
@@ -30,11 +30,11 @@ export default async function GroupDetailPage({ params }: { params: Promise<{ sl
 
   const benchmark = group.benchmark || {};
   const locations = group.locations || [];
-  const avgQuality = typeof group.avg_quality_score === "number" ? group.avg_quality_score : null;
+  const avgQuality = typeof group.avg_data_completeness_score === "number" ? group.avg_data_completeness_score : null;
   const pctGoodOrOutstanding =
     typeof group.pct_good_or_outstanding === "number" ? group.pct_good_or_outstanding : null;
   const nationalAvgQuality =
-    typeof benchmark.national_avg_quality === "number" ? benchmark.national_avg_quality : null;
+    typeof benchmark.national_avg_data_completeness === "number" ? benchmark.national_avg_data_completeness : null;
   const nationalPctGood = typeof benchmark.national_pct_good === "number" ? benchmark.national_pct_good : null;
 
   const ratingCounts = [
@@ -62,7 +62,7 @@ export default async function GroupDetailPage({ params }: { params: Promise<{ sl
       {/* Benchmark comparison */}
       <div className="grid md:grid-cols-3 gap-4 mb-8">
         <div className="bg-cream border border-stone rounded-lg p-5 text-center">
-          <p className="text-sm text-dusk mb-1">Average Quality Score</p>
+          <p className="text-sm text-dusk mb-1">Average Data Completeness</p>
           <p className="text-3xl font-bold text-clay">{avgQuality ?? "—"}<span className="text-sm text-dusk">/100</span></p>
           {nationalAvgQuality !== null && avgQuality !== null && (
             <p className="text-xs text-dusk mt-1">
@@ -128,7 +128,7 @@ export default async function GroupDetailPage({ params }: { params: Promise<{ sl
               <th className="py-3 pr-4 font-medium">Name</th>
               <th className="py-3 pr-4 font-medium">Location</th>
               <th className="py-3 pr-4 font-medium text-center">Rating</th>
-              <th className="py-3 pr-4 font-medium text-center">Quality</th>
+              <th className="py-3 pr-4 font-medium text-center">Data completeness</th>
               <th className="py-3 pr-4 font-medium text-center">Beds</th>
               <th className="py-3 font-medium">Last Inspected</th>
             </tr>
@@ -143,7 +143,7 @@ export default async function GroupDetailPage({ params }: { params: Promise<{ sl
                 </td>
                 <td className="py-3 pr-4 text-dusk">{loc.town}{loc.postcode ? `, ${loc.postcode}` : ""}</td>
                 <td className="py-3 pr-4 text-center"><RatingBadge rating={loc.overall_rating} /></td>
-                <td className="py-3 pr-4 text-center font-mono">{loc.quality_score || "—"}</td>
+                <td className="py-3 pr-4 text-center font-mono">{loc.data_completeness_score || "—"}</td>
                 <td className="py-3 pr-4 text-center font-mono">{loc.number_of_beds || "—"}</td>
                 <td className="py-3 text-dusk">
                   {loc.last_inspection_date

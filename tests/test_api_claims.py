@@ -8,6 +8,7 @@ from httpx import ASGITransport, AsyncClient
 
 from api.main import app
 from api.middleware.auth import validate_api_key
+from api.routers.claims import _proof_fingerprint
 
 
 @pytest.fixture
@@ -34,9 +35,10 @@ def patched_db(mock_conn):
             "monthly_remaining": 100,
         },
         "user_id": 1,
-        "email": "ops@caregist.co.uk",
+        "email": "jane@care.co.uk",
     }
-    with patch("api.routers.claims.get_connection", mock_get_connection):
+    with patch("api.routers.claims.get_connection", mock_get_connection), \
+         patch("api.routers.claims.settings.provider_claims_enabled", True):
         yield mock_conn
     app.dependency_overrides = {}
 
@@ -64,6 +66,25 @@ async def test_submit_claim_success(patched_db):
     assert resp.status_code == 201
     data = resp.json()
     assert data["message"] == "Claim submitted successfully. We'll review it within 2 business days."
+    insert_args = mock_conn.fetchrow.await_args_list[2].args
+    assert insert_args[7] == _proof_fingerprint("I am the registered manager, CQC ID 12345")
+    assert "registered manager" not in insert_args[7]
+    assert insert_args[-1] == 1
+
+
+@pytest.mark.asyncio
+async def test_submit_claim_rejects_email_other_than_verified_account(patched_db):
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.post("/api/v1/providers/test-provider/claim", json={
+            "claimant_name": "Jane Smith",
+            "claimant_email": "other@care.co.uk",
+            "claimant_role": "Registered Manager",
+            "proof_of_association": "CQC ID 12345",
+        }, headers=HEADERS)
+
+    assert resp.status_code == 400
+    assert "verified account email" in resp.json()["detail"]
+    patched_db.fetchrow.assert_not_awaited()
 
 
 @pytest.mark.asyncio
@@ -142,6 +163,30 @@ async def test_submit_claim_validation():
     app.dependency_overrides = {}
 
     assert resp.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_submit_claim_fails_closed_while_human_gate_is_unapproved():
+    app.dependency_overrides[validate_api_key] = lambda: {
+        "tier": "starter",
+        "remaining": {},
+        "user_id": 1,
+        "email": "ops@caregist.co.uk",
+    }
+    try:
+        with patch("api.routers.claims.settings.provider_claims_enabled", False):
+            async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+                resp = await client.post("/api/v1/providers/test-provider/claim", json={
+                    "claimant_name": "Jane Smith",
+                    "claimant_email": "jane@care.co.uk",
+                    "claimant_role": "Registered Manager",
+                    "proof_of_association": "CQC ID 12345",
+                }, headers=HEADERS)
+    finally:
+        app.dependency_overrides = {}
+
+    assert resp.status_code == 503
+    assert resp.json()["detail"] == "Provider claims are not currently accepting submissions."
 
 
 @pytest.mark.asyncio

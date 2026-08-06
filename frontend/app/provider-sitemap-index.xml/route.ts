@@ -1,15 +1,20 @@
 import { NextResponse } from "next/server";
 
-import { getPublicApiBase } from "@/lib/server-api-config";
+import { getServerApiBase } from "@/lib/server-api-config";
 
 const BASE = "https://caregist.co.uk";
-const PAGE_SIZE = 50000;
+const PAGE_SIZE = 5000;
 
 export async function GET() {
-  const apiBase = getPublicApiBase();
-  const res = await fetch(`${apiBase}/api/v1/sitemaps/providers/count`, {
-    next: { revalidate: 86400 },
-  });
+  let res: Response;
+  try {
+    const apiBase = getServerApiBase();
+    res = await fetch(`${apiBase}/api/v1/sitemaps/providers/count`, {
+      next: { revalidate: 86400 },
+    });
+  } catch {
+    return new NextResponse("Provider sitemap index unavailable", { status: 503 });
+  }
 
   if (!res.ok) {
     return new NextResponse("Provider sitemap index unavailable", { status: 503 });
@@ -17,6 +22,9 @@ export async function GET() {
 
   const payload = await res.json();
   const total = Number(payload.total || 0);
+  if (!Number.isSafeInteger(total) || total <= 0) {
+    return new NextResponse("Provider sitemap index unavailable", { status: 503 });
+  }
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const now = new Date().toISOString();
 

@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 
 const STATS = [
   { value: "National", label: "CQC-registered provider coverage", source: "CQC Public Register" },
-  { value: "Daily", label: "Data refresh from the CQC register", source: "CareGist pipeline" },
+  { value: "Dated", label: "Published source watermark and freshness", source: "CareGist pipeline" },
   { value: "Dashboard", label: "Search, export, and monitoring workflows", source: "CareGist product" },
   { value: "Grouped", label: "Care organisations normalised for benchmarking", source: "CareGist analysis" },
 ];
@@ -32,13 +32,7 @@ const VALUE_TABLE = [
 export default function WhyCareGistPage() {
   return (
     <div className="max-w-4xl mx-auto px-6 py-12">
-      <div className="rounded-xl overflow-hidden mb-8 h-48 relative">
-        <img
-          src="https://images.unsplash.com/photo-1516549655169-df83a0774514?w=900&q=40&auto=format"
-          alt="Care operations and data workflow"
-          className="w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-parchment/40 to-transparent" />
+      <div className="rounded-xl mb-8 h-48 bg-gradient-to-br from-bark via-moss to-clay" aria-hidden="true">
       </div>
 
       <div className="text-center mb-12">
@@ -101,7 +95,7 @@ export default function WhyCareGistPage() {
       <div className="bg-moss/10 border border-moss/20 rounded-xl p-8 mb-10 text-center">
         <h2 className="text-2xl font-bold text-bark mb-3">Our commitment to accuracy</h2>
         <p className="text-sm text-charcoal max-w-xl mx-auto mb-4">
-          We are careful about what we claim. We do not describe CareGist as live occupancy, live pricing, or real-time source data. We state what the implementation supports today: daily refresh, monitoring, exports, and workflow-ready access to cleaned regulatory data.
+          We do not describe CareGist as live occupancy, live pricing, real-time source data, or an active alert service. The Data Status page publishes the reconciliation watermark actually held; paid monitoring, exports, and delivery remain unavailable until their evidence gates pass.
         </p>
         <p className="text-xs text-dusk">
           CareGist is built on CQC data published under the Open Government Licence v3.0. Crown copyright and database right. CareGist is not affiliated with or endorsed by the Care Quality Commission.
@@ -120,7 +114,7 @@ export default function WhyCareGistPage() {
         <div className="bg-cream border border-stone rounded-lg p-5">
           <h3 className="font-bold text-bark mb-2">CareTech teams and product builders</h3>
           <ul className="space-y-2 text-sm text-charcoal">
-            <li>Daily-refreshed provider data through dashboard, exports, and API</li>
+            <li>Provider data with the reconciled source date published on Data Status</li>
             <li>Stable access layer over the public register</li>
             <li>Geospatial search, coordinates, local authority, and quality fields</li>
             <li>Faster path to usable care data without rebuilding a cleaning pipeline</li>
@@ -130,7 +124,7 @@ export default function WhyCareGistPage() {
         <div className="bg-cream border border-stone rounded-lg p-5">
           <h3 className="font-bold text-bark mb-2">Care groups and operators</h3>
           <ul className="space-y-2 text-sm text-charcoal">
-            <li>Monitor local markets and rating changes continuously</li>
+            <li>Search local markets now; monitoring remains gated pending production evidence</li>
             <li>Benchmark group portfolios using the same cleaned dataset</li>
             <li>Export shortlists and regional views into operating workflows</li>
             <li>Use dashboard-first access without needing internal engineering support</li>
@@ -143,7 +137,7 @@ export default function WhyCareGistPage() {
             <li>Group benchmarking across normalised care organisations</li>
             <li>Regional quality trends and rating distribution</li>
             <li>Monitoring and exports for market visibility</li>
-            <li>Enriched CSV exports with quality scores and CQC report links</li>
+            <li>Enriched CSV exports with data-completeness fields and CQC report links</li>
             <li>Enterprise contact path for procurement-heavy rollouts</li>
           </ul>
         </div>
@@ -169,7 +163,7 @@ export default function WhyCareGistPage() {
             Explore API
           </TrackedLink>
           <TrackedLink href="/search" eventType="homepage_cta_click" eventSource="why_caregist" className="px-8 py-3 border border-stone text-dusk rounded-lg font-medium hover:border-clay hover:text-clay transition-colors">
-            Open New Provider Lead Feed
+            Open provider search
           </TrackedLink>
         </div>
       </div>

@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "currency": "gbp",
+  "interval": "month",
+  "prices": {
+    "STRIPE_PRICE_ALERTS_PRO": {
+      "offering": "alerts-pro",
+      "unit_amount": 4900
+    },
+    "STRIPE_PRICE_STARTER": {
+      "offering": "starter",
+      "unit_amount": 9900
+    },
+    "STRIPE_PRICE_PRO": {
+      "offering": "pro",
+      "unit_amount": 19900
+    },
+    "STRIPE_PRICE_PRO_SEAT": {
+      "offering": "pro-seat",
+      "unit_amount": 1500
+    },
+    "STRIPE_PRICE_BUSINESS": {
+      "offering": "business",
+      "unit_amount": 49900
+    },
+    "STRIPE_PRICE_PROFILE_ENHANCED": {
+      "offering": "profile-enhanced",
+      "unit_amount": 9900
+    },
+    "STRIPE_PRICE_PROFILE_SPONSORED": {
+      "offering": "profile-sponsored",
+      "unit_amount": 14900
+    }
+  }
+}

@@ -6,7 +6,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Care Home Groups — UK Provider Group Benchmarking | CareGist",
   description:
-    "Compare UK care home groups by CQC ratings, quality scores, and inspection outcomes. Benchmark Barchester, Care UK, HC-One, and thousands more.",
+    "Compare UK care home groups by CQC ratings, rated coverage, data completeness, and inspection outcomes.",
   alternates: { canonical: "https://caregist.co.uk/groups" },
 };
 
@@ -54,7 +54,7 @@ export default async function GroupsPage({
             <tr className="border-b border-stone text-left text-dusk">
               <th className="py-3 pr-4 font-medium">Group</th>
               <th className="py-3 pr-4 font-medium text-center">Locations</th>
-              <th className="py-3 pr-4 font-medium text-center">Avg Quality</th>
+              <th className="py-3 pr-4 font-medium text-center">Avg Data Completeness</th>
               <th className="py-3 pr-4 font-medium text-center">% Good+</th>
               <th className="py-3 pr-4 font-medium text-center">Outstanding</th>
               <th className="py-3 pr-4 font-medium text-center">Good</th>
@@ -74,7 +74,7 @@ export default async function GroupsPage({
                 </td>
                 <td className="py-3 pr-4 text-center font-mono">{g.location_count}</td>
                 <td className="py-3 pr-4 text-center">
-                  <span className="font-mono font-bold">{g.avg_quality_score || "—"}</span>
+                  <span className="font-mono font-bold">{g.avg_data_completeness_score || "—"}</span>
                   <span className="text-xs text-dusk">/100</span>
                 </td>
                 <td className="py-3 pr-4 text-center font-mono">{g.pct_good_or_outstanding ? `${g.pct_good_or_outstanding}%` : "—"}</td>

@@ -209,11 +209,11 @@ def main() -> int:
     duplicates_removed = count_lines(duplicates_path)
 
     if total_active == 0:
-        df["qualityScore"] = []
-        df["qualityTier"] = []
+        df["dataCompletenessScore"] = []
+        df["dataCompletenessTier"] = []
     else:
-        df["qualityScore"] = df.apply(score_row, axis=1)
-        df["qualityTier"] = df["qualityScore"].apply(score_to_tier)
+        df["dataCompletenessScore"] = df.apply(score_row, axis=1)
+        df["dataCompletenessTier"] = df["dataCompletenessScore"].apply(score_to_tier)
 
     # Persist scoring columns back into cleaned dataset
     df.to_csv(input_path, index=False)
@@ -232,7 +232,7 @@ def main() -> int:
         }
 
     tier_counts = {
-        tier: int((df.get("qualityTier", "") == tier).sum())
+        tier: int((df.get("dataCompletenessTier", "") == tier).sum())
         for tier in ["COMPLETE", "GOOD", "PARTIAL", "SPARSE"]
     }
 
@@ -272,7 +272,7 @@ def main() -> int:
         "generated_at": generated,
         "total_records": int(total_active),
         "field_completeness": completeness,
-        "quality_tiers": {
+        "data_completeness_tiers": {
             "COMPLETE": {"count": tier_counts["COMPLETE"], "pct": pct(tier_counts["COMPLETE"], total_active)},
             "GOOD": {"count": tier_counts["GOOD"], "pct": pct(tier_counts["GOOD"], total_active)},
             "PARTIAL": {"count": tier_counts["PARTIAL"], "pct": pct(tier_counts["PARTIAL"], total_active)},

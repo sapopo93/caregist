@@ -22,11 +22,12 @@ _TRUSTED_PROXY_COUNT = 1
 
 
 def _parse_trusted_proxy_cidrs() -> list[ipaddress._BaseNetwork]:
-    """Networks whose connections are allowed to set X-Forwarded-For.
+    """Networks whose connections are allowed to set X-Forwarded-For (F-19).
 
-    Defaults to RFC1918 private ranges + loopback, where an ALB or internal
-    proxy terminates. Override with TRUSTED_PROXY_CIDRS to match production.
-    An empty override trusts nothing, so the direct peer IP is always used.
+    Defaults to RFC1918 private ranges + loopback (where an AWS ALB / internal
+    proxy terminates). Override with TRUSTED_PROXY_CIDRS (comma-separated CIDRs)
+    to match your edge. An empty override trusts nothing — the direct peer IP is
+    always used.
     """
     raw = os.getenv("TRUSTED_PROXY_CIDRS")
     if raw is None:
@@ -56,7 +57,13 @@ def _is_trusted_proxy(peer: str | None) -> bool:
 
 
 def _get_client_ip(request: Request) -> str:
-    """Extract real client IP, respecting X-Forwarded-For only behind a trusted proxy."""
+    """Extract real client IP, respecting X-Forwarded-For only behind a trusted proxy.
+
+    X-Forwarded-For is honoured *only* when the immediate peer is an allowlisted
+    proxy; otherwise a direct attacker could forge the header to evade IP limits.
+    When trusted, we strip the rightmost N proxy-added entries and take the next
+    one rather than the forgeable leftmost value.
+    """
     peer = request.client.host if request.client else None
     forwarded = request.headers.get("x-forwarded-for")
     if forwarded and _is_trusted_proxy(peer):

@@ -10,6 +10,25 @@ from api.main import app
 
 
 @pytest.mark.asyncio
+async def test_preview_database_failure_starts_explicitly_degraded():
+    with patch("api.main.init_pool", new=AsyncMock(side_effect=RuntimeError("database unavailable"))), \
+         patch("api.main.runtime_requires_production_secrets", return_value=False):
+        from api.main import _initialize_database
+
+        assert await _initialize_database() is False
+
+
+@pytest.mark.asyncio
+async def test_production_database_failure_still_fails_startup():
+    with patch("api.main.init_pool", new=AsyncMock(side_effect=RuntimeError("database unavailable"))), \
+         patch("api.main.runtime_requires_production_secrets", return_value=True):
+        from api.main import _initialize_database
+
+        with pytest.raises(RuntimeError, match="database unavailable"):
+            await _initialize_database()
+
+
+@pytest.mark.asyncio
 async def test_health_endpoint_returns_degraded_snapshot():
     conn = AsyncMock()
 
@@ -36,13 +55,15 @@ async def test_health_endpoint_returns_degraded_snapshot():
         },
     }
 
-    with patch("api.routers.health.get_connection", mock_get_connection), \
+    with patch.dict("os.environ", {"CAREGIST_RELEASE_SHA": "a" * 40}), \
+         patch("api.routers.health.get_connection", mock_get_connection), \
          patch("api.routers.health.get_pipeline_health", new=AsyncMock(return_value=snapshot)):
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.get("/api/v1/health")
 
     assert response.status_code == 200
     assert response.json()["status"] == "degraded"
+    assert response.json()["release"] == {"git_sha": "a" * 40}
 
 
 @pytest.mark.asyncio
@@ -178,3 +199,86 @@ async def test_freshness_endpoint_returns_503_when_feed_stale():
 
     assert response.status_code == 503
     assert response.json()["status"] == "stale"
+
+
+@pytest.mark.asyncio
+async def test_liveness_always_ok():
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.get("/api/v1/health/liveness")
+    assert response.status_code == 200
+    assert response.json()["status"] == "alive"
+
+
+@pytest.mark.asyncio
+async def test_version_publishes_validated_release_sha():
+    with patch.dict("os.environ", {"CAREGIST_RELEASE_SHA": "B" * 40}):
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get("/api/v1/version")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "application": "caregist-api",
+        "version": "1.0.0",
+        "release": {"git_sha": "b" * 40},
+    }
+
+
+@pytest.mark.asyncio
+async def test_version_does_not_reflect_invalid_release_value():
+    with patch.dict("os.environ", {"CAREGIST_RELEASE_SHA": "not-a-sha<script>"}, clear=False):
+        with patch("api.release._SHA_ENV_KEYS", ("CAREGIST_RELEASE_SHA",)):
+            async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+                response = await client.get("/api/v1/version")
+
+    assert response.json()["release"] == {"git_sha": "unknown"}
+
+
+@pytest.mark.asyncio
+async def test_readiness_503_when_redis_unreachable():
+    conn = AsyncMock()
+
+    @asynccontextmanager
+    async def mock_get_connection():
+        yield conn
+
+    snapshot = {
+        "status": "healthy",
+        "readiness_ok": True,
+        "feed_fresh": True,
+        "checks": {"database": "ok"},
+    }
+
+    with patch("api.routers.health.get_connection", mock_get_connection), \
+         patch("api.routers.health.get_pipeline_health", new=AsyncMock(return_value=snapshot)), \
+         patch("api.routers.health.redis_health", new=AsyncMock(return_value={"configured": True, "ok": False})):
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get("/api/v1/health/readiness")
+
+    assert response.status_code == 503
+    assert response.json()["readiness_ok"] is False
+    assert response.json()["redis"] == {"configured": True, "ok": False}
+
+
+@pytest.mark.asyncio
+async def test_readiness_ok_when_db_and_redis_healthy():
+    conn = AsyncMock()
+
+    @asynccontextmanager
+    async def mock_get_connection():
+        yield conn
+
+    snapshot = {
+        "status": "healthy",
+        "readiness_ok": True,
+        "feed_fresh": True,
+        "checks": {"database": "ok"},
+    }
+
+    with patch("api.routers.health.get_connection", mock_get_connection), \
+         patch("api.routers.health.get_pipeline_health", new=AsyncMock(return_value=snapshot)), \
+         patch("api.routers.health.redis_health", new=AsyncMock(return_value={"configured": True, "ok": True})):
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get("/api/v1/health/readiness")
+
+    assert response.status_code == 200
+    assert response.json()["readiness_ok"] is True

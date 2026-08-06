@@ -1,0 +1,68 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "services": {
+    "frontend": {
+      "root": "frontend/",
+      "framework": "nextjs",
+      "buildCommand": "npm run build",
+      "outputDirectory": ".next",
+      "bindings": [
+        {
+          "type": "service",
+          "service": "backend",
+          "format": "url",
+          "env": "CAREGIST_BACKEND_URL"
+        }
+      ]
+    },
+    "backend": {
+      "root": ".",
+      "framework": "fastapi",
+      "entrypoint": "api.main:app"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/health/directory",
+      "destination": { "service": "frontend" }
+    },
+    {
+      "source": "/api/export",
+      "destination": { "service": "frontend" }
+    },
+    {
+      "source": "/api/leads/request",
+      "destination": { "service": "frontend" }
+    },
+    {
+      "source": "/api/v1",
+      "destination": { "service": "backend" }
+    },
+    {
+      "source": "/api/v1/(.*)",
+      "destination": { "service": "backend" }
+    },
+    {
+      "source": "/internal/(.*)",
+      "destination": { "service": "backend" }
+    },
+    {
+      "source": "/metrics",
+      "destination": { "service": "backend" }
+    },
+    {
+      "source": "/(.*)",
+      "destination": { "service": "frontend" }
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/v1/cron/email-queue",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/v1/cron/feed-cycle",
+      "schedule": "15 * * * *"
+    }
+  ]
+}

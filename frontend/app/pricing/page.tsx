@@ -1,8 +1,10 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { Suspense } from "react";
 
 import PricingCTA from "@/components/PricingCTA";
 import ProviderListingCTA from "@/components/ProviderListingCTA";
+import RetainedPlanFocus from "@/components/RetainedPlanFocus";
 import TrackedLink from "@/components/TrackedLink";
 import {
   CQC_INDEPENDENCE_LINE,
@@ -14,6 +16,7 @@ import {
   PRICING_LADDER,
   PROVIDER_TIERS,
 } from "@/lib/caregist-config";
+import { pricingPlanCardId } from "@/lib/pricing-plan-path";
 
 export const metadata: Metadata = {
   title: "CareGist Pricing | New Provider Intelligence, Alerts, Data & Listings",
@@ -33,6 +36,8 @@ const UPGRADE_BOX_TITLE: Record<string, string> = {
 };
 
 export default function PricingPage() {
+  const checkoutEnabled = process.env.BILLING_CHECKOUT_ENABLED === "true";
+  const termsVersion = process.env.B2B_TERMS_VERSION?.trim() || "";
   return (
     <div className="max-w-6xl mx-auto px-6 py-16">
       <div className="text-center mb-12">
@@ -49,6 +54,9 @@ export default function PricingPage() {
       </div>
 
       <div id="data-plans" className="scroll-mt-8" />
+      <Suspense fallback={null}>
+        <RetainedPlanFocus />
+      </Suspense>
 
       <div className="mb-8">
         <h2 className="text-2xl font-extrabold text-bark mb-2">New-provider intelligence plans</h2>
@@ -73,8 +81,8 @@ export default function PricingPage() {
           ))}
         </div>
         <p className="font-mono text-xs text-dusk mt-4 pt-4 border-t border-white/10">
-          Free is basic provider lookup and limited evaluation. Alerts Pro is for fresh new-provider
-          alerts without heavy exports. Data Starter, Data Pro, and Data Business are the core
+          Free is basic provider lookup and limited evaluation. Alerts Pro is for provider watchlists
+          and rating-change monitoring. Data Starter, Data Pro, and Data Business are the core
           new-provider intelligence plans for recurring feeds, saved filters, weekly digests, CRM
           exports, API access, and webhooks.
         </p>
@@ -84,7 +92,9 @@ export default function PricingPage() {
         {PRICING_LADDER.map((tier, i) => (
           <div
             key={tier.tier}
-            className={`bg-cream border rounded-xl p-6 ${tier.recommended ? "border-2 border-clay shadow-lg ring-2 ring-amber/20" : "border-stone"}`}
+            id={pricingPlanCardId(tier.tier) || undefined}
+            tabIndex={-1}
+            className={`scroll-mt-24 bg-cream border rounded-xl p-6 focus:outline-none focus:ring-4 focus:ring-amber/50 ${tier.recommended ? "border-2 border-clay shadow-lg ring-2 ring-amber/20" : "border-stone"}`}
             style={{ borderLeftWidth: 4, borderLeftColor: tier.color }}
           >
             <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-4">
@@ -137,7 +147,12 @@ export default function PricingPage() {
                   Contact sales
                 </TrackedLink>
               ) : (
-                <PricingCTA tier={tier.tier} isFreeTier={i === 0} />
+                <PricingCTA
+                  tier={tier.tier}
+                  isFreeTier={i === 0}
+                  checkoutEnabled={checkoutEnabled}
+                  termsVersion={termsVersion}
+                />
               )}
             </div>
           </div>
@@ -218,7 +233,7 @@ export default function PricingPage() {
             </div>
           ))}
         </div>
-        <p className="text-center text-xs text-dusk mt-4">All prices exclude VAT · Provider visibility plans are separate from new-provider intelligence plans · Claim your listing first at no cost</p>
+        <p className="text-center text-xs text-dusk mt-4">Displayed prices are the total monthly prices · VAT is not currently charged · Provider visibility plans are separate from new-provider intelligence plans · Claim your listing first at no cost</p>
       </div>
 
       <div className="text-center mt-10">
@@ -232,7 +247,7 @@ export default function PricingPage() {
       </div>
 
       <div className="text-center mt-6 text-xs text-dusk space-y-1">
-        <p>All prices exclude VAT. Cancel anytime.</p>
+        <p>Displayed prices are the total monthly prices. VAT is not currently charged. Cancel anytime.</p>
         <p>{NEW_REGISTRATION_MONTHLY_AVG_CAVEAT}</p>
         <p>{NEW_REGISTRATION_SOURCE_LINE} {CQC_INDEPENDENCE_LINE}</p>
       </div>

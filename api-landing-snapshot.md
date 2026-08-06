@@ -1,0 +1,166 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e3]:
+      - link "CareGist" [ref=e4] [cursor=pointer]:
+        - /url: /
+        - img "CareGist" [ref=e5]
+      - generic [ref=e6]:
+        - navigation [ref=e7]:
+          - link "Products" [ref=e8] [cursor=pointer]:
+            - /url: /#products
+          - link "Who it's for" [ref=e9] [cursor=pointer]:
+            - /url: /#positioning
+          - link "About" [ref=e10] [cursor=pointer]:
+            - /url: /why-caregist
+          - link "Search" [ref=e11] [cursor=pointer]:
+            - /url: /search
+          - link "Pricing" [ref=e12] [cursor=pointer]:
+            - /url: /pricing
+          - link "API" [ref=e13] [cursor=pointer]:
+            - /url: /api
+          - link "Get a lead list" [ref=e14] [cursor=pointer]:
+            - /url: /lead-list
+          - link "Buy dataset" [ref=e15] [cursor=pointer]:
+            - /url: /lead-list
+        - navigation [ref=e16]:
+          - link "Log In" [ref=e17] [cursor=pointer]:
+            - /url: /login
+          - link "Sign Up" [ref=e18] [cursor=pointer]:
+            - /url: /signup
+  - main [ref=e19]:
+    - generic [ref=e20]:
+      - paragraph [ref=e22]: "CareGist provides daily-refreshed UK care-provider data through no-code exports, CRM-ready webhooks, and a developer API — all built on the same new-provider intelligence layer that powers the dashboard. The core product is the new registration feed: a recurring workflow for finding newly registered CQC providers before competitors build the relationship."
+      - heading "New-provider intelligence for no-code exports, CRM workflows, and developer integration" [level=1] [ref=e23]
+      - paragraph [ref=e24]: CareGist tracked an average of 340 newly registered CQC providers per month from January to March 2026. Use the data in the way your team actually works.
+      - paragraph [ref=e25]: Monthly registration volumes vary. The 340/month figure is calculated from CareGist’s January–March 2026 live-feed average.
+      - generic [ref=e26]:
+        - generic [ref=e27]:
+          - generic [ref=e28]: Dashboard & CSV
+          - heading "No-code exports" [level=3] [ref=e29]
+          - paragraph [ref=e30]: Export filtered provider lists for outreach, research, and CRM upload. Filter by region, service type, registration window, and confidence score — then download as CSV or Excel without writing a line of code.
+          - list [ref=e31]:
+            - listitem [ref=e32]: ✓Filter and export newly registered providers weekly
+            - listitem [ref=e33]: ✓CSV and Excel output for immediate outreach or CRM upload
+            - listitem [ref=e34]: ✓Saved filter views for repeatable lead-list workflows
+            - listitem [ref=e35]: ✓Free sample · Data Starter and above for workflow volumes
+        - generic [ref=e36]:
+          - generic [ref=e37]: Data Business
+          - heading "CRM and webhook workflow" [level=3] [ref=e38]
+          - paragraph [ref=e39]: Push new-provider opportunities and registration movement into your sales workflow automatically. Data Business plans can register outbound webhooks that receive signed payloads for every new CQC registration matching your saved filter.
+          - list [ref=e40]:
+            - listitem [ref=e41]: ✓Outbound webhooks for feed.new_registration and provider.rating_changed
+            - listitem [ref=e42]: ✓HMAC-SHA256 signed payloads for secure CRM and ops delivery
+            - listitem [ref=e43]: ✓Filter by region and service type at the webhook level
+            - listitem [ref=e44]: ✓1s, 2s, 4s retry backoff with dashboard delivery log
+        - generic [ref=e45]:
+          - generic [ref=e46]: All paid plans
+          - heading "Developer API" [level=3] [ref=e47]
+          - paragraph [ref=e48]: Use the CareGist API for structured provider lookup, geospatial search, new-provider feed access, monitoring, and integration. The same data layer powers the dashboard, exports, and webhooks.
+          - list [ref=e49]:
+            - listitem [ref=e50]: ✓Provider search, detail, nearby, and bulk export endpoints
+            - listitem [ref=e51]: ✓New registration feed with filter, pagination, and digest APIs
+            - listitem [ref=e52]: ✓PostGIS geospatial search by postcode and radius
+            - listitem [ref=e53]: ✓Monitoring and rating-change tracking endpoints
+            - listitem [ref=e54]: ✓Plan-based rate limits and field visibility
+      - generic [ref=e55]:
+        - heading "Sample API response" [level=2] [ref=e56]
+        - generic [ref=e57]: "{ \"data\": [{ \"id\": \"1-123456789\", \"name\": \"Sunrise Care Home\", \"slug\": \"sunrise-care-home-bournemouth\", \"type\": \"Social Care Org\", \"status\": \"ACTIVE\", \"overall_rating\": \"Good\", \"town\": \"Bournemouth\", \"postcode\": \"BH1 1AA\", \"region\": \"South West\", \"service_types\": \"Care home service with nursing\", \"quality_score\": 82, \"quality_tier\": \"GOOD\", \"latitude\": 50.7192, \"longitude\": -1.8808, \"phone\": \"01202 000000\" }], \"meta\": { \"total\": 1, \"page\": 1, \"per_page\": 20, \"pages\": 1 } }"
+      - generic [ref=e58]:
+        - generic [ref=e59]:
+          - heading "CRM and webhook delivery" [level=2] [ref=e60]
+          - paragraph [ref=e61]:
+            - text: Data Business plans can register outbound webhooks for
+            - code [ref=e62]: feed.new_registration
+            - text: and
+            - code [ref=e63]: provider.rating_changed
+            - text: . CareGist signs each payload with HMAC-SHA256 in
+            - code [ref=e64]: X-CareGist-Signature
+            - text: .
+          - paragraph [ref=e65]: Failed deliveries remain visible in the dashboard so teams can spot broken endpoints without digging through support tickets. Retries use 1s, 2s, and 4s backoff.
+          - paragraph [ref=e66]: Webhooks are designed for operational sync and CRM push — not a substitute for scheduled batch exports.
+        - generic [ref=e67]:
+          - heading "Webhook example" [level=2] [ref=e68]
+          - generic [ref=e69]: "POST /webhooks { \"url\": \"https://ops.example.com/caregist/webhooks\", \"events\": [\"feed.new_registration\"], \"filters\": { \"region\": \"London\", \"service_type\": \"home care\" } } Headers on delivery: X-CareGist-Event: feed.new_registration X-CareGist-Signature: sha256=<hmac> Retries: 1s, 2s, 4s backoff before final failure"
+      - generic [ref=e70]:
+        - heading "Plans" [level=2] [ref=e71]
+        - generic [ref=e72]:
+          - generic [ref=e73]:
+            - heading "Alerts Pro" [level=3] [ref=e74]
+            - paragraph [ref=e75]: £49 + VAT/mo
+            - paragraph [ref=e76]: Provider monitoring and rating-change alerts · saved watchlists · weekly alert digest · 5 req/sec · 200/day
+          - generic [ref=e77]:
+            - heading "Data Starter" [level=3] [ref=e78]
+            - paragraph [ref=e79]: £99 + VAT/mo
+            - paragraph [ref=e80]: New registration feed · 3 saved filters · weekly digest · 500-row export · 15 monitors · 10 req/sec
+          - generic [ref=e81]:
+            - heading "Data Pro" [level=3] [ref=e82]
+            - paragraph [ref=e83]: Recommended
+            - paragraph [ref=e84]: £199 + VAT/mo
+            - paragraph [ref=e85]: 20 saved filters · 10 digests · 5,000-row export · 100 monitors · 3 included seats · 25 req/sec
+          - generic [ref=e86]:
+            - heading "Data Business" [level=3] [ref=e87]
+            - paragraph [ref=e88]: £499 + VAT/mo
+            - paragraph [ref=e89]: Webhooks for new registrations and rating changes · full fields · 10,000-row export · 500 monitors · 10 included seats · 60 req/sec
+        - paragraph [ref=e90]:
+          - link "See full pricing details" [ref=e91] [cursor=pointer]:
+            - /url: /pricing
+      - generic [ref=e92]:
+        - heading "Request CRM integration" [level=2] [ref=e93]
+        - paragraph [ref=e94]: Data Starter, Data Pro, and Data Business can begin self-serve from the pricing page. Use this form if you want help scoping a CRM integration, webhook workflow, higher-volume export path, or enterprise procurement route.
+        - generic [ref=e95]:
+          - generic [ref=e96]:
+            - generic [ref=e97]
+            - generic [ref=e100]
+          - generic [ref=e103]:
+            - generic [ref=e104]
+            - generic [ref=e107]
+          - generic [ref=e110]:
+            - generic [ref=e111]: Use case
+            - textbox "Describe how you plan to use CareGist data..." [ref=e112]
+          - button "Apply for API Access" [ref=e113]
+      - paragraph [ref=e114]: "Source: CareGist tracking of CQC public registration movement. CareGist is independent and is not affiliated with or endorsed by the Care Quality Commission."
+  - generic [ref=e116]:
+    - paragraph [ref=e118]:
+      - text: We use cookies for site functionality and to analyse traffic. Read our
+      - link "cookie policy" [ref=e119] [cursor=pointer]:
+        - /url: /cookies
+      - text: .
+    - generic [ref=e120]:
+      - button "Accept all" [ref=e121]
+      - button "Essential only" [ref=e122]
+  - contentinfo [ref=e123]:
+    - generic [ref=e124]:
+      - paragraph [ref=e125]: "Data source: Care Quality Commission (CQC). CareGist is not an official CQC service."
+      - paragraph [ref=e126]:
+        - text: If you have concerns about care quality, contact CQC directly at
+        - link "cqc.org.uk/contact-us" [ref=e127] [cursor=pointer]:
+          - /url: https://www.cqc.org.uk/contact-us
+        - text: or call 03000 616161.
+      - generic [ref=e128]:
+        - link "Privacy Policy" [ref=e129] [cursor=pointer]:
+          - /url: /privacy
+        - link "Terms of Service" [ref=e130] [cursor=pointer]:
+          - /url: /terms
+        - link "Acceptable Use" [ref=e131] [cursor=pointer]:
+          - /url: /acceptable-use
+        - link "Review Policy" [ref=e132] [cursor=pointer]:
+          - /url: /review-policy
+        - link "Cookies" [ref=e133] [cursor=pointer]:
+          - /url: /cookies
+        - link "Search" [ref=e134] [cursor=pointer]:
+          - /url: /search
+        - link "Find Care" [ref=e135] [cursor=pointer]:
+          - /url: /find-care
+        - link "Care Groups" [ref=e136] [cursor=pointer]:
+          - /url: /groups
+        - link "Pricing" [ref=e137] [cursor=pointer]:
+          - /url: /pricing
+        - link "API" [ref=e138] [cursor=pointer]:
+          - /url: /api
+        - link "Why CareGist" [ref=e139] [cursor=pointer]:
+          - /url: /why-caregist
+        - link "Get a lead list" [ref=e140] [cursor=pointer]:
+          - /url: /lead-list
+        - link "Contact" [ref=e141] [cursor=pointer]:
+          - /url: mailto:hello@caregist.co.uk
+  - alert [ref=e142]

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { submitClaim } from "@/lib/actions";
 import { trackEvent } from "@/lib/analytics";
+import { getProviderHref } from "@/lib/provider-path";
 
 const ROLES = ["Registered Manager", "Nominated Individual", "Provider Director", "Other"];
 
@@ -211,7 +212,7 @@ export default function ClaimStepper({
             </p>
           )}
           <a
-            href={`/provider/${slug}`}
+            href={getProviderHref({ id: providerId, slug })}
             className="inline-block mt-6 px-6 py-3 bg-clay text-white rounded-lg font-medium hover:bg-bark transition-colors"
           >
             Back to provider

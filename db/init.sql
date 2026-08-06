@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS care_providers (
   id VARCHAR(20) PRIMARY KEY,
   provider_id VARCHAR(20),
   name VARCHAR(255) NOT NULL,
-  slug VARCHAR(300) UNIQUE,
+  slug VARCHAR(300) UNIQUE NOT NULL,  -- F-33: matches migration 025's invariant on fresh deploys
   type VARCHAR(100),
   status VARCHAR(20),
   registration_date DATE,
@@ -39,8 +39,8 @@ CREATE TABLE IF NOT EXISTS care_providers (
   regulated_activities TEXT,
   number_of_beds INT,
   ownership_type VARCHAR(50),
-  quality_score INT,
-  quality_tier VARCHAR(20),
+  data_completeness_score INT,
+  data_completeness_tier VARCHAR(20),
   meta_title VARCHAR(300),
   meta_description TEXT,
   geocode_source VARCHAR(20),
@@ -56,7 +56,7 @@ CREATE INDEX IF NOT EXISTS idx_postcode ON care_providers (postcode);
 CREATE INDEX IF NOT EXISTS idx_region ON care_providers (region);
 CREATE INDEX IF NOT EXISTS idx_local_authority ON care_providers (local_authority);
 CREATE INDEX IF NOT EXISTS idx_overall_rating ON care_providers (overall_rating);
-CREATE INDEX IF NOT EXISTS idx_quality_tier ON care_providers (quality_tier);
+CREATE INDEX IF NOT EXISTS idx_data_completeness_tier ON care_providers (data_completeness_tier);
 CREATE INDEX IF NOT EXISTS idx_status ON care_providers (status);
 CREATE INDEX IF NOT EXISTS idx_slug ON care_providers (slug);
 CREATE INDEX IF NOT EXISTS idx_type ON care_providers (type);
@@ -123,8 +123,15 @@ CREATE TABLE IF NOT EXISTS users (
   stripe_customer_id VARCHAR(100),
   is_verified BOOLEAN DEFAULT false,
   verification_token VARCHAR(100),
+  signup_intent_type VARCHAR(20),
+  signup_intent_value VARCHAR(40),
   created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
+  updated_at TIMESTAMP DEFAULT NOW(),
+  CONSTRAINT users_signup_purchase_intent_valid CHECK (
+    (signup_intent_type IS NULL AND signup_intent_value IS NULL)
+    OR (signup_intent_type = 'plan' AND signup_intent_value IN ('alerts-pro', 'data-starter', 'data-pro', 'data-business'))
+    OR (signup_intent_type = 'provider_tier' AND signup_intent_value IN ('enhanced', 'sponsored'))
+  )
 );
 
 CREATE INDEX IF NOT EXISTS idx_users_email ON users (email);
@@ -146,6 +153,31 @@ CREATE TABLE IF NOT EXISTS subscriptions (
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );
+
+CREATE TABLE IF NOT EXISTS billing_operations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  owner_type VARCHAR(20) NOT NULL CHECK (owner_type IN ('account', 'provider')),
+  owner_id VARCHAR(100) NOT NULL,
+  operation_type VARCHAR(40) NOT NULL CHECK (
+    operation_type IN ('checkout', 'subscription_change', 'profile_checkout', 'profile_change')
+  ),
+  request_fingerprint VARCHAR(64) NOT NULL,
+  status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (
+    status IN ('pending', 'succeeded', 'failed', 'expired')
+  ),
+  stripe_object_id VARCHAR(255),
+  stripe_object_url TEXT,
+  expires_at TIMESTAMPTZ NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_billing_operations_pending_owner
+  ON billing_operations (owner_type, owner_id, operation_type)
+  WHERE status = 'pending';
+
+CREATE INDEX IF NOT EXISTS idx_billing_operations_expiry
+  ON billing_operations (status, expires_at);
 
 -- Link api_keys to users
 ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS user_id INT REFERENCES users(id);

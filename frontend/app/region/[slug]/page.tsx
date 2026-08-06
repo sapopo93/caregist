@@ -8,6 +8,7 @@ import TrustSignal from "@/components/TrustSignal";
 import { searchProviders, getRegionStats } from "@/lib/api";
 import { getProviderHref, getProviderPathKey } from "@/lib/provider-path";
 import Link from "next/link";
+import { headers } from "next/headers";
 import type { Metadata } from "next";
 
 const REGION_MAP: Record<string, string> = {
@@ -42,6 +43,9 @@ export default async function RegionPage({
 }) {
   const { slug } = await params;
   const { page } = await searchParams;
+  // Nonce from the CSP middleware so the JSON-LD script is allowed under the
+  // nonce-based policy (F-21).
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
   const isRegion = slug in REGION_MAP;
 
   // For the 9 known regions, use the search endpoint
@@ -102,18 +106,18 @@ export default async function RegionPage({
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-8">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      {!error && <script type="application/ld+json" nonce={nonce} dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />}
       {/* AEO Block */}
-      <section className="bg-parchment border-b border-stone rounded-t-lg px-6 py-4 text-sm text-charcoal leading-relaxed mb-6">
+      {!error && <section className="bg-parchment border-b border-stone rounded-t-lg px-6 py-4 text-sm text-charcoal leading-relaxed mb-6">
         <p>
           There are {totalProviders.toLocaleString()} CQC-registered care providers in {displayName}.
           {pctGood !== undefined && <> {pctGood}% are rated Good or Outstanding.</>}
         </p>
-      </section>
+      </section>}
 
       <h1 className="text-3xl font-bold mb-2">CQC care providers in {displayName}</h1>
       <div className="flex items-center justify-between mb-6">
-        <p className="text-dusk">{totalProviders.toLocaleString()} providers</p>
+        <p className="text-dusk">{error ? "Provider count unavailable" : `${totalProviders.toLocaleString()} providers`}</p>
         <div className="flex gap-3 items-center print:hidden">
           <ExportCSVButton exportUrl={`/api/v1/providers/export.csv?${isRegion ? `region=${encodeURIComponent(REGION_MAP[slug])}` : `q=${encodeURIComponent(displayName)}`}`} />
           <PrintButton />
@@ -205,8 +209,8 @@ export default async function RegionPage({
       <div className="mt-8">
         <EmailCaptureStrip
           source={`region_${slug}`}
-          heading={`Get weekly alerts for ${displayName}`}
-          subheading="Rating changes and new inspections, delivered to your inbox."
+          heading={`Request product updates for ${displayName}`}
+          subheading="Rating-change alerts are not yet active; register interest for availability updates."
         />
       </div>
 

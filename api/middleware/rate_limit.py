@@ -40,6 +40,29 @@ async def _get_redis():
     return _redis_client
 
 
+async def redis_health() -> dict:
+    """Lightweight Redis liveness probe for readiness checks (F-25).
+
+    Returns {"configured": bool, "ok": bool}. When Redis is not configured we
+    report ok=True (in-memory fallback is acceptable in dev), so this only fails
+    readiness when a configured Redis is actually unreachable.
+    """
+    if not settings.redis_url:
+        return {"configured": False, "ok": True}
+    try:
+        import redis.asyncio as aioredis
+
+        client = aioredis.from_url(settings.redis_url, decode_responses=True)
+        try:
+            await client.ping()
+        finally:
+            await client.aclose()
+        return {"configured": True, "ok": True}
+    except Exception as exc:
+        logger.warning("Redis health probe failed: %s", exc)
+        return {"configured": True, "ok": False}
+
+
 # Lua script: atomically check all quota windows, then increment only when every
 # window has remaining capacity. Return shape:
 #   {0, daily_remaining, rolling_remaining, monthly_remaining} on success
@@ -518,7 +541,8 @@ def check_export_limit(api_key: str, tier: str) -> None:
 def add_rate_limit_headers(response: Response, tier: str, remaining: dict[str, int]) -> None:
     """Add rate limit headers to a response."""
     config = get_tier_config(tier)
-    response.headers["X-Tier"] = tier
+    # F-41: do not expose the customer's tier to intermediaries / browser
+    # extensions. The numeric limits below are sufficient for client backoff.
     response.headers["X-RateLimit-Limit"] = str(config["rate"])
     response.headers["X-RateLimit-Window"] = f"{config.get('rate_window_seconds', 1)}s"
     response.headers["X-RateLimit-Remaining"] = str(max(0, remaining["burst_remaining"]))

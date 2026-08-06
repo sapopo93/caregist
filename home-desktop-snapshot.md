@@ -1,0 +1,30 @@
+- generic [active] [ref=e1] [box=0,0,1440,4298]:
+  - banner [ref=e2] [box=0,0,1440,89]:
+    - generic [ref=e3] [box=144,16,1152,56]:
+      - link "CareGist" [ref=e4] [cursor=pointer] [box=144,16,239,56]:
+        - /url: /
+      - generic [ref=e6] [box=515,26,781,36]
+  - main [ref=e19] [box=0,89,1440,4061]:
+    - generic [ref=e20] [box=0,89,1440,4061]:
+      - generic [ref=e22] [box=144,153,1152,702]
+      - generic [ref=e56] [box=144,976,1152,682]
+      - generic [ref=e93] [box=144,1771,1152,1349]
+      - generic [ref=e172] [box=144,3233,1152,274]
+      - generic [ref=e188] [box=144,3620,1152,234]
+      - generic [ref=e202] [box=168,3926,1104,152]
+      - paragraph [ref=e208] [box=0,4134,1440,16]: Data sourced from CQC public register · Daily refresh from the CQC public register
+  - generic [ref=e210] [box=272,946,896,38]:
+    - paragraph [ref=e212] [box=272,955,630,20]:
+      - text: We use cookies for site functionality and to analyse traffic. Read our
+      - link "cookie policy" [ref=e213] [cursor=pointer] [box=716,956,85,19]:
+        - /url: /cookies
+      - text: .
+    - generic [ref=e214] [box=918,946,250,38]:
+      - button "Accept all" [ref=e215] [box=918,946,106,38]
+      - button "Essential only" [ref=e216] [box=1036,946,132,38]
+  - contentinfo [ref=e217] [box=0,4150,1440,148]:
+    - generic [ref=e218] [box=144,4182,1152,84]:
+      - paragraph [ref=e219] [box=144,4182,1152,20]: "Data source: Care Quality Commission (CQC). CareGist is not an official CQC service."
+      - paragraph [ref=e220] [box=144,4210,1152,20]
+      - generic [ref=e222] [box=144,4246,1152,20]
+  - alert [ref=e236] [box=-1,-1,1,1]

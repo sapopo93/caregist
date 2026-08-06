@@ -1,0 +1,390 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e3]:
+      - link "CareGist" [ref=e4] [cursor=pointer]:
+        - /url: /
+        - img "CareGist" [ref=e5]
+      - generic [ref=e6]:
+        - navigation [ref=e7]:
+          - link "Products" [ref=e8] [cursor=pointer]:
+            - /url: /#products
+          - link "Who it's for" [ref=e9] [cursor=pointer]:
+            - /url: /#positioning
+          - link "About" [ref=e10] [cursor=pointer]:
+            - /url: /why-caregist
+          - link "Search" [ref=e11] [cursor=pointer]:
+            - /url: /search
+          - link "Pricing" [ref=e12] [cursor=pointer]:
+            - /url: /pricing
+          - link "API" [ref=e13] [cursor=pointer]:
+            - /url: /api
+          - link "Get a lead list" [ref=e14] [cursor=pointer]:
+            - /url: /lead-list
+          - link "Buy dataset" [ref=e15] [cursor=pointer]:
+            - /url: https://buy.stripe.com/aFaeV6elF2uk2fAfi73AY00
+        - navigation [ref=e16]:
+          - link "Log In" [ref=e17] [cursor=pointer]:
+            - /url: /login
+          - link "Sign Up" [ref=e18] [cursor=pointer]:
+            - /url: /signup
+  - main [ref=e19]:
+    - generic [ref=e59]:
+      - generic [ref=e60]:
+        - link "All groups" [ref=e61] [cursor=pointer]:
+          - /url: /groups
+        - button "Print" [ref=e62]
+      - heading "Voyage 1 Limited" [level=1] [ref=e63]
+      - paragraph [ref=e64]: 279 locations across East, East Midlands, London, North East, North West, South East, South West, West Midlands, Yorkshire & Humberside · 1,900 total beds
+      - generic [ref=e65]:
+        - generic [ref=e66]:
+          - paragraph [ref=e67]: Average Quality Score
+          - paragraph [ref=e68]: —/100
+        - generic [ref=e69]:
+          - paragraph [ref=e70]: "% Good or Outstanding"
+          - paragraph [ref=e71]: —%
+        - generic [ref=e72]:
+          - paragraph [ref=e73]: Locations
+          - paragraph [ref=e74]: "279"
+          - paragraph [ref=e75]: 230 inspected · 49 pending
+      - generic [ref=e76]:
+        - heading "Rating Distribution" [level=2] [ref=e77]
+        - generic [ref=e78]:
+          - 'generic "Outstanding: 12" [ref=e79]': "12"
+          - 'generic "Good: 199" [ref=e80]': "199"
+          - 'generic "Requires Improvement: 19" [ref=e81]': "19"
+          - 'generic "Not Inspected: 49" [ref=e82]': "49"
+        - generic [ref=e83]:
+          - generic [ref=e86]: "Outstanding: 12"
+          - generic [ref=e89]: "Good: 199"
+          - generic [ref=e92]: "Requires Improvement: 19"
+          - generic [ref=e95]: "Inadequate: 0"
+          - generic [ref=e98]: "Not Inspected: 49"
+      - heading "All 279 Locations" [level=2] [ref=e99]
+      - table [ref=e101]:
+        - rowgroup [ref=e102]:
+          - row "Name Location Rating Quality Beds Last Inspected" [ref=e103]
+        - rowgroup [ref=e110]:
+          - 'row "1 Longmore Road Reading, RG2 8QG CQC rating: Good 100 7 19/09/2017" [ref=e111]'
+          - 'row "1-2 Canterbury Close Rotherham, S65 2LW CQC rating: Good 100 10 02/02/2022" [ref=e120]'
+          - 'row "109 Grange Road Birmingham, B24 0ES CQC rating: Good 100 5 16/02/2022" [ref=e129]'
+          - 'row "130 Whitworth Road Swindon, SN25 3BJ CQC rating: Good 100 4 11/11/2020" [ref=e138]'
+          - 'row "16 Balnacraig Avenue (The Leaves) London, NW10 1TH CQC rating: Good 90 7 05/09/2019" [ref=e147]'
+          - 'row "17 Walsworth Road Hitchin, SG4 9SP CQC rating: Good 100 6 05/12/2019" [ref=e156]'
+          - 'row "182 Ashby Road Burton on Trent, DE15 0LB CQC rating: Good 100 5 05/12/2017" [ref=e165]'
+          - 'row "183 Ashby Road Burton on Trent, DE15 0LB CQC rating: Good 100 5 15/10/2019" [ref=e174]'
+          - 'row "20 Towngate East Peterborough, PE6 8DR CQC rating: Good 100 8 19/09/2019" [ref=e183]'
+          - 'row "23 Cecil Road Dronfield, S18 2GW CQC rating: Good 100 6 12/03/2018" [ref=e192]'
+          - 'row "23 Church Street Mansfield, NG20 0AU CQC rating: Good 100 10 28/02/2019" [ref=e201]'
+          - 'row "235 Rugeley Road Burntwood, WS7 1NS CQC rating: Good 100 7 09/02/2023" [ref=e210]'
+          - 'row "24 St Marks Road Derby, DE21 6AH CQC rating: Good 100 8 09/03/2018" [ref=e219]'
+          - 'row "26 St Barnabas Road Reading, RG4 8RA CQC rating: Good 100 6 19/04/2022" [ref=e228]'
+          - 'row "29 Briants Avenue Reading, RG4 5AY CQC rating: Good 100 3 24/01/2024" [ref=e237]'
+          - 'row "2a & 2b Mayfair Reading, RG30 4QY CQC rating: Good 100 10 12/04/2018" [ref=e246]'
+          - 'row "30 Broad Lane Reading, RG7 6QJ CQC rating: Good 100 6 13/11/2017" [ref=e255]'
+          - 'row "30 Richmond Road Reading, RG4 7PR CQC rating: Good 100 5 22/01/2019" [ref=e264]'
+          - 'row "35/37 Solna Road London, N21 2JE CQC rating: Good 90 11 22/01/2020" [ref=e273]'
+          - 'row "351 Maidstone Road Gillingham, ME8 0HU CQC rating: Good 100 5 24/10/2018" [ref=e282]'
+          - 'row "36 West Street Barnsley, S73 8LA CQC rating: Good 100 6 14/06/2018" [ref=e291]'
+          - 'row "39 Hawthorne Grove Trowbridge, BA14 0JF CQC rating: Good 100 3 10/03/2020" [ref=e300]'
+          - 'row "4 Hermitage Lane Swindon, SN2 7QS CQC rating: Good 100 6 13/12/2017" [ref=e309]'
+          - 'row "429 Warwick Road Birmingham, B91 1BD CQC rating: Good 100 6 20/11/2018" [ref=e318]'
+          - 'row "46 Derby Road Burton on Trent, DE14 1RP CQC rating: Good 100 3 18/10/2018" [ref=e327]'
+          - 'row "48 Heath Road Chesterfield, S42 5SW CQC rating: Good 100 8 12/12/2023" [ref=e336]'
+          - 'row "49 Stolford Rise Milton Keynes, MK4 3DW CQC rating: Good 100 3 04/09/2023" [ref=e345]'
+          - 'row "514 Arnold Road Nottingham, NG5 5HN CQC rating: Good 100 10 21/11/2019" [ref=e354]'
+          - 'row "52 Porthcawl Green Milton Keynes, MK4 3AL CQC rating: Good 100 3 30/08/2023" [ref=e363]'
+          - 'row "579 Maidstone Road Gillingham, ME8 0LQ CQC rating: Good 100 6 12/08/2021" [ref=e372]'
+          - 'row "60 Bullpond Lane Dunstable, LU6 3BJ CQC rating: Good 100 6 03/04/2019" [ref=e381]'
+          - 'row "66 Dudley Street West Bromwich, B70 9LU CQC rating: Good 100 6 11/03/2020" [ref=e390]'
+          - 'row "703 Burton Road Swadlincote, DE11 0DL CQC rating: Good 100 5 01/03/2022" [ref=e399]'
+          - 'row "Abbotts Road Birmingham, B24 8HE CQC rating: Good 100 4 31/01/2020" [ref=e408]'
+          - 'row "Agricola House Bury, BL8 3NE CQC rating: Good 100 8 02/08/2022" [ref=e417]'
+          - 'row "Anro House Deal, CT14 7HG CQC rating: Good 100 5 18/06/2018" [ref=e426]'
+          - 'row "Astbury View Walsall, WS3 3UB CQC rating: Good 100 9 20/11/2019" [ref=e435]'
+          - 'row "Barnford House Oldbury, B68 9LZ CQC rating: Good 100 6 13/09/2018" [ref=e444]'
+          - 'row "Beech House Wokingham, RG5 3JY CQC rating: Good 100 6 16/01/2018" [ref=e453]'
+          - 'row "Beechwood Hindhead, GU26 6GG CQC rating: Good 100 5 08/11/2022" [ref=e462]'
+          - 'row "Belchford Hartlepool, TS27 4PB CQC rating: Good 100 7 29/03/2023" [ref=e471]'
+          - 'row "Bethia Cottage Hull, HU12 8TX CQC rating: Good 100 5 20/02/2020" [ref=e480]'
+          - 'row "Birchwood Bungalow St Albans, AL2 2QZ CQC rating: Good 100 7 03/09/2019" [ref=e489]'
+          - 'row "Blackberry Hill Castle Cary, BA7 7HG CQC rating: Good 100 10 03/02/2021" [ref=e498]'
+          - 'row "Bramley Avenue Royston, SG8 6HG CQC rating: Good 100 5 18/03/2021" [ref=e507]'
+          - 'row "Branwell Manor Dewsbury, WF13 3PG CQC rating: Good 100 8 20/11/2020" [ref=e516]'
+          - 'row "Bridge Court Bungalow Middlesbrough, TS6 0LD CQC rating: Good 100 6 20/01/2022" [ref=e525]'
+          - 'row "Bronte View Keighley, BD22 9PH CQC rating: Good 100 7 02/02/2018" [ref=e534]'
+          - 'row "Brook Lodge Longhope, GL17 0QA CQC rating: Good 100 8 10/12/2020" [ref=e543]'
+          - 'row "Byards Keep Sleaford, NG34 8XT CQC rating: Good 100 8 27/06/2019" [ref=e552]'
+          - 'row "Calvert House Leyland, PR25 1HY CQC rating: Good 100 8 17/07/2019" [ref=e561]'
+          - 'row "Carville Road Wallsend, NE28 6AB CQC rating: Good 100 12 19/12/2019" [ref=e570]'
+          - 'row "Castle Lane Solihull, B92 8RW CQC rating: Good 100 3 27/03/2019" [ref=e579]'
+          - 'row "Cedar Road Dudley, DY1 4HW CQC rating: Good 100 9 06/04/2022" [ref=e588]'
+          - 'row "Chantry Gardens Trowbridge, BA14 9QT CQC rating: Good 100 3 03/01/2020" [ref=e597]'
+          - 'row "Chard Manor Chard, TA20 2DP CQC rating: Good 100 10 13/06/2023" [ref=e606]'
+          - 'row "Chestnut Grange Newark, NG23 6ST CQC rating: Good 100 10 09/12/2020" [ref=e615]'
+          - 'row "Church Road Bridgwater, TA6 7RQ CQC rating: Good 100 5 13/02/2020" [ref=e624]'
+          - 'row "Churchfield Avenue Cambridge, CB22 3LA CQC rating: Good 100 8 24/01/2024" [ref=e633]'
+          - 'row "Coombe Road Croydon, CR0 5RA CQC rating: Good 100 7 28/09/2022" [ref=e642]'
+          - 'row "Cordwainers Lindford, GU35 0RW CQC rating: Good 100 8 11/01/2018" [ref=e651]'
+          - 'row "Cornerways Wokingham, RG41 5JD CQC rating: Good 100 8 04/06/2019" [ref=e660]'
+          - 'row "Cote House Chippenham, SN15 2AG CQC rating: Good 100 11 23/10/2020" [ref=e669]'
+          - 'row "Croft House Thurcaston, LE7 7JJ CQC rating: Good 100 5 16/02/2022" [ref=e678]'
+          - 'row "Daffodils Bordon, GU35 0PU CQC rating: Good 100 5 24/05/2021" [ref=e687]'
+          - 'row "Deja Vu Lindford, GU35 0PX CQC rating: Good 100 7 12/12/2018" [ref=e696]'
+          - 'row "Derby DCA Derby, DE21 6AH CQC rating: Good 100 — 17/01/2019" [ref=e705]'
+          - 'row "Devonshire House Manchester, M12 4BB CQC rating: Good 100 24 15/06/2022" [ref=e714]'
+          - 'row "Dorset Domiciliary Care Agency Christchurch, BH23 3TA CQC rating: Good 100 — 16/04/2019" [ref=e723]'
+          - 'row "Dove House Ashbourne, DE6 5JR CQC rating: Good 100 4 21/11/2023" [ref=e732]'
+          - 'row "Dryad Spinney Southampton, SO45 1XP CQC rating: Good 100 5 28/02/2022" [ref=e741]'
+          - 'row "Durlands Road Horndean, PO8 9NT CQC rating: Good 100 4 09/10/2018" [ref=e750]'
+          - 'row "Edith Road (Tregona) Maidenhead, SL6 5DY CQC rating: Good 90 3 02/04/2019" [ref=e759]'
+          - 'row "Elliott House Barnsley, S72 0EG CQC rating: Good 100 6 26/09/2018" [ref=e768]'
+          - 'row "Elmsmead Taunton, TA1 3EA CQC rating: Good 100 12 30/10/2018" [ref=e777]'
+          - 'row "Fairfax Road Leeds, LS11 8SY CQC rating: Good 100 4 12/12/2023" [ref=e786]'
+          - 'row "Falcon Lodge Southampton, SO32 2TE CQC rating: Good 100 5 09/03/2020" [ref=e795]'
+          - 'row "Falcons Rest and Poachers Cottage Wormelow, HR2 8EQ CQC rating: Good 100 14 20/07/2023" [ref=e804]'
+          - 'row "Fennell Court Dewsbury, WF13 4RS CQC rating: Good 100 8 23/05/2018" [ref=e813]'
+          - 'row "Fenney Lodge Rotherham, S60 5TN CQC rating: Good 100 8 23/07/2019" [ref=e822]'
+          - 'row "Five Penny House Hartlepool, TS25 5RE CQC rating: Good 100 6 25/02/2020" [ref=e831]'
+          - 'row "Glasshouse Hill Ripley, DE5 9QT CQC rating: Good 100 11 24/10/2023" [ref=e840]'
+          - 'row "Gorse Hill Burnley, BB12 8AJ CQC rating: Good 100 8 18/10/2023" [ref=e849]'
+          - 'row "Green Lanes Sutton Coldfield, B73 5LX CQC rating: Good 100 7 08/11/2018" [ref=e858]'
+          - 'row "Greenfield Lodge Hartlepool, TS25 5BQ CQC rating: Good 100 10 19/12/2022" [ref=e867]'
+          - 'row "Gregory Court Nottingham, NG7 6AJ CQC rating: Good 100 10 24/01/2024" [ref=e876]'
+          - 'row "Hall O’Shaw Supported Living Crewe, CW1 4AD CQC rating: Good 90 — 29/10/2020" [ref=e885]'
+          - 'row "Hamilton Lodge Doncaster, DN4 5HP CQC rating: Good 100 8 09/11/2023" [ref=e894]'
+          - 'row "Harefield Lodge Southampton, SO17 1DN CQC rating: Good 100 7 19/03/2021" [ref=e903]'
+          - 'row "Heather House Chester Le Street, DH3 2BA CQC rating: Good 100 11 18/07/2019" [ref=e912]'
+          - 'row "Hemlington Hall Middlesbrough, TS8 9DA CQC rating: Good 100 8 06/12/2023" [ref=e921]'
+          - 'row "Hepdene House Hebden Bridge, HX7 6PT CQC rating: Good 100 8 03/03/2021" [ref=e930]'
+          - 'row "Hertfordshire Domiciliary Care Agency Stevenage, SG1 2DX CQC rating: Good 100 — 19/11/2018" [ref=e939]'
+          - 'row "Hibernia Southampton, SO31 1AR CQC rating: Good 100 5 18/02/2022" [ref=e948]'
+          - 'row "Hillbrow Dover, CT17 0SE CQC rating: Good 100 9 20/08/2019" [ref=e957]'
+          - 'row "Huish House Langport, TA10 9QP CQC rating: Good 100 12 27/11/2019" [ref=e966]'
+          - 'row "Hutton Avenue Hartlepool, TS26 9PW CQC rating: Good 100 9 23/08/2021" [ref=e975]'
+          - 'row "Ingleby House Bedworth, CV12 8BU CQC rating: Good 100 8 13/03/2023" [ref=e984]'
+          - 'row "Ivydene Southampton, SO17 2GE CQC rating: Good 100 8 12/02/2021" [ref=e993]'
+          - 'row "John Cabot House Bristol, BS4 2NZ CQC rating: Good 100 8 22/08/2018" [ref=e1002]'
+          - 'row "Kay Hitch Way Cambridge, CB24 9YR CQC rating: Good 100 4 18/02/2021" [ref=e1011]'
+          - 'row "Ladycroft Respite Service Rotherham, S63 6SE CQC rating: Good 100 6 04/02/2020" [ref=e1020]'
+          - 'row "Landau Lodge Hull, HU9 4HU CQC rating: Good 100 10 10/02/2020" [ref=e1029]'
+          - 'row "Langley House Wiveliscombe, TA4 2UF CQC rating: Good 100 12 03/01/2019" [ref=e1038]'
+          - 'row "Lavender House and Primrose Lodge Trowbridge, BA14 7NQ CQC rating: Good 100 11 15/09/2021" [ref=e1047]'
+          - 'row "Ling Crescent Headley Down, GU35 8AY CQC rating: Good 100 6 06/06/2023" [ref=e1056]'
+          - 'row "London Road Gloucester, GL1 3NZ CQC rating: Good 100 10 12/12/2022" [ref=e1065]'
+          - 'row "Longridge Court Stroud, GL6 7HU CQC rating: Good 100 12 27/09/2019" [ref=e1074]'
+          - 'row "Lorenzo Drive Liverpool, L11 1BQ CQC rating: Good 100 24 26/03/2019" [ref=e1083]'
+          - 'row "Lower St Helens Southampton, SO30 0LU CQC rating: Good 100 4 22/02/2022" [ref=e1092]'
+          - 'row "Lynwood House Radstock, BA3 2UA CQC rating: Good 100 10 12/09/2022" [ref=e1101]'
+          - 'row "Maeres House Widnes, WA8 8SS CQC rating: Good 100 8 06/12/2017" [ref=e1110]'
+          - 'row "Magnolia House Haywards Heath, RH16 3TT CQC rating: Good 100 4 24/01/2024" [ref=e1119]'
+          - 'row "Mandalay Witham, CM8 1BU CQC rating: Good 100 6 15/01/2021" [ref=e1128]'
+          - 'row "Markham House Chesterfield, S44 6EL CQC rating: Good 100 17 30/07/2019" [ref=e1137]'
+          - 'row "Marner House Nuneaton, CV11 5RZ CQC rating: Good 100 12 17/01/2018" [ref=e1146]'
+          - 'row "Mason House Nottingham, DN22 7EU CQC rating: Good 100 8 22/01/2019" [ref=e1155]'
+          - 'row "Milehouse Lane St Albans, AL1 1TF CQC rating: Good 100 7 16/08/2017" [ref=e1164]'
+          - 'row "Millstream House Rochester, ME2 3BT CQC rating: Good 100 22 20/02/2019" [ref=e1173]'
+          - 'row "Mimosa Lodge Southampton, SO32 2DH CQC rating: Good 100 8 08/02/2018" [ref=e1182]'
+          - 'row "Moorfields Lodge Keighley, BD22 8EN CQC rating: Good 100 5 08/12/2020" [ref=e1191]'
+          - 'row "Mountain Ash Fairlight, TN35 4AY CQC rating: Good 100 10 22/10/2020" [ref=e1200]'
+          - 'row "Mountearl London, SW16 2NR CQC rating: Good 100 9 24/01/2023" [ref=e1209]'
+          - 'row "Northfield House Willliton, TA4 4JR CQC rating: Good 100 11 17/01/2023" [ref=e1218]'
+          - 'row "Nottingham Supported Living (DCA) Nottingham, NG1 1LP CQC rating: Good 90 — 22/03/2022" [ref=e1227]'
+          - 'row "Oakcroft Four Marks, GU34 5HW CQC rating: Good 100 4 06/10/2023" [ref=e1236]'
+          - 'row "Oaklands Reading, RG7 5DR CQC rating: Good 100 6 30/10/2018" [ref=e1245]'
+          - 'row "Orchard Leigh Cheltenham, GL51 0SN CQC rating: Good 100 8 17/02/2022" [ref=e1254]'
+          - 'row "Parkbrook Lodge Uttoxeter, ST14 5HU CQC rating: Good 100 10 20/01/2022" [ref=e1263]'
+          - 'row "Peacock Hay Stoke On Trent, ST7 1UN CQC rating: Good 100 7 14/05/2019" [ref=e1272]'
+          - 'row "Peel House Melksham, SN12 6QL CQC rating: Good 100 8 24/05/2018" [ref=e1281]'
+          - 'row "Pembroke Lodge Newcastle Upon Tyne, NE6 4QU CQC rating: Good 100 15 16/06/2022" [ref=e1290]'
+          - 'row "Phoenix House Trowbridge, BA14 6RD CQC rating: Good 100 9 07/10/2021" [ref=e1299]'
+          - 'row "Quiet Waters Brentwood, CM13 3TT CQC rating: Good 100 6 18/02/2021" [ref=e1308]'
+          - 'row "Redcliffe House Mansfield, NG18 2QN CQC rating: Good 100 8 12/12/2019" [ref=e1317]'
+          - 'row "Redmond House Corby, NN17 1EA CQC rating: Good 100 12 10/02/2022" [ref=e1326]'
+          - 'row "Rhodelands Doveridge, DE6 5JT CQC rating: Good 100 7 09/03/2021" [ref=e1335]'
+          - 'row "Rivelin House Sheffield, S5 0RG CQC rating: Good 100 8 20/11/2018" [ref=e1344]'
+          - 'row "Rivers Worksop, S81 8HU CQC rating: Good 100 6 09/01/2020" [ref=e1353]'
+          - 'row "Riverside & Roseberry Lodge Middlesbrough, TS4 2AF CQC rating: Good 100 13 04/09/2019" [ref=e1362]'
+          - 'row "Rookery Cottage Reading, RG2 8HE CQC rating: Good 100 6 23/02/2022" [ref=e1371]'
+          - 'row "Roselea Slimbridge, GL2 7BL CQC rating: Good 100 11 09/06/2021" [ref=e1380]'
+          - 'row "Rosewood Burgess Hill, RH15 8HH CQC rating: Good 100 4 24/01/2024" [ref=e1389]'
+          - 'row "Ruddington View Nottingham, NG11 6AB CQC rating: Good 100 8 08/04/2019" [ref=e1398]'
+          - 'row "Saxon Lodge Stockton On Tees, TS20 2TB CQC rating: Good 100 9 07/06/2023" [ref=e1407]'
+          - 'row "Sir Evelyn Road Rochester, ME1 3LZ CQC rating: Good 100 6 23/01/2018" [ref=e1416]'
+          - 'row "Southview Eastleigh, SO50 7GP CQC rating: Good 100 6 28/01/2019" [ref=e1425]'
+          - 'row "Spring Gardens Middlesbrough, TS7 9HS CQC rating: Good 100 6 03/09/2020" [ref=e1434]'
+          - 'row "Spring Grove Road Isleworth, TW7 4AF CQC rating: Good 100 5 25/04/2023" [ref=e1443]'
+          - 'row "St Helens Down Hastings, TN34 2BQ CQC rating: Good 100 6 22/02/2023" [ref=e1452]'
+          - 'row "Strafford View Rotherham, S65 4PF CQC rating: Good 100 7 11/03/2020" [ref=e1461]'
+          - 'row "Stretton Lodge Supported Living Nuneaton, CV10 9NY CQC rating: Good 100 — 14/11/2023" [ref=e1470]'
+          - 'row "Summerfield Court Leeds, LS13 1AJ CQC rating: Good 100 17 01/05/2018" [ref=e1479]'
+          - 'row "Sunnyside Respite Service Rotherham, S66 3RE CQC rating: Good 100 15 11/02/2022" [ref=e1488]'
+          - 'row "Surrey and Hants Domiciliary Care Agency Hindhead, GU26 6BN CQC rating: Good 100 — 05/12/2019" [ref=e1497]'
+          - 'row "Talbot Court West Bromwich, B70 9LZ CQC rating: Good 100 10 25/03/2022" [ref=e1506]'
+          - 'row "Tate Lodge Liverpool, L11 5AF CQC rating: Good 100 8 18/07/2018" [ref=e1515]'
+          - 'row "Ten Acre Respite Service Rotherham, S61 3RW CQC rating: Good 100 5 09/12/2019" [ref=e1524]'
+          - 'row "The Acorns Crawley, RH10 3UE CQC rating: Good 100 4 31/01/2023" [ref=e1533]'
+          - 'row "The Cedars Hindhead, GU26 6GG CQC rating: Good 100 14 26/03/2021" [ref=e1542]'
+          - 'row "The Cedars (Mansfield) Mansfield, NG21 0RB CQC rating: Good 90 7 27/08/2019" [ref=e1551]'
+          - 'row "The Granary Driffield, YO25 8QZ CQC rating: Good 100 12 19/08/2020" [ref=e1560]'
+          - 'row "The Hadlows Tonbridge, TN9 1PA CQC rating: Good 100 9 02/09/2019" [ref=e1569]'
+          - 'row "The Knowls Taunton, TA1 4QW CQC rating: Good 100 13 03/12/2019" [ref=e1578]'
+          - 'row "The Laurels Fareham, PO14 4BL CQC rating: Good 100 6 12/04/2018" [ref=e1587]'
+          - 'row "The Lawns Exmouth, EX8 2EJ CQC rating: Good 100 9 20/04/2021" [ref=e1596]'
+          - 'row "The Legard Hull, HU9 4HS CQC rating: Good 100 8 16/01/2018" [ref=e1605]'
+          - 'row "The Lodge Bracknell, RG42 3RZ CQC rating: Good 100 5 10/10/2018" [ref=e1614]'
+          - 'row "The Maltings Calne, SN11 8EZ CQC rating: Good 100 3 20/02/2020" [ref=e1623]'
+          - 'row "The Mews Blyth, NE24 5ND CQC rating: Good 100 4 24/10/2019" [ref=e1632]'
+          - 'row "The Orchards Crawley, RH10 1JJ CQC rating: Good 100 4 19/05/2023" [ref=e1641]'
+          - 'row "The Willows Hindhead, GU26 6GG CQC rating: Good 100 10 24/07/2019" [ref=e1650]'
+          - 'row "Theoc House Tewkesbury, GL20 5HT CQC rating: Good 100 10 24/01/2024" [ref=e1659]'
+          - 'row "Titchfield Lodge Fareham, PO15 5RN CQC rating: Good 100 4 25/04/2019" [ref=e1668]'
+          - 'row "Tudor Rose Alton, GU34 1PB CQC rating: Good 100 5 12/10/2018" [ref=e1677]'
+          - 'row "Voyage (DCA) (North 3) Hartlepool, TS25 5TG CQC rating: Good 90 — 17/01/2024" [ref=e1686]'
+          - 'row "Voyage (DCA) Berkshire Reading, RG4 5AF CQC rating: Good 90 — 04/11/2022" [ref=e1695]'
+          - 'row "Voyage (DCA) Cambridge City Ely, CB7 5LL CQC rating: Good 90 — 08/11/2023" [ref=e1704]'
+          - 'row "Voyage (DCA) Essex Clacton-on-Sea, CO15 6PH CQC rating: Good 90 — 26/07/2019" [ref=e1713]'
+          - 'row "Voyage (DCA) Hull and East Riding Hull, HU12 8TX CQC rating: Good 90 — 27/01/2020" [ref=e1722]'
+          - 'row "Voyage (DCA) Huntingdon Huntingdon, PE29 6XU CQC rating: Good 90 — 23/07/2018" [ref=e1731]'
+          - 'row "Voyage (DCA) Leicestershire Hinckley, LE10 0BX CQC rating: Good 90 — 10/06/2019" [ref=e1740]'
+          - 'row "Voyage (DCA) London West Reading, RG4 5AF CQC rating: Good 90 — 13/11/2023" [ref=e1749]'
+          - 'row "Voyage (DCA) North Derbyshire Chesterfield, S43 2BG CQC rating: Good 90 — 18/05/2021" [ref=e1758]'
+          - 'row "Voyage (DCA) Rotherham Rotherham, S60 2DH CQC rating: Good 90 — 05/08/2019" [ref=e1767]'
+          - 'row "Voyage (DCA) Solihull and Birmingham Birmingham, B37 7BS CQC rating: Good 90 — 07/02/2018" [ref=e1776]'
+          - 'row "Voyage (DCA) Somerset & Devon Bridgwater, TA6 6DF CQC rating: Good 90 — 28/02/2023" [ref=e1785]'
+          - 'row "Voyage (DCA) West Midlands Wolverhampton, WV6 0RQ CQC rating: Good 90 — 24/01/2024" [ref=e1794]'
+          - 'row "Walker Lodge Liverpool, L11 5AF CQC rating: Good 100 8 19/12/2017" [ref=e1803]'
+          - 'row "Waterbeach Cambridge, CB25 9JZ CQC rating: Good 100 4 23/01/2018" [ref=e1812]'
+          - 'row "Welland House - Occupation Road Corby, NN17 1EA CQC rating: Good 100 12 24/10/2018" [ref=e1821]'
+          - 'row "West Road Southampton, SO30 4BD CQC rating: Good 100 4 21/02/2022" [ref=e1830]'
+          - 'row "Westbury House Deal, CT14 7DB CQC rating: Good 100 10 14/02/2022" [ref=e1839]'
+          - 'row "Westwood Coventry, CV6 2EG CQC rating: Good 100 9 15/05/2019" [ref=e1848]'
+          - 'row "Willowbrook Leicester, LE5 2HY CQC rating: Good 100 6 03/03/2022" [ref=e1857]'
+          - 'row "Winchester Road Alton, GU34 5HR CQC rating: Good 100 4 22/03/2021" [ref=e1866]'
+          - 'row "Wood Dene Wakefield, WF3 3JG CQC rating: Good 100 8 16/02/2023" [ref=e1875]'
+          - 'row "Woodside Minehead, TA24 8RZ CQC rating: Good 100 11 16/03/2023" [ref=e1884]'
+          - 'row "Worting Road (The Whispers) Basingstoke, RG22 5DY CQC rating: Good 90 8 26/06/2018" [ref=e1893]'
+          - 'row "694 Pinner Road Pinner, HA5 5QY CQC rating: Not Yet Inspected 100 8 30/03/2022" [ref=e1902]'
+          - 'row "74 Old Ford End Bedford, MK40 4LY CQC rating: Not Yet Inspected 100 6 15/04/2019" [ref=e1911]'
+          - 'row "Apple Blossom House Reading, RG30 2QE CQC rating: Not Yet Inspected 100 6 24/01/2024" [ref=e1920]'
+          - 'row "Ashdale Holybourne, GU34 4ED CQC rating: Not Yet Inspected 100 4 16/12/2018" [ref=e1929]'
+          - 'row "Ashleigh House Taunton, TA1 1BZ CQC rating: Not Yet Inspected 100 8 08/03/2018" [ref=e1938]'
+          - 'row "Barn Rise Wembley, HA9 9NA CQC rating: Not Yet Inspected 100 6 21/06/2023" [ref=e1947]'
+          - 'row "Bridge House (Somerset) Taunton, TA1 2DS CQC rating: Not Yet Inspected 90 11 08/02/2018" [ref=e1956]'
+          - 'row "Cleadon Court South Shields, NE34 7SA CQC rating: Not Yet Inspected 100 13 24/01/2024" [ref=e1965]'
+          - 'row "Cloverdale Alton, GU34 2NJ CQC rating: Not Yet Inspected 100 4 10/09/2019" [ref=e1974]'
+          - 'row "Cosin Lodge Crook, DL15 0PW CQC rating: Not Yet Inspected 100 4 13/04/2023" [ref=e1983]'
+          - 'row "Drakes Place Wellington, TA21 8TD CQC rating: Not Yet Inspected 100 26 30/08/2018" [ref=e1992]'
+          - 'row "Knot House Ellesmere Port, CH65 8AB CQC rating: Not Yet Inspected 100 28 24/01/2024" [ref=e2001]'
+          - 'row "Linnet Mews Chesterfield, S43 4JU CQC rating: Not Yet Inspected 100 10 24/01/2024" [ref=e2010]'
+          - 'row "Meadow View Supported Living Arlesey, SG15 6RW CQC rating: Not Yet Inspected 100 — 24/01/2024" [ref=e2019]'
+          - 'row "Milverton Road London, NW6 7AS CQC rating: Not Yet Inspected 100 6 04/12/2019" [ref=e2028]'
+          - 'row "Oak House Crawley, RH10 6NZ CQC rating: Not Yet Inspected 100 4 07/11/2017" [ref=e2037]'
+          - 'row "Park View Road Bradford, BD9 4PA CQC rating: Not Yet Inspected 100 10 28/02/2023" [ref=e2046]'
+          - 'row "Park View Supported Living Wolverhampton, WV11 2JZ CQC rating: Not Yet Inspected 100 — 24/01/2024" [ref=e2055]'
+          - 'row "Pennington Court Rotherham, S66 8ND CQC rating: Not Yet Inspected 100 8 20/12/2019" [ref=e2064]'
+          - 'row "Pinkneys Road Maidenhead, SL6 5DT CQC rating: Not Yet Inspected 100 3 10/01/2020" [ref=e2073]'
+          - 'row "Red Gables Burnham on Sea, TA8 2NF CQC rating: Not Yet Inspected 100 11 07/05/2021" [ref=e2082]'
+          - 'row "Rivers Reach Fareham, PO15 6QX CQC rating: Not Yet Inspected 100 5 08/07/2019" [ref=e2091]'
+          - 'row "Saltbank Court Supported Living Stafford, ST16 3TB CQC rating: Not Yet Inspected 100 — 24/01/2024" [ref=e2100]'
+          - 'row "Seaview Folkestone, CT18 7HW CQC rating: Not Yet Inspected 100 6 14/11/2019" [ref=e2109]'
+          - 'row "Sonnet Court Supported Living Eastleigh, SO50 4DN CQC rating: Not Yet Inspected 100 — 24/01/2024" [ref=e2118]'
+          - 'row "South Avenue Derby, DE73 6RS CQC rating: Not Yet Inspected 100 7 13/03/2018" [ref=e2127]'
+          - 'row "South Highnam Hartlepool, TS26 0DZ CQC rating: Not Yet Inspected 100 8 31/01/2023" [ref=e2136]'
+          - 'row "Strafford House Rotherham, S65 4PF CQC rating: Not Yet Inspected 100 6 31/01/2022" [ref=e2145]'
+          - 'row "Tentelow Lane Southall, UB2 4LW CQC rating: Not Yet Inspected 100 8 12/11/2019" [ref=e2154]'
+          - 'row "The Bungalow Taunton, TA1 2DR CQC rating: Not Yet Inspected 100 7 15/11/2017" [ref=e2163]'
+          - 'row "The Minster Bridgwater, TA6 6LX CQC rating: Not Yet Inspected 100 10 05/01/2018" [ref=e2172]'
+          - 'row "Three Sisters Keighley, BD22 9PH CQC rating: Not Yet Inspected 100 10 19/10/2022" [ref=e2181]'
+          - 'row "Voyage (DCA) Complex Community Care Norfolk Lowestoft, NR32 1BN CQC rating: Not Yet Inspected 90 — 24/01/2024" [ref=e2190]'
+          - 'row "Voyage (DCA) Doncaster Doncaster, DN4 0RP CQC rating: Not Yet Inspected 90 — 24/01/2024" [ref=e2199]'
+          - 'row "Voyage (DCA) Hampshire Eastleigh, SO53 3TG CQC rating: Not Yet Inspected 90 — 15/10/2021" [ref=e2208]'
+          - 'row "Voyage (DCA) Lancashire Complex Community Care Preston, PR1 8HU CQC rating: Not Yet Inspected 90 — 24/01/2024" [ref=e2217]'
+          - 'row "Voyage (DCA) London East Crawley, RH10 9LU CQC rating: Not Yet Inspected 90 — 06/04/2023" [ref=e2226]'
+          - 'row "Voyage (DCA) Peterborough Peterborough, PE1 3NG CQC rating: Not Yet Inspected 90 — 24/01/2024" [ref=e2235]'
+          - 'row "Voyage (DCA) Savoy Gardens Nuneaton, CV10 8BF CQC rating: Not Yet Inspected 90 — 24/01/2024" [ref=e2244]'
+          - 'row "Voyage (DCA) Sleaford Sleaford, NG34 8XT CQC rating: Not Yet Inspected 90 — 24/01/2024" [ref=e2253]'
+          - 'row "Voyage (DCA) Swindon Swindon, SN4 7DB CQC rating: Not Yet Inspected 90 — 18/10/2021" [ref=e2262]'
+          - 'row "Voyage (DCA) Wiltshire Trowbridge, BA14 6JQ CQC rating: Not Yet Inspected 90 — 24/01/2024" [ref=e2271]'
+          - 'row "Voyage (DCA) Wirral Birkenhead, CH41 8ER CQC rating: Not Yet Inspected 90 — 24/01/2024" [ref=e2280]'
+          - 'row "Weaver House Bedworth, CV12 9LJ CQC rating: Not Yet Inspected 100 6 24/01/2024" [ref=e2289]'
+          - 'row "Wellington Road Taunton, TA1 5AP CQC rating: Not Yet Inspected 100 10 05/01/2018" [ref=e2298]'
+          - 'row "Westleigh House Taunton, TA1 1BZ CQC rating: Not Yet Inspected 100 12 22/03/2018" [ref=e2307]'
+          - 'row "Westwood House Swindon, SN1 4EY CQC rating: Not Yet Inspected 100 10 22/10/2020" [ref=e2316]'
+          - 'row "Woodham Grange Newton Aycliffe, DL5 4PJ CQC rating: Not Yet Inspected 100 8 25/04/2023" [ref=e2325]'
+          - 'row "Woodham Lodge Newton Aycliffe, DL5 4PJ CQC rating: Not Yet Inspected 100 6 16/11/2023" [ref=e2334]'
+          - 'row "128 Beech Hill Haywards Heath, RH16 3TT CQC rating: Outstanding 100 4 24/01/2024" [ref=e2343]'
+          - 'row "4 Pages Orchard Reading, RG4 9LW CQC rating: Outstanding 100 3 24/01/2024" [ref=e2352]'
+          - 'row "Bewick House Darlington, DL1 3HW CQC rating: Outstanding 100 6 06/02/2020" [ref=e2361]'
+          - 'row "Broadview Fareham, PO16 7UB CQC rating: Outstanding 100 6 11/03/2020" [ref=e2370]'
+          - 'row "Derwent Cottage Scarborough, YO12 4RB CQC rating: Outstanding 100 4 24/02/2022" [ref=e2379]'
+          - 'row "Esmer House Mansfield, NG19 9DT CQC rating: Outstanding 100 6 02/09/2021" [ref=e2388]'
+          - 'row "Garfield Grange Hull, HU12 8TX CQC rating: Outstanding 100 6 21/06/2018" [ref=e2397]'
+          - 'row "Redbank House Retford, DN22 0BT CQC rating: Outstanding 100 8 22/11/2018" [ref=e2406]'
+          - 'row "Sadlers Place Walsall, WS2 8SU CQC rating: Outstanding 100 9 16/02/2022" [ref=e2415]'
+          - 'row "Sanderling House Liverpool, L37 4BN CQC rating: Outstanding 100 7 28/03/2018" [ref=e2424]'
+          - 'row "Voyage (DCA) Norfolk Dereham, NR19 1FD CQC rating: Outstanding 90 — 19/12/2019" [ref=e2433]'
+          - 'row "Woodlands Middlesborough, TS5 7EB CQC rating: Outstanding 100 14 07/01/2019" [ref=e2442]'
+          - 'row "22 Woodlands Road Reading, RG4 9TE CQC rating: Requires Improvement 100 3 19/10/2023" [ref=e2451]'
+          - 'row "25 Welby Close Maidenhead, SL6 3PY CQC rating: Requires Improvement 100 3 24/01/2024" [ref=e2460]'
+          - 'row "43 Station Road Staines, TW19 5ND CQC rating: Requires Improvement 100 6 24/05/2019" [ref=e2469]'
+          - 'row "45 Hall Green Road West Bromwich, B71 3JS CQC rating: Requires Improvement 100 8 23/07/2019" [ref=e2478]'
+          - 'row "50 Burton Road Burton on Trent, DE14 3DN CQC rating: Requires Improvement 100 6 11/08/2020" [ref=e2487]'
+          - 'row "60 Cobham Road Leatherhead, KT22 9JS CQC rating: Requires Improvement 100 6 19/03/2023" [ref=e2496]'
+          - 'row "Aykroyd Lodge Burnley, BB10 2LX CQC rating: Requires Improvement 100 5 25/10/2023" [ref=e2505]'
+          - 'row "Barley Close Axminster, EX13 8AQ CQC rating: Requires Improvement 100 10 12/05/2023" [ref=e2514]'
+          - 'row "Bowens Field Shrewsbury, SY4 5AP CQC rating: Requires Improvement 100 3 03/03/2022" [ref=e2523]'
+          - 'row "Kent and Medway Domiciliary Care Agency Ashford, TN24 8DH CQC rating: Requires Improvement 100 — 15/08/2023" [ref=e2532]'
+          - 'row "Melbreck Farnham, GU10 2ED CQC rating: Requires Improvement 100 26 10/07/2019" [ref=e2541]'
+          - 'row "Parkgate Road Coventry, CV6 4GF CQC rating: Requires Improvement 100 5 30/10/2023" [ref=e2550]'
+          - 'row "St Philips Close Leeds, LS10 3TR CQC rating: Requires Improvement 100 8 26/04/2023" [ref=e2559]'
+          - 'row "The Grange, Liss Liss, GU33 6JE CQC rating: Requires Improvement 90 15 01/08/2023" [ref=e2568]'
+          - 'row "The Red House Derby, DE7 5GF CQC rating: Requires Improvement 100 7 29/11/2023" [ref=e2577]'
+          - 'row "Twyford House Dover, CT16 2AG CQC rating: Requires Improvement 100 12 07/06/2022" [ref=e2586]'
+          - 'row "Voyage(DCA) Greater Manchester Manchester, M12 4BB CQC rating: Requires Improvement 90 — 04/10/2022" [ref=e2595]'
+          - 'row "Wellington House Deal, CT14 7NZ CQC rating: Requires Improvement 100 10 21/12/2021" [ref=e2604]'
+          - 'row "Woodrow Cottage Eastleigh, SO50 7HJ CQC rating: Requires Improvement 100 8 24/11/2022" [ref=e2613]'
+  - generic [ref=e32]:
+    - paragraph [ref=e34]:
+      - text: We use cookies for site functionality and to analyse traffic. Read our
+      - link "cookie policy" [ref=e35] [cursor=pointer]:
+        - /url: /cookies
+      - text: .
+    - generic [ref=e36]:
+      - button "Accept all" [ref=e37]
+      - button "Essential only" [ref=e38]
+  - contentinfo [ref=e39]:
+    - generic [ref=e40]:
+      - paragraph [ref=e41]: "Data source: Care Quality Commission (CQC). CareGist is not an official CQC service."
+      - paragraph [ref=e42]:
+        - text: If you have concerns about care quality, contact CQC directly at
+        - link "cqc.org.uk/contact-us" [ref=e43] [cursor=pointer]:
+          - /url: https://www.cqc.org.uk/contact-us
+        - text: or call 03000 616161.
+      - generic [ref=e44]:
+        - link "Privacy Policy" [ref=e45] [cursor=pointer]:
+          - /url: /privacy
+        - link "Terms of Service" [ref=e46] [cursor=pointer]:
+          - /url: /terms
+        - link "Acceptable Use" [ref=e47] [cursor=pointer]:
+          - /url: /acceptable-use
+        - link "Review Policy" [ref=e48] [cursor=pointer]:
+          - /url: /review-policy
+        - link "Cookies" [ref=e49] [cursor=pointer]:
+          - /url: /cookies
+        - link "Search" [ref=e50] [cursor=pointer]:
+          - /url: /search
+        - link "Find Care" [ref=e51] [cursor=pointer]:
+          - /url: /find-care
+        - link "Care Groups" [ref=e52] [cursor=pointer]:
+          - /url: /groups
+        - link "Pricing" [ref=e53] [cursor=pointer]:
+          - /url: /pricing
+        - link "API" [ref=e54] [cursor=pointer]:
+          - /url: /api
+        - link "Why CareGist" [ref=e55] [cursor=pointer]:
+          - /url: /why-caregist
+        - link "Get a lead list" [ref=e56] [cursor=pointer]:
+          - /url: /lead-list
+        - link "Contact" [ref=e57] [cursor=pointer]:
+          - /url: mailto:hello@caregist.co.uk
+  - alert [ref=e58]

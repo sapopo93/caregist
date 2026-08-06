@@ -5,10 +5,12 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import hmac
+import ipaddress
 import json
 import logging
-import time
+import socket
 from datetime import datetime, timezone
+from urllib.parse import urlparse
 
 import httpx
 
@@ -21,9 +23,48 @@ _RETRY_DELAYS = (1, 2, 4)  # seconds between attempts
 _TIMEOUT = 10.0
 
 
+def assert_public_webhook_url(url: str) -> None:
+    """Reject webhook targets that currently resolve to non-public IP space."""
+    parsed = urlparse(url)
+    if parsed.scheme not in {"http", "https"} or not parsed.hostname:
+        raise ValueError("Webhook URL must be an absolute HTTP(S) URL.")
+    try:
+        results = socket.getaddrinfo(parsed.hostname, None)
+    except socket.gaierror as exc:
+        raise ValueError("Webhook URL hostname could not be resolved.") from exc
+
+    for _, _, _, _, sockaddr in results:
+        ip = ipaddress.ip_address(sockaddr[0])
+        if not ip.is_global:
+            raise ValueError("Webhook URL must resolve to public internet addresses.")
+
+
 def _sign_payload(secret: str, payload_json: str) -> str:
     """Return HMAC-SHA256 hex digest of the JSON payload."""
     return hmac.new(secret.encode(), payload_json.encode(), hashlib.sha256).hexdigest()  # type: ignore[attr-defined]
+
+
+def verify_signature(secret: str, payload_body: str | bytes, signature_header: str | None) -> bool:
+    """Verify an X-CareGist-Signature header against the raw request body.
+
+    This is the consumer-side counterpart to our signing and is the reference
+    implementation we publish to customers (F-43). Usage in a subscriber:
+
+        body = await request.body()
+        if not verify_signature(my_secret, body, request.headers.get("X-CareGist-Signature")):
+            return 401
+
+    The header format is ``sha256=<hexdigest>``; comparison is constant-time.
+    """
+    if not signature_header:
+        return False
+    scheme, _, provided = signature_header.partition("=")
+    if scheme != "sha256" or not provided:
+        return False
+    if isinstance(payload_body, bytes):
+        payload_body = payload_body.decode("utf-8")
+    expected = _sign_payload(secret, payload_body)
+    return hmac.compare_digest(expected, provided)
 
 
 async def deliver_webhook(url: str, secret: str, payload: dict, *, return_metadata: bool = False):
@@ -36,6 +77,14 @@ async def deliver_webhook(url: str, secret: str, payload: dict, *, return_metada
     When return_metadata=True, returns a tuple:
     `(success, attempts, response_status, error_message)`.
     """
+    try:
+        assert_public_webhook_url(url)
+    except ValueError as exc:
+        logger.warning("Blocked webhook delivery to non-public URL %s: %s", url, exc)
+        if return_metadata:
+            return False, 0, None, str(exc)
+        return False
+
     payload_json = json.dumps(payload, default=str)
     signature = _sign_payload(secret, payload_json)
     headers = {
@@ -48,6 +97,8 @@ async def deliver_webhook(url: str, secret: str, payload: dict, *, return_metada
     last_status_code: int | None = None
     last_error_message: str | None = None
 
+    from api.metrics import observe_webhook_delivery
+
     async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
         for attempt, delay in enumerate((*_RETRY_DELAYS, None), start=1):
             try:
@@ -55,6 +106,7 @@ async def deliver_webhook(url: str, secret: str, payload: dict, *, return_metada
                 last_status_code = resp.status_code
                 if resp.status_code < 300:
                     logger.info("Webhook delivered to %s (attempt %d, status %d)", url, attempt, resp.status_code)
+                    observe_webhook_delivery(True)
                     if return_metadata:
                         return True, attempt, resp.status_code, None
                     return True
@@ -71,6 +123,7 @@ async def deliver_webhook(url: str, secret: str, payload: dict, *, return_metada
                 await asyncio.sleep(delay)
 
     logger.error("Webhook to %s failed after %d attempts", url, len(_RETRY_DELAYS) + 1)
+    observe_webhook_delivery(False)
     if return_metadata:
         return False, len(_RETRY_DELAYS) + 1, last_status_code, last_error_message
     return False

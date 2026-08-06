@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect } from "react";
 
 export default function LoginPromptModal({
   action,
@@ -9,9 +10,21 @@ export default function LoginPromptModal({
   action: string;
   onClose: () => void;
 }) {
+  // Accessibility (F-48): dismiss on Escape, like a native dialog.
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [onClose]);
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Sign in to ${action}`}
         className="bg-white rounded-xl shadow-lg p-6 max-w-sm mx-4 text-center"
         onClick={(e) => e.stopPropagation()}
       >

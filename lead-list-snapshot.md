@@ -1,0 +1,115 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e3]:
+      - link "CareGist" [ref=e4] [cursor=pointer]:
+        - /url: /
+        - img "CareGist" [ref=e5]
+      - generic [ref=e6]:
+        - navigation [ref=e7]:
+          - link "Products" [ref=e8] [cursor=pointer]:
+            - /url: /#products
+          - link "Who it's for" [ref=e9] [cursor=pointer]:
+            - /url: /#positioning
+          - link "About" [ref=e10] [cursor=pointer]:
+            - /url: /why-caregist
+          - link "Search" [ref=e11] [cursor=pointer]:
+            - /url: /search
+          - link "Pricing" [ref=e12] [cursor=pointer]:
+            - /url: /pricing
+          - link "API" [ref=e13] [cursor=pointer]:
+            - /url: /api
+          - link "Get a lead list" [ref=e14] [cursor=pointer]:
+            - /url: /lead-list
+          - link "Buy dataset" [ref=e15] [cursor=pointer]:
+            - /url: /lead-list
+        - navigation [ref=e16]:
+          - link "Log In" [ref=e17] [cursor=pointer]:
+            - /url: /login
+          - link "Sign Up" [ref=e18] [cursor=pointer]:
+            - /url: /signup
+  - main [ref=e19]:
+    - generic [ref=e21]:
+      - generic [ref=e22]:
+        - paragraph [ref=e23]: Lead lists
+        - heading "Request a filtered provider list without buying the full dataset." [level=1] [ref=e24]
+        - paragraph [ref=e25]: "CareGist lead lists are for buyers who know the segment they want now: region, service type, and rating slices that can be used for outreach, research, market mapping, or CRM upload."
+        - generic [ref=e26]:
+          - link "Request by email" [ref=e27] [cursor=pointer]:
+            - /url: mailto:hello@caregist.co.uk?subject=CareGist%20lead%20list%20request
+          - link "Compare plans" [ref=e28] [cursor=pointer]:
+            - /url: /pricing
+      - generic [ref=e29]:
+        - generic [ref=e30]:
+          - paragraph [ref=e31]: What to request
+          - heading "Examples of good lead-list briefs" [level=2] [ref=e32]
+          - list [ref=e33]:
+            - listitem [ref=e34]: Homecare agencies in London rated Good or Outstanding
+            - listitem [ref=e35]: Care homes in the North West with Requires Improvement ratings
+            - listitem [ref=e36]: Providers in one local authority for outreach, benchmarking, or CRM upload
+        - generic [ref=e37]:
+          - paragraph [ref=e38]: Best fit
+          - heading "When this product makes sense" [level=2] [ref=e39]
+          - paragraph [ref=e40]: Choose a lead list when the job is immediate and scoped. If you need repeated monitoring, scheduled exports, or integrations, move up to the subscription or API products instead.
+      - generic [ref=e41]:
+        - paragraph [ref=e42]: Next step options
+        - generic [ref=e43]:
+          - generic [ref=e44]:
+            - heading "Start with search" [level=3] [ref=e45]
+            - paragraph [ref=e46]: Use the public directory to refine the segment you want before deciding whether a one-off lead list or a recurring plan is the right fit.
+            - link "Open search" [ref=e47] [cursor=pointer]:
+              - /url: /search
+          - generic [ref=e48]:
+            - heading "Compare pricing" [level=3] [ref=e49]
+            - paragraph [ref=e50]: If you need more than a one-off list, move into the subscription and dataset products that support recurring monitoring and larger exports.
+            - link "See pricing" [ref=e51] [cursor=pointer]:
+              - /url: /pricing
+          - generic [ref=e52]:
+            - heading "Need workflow automation?" [level=3] [ref=e53]
+            - paragraph [ref=e54]: If this segment needs to flow into CRM or internal operations, the API and webhook stack is the better long-term route than manual list fulfilment.
+            - link "Explore API" [ref=e55] [cursor=pointer]:
+              - /url: /api
+  - generic [ref=e57]:
+    - paragraph [ref=e59]:
+      - text: We use cookies for site functionality and to analyse traffic. Read our
+      - link "cookie policy" [ref=e60] [cursor=pointer]:
+        - /url: /cookies
+      - text: .
+    - generic [ref=e61]:
+      - button "Accept all" [ref=e62]
+      - button "Essential only" [ref=e63]
+  - contentinfo [ref=e64]:
+    - generic [ref=e65]:
+      - paragraph [ref=e66]: "Data source: Care Quality Commission (CQC). CareGist is not an official CQC service."
+      - paragraph [ref=e67]:
+        - text: If you have concerns about care quality, contact CQC directly at
+        - link "cqc.org.uk/contact-us" [ref=e68] [cursor=pointer]:
+          - /url: https://www.cqc.org.uk/contact-us
+        - text: or call 03000 616161.
+      - generic [ref=e69]:
+        - link "Privacy Policy" [ref=e70] [cursor=pointer]:
+          - /url: /privacy
+        - link "Terms of Service" [ref=e71] [cursor=pointer]:
+          - /url: /terms
+        - link "Acceptable Use" [ref=e72] [cursor=pointer]:
+          - /url: /acceptable-use
+        - link "Review Policy" [ref=e73] [cursor=pointer]:
+          - /url: /review-policy
+        - link "Cookies" [ref=e74] [cursor=pointer]:
+          - /url: /cookies
+        - link "Search" [ref=e75] [cursor=pointer]:
+          - /url: /search
+        - link "Find Care" [ref=e76] [cursor=pointer]:
+          - /url: /find-care
+        - link "Care Groups" [ref=e77] [cursor=pointer]:
+          - /url: /groups
+        - link "Pricing" [ref=e78] [cursor=pointer]:
+          - /url: /pricing
+        - link "API" [ref=e79] [cursor=pointer]:
+          - /url: /api
+        - link "Why CareGist" [ref=e80] [cursor=pointer]:
+          - /url: /why-caregist
+        - link "Get a lead list" [ref=e81] [cursor=pointer]:
+          - /url: /lead-list
+        - link "Contact" [ref=e82] [cursor=pointer]:
+          - /url: mailto:hello@caregist.co.uk
+  - alert [ref=e83]

@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import logging
+import hashlib
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, EmailStr, Field
 
+from api.config import settings
 from api.database import get_connection
 from api.middleware.auth import validate_api_key
 from api.queries.claims import (
@@ -30,6 +32,11 @@ class ClaimRequest(BaseModel):
     fast_track: bool = False
 
 
+def _proof_fingerprint(value: str) -> str:
+    """Retain a deterministic fingerprint, never raw authority evidence."""
+    return f"sha256:{hashlib.sha256(value.strip().encode('utf-8')).hexdigest()}"
+
+
 @router.post("/providers/{slug}/claim", status_code=201)
 async def submit_claim(
     slug: str,
@@ -37,6 +44,16 @@ async def submit_claim(
     _auth: dict = Depends(validate_api_key),
 ) -> dict:
     """Submit a claim for a provider listing."""
+    if not settings.provider_claims_enabled:
+        raise HTTPException(
+            status_code=503,
+            detail="Provider claims are not currently accepting submissions.",
+        )
+    authenticated_email = str(_auth.get("email") or "").strip().lower()
+    if not _auth.get("user_id") or not authenticated_email:
+        raise HTTPException(status_code=401, detail="A verified user account is required to submit a claim.")
+    if req.claimant_email.lower() != authenticated_email:
+        raise HTTPException(status_code=400, detail="Claimant email must match the verified account email.")
     try:
         async with get_connection() as conn:
             provider = await conn.fetchrow(PROVIDER_ID_BY_SLUG, slug)
@@ -58,8 +75,9 @@ async def submit_claim(
                 req.claimant_phone,
                 req.claimant_role,
                 req.organisation_name,
-                req.proof_of_association,
+                _proof_fingerprint(req.proof_of_association),
                 req.fast_track,
+                _auth["user_id"],
             )
     except HTTPException:
         raise
@@ -71,6 +89,8 @@ async def submit_claim(
     # Idempotency keys are scoped to (provider_id, email) so that retried
     # submissions or concurrent requests do not deliver duplicate drip emails.
     try:
+        if not settings.outbound_communications_enabled:
+            raise RuntimeError("Outbound claim communications are awaiting Human Gate approval.")
         from api.utils.analytics import log_event
         from api.utils.email_queue import queue_email
         from datetime import datetime, timedelta, timezone

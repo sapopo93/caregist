@@ -1,4 +1,7 @@
-export default function ProviderJsonLd({
+import { headers } from "next/headers";
+import { getProviderHref } from "@/lib/provider-path";
+
+export default async function ProviderJsonLd({
   name,
   type,
   address,
@@ -36,7 +39,7 @@ export default function ProviderJsonLd({
     "@context": "https://schema.org",
     "@type": ["LocalBusiness", "MedicalOrganization"],
     name,
-    url: `https://caregist.co.uk/provider/${slug}`,
+    url: `https://caregist.co.uk${getProviderHref({ slug })}`,
     ...(type && { additionalType: type }),
     address: {
       "@type": "PostalAddress",
@@ -67,9 +70,11 @@ export default function ProviderJsonLd({
     }),
   };
 
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
   return (
     <script
       type="application/ld+json"
+      nonce={nonce}
       dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
     />
   );

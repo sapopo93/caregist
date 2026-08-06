@@ -10,7 +10,7 @@ RETURNING id, provider_id, status, enquirer_name, created_at
 
 UPDATE_PROVIDER_ENQUIRY_COUNT = """
 UPDATE care_providers
-SET enquiry_count = (SELECT COUNT(*) FROM enquiries WHERE provider_id = $1)
+SET enquiry_count = COALESCE(enquiry_count, 0) + 1
 WHERE id = $1
 """
 

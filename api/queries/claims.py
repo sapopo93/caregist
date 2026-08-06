@@ -11,8 +11,9 @@ LIMIT 1
 INSERT_CLAIM = """
 INSERT INTO provider_claims
   (provider_id, claimant_name, claimant_email, claimant_phone,
-   claimant_role, organisation_name, proof_of_association, fast_track, submitted_at)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
+   claimant_role, organisation_name, proof_of_association, fast_track,
+   claimant_user_id, submitted_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
 RETURNING id, provider_id, status, claimant_name, claimant_email, fast_track, created_at
 """
 
@@ -49,6 +50,33 @@ UPDATE provider_claims
 SET status = $2, reviewed_at = NOW(), reviewed_by = $3, admin_notes = $4
 WHERE id = $1
 RETURNING id, provider_id, status
+"""
+
+GET_CLAIM_APPROVAL_READINESS = """
+SELECT
+  pc.id,
+  pc.provider_id,
+  pc.status,
+  pc.identity_status,
+  pc.authority_status,
+  pc.identity_verified_by,
+  pc.authority_verified_by,
+  pc.verification_expires_at,
+  COALESCE(u.is_verified, FALSE) AS account_email_verified,
+  EXISTS (
+    SELECT 1 FROM provider_claim_verification_evidence e
+    WHERE e.claim_id = pc.id AND e.evidence_class = 'identity'
+      AND e.result = 'verified' AND e.expires_at > NOW()
+  ) AS has_current_identity_evidence,
+  EXISTS (
+    SELECT 1 FROM provider_claim_verification_evidence e
+    WHERE e.claim_id = pc.id AND e.evidence_class = 'authority'
+      AND e.result = 'verified' AND e.expires_at > NOW()
+  ) AS has_current_authority_evidence
+FROM provider_claims pc
+LEFT JOIN users u ON u.id = pc.claimant_user_id
+WHERE pc.id = $1
+FOR UPDATE OF pc
 """
 
 MARK_PROVIDER_CLAIMED = """

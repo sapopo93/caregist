@@ -6,7 +6,7 @@ const SORT_OPTIONS = [
   { value: "relevance", label: "Relevance" },
   { value: "name", label: "Name (A-Z)" },
   { value: "rating", label: "Best Rating" },
-  { value: "quality", label: "Quality Score" },
+  { value: "quality", label: "CQC Rating" },
   { value: "beds", label: "Most Beds" },
   { value: "newest", label: "Newest" },
 ];

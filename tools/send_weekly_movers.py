@@ -106,37 +106,25 @@ def rating_pill(rating: str) -> str:
     )
 
 
-def quality_bar(score: int | float, width: int = 120) -> str:
-    """Render an inline quality score bar for email."""
-    pct = min(max(int(score), 0), 100)
-    fill_color = "#4A5E45" if pct >= 80 else "#D4943A" if pct >= 60 else "#C44444"
-    return (
-        f'<div style="display:inline-block;width:{width}px;vertical-align:middle">'
-        f'<div style="background:#E8E0D0;border-radius:6px;height:10px;width:100%">'
-        f'<div style="background:{fill_color};border-radius:6px;height:10px;width:{pct}%"></div>'
-        f'</div></div>'
-        f'<span style="font-weight:700;color:#6B4C35;font-size:13px;margin-left:6px">{pct}/100</span>'
-    )
-
-
 def fetch_spotlight(cur, postcode_area: str | None) -> dict | None:
-    """Find the highest-quality provider near subscriber's postcode."""
+    """Find a recently inspected Good/Outstanding provider for context."""
     if postcode_area:
         cur.execute(
-            """SELECT name, slug, town, postcode, overall_rating, quality_score, service_types, number_of_beds
+            """SELECT name, slug, town, postcode, overall_rating, last_inspection_date, service_types, number_of_beds
                FROM care_providers
                WHERE postcode ILIKE %s AND overall_rating IN ('Outstanding', 'Good')
-                 AND quality_score IS NOT NULL
-               ORDER BY quality_score DESC
+               ORDER BY CASE overall_rating WHEN 'Outstanding' THEN 1 ELSE 2 END,
+                        last_inspection_date DESC NULLS LAST,
+                        name ASC
                LIMIT 1""",
             (postcode_area + "%",),
         )
     else:
         cur.execute(
-            """SELECT name, slug, town, postcode, overall_rating, quality_score, service_types, number_of_beds
+            """SELECT name, slug, town, postcode, overall_rating, last_inspection_date, service_types, number_of_beds
                FROM care_providers
-               WHERE overall_rating = 'Outstanding' AND quality_score IS NOT NULL
-               ORDER BY quality_score DESC
+               WHERE overall_rating = 'Outstanding'
+               ORDER BY last_inspection_date DESC NULLS LAST, name ASC
                LIMIT 1"""
         )
     row = cur.fetchone()
@@ -264,8 +252,7 @@ def build_email_html(
             f'<a href="{APP_URL}/provider/{spotlight["slug"]}" style="color:#6B4C35;font-size:18px;font-weight:700;text-decoration:none">{spotlight["name"]}</a>'
             f'<p style="color:#8a6a4a;font-size:13px;margin:4px 0">{spotlight.get("town", "")}{", " + spotlight["postcode"] if spotlight.get("postcode") else ""}'
             f' &middot; {svc}{beds_text}</p>'
-            f'<div style="margin-top:8px">{rating_pill(spotlight.get("overall_rating", ""))}'
-            f'<span style="margin-left:12px">{quality_bar(spotlight.get("quality_score", 0))}</span></div>'
+            f'<div style="margin-top:8px">{rating_pill(spotlight.get("overall_rating", ""))}</div>'
             f'</td></tr></table>'
             f'<a href="{APP_URL}/provider/{spotlight["slug"]}" style="display:inline-block;margin-top:12px;'
             f'color:{BRAND_COLOR};font-size:13px;font-weight:600;text-decoration:none">View full profile &rarr;</a>'
@@ -374,6 +361,10 @@ def main():
     parser.add_argument("--database-url", help="PostgreSQL connection URL")
     args = parser.parse_args()
 
+    if not args.dry_run and os.environ.get("OUTBOUND_DELIVERY_ENABLED", "").lower() != "true":
+        print("ERROR: Outbound digest delivery is awaiting Human Gate approval.", file=sys.stderr)
+        return 1
+
     db_url = args.database_url or get_database_url()
     if not db_url:
         print("ERROR: DATABASE_URL not set")
@@ -462,7 +453,7 @@ def main():
                 # Write first email to file for preview
                 with open("/tmp/movers_preview.html", "w") as f:
                     f.write(html)
-                print(f"  Preview saved to /tmp/movers_preview.html")
+                print("  Preview saved to /tmp/movers_preview.html")
         else:
             # Stagger sends by 2 seconds each to avoid Resend rate limits
             send_after = datetime.now(timezone.utc) + timedelta(seconds=stagger_seconds)

@@ -1,4 +1,10 @@
-# Workflow: Deploy to EC2
+# Workflow: Deploy to EC2 — Historical
+
+> **Retired production path (2026-08-02).** This runbook is preserved for audit
+> and incident archaeology only. The canonical architecture is Vercel
+> multi-service plus Neon Postgres; use the root `README.md`,
+> `DEPLOYMENT_CHECKLIST.md`, and `workflows/neon-pitr-restore-drill.md`. Do not
+> configure production CQC cron, backups, migrations, or rollback from this file.
 
 ## Overview
 Standard deployment sequence for CareGist on AWS EC2. Covers the API (uvicorn), frontend (Next.js), migration application, and post-deploy verification.

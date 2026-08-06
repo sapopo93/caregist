@@ -8,10 +8,18 @@ GROUP BY overall_rating
 """
 
 TOP_PROVIDERS_BY_LA = """
-SELECT name, slug, overall_rating, type, quality_score, last_inspection_date
+SELECT name, slug, overall_rating, type, data_completeness_score, last_inspection_date
 FROM care_providers
 WHERE local_authority = $1 AND UPPER(status) = 'ACTIVE'
-ORDER BY quality_score DESC NULLS LAST
+ORDER BY CASE overall_rating
+           WHEN 'Outstanding' THEN 1
+           WHEN 'Good' THEN 2
+           WHEN 'Requires Improvement' THEN 3
+           WHEN 'Inadequate' THEN 4
+           ELSE 5
+         END ASC,
+         last_inspection_date DESC NULLS LAST,
+         name ASC
 LIMIT 5
 """
 

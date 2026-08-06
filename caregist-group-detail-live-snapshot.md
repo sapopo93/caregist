@@ -1,0 +1,59 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e3]:
+      - link "CareGist" [ref=e4] [cursor=pointer]:
+        - /url: /
+        - img "CareGist" [ref=e5]
+      - generic [ref=e6]:
+        - navigation [ref=e7]
+        - navigation [ref=e16]
+  - main [ref=e19]:
+    - generic [ref=e20]:
+      - heading "Something went wrong" [level=1] [ref=e21]
+      - paragraph [ref=e22]: We hit an unexpected error. This is usually temporary — please try again.
+      - button "Try again" [ref=e23]
+  - generic [ref=e25]:
+    - paragraph [ref=e27]:
+      - text: We use cookies for site functionality and to analyse traffic. Read our
+      - link "cookie policy" [ref=e28] [cursor=pointer]:
+        - /url: /cookies
+      - text: .
+    - generic [ref=e29]:
+      - button "Accept all" [ref=e30]
+      - button "Essential only" [ref=e31]
+  - contentinfo [ref=e32]:
+    - generic [ref=e33]:
+      - paragraph [ref=e34]: "Data source: Care Quality Commission (CQC). CareGist is not an official CQC service."
+      - paragraph [ref=e35]:
+        - text: If you have concerns about care quality, contact CQC directly at
+        - link "cqc.org.uk/contact-us" [ref=e36] [cursor=pointer]:
+          - /url: https://www.cqc.org.uk/contact-us
+        - text: or call 03000 616161.
+      - generic [ref=e37]:
+        - link "Privacy Policy" [ref=e38] [cursor=pointer]:
+          - /url: /privacy
+        - link "Terms of Service" [ref=e39] [cursor=pointer]:
+          - /url: /terms
+        - link "Acceptable Use" [ref=e40] [cursor=pointer]:
+          - /url: /acceptable-use
+        - link "Review Policy" [ref=e41] [cursor=pointer]:
+          - /url: /review-policy
+        - link "Cookies" [ref=e42] [cursor=pointer]:
+          - /url: /cookies
+        - link "Search" [ref=e43] [cursor=pointer]:
+          - /url: /search
+        - link "Find Care" [ref=e44] [cursor=pointer]:
+          - /url: /find-care
+        - link "Care Groups" [ref=e45] [cursor=pointer]:
+          - /url: /groups
+        - link "Pricing" [ref=e46] [cursor=pointer]:
+          - /url: /pricing
+        - link "API" [ref=e47] [cursor=pointer]:
+          - /url: /api
+        - link "Why CareGist" [ref=e48] [cursor=pointer]:
+          - /url: /why-caregist
+        - link "Get a lead list" [ref=e49] [cursor=pointer]:
+          - /url: /lead-list
+        - link "Contact" [ref=e50] [cursor=pointer]:
+          - /url: mailto:hello@caregist.co.uk
+  - alert [ref=e51]

@@ -1,0 +1,134 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e3]:
+      - link "CareGist" [ref=e4] [cursor=pointer]:
+        - /url: /
+        - img "CareGist" [ref=e5]
+      - generic [ref=e6]:
+        - navigation [ref=e7]:
+          - link "Products" [ref=e8] [cursor=pointer]:
+            - /url: /#products
+          - link "Who it's for" [ref=e9] [cursor=pointer]:
+            - /url: /#positioning
+          - link "About" [ref=e10] [cursor=pointer]:
+            - /url: /why-caregist
+          - link "Search" [ref=e11] [cursor=pointer]:
+            - /url: /search
+          - link "Pricing" [ref=e12] [cursor=pointer]:
+            - /url: /pricing
+          - link "API" [ref=e13] [cursor=pointer]:
+            - /url: /api
+          - link "Get a lead list" [ref=e14] [cursor=pointer]:
+            - /url: /lead-list
+          - link "Buy dataset" [ref=e15] [cursor=pointer]:
+            - /url: https://buy.stripe.com/aFaeV6elF2uk2fAfi73AY00
+        - navigation [ref=e16]:
+          - link "Log In" [ref=e17] [cursor=pointer]:
+            - /url: /login
+          - link "Sign Up" [ref=e18] [cursor=pointer]:
+            - /url: /signup
+  - main [ref=e19]:
+    - generic [ref=e59]:
+      - heading "Care Home Groups in the UK" [level=1] [ref=e60]
+      - generic [ref=e61]:
+        - paragraph [ref=e62]: 1,091 groups with 3+ locations
+        - button "Print" [ref=e64]
+      - generic [ref=e66]:
+        - textbox "Search by group name..." [ref=e67]
+        - button "Search" [ref=e68]
+      - table [ref=e70]:
+        - rowgroup [ref=e71]:
+          - row "Group Locations Avg Quality % Good+ Outstanding Good RI Inadequate Beds" [ref=e72]
+        - rowgroup [ref=e82]:
+          - row "Voyage 1 Limited East, East Midlands, London 279 98.7/100 91.7% 12 199 19 0 1900" [ref=e83]
+          - row "Care UK Care Services Limited East, East Midlands, London 240 100.0/100 84.6% 3 19 0 0 16275" [ref=e95]
+          - row "Barchester Healthcare Homes Limited East, East Midlands, London 239 100.0/100 76.6% 8 126 14 0 14856" [ref=e107]
+          - row "Achieve Together Limited East, East Midlands, London 189 100.0/100 83.0% 8 114 25 0 1172" [ref=e119]
+          - row "Midshires Care Limited East, East Midlands, London 149 100.0/100 99.1% 0 114 1 0 —" [ref=e131]
+          - row "Anchor Hanover Group East, East Midlands, London 125 99.9/100 87.8% 4 82 12 0 6133" [ref=e143]
+          - row "Care UK Community Partnerships Ltd East, East Midlands, London 111 100.0/100 94.8% 10 63 4 0 7691" [ref=e155]
+          - row "Methodist Homes East, East Midlands, London 93 99.8/100 93.0% 7 73 6 0 3701" [ref=e167]
+          - row "Creative Support Limited East, East Midlands, London 90 98.3/100 94.0% 2 61 4 0 110" [ref=e179]
+          - row "Time for Teeth Limited East, East Midlands, North West 86 99.7/100 0.0% 0 0 0 0 —" [ref=e191]
+          - row "Sanctuary Care Limited East, East Midlands, London 82 100.0/100 95.7% 3 63 2 0 4193" [ref=e203]
+          - row "G P Homecare Limited East, East Midlands, North East 81 90.0/100 85.7% 0 36 5 0 6" [ref=e215]
+          - row "Housing 21 East, East Midlands, London 81 100.0/100 94.5% 5 64 4 0 80" [ref=e227]
+          - row "Parkcare Homes (No.2) Limited East, East Midlands, London 74 99.9/100 90.3% 2 54 6 0 683" [ref=e239]
+          - row "Community Homes of Intensive Care and Education Limited South East, South West, West Midlands 72 100.0/100 93.7% 8 51 4 0 563" [ref=e251]
+          - row "Nuffield Health East, East Midlands, London 66 100.0/100 83.6% 2 44 0 0 1184" [ref=e263]
+          - row "Royal Mencap Society East, East Midlands, London 64 99.3/100 96.4% 3 50 2 0 196" [ref=e275]
+          - row "SpaMedica Ltd East, East Midlands, London 63 99.8/100 97.1% 11 22 0 0 —" [ref=e287]
+          - row "Community Integrated Care East, East Midlands, North East 63 99.7/100 90.7% 1 38 2 0 253" [ref=e299]
+          - row "The Orders Of St. John Care Trust East, East Midlands, South East 60 100.0/100 93.5% 2 41 3 0 2859" [ref=e311]
+          - row "Change, Grow, Live East, East Midlands, London 59 96.7/100 91.5% 4 50 0 0 25" [ref=e323]
+          - row "Runwood Homes Limited East, East Midlands, West Midlands 58 100.0/100 84.4% 1 26 5 0 4070" [ref=e335]
+          - row "Heathcotes Care Limited East Midlands, London, North West 57 99.8/100 83.3% 2 33 7 0 410" [ref=e347]
+          - row "Consensus Support Services Limited East, East Midlands, London 57 100.0/100 91.3% 4 38 3 1 469" [ref=e359]
+          - row "Turning Point East, East Midlands, London 52 99.0/100 97.4% 3 35 1 0 214" [ref=e371]
+      - generic [ref=e383]:
+        - link "1" [ref=e384] [cursor=pointer]:
+          - /url: /groups?page=1
+        - link "2" [ref=e385] [cursor=pointer]:
+          - /url: /groups?page=2
+        - link "3" [ref=e386] [cursor=pointer]:
+          - /url: /groups?page=3
+        - link "4" [ref=e387] [cursor=pointer]:
+          - /url: /groups?page=4
+        - link "5" [ref=e388] [cursor=pointer]:
+          - /url: /groups?page=5
+        - link "6" [ref=e389] [cursor=pointer]:
+          - /url: /groups?page=6
+        - link "7" [ref=e390] [cursor=pointer]:
+          - /url: /groups?page=7
+        - link "8" [ref=e391] [cursor=pointer]:
+          - /url: /groups?page=8
+        - link "9" [ref=e392] [cursor=pointer]:
+          - /url: /groups?page=9
+        - link "10" [ref=e393] [cursor=pointer]:
+          - /url: /groups?page=10
+        - generic [ref=e394]: ...
+  - generic [ref=e32]:
+    - paragraph [ref=e34]:
+      - text: We use cookies for site functionality and to analyse traffic. Read our
+      - link "cookie policy" [ref=e35] [cursor=pointer]:
+        - /url: /cookies
+      - text: .
+    - generic [ref=e36]:
+      - button "Accept all" [ref=e37]
+      - button "Essential only" [ref=e38]
+  - contentinfo [ref=e39]:
+    - generic [ref=e40]:
+      - paragraph [ref=e41]: "Data source: Care Quality Commission (CQC). CareGist is not an official CQC service."
+      - paragraph [ref=e42]:
+        - text: If you have concerns about care quality, contact CQC directly at
+        - link "cqc.org.uk/contact-us" [ref=e43] [cursor=pointer]:
+          - /url: https://www.cqc.org.uk/contact-us
+        - text: or call 03000 616161.
+      - generic [ref=e44]:
+        - link "Privacy Policy" [ref=e45] [cursor=pointer]:
+          - /url: /privacy
+        - link "Terms of Service" [ref=e46] [cursor=pointer]:
+          - /url: /terms
+        - link "Acceptable Use" [ref=e47] [cursor=pointer]:
+          - /url: /acceptable-use
+        - link "Review Policy" [ref=e48] [cursor=pointer]:
+          - /url: /review-policy
+        - link "Cookies" [ref=e49] [cursor=pointer]:
+          - /url: /cookies
+        - link "Search" [ref=e50] [cursor=pointer]:
+          - /url: /search
+        - link "Find Care" [ref=e51] [cursor=pointer]:
+          - /url: /find-care
+        - link "Care Groups" [ref=e52] [cursor=pointer]:
+          - /url: /groups
+        - link "Pricing" [ref=e53] [cursor=pointer]:
+          - /url: /pricing
+        - link "API" [ref=e54] [cursor=pointer]:
+          - /url: /api
+        - link "Why CareGist" [ref=e55] [cursor=pointer]:
+          - /url: /why-caregist
+        - link "Get a lead list" [ref=e56] [cursor=pointer]:
+          - /url: /lead-list
+        - link "Contact" [ref=e57] [cursor=pointer]:
+          - /url: mailto:hello@caregist.co.uk
+  - alert [ref=e58]

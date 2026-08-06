@@ -11,6 +11,12 @@ export default function ReviewPolicyPage() {
       <h1 className="text-3xl font-bold mb-2">Review Policy</h1>
       <p className="text-dusk text-sm mb-8">Last updated: 28 March 2026</p>
 
+      <div className="rounded-xl border border-amber-400 bg-amber-50 p-4 text-sm text-amber-950 mb-8">
+        <strong>Controlled draft.</strong> Review submission and publication are disabled pending
+        moderation, safeguarding, privacy and publishing approval. The process below is a proposed
+        standard and does not authorize collection or publication.
+      </div>
+
       <div className="prose prose-sm text-charcoal space-y-6" style={{ fontFamily: "Lora" }}>
 
         <section>

@@ -5,7 +5,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Sample CareGist Assessment Report | CareGist",
   description:
-    "See what a CareGist provider assessment looks like. Quality scoring, local ranking, CQC dimension analysis, visit questions — all free.",
+    "See what a CareGist provider assessment looks like. CQC ratings, inspection recency, data completeness, and visit questions — all free.",
   alternates: { canonical: "https://caregist.co.uk/sample-report" },
 };
 
@@ -19,8 +19,8 @@ const sampleProvider = {
   postcode: "BH1 3QJ",
   region: "South West",
   overall_rating: "Good",
-  quality_score: 82,
-  quality_tier: "GOOD",
+  data_completeness_score: 82,
+  data_completeness_tier: "GOOD",
   number_of_beds: 42,
   rating_safe: "Good",
   rating_effective: "Good",
@@ -32,7 +32,7 @@ const sampleProvider = {
   specialisms: "Dementia|Caring For Adults Over 65 Yrs|Physical Disabilities",
   phone: "01202 555 123",
   inspection_report_url: "https://www.cqc.org.uk/location/example",
-  inspection_summary: "Rosewood Manor Care Home is a residential care home with 42 beds in Bournemouth (BH1 3QJ). CQC inspectors rated this service Good overall. Breakdown: Safe — Good, Effective — Good, Caring — Outstanding, Responsive — Good, Well-led — Requires Improvement. Last inspected 15 November 2024. Specialises in: dementia, caring for adults over 65 yrs, physical disabilities. CareGist quality score: 82/100.",
+  inspection_summary: "Rosewood Manor Care Home is a residential care home with 42 beds in Bournemouth (BH1 3QJ). CQC inspectors rated this service Good overall. Breakdown: Safe — Good, Effective — Good, Caring — Outstanding, Responsive — Good, Well-led — Requires Improvement. Last inspected 15 November 2024. Specialises in: dementia, caring for adults over 65 yrs, physical disabilities.",
   latitude: 50.7192,
   longitude: -1.8808,
   is_claimed: false,
@@ -41,14 +41,7 @@ const sampleProvider = {
 export default function SampleReportPage() {
   return (
     <div className="max-w-4xl mx-auto px-6 py-12">
-      {/* Hero image */}
-      <div className="rounded-xl overflow-hidden mb-8 h-44 relative">
-        <img
-          src="https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=900&q=40&auto=format"
-          alt="Healthcare professional reviewing data"
-          className="w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-parchment/40 to-transparent" />
+      <div className="rounded-xl mb-8 h-44 bg-gradient-to-br from-clay/20 via-parchment to-moss/20" aria-hidden="true">
       </div>
 
       {/* Hero */}
@@ -58,7 +51,7 @@ export default function SampleReportPage() {
           Every provider page includes a free, independent assessment.
         </p>
         <p className="text-dusk text-sm">
-          Quality scoring, local ranking, CQC dimension analysis, and personalised visit questions — built from official CQC data, not advertising.
+          CQC rating context, inspection recency, data completeness, and personalised visit questions — built from official CQC data, not advertising.
         </p>
       </div>
 
@@ -66,13 +59,13 @@ export default function SampleReportPage() {
       <div className="grid md:grid-cols-3 gap-4 mb-12">
         <div className="bg-cream border border-stone rounded-lg p-5 text-center">
           <div className="text-3xl mb-2">&#128202;</div>
-          <h3 className="font-bold text-bark text-sm mb-1">Quality Score</h3>
-          <p className="text-xs text-dusk">0-100 score based on CQC data. See how providers compare to the national average.</p>
+          <h3 className="font-bold text-bark text-sm mb-1">Data Completeness</h3>
+          <p className="text-xs text-dusk">Shows which expected CQC directory fields are present. It is not a care-quality judgement.</p>
         </div>
         <div className="bg-cream border border-stone rounded-lg p-5 text-center">
           <div className="text-3xl mb-2">&#128205;</div>
-          <h3 className="font-bold text-bark text-sm mb-1">Local Rank</h3>
-          <p className="text-xs text-dusk">Know where a provider ranks among all nearby options. #3 of 12 within 5 miles.</p>
+          <h3 className="font-bold text-bark text-sm mb-1">Inspection Context</h3>
+          <p className="text-xs text-dusk">See the published CQC rating and inspection date without a CareGist-generated quality rank.</p>
         </div>
         <div className="bg-cream border border-stone rounded-lg p-5 text-center">
           <div className="text-3xl mb-2">&#9745;</div>

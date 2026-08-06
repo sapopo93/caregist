@@ -2,24 +2,26 @@
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import logging
 import secrets
 import time
 from datetime import datetime, timedelta, timezone
+from typing import Literal
 
 try:
     import bcrypt
 except ImportError:  # pragma: no cover - local fallback when bcrypt is unavailable
     bcrypt = None
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Response
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, model_validator
 
 from api.middleware.ip_rate_limit import check_ip_rate_limit
 
 from api.config import get_max_users, get_subscription_entitlements, get_tier_config, settings
 from api.database import get_connection
-from api.middleware.auth import api_key_prefix, hash_api_key, validate_api_key
+from api.middleware.auth import api_key_prefix, hash_api_key, validate_api_key, validate_billing_identity
 from api.utils.audit import actor_from_auth, write_audit_log
 
 logger = logging.getLogger("caregist.auth")
@@ -75,6 +77,60 @@ async def _raise_auth_failure(email: str, action: str, audit_action: str | None 
     raise HTTPException(status_code=401, detail=GENERIC_AUTH_FAILURE)
 
 
+MIN_PASSWORD_LENGTH = 12
+
+# How long an email-verification token stays valid before a re-send is required.
+EMAIL_VERIFICATION_TTL = timedelta(hours=24)
+
+# A small deny-list of obviously weak passwords that satisfy the length/class
+# rules but are trivially guessable. Not exhaustive — defence in depth alongside
+# the character-class check below.
+_COMMON_PASSWORDS = frozenset(
+    {
+        "password1234",
+        "password12345",
+        "qwertyuiop12",
+        "123456789012",
+        "aaaaaaaaaaaa",
+        "letmein12345",
+        "welcome12345",
+        "admin1234567",
+        "iloveyou1234",
+        "caregist1234",
+    }
+)
+
+
+def _validate_password_strength(password: str) -> None:
+    """Reject weak passwords (F-22).
+
+    Requires at least MIN_PASSWORD_LENGTH characters and at least three of the
+    four character classes (lower, upper, digit, symbol), and rejects a small
+    deny-list of common passwords. Raises HTTPException(400) on failure.
+    """
+    if len(password) < MIN_PASSWORD_LENGTH:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Password must be at least {MIN_PASSWORD_LENGTH} characters.",
+        )
+    classes = sum(
+        bool(check)
+        for check in (
+            any(c.islower() for c in password),
+            any(c.isupper() for c in password),
+            any(c.isdigit() for c in password),
+            any(not c.isalnum() for c in password),
+        )
+    )
+    if classes < 3:
+        raise HTTPException(
+            status_code=400,
+            detail="Password must include at least three of: lowercase, uppercase, digits, symbols.",
+        )
+    if password.lower() in _COMMON_PASSWORDS:
+        raise HTTPException(status_code=400, detail="Password is too common. Choose a stronger one.")
+
+
 def _hash_password(password: str) -> str:
     if bcrypt:
         return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
@@ -93,6 +149,17 @@ def _verify_password(password: str, stored: str) -> bool:
     return False
 
 
+def _masked_from_prefix(key_prefix: str | None) -> str | None:
+    """Render a stored key_prefix for display.
+
+    New prefixes already encode an ellipsis (first4…last4, F-50); legacy 10-char
+    prefixes do not, so append one only when it is missing.
+    """
+    if not key_prefix:
+        return None
+    return key_prefix if "…" in key_prefix else f"{key_prefix}…"
+
+
 async def _rehash_if_legacy(user_id: int, password: str, stored: str) -> None:
     """Re-hash a legacy SHA-256 password to bcrypt on successful login."""
     if not stored.startswith("$2b$"):
@@ -107,7 +174,15 @@ async def _rehash_if_legacy(user_id: int, password: str, stored: str) -> None:
 class RegisterRequest(BaseModel):
     email: EmailStr
     name: str = Field(..., max_length=255)
-    password: str = Field(..., min_length=8)
+    password: str = Field(..., min_length=MIN_PASSWORD_LENGTH)
+    plan: Literal["free", "alerts-pro", "data-starter", "data-pro", "data-business"] = "free"
+    provider_tier: Literal["enhanced", "sponsored"] | None = None
+
+    @model_validator(mode="after")
+    def validate_single_purchase_intent(self) -> "RegisterRequest":
+        if self.provider_tier and self.plan != "free":
+            raise ValueError("Choose either a data plan or a provider listing, not both.")
+        return self
 
 
 class LoginRequest(BaseModel):
@@ -126,6 +201,35 @@ class VerifyEmailRequest(BaseModel):
 
 class ResendVerificationRequest(BaseModel):
     email: EmailStr
+
+
+PLAN_CONTINUATION_PATHS = {
+    "alerts-pro": "/login?upgrade=alerts-pro",
+    "data-starter": "/login?upgrade=data-starter",
+    "data-pro": "/login?upgrade=data-pro",
+    "data-business": "/login?upgrade=data-business",
+}
+PROVIDER_CONTINUATION_PATHS = {
+    "enhanced": "/login?provider_tier=enhanced",
+    "sponsored": "/login?provider_tier=sponsored",
+}
+
+
+def _purchase_intent_for_registration(req: RegisterRequest) -> tuple[str | None, str | None]:
+    if req.provider_tier:
+        return "provider_tier", req.provider_tier
+    if req.plan != "free":
+        return "plan", req.plan
+    return None, None
+
+
+def purchase_intent_continuation(intent_type: str | None, intent_value: str | None) -> str:
+    """Build a same-origin continuation from server-owned enum values only."""
+    if intent_type == "plan":
+        return PLAN_CONTINUATION_PATHS.get(intent_value or "", "/login")
+    if intent_type == "provider_tier":
+        return PROVIDER_CONTINUATION_PATHS.get(intent_value or "", "/login")
+    return "/login"
 
 
 async def _get_key_capacity(conn, user_id: int, tier: str | None = None) -> tuple[int, int]:
@@ -153,6 +257,7 @@ async def _get_key_capacity(conn, user_id: int, tier: str | None = None) -> tupl
 @router.post("/register")
 async def register(req: RegisterRequest, _ip=Depends(check_ip_rate_limit)) -> dict:
     """Register a new user, provision free-tier access, and send verification email."""
+    _validate_password_strength(req.password)
     async with get_connection() as conn:
         existing = await conn.fetchrow("SELECT id FROM users WHERE email = $1", req.email)
         if existing:
@@ -162,14 +267,21 @@ async def register(req: RegisterRequest, _ip=Depends(check_ip_rate_limit)) -> di
         verification_token = secrets.token_urlsafe(32)
         api_key = f"cg_{secrets.token_urlsafe(32)}"
         api_key_hash = hash_api_key(api_key)
+        intent_type, intent_value = _purchase_intent_for_registration(req)
 
         async with conn.transaction():
             free_entitlements = get_subscription_entitlements("free")
+            verification_expires = datetime.now(timezone.utc) + EMAIL_VERIFICATION_TTL
             user = await conn.fetchrow(
-                """INSERT INTO users (email, name, password_hash, verification_token, is_verified)
-                   VALUES ($1, $2, $3, $4, false)
+                """INSERT INTO users (
+                       email, name, password_hash, verification_token,
+                       verification_token_expires_at, is_verified,
+                       signup_intent_type, signup_intent_value
+                   )
+                   VALUES ($1, $2, $3, $4, $5, false, $6, $7)
                    RETURNING id, email, name""",
-                req.email, req.name, password_hash, verification_token,
+                req.email, req.name, password_hash, verification_token, verification_expires,
+                intent_type, intent_value,
             )
 
             await conn.execute(
@@ -214,7 +326,7 @@ def _set_session_cookie(response: Response, api_key: str, *, is_prod: bool) -> N
         value=api_key,
         httponly=True,
         secure=is_prod,
-        samesite="lax",
+        samesite="strict",
         path="/",
         max_age=30 * 24 * 3600,  # 30 days
     )
@@ -310,7 +422,7 @@ async def logout_session(
 
 
 @router.get("/me")
-async def get_me(_auth: dict = Depends(validate_api_key)) -> dict:
+async def get_me(_auth: dict = Depends(validate_billing_identity)) -> dict:
     """Return the current user's profile and tier (authenticated via header or cookie)."""
     return {
         "tier": _auth.get("tier"),
@@ -378,7 +490,7 @@ async def reveal_key(req: LoginRequest, _ip=Depends(check_ip_rate_limit)) -> dic
             )
             return {
                 "api_key": None,
-                "masked_key": f"{key_row['key_prefix']}…" if key_row["key_prefix"] else None,
+                "masked_key": _masked_from_prefix(key_row["key_prefix"]),
                 "tier": key_row["tier"],
                 "rate_limit": key_row["rate_limit"],
                 "message": "This key cannot be revealed. Rotate it to generate a new API key shown once.",
@@ -460,7 +572,7 @@ async def rotate_key(req: LoginRequest, _ip=Depends(check_ip_rate_limit)) -> dic
 
 
 @router.get("/team-keys")
-async def list_team_keys(_auth: dict = Depends(validate_api_key)) -> dict:
+async def list_team_keys(_auth: dict = Depends(validate_billing_identity)) -> dict:
     user_id = _auth.get("user_id")
     if not user_id:
         raise HTTPException(status_code=401, detail="User account required.")
@@ -489,7 +601,7 @@ async def list_team_keys(_auth: dict = Depends(validate_api_key)) -> dict:
                 "masked_key": (
                     f"{row['key'][:10]}…{row['key'][-4:]}"
                     if row["key"]
-                    else f"{row['key_prefix']}…" if row["key_prefix"] else None
+                    else _masked_from_prefix(row["key_prefix"])
                 ),
             }
             for row in keys
@@ -587,22 +699,27 @@ class ForgotPasswordRequest(BaseModel):
 class ResetPasswordRequest(BaseModel):
     email: EmailStr
     token: str
-    new_password: str = Field(..., min_length=8)
+    new_password: str = Field(..., min_length=MIN_PASSWORD_LENGTH)
 
 
 MAX_RESET_ATTEMPTS = 5
 RESET_TOKEN_BYTES = 32
+# Minimum wall-clock duration for /forgot-password so the registered and
+# unregistered paths are indistinguishable by timing (F-24).
+FORGOT_PASSWORD_MIN_SECONDS = 0.5
 
 
-@router.post("/forgot-password")
-async def forgot_password(req: ForgotPasswordRequest, _ip=Depends(check_ip_rate_limit)) -> dict:
-    """Generate a high-entropy reset token and email it via Resend."""
-    # Always return success to avoid email enumeration
+async def _forgot_password_inner(req: ForgotPasswordRequest) -> None:
+    """Issue a reset token if the email is registered. No-op otherwise.
+
+    Kept separate from the public handler so the handler can clamp the total
+    response time regardless of which branch runs (F-24).
+    """
     async with get_connection() as conn:
         user = await conn.fetchrow("SELECT id FROM users WHERE email = $1", req.email)
 
     if not user:
-        return {"message": "If that email is registered, a reset token has been sent."}
+        return
 
     async with get_connection() as conn:
         recent_count = await conn.fetchval(
@@ -611,20 +728,43 @@ async def forgot_password(req: ForgotPasswordRequest, _ip=Depends(check_ip_rate_
             req.email,
         )
     if recent_count and recent_count >= 3:
-        return {"message": "If that email is registered, a reset token has been sent."}
+        return
 
     reset_token = secrets.token_urlsafe(RESET_TOKEN_BYTES)
+    token_hash = hash_api_key(reset_token)
     expires_at = datetime.now(timezone.utc) + timedelta(minutes=15)
 
     async with get_connection() as conn:
+        # Invalidate any prior unused tokens so only the newest can be redeemed
+        # (F-23: prevents brute-forcing older outstanding tokens).
         await conn.execute(
-            """INSERT INTO password_reset_tokens (token, email, expires_at)
+            "UPDATE password_reset_tokens SET used = true WHERE email = $1 AND used = false",
+            req.email,
+        )
+        await conn.execute(
+            """INSERT INTO password_reset_tokens (token_hash, email, expires_at)
                VALUES ($1, $2, $3)""",
-            reset_token, req.email, expires_at,
+            token_hash, req.email, expires_at,
         )
 
-    # Send email (best-effort)
+    # Send email (best-effort) with the raw token; only its hash is persisted.
     await _send_reset_email(req.email, reset_token)
+
+
+@router.post("/forgot-password")
+async def forgot_password(req: ForgotPasswordRequest, _ip=Depends(check_ip_rate_limit)) -> dict:
+    """Generate a high-entropy reset token and email it via Resend.
+
+    Always returns the same message and clamps to a minimum duration so the
+    registered and unregistered paths cannot be distinguished by timing (F-24).
+    """
+    start = time.monotonic()
+    try:
+        await _forgot_password_inner(req)
+    finally:
+        elapsed = time.monotonic() - start
+        if elapsed < FORGOT_PASSWORD_MIN_SECONDS:
+            await asyncio.sleep(FORGOT_PASSWORD_MIN_SECONDS - elapsed)
 
     return {"message": "If that email is registered, a reset token has been sent."}
 
@@ -635,7 +775,9 @@ async def verify_email(req: VerifyEmailRequest, _ip=Depends(check_ip_rate_limit)
     async with get_connection() as conn:
         user = await conn.fetchrow(
             """
-            SELECT id, email
+            SELECT id, email, signup_intent_type, signup_intent_value,
+                   (verification_token_expires_at IS NOT NULL
+                    AND verification_token_expires_at < NOW()) AS is_expired
             FROM users
             WHERE verification_token = $1
               AND is_verified = false
@@ -644,17 +786,31 @@ async def verify_email(req: VerifyEmailRequest, _ip=Depends(check_ip_rate_limit)
         )
         if not user:
             raise HTTPException(status_code=400, detail="Invalid or expired verification link.")
+        if user["is_expired"]:
+            # F-51: distinct, actionable error so the client can offer a re-send.
+            raise HTTPException(
+                status_code=410,
+                detail="Verification link has expired. Request a new verification email.",
+            )
         await conn.execute(
             """
             UPDATE users
             SET is_verified = true,
                 verification_token = NULL,
+                verification_token_expires_at = NULL,
                 updated_at = NOW()
             WHERE id = $1
             """,
             user["id"],
         )
-    return {"message": "Email verified. You can now log in.", "email": user["email"]}
+    return {
+        "message": "Email verified. You can now log in.",
+        "email": user["email"],
+        "next_path": purchase_intent_continuation(
+            user["signup_intent_type"],
+            user["signup_intent_value"],
+        ),
+    }
 
 
 @router.post("/resend-verification")
@@ -668,10 +824,15 @@ async def resend_verification(req: ResendVerificationRequest, _ip=Depends(check_
     if not user or user["is_verified"]:
         return {"message": "If that email is waiting for verification, a new link has been sent."}
 
-    token = user["verification_token"] or secrets.token_urlsafe(32)
-    if not user["verification_token"]:
-        async with get_connection() as conn:
-            await conn.execute("UPDATE users SET verification_token = $1 WHERE email = $2", token, req.email)
+    # Always mint a fresh token with a new expiry window so a previously expired
+    # link can be replaced (F-51).
+    token = secrets.token_urlsafe(32)
+    expires_at = datetime.now(timezone.utc) + EMAIL_VERIFICATION_TTL
+    async with get_connection() as conn:
+        await conn.execute(
+            "UPDATE users SET verification_token = $1, verification_token_expires_at = $2 WHERE email = $3",
+            token, expires_at, req.email,
+        )
     await _send_verification_email(req.email, user["name"] or "there", token)
     return {"message": "If that email is waiting for verification, a new link has been sent."}
 
@@ -679,6 +840,8 @@ async def resend_verification(req: ResendVerificationRequest, _ip=Depends(check_
 @router.post("/reset-password")
 async def reset_password(req: ResetPasswordRequest, _ip=Depends(check_ip_rate_limit)) -> dict:
     """Validate reset token and update password."""
+    _validate_password_strength(req.new_password)
+    candidate_hash = hash_api_key(req.token)
     async with get_connection() as conn:
         # Check for too many failed attempts in the last 15 minutes
         attempt_count = await conn.fetchval(
@@ -690,24 +853,31 @@ async def reset_password(req: ResetPasswordRequest, _ip=Depends(check_ip_rate_li
         if attempt_count and attempt_count > 0:
             raise HTTPException(status_code=429, detail="Too many attempts. Request a new token.")
 
+        # Fetch the single outstanding token for this email (forgot-password
+        # invalidates older ones), then compare hashes in constant time (F-23).
         token_row = await conn.fetchrow(
-            """SELECT id, expires_at, used, attempts FROM password_reset_tokens
-               WHERE email = $1 AND token = $2
+            """SELECT id, token_hash, expires_at, used, attempts FROM password_reset_tokens
+               WHERE email = $1 AND used = false
                ORDER BY created_at DESC LIMIT 1""",
-            req.email, req.token,
+            req.email,
         )
 
-        if not token_row or token_row["used"] or token_row["expires_at"] < datetime.now(timezone.utc):
-            # Increment attempt counter on the most recent token for this email
-            await conn.execute(
-                """UPDATE password_reset_tokens SET attempts = attempts + 1
-                   WHERE id = (
-                       SELECT id FROM password_reset_tokens
-                       WHERE email = $1 AND used = false
-                       ORDER BY created_at DESC LIMIT 1
-                   )""",
-                req.email,
-            )
+        stored_hash = token_row["token_hash"] if token_row else None
+        token_matches = bool(stored_hash) and secrets.compare_digest(stored_hash, candidate_hash)
+
+        if (
+            not token_row
+            or not token_matches
+            or token_row["used"]
+            or token_row["expires_at"] < datetime.now(timezone.utc)
+        ):
+            # Increment the attempt counter on the specific token being tried,
+            # not "whichever is newest" — closes the brute-force gap in F-23.
+            if token_row:
+                await conn.execute(
+                    "UPDATE password_reset_tokens SET attempts = attempts + 1 WHERE id = $1",
+                    token_row["id"],
+                )
             raise HTTPException(status_code=400, detail="Invalid or expired reset token.")
 
         new_hash = _hash_password(req.new_password)
@@ -732,6 +902,23 @@ async def reset_password(req: ResetPasswordRequest, _ip=Depends(check_ip_rate_li
             )
 
     return {"message": "Password has been reset. You can now log in."}
+
+
+def _safe_resend_error(resp) -> str:
+    """Sanitised Resend error for logs (F-40).
+
+    Resend error bodies can echo recipient PII (and, on auth failures, hints
+    about the key). Log only the status code and the provider's short message
+    field, never the raw response body.
+    """
+    message = ""
+    try:
+        payload = resp.json()
+        if isinstance(payload, dict):
+            message = str(payload.get("message") or payload.get("name") or "")
+    except Exception:
+        message = ""
+    return f"status={resp.status_code} message={message!r}"
 
 
 async def _send_reset_email(email: str, reset_token: str) -> None:
@@ -763,7 +950,7 @@ async def _send_reset_email(email: str, reset_token: str) -> None:
                 timeout=10,
             )
             if resp.status_code >= 400:
-                logger.error("Resend API error %s: %s", resp.status_code, resp.text)
+                logger.error("Resend API error: %s", _safe_resend_error(resp))
     except Exception as exc:
         logger.error("Failed to send reset email: %s", exc)
 
@@ -799,7 +986,7 @@ async def _send_verification_email(email: str, name: str, token: str) -> None:
                 timeout=10,
             )
             if resp.status_code >= 400:
-                logger.error("Resend verification email error %s: %s", resp.status_code, resp.text)
+                logger.error("Resend verification email error: %s", _safe_resend_error(resp))
     except Exception as exc:
         logger.error("Failed to send verification email: %s", exc)
 
@@ -810,7 +997,7 @@ class DeleteAccountRequest(BaseModel):
 
 
 @router.delete("/delete-account")
-async def delete_account(req: DeleteAccountRequest) -> dict:
+async def delete_account(req: DeleteAccountRequest, _ip=Depends(check_ip_rate_limit)) -> dict:
     """Delete user account and anonymize associated data (GDPR right to erasure)."""
     async with get_connection() as conn:
         user = await conn.fetchrow(
@@ -836,7 +1023,28 @@ async def delete_account(req: DeleteAccountRequest) -> dict:
             )
             # Anonymize claims
             await conn.execute(
-                "UPDATE provider_claims SET claimant_name = '[deleted]', claimant_email = '[deleted]', claimant_phone = NULL WHERE claimant_email = $1",
+                """UPDATE provider_claims
+                   SET claimant_name = '[deleted]', claimant_email = '[deleted]',
+                       claimant_phone = NULL, claimant_role = NULL,
+                       organisation_name = NULL, proof_of_association = '[deleted]',
+                       admin_notes = NULL
+                   WHERE claimant_email = $1""",
+                req.email,
+            )
+            # Remove queued correspondence and anonymize analytics/audit copies.
+            await conn.execute("DELETE FROM pending_emails WHERE to_email = $1", req.email)
+            await conn.execute(
+                """UPDATE analytics_events
+                   SET email = NULL, ip_address = NULL, user_agent = NULL, meta = '{}'::jsonb
+                   WHERE user_id = $1 OR email = $2""",
+                user_id,
+                req.email,
+            )
+            await conn.execute(
+                """UPDATE audit_log
+                   SET actor_email = NULL, actor_name = '[deleted]'
+                   WHERE actor_user_id = $1 OR actor_email = $2""",
+                user_id,
                 req.email,
             )
             # Delete API keys, subscriptions, then user (cascade should handle but be explicit)

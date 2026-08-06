@@ -1,0 +1,131 @@
+- generic [active] [ref=e1] [box=0,0,390,10828]:
+  - banner [ref=e2] [box=0,0,390,229]:
+    - generic [ref=e3] [box=24,16,342,196]:
+      - link "CareGist" [ref=e4] [cursor=pointer] [box=24,16,205,48]:
+        - /url: /
+        - img "CareGist" [ref=e5] [box=24,16,205,48]
+      - generic [ref=e6] [box=24,80,342,132]:
+        - navigation [ref=e7] [box=24,80,342,76]:
+          - link "Products" [ref=e8] [cursor=pointer] [box=24,80,60,20]:
+            - /url: /#products
+          - link "Who it's for" [ref=e9] [cursor=pointer] [box=104,80,75,20]:
+            - /url: /#positioning
+          - link "About" [ref=e10] [cursor=pointer] [box=198,80,41,20]:
+            - /url: /why-caregist
+          - link "Search" [ref=e11] [cursor=pointer] [box=259,80,46,20]:
+            - /url: /search
+          - link "Pricing" [ref=e12] [cursor=pointer] [box=24,128,45,20]:
+            - /url: /pricing
+          - link "API" [ref=e13] [cursor=pointer] [box=89,128,21,20]:
+            - /url: /api
+          - link "Get a lead list" [ref=e14] [cursor=pointer] [box=130,128,90,20]:
+            - /url: /lead-list
+          - link "Buy dataset" [ref=e15] [cursor=pointer] [box=241,120,113,36]:
+            - /url: /lead-list
+        - button "Open menu" [ref=e16] [box=326,172,40,40]:
+          - img [ref=e17] [box=334,180,24,24]
+  - main [ref=e19] [box=0,229,390,10283]:
+    - generic [ref=e20] [box=0,229,390,10283]:
+      - generic [ref=e21] [box=24,269,342,647]:
+        - generic [ref=e22] [box=49,294,292,183]:
+          - paragraph [ref=e23] [box=49,294,292,16]: CQC directory
+          - heading "Search the public CareGist directory" [level=2] [ref=e24] [box=49,318,292,75]
+          - paragraph [ref=e25] [box=49,405,292,72]: Browse active CQC providers with 24 results per page and filters for region, service type, and rating.
+        - generic [ref=e26] [box=49,501,292,390]:
+          - generic [ref=e27] [box=49,501,292,70]:
+            - generic [ref=e28] [box=49,501,292,20]: Name or town
+            - textbox "Name or town" [ref=e29] [box=49,525,292,46]:
+              - /placeholder: London, Ipswich, Henley House...
+          - generic [ref=e30] [box=49,587,292,71]:
+            - generic [ref=e31] [box=49,587,292,20]: Region
+            - combobox "Region" [ref=e32] [box=49,611,292,47]
+          - generic [ref=e33] [box=49,674,292,71]:
+            - generic [ref=e34] [box=49,674,292,20]: Service type
+            - combobox "Service type" [ref=e35] [box=49,698,292,47]
+          - generic [ref=e36] [box=49,760,292,71]:
+            - generic [ref=e37] [box=49,760,292,20]: Rating
+            - combobox "Rating" [ref=e38] [box=49,784,292,47]
+          - button "Update search" [ref=e40] [box=49,847,292,44]
+      - generic [ref=e41] [box=24,948,342,9524]:
+        - generic [ref=e42] [box=24,948,342,8958]:
+          - generic [ref=e43] [box=24,948,342,120]:
+            - generic [ref=e44] [box=24,948,317,88]
+            - paragraph [ref=e48] [box=24,1048,64,20]: Page 1 of 1
+          - generic [ref=e49] [box=24,1088,342,8818]:
+            - article [ref=e50] [box=24,1088,342,484]
+            - article [ref=e67] [box=24,1588,342,392]
+            - article [ref=e83] [box=24,1996,342,512]
+            - article [ref=e100] [box=24,2524,342,416]
+            - article [ref=e117] [box=24,2956,342,452]
+            - article [ref=e134] [box=24,3424,342,452]
+            - article [ref=e151] [box=24,3892,342,458]
+            - article [ref=e167] [box=24,4366,342,452]
+            - article [ref=e184] [box=24,4834,342,452]
+            - article [ref=e200] [box=24,5302,342,452]
+            - article [ref=e216] [box=24,5770,342,472]
+            - article [ref=e233] [box=24,6258,342,416]
+            - article [ref=e249] [box=24,6690,342,452]
+            - article [ref=e265] [box=24,7158,342,418]
+            - article [ref=e281] [box=24,7592,342,448]
+            - article [ref=e297] [box=24,8056,342,448]
+            - article [ref=e313] [box=24,8520,342,448]
+            - article [ref=e329] [box=24,8984,342,458]
+            - article [ref=e345] [box=24,9458,342,448]
+        - complementary [ref=e361] [box=24,9938,342,534]:
+          - generic [ref=e362] [box=24,9938,342,270]:
+            - paragraph [ref=e363] [box=49,9963,292,16]: Monetisation
+            - heading "Get a filtered lead pack" [level=2] [ref=e364] [box=49,9987,292,32]
+            - paragraph [ref=e365] [box=49,10031,292,96]: Capture the exact segment a buyer wants, issue a temporary export token, and fulfil the list manually while demand is still being validated.
+            - link "Get a lead list" [ref=e366] [cursor=pointer] [box=49,10147,124,36]:
+              - /url: /lead-list?service_type=Homecare+Agencies
+          - generic [ref=e367] [box=24,10224,342,248]:
+            - paragraph [ref=e368] [box=49,10249,292,16]: Checkout
+            - heading "Buy the full dataset" [level=2] [ref=e369] [box=49,10273,292,32]
+            - paragraph [ref=e370] [box=49,10317,292,72]: For full-dataset or regional-pack buyers, send them straight to the configured Stripe Payment Link.
+            - link "Buy full dataset / regional pack" [ref=e371] [cursor=pointer] [box=49,10409,243,38]:
+              - /url: /lead-list
+  - generic [ref=e373] [box=24,734,342,94]:
+    - paragraph [ref=e375] [box=24,734,342,40]:
+      - text: We use cookies for site functionality and to analyse traffic. Read our
+      - link "cookie policy" [ref=e376] [cursor=pointer] [box=131,755,85,19]:
+        - /url: /cookies
+      - text: .
+    - generic [ref=e377] [box=24,790,250,38]:
+      - button "Accept all" [ref=e378] [box=24,790,106,38]
+      - button "Essential only" [ref=e379] [box=142,790,132,38]
+  - contentinfo [ref=e380] [box=0,10512,390,316]:
+    - generic [ref=e381] [box=24,10544,342,252]:
+      - paragraph [ref=e382] [box=24,10544,342,40]: "Data source: Care Quality Commission (CQC). CareGist is not an official CQC service."
+      - paragraph [ref=e383] [box=24,10592,342,60]:
+        - text: If you have concerns about care quality, contact CQC directly at
+        - link "cqc.org.uk/contact-us" [ref=e384] [cursor=pointer] [box=128,10612,145,19]:
+          - /url: https://www.cqc.org.uk/contact-us
+        - text: or call 03000 616161.
+      - generic [ref=e385] [box=24,10668,342,128]:
+        - link "Privacy Policy" [ref=e386] [cursor=pointer] [box=24,10668,89,20]:
+          - /url: /privacy
+        - link "Terms of Service" [ref=e387] [cursor=pointer] [box=129,10668,108,20]:
+          - /url: /terms
+        - link "Acceptable Use" [ref=e388] [cursor=pointer] [box=253,10668,102,20]:
+          - /url: /acceptable-use
+        - link "Review Policy" [ref=e389] [cursor=pointer] [box=24,10704,87,20]:
+          - /url: /review-policy
+        - link "Cookies" [ref=e390] [cursor=pointer] [box=127,10704,52,20]:
+          - /url: /cookies
+        - link "Search" [ref=e391] [cursor=pointer] [box=195,10704,45,20]:
+          - /url: /search
+        - link "Find Care" [ref=e392] [cursor=pointer] [box=255,10704,62,20]:
+          - /url: /find-care
+        - link "Care Groups" [ref=e393] [cursor=pointer] [box=24,10740,82,20]:
+          - /url: /groups
+        - link "Pricing" [ref=e394] [cursor=pointer] [box=122,10740,44,20]:
+          - /url: /pricing
+        - link "API" [ref=e395] [cursor=pointer] [box=182,10740,21,20]:
+          - /url: /api
+        - link "Why CareGist" [ref=e396] [cursor=pointer] [box=218,10740,90,20]:
+          - /url: /why-caregist
+        - link "Get a lead list" [ref=e397] [cursor=pointer] [box=24,10776,89,20]:
+          - /url: /lead-list
+        - link "Contact" [ref=e398] [cursor=pointer] [box=129,10776,53,20]:
+          - /url: mailto:hello@caregist.co.uk
+  - alert [ref=e399] [box=-1,-1,1,1]

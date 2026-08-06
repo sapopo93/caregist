@@ -4,11 +4,13 @@ import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { trackEvent } from "@/lib/analytics";
+import { apiErrorMessage } from "@/lib/api-error";
+import { normalizePostVerificationPath } from "@/lib/post-verification";
 
 const PLAN_COPY: Record<string, { title: string; body: string }> = {
   free: {
     title: "Start with Free",
-    body: "Built for evaluation: test the dashboard, sample exports, and one provider watchlist before moving into a paid workflow.",
+    body: "Built for evaluation: test the dashboard, browse provider data, and monitor one provider before moving into a paid workflow.",
   },
   "alerts-pro": {
     title: "Start Alerts Pro",
@@ -70,13 +72,19 @@ function SignupForm() {
       const res = await fetch("/api/v1/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, name, password }),
+        body: JSON.stringify({
+          email,
+          name,
+          password,
+          plan,
+          provider_tier: providerTier || null,
+        }),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.detail || "Registration failed.");
+        setError(apiErrorMessage(data, "Registration failed."));
         return;
       }
 
@@ -88,7 +96,9 @@ function SignupForm() {
       } else {
         next = "/login";
       }
-      router.push(`/verify-email?email=${encodeURIComponent(email)}&next=${encodeURIComponent(next)}`);
+      const safeNext = normalizePostVerificationPath(next) || "/login";
+      localStorage.setItem("caregist_post_verify_path", safeNext);
+      router.push(`/verify-email?email=${encodeURIComponent(email)}&next=${encodeURIComponent(safeNext)}`);
     } catch {
       setError("Something went wrong. Please try again.");
     } finally {
@@ -124,6 +134,7 @@ function SignupForm() {
           <input
             id="name"
             type="text"
+            autoComplete="name"
             required
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -135,6 +146,7 @@ function SignupForm() {
           <input
             id="email"
             type="email"
+            autoComplete="email"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -146,6 +158,7 @@ function SignupForm() {
           <input
             id="password"
             type="password"
+            autoComplete="new-password"
             required
             minLength={8}
             value={password}

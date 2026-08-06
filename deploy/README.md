@@ -1,4 +1,9 @@
-## EC2 deploy notes
+## Historical EC2 deploy notes
+
+> **Retired production path (2026-08-02).** CareGist production uses the
+> Vercel multi-service configuration plus Neon Postgres described in the root
+> `README.md`. The commands below are retained only to explain legacy assets.
+> Do not use EC2/PM2 cron instructions for a new release.
 
 Current AWS EC2 runtime assets:
 

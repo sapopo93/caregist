@@ -1,0 +1,56 @@
+version: 1
+status: required-not-evidenced
+owner: operations
+default_recipient: ops@caregist.co.uk
+policy:
+  evidence_required_before_green: true
+  credentials_are_not_evidence: true
+  test_requires_delivery_and_recovery: true
+alerts:
+  - id: cqc-freshness
+    signal: /api/v1/health/freshness returns non-200 or freshness_ok=false
+    cadence: 15m
+    severity: critical
+    implementation: .github/workflows/freshness-watchdog.yml
+    configured: false
+    evidence_id: null
+  - id: reconciliation-job-failed-or-missed
+    signal: batch failed, shard incomplete, or expected schedule absent
+    severity: critical
+    configured: false
+    evidence_id: null
+  - id: backend-5xx-rate
+    signal: HTTP 5xx rate above approved threshold for 5m
+    severity: critical
+    configured: false
+    evidence_id: null
+  - id: backend-p99-latency
+    signal: P99 latency above approved threshold for 5m
+    severity: warning
+    configured: false
+    evidence_id: null
+  - id: redis-availability-latency
+    signal: Redis health failure, connection error, or latency above approved threshold
+    severity: critical
+    configured: false
+    evidence_id: null
+  - id: neon-compute-connections-storage
+    signal: Neon compute, connection, or storage threshold breached
+    severity: critical
+    configured: false
+    evidence_id: null
+  - id: stripe-webhook-failures
+    signal: Stripe delivery failure or terminal webhook processing error
+    severity: critical
+    configured: false
+    evidence_id: null
+  - id: resend-dead-letters
+    signal: pending email dead-letter or terminal Resend failure
+    severity: critical
+    configured: false
+    evidence_id: null
+  - id: master-key-rotation
+    signal: overdue, failed, or rollback-triggered master-key rotation
+    severity: critical
+    configured: false
+    evidence_id: null

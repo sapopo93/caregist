@@ -4,7 +4,7 @@ Per-user provider monitor rating-change alerts.
 
 For each user with monitored providers (provider_monitors table), finds providers
 whose rating changed since the user's last alert was sent, then queues an email
-via pending_emails. Gated to Pro+ tier only.
+via pending_emails. Gated to Alerts Pro and data Pro+ tiers.
 
 Usage:
     python3 tools/send_monitor_alerts.py             # Send all pending alerts
@@ -14,6 +14,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import html
 import os
 import sys
 from datetime import datetime, timezone
@@ -24,7 +25,7 @@ import traceback
 # ── Config ──
 
 APP_URL = os.environ.get("APP_URL", "https://caregist.co.uk")
-ALERT_TIERS = {"pro", "business", "enterprise"}
+ALERT_TIERS = {"alerts-pro", "pro", "business", "enterprise"}
 WEBHOOK_TIERS = {"business", "enterprise"}
 
 RATING_ORDER = {"Outstanding": 1, "Good": 2, "Requires Improvement": 3, "Inadequate": 4}
@@ -73,21 +74,26 @@ def build_email_html(user_name: str, changes: list[dict]) -> str:
         direction = rating_direction(c["previous_rating"], c["new_rating"])
         color = UPGRADE_COLOR if direction == "improved" else DOWNGRADE_COLOR
         arrow = "↑" if direction == "improved" else ("↓" if direction == "declined" else "→")
+        safe_name = html.escape(str(c["name"] or ""))
+        safe_town = html.escape(str(c["town"] or ""))
+        safe_slug = html.escape(str(c["slug"] or ""), quote=True)
+        safe_previous = html.escape(str(c["previous_rating"] or "—"))
+        safe_new = html.escape(str(c["new_rating"] or "—"))
         rows += f"""
         <tr>
           <td style="padding:8px 0;border-bottom:1px solid #eee;">
-            <a href="{APP_URL}/provider/{c['slug']}" style="color:{BRAND_COLOR};text-decoration:none;font-weight:600;">{c['name']}</a>
-            <br><small style="color:#888;">{c['town'] or ''}</small>
+            <a href="{APP_URL}/provider/{safe_slug}" style="color:{BRAND_COLOR};text-decoration:none;font-weight:600;">{safe_name}</a>
+            <br><small style="color:#888;">{safe_town}</small>
           </td>
-          <td style="padding:8px 12px;border-bottom:1px solid #eee;color:#888;text-decoration:line-through;">{c['previous_rating'] or '—'}</td>
-          <td style="padding:8px 0;border-bottom:1px solid #eee;color:{color};font-weight:600;">{arrow} {c['new_rating'] or '—'}</td>
+          <td style="padding:8px 12px;border-bottom:1px solid #eee;color:#888;text-decoration:line-through;">{safe_previous}</td>
+          <td style="padding:8px 0;border-bottom:1px solid #eee;color:{color};font-weight:600;">{arrow} {safe_new}</td>
         </tr>"""
 
     return f"""
     <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:24px;">
       <p style="color:#8a6a4a;font-size:12px;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">CareGist</p>
       <h2 style="color:#2C1A0E;margin-top:0;">Rating changes on your monitored providers</h2>
-      <p style="color:#555;">Hi {user_name or 'there'}, the following providers you monitor have had a CQC rating change.</p>
+      <p style="color:#555;">Hi {html.escape(str(user_name or 'there'))}, the following providers you monitor have had a CQC rating change.</p>
       <table style="width:100%;border-collapse:collapse;margin:16px 0;">
         <thead>
           <tr>
@@ -145,18 +151,21 @@ def notify_failure(exc: Exception) -> None:
 
 
 def run(dry_run: bool = False) -> None:
+    if not dry_run and os.environ.get("OUTBOUND_DELIVERY_ENABLED", "").lower() != "true":
+        raise RuntimeError("Outbound monitor delivery is awaiting Human Gate approval.")
     import psycopg2.extras
 
     db_url = get_database_url()
     conn = get_connection(db_url)
     cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
-    # Find all monitors for Pro+ users that have had rating changes since last alert
+    # Find all monitors for paid alert tiers that have had rating changes since last alert
     cur.execute("""
         SELECT
             pm.id          AS monitor_id,
             pm.user_id,
             pm.provider_id,
+            pm.created_at,
             pm.last_alert_sent_at,
             u.email,
             u.name         AS user_name,
@@ -188,14 +197,14 @@ def run(dry_run: bool = False) -> None:
         watermark = m["last_alert_sent_at"]
         cur.execute("""
             SELECT
-                prh.provider_id,
-                prh.previous_rating,
-                prh.new_rating,
-                prh.changed_at
-            FROM provider_rating_history prh
-            WHERE prh.provider_id = %(provider_id)s
-              AND prh.changed_at > %(watermark)s
-            ORDER BY prh.changed_at DESC
+                rc.provider_id,
+                rc.old_rating AS previous_rating,
+                rc.new_rating,
+                rc.detected_at AS changed_at
+            FROM rating_changes rc
+            WHERE rc.provider_id = %(provider_id)s
+              AND rc.detected_at > %(watermark)s
+            ORDER BY rc.detected_at DESC
             LIMIT 1
         """, {
             "provider_id": m["provider_id"],

@@ -60,7 +60,7 @@ export const PRICING_LADDER: PricingTier[] = [
     includes: [
       "Search CQC-registered providers",
       "Browse profiles, ratings, and inspection dates",
-      "Sample CSV export: 25 rows",
+      "Evaluate search results before upgrading",
       "1 provider watchlist",
       "Basic fields only",
     ],
@@ -71,14 +71,13 @@ export const PRICING_LADDER: PricingTier[] = [
     tier: "Alerts Pro",
     forWho: "For teams monitoring providers, watchlists, and rating movement",
     color: "#8b5cf6",
-    price: "\u00A349 + VAT/mo",
-    priceNote: "Cancel anytime",
+    price: "\u00A349/mo",
+    priceNote: "Total price · VAT not currently charged · Cancel anytime",
     includes: [
       "Everything in Free",
       "Provider watchlists and rating-change alerts",
       "Saved monitoring views",
       "Weekly alert digest",
-      "CSV and Excel export for monitored providers",
       "Ideal for monitoring existing accounts and local markets",
     ],
     limit: "Monitoring and watchlists only. New-provider intelligence feed starts with Data Starter.",
@@ -88,8 +87,8 @@ export const PRICING_LADDER: PricingTier[] = [
     tier: "Data Starter",
     forWho: "For solo sellers building weekly new-provider lists",
     color: "#C8862A",
-    price: "\u00A399 + VAT/mo",
-    priceNote: "Cancel anytime",
+    price: "\u00A399/mo",
+    priceNote: "Total price · VAT not currently charged · Cancel anytime",
     includes: [
       "Everything in Alerts Pro",
       "New registration feed",
@@ -106,8 +105,8 @@ export const PRICING_LADDER: PricingTier[] = [
     tier: "Data Pro",
     forWho: "For small teams using CareGist as a weekly sales workflow",
     color: "#D4943A",
-    price: "\u00A3199 + VAT/mo",
-    priceNote: "Includes 3 named access seats. Extra seats \u00A315 + VAT/mo.",
+    price: "\u00A3199/mo",
+    priceNote: "Total price · Includes 3 named access seats. Extra seats \u00A315/mo.",
     recommended: true,
     includes: [
       "Everything in Data Starter",
@@ -126,8 +125,8 @@ export const PRICING_LADDER: PricingTier[] = [
     tier: "Data Business",
     forWho: "For teams pushing provider intelligence into CRM, outbound, and internal systems",
     color: "#ef4444",
-    price: "\u00A3499 + VAT/mo",
-    priceNote: "Includes 10 named access seats, webhooks, and admin support.",
+    price: "\u00A3499/mo",
+    priceNote: "Total price · Includes 10 named access seats, webhooks, and admin support.",
     includes: [
       "Everything in Data Pro",
       "Webhooks for new registrations and rating changes",
@@ -184,7 +183,7 @@ export const PROVIDER_TIERS = [
   {
     tier: "enhanced" as const,
     label: "Provider Pro Listing",
-    price: "£99 + VAT/location/mo",
+    price: "£99/location/mo",
     priceMonthly: 99,
     priceAnnual: null,
     stripeSlug: "caregist_enhanced_profile",
@@ -204,7 +203,7 @@ export const PROVIDER_TIERS = [
   {
     tier: "sponsored" as const,
     label: "Sponsored Listing",
-    price: "£149 + VAT/location/mo",
+    price: "£149/location/mo",
     priceMonthly: 149,
     priceAnnual: null,
     stripeSlug: "caregist_sponsored_profile",
@@ -216,7 +215,7 @@ export const PROVIDER_TIERS = [
       "Everything in Provider Pro Listing",
       "Up to 15 photos",
       "Sponsored badge & visibility boost",
-      "Top placement in search results",
+      "Sponsored search visibility boost",
     ],
     limit: "Per location pricing",
   },
@@ -244,7 +243,7 @@ export const PROVIDER_TIERS = [
 export type ProviderTierKey = typeof PROVIDER_TIERS[number]["tier"];
 
 // ── Provider Add-on: Extra Team Seat ──
-export const PROVIDER_TEAM_SEAT_PRICE = 15; // £15 + VAT/mo per seat
+export const PROVIDER_TEAM_SEAT_PRICE = 15; // £15/mo total per seat while VAT is not charged
 
 export const PLAN_PRIMARY_CTA: Record<string, string> = {
   free: "Start free",
@@ -296,7 +295,7 @@ export const ADD_ONS: AddOn[] = [
   { name: "Extra team seat",               price: "\u00A315/mo per user",      note: "Pro and above \u00B7 own login, activity history, and access controls" },
   { name: "Area movers pack",              price: "\u00A319/mo per area",      note: "Additional local authority coverage" },
   { name: "Benchmark PDF pack",            price: "\u00A329/report",           note: "Included in higher plans" },
-  { name: "Sponsored placement",           price: "from \u00A399/mo/location", note: "Featured placement on filter and region pages" },
+  { name: "Sponsored placement",           price: "from \u00A399/mo/location", note: "Sponsored visibility boost in provider search" },
   { name: "Claim verification fast-track", price: "\u00A349 one-off",          note: "24hr instead of standard 48hr review" },
   { name: "White-label consultant report", price: "\u00A379/mo",               note: "Branded PDF reports for consultants" },
 ];
@@ -304,10 +303,10 @@ export const ADD_ONS: AddOn[] = [
 // ── Launch Pricing ──
 export const LAUNCH_PRICING: LaunchPrice[] = [
   { tier: "Free",       price: "\u00A30",                 color: "#10b981" },
-  { tier: "Alerts Pro", price: "\u00A349 + VAT/mo",       color: "#8b5cf6" },
-  { tier: "Data Starter", price: "\u00A399 + VAT/mo",     color: "#C8862A" },
-  { tier: "Data Pro",   price: "\u00A3199 + VAT/mo",      color: "#D4943A" },
-  { tier: "Data Business", price: "\u00A3499 + VAT/mo",   color: "#ef4444" },
+  { tier: "Alerts Pro", price: "\u00A349/mo",       color: "#8b5cf6" },
+  { tier: "Data Starter", price: "\u00A399/mo",     color: "#C8862A" },
+  { tier: "Data Pro",   price: "\u00A3199/mo",      color: "#D4943A" },
+  { tier: "Data Business", price: "\u00A3499/mo",   color: "#ef4444" },
   { tier: "Enterprise", price: "Contact",                 color: "#64748b" },
 ];
 
@@ -618,8 +617,8 @@ export const PAGE_SPECS: PageSpec[] = [
     actionType: "download",
     gate: "login",
     capturedAsset: "Identified user + search query (location, rating, service type) \u2014 high segmentation signal",
-    revenuePath: "Login to export \u2192 free basic CSV; Data Pro unlocks enriched CSV with contacts, coordinates, and inspection history",
-    upgradeTrigger: "User hits free row limit (25 rows) or selects locked enriched columns",
+    revenuePath: "Paid export intent \u2192 Data Starter for CSV; Data Pro unlocks enriched CSV with wider limits",
+    upgradeTrigger: "User selects CSV export or locked enriched columns",
     successMetric: "CSV click-to-login conversion rate (target: \u226515% of search sessions)",
     followUpAutomation: "Post-export email: \u2018Your list is ready. Want alerts when any of these providers change rating?\u2019 \u2192 Pro Alerts upsell.",
     trustLayer: "\u2018Sourced from CQC public register, refreshed weekly\u2019 in results header. Show record count and last refresh timestamp.",
