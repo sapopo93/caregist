@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { normalizeApiError, describeFetchError } from "@/lib/api-error";
 
 function LoginForm() {
   const router = useRouter();
@@ -32,10 +33,15 @@ function LoginForm() {
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
+      const errInfo = normalizeApiError(res.status, data, "Invalid email or password.");
 
       if (!res.ok) {
-        setError(data.detail || "Login failed.");
+        if (errInfo.isUnverifiedEmail) {
+          router.push(`/verify-email?email=${encodeURIComponent(email)}`);
+          return;
+        }
+        setError(errInfo.message);
         return;
       }
 
@@ -66,8 +72,8 @@ function LoginForm() {
       }
 
       router.push(upgrade ? `/pricing?highlight=${upgrade}` : "/dashboard");
-    } catch {
-      setError("Something went wrong. Please try again.");
+    } catch (err) {
+      setError(describeFetchError(err));
     } finally {
       setLoading(false);
     }
@@ -90,7 +96,7 @@ function LoginForm() {
       )}
 
       {error && (
-        <div className="bg-cream border border-alert rounded-lg p-3 mb-4 text-sm text-alert">
+        <div role="alert" className="bg-cream border border-alert rounded-lg p-3 mb-4 text-sm text-alert">
           {error}
         </div>
       )}
@@ -101,6 +107,7 @@ function LoginForm() {
           <input
             id="email"
             type="email"
+            autoComplete="email"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -112,6 +119,7 @@ function LoginForm() {
           <input
             id="password"
             type="password"
+            autoComplete="current-password"
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}

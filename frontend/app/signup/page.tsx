@@ -4,11 +4,12 @@ import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { trackEvent } from "@/lib/analytics";
+import { normalizeApiError, describeFetchError } from "@/lib/api-error";
 
 const PLAN_COPY: Record<string, { title: string; body: string }> = {
   free: {
     title: "Start with Free",
-    body: "Built for evaluation: test the dashboard, sample exports, and one provider watchlist before moving into a paid workflow.",
+    body: "Built for evaluation: test the dashboard, browse provider data, and monitor one provider before moving into a paid workflow.",
   },
   "alerts-pro": {
     title: "Start Alerts Pro",
@@ -73,10 +74,15 @@ function SignupForm() {
         body: JSON.stringify({ email, name, password }),
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
+      const errInfo = normalizeApiError(res.status, data, "Registration failed. Please try again.");
 
       if (!res.ok) {
-        setError(data.detail || "Registration failed.");
+        if (errInfo.isConflict) {
+          setError("This email is already registered. Please log in instead.");
+          return;
+        }
+        setError(errInfo.message);
         return;
       }
 
@@ -89,8 +95,8 @@ function SignupForm() {
         next = "/login";
       }
       router.push(`/verify-email?email=${encodeURIComponent(email)}&next=${encodeURIComponent(next)}`);
-    } catch {
-      setError("Something went wrong. Please try again.");
+    } catch (err) {
+      setError(describeFetchError(err));
     } finally {
       setLoading(false);
     }
@@ -113,7 +119,7 @@ function SignupForm() {
       </p>
 
       {error && (
-        <div className="bg-cream border border-alert rounded-lg p-3 mb-4 text-sm text-alert">
+        <div role="alert" className="bg-cream border border-alert rounded-lg p-3 mb-4 text-sm text-alert">
           {error}
         </div>
       )}
@@ -124,6 +130,7 @@ function SignupForm() {
           <input
             id="name"
             type="text"
+            autoComplete="name"
             required
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -135,6 +142,7 @@ function SignupForm() {
           <input
             id="email"
             type="email"
+            autoComplete="email"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -146,8 +154,9 @@ function SignupForm() {
           <input
             id="password"
             type="password"
+            autoComplete="new-password"
             required
-            minLength={8}
+            minLength={12}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="w-full px-4 py-3 rounded-lg border border-stone bg-cream focus:ring-2 focus:ring-clay focus:outline-none"
