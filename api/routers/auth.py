@@ -108,6 +108,10 @@ class RegisterRequest(BaseModel):
     email: EmailStr
     name: str = Field(..., max_length=255)
     password: str = Field(..., min_length=8)
+    # UK GDPR Art 7: freely given, specific, informed, unambiguous consent.
+    # This field is SEPARATE from ToS acceptance and defaults to False.
+    # The frontend renders it as a distinct, unticked checkbox.
+    marketing_consent: bool = False
 
 
 class LoginRequest(BaseModel):
@@ -163,13 +167,16 @@ async def register(req: RegisterRequest, _ip=Depends(check_ip_rate_limit)) -> di
         api_key = f"cg_{secrets.token_urlsafe(32)}"
         api_key_hash = hash_api_key(api_key)
 
+        # Record marketing consent timestamp only when explicitly opted in (UK GDPR Art 7).
+        marketing_consent_at = datetime.now(timezone.utc) if req.marketing_consent else None
+
         async with conn.transaction():
             free_entitlements = get_subscription_entitlements("free")
             user = await conn.fetchrow(
-                """INSERT INTO users (email, name, password_hash, verification_token, is_verified)
-                   VALUES ($1, $2, $3, $4, false)
+                """INSERT INTO users (email, name, password_hash, verification_token, is_verified, marketing_consent_at)
+                   VALUES ($1, $2, $3, $4, false, $5)
                    RETURNING id, email, name""",
-                req.email, req.name, password_hash, verification_token,
+                req.email, req.name, password_hash, verification_token, marketing_consent_at,
             )
 
             await conn.execute(
@@ -623,7 +630,7 @@ async def forgot_password(req: ForgotPasswordRequest, _ip=Depends(check_ip_rate_
             reset_token, req.email, expires_at,
         )
 
-    # Send email (best-effort)
+    # Send email (best-effort) — transactional email, bypasses marketing gate
     await _send_reset_email(req.email, reset_token)
 
     return {"message": "If that email is registered, a reset token has been sent."}
@@ -734,74 +741,119 @@ async def reset_password(req: ResetPasswordRequest, _ip=Depends(check_ip_rate_li
     return {"message": "Password has been reset. You can now log in."}
 
 
-async def _send_reset_email(email: str, reset_token: str) -> None:
-    """Send password reset token via Resend. Fails silently."""
+# ---------------------------------------------------------------------------
+# Email helpers
+# ---------------------------------------------------------------------------
+# MARKETING EMAIL GATE (UK GDPR Art 7)
+# Any function that sends marketing or promotional email MUST call
+# _assert_marketing_consent(user) before sending.
+# Transactional emails (password reset, verification, receipts, account
+# notifications) are exempt — they may be sent regardless of consent.
+# ---------------------------------------------------------------------------
+
+
+async def _user_has_marketing_consent(conn, user_id: int) -> bool:
+    """Return True iff the user has given marketing consent and has not been deleted."""
+    row = await conn.fetchrow(
+        "SELECT marketing_consent_at, deleted_at FROM users WHERE id = $1",
+        user_id,
+    )
+    if row is None:
+        return False
+    return row["marketing_consent_at"] is not None and row["deleted_at"] is None
+
+
+async def send_marketing_email(
+    *,
+    user_id: int,
+    email: str,
+    subject: str,
+    html: str,
+    text: str | None = None,
+) -> bool:
+    """Send a marketing email — skipped silently when consent is missing.
+
+    Returns True if the email was sent, False if skipped (no consent).
+    Transactional emails (password reset, verification, etc.) must NOT use
+    this wrapper — call _send_resend_email directly.
+
+    UK GDPR Art 7: consent must be freely given, specific, informed, and
+    unambiguous. This gate checks marketing_consent_at IS NOT NULL, which is
+    only set when the user actively ticked the separate marketing checkbox at
+    signup (or a later consent event).
+    """
+    async with get_connection() as conn:
+        if not await _user_has_marketing_consent(conn, user_id):
+            logger.info(
+                "Marketing email skipped — no consent: user_id=%s subject=%r",
+                user_id,
+                subject,
+            )
+            return False
+
+    await _send_resend_email(email=email, subject=subject, html=html, text=text)
+    return True
+
+
+async def _send_resend_email(
+    *,
+    email: str,
+    subject: str,
+    html: str,
+    text: str | None = None,
+    from_email: str | None = None,
+) -> None:
+    """Low-level Resend send — no consent check. Use only for transactional email."""
     if not settings.resend_api_key:
-        logger.warning("RESEND_API_KEY not set — skipping password reset email")
+        logger.warning("RESEND_API_KEY not set — skipping email to %s", email)
         return
 
     import httpx
 
-    from_email = settings.enquiry_from_email or "noreply@caregist.co.uk"
-    body = (
-        f"Your CareGist password reset token is: {reset_token}\n\n"
-        f"This token expires in 15 minutes. If you didn't request this, ignore this email.\n\n"
-        f"— The CareGist Team"
-    )
+    sender = from_email or settings.enquiry_from_email or "noreply@caregist.co.uk"
+    payload: dict = {"from": sender, "to": [email], "subject": subject, "html": html}
+    if text:
+        payload["text"] = text
 
     try:
         async with httpx.AsyncClient() as client:
             resp = await client.post(
                 "https://api.resend.com/emails",
                 headers={"Authorization": f"Bearer {settings.resend_api_key}"},
-                json={
-                    "from": from_email,
-                    "to": [email],
-                    "subject": "Your CareGist password reset token",
-                    "text": body,
-                },
+                json=payload,
                 timeout=10,
             )
             if resp.status_code >= 400:
                 logger.error("Resend API error %s: %s", resp.status_code, resp.text)
     except Exception as exc:
-        logger.error("Failed to send reset email: %s", exc)
+        logger.error("Failed to send email to %s: %s", email, exc)
+
+
+async def _send_reset_email(email: str, reset_token: str) -> None:
+    """Send password reset token via Resend. Transactional — bypasses marketing gate."""
+    body = (
+        f"Your CareGist password reset token is: {reset_token}\n\n"
+        f"This token expires in 15 minutes. If you didn't request this, ignore this email.\n\n"
+        f"— The CareGist Team"
+    )
+    await _send_resend_email(
+        email=email,
+        subject="Your CareGist password reset token",
+        html=f"<p>{body.replace(chr(10), '<br>')}</p>",
+        text=body,
+    )
 
 
 async def _send_verification_email(email: str, name: str, token: str) -> None:
-    """Send email verification link via Resend. Fails silently."""
-    if not settings.resend_api_key:
-        logger.warning("RESEND_API_KEY not set — skipping verification email")
-        return
-
-    import httpx
-
-    from_email = settings.enquiry_from_email or "noreply@caregist.co.uk"
+    """Send email verification link via Resend. Transactional — bypasses marketing gate."""
     verify_link = f"{settings.app_url}/verify-email?token={token}"
     html = (
         f"<p>Hi {name},</p>"
         "<p>Verify your CareGist email to activate dashboard access, billing, and named access seats.</p>"
-        f"<p><a href=\"{verify_link}\">Verify your email</a></p>"
+        f'<p><a href="{verify_link}">Verify your email</a></p>'
         f"<p>If the button does not work, copy this link into your browser:</p><p>{verify_link}</p>"
     )
-
-    try:
-        async with httpx.AsyncClient() as client:
-            resp = await client.post(
-                "https://api.resend.com/emails",
-                headers={"Authorization": f"Bearer {settings.resend_api_key}"},
-                json={
-                    "from": from_email,
-                    "to": [email],
-                    "subject": "Verify your CareGist email",
-                    "html": html,
-                },
-                timeout=10,
-            )
-            if resp.status_code >= 400:
-                logger.error("Resend verification email error %s: %s", resp.status_code, resp.text)
-    except Exception as exc:
-        logger.error("Failed to send verification email: %s", exc)
+    await _send_resend_email(email=email, subject="Verify your CareGist email", html=html)
 
 
 class DeleteAccountRequest(BaseModel):
