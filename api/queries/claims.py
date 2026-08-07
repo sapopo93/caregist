@@ -1,7 +1,7 @@
 """SQL queries for provider claims."""
 
 PROVIDER_ID_BY_SLUG = """
-SELECT id, is_claimed
+SELECT id, is_claimed, website
 FROM care_providers
 WHERE slug = $1 OR id = $1
 ORDER BY CASE WHEN slug = $1 THEN 0 ELSE 1 END
@@ -10,28 +10,32 @@ LIMIT 1
 
 INSERT_CLAIM = """
 INSERT INTO provider_claims
-  (provider_id, claimant_name, claimant_email, claimant_phone,
-   claimant_role, organisation_name, proof_of_association, fast_track, submitted_at)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
-RETURNING id, provider_id, status, claimant_name, claimant_email, fast_track, created_at
+ (provider_id, claimant_name, claimant_email, claimant_phone,
+  claimant_role, organisation_name, proof_of_association, fast_track,
+  status, review_reason, submitted_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())
+RETURNING id, provider_id, status, claimant_name, claimant_email, fast_track,
+          review_reason, created_at
 """
 
 GET_CLAIM_STATUS = """
-SELECT id, status, fast_track, created_at, submitted_at, reviewed_at
+SELECT id, status, fast_track, review_reason, created_at, submitted_at, reviewed_at
 FROM provider_claims
 WHERE claimant_email = $1 AND provider_id = $2
 ORDER BY created_at DESC LIMIT 1
 """
 
 HAS_PENDING_CLAIM = """
-SELECT id FROM provider_claims WHERE provider_id = $1 AND status = 'pending'
+SELECT id FROM provider_claims WHERE provider_id = $1 AND status IN ('pending', 'pending_review')
 """
 
 LIST_CLAIMS = """
 SELECT pc.id, pc.provider_id, pc.status, pc.claimant_name, pc.claimant_email,
-       pc.claimant_phone, pc.claimant_role, pc.organisation_name,
-       pc.proof_of_association, pc.admin_notes, pc.created_at, pc.reviewed_at,
-       cp.name AS provider_name, cp.slug AS provider_slug
+ pc.claimant_phone, pc.claimant_role, pc.organisation_name,
+ pc.proof_of_association, pc.admin_notes, pc.review_reason,
+ pc.created_at, pc.reviewed_at,
+ cp.name AS provider_name, cp.slug AS provider_slug,
+ cp.website AS provider_website
 FROM provider_claims pc
 JOIN care_providers cp ON cp.id = pc.provider_id
 WHERE ($1::text IS NULL OR pc.status = $1)
@@ -58,3 +62,7 @@ UPDATE care_providers SET is_claimed = true, claimed_at = NOW() WHERE id = $1
 MARK_PROVIDER_UNCLAIMED = """
 UPDATE care_providers SET is_claimed = false, claimed_at = NULL WHERE id = $1
 """
+
+# Legacy aliases kept for backward compatibility
+AUTO_APPROVE_CLAIM = INSERT_CLAIM
+SET_CLAIM_PENDING_REVIEW = INSERT_CLAIM
