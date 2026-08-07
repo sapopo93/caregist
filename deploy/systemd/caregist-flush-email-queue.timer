@@ -1,0 +1,13 @@
+[Unit]
+Description=CareGist Flush Email Queue — every 10 minutes
+Documentation=https://github.com/sapopo93/caregist
+# Replaces: */10 * * * * in /etc/cron.d/caregist
+
+[Timer]
+OnCalendar=*:0/10
+Persistent=true
+AccuracySec=1min
+RandomizedDelaySec=15
+
+[Install]
+WantedBy=timers.target

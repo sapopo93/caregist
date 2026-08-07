@@ -1,0 +1,13 @@
+[Unit]
+Description=CareGist New Registration Feed Cycle — 5 min past every hour
+Documentation=https://github.com/sapopo93/caregist
+# Replaces: 5 * * * * in /etc/cron.d/caregist
+
+[Timer]
+OnCalendar=*:05
+Persistent=true
+AccuracySec=1min
+RandomizedDelaySec=30
+
+[Install]
+WantedBy=timers.target

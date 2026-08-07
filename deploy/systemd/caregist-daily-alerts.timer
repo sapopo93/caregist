@@ -1,0 +1,12 @@
+[Unit]
+Description=CareGist Daily Monitor Alerts — 08:00 daily
+Documentation=https://github.com/sapopo93/caregist
+# Replaces: 0 8 * * * in /etc/cron.d/caregist
+
+[Timer]
+OnCalendar=*-*-* 08:00:00
+Persistent=true
+AccuracySec=1min
+
+[Install]
+WantedBy=timers.target

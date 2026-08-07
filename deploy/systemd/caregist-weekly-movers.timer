@@ -1,0 +1,12 @@
+[Unit]
+Description=CareGist Weekly Movers Digest — Mondays at 07:00
+Documentation=https://github.com/sapopo93/caregist
+# Replaces: 0 7 * * 1 in /etc/cron.d/caregist
+
+[Timer]
+OnCalendar=Mon *-*-* 07:00:00
+Persistent=true
+AccuracySec=1min
+
+[Install]
+WantedBy=timers.target

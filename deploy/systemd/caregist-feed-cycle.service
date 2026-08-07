@@ -1,0 +1,18 @@
+[Unit]
+Description=CareGist New Registration Feed Cycle
+Documentation=https://github.com/sapopo93/caregist
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=caregist
+WorkingDirectory=/home/caregist/CareGist
+ExecStart=/home/caregist/CareGist/.venv/bin/python /home/caregist/CareGist/tools/run_new_registration_feed_cycle.py
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=caregist-feed-cycle
+EnvironmentFile=/home/caregist/CareGist/.env
+
+[Install]
+WantedBy=multi-user.target
