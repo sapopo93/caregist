@@ -16,8 +16,8 @@ Applies pending SQL migrations to the PostgreSQL database in version order. Idem
 ## Prerequisites
 - Python 3.12+, venv activated
 - `.env` with valid `DATABASE_URL`:
-  - Local: `postgresql://user:pass@localhost:5432/caregist`
-  - Neon: `postgresql://...@...eu-west-2.aws.neon.tech/neondb?sslmode=require`
+ - Local: `postgresql://user:pass@localhost:5432/caregist`
+ - Neon: `postgresql://...@...eu-west-2.aws.neon.tech/neondb?sslmode=require`
 - PostgreSQL version 12+
 - Base schema initialized (`db/init.sql` already applied)
 - Superuser or role with CREATE/ALTER TABLE permissions
@@ -98,47 +98,33 @@ asyncio.run(check())
 
 ## Rollback / Undo
 
-**Important:** Migrations are designed to be forward-only. Rollback requires manual SQL or database restore.
+**Important:** Migrations are designed to be forward-only. Rollback procedures and risk profiles are documented per-migration in [`workflows/migration-rollback.md`](./migration-rollback.md). Paired downgrade scripts live in `db/migrations/downgrades/`. For irreversible migrations, refer to the rollback runbook which references the snapshot restore procedure in `workflows/restore-from-snapshot.md`.
 
-### If a migration fails:
+## Error Recovery
+
 1. Check error output (e.g., "relation already exists")
 2. Investigate the failing migration file in `db/migrations/`
 3. **Do not** continue — fix the issue or restore from backup
 4. Once fixed, re-run `apply_migrations.py` (it skips already-applied migrations)
 
-### If you need to roll back entirely:
-1. Restore from database backup
+### Rollback steps
+
+1. See `workflows/migration-rollback.md` for the per-migration downgrade script and risk profile
 2. Do not attempt to `DELETE FROM schema_migrations` — it will cause sync issues
 
-## Monitoring
-
-Track migration status in production:
+## Track Migration Status
 
 ```sql
-SELECT 
-  filename,
-  applied_at::date as applied_date,
-  extract(epoch from (NOW() - applied_at))::int as seconds_ago
-FROM schema_migrations
-ORDER BY applied_at DESC;
+SELECT filename, applied_at FROM schema_migrations ORDER BY applied_at DESC;
 ```
 
-## Troubleshooting
+## Common Issues
 
-**"relation 'care_providers' does not exist"**
-- Base schema (`db/init.sql`) was not applied before migrations
-- Apply `db/init.sql` first, then run migrations
-
-**"column 'X' already exists"**
+**"relation X already exists"**
 - Migration has already been applied
 - Check `schema_migrations` table
 - Run script again — it will skip already-applied migrations
 
-**"permission denied for schema 'public'"**
+**"permission denied"**
 - Database user does not have CREATE/ALTER permissions
 - Grant permissions: `GRANT CREATE, USAGE ON SCHEMA public TO role_name;`
-
-**Script hangs**
-- Database connection timeout — check `DATABASE_URL`, network connectivity
-- Check if database is under heavy load
-- Use Ctrl+C to cancel, investigate database, retry
