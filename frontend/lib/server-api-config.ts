@@ -125,7 +125,16 @@ export function getServerApiBase() {
   return DEV_API_BASE;
 }
 
-export function getServerApiKey() {
+/**
+ * Returns the server-only API key. Must NEVER be called from client-side code.
+ *
+ * Security: NEXT_PUBLIC_* env vars are baked into the JS bundle and visible to
+ * every browser visitor. API_KEY must remain server-only (no NEXT_PUBLIC_ prefix).
+ * All frontend-to-backend calls must route through Next.js route handlers
+ * (frontend/app/api/proxy/[...path]/route.ts) which inject this key server-side.
+ */
+export function getServerApiKey(): string {
+  // PRIMARY: server-only key (never prefixed NEXT_PUBLIC_)
   if (process.env.API_KEY) return process.env.API_KEY;
   if (process.env.API_MASTER_KEY) {
     warnOnce("server_key", "[caregist] API_KEY env var is not set — falling back to API_MASTER_KEY");
@@ -144,15 +153,13 @@ export function getServerApiKey() {
     return rootMasterKey;
   }
 
-  if (process.env.NEXT_PUBLIC_API_KEY) {
-    warnOnce(
-      "server_key",
-      "[caregist] Falling back to NEXT_PUBLIC_API_KEY for server requests. Rotate this key and move it to API_KEY or API_MASTER_KEY.",
-    );
-    return process.env.NEXT_PUBLIC_API_KEY;
-  }
-
-  throw new Error("[caregist] API_KEY or API_MASTER_KEY env var is required but not set");
+  // NEXT_PUBLIC_API_KEY fallback REMOVED (F#4).
+  // That env var bakes the key into the JS bundle, exposing it to any browser visitor.
+  // Set API_KEY (no NEXT_PUBLIC_ prefix) in your server environment instead.
+  throw new Error(
+    "[caregist] API_KEY or API_MASTER_KEY env var is required but not set. " +
+    "Do NOT use NEXT_PUBLIC_API_KEY — it exposes the backend master key in the JS bundle."
+  );
 }
 
 export function getPublicApiBase() {
