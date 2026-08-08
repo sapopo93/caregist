@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import logging
 from datetime import datetime, timedelta, timezone
 from typing import Literal
@@ -1120,6 +1121,8 @@ async def stripe_webhook(request: Request) -> dict:
                 await _handle_subscription_updated(conn, authoritative)
             elif event_type == "customer.subscription.deleted":
                 await _handle_subscription_deleted(conn, data)
+            elif event_type in ("charge.refunded", "charge.refund.updated"):
+                await _handle_refund(conn, data)
             else:
                 logger.info("Unhandled Stripe event: %s", event_type)
 
@@ -1406,4 +1409,64 @@ async def _handle_profile_checkout_completed(conn, session: dict) -> None:
         target_id=slug,
         metadata={"tier": tier, "subscription_id": subscription_id},
         conn=conn,
+    )
+
+
+async def _handle_refund(conn, charge: dict) -> None:
+    """Record a charge.refunded or charge.refund.updated event atomically.
+
+    Updates billing_operations with the refund status and writes an audit log
+    inside the same transaction as the webhook dedup insert. On exception the
+    entire transaction rolls back and Stripe will re-deliver the event.
+
+    Clawback (full refund of a paid charge) also records the commercial reversal
+    so reconciliation can detect orphaned value.
+    """
+    charge_id = charge.get("id")
+    if not charge_id:
+        raise RuntimeError("charge.refunded missing charge id")
+
+    amount_refunded = charge.get("amount_refunded", 0)
+    amount = charge.get("amount", 0)
+    fully_refunded = charge.get("refunded", False)
+    payment_intent = charge.get("payment_intent")
+
+    await conn.execute(
+        """
+        INSERT INTO billing_operations
+            (owner_type, operation_type, stripe_object_id, status,
+             amount_gbp, metadata, created_at, updated_at)
+        VALUES ('account', 'refund', $1, $2, $3, $4, NOW(), NOW())
+        ON CONFLICT (stripe_object_id, operation_type)
+        DO UPDATE SET status = EXCLUDED.status,
+                      amount_gbp = EXCLUDED.amount_gbp,
+                      metadata = EXCLUDED.metadata,
+                      updated_at = NOW()
+        """,
+        charge_id,
+        "refunded" if fully_refunded else "partial_refund",
+        round(amount_refunded / 100, 2),
+        json.dumps({"payment_intent": payment_intent, "amount": amount,
+                     "amount_refunded": amount_refunded,
+                     "fully_refunded": fully_refunded}),
+    )
+
+    await write_audit_log(
+        action="billing.charge.refund",
+        outcome="success",
+        actor={"type": "system", "name": "stripe"},
+        target_type="charge",
+        target_id=charge_id,
+        metadata={
+            "amount_refunded_gbp": round(amount_refunded / 100, 2),
+            "amount_original_gbp": round(amount / 100, 2),
+            "fully_refunded": fully_refunded,
+            "payment_intent": payment_intent,
+        },
+        conn=conn,
+    )
+
+    logger.info(
+        "Refund recorded: charge=%s refunded=%s/%s full=%s",
+        charge_id, amount_refunded, amount, fully_refunded,
     )
