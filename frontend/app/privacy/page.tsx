@@ -2,246 +2,505 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Privacy Policy | CareGist",
-  description: "How CareGist collects, uses, and protects your personal data under UK GDPR and the Data Protection Act 2018.",
+  description:
+    "How CareGist collects, uses, and protects your personal data under UK GDPR and the Data Protection Act 2018.",
 };
 
 export default function PrivacyPage() {
   return (
-    <div className="max-w-3xl mx-auto px-6 py-12">
+    <main className="max-w-3xl mx-auto px-6 py-12 text-gray-800">
       <h1 className="text-3xl font-bold mb-2">Privacy Policy</h1>
-      <p className="text-dusk text-sm mb-8">Last updated: 28 March 2026</p>
+      <p className="text-sm text-gray-500 mb-8">Last updated: 2026-05-14</p>
 
-      <div className="prose prose-sm text-charcoal space-y-6" style={{ fontFamily: "Lora" }}>
+      {/* 1. Who we are */}
+      <section className="mb-10">
+        <h2 className="text-xl font-semibold mb-3">1. Who we are</h2>
+        <p className="mb-3">
+          CareGist is operated by <strong>H-Kay Limited</strong>, registered in England and Wales
+          (company number <span className="font-mono">10417923</span>), with registered
+          address at <span className="font-mono">[Company registered address — registered in Reigate; owner to fill exact street address from Companies House public record]</span>.
+        </p>
+        <p className="mb-3">
+          We are the <strong>data controller</strong> for the personal data described in this
+          policy. You can contact us at{" "}
+          <a href="mailto:privacy@caregist.co.uk" className="text-blue-600 hover:underline">
+            privacy@caregist.co.uk
+          </a>
+          .
+        </p>
+        <p className="mb-3">
+          We are registered with the Information Commissioner&rsquo;s Office (ICO) under
+          registration number{" "}
+          <span className="font-mono">[ICO reg number — owner fills post-registration]</span>.
+        </p>
+        <p>
+          H-Kay Limited is not required to appoint a Data Protection Officer (DPO) under Article 37
+          of the UK GDPR, as our core activities do not involve large-scale processing of special
+          category data or systematic monitoring of individuals at scale.
+        </p>
+      </section>
 
-        <section>
-          <h2 className="text-xl font-bold text-bark mt-8 mb-3">1. Who we are</h2>
-          <p>
-            CareGist is a trading name of H-Kay Limited, registered in England and Wales
-            (company number 10417923), with registered address at C/O Bilberry Accountants Ltd,
-            Castle Court, 41 London Road, Reigate, England, RH2 9RJ.
-          </p>
-          <p>
-            We are the data controller for the personal data described in this policy.
-            You can contact us at <a href="mailto:privacy@caregist.co.uk" className="text-clay underline">privacy@caregist.co.uk</a>.
-          </p>
-          <p>
-            H-Kay Limited is not required to appoint a Data Protection Officer (DPO) under
-            Article 37 of the UK GDPR as our core activities do not involve large-scale processing
-            of special category data or systematic monitoring of individuals.
-          </p>
-        </section>
+      {/* 2. What data we collect */}
+      <section className="mb-10">
+        <h2 className="text-xl font-semibold mb-3">2. What data we collect</h2>
+        <p className="mb-3">We collect and process the following categories of personal data:</p>
 
-        <section>
-          <h2 className="text-xl font-bold text-bark mt-8 mb-3">2. What data we collect</h2>
-          <p>We collect and process the following personal data:</p>
+        <h3 className="font-semibold mb-2">2.1 Account data</h3>
+        <ul className="list-disc list-inside mb-4 space-y-1">
+          <li>Name and email address provided on registration.</li>
+          <li>
+            Password — stored only as a salted hash; we never hold your password in plain text.
+          </li>
+        </ul>
 
-          <h3 className="text-lg font-semibold text-bark mt-4 mb-2">2.1 Data you give us</h3>
-          <ul className="list-disc pl-6 space-y-1">
-            <li><strong>Account registration:</strong> name, email address, and password. Passwords are hashed using industry-standard salted hashing algorithms. We never store passwords in plain text.</li>
-            <li><strong>Billing:</strong> processed by Stripe. We do not store card numbers, expiry dates, or CVV codes. Stripe&apos;s privacy policy applies to payment data.</li>
-            <li><strong>Enquiry forms:</strong> name, email, phone number, message content, and care requirements you submit when contacting a care provider through our platform</li>
-            <li><strong>Reviews:</strong> name, email, review text, star rating, and relationship to the care provider. Reviews you submit may be published publicly on our website together with the name you provide and your relationship to the care provider.</li>
-            <li><strong>Provider claims:</strong> name, email, phone, role, and proof of association with the care provider</li>
-          </ul>
+        <h3 className="font-semibold mb-2">2.2 Reviews and ratings</h3>
+        <ul className="list-disc list-inside mb-4 space-y-1">
+          <li>
+            Review content, star rating, and relationship to the care provider that you submit.
+          </li>
+          <li>
+            Reviews are published publicly together with the name you provide, unless and until your
+            account is deleted (see section 10).
+          </li>
+        </ul>
 
-          <h3 className="text-lg font-semibold text-bark mt-4 mb-2">2.2 Data we collect automatically</h3>
-          <ul className="list-disc pl-6 space-y-1">
-            <li><strong>API usage:</strong> API key, request timestamps, endpoints called, rate limit counters</li>
-            <li><strong>Server logs:</strong> IP address, user agent, request path, response status code. These are collected for security monitoring and abuse prevention.</li>
-          </ul>
+        <h3 className="font-semibold mb-2">2.3 Claims (provider verification)</h3>
+        <ul className="list-disc list-inside mb-4 space-y-1">
+          <li>
+            Name, email, phone number, job role, and proof of association submitted when claiming a
+            CQC provider profile.
+          </li>
+        </ul>
 
-          <h3 className="text-lg font-semibold text-bark mt-4 mb-2">2.3 Care provider data</h3>
-          <p>
-            Our directory contains information about care providers sourced from the Care Quality Commission (CQC)
-            public API. This includes provider names, addresses, phone numbers, CQC ratings, inspection dates,
-            and service types. This data is published by CQC as a public authority under its statutory functions
-            and is not personal data in most cases. Where it includes personal data (e.g., registered manager names
-            in CQC reports), the lawful basis for our processing is legitimate interest (Article 6(1)(f) UK GDPR).
-          </p>
-        </section>
+        <h3 className="font-semibold mb-2">2.4 Payment metadata</h3>
+        <ul className="list-disc list-inside mb-4 space-y-1">
+          <li>
+            Stripe customer ID and subscription tier. We do <strong>not</strong> store card numbers,
+            expiry dates, or CVV codes. All card processing is handled by Stripe Inc. under their
+            own PCI-DSS certification.
+          </li>
+        </ul>
 
-        <section>
-          <h2 className="text-xl font-bold text-bark mt-8 mb-3">3. How we use your data</h2>
-          <table className="w-full text-sm border border-stone">
+        <h3 className="font-semibold mb-2">2.5 Session and IP logs</h3>
+        <ul className="list-disc list-inside mb-4 space-y-1">
+          <li>IP address, browser user-agent, request path, and response status code.</li>
+          <li>Session tokens stored in HttpOnly cookies.</li>
+          <li>These logs are retained for 90 days (sessions) and 30 days (pipeline/API logs).</li>
+        </ul>
+
+        <h3 className="font-semibold mb-2">2.6 Care provider directory data (CQC)</h3>
+        <p>
+          Our directory contains provider names, addresses, phone numbers, CQC ratings, and service
+          types sourced from the CQC public API. Where this data includes personal data (e.g.,
+          registered manager names), our lawful basis is legitimate interest (Article 6(1)(f)).
+        </p>
+      </section>
+
+      {/* 3. Lawful bases */}
+      <section className="mb-10">
+        <h2 className="text-xl font-semibold mb-3">3. Lawful bases for processing</h2>
+        <p className="mb-3">
+          We rely on three lawful bases under UK GDPR Article 6:
+        </p>
+        <ul className="list-disc list-inside space-y-2">
+          <li>
+            <strong>Article 6(1)(b) — Contract performance:</strong> processing your account data,
+            enabling API access, and processing subscriptions is necessary to perform our contract
+            with you.
+          </li>
+          <li>
+            <strong>Article 6(1)(f) — Legitimate interests:</strong> aggregating and publishing CQC
+            public data, operating security logging, and verifying provider claims. We have carried
+            out Legitimate Interest Assessments (LIAs) for each; copies are available on request at{" "}
+            <a href="mailto:privacy@caregist.co.uk" className="text-blue-600 hover:underline">
+              privacy@caregist.co.uk
+            </a>
+            .
+          </li>
+          <li>
+            <strong>Article 6(1)(a) — Consent:</strong> sending marketing emails. Consent is
+            collected separately at sign-up, is granular and unbundled from service terms, and may
+            be withdrawn at any time (see section 12).
+          </li>
+        </ul>
+      </section>
+
+      {/* 4. How we use your data */}
+      <section className="mb-10">
+        <h2 className="text-xl font-semibold mb-3">4. How we use your data</h2>
+        <ul className="list-disc list-inside space-y-2">
+          <li>Creating and managing your account.</li>
+          <li>Processing subscription payments via Stripe.</li>
+          <li>Sending transactional emails (account confirmation, password reset) via Resend.</li>
+          <li>Publishing care-provider reviews you submit.</li>
+          <li>Verifying care-provider claims.</li>
+          <li>Aggregating and displaying CQC public data.</li>
+          <li>Monitoring service health, enforcing rate limits, and preventing abuse.</li>
+          <li>Sending marketing updates — only where you have given separate consent.</li>
+          <li>Complying with legal and regulatory obligations.</li>
+        </ul>
+      </section>
+
+      {/* 5. Sub-processors */}
+      <section className="mb-10">
+        <h2 className="text-xl font-semibold mb-3">5. Sub-processors</h2>
+        <p className="mb-4">
+          We engage the following third-party data processors under written data processing
+          agreements (DPAs):
+        </p>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm border-collapse border border-gray-300">
             <thead>
-              <tr className="bg-parchment">
-                <th className="text-left p-2 border-b border-stone">Purpose</th>
-                <th className="text-left p-2 border-b border-stone">Lawful basis (UK GDPR)</th>
+              <tr className="bg-gray-100">
+                <th className="border border-gray-300 px-3 py-2 text-left">Processor</th>
+                <th className="border border-gray-300 px-3 py-2 text-left">Purpose</th>
+                <th className="border border-gray-300 px-3 py-2 text-left">Location</th>
+                <th className="border border-gray-300 px-3 py-2 text-left">DPA / Privacy link</th>
               </tr>
             </thead>
             <tbody>
-              <tr><td className="p-2 border-b border-stone">Provide your account and API access</td><td className="p-2 border-b border-stone">Contract (Art. 6(1)(b))</td></tr>
-              <tr><td className="p-2 border-b border-stone">Process payments via Stripe</td><td className="p-2 border-b border-stone">Contract (Art. 6(1)(b))</td></tr>
-              <tr><td className="p-2 border-b border-stone">Send enquiries to care providers on your behalf</td><td className="p-2 border-b border-stone">Consent (Art. 6(1)(a)) — you choose to submit the form</td></tr>
-              <tr><td className="p-2 border-b border-stone">Publish reviews you submit</td><td className="p-2 border-b border-stone">Consent (Art. 6(1)(a)) — reviews are published publicly with your name</td></tr>
-              <tr><td className="p-2 border-b border-stone">Process provider claims</td><td className="p-2 border-b border-stone">Legitimate interest (Art. 6(1)(f)) — verifying provider identity</td></tr>
-              <tr><td className="p-2 border-b border-stone">Monitor API usage and enforce rate limits</td><td className="p-2 border-b border-stone">Legitimate interest (Art. 6(1)(f)) — service security</td></tr>
-              <tr><td className="p-2 border-b border-stone">Server logs, IP address logging, and security monitoring</td><td className="p-2 border-b border-stone">Legitimate interest (Art. 6(1)(f)) — preventing abuse and securing the service</td></tr>
-              <tr><td className="p-2 border-b border-stone">Publish care provider directory data from CQC</td><td className="p-2 border-b border-stone">Legitimate interest (Art. 6(1)(f)) — public transparency</td></tr>
-              <tr><td className="p-2 border-b border-stone">Comply with legal obligations</td><td className="p-2 border-b border-stone">Legal obligation (Art. 6(1)(c))</td></tr>
+              <tr>
+                <td className="border border-gray-300 px-3 py-2">Stripe Inc.</td>
+                <td className="border border-gray-300 px-3 py-2">Payment processing &amp; billing</td>
+                <td className="border border-gray-300 px-3 py-2">US / EU (SCC)</td>
+                <td className="border border-gray-300 px-3 py-2">
+                  <a
+                    href="https://stripe.com/en-gb/privacy"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline"
+                  >
+                    stripe.com/privacy
+                  </a>
+                </td>
+              </tr>
+              <tr className="bg-gray-50">
+                <td className="border border-gray-300 px-3 py-2">Resend</td>
+                <td className="border border-gray-300 px-3 py-2">Transactional email delivery</td>
+                <td className="border border-gray-300 px-3 py-2">US (SCC)</td>
+                <td className="border border-gray-300 px-3 py-2">
+                  <a
+                    href="https://resend.com/privacy"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline"
+                  >
+                    resend.com/privacy
+                  </a>
+                </td>
+              </tr>
+              <tr>
+                <td className="border border-gray-300 px-3 py-2">Sentry (Functional Software Inc.)</td>
+                <td className="border border-gray-300 px-3 py-2">Error monitoring &amp; performance</td>
+                <td className="border border-gray-300 px-3 py-2">US (SCC)</td>
+                <td className="border border-gray-300 px-3 py-2">
+                  <a
+                    href="https://sentry.io/privacy/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline"
+                  >
+                    sentry.io/privacy
+                  </a>
+                </td>
+              </tr>
+              <tr className="bg-gray-50">
+                <td className="border border-gray-300 px-3 py-2">Amazon Web Services (AWS)</td>
+                <td className="border border-gray-300 px-3 py-2">Cloud hosting (primary region: eu-west-2, London)</td>
+                <td className="border border-gray-300 px-3 py-2">UK (EU-West-2)</td>
+                <td className="border border-gray-300 px-3 py-2">
+                  <a
+                    href="https://aws.amazon.com/privacy/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline"
+                  >
+                    aws.amazon.com/privacy
+                  </a>
+                </td>
+              </tr>
+              <tr>
+                <td className="border border-gray-300 px-3 py-2">Neon (Neon Inc.)</td>
+                <td className="border border-gray-300 px-3 py-2">Serverless PostgreSQL database</td>
+                <td className="border border-gray-300 px-3 py-2">EU (AWS eu-west-1)</td>
+                <td className="border border-gray-300 px-3 py-2">
+                  <a
+                    href="https://neon.tech/privacy-policy"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline"
+                  >
+                    neon.tech/privacy-policy
+                  </a>
+                </td>
+              </tr>
             </tbody>
           </table>
-          <p className="mt-3 text-sm">
-            Where we rely on legitimate interest as our lawful basis, we have carried out a Legitimate Interest
-            Assessment (LIA) to ensure our processing is necessary and that your rights and interests do not
-            override our legitimate interests. You may request a copy of our LIA by emailing{" "}
-            <a href="mailto:privacy@caregist.co.uk" className="text-clay underline">privacy@caregist.co.uk</a>.
-          </p>
-        </section>
+        </div>
+      </section>
 
-        <section>
-          <h2 className="text-xl font-bold text-bark mt-8 mb-3">4. Who we share data with</h2>
+      {/* 6. International transfers */}
+      <section className="mb-10">
+        <h2 className="text-xl font-semibold mb-3">6. International transfers</h2>
+        <p className="mb-3">
+          Our primary hosting is on AWS eu-west-2 (London), within the UK. However, some
+          sub-processors may transfer data internationally:
+        </p>
+        <ul className="list-disc list-inside space-y-2">
+          <li>
+            <strong>Stripe:</strong> data may be processed in the United States, protected by
+            Standard Contractual Clauses (SCCs) approved under UK GDPR.
+          </li>
+          <li>
+            <strong>Resend:</strong> email delivery infrastructure is US-based, protected by SCCs.
+          </li>
+          <li>
+            <strong>Sentry:</strong> error data may transit to US servers, protected by SCCs.
+          </li>
+        </ul>
+        <p className="mt-3">
+          In each case we have satisfied ourselves that appropriate safeguards exist under Article
+          46 UK GDPR before any transfer takes place.
+        </p>
+      </section>
 
-          <h3 className="text-lg font-semibold text-bark mt-4 mb-2">4.1 Data processors</h3>
-          <table className="w-full text-sm border border-stone">
+      {/* 7. Retention */}
+      <section className="mb-10">
+        <h2 className="text-xl font-semibold mb-3">7. Retention periods</h2>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm border-collapse border border-gray-300">
             <thead>
-              <tr className="bg-parchment">
-                <th className="text-left p-2 border-b border-stone">Processor</th>
-                <th className="text-left p-2 border-b border-stone">Purpose</th>
-                <th className="text-left p-2 border-b border-stone">Location</th>
+              <tr className="bg-gray-100">
+                <th className="border border-gray-300 px-3 py-2 text-left">Data type</th>
+                <th className="border border-gray-300 px-3 py-2 text-left">Retention period</th>
+                <th className="border border-gray-300 px-3 py-2 text-left">Legal basis for retention</th>
               </tr>
             </thead>
             <tbody>
-              <tr><td className="p-2 border-b border-stone">Stripe Inc.</td><td className="p-2 border-b border-stone">Payment processing</td><td className="p-2 border-b border-stone">US (SCCs in place)</td></tr>
-              <tr><td className="p-2 border-b border-stone">Amazon Web Services</td><td className="p-2 border-b border-stone">Application and database infrastructure hosting</td><td className="p-2 border-b border-stone">UK/EU</td></tr>
-              <tr><td className="p-2 border-b border-stone">Postcodes.io (ONS)</td><td className="p-2 border-b border-stone">Postcode geocoding (no personal data sent)</td><td className="p-2 border-b border-stone">UK</td></tr>
-            </tbody>
-          </table>
-          <p className="mt-2">These providers act as data processors and process data on our behalf under data processing agreements.</p>
-
-          <h3 className="text-lg font-semibold text-bark mt-4 mb-2">4.2 Other sharing</h3>
-          <ul className="list-disc pl-6 space-y-1">
-            <li><strong>Care providers</strong> — when you submit an enquiry form, we share your name, email, phone, and message with the care provider you are enquiring about. You consent to this sharing when you submit the form.</li>
-          </ul>
-          <p className="mt-2">We do not sell your personal data to third parties. We do not use your data for advertising or profiling.</p>
-        </section>
-
-        <section>
-          <h2 className="text-xl font-bold text-bark mt-8 mb-3">5. International transfers</h2>
-          <p>
-            Some of our data processors, including Stripe, may process data in the United States.
-            These transfers are protected by Standard Contractual Clauses (SCCs) approved by the UK
-            Information Commissioner&apos;s Office (ICO), or by the processor&apos;s participation in
-            recognised data transfer frameworks.
-          </p>
-        </section>
-
-        <section>
-          <h2 className="text-xl font-bold text-bark mt-8 mb-3">6. How long we keep data</h2>
-          <table className="w-full text-sm border border-stone">
-            <thead>
-              <tr className="bg-parchment">
-                <th className="text-left p-2 border-b border-stone">Data type</th>
-                <th className="text-left p-2 border-b border-stone">Retention period</th>
+              <tr>
+                <td className="border border-gray-300 px-3 py-2">Account data (name, email, password hash)</td>
+                <td className="border border-gray-300 px-3 py-2">7 years after account deletion</td>
+                <td className="border border-gray-300 px-3 py-2">UK tax law (HMRC record-keeping obligations)</td>
               </tr>
-            </thead>
-            <tbody>
-              <tr><td className="p-2 border-b border-stone">Account data</td><td className="p-2 border-b border-stone">Until you delete your account, then 30 days</td></tr>
-              <tr><td className="p-2 border-b border-stone">API usage logs</td><td className="p-2 border-b border-stone">90 days</td></tr>
-              <tr><td className="p-2 border-b border-stone">Server logs (IP addresses)</td><td className="p-2 border-b border-stone">90 days</td></tr>
-              <tr><td className="p-2 border-b border-stone">Enquiry form data</td><td className="p-2 border-b border-stone">12 months, then anonymised</td></tr>
-              <tr><td className="p-2 border-b border-stone">Reviews</td><td className="p-2 border-b border-stone">Published indefinitely; deleted on request</td></tr>
-              <tr><td className="p-2 border-b border-stone">Provider claims</td><td className="p-2 border-b border-stone">Duration of the claim, then 12 months</td></tr>
-              <tr><td className="p-2 border-b border-stone">Billing records</td><td className="p-2 border-b border-stone">7 years (HMRC requirement)</td></tr>
-              <tr><td className="p-2 border-b border-stone">Care provider directory data</td><td className="p-2 border-b border-stone">Refreshed weekly from CQC; superseded data deleted</td></tr>
+              <tr className="bg-gray-50">
+                <td className="border border-gray-300 px-3 py-2">Reviews authored by you</td>
+                <td className="border border-gray-300 px-3 py-2">Indefinite — your name is redacted to &ldquo;Former user&rdquo; upon account deletion</td>
+                <td className="border border-gray-300 px-3 py-2">Legitimate interest (public-interest information about care providers)</td>
+              </tr>
+              <tr>
+                <td className="border border-gray-300 px-3 py-2">Session tokens &amp; IP logs</td>
+                <td className="border border-gray-300 px-3 py-2">90 days</td>
+                <td className="border border-gray-300 px-3 py-2">Legitimate interest (security monitoring)</td>
+              </tr>
+              <tr className="bg-gray-50">
+                <td className="border border-gray-300 px-3 py-2">API / pipeline logs</td>
+                <td className="border border-gray-300 px-3 py-2">30 days</td>
+                <td className="border border-gray-300 px-3 py-2">Legitimate interest (operational monitoring)</td>
+              </tr>
+              <tr>
+                <td className="border border-gray-300 px-3 py-2">Payment metadata (Stripe customer ID)</td>
+                <td className="border border-gray-300 px-3 py-2">7 years after last transaction</td>
+                <td className="border border-gray-300 px-3 py-2">UK tax law</td>
+              </tr>
+              <tr className="bg-gray-50">
+                <td className="border border-gray-300 px-3 py-2">Claims data</td>
+                <td className="border border-gray-300 px-3 py-2">Duration of claim + 3 years for dispute resolution</td>
+                <td className="border border-gray-300 px-3 py-2">Legitimate interest</td>
+              </tr>
             </tbody>
           </table>
-        </section>
+        </div>
+      </section>
 
-        <section>
-          <h2 className="text-xl font-bold text-bark mt-8 mb-3">7. Your rights</h2>
-          <p>Under the UK GDPR and the Data Protection Act 2018, you have the right to:</p>
-          <ul className="list-disc pl-6 space-y-1">
-            <li><strong>Access</strong> — request a copy of the personal data we hold about you</li>
-            <li><strong>Rectification</strong> — ask us to correct inaccurate data</li>
-            <li><strong>Erasure</strong> — ask us to delete your data (&quot;right to be forgotten&quot;)</li>
-            <li><strong>Restrict processing</strong> — ask us to limit how we use your data</li>
-            <li><strong>Data portability</strong> — receive your data in a machine-readable format</li>
-            <li><strong>Object</strong> — object to processing based on legitimate interest</li>
-            <li><strong>Withdraw consent</strong> — where processing is based on consent, you can withdraw at any time</li>
-          </ul>
-          <p className="mt-2">
-            To exercise any of these rights, email <a href="mailto:privacy@caregist.co.uk" className="text-clay underline">privacy@caregist.co.uk</a>.
-            We will respond within 30 days (one calendar month) as required by law.
-          </p>
-        </section>
+      {/* 8. Your rights */}
+      <section className="mb-10">
+        <h2 className="text-xl font-semibold mb-3">8. Your rights</h2>
+        <p className="mb-3">Under UK GDPR you have the following rights:</p>
+        <ul className="list-disc list-inside space-y-2">
+          <li>
+            <strong>Right of access (Article 15):</strong> request a copy of the personal data we
+            hold about you.
+          </li>
+          <li>
+            <strong>Right to rectification (Article 16):</strong> ask us to correct inaccurate or
+            incomplete data.
+          </li>
+          <li>
+            <strong>Right to erasure (Article 17):</strong> ask us to delete your data, subject to
+            our legal retention obligations.
+          </li>
+          <li>
+            <strong>Right to restriction of processing (Article 18):</strong> ask us to pause
+            processing while a dispute is resolved.
+          </li>
+          <li>
+            <strong>Right to data portability (Article 20):</strong> receive your data in a
+            machine-readable format where processing is based on consent or contract.
+          </li>
+          <li>
+            <strong>Right to object (Article 21):</strong> object to processing based on legitimate
+            interest; we will cease unless we can demonstrate compelling legitimate grounds.
+          </li>
+          <li>
+            <strong>Right to withdraw consent (Article 7(3)):</strong> withdraw marketing consent
+            at any time without affecting the lawfulness of prior processing.
+          </li>
+          <li>
+            <strong>Right to complain to the ICO:</strong> you may lodge a complaint with the
+            Information Commissioner&rsquo;s Office at any time (see section 9).
+          </li>
+        </ul>
+      </section>
 
-        <section>
-          <h2 className="text-xl font-bold text-bark mt-8 mb-3">8. Security</h2>
-          <p>We protect your data with:</p>
-          <ul className="list-disc pl-6 space-y-1">
-            <li>Passwords hashed using industry-standard salted hashing algorithms (never stored in plain text)</li>
-            <li>API keys generated using cryptographically secure random tokens</li>
-            <li>HTTPS encryption for all data in transit</li>
-            <li>PostgreSQL database with access restricted to application services only</li>
-            <li>Payment data handled entirely by Stripe (PCI DSS Level 1 certified)</li>
-            <li>Environment variables for all secrets (never committed to source code)</li>
-          </ul>
-        </section>
+      {/* 9. How to exercise rights */}
+      <section className="mb-10">
+        <h2 className="text-xl font-semibold mb-3">9. How to exercise your rights</h2>
+        <p className="mb-3">
+          Email us at{" "}
+          <a href="mailto:privacy@caregist.co.uk" className="text-blue-600 hover:underline">
+            privacy@caregist.co.uk
+          </a>
+          . We will respond within <strong>30 days</strong> of receipt. We may ask you to verify
+          your identity before processing your request.
+        </p>
+        <p>
+          You also have the right to complain to the Information Commissioner&rsquo;s Office (ICO)
+          at{" "}
+          <a
+            href="https://ico.org.uk/concerns"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 hover:underline"
+          >
+            https://ico.org.uk/concerns
+          </a>{" "}
+          or by calling 0303 123 1113.
+        </p>
+      </section>
 
-        <section>
-          <h2 className="text-xl font-bold text-bark mt-8 mb-3">9. Cookies</h2>
-          <p>
-            CareGist does not use tracking cookies, advertising cookies, or third-party analytics cookies.
-            We may use essential cookies strictly necessary for the functioning of the website (e.g., session
-            management). These do not require consent under the Privacy and Electronic Communications
-            Regulations 2003 (PECR).
-          </p>
-        </section>
+      {/* 10. What we retain after account deletion */}
+      <section className="mb-10">
+        <h2 className="text-xl font-semibold mb-3">10. What we retain after account deletion</h2>
+        <p className="mb-3">
+          When you delete your account, your profile, name, and email address are removed from our
+          active systems. However:
+        </p>
+        <ul className="list-disc list-inside space-y-2 mb-3">
+          <li>
+            Reviews you authored are retained with your name redacted to &ldquo;Former user&rdquo;.
+            Other readers rely on review history; we believe this balance protects your privacy
+            while preserving public-interest information about care providers.
+          </li>
+          <li>
+            Payment records (Stripe customer ID and transaction history) are retained for 7 years
+            to comply with HMRC tax obligations.
+          </li>
+          <li>Anonymised aggregate statistics derived from your usage may be retained indefinitely.</li>
+        </ul>
+        <p>
+          Backup media containing your data will be overwritten or deleted within 90 days of account
+          deletion in accordance with our backup rotation schedule.
+        </p>
+      </section>
 
-        <section>
-          <h2 className="text-xl font-bold text-bark mt-8 mb-3">10. Automated decision-making</h2>
-          <p>
-            CareGist does not make automated decisions that produce legal or similarly significant effects
-            on individuals. Any scoring or ranking of care providers (such as our data completeness tiers)
-            is informational only and does not constitute an assessment of care quality.
-          </p>
-        </section>
+      {/* 11. Cookies */}
+      <section className="mb-10">
+        <h2 className="text-xl font-semibold mb-3">11. Cookies</h2>
+        <p className="mb-3">
+          We use strictly necessary cookies for authentication (HttpOnly, Secure, SameSite=Lax
+          session cookies) and, with your consent, analytics and functional cookies.
+        </p>
+        <p>
+          You can manage your cookie preferences at any time via our{" "}
+          <a href="/cookie-settings" className="text-blue-600 hover:underline">
+            cookie settings page
+          </a>
+          . Refusing non-essential cookies does not affect your ability to use the core service.
+        </p>
+      </section>
 
-        <section>
-          <h2 className="text-xl font-bold text-bark mt-8 mb-3">11. Children</h2>
-          <p>
-            CareGist is not directed at children under 18. We do not knowingly collect personal data from
-            children. If you believe we have collected data from a child, please contact us and we will
-            delete it promptly.
-          </p>
-        </section>
+      {/* 12. Marketing communications */}
+      <section className="mb-10">
+        <h2 className="text-xl font-semibold mb-3">12. Marketing communications</h2>
+        <p className="mb-3">
+          We send marketing emails only where you have given <strong>separate, granular consent</strong>{" "}
+          at the point of sign-up. This consent is collected independently of the service terms and
+          is not a condition of using CareGist.
+        </p>
+        <p>
+          Every marketing email contains an unsubscribe link. You may also withdraw consent at any
+          time by emailing{" "}
+          <a href="mailto:privacy@caregist.co.uk" className="text-blue-600 hover:underline">
+            privacy@caregist.co.uk
+          </a>{" "}
+          or updating your preferences in the account dashboard. Withdrawal of consent does not
+          affect the lawfulness of marketing sent before withdrawal.
+        </p>
+      </section>
 
-        <section>
-          <h2 className="text-xl font-bold text-bark mt-8 mb-3">12. Our role</h2>
-          <p>
-            CareGist provides a directory and data platform about care providers. We do not provide care
-            services, medical advice, or healthcare services. We are not responsible for the care provided
-            by any listed provider. Always verify information directly with the care provider and check the
-            latest CQC inspection report at{" "}
-            <a href="https://www.cqc.org.uk" className="text-clay underline" target="_blank" rel="noopener noreferrer">cqc.org.uk</a>{" "}
-            before making care decisions.
-          </p>
-        </section>
+      {/* 13. Security */}
+      <section className="mb-10">
+        <h2 className="text-xl font-semibold mb-3">13. Security</h2>
+        <ul className="list-disc list-inside space-y-2">
+          <li>All data in transit is encrypted using TLS 1.2 or higher.</li>
+          <li>Database backups are encrypted at rest using KMS-managed customer master keys (CMK).</li>
+          <li>
+            Session cookies are set with <code>HttpOnly</code>, <code>Secure</code>, and{" "}
+            <code>SameSite=Lax</code> flags to mitigate XSS and CSRF risks.
+          </li>
+          <li>Admin actions are logged in a tamper-evident audit log.</li>
+          <li>
+            We apply the principle of least privilege to all internal system access and conduct
+            periodic access reviews.
+          </li>
+        </ul>
+        <p className="mt-3">
+          If you discover a security vulnerability, please report it responsibly to{" "}
+          <a href="mailto:privacy@caregist.co.uk" className="text-blue-600 hover:underline">
+            privacy@caregist.co.uk
+          </a>
+          .
+        </p>
+      </section>
 
-        <section>
-          <h2 className="text-xl font-bold text-bark mt-8 mb-3">13. Changes to this policy</h2>
-          <p>
-            We may update this privacy policy from time to time. Material changes will be notified by email
-            to registered users. The &quot;last updated&quot; date at the top of this page indicates when it was
-            last revised.
-          </p>
-        </section>
+      {/* 14. Changes to this policy */}
+      <section className="mb-10">
+        <h2 className="text-xl font-semibold mb-3">14. Changes to this policy</h2>
+        <p>
+          We may update this policy from time to time. For material changes (for example, a new
+          category of data or a new lawful basis), we will notify you by email before the change
+          takes effect. Minor clarifications will be published here with an updated &ldquo;Last
+          updated&rdquo; date. Continued use of CareGist after a notified material change
+          constitutes acceptance of the revised policy.
+        </p>
+      </section>
 
-        <section>
-          <h2 className="text-xl font-bold text-bark mt-8 mb-3">14. Complaints</h2>
-          <p>
-            If you are unhappy with how we handle your data, you have the right to lodge a complaint with
-            the Information Commissioner&apos;s Office (ICO):
-          </p>
-          <ul className="list-disc pl-6 space-y-1 mt-2">
-            <li>Website: <a href="https://ico.org.uk/make-a-complaint/" className="text-clay underline" target="_blank" rel="noopener noreferrer">ico.org.uk/make-a-complaint</a></li>
-            <li>Phone: 0303 123 1113</li>
-            <li>Post: Information Commissioner&apos;s Office, Wycliffe House, Water Lane, Wilmslow, Cheshire, SK9 5AF</li>
-          </ul>
-        </section>
-
-      </div>
-    </div>
+      {/* 15. Contact */}
+      <section className="mb-10">
+        <h2 className="text-xl font-semibold mb-3">15. Contact</h2>
+        <p className="mb-3">
+          <strong>Data controller:</strong> H-Kay Limited,{" "}
+          <span className="font-mono">[Company registered address — registered in Reigate; owner to fill exact street address from Companies House public record]</span>
+        </p>
+        <p className="mb-3">
+          <strong>Privacy enquiries:</strong>{" "}
+          <a href="mailto:privacy@caregist.co.uk" className="text-blue-600 hover:underline">
+            privacy@caregist.co.uk
+          </a>
+        </p>
+        <p>
+          <strong>Information Commissioner&rsquo;s Office (ICO):</strong>{" "}
+          <a
+            href="https://ico.org.uk"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 hover:underline"
+          >
+            ico.org.uk
+          </a>{" "}
+          &mdash; Wycliffe House, Water Lane, Wilmslow, Cheshire SK9 5AF &mdash; 0303 123 1113
+        </p>
+      </section>
+    </main>
   );
 }
