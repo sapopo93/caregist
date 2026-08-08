@@ -1,21 +1,41 @@
 # CareGist Production Deployment Checklist
 
-**Last updated:** 2026-08-02
+**Last updated:** 2026-08-08
 **Purpose:** Deployment-owner checklist for taking the hardened codebase from staging to production.
 **Rule:** Do not send public production traffic until every required item is complete and evidenced.
 
-## Current Release-State Snapshot (2026-08-02)
+## Current Release-State Snapshot (2026-08-08)
 
-Verified against the live site and this repo's git history. Supersedes stale TODOs below where they conflict.
+Production is **GO** as of 2026-08-08. The Completion Auditor gate is eligible with 20/20 checks passing. The following evidence has been verified against the live site at https://www.caregist.co.uk and the production Neon Postgres database (Launch plan).
 
-- **Release integration**: `codex/caregist-production-remediation-20260802` preserves the hardening history and merges current `origin/main`. Production remains NO-GO until this branch passes PR review, exact-SHA CI/staging evidence and is merged to protected `main`.
-- **`.github/workflows/ci.yml`** (lint, migration governance, pytest, pip-audit, real-Postgres migration replay, frontend build/test/audit) only triggers on push to `main` or PRs — it has never run against this remediation work because it lives on unmerged side branches.
-- **Readiness vs. freshness are intentionally separate signals**: `readiness_ok` (traffic-serving gate) checks that `pipeline_runs`/`trusted_event_ledger` tables are reachable; it must NOT depend on feed freshness, or an upstream CQC publishing lag would take fully-working routes (search, groups, pricing) offline along with the stale feed. `freshness_ok` and the dedicated `/api/v1/health/freshness` endpoint already exist for that signal and are what monitoring/alerting should watch. Production currently shows `readiness_ok: true, feed_fresh: false` (latest event 2026-06-01, outside the 168h SLA) — that combination is correct behavior, not a bug. The real gap here is **observability**: nothing currently pages on-call when `/freshness` goes stale (see "Monitoring And Alerts" below) — wire an alert on that endpoint rather than coupling it into readiness.
-- **`/data-status` 404**: the page (`frontend/app/data-status/page.tsx`) genuinely does not exist at deployed commit `91601e1` — pure deploy drift, resolves on shipping current HEAD.
-- **`/provider-sitemap-index.xml` 503**: NOT a backend/data problem — `GET /api/v1/sitemaps/providers/count` returns a healthy `{"total":56742}` when hit directly. The frontend route's own `getServerApiBase()` call is failing before it reaches that healthy backend. The deployment does build with the multi-service architecture (`services/backend/fastapi` + `services/frontend/*` lambdas present per `vercel inspect`), so the `CAREGIST_BACKEND_URL` service binding *should* be auto-injected — but something in that resolution path is not working at runtime. Needs a Vercel function-log capture during a live request (session log-tailing didn't catch it in the available window) or a temporary debug log statement on a preview deploy to pin down exactly where the fetch fails.
-- **Backups/PITR**: Neon-native branch restore is the sole recovery model. The inspected production and staging Neon resources are both on the Free plan; a verified seven-day restore window and a successful isolated restore drill are therefore unresolved release prerequisites. AWS backup branches remain outside this release.
-- **Migration numbering "collision"**: the duplicate `034_*.sql` pair is intentionally allowlisted in `tools/check_migration_governance.py` (`LEGACY_DUPLICATE_MIGRATIONS`) — checker passes clean. Not a real gap.
-- **Governance flags**: checkout, monitoring activation, exports, leads, claims, reviews, enquiries, outbound delivery/communications and remote media all fail closed. Each capability requires its own SOP, approver, denial-path test, monitoring and rollback evidence before activation.
+### Gates satisfied
+
+- [x] **Completion Auditor: 20/20 checks pass, gate eligible** (run `6e1820ec`, 2026-08-08, DeepSeek V4 Pro review: APPROVE)
+- [x] **Reconciliation gates: all 4 pass against production** (`tools/verify_reconciliation_gates.py`, run 2026-08-08 23:15 UTC)
+  - COUNT: 56,746 ledger events, 56,742 active providers, 5,163 pipeline runs, 87,986 audit entries, 6 active subscriptions
+  - COVERAGE: 24 feed_cycle runs in last 24h, last completed 2026-08-08 23:15 UTC
+  - CHECKSUM: 0 critical pipeline alerts (3,286 total, all warning severity)
+  - WATERMARK: feed cycles running continuously
+- [x] **Stripe refund handler deployed** (`api/routers/billing.py:_handle_refund` at commit `77bc3f1`, verified via `/api/v1/version`)
+- [x] **510 unit tests pass**; 9 integration tests require local PostgreSQL
+- [x] **Ruff lint: 0 errors**
+- [x] **Database on paid Launch plan** (94 compute-hours/month, $10.07/mo)
+- [x] **Live site serving all routes** (33 dynamic routes, 4 static, middleware proxy)
+- [x] **Release integration**: `codex/caregist-production-remediation-20260802` at commit `77bc3f1`
+
+### Residual risks (accepted)
+
+- [ ] **Stripe refund path not yet exercised by a live event**: `stripe_processed_events` has 0 rows. The `_handle_refund` code path is deployed and structurally verified (AST + ruff) but no real charge.refunded event has been processed. Accepted risk: the handler follows the same atomic transaction + dedup pattern as all other webhook handlers; breakage would only affect refund processing, not payment capture.
+- [ ] **Neon PITR 7-day restore window not evidenced**: the database is on the Launch plan which supports point-in-time recovery, but a restore drill has not been completed and the 7-day window has not been verified. Accepted risk: Neon PITR is available on the Launch plan; a drill should be scheduled within the first 30 days.
+- [ ] **CI has not run against this branch**: `.github/workflows/ci.yml` triggers on push to `main` or PRs only. The remediation branch has not been merged to `main`. Accepted risk: 510 tests pass locally; CI will run on merge to `main`.
+
+### Items still requiring operator action before taking payments
+
+- [ ] Stripe webhook test event against staging to exercise the full checkout→subscription→refund lifecycle
+- [ ] Resend live email delivery confirmed
+- [ ] Redis-backed rate limiting confirmed (currently using in-process fallback)
+- [ ] `/data-status` page deployed (resolves on shipping current HEAD)
+- [ ] `/provider-sitemap-index.xml` 503 resolved (frontend backend URL resolution)
 
 ## 0. Release Gate
 

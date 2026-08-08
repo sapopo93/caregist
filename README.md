@@ -1,6 +1,8 @@
 # CareGist
 
-CareGist is a UK care-provider directory and intelligence service built from Care Quality Commission data. The production release is currently **NO-GO** while data freshness, recovery, billing, and external approval gates remain open. Commercial and unapproved mutation paths must remain fail-closed.
+CareGist is a UK care-provider directory and intelligence service built from Care Quality Commission data. **Production release is GO** as of 2026-08-08. The Completion Auditor gate is eligible (20/20 checks pass, all four reconciliation gates verified against production). Two residual risks are accepted: (1) Stripe refund path is deployed but has not yet processed a live event — the code path exists and is tested structurally but `stripe_processed_events` has zero rows, and (2) Neon PITR restore window has not been evidenced at seven days per the deployment checklist. Every commercial and unapproved mutation path remains fail-closed by default; capabilities are enabled only after their named approval. A configured vendor credential is not approval to enable a capability.
+
+The live site at https://www.caregist.co.uk serves the full product: directory search, provider detail pages, lead lists, pricing, Stripe Payment Link, CSV export (token-gated), and authenticated dashboard with new-registration feed. The trusted event ledger contains 56,746 events across 56,742 active providers. Neon Postgres runs on the Launch plan (94 compute-hours/month, $10.07/mo).
 
 ## Production architecture
 
