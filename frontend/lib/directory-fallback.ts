@@ -307,6 +307,8 @@ export async function listFallbackProvidersForExport(scope: DirectoryExportScope
     .sort((left, right) => left.name.localeCompare(right.name))
     .slice(0, MAX_DIRECTORY_EXPORT_ROWS + 1)
     .map((provider) => ({
+      cqc_location_id: provider.id,
+      cqc_provider_id: provider.provider_id,
       name: provider.name,
       slug: provider.slug,
       region: provider.region,

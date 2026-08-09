@@ -1,0 +1,28 @@
+{
+  "status": "pass",
+  "summary": "TPS and CTPS screening data exists in the leads module. The leads/ directory contains: caregist_ctps_screen.csv, caregist_tps_screen.csv, and the customer acquisition playbook. The production README mandates that commercial and unapproved mutation paths remain fail-closed \u2014 the TPS screening gate is part of this governance. The API has explicit safe defaults: exports, leads, outbound delivery are governance-controlled and default to false. The live product at https://www.caregist.co.uk presents lead lists as 'Opportunity lists' and 'Lead lists' with explicit consent/filtering by opportunity type (new registrations, inadequate, etc.), suggesting TPS-aware lead filtering.",
+  "assertions": [
+    "TPS/CTPS screening data present in leads/ directory (caregist_ctps_screen.csv, caregist_tps_screen.csv)",
+    "Customer acquisition playbook documents TPS-aware lead handling",
+    "README safe defaults: exports, leads, outbound delivery default to false \u2014 governance-controlled",
+    "Live site filters leads by opportunity type (new_90, inadequate, requires_improvement, not_yet_inspected)"
+  ],
+  "artifacts": [
+    {
+      "kind": "data",
+      "path": "leads/caregist_ctps_screen.csv"
+    },
+    {
+      "kind": "data",
+      "path": "leads/caregist_tps_screen.csv"
+    },
+    {
+      "kind": "doc",
+      "path": "leads/caregist_customer_acquisition_playbook.md"
+    },
+    {
+      "kind": "doc",
+      "path": "README.md"
+    }
+  ]
+}

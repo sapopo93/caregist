@@ -30,6 +30,7 @@ SECRET_ENV_NAMES = {
     "stripe_price_pro": "STRIPE_PRICE_PRO",
     "stripe_price_pro_seat": "STRIPE_PRICE_PRO_SEAT",
     "stripe_price_business": "STRIPE_PRICE_BUSINESS",
+    "stripe_price_full_dataset": "STRIPE_PRICE_FULL_DATASET",
     "stripe_price_enterprise": "STRIPE_PRICE_ENTERPRISE",
     "stripe_price_profile_enhanced": "STRIPE_PRICE_PROFILE_ENHANCED",
     "stripe_price_profile_premium": "STRIPE_PRICE_PROFILE_PREMIUM",
@@ -79,6 +80,7 @@ REQUIRED_PUBLIC_STRIPE_PRICE_FIELDS = (
     "stripe_price_pro",
     "stripe_price_pro_seat",
     "stripe_price_business",
+    "stripe_price_full_dataset",
     "stripe_price_profile_enhanced",
     "stripe_price_profile_sponsored",
 )
@@ -326,6 +328,7 @@ class Settings(BaseSettings):
     stripe_price_pro: str = ""
     stripe_price_pro_seat: str = ""
     stripe_price_business: str = ""
+    stripe_price_full_dataset: str = ""
     stripe_price_enterprise: str = ""
     stripe_price_profile_enhanced: str = ""
     stripe_price_profile_premium: str = ""
@@ -335,6 +338,9 @@ class Settings(BaseSettings):
     b2b_terms_version: str = ""
     b2b_terms_sha256: str = ""
     b2b_evidence_hash_key: str = ""
+    # Exact approved digital-content terms accepted in Stripe Checkout.
+    digital_content_terms_version: str = ""
+    digital_content_terms_sha256: str = ""
     default_page_size: int = 20
     app_url: str = "http://localhost:3000"
     resend_api_key: str = ""
@@ -370,6 +376,7 @@ class Settings(BaseSettings):
     monitoring_activation_enabled: bool = False
     outbound_delivery_enabled: bool = False
     directory_export_delivery_enabled: bool = False
+    full_dataset_checkout_enabled: bool = False
     review_publication_enabled: bool = False
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8", "extra": "ignore"}

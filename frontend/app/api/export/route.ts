@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getDownloadUrl, issueSignedToken, presignUrl } from "@vercel/blob";
 
 import { readDirectoryAccessToken } from "@/lib/directory-access-token";
 import { isDirectoryOpportunity } from "@/lib/directory-constants";
-import { getExportScopeForToken, listProvidersForExport } from "@/lib/directory-db";
+import {
+  consumePaidDatasetDownload,
+  getExportScopeForToken,
+  listProvidersForExport,
+} from "@/lib/directory-db";
 import {
   MAX_DIRECTORY_EXPORT_ROWS,
   providersToCsv,
@@ -23,7 +28,9 @@ function buildFilename(scope: { region: string; serviceType: string; rating: str
 }
 
 export async function GET(request: NextRequest) {
-  if (process.env.DIRECTORY_EXPORT_DELIVERY_ENABLED !== "true") {
+  const segmentedDeliveryEnabled = process.env.DIRECTORY_EXPORT_DELIVERY_ENABLED === "true";
+  const fullDatasetDeliveryEnabled = process.env.FULL_DATASET_CHECKOUT_ENABLED === "true";
+  if (!segmentedDeliveryEnabled && !fullDatasetDeliveryEnabled) {
     return NextResponse.json(
       { error: "Export delivery is awaiting Human Gate approval." },
       { status: 503, headers: { "Cache-Control": "private, no-store" } },
@@ -39,14 +46,42 @@ export async function GET(request: NextRequest) {
   const opportunity = request.nextUrl.searchParams.get("opportunity")?.trim() ?? "";
   let storedScope = readDirectoryAccessToken(token);
   if (!storedScope) {
+    if (!fullDatasetDeliveryEnabled) {
+      return NextResponse.json({ error: "Export token is invalid or expired." }, { status: 401 });
+    }
     try {
       storedScope = await getExportScopeForToken(token);
     } catch {
       return NextResponse.json({ error: "Export service is temporarily unavailable." }, { status: 503 });
     }
   }
+
+  if (storedScope && !segmentedDeliveryEnabled) {
+    return NextResponse.json(
+      { error: "Segmented export delivery is awaiting Human Gate approval." },
+      { status: 503, headers: { "Cache-Control": "private, no-store" } },
+    );
+  }
   if (!storedScope) {
-    return NextResponse.json({ error: "Export token is invalid or expired." }, { status: 401 });
+    try {
+      const paidDownload = await consumePaidDatasetDownload(token);
+      if (!paidDownload) {
+        return NextResponse.json({ error: "Export token is invalid, expired, refunded, or exhausted." }, { status: 401 });
+      }
+      const signedToken = await issueSignedToken({ operations: ["get"] });
+      const { presignedUrl } = await presignUrl(signedToken, {
+        pathname: paidDownload.blob_pathname,
+        operation: "get",
+        access: "private",
+        validUntil: Date.now() + 5 * 60 * 1000,
+      });
+      return NextResponse.redirect(getDownloadUrl(presignedUrl), {
+        status: 307,
+        headers: { "Cache-Control": "private, no-store" },
+      });
+    } catch {
+      return NextResponse.json({ error: "Export service is temporarily unavailable." }, { status: 503 });
+    }
   }
 
   try {

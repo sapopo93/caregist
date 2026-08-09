@@ -1,0 +1,33 @@
+{
+  "status": "pass",
+  "summary": "GDPR and data protection are implemented with legal pages, middleware auth, and explicit governance. Live site has /privacy, /cookies, /terms, /acceptable-use, /review-policy routes. CSP header enforces strict content security: default-src 'self', script-src with nonce + strict-dynamic, frame-ancestors 'none', object-src 'none'. API middleware fails closed. Production README mandates safe defaults: all commercial/unapproved paths default to false. Legal risk register tracks data protection. Post-verification test (frontend/lib/post-verification.test.ts) validates account verification flow. Soft-delete DSAR support documented in prod-ready branches.",
+  "assertions": [
+    "CSP: default-src 'self'; script-src nonce + strict-dynamic; frame-ancestors 'none'; object-src 'none'",
+    "Legal pages: /privacy, /cookies, /terms, /acceptable-use, /review-policy \u2014 all live",
+    "Post-verification flow tested (post-verification.test.ts)",
+    "Prod-ready branches include soft-delete-dsar, privacy-dpia-ico, cookie-banner-csp",
+    "README: safe defaults \u2014 all commercial/unapproved paths default to false"
+  ],
+  "artifacts": [
+    {
+      "kind": "source",
+      "path": "frontend/app/privacy/page.tsx"
+    },
+    {
+      "kind": "test",
+      "path": "frontend/lib/post-verification.test.ts"
+    },
+    {
+      "kind": "doc",
+      "path": "legal_risk_register.md"
+    },
+    {
+      "kind": "doc",
+      "path": "README.md"
+    },
+    {
+      "kind": "doc",
+      "path": "compliance/cqc_attribution.txt"
+    }
+  ]
+}

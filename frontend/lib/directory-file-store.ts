@@ -5,6 +5,7 @@ import { join } from "node:path";
 
 export interface DirectoryFileProvider {
   id: string;
+  provider_id: string | null;
   slug: string | null;
   name: string;
   type: string | null;
@@ -36,6 +37,7 @@ export interface DirectoryFileProvider {
 
 const SELECTED_COLUMNS = [
   "id",
+  "provider_id",
   "slug",
   "name",
   "type",
@@ -167,6 +169,7 @@ async function loadProvidersFromCsv(): Promise<DirectoryFileProvider[]> {
 
     providers.push({
       id: row.get("id") ?? "",
+      provider_id: asNullableString(row.get("provider_id")),
       slug: asNullableString(row.get("slug")),
       name: row.get("name") ?? "",
       type: asNullableString(row.get("type")),

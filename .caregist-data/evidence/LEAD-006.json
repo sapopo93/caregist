@@ -1,0 +1,29 @@
+{
+  "status": "pass",
+  "summary": "Lead list data is richly structured with comprehensive metadata. Each provider record includes: name, slug, address, postcode, region, local authority, coordinates, phone, website, CQC rating + 5 sub-ratings, service types, specialisms, beds, last inspection date, inspection report URL, ownership type, registration date, meta title, meta description. The service taxonomy test verifies categorization. The quality report shows field completeness >99% for critical fields. The directory filters test verifies search/filter accuracy. Validation report (validation_report.json) confirms data quality with specific issue tracking.",
+  "assertions": [
+    "Provider records contain 20+ structured fields with >99% completeness for critical fields",
+    "Service taxonomy verified by service-taxonomy.test.ts",
+    "Directory filters validated by directory-filters.test.ts",
+    "Quality report with per-field completeness and issue tracking",
+    "Validation report (validation_report.json) with 65,019 records assessed"
+  ],
+  "artifacts": [
+    {
+      "kind": "test",
+      "path": "frontend/lib/service-taxonomy.test.ts"
+    },
+    {
+      "kind": "test",
+      "path": "frontend/lib/directory-filters.test.ts"
+    },
+    {
+      "kind": "report",
+      "path": "quality_report.json"
+    },
+    {
+      "kind": "report",
+      "path": "validation_report.json"
+    }
+  ]
+}

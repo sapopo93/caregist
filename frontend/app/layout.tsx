@@ -10,7 +10,30 @@ import CompareBar from "@/components/CompareBar";
 import CookieConsent from "@/components/CookieConsent";
 import SupportWidgetMount from "@/components/SupportWidgetMount";
 
+import { getServerApiBase } from "@/lib/server-api-config";
+
 const SITE_URL = "https://caregist.co.uk";
+
+async function getDataRefreshDate(): Promise<string | null> {
+  try {
+    const apiBase = getServerApiBase();
+    const response = await fetch(`${apiBase}/api/v1/health/freshness`, {
+      next: { revalidate: 3600 },
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!response.ok) return null;
+    const data = await response.json();
+    const retrievedAt = data?.source?.sourceRetrievedAt;
+    if (!retrievedAt) return null;
+    return new Date(retrievedAt).toLocaleDateString("en-GB", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  } catch {
+    return null;
+  }
+}
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
@@ -54,6 +77,7 @@ export const metadata: Metadata = {
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   await connection();
+  const dataRefreshDate = await getDataRefreshDate();
 
   return (
     <html lang="en" className={`${dmSans.variable} ${playfairDisplay.variable}`}>
@@ -111,7 +135,24 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <footer className="bg-charcoal px-6 py-8 text-sm text-stone">
           <div className="mx-auto max-w-6xl">
             <p className="mb-2">
-              Data source: Care Quality Commission (CQC). CareGist is not an official CQC service.
+              Contains public sector information licensed under the{" "}
+              <a
+                href="https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/"
+                className="underline hover:text-cream"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Open Government Licence v3.0
+              </a>
+              .
+            </p>
+            {dataRefreshDate && (
+              <p className="mb-2 text-dusk">
+                CQC data last updated: {dataRefreshDate}.
+              </p>
+            )}
+            <p className="mb-2 text-dusk">
+              CareGist is not an official CQC service.
             </p>
             <p className="text-dusk">
               If you have concerns about care quality, contact CQC directly at{" "}

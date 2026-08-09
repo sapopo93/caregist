@@ -61,8 +61,8 @@ const SECONDARY_PRODUCTS = [
     rank: "5",
     title: "CSV exports and dataset packs",
     body: "Delivery format for buyers who need a list now. The value is the segment; CSV is how it reaches their CRM.",
-    href: "/lead-list",
-    cta: "Request a segment",
+    href: "/full-dataset",
+    cta: "Buy the full dataset",
   },
   {
     rank: "6",

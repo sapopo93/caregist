@@ -30,6 +30,7 @@ PUBLIC_STRIPE_PRICE_FIELDS = {
     "stripe_price_pro": "price_pro",
     "stripe_price_pro_seat": "price_seat",
     "stripe_price_business": "price_business",
+    "stripe_price_full_dataset": "price_full_dataset",
     "stripe_price_profile_enhanced": "price_profile_enhanced",
     "stripe_price_profile_sponsored": "price_profile_sponsored",
 }
@@ -40,6 +41,7 @@ PUBLIC_STRIPE_PRICE_ENV = {
     "STRIPE_PRICE_PRO": "price_pro",
     "STRIPE_PRICE_PRO_SEAT": "price_seat",
     "STRIPE_PRICE_BUSINESS": "price_business",
+    "STRIPE_PRICE_FULL_DATASET": "price_full_dataset",
     "STRIPE_PRICE_PROFILE_ENHANCED": "price_profile_enhanced",
     "STRIPE_PRICE_PROFILE_SPONSORED": "price_profile_sponsored",
 }
@@ -88,6 +90,7 @@ def test_secret_resolution_includes_stripe_price_aliases_from_aws():
         "STRIPE_PRICE_DATA_STARTER_MONTHLY": "price_starter",
         "STRIPE_PRICE_DATA_PRO_MONTHLY": "price_pro",
         "STRIPE_PRICE_DATA_BUSINESS_MONTHLY": "price_business",
+        "STRIPE_PRICE_FULL_DATASET": "price_full_dataset",
         "STRIPE_PRICE_PROVIDER_ENHANCED_LISTING_MONTHLY": "price_profile_enhanced",
         "STRIPE_PRICE_PROVIDER_PRO_LISTING_MONTHLY": "price_profile_premium",
         "STRIPE_PRICE_SPONSORED_LISTING_MONTHLY": "price_profile_sponsored",

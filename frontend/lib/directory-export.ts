@@ -8,6 +8,8 @@ export interface DirectoryExportScope {
 }
 
 export interface DirectoryExportRow {
+  cqc_location_id: string | null;
+  cqc_provider_id: string | null;
   name: string | null;
   slug: string | null;
   region: string | null;
@@ -22,9 +24,11 @@ export interface DirectoryExportRow {
 
 export const MAX_DIRECTORY_EXPORT_ROWS = 10_000;
 export const CQC_SOURCE_ATTRIBUTION =
-  "Care Quality Commission data, licensed under the Open Government Licence v3.0";
+  "Contains public sector information licensed under the Open Government Licence v3.0";
 
 const CSV_COLUMNS: Array<keyof DirectoryExportRow> = [
+  "cqc_location_id",
+  "cqc_provider_id",
   "name",
   "slug",
   "region",
@@ -67,6 +71,7 @@ export function resolveExportScope(
 }
 
 export function providersToCsv(rows: DirectoryExportRow[]): string {
+  const attributionLine = `# ${CQC_SOURCE_ATTRIBUTION} — https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/`;
   const header = [...CSV_COLUMNS, "source_attribution"].join(",");
   const lines = rows.map((row) =>
     [
@@ -75,5 +80,5 @@ export function providersToCsv(rows: DirectoryExportRow[]): string {
     ].join(","),
   );
 
-  return [header, ...lines].join("\n");
+  return [attributionLine, header, ...lines].join("\n");
 }

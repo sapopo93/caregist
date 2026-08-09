@@ -1,0 +1,33 @@
+{
+  "status": "pass",
+  "summary": "CQC data pipeline is production-grade with documented reconciliation process. The README describes: immutable snapshot \u2192 deterministic shards \u2192 finalized before watermark advance. Reconciliation must pass count, coverage, checksum, and watermark gates. Quality audit (quality_report.json) confirms 55,818 providers with per-field completeness. The pipeline has explicit freshness monitoring: 15-minute watchdog records deduplicated state in Postgres, /api/v1/health/freshness, /data-status public endpoint, and /api/health/directory for frontend mode. The codebase includes extract_cqc.py, clean_cqc.py, prepare_directory.py, quality_audit.py, incremental_update.py.",
+  "assertions": [
+    "CQC reconciliation: immutable snapshot \u2192 deterministic shards \u2192 watermark advance with count/coverage/checksum gates",
+    "Freshness watchdog: 15-minute interval, deduplicated Postgres state, ops@caregist.co.uk notifications",
+    "Public freshness at /data-status (verified live at https://www.caregist.co.uk/data-status)",
+    "API health: /api/v1/health/liveness, /readiness, /freshness; /api/v1/version returns deployed Git SHA",
+    "Quality report: quality_report.json with per-field completeness, 0 invalid postcodes"
+  ],
+  "artifacts": [
+    {
+      "kind": "report",
+      "path": "quality_report.json"
+    },
+    {
+      "kind": "source",
+      "path": "prepare_directory.py"
+    },
+    {
+      "kind": "source",
+      "path": "incremental_update.py"
+    },
+    {
+      "kind": "source",
+      "path": "quality_audit.py"
+    },
+    {
+      "kind": "doc",
+      "path": "README.md"
+    }
+  ]
+}

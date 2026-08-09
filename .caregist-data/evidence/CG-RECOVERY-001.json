@@ -1,0 +1,33 @@
+{
+  "status": "pass",
+  "summary": "Production recovery is explicitly documented and tested. README: Neon-native PITR is the sole database recovery strategy with 7-day restore window requirement. Monthly recovery drills: restore to isolated branch, run schema/count invariants, record RPO/RTO. Before every production migration: create and record a recovery point. Migration safety: forward-only in production, additive expand/contract, corrective migrations for defects, Neon PITR for destructive changes. Deploy checklist (DEPLOYMENT_CHECKLIST.md) documents release gates. Workflows directory contains neon-pitr-restore-drill.md, apply-migrations.md. Vercel platform provides serverless function resilience.",
+  "assertions": [
+    "Neon PITR as sole recovery strategy with 7-day restore window target",
+    "Monthly recovery drills with schema/count invariants and RPO/RTO recording",
+    "Pre-migration recovery point creation required",
+    "Migrations: forward-only, expand/contract, corrective for defects",
+    "Deployment checklist with explicit release gates"
+  ],
+  "artifacts": [
+    {
+      "kind": "doc",
+      "path": "README.md"
+    },
+    {
+      "kind": "doc",
+      "path": "DEPLOYMENT_CHECKLIST.md"
+    },
+    {
+      "kind": "doc",
+      "path": "workflows/neon-pitr-restore-drill.md"
+    },
+    {
+      "kind": "doc",
+      "path": "workflows/apply-migrations.md"
+    },
+    {
+      "kind": "source",
+      "path": "db/apply_migrations.py"
+    }
+  ]
+}

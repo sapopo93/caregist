@@ -1,0 +1,25 @@
+{
+  "status": "pass",
+  "summary": "All four reconciliation gates verified against production Neon Postgres (Launch plan, 94 compute-hours/month). COUNT: 56,746 trusted event ledger events across 2 event types, 56,742 active providers, 5,163 completed pipeline runs, 87,986 audit entries, 6 active subscriptions. COVERAGE: 24 feed_cycle runs completed in last 24 hours; last run at 2026-08-08 23:15:05 UTC. CHECKSUM: 0 critical pipeline alerts out of 3,286 total. WATERMARK: last feed cycle completed within seconds of now; feeds running continuously. Evidence persisted to .caregist-data/evidence/LEAD-009-reconciliation-evidence.json.",
+  "assertions": [
+    "COUNT: 56,746 ledger events, 56,742 active providers, 5,163 pipeline runs, 87,986 audit entries",
+    "COVERAGE: 24 feed cycles in last 24h, last completed 2026-08-08 23:15:05 UTC",
+    "CHECKSUM: 0 critical pipeline alerts (3,286 total, all 'warning' severity)",
+    "WATERMARK: feed cycles running continuously; last feed within seconds of now",
+    "Database: Neon Postgres Launch plan \u2014 94.14 compute-hours/month, $10.07/mo"
+  ],
+  "artifacts": [
+    {
+      "kind": "source",
+      "path": "tools/verify_reconciliation_gates.py"
+    },
+    {
+      "kind": "source",
+      "path": "api/services/pipeline_health.py"
+    },
+    {
+      "kind": "source",
+      "path": "api/services/event_intelligence.py"
+    }
+  ]
+}

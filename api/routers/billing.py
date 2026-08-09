@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import hashlib
+import html
 import json
 import logging
+import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Literal
 
@@ -13,7 +15,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, EmailStr, Field
 
 from api.middleware.auth import validate_billing_identity
-from api.middleware.ip_rate_limit import _get_client_ip
+from api.middleware.ip_rate_limit import _get_client_ip, check_ip_rate_limit
 
 from api.config import (
     allows_extra_seats,
@@ -31,6 +33,15 @@ router = APIRouter(prefix="/api/v1/billing", tags=["billing"])
 
 PRICE_TO_TIER = {}         # B2B data plan prices → tier name
 PRICE_TO_PROFILE_TIER = {}  # Provider listing prices → profile tier name
+
+FULL_DATASET_CONSENT_TEXT = (
+    "By purchasing, I expressly request immediate supply of the digital dataset before the end "
+    "of the 14-day cancellation period and acknowledge that I lose my statutory right to cancel "
+    "once download access is provided. I agree to the Terms of Service."
+)
+OGL_ATTRIBUTION = (
+    "Contains public sector information licensed under the Open Government Licence v3.0"
+)
 
 
 def init_stripe():
@@ -283,6 +294,26 @@ class CheckoutRequest(BaseModel):
     model_config = {"extra": "forbid"}
 
 
+class DatasetCheckoutRequest(BaseModel):
+    email: EmailStr
+
+    model_config = {"extra": "forbid"}
+
+
+def _dataset_terms() -> tuple[str, str, str]:
+    version = settings.digital_content_terms_version.strip()
+    terms_sha = settings.digital_content_terms_sha256.strip().lower()
+    consent_sha = hashlib.sha256(FULL_DATASET_CONSENT_TEXT.encode("utf-8")).hexdigest()
+    if not version or len(terms_sha) != 64 or any(char not in "0123456789abcdef" for char in terms_sha):
+        raise HTTPException(status_code=503, detail="Dataset checkout is awaiting approved digital-content terms.")
+    return version, terms_sha, consent_sha
+
+
+def _new_dataset_download_token() -> tuple[str, str]:
+    token = secrets.token_urlsafe(32)
+    return token, hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
 def _require_billing_user_id(auth: dict) -> int:
     user_id = auth.get("user_id")
     if not user_id:
@@ -445,6 +476,91 @@ async def _persist_subscription_state(
         user_id,
         max_users,
     )
+
+
+@router.post("/dataset-checkout", dependencies=[Depends(check_ip_rate_limit)])
+async def create_dataset_checkout(req: DatasetCheckoutRequest) -> dict:
+    """Create a one-time Checkout Session tied to an immutable full-dataset artefact."""
+    if not settings.full_dataset_checkout_enabled:
+        raise HTTPException(status_code=503, detail="Dataset checkout is not available yet.")
+    if not settings.stripe_secret_key or not settings.stripe_price_full_dataset or not settings.resend_api_key:
+        raise HTTPException(status_code=503, detail="Dataset checkout is not configured.")
+
+    terms_version, terms_sha, consent_sha = _dataset_terms()
+    email = str(req.email).strip().lower()
+    async with get_connection() as conn:
+        artifact = await conn.fetchrow(
+            """
+            SELECT id, record_count, sha256, source_watermark
+            FROM full_dataset_artifacts
+            WHERE is_active
+            LIMIT 1
+            """
+        )
+        if not artifact:
+            raise HTTPException(status_code=503, detail="A current full dataset is being prepared. No payment has been taken.")
+        order = await conn.fetchrow(
+            """
+            INSERT INTO full_dataset_orders (artifact_id, customer_email, stripe_price_id)
+            VALUES ($1, $2, $3)
+            RETURNING id
+            """,
+            artifact["id"],
+            email,
+            settings.stripe_price_full_dataset,
+        )
+
+    expires_at = datetime.now(timezone.utc) + timedelta(minutes=30)
+    try:
+        session = stripe.checkout.Session.create(
+            mode="payment",
+            customer_email=email,
+            line_items=[{"price": settings.stripe_price_full_dataset, "quantity": 1}],
+            success_url=f"{settings.app_url}/full-dataset?session_id={{CHECKOUT_SESSION_ID}}",
+            cancel_url=f"{settings.app_url}/full-dataset?cancelled=1",
+            expires_at=int(expires_at.timestamp()),
+            consent_collection={"terms_of_service": "required"},
+            custom_text={
+                "terms_of_service_acceptance": {"message": FULL_DATASET_CONSENT_TEXT},
+                "after_submit": {"message": "Your private download link will be emailed after payment is confirmed."},
+            },
+            invoice_creation={"enabled": True},
+            metadata={
+                "type": "full_dataset",
+                "order_id": str(order["id"]),
+                "artifact_id": str(artifact["id"]),
+                "price_id": settings.stripe_price_full_dataset,
+                "terms_version": terms_version,
+                "terms_sha256": terms_sha,
+                "consent_text_sha256": consent_sha,
+            },
+            idempotency_key=f"caregist-full-dataset-{order['id']}",
+        )
+        async with get_connection() as conn:
+            await conn.execute(
+                """
+                UPDATE full_dataset_orders
+                SET stripe_checkout_session_id = $1, updated_at = NOW()
+                WHERE id = $2 AND status = 'pending'
+                """,
+                session.id,
+                order["id"],
+            )
+    except Exception:
+        async with get_connection() as conn:
+            await conn.execute(
+                "UPDATE full_dataset_orders SET status = 'expired', updated_at = NOW() WHERE id = $1",
+                order["id"],
+            )
+        raise
+
+    return {
+        "checkout_url": session.url,
+        "session_id": session.id,
+        "record_count": int(artifact["record_count"]),
+        "source_watermark": artifact["source_watermark"].isoformat(),
+        "stripe_mode": "test" if settings.stripe_secret_key.startswith("sk_test_") else "live",
+    }
 
 
 @router.post("/checkout")
@@ -1113,6 +1229,14 @@ async def stripe_webhook(request: Request) -> dict:
                     """,
                     data.get("id"),
                 )
+                await conn.execute(
+                    """
+                    UPDATE full_dataset_orders
+                    SET status = 'expired', updated_at = NOW()
+                    WHERE stripe_checkout_session_id = $1 AND status = 'pending'
+                    """,
+                    data.get("id"),
+                )
             elif event_type == "customer.subscription.updated":
                 subscription_id = data.get("id")
                 if not subscription_id:
@@ -1135,6 +1259,132 @@ async def stripe_webhook(request: Request) -> dict:
     return {"status": "ok"}
 
 
+async def _handle_dataset_checkout_completed(conn, session: dict) -> None:
+    """Verify Stripe state, preserve consent evidence, and queue fulfilment atomically."""
+    session_id = session.get("id")
+    if not session_id:
+        raise RuntimeError("full-dataset checkout missing session id")
+    authoritative = stripe.checkout.Session.retrieve(session_id, expand=["line_items"])
+    metadata = authoritative.get("metadata", {})
+    order_id = metadata.get("order_id")
+    artifact_id = metadata.get("artifact_id")
+    if metadata.get("type") != "full_dataset" or not order_id or not artifact_id:
+        raise RuntimeError("full-dataset checkout missing immutable order metadata")
+    if authoritative.get("payment_status") not in {"paid", "no_payment_required"}:
+        raise RuntimeError("full-dataset checkout completed before payment became valid")
+    if authoritative.get("consent", {}).get("terms_of_service") != "accepted":
+        raise RuntimeError("full-dataset checkout has no Stripe terms acceptance")
+
+    terms_version, terms_sha, consent_sha = _dataset_terms()
+    if (
+        metadata.get("terms_version") != terms_version
+        or metadata.get("terms_sha256") != terms_sha
+        or metadata.get("consent_text_sha256") != consent_sha
+    ):
+        raise RuntimeError("full-dataset checkout legal evidence does not match approved terms")
+
+    line_items = authoritative.get("line_items", {}).get("data", [])
+    actual_items = [
+        (item.get("price", {}).get("id"), int(item.get("quantity") or 0))
+        for item in line_items
+    ]
+    if actual_items != [(settings.stripe_price_full_dataset, 1)]:
+        raise RuntimeError(f"full-dataset checkout has unexpected line items: {actual_items!r}")
+
+    order = await conn.fetchrow(
+        """
+        SELECT id, artifact_id, customer_email, stripe_price_id, status
+        FROM full_dataset_orders
+        WHERE id = $1 AND stripe_checkout_session_id = $2
+        FOR UPDATE
+        """,
+        order_id,
+        session_id,
+    )
+    if (
+        not order
+        or str(order["artifact_id"]) != artifact_id
+        or order["stripe_price_id"] != settings.stripe_price_full_dataset
+    ):
+        raise RuntimeError("full-dataset checkout does not match its reserved local order")
+    if order["status"] == "refunded":
+        raise RuntimeError("refunded full-dataset order cannot be fulfilled")
+    if order["status"] == "paid":
+        logger.info("Full-dataset order %s is already fulfilled", order["id"])
+        return
+
+    payment_intent = authoritative.get("payment_intent")
+    if hasattr(payment_intent, "get"):
+        payment_intent = payment_intent.get("id")
+    await conn.execute(
+        """
+        UPDATE full_dataset_orders
+        SET status = 'paid', stripe_payment_intent_id = $1,
+            amount_total = $2, currency = LOWER($3), paid_at = COALESCE(paid_at, NOW()),
+            fulfilled_at = COALESCE(fulfilled_at, NOW()), updated_at = NOW()
+        WHERE id = $4
+        """,
+        payment_intent,
+        authoritative.get("amount_total"),
+        authoritative.get("currency"),
+        order["id"],
+    )
+    await conn.execute(
+        """
+        INSERT INTO digital_content_consents (
+          order_id, stripe_checkout_session_id, terms_version, terms_sha256,
+          consent_text_sha256, immediate_supply_consented,
+          cancellation_right_acknowledged, accepted_at, evidence_source
+        ) VALUES ($1, $2, $3, $4, $5, TRUE, TRUE, NOW(), 'stripe_checkout_terms_checkbox')
+        ON CONFLICT (order_id) DO NOTHING
+        """,
+        order["id"], session_id, terms_version, terms_sha, consent_sha,
+    )
+
+    raw_token, token_hash = _new_dataset_download_token()
+    await conn.execute(
+        """
+        INSERT INTO dataset_download_tokens (token_hash, order_id, expires_at)
+        VALUES ($1, $2, NOW() + INTERVAL '7 days')
+        ON CONFLICT (token_hash) DO NOTHING
+        """,
+        token_hash,
+        order["id"],
+    )
+    download_url = f"{settings.app_url}/api/export?token={raw_token}"
+    safe_url = html.escape(download_url, quote=True)
+    safe_version = html.escape(terms_version)
+    email_body = (
+        "<p>Your CareGist full dataset is ready.</p>"
+        f'<p><a href="{safe_url}">Download the private CSV</a>. '
+        "This link expires in 7 days and permits up to 5 downloads.</p>"
+        f"<p>You expressly requested immediate supply and acknowledged that your statutory "
+        f"right to cancel would be lost once access was provided (Terms {safe_version}). "
+        "This does not affect rights relating to faulty or misdescribed digital content.</p>"
+        f"<p>{html.escape(OGL_ATTRIBUTION)}. "
+        '<a href="https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/">View licence</a>.</p>'
+    )
+    await conn.execute(
+        """
+        INSERT INTO pending_emails (to_email, subject, html_body, idempotency_key)
+        VALUES ($1, 'Your CareGist full dataset', $2, $3)
+        ON CONFLICT (idempotency_key) WHERE idempotency_key IS NOT NULL DO NOTHING
+        """,
+        order["customer_email"],
+        email_body,
+        f"full-dataset-delivery:{order['id']}",
+    )
+    await write_audit_log(
+        action="billing.full_dataset.fulfil",
+        outcome="success",
+        actor={"type": "system", "name": "stripe"},
+        target_type="full_dataset_order",
+        target_id=str(order["id"]),
+        metadata={"artifact_id": artifact_id, "session_id": session_id},
+        conn=conn,
+    )
+
+
 async def _handle_checkout_completed(conn, session: dict) -> None:
     """Route completed checkout to B2B or provider profile handler.
 
@@ -1144,6 +1394,9 @@ async def _handle_checkout_completed(conn, session: dict) -> None:
     """
     session_id = session.get("id")
     metadata = session.get("metadata", {})
+    if metadata.get("type") == "full_dataset":
+        await _handle_dataset_checkout_completed(conn, session)
+        return
     user_id = metadata.get("user_id")
     terms_version = metadata.get("terms_version")
     if not user_id:
@@ -1422,6 +1675,12 @@ async def _handle_refund(conn, charge: dict) -> None:
     Clawback (full refund of a paid charge) also records the commercial reversal
     so reconciliation can detect orphaned value.
     """
+    if charge.get("object") == "refund" or str(charge.get("id", "")).startswith("re_"):
+        charge_id_for_refund = charge.get("charge")
+        if not charge_id_for_refund:
+            raise RuntimeError("charge.refund.updated missing charge reference")
+        charge = stripe.Charge.retrieve(charge_id_for_refund)
+
     charge_id = charge.get("id")
     if not charge_id:
         raise RuntimeError("charge.refunded missing charge id")
@@ -1450,6 +1709,22 @@ async def _handle_refund(conn, charge: dict) -> None:
                      "amount_refunded": amount_refunded,
                      "fully_refunded": fully_refunded}),
     )
+
+    if fully_refunded and payment_intent:
+        refunded_order = await conn.fetchrow(
+            """
+            UPDATE full_dataset_orders
+            SET status = 'refunded', updated_at = NOW()
+            WHERE stripe_payment_intent_id = $1 AND status = 'paid'
+            RETURNING id
+            """,
+            payment_intent,
+        )
+        if refunded_order:
+            await conn.execute(
+                "UPDATE dataset_download_tokens SET expires_at = NOW() WHERE order_id = $1 AND expires_at > NOW()",
+                refunded_order["id"],
+            )
 
     await write_audit_log(
         action="billing.charge.refund",

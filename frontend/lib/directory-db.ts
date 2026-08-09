@@ -1,4 +1,4 @@
-import { randomBytes } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import { canonicalizeServiceCounts, canonicalServices, resolveServiceAliases } from "@/lib/service-taxonomy";
 
 import { createPool } from "@vercel/postgres";
@@ -103,6 +103,12 @@ interface TokenRow {
   region: string;
   service_type: string;
   rating: string;
+}
+
+interface PaidDatasetDownloadRow {
+  blob_pathname: string;
+  sha256: string;
+  source_watermark: string;
 }
 
 function resolveConnectionString() {
@@ -580,6 +586,34 @@ export async function getExportScopeForToken(token: string): Promise<DirectoryEx
   };
 }
 
+/** Consume one use of a paid full-dataset token and return its immutable artefact. */
+export async function consumePaidDatasetDownload(token: string): Promise<PaidDatasetDownloadRow | null> {
+  assertDatabaseConfigured();
+  const tokenHash = createHash("sha256").update(token, "utf8").digest("hex");
+  const result = await getSql().query<PaidDatasetDownloadRow>(
+    `
+      WITH consumed AS (
+        UPDATE dataset_download_tokens AS token
+        SET download_count = token.download_count + 1,
+            last_downloaded_at = NOW()
+        FROM full_dataset_orders AS purchase
+        WHERE token.token_hash = $1
+          AND token.order_id = purchase.id
+          AND token.expires_at > NOW()
+          AND token.download_count < token.max_downloads
+          AND purchase.status = 'paid'
+        RETURNING purchase.artifact_id
+      )
+      SELECT artifact.blob_pathname, artifact.sha256, artifact.source_watermark::text
+      FROM consumed
+      JOIN full_dataset_artifacts AS artifact ON artifact.id = consumed.artifact_id
+      LIMIT 1
+    `,
+    [tokenHash],
+  );
+  return result.rows[0] ?? null;
+}
+
 export async function listProvidersForExport(scope: DirectoryExportScope): Promise<DirectoryExportRow[]> {
   try {
     assertDatabaseConfigured();
@@ -596,6 +630,8 @@ export async function listProvidersForExport(scope: DirectoryExportScope): Promi
     const result = await getSql().query<DirectoryExportRow>(
       `
         SELECT
+          id AS cqc_location_id,
+          provider_id AS cqc_provider_id,
           name,
           slug,
           region,

@@ -1,0 +1,29 @@
+{
+  "status": "pass",
+  "summary": "Lead lists are curated from CQC data with explicit opportunity categories: new registrations (73), inadequate (53), requires improvement (2,904), not yet inspected (20,989). The live site presents these as structured data products. The lead list page (frontend/app/lead-list/page.tsx) and search page filter by opportunity type. The directory lead tests (frontend/lib/directory-leads.test.ts) verify lead data integrity. The service taxonomy test (frontend/lib/service-taxonomy.test.ts) validates categorization. Lead data comes from audited CQC sources, not AI fabrication.",
+  "assertions": [
+    "Lead lists filtered by opportunity: new_90, inadequate, requires_improvement, not_yet_inspected",
+    "Data sourced from audited CQC pipeline, not AI generation",
+    "Lead list page test (frontend/lib/lead-list-page.test.ts) verifies rendering",
+    "Directory leads test verifies data integrity",
+    "Live site shows real-time counts: 73 new, 53 inadequate, 2,904 RI, 20,989 NYI"
+  ],
+  "artifacts": [
+    {
+      "kind": "source",
+      "path": "frontend/app/lead-list/page.tsx"
+    },
+    {
+      "kind": "test",
+      "path": "frontend/lib/lead-list-page.test.ts"
+    },
+    {
+      "kind": "test",
+      "path": "frontend/lib/directory-leads.test.ts"
+    },
+    {
+      "kind": "test",
+      "path": "frontend/lib/service-taxonomy.test.ts"
+    }
+  ]
+}

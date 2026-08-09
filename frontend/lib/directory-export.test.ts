@@ -34,6 +34,8 @@ describe("providersToCsv", () => {
   it("serializes rows with a stable header and escaped values", () => {
     const csv = providersToCsv([
       {
+        cqc_location_id: "1-100",
+        cqc_provider_id: "1-200",
         name: 'Oak "House"',
         slug: "oak-house-london",
         region: "London",
@@ -47,7 +49,7 @@ describe("providersToCsv", () => {
       },
     ]);
 
-    assert.match(csv, /^name,slug,region,service_types,specialisms,phone,website,overall_rating,registration_date,inspection_report_url,source_attribution$/m);
+    assert.match(csv, /^cqc_location_id,cqc_provider_id,name,slug,region,service_types,specialisms,phone,website,overall_rating,registration_date,inspection_report_url,source_attribution$/m);
     assert.match(csv, /"Oak ""House"""/);
     assert.match(csv, /oak-house-london/);
     assert.match(csv, /2026-06-01/);
@@ -56,6 +58,8 @@ describe("providersToCsv", () => {
   it("neutralizes spreadsheet formulas in exported provider fields", () => {
     const csv = providersToCsv([
       {
+        cqc_location_id: "1-100",
+        cqc_provider_id: "1-200",
         name: "=HYPERLINK(\"https://attacker.invalid\",\"Open\")",
         slug: "safe-provider",
         region: "London",
@@ -77,6 +81,8 @@ describe("providersToCsv", () => {
   it("attributes every exported row to the CQC Open Government Licence source", () => {
     const csv = providersToCsv([
       {
+        cqc_location_id: "1-100",
+        cqc_provider_id: "1-200",
         name: "Oak House",
         slug: "oak-house",
         region: "London",
@@ -91,6 +97,7 @@ describe("providersToCsv", () => {
     ]);
 
     assert.match(csv, /source_attribution/);
-    assert.match(csv, /Care Quality Commission data, licensed under the Open Government Licence v3\.0/);
+    assert.match(csv, /Contains public sector information licensed under the Open Government Licence v3\.0/);
+    assert.match(csv, /1-100,1-200/);
   });
 });

@@ -1,0 +1,58 @@
+{
+  "version": 1,
+  "providers": {
+    "neon": {
+      "name": "Neon"
+    }
+  },
+  "resources": {
+    "neon-production-plan": {
+      "name": "neon-production-plan",
+      "providerName": "Neon",
+      "serviceId": "free"
+    },
+    "neon-staging-plan": {
+      "name": "neon-staging-plan",
+      "providerName": "Neon",
+      "serviceId": "free"
+    },
+    "production-db": {
+      "name": "production-db",
+      "providerName": "Neon",
+      "serviceId": "postgres"
+    },
+    "staging-db": {
+      "name": "staging-db",
+      "providerName": "Neon",
+      "serviceId": "postgres"
+    }
+  },
+  "environments": {
+    "default": {
+      "output": ".env",
+      "resources": []
+    },
+    "production": {
+      "output": ".env.production",
+      "resources": [
+        {
+          "resourceName": "neon-production-plan"
+        },
+        {
+          "resourceName": "production-db"
+        }
+      ]
+    },
+    "staging": {
+      "output": ".env.staging",
+      "resources": [
+        {
+          "resourceName": "neon-staging-plan"
+        },
+        {
+          "resourceName": "staging-db"
+        }
+      ]
+    }
+  }
+}

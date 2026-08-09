@@ -1,0 +1,25 @@
+{
+  "status": "pass",
+  "summary": "Authentication boundaries are enforced through a multi-layer architecture: API middleware validates backend sessions, frontend proxy.ts handles session validation with explicit fail-closed behavior (auth errors redirect to login, never return NextResponse.next()), and Vercel binds the backend URL as CAREGIST_BACKEND_URL. The middleware auth test (frontend/lib/middleware-auth.test.ts) verifies fail-closed behavior. The live site at https://www.caregist.co.uk requires login for Dashboard access. Production deployment has separate frontend (Next.js) and backend (FastAPI) services with distinct auth boundaries.",
+  "assertions": [
+    "API middleware validates sessions; frontend proxy.ts fails closed \u2014 errors redirect to login, never pass through",
+    "middleware-auth.test.ts verifies: catch block returns redirectToLogin(), does NOT return NextResponse.next()",
+    "Live site has /login and /signup routes; Dashboard/Log Out visible only post-authentication",
+    "Frontend and backend are separate Vercel services with distinct auth boundaries",
+    "Production README: 'Commercial and unapproved mutation paths must remain fail-closed'"
+  ],
+  "artifacts": [
+    {
+      "kind": "source",
+      "path": "frontend/proxy.ts"
+    },
+    {
+      "kind": "test",
+      "path": "frontend/lib/middleware-auth.test.ts"
+    },
+    {
+      "kind": "doc",
+      "path": "README.md"
+    }
+  ]
+}

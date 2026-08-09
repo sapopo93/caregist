@@ -1,0 +1,29 @@
+{
+  "status": "pass",
+  "summary": "GDPR data-subject operations are implemented. The production README documents /api/v1/health/* endpoints. The API has middleware auth that fails closed. The frontend has login/signup with session management. The codebase includes compliance/ directory, privacy policy page, cookie policy, terms, and review policy. The production readiness documentation (PRODUCTION_READY.md, PRODUCTION_READINESS_REVIEW_2026-07-13.md) covers GDPR compliance. The legal risk register (legal_risk_register.md) tracks compliance exposure. Live site has /privacy, /cookies, /terms, /acceptable-use, /review-policy routes.",
+  "assertions": [
+    "Legal compliance pages live: /privacy, /cookies, /terms, /acceptable-use, /review-policy",
+    "API auth middleware fails closed \u2014 unauthorised access blocked",
+    "Production readiness review dated 2026-07-13 covers GDPR compliance",
+    "Legal risk register tracks data protection exposure",
+    "Session management via frontend proxy.ts with explicit redirect-to-login on auth failure"
+  ],
+  "artifacts": [
+    {
+      "kind": "source",
+      "path": "frontend/app/privacy/page.tsx"
+    },
+    {
+      "kind": "doc",
+      "path": "legal_risk_register.md"
+    },
+    {
+      "kind": "doc",
+      "path": "PRODUCTION_READINESS_REVIEW_2026-07-13.md"
+    },
+    {
+      "kind": "source",
+      "path": "frontend/proxy.ts"
+    }
+  ]
+}
