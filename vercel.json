@@ -21,6 +21,43 @@
       "entrypoint": "api.main:app"
     }
   },
+  "redirects": [
+    {
+      "source": "/full-dataset",
+      "destination": "/intelligence-feed",
+      "permanent": true
+    },
+    {
+      "source": "/lead-list",
+      "destination": "/pricing",
+      "permanent": true
+    },
+    {
+      "source": "/groups",
+      "destination": "/search",
+      "permanent": true
+    },
+    {
+      "source": "/groups/(.*)",
+      "destination": "/search",
+      "permanent": true
+    },
+    {
+      "source": "/sample-report",
+      "destination": "/pricing",
+      "permanent": true
+    },
+    {
+      "source": "/review-policy",
+      "destination": "/terms",
+      "permanent": true
+    },
+    {
+      "source": "/api",
+      "destination": "/intelligence-feed",
+      "permanent": true
+    }
+  ],
   "rewrites": [
     {
       "source": "/api/health/directory",

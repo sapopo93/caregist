@@ -38,3 +38,21 @@ def test_frontend_has_a_deployment_scoped_backend_binding():
         "format": "url",
         "env": "CAREGIST_BACKEND_URL",
     } in bindings
+
+
+def test_retired_product_routes_use_edge_level_permanent_redirects():
+    config = json.loads((ROOT / "vercel.json").read_text(encoding="utf-8"))
+    redirects = {
+        route["source"]: (route["destination"], route["permanent"])
+        for route in config["redirects"]
+    }
+
+    assert redirects == {
+        "/full-dataset": ("/intelligence-feed", True),
+        "/lead-list": ("/pricing", True),
+        "/groups": ("/search", True),
+        "/groups/(.*)": ("/search", True),
+        "/sample-report": ("/pricing", True),
+        "/review-policy": ("/terms", True),
+        "/api": ("/intelligence-feed", True),
+    }
