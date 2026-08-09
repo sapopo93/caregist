@@ -14,7 +14,7 @@ The controlled catalogue-safety release is deployed at https://www.caregist.co.u
 - [x] **Stripe test and live modes reconciled explicitly:** each mode contains exactly four active Products and three active Prices with the approved lookup keys and amounts; all legacy Products and Prices are archived.
 - [x] **Legacy sales paths retired:** `/full-dataset` permanently redirects to `/intelligence-feed`; legacy checkout endpoints remain fail-closed and legacy Price IDs are retained only for subscription replay compatibility.
 - [x] **Release verification:** the deployed Git SHA is exposed by `/api/v1/version` and `/api/v1/health/liveness`; the exact-commit preview smoke workflow passes.
-- [x] **Local validation:** 553 backend tests and 126 frontend tests pass; Ruff, TypeScript, the Next.js 16.2.12 production build, migration replay, and dependency audits pass.
+- [x] **Local validation:** 554 backend tests and 126 frontend tests pass; Ruff, TypeScript, the Next.js 16.2.12 production build, migration replay, and dependency audits pass.
 - [x] **Customer-surface verification:** public routes, pricing, search-to-provider rendering, CQC attribution, legal pages, checkout denial, and source-status wording were verified with the Chrome browser plugin.
 - [x] **Production recovery:** Neon is on Launch with seven-day history; a pre-migration recovery checkpoint and isolated point-in-time restore passed with 56,743 provider rows, 56,742 active rows, and zero duplicate canonical CQC location IDs.
 - [x] **Database migration:** the pending chain through `049_cqc_signal_intelligence.sql` passed on an isolated Neon branch and production; provider counts were preserved, trusted-ledger public IDs were fully populated, and delivery-outbox RLS is enabled.

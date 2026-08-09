@@ -205,3 +205,17 @@ def test_lead_smoke_accepts_human_gate_redirect(verifier, monkeypatch):
     )
 
     verifier.verify_lead_capture_and_export()
+
+
+def test_lead_smoke_accepts_explicitly_retired_product(verifier, monkeypatch):
+    monkeypatch.setattr(
+        verifier,
+        "fetch",
+        lambda *_args, **_kwargs: verifier.Response(
+            410,
+            {"content-type": "application/json"},
+            '{"error":"Filtered lead-list exports are no longer offered. Use CareGist Radar for verified change events."}',
+        ),
+    )
+
+    verifier.verify_lead_capture_and_export()

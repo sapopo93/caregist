@@ -294,6 +294,13 @@ def verify_lead_capture_and_export() -> None:
         headers={"Content-Type": "application/x-www-form-urlencoded"},
     )
 
+    if response.status == 410:
+        assert_true(
+            "no longer offered" in response.body and "CareGist Radar" in response.body,
+            "retired lead response did not explain the replacement product",
+        )
+        print_ok("LEAD_RETIRED", "commodity lead-list intake is retired with HTTP 410")
+        return
     if response.status == 503:
         assert_true(
             "Human Gate" in response.body or "awaiting" in response.body,
