@@ -481,7 +481,7 @@ As of 9 August 2026:
 - Checkout remains disabled.
 - The repository contains additive tenancy, event-ledger, Radar, collector,
   health-gate, and durable-delivery implementation.
-- Python 3.12 validation passes; Ruff passes; 554 backend tests pass.
+- Python 3.12 validation passes; Ruff passes; 555 backend tests pass.
 - 126 frontend tests, TypeScript, and the Next.js 16.2.12 production build pass.
 - Migration 049 is applied in production after an isolated migration rehearsal and point-in-time restore drill; provider counts were preserved and the recovery branch remains retained.
 - The controlled website correction is deployed and its exact release SHA is

@@ -1,10 +1,18 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
 from tools import poll_cqc_signals
+
+
+def test_workflow_runs_poller_as_importable_module():
+    workflow = (Path(__file__).resolve().parents[1] / ".github/workflows/cqc-signal-poll.yml").read_text()
+
+    assert "python -m tools.poll_cqc_signals" in workflow
+    assert "python tools/poll_cqc_signals.py" not in workflow
 
 
 class IndexCursor:
