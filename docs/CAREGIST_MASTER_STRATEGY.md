@@ -332,12 +332,13 @@ not be treated as a stale source.
 
 ### Gate 0 — catalogue safety
 
-**Decision:** deploy a narrow catalogue-safety release now; do not deploy the
-full Radar platform.
+**Decision:** the narrow catalogue-safety release is deployed; do not enable the
+full Radar platform or paid checkout yet.
 
-The live pricing page was verified on 9 August 2026 and still advertised the
-archived Alerts/Data/Listing catalogue. Vercel returned a fresh, non-cached
-response, so this is an outdated deployment rather than a browser-cache issue.
+The live pricing page was re-verified on 9 August 2026 after deployment. It now
+shows only Free Directory, Radar Regional, Radar National, Intelligence Feed
+Pilot, and quote-only Embedded Enterprise. Paid Radar checkout is visibly and
+technically disabled while source trust remains red.
 
 The narrow release includes:
 
@@ -475,15 +476,21 @@ outreach without re-qualification.
 
 As of 9 August 2026:
 
-- The Stripe test and live catalogues contain the four final paid/quote surfaces;
-  nine legacy live products and their prices are archived.
+- The live Stripe catalogue contains the four final paid/quote surfaces and
+  exactly three active prices; all legacy live products and prices are archived.
 - Checkout remains disabled.
 - The repository contains additive tenancy, event-ledger, Radar, collector,
   health-gate, and durable-delivery implementation.
-- Python 3.12 validation passes; Ruff passes; 545 backend tests pass.
-- 102 frontend tests, TypeScript, and the Next.js 16.2.12 production build pass.
+- Python 3.12 validation passes; Ruff passes; 550 backend tests pass.
+- 111 frontend tests, TypeScript, and the Next.js 16.2.12 production build pass.
 - Migration 049 has not been applied to production.
-- The corrected website is not deployed; the live pricing page remains legacy.
+- The controlled website correction is deployed and its exact release SHA is
+  exposed through the public version and liveness endpoints.
+- Production Neon is on Free, which provides at most six hours of restore
+  history. The seven-day recovery gate requires a Launch upgrade and explicit
+  restore-window evidence before migration 049 or source collectors can start.
+- Production health correctly reports degraded/stale, reconciliation evidence
+  is absent for the new source-trust pipeline, and checkout remains fail-closed.
 - Legal approval, production shadow evidence, private-pilot evidence, the
   narrative gold set, and Feed/Embedded operational evidence remain open gates.
 

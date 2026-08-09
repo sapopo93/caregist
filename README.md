@@ -1,8 +1,10 @@
 # CareGist
 
-CareGist is a UK care-provider directory and intelligence service built from Care Quality Commission data. **Production release is GO** as of 2026-08-08. The Completion Auditor gate is eligible (20/20 checks pass, all four reconciliation gates verified against production). Two residual risks are accepted: (1) Stripe refund path is deployed but has not yet processed a live event — the code path exists and is tested structurally but `stripe_processed_events` has zero rows, and (2) Neon PITR restore window has not been evidenced at seven days per the deployment checklist. Every commercial and unapproved mutation path remains fail-closed by default; capabilities are enabled only after their named approval. A configured vendor credential is not approval to enable a capability.
+CareGist is a UK care-provider directory and intelligence service built from Care Quality Commission data. The **controlled catalogue-safety release is deployed**, but the paid Radar release is not yet approved. Checkout, source collectors, outbound delivery, and other commercial capabilities remain fail-closed until their named recovery, source-trust, legal, and pilot gates pass. A configured vendor credential is not approval to enable a capability.
 
-The live site at https://www.caregist.co.uk serves the full product: directory search, provider detail pages, lead lists, pricing, Stripe Payment Link, CSV export (token-gated), and authenticated dashboard with new-registration feed. The trusted event ledger contains 56,746 events across 56,742 active providers. Neon Postgres runs on the Launch plan (94 compute-hours/month, $10.07/mo).
+The live site at https://www.caregist.co.uk serves the Free Directory, provider detail pages, the final Radar/Feed positioning, source-status reporting, and the current legal and licence surfaces. It does not publicly sell legacy data packs, paid listings, extra seats, or predictive products. The live Stripe catalogue contains Radar Regional (£299/month), Radar National (£799/month), Intelligence Feed Pilot (£6,000/year), and quote-only Embedded Enterprise; the three priced products remain checkout-gated. Production contains 56,743 location rows, of which 56,742 are active.
+
+Production and staging Neon resources are currently on the Free plan. Neon documents that Free provides at most six hours of restore history, while CareGist requires an evidenced seven-day window. Production migration `049_cqc_signal_intelligence.sql` and the source-trust shadow run must therefore remain blocked until production is upgraded to Launch, the restore window is configured and evidenced at seven days, and a pre-migration recovery point is recorded.
 
 ## Production architecture
 
@@ -69,7 +71,7 @@ The 15-minute freshness watchdog records deduplicated state in Postgres and noti
 
 ## Recovery and release
 
-Neon-native PITR is the sole database recovery strategy. A seven-day restore window is a release prerequisite; the current provider plan has not yet been evidenced as meeting it. Before every production migration, create and record a recovery point. Monthly drills restore to an isolated branch, run schema/count invariants, record RPO/RTO, and delete the temporary branch only after approval.
+Neon-native PITR is the sole database recovery strategy. A seven-day restore window is a release prerequisite. The production resource was verified through the provider integration as Free on 9 August 2026 and therefore cannot meet this gate. Upgrade production to Launch, configure and evidence the full seven-day window, and create a recorded recovery point before any production migration. Monthly drills restore to an isolated branch, run schema/count invariants, record RPO/RTO, and delete the temporary branch only after approval.
 
 Use these documents:
 

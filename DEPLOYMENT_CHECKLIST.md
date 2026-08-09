@@ -1,45 +1,37 @@
 # CareGist Production Deployment Checklist
 
-**Last updated:** 2026-08-08
+**Last updated:** 2026-08-09
 **Purpose:** Deployment-owner checklist for taking the hardened codebase from staging to production.
-**Rule:** Do not send public production traffic until every required item is complete and evidenced.
+**Rule:** Public directory traffic is allowed. Do not enable paid Radar, source collectors, outbound delivery, or other gated capabilities until every applicable item is complete and evidenced.
 
-## Current Release-State Snapshot (2026-08-08)
+## Current Release-State Snapshot (2026-08-09)
 
-Production is **GO** as of 2026-08-08. The Completion Auditor gate is eligible with 20/20 checks passing. The following evidence has been verified against the live site at https://www.caregist.co.uk and the production Neon Postgres database (Launch plan).
+The controlled catalogue-safety release is deployed at https://www.caregist.co.uk. The paid Radar release is **NO-GO** until the recovery, source-trust, legal, billing, and pilot gates below pass. Production health intentionally reports degraded/stale and checkout intentionally fails closed.
 
 ### Gates satisfied
 
-- [x] **Completion Auditor: 20/20 checks pass, gate eligible** (run `6e1820ec`, 2026-08-08, DeepSeek V4 Pro review: APPROVE)
-- [x] **Reconciliation gates: all 4 pass against production** (`tools/verify_reconciliation_gates.py`, run 2026-08-08 23:15 UTC)
-  - COUNT: 56,746 ledger events, 56,742 active providers, 5,163 pipeline runs, 87,986 audit entries, 6 active subscriptions
-  - COVERAGE: 24 feed_cycle runs in last 24h, last completed 2026-08-08 23:15 UTC
-  - CHECKSUM: 0 critical pipeline alerts (3,286 total, all warning severity)
-  - WATERMARK: feed cycles running continuously
-- [x] **Stripe refund handler deployed** (`api/routers/billing.py:_handle_refund` at commit `77bc3f1`, verified via `/api/v1/version`)
-- [x] **510 unit tests pass**; 9 integration tests require local PostgreSQL
-- [x] **Ruff lint: 0 errors**
-- [x] **Database on paid Launch plan** (94 compute-hours/month, $10.07/mo)
-- [x] **Live site serving all routes** (33 dynamic routes, 4 static, middleware proxy)
-- [x] **Release integration**: `codex/caregist-production-remediation-20260802` at commit `77bc3f1`
-
-### Residual risks (accepted)
-
-- [ ] **Stripe refund path not yet exercised by a live event**: `stripe_processed_events` has 0 rows. The `_handle_refund` code path is deployed and structurally verified (AST + ruff) but no real charge.refunded event has been processed. Accepted risk: the handler follows the same atomic transaction + dedup pattern as all other webhook handlers; breakage would only affect refund processing, not payment capture.
-- [ ] **Neon PITR 7-day restore window not evidenced**: the database is on the Launch plan which supports point-in-time recovery, but a restore drill has not been completed and the 7-day window has not been verified. Accepted risk: Neon PITR is available on the Launch plan; a drill should be scheduled within the first 30 days.
-- [ ] **CI has not run against this branch**: `.github/workflows/ci.yml` triggers on push to `main` or PRs only. The remediation branch has not been merged to `main`. Accepted risk: 510 tests pass locally; CI will run on merge to `main`.
+- [x] **Final catalogue deployed:** Free Directory, Radar Regional, Radar National, Intelligence Feed Pilot, and quote-only Embedded Enterprise are the only public product surfaces.
+- [x] **Stripe test and live modes reconciled explicitly:** each mode contains exactly four active Products and three active Prices with the approved lookup keys and amounts; all legacy Products and Prices are archived.
+- [x] **Legacy sales paths retired:** `/full-dataset` permanently redirects to `/intelligence-feed`; legacy checkout endpoints remain fail-closed and legacy Price IDs are retained only for subscription replay compatibility.
+- [x] **Release verification:** the deployed Git SHA is exposed by `/api/v1/version` and `/api/v1/health/liveness`; the exact-commit preview smoke workflow passes.
+- [x] **Local validation:** 550 backend tests and 111 frontend tests pass; Ruff, TypeScript, the Next.js 16.2.12 production build, migration replay, and dependency audits pass.
+- [x] **Customer-surface verification:** public routes, pricing, search-to-provider rendering, CQC attribution, legal pages, checkout denial, and source-status wording were verified with the Chrome browser plugin.
 
 ### Items still requiring operator action before taking payments
 
-- [ ] Stripe webhook test event against staging to exercise the full checkout→subscription→refund lifecycle
-- [ ] Resend live email delivery confirmed
-- [ ] Redis-backed rate limiting confirmed (currently using in-process fallback)
-- [ ] `/data-status` page deployed (resolves on shipping current HEAD)
-- [ ] `/provider-sitemap-index.xml` 503 resolved (frontend backend URL resolution)
+- [ ] Upgrade the production Neon resource from Free to Launch with explicit billing authority.
+- [ ] Configure and evidence the production restore window at seven days.
+- [ ] Create a pre-migration recovery point and complete an isolated restore drill.
+- [ ] Apply migration `049_cqc_signal_intelligence.sql` only after the recovery evidence is approved.
+- [ ] Run the source collectors in shadow mode for seven consecutive days and pass the poll-completion, rolling-sweep, reconciliation, checksum, and p95 latency thresholds.
+- [ ] Obtain human legal approval for the deployed Terms, Privacy, OGL attribution, digital-content wording, and B2B checkout evidence version.
+- [ ] Exercise Checkout, Portal, duplicate/reordered webhooks, cancellation, and refund lifecycle in Stripe test mode against staging.
+- [ ] Confirm Redis-backed rate limiting, Resend delivery, alert routing, and independent kill switches in the release environment.
+- [ ] Complete the private compliance pilot and grounded-narrative gates before enabling paid Radar one account at a time.
 
-## 0. Release Gate
+## 0. Paid Radar Release Gate
 
-### Required Before Production
+### Required Before Paid Activation
 
 - [ ] CI is green on the exact commit being deployed.
 - [ ] Staging deploy uses the same build artifact or commit as production.
@@ -58,7 +50,7 @@ Production is **GO** as of 2026-08-08. The Completion Auditor gate is eligible w
 - [x] API keys authenticate by hash only.
 - [x] Production startup requires webhook encryption key and Redis URL for non-local DB deployments.
 - [x] Stripe webhook side effects are transactionally deduplicated.
-- [x] Profile checkout requires an approved provider claim.
+- [x] Removed paid-listing and Full Dataset checkout endpoints return `410 Gone` before any Stripe call.
 - [x] Frontend dependency audit is clean.
 
 ## 1. Secrets
@@ -71,17 +63,14 @@ Create production secrets in the Vercel project secret store and approved connec
   "api_master_key": "cm_...",
   "stripe_secret_key": "sk_live_...",
   "stripe_webhook_secret": "whsec_...",
-  "stripe_price_alerts_pro": "price_...",
-  "stripe_price_starter": "price_...",
-  "stripe_price_pro": "price_...",
-  "stripe_price_pro_seat": "price_...",
-  "stripe_price_business": "price_...",
-  "stripe_price_profile_enhanced": "price_...",
-  "stripe_price_profile_premium": "price_...",
-  "stripe_price_profile_sponsored": "price_...",
+  "stripe_price_radar_regional": "price_...",
+  "stripe_price_radar_national": "price_...",
+  "stripe_price_intelligence_feed": "price_...",
   "b2b_terms_version": "approved-version-id",
   "b2b_terms_sha256": "lowercase-sha256-of-approved-terms",
   "b2b_evidence_hash_key": "dedicated-random-secret",
+  "digital_content_terms_version": "approved-version-id",
+  "digital_content_terms_sha256": "lowercase-sha256-of-approved-terms",
   "resend_api_key": "re_...",
   "caregist_to_support_token": "...",
   "support_internal_token": "...",
@@ -90,6 +79,10 @@ Create production secrets in the Vercel project secret store and approved connec
   "redis_url": "rediss://..."
 }
 ```
+
+Archived legacy Price IDs may remain configured only for existing-subscription
+replay and compatibility entitlements. They must not be reactivated, exposed as
+saleable plans, or accepted by new checkout sessions.
 
 Checklist:
 
@@ -204,8 +197,8 @@ Manual staging checks:
 - [ ] Checkout returns the governed unavailable response while any legal/privacy/VAT gate is red.
 - [ ] After every gate is evidenced in staging, a browser session plus the exact approved terms version and business-authority confirmation creates one Stripe Checkout Session.
 - [ ] Stripe dashboard test event reaches `/api/v1/billing/webhook`.
-- [ ] Profile checkout fails without an approved claim.
-- [ ] Profile checkout remains unavailable until the same commercial gates pass; after controlled staging activation it succeeds only for an approved claim and rejects duplicate subscriptions.
+- [ ] Radar checkout rejects every legacy tier, extra-seat request, and self-service Feed/Enterprise request without creating a Stripe object.
+- [ ] After controlled staging activation, only Radar Regional and Radar National create Checkout Sessions and their fixed seat limits match the approved catalogue.
 - [ ] Redis-backed rate limiting blocks over-quota traffic.
 
 ## 7. Production Smoke Tests
