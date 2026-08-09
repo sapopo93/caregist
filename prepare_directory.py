@@ -6,11 +6,12 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import os
 import re
 import time
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Protocol
 from urllib.parse import quote
 
 import pandas as pd
@@ -140,8 +141,69 @@ def normalize_rating(value: Any) -> str:
     return mapping.get(normalized, text)
 
 
-def geocode_from_postcode(postcode: str, timeout: int = 10) -> tuple[float | None, float | None]:
-    url = f"https://api.postcodes.io/postcodes/{quote(postcode)}"
+def _normalize_postcode_key(postcode: str) -> str:
+    return normalize_whitespace(postcode).upper()
+
+
+class PostcodeCache(Protocol):
+    def get(self, postcode: str) -> tuple[float, float] | None:
+        ...
+
+    def set(self, postcode: str, latitude: float, longitude: float) -> None:
+        ...
+
+
+class DatabasePostcodeCache:
+    def __init__(self, database_url: str):
+        import psycopg2
+
+        self._conn = psycopg2.connect(database_url)
+        self._conn.autocommit = True
+
+    def get(self, postcode: str) -> tuple[float, float] | None:
+        with self._conn.cursor() as cur:
+            cur.execute(
+                "SELECT latitude, longitude FROM postcode_cache WHERE postcode = %s",
+                (_normalize_postcode_key(postcode),),
+            )
+            row = cur.fetchone()
+        if not row:
+            return None
+        return float(row[0]), float(row[1])
+
+    def set(self, postcode: str, latitude: float, longitude: float) -> None:
+        with self._conn.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO postcode_cache (postcode, latitude, longitude, cached_at)
+                VALUES (%s, %s, %s, NOW())
+                ON CONFLICT (postcode) DO UPDATE SET
+                    latitude = EXCLUDED.latitude,
+                    longitude = EXCLUDED.longitude,
+                    cached_at = NOW()
+                """,
+                (_normalize_postcode_key(postcode), latitude, longitude),
+            )
+
+    def close(self) -> None:
+        self._conn.close()
+
+
+def geocode_from_postcode(
+    postcode: str,
+    timeout: int = 10,
+    cache: PostcodeCache | None = None,
+) -> tuple[float | None, float | None]:
+    postcode_key = _normalize_postcode_key(postcode)
+    if cache:
+        try:
+            cached = cache.get(postcode_key)
+            if cached:
+                return cached
+        except Exception:
+            pass
+
+    url = f"https://api.postcodes.io/postcodes/{quote(postcode_key)}"
     try:
         response = requests.get(url, timeout=timeout)
         if response.status_code != 200:
@@ -154,7 +216,14 @@ def geocode_from_postcode(postcode: str, timeout: int = 10) -> tuple[float | Non
         lon = result.get("longitude")
         if lat is None or lon is None:
             return None, None
-        return float(lat), float(lon)
+        lat_float = float(lat)
+        lon_float = float(lon)
+        if cache:
+            try:
+                cache.set(postcode_key, lat_float, lon_float)
+            except Exception:
+                pass
+        return lat_float, lon_float
     except Exception:
         return None, None
 
@@ -281,6 +350,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output-json", default=OUTPUT_DIRECTORY_JSON, help="Output directory JSON")
     parser.add_argument("--enable-geocode", action="store_true", help="Geocode missing coordinates via postcodes.io")
     parser.add_argument("--geocode-sleep", type=float, default=0.1, help="Sleep seconds between geocode calls")
+    parser.add_argument("--database-url", default=None, help="Optional Postgres URL for postcode_cache lookups")
     return parser.parse_args()
 
 
@@ -299,6 +369,14 @@ def main() -> int:
         return 1
 
     df = pd.read_csv(input_path, dtype=str, keep_default_na=False)
+    postcode_cache = None
+    if args.enable_geocode:
+        database_url = args.database_url or os.environ.get("DATABASE_URL")
+        if database_url:
+            try:
+                postcode_cache = DatabasePostcodeCache(database_url)
+            except Exception as exc:
+                print(f"Warning: postcode_cache unavailable, using postcodes.io directly: {exc}")
 
     fieldnames = [
         "id",
@@ -334,8 +412,8 @@ def main() -> int:
         "regulated_activities",
         "number_of_beds",
         "ownership_type",
-        "quality_score",
-        "quality_tier",
+        "data_completeness_score",
+        "data_completeness_tier",
         "meta_title",
         "meta_description",
         "geocode_source",
@@ -373,7 +451,7 @@ def main() -> int:
 
         if lat is None or lon is None:
             if args.enable_geocode and postcode:
-                geo_lat, geo_lon = geocode_from_postcode(postcode)
+                geo_lat, geo_lon = geocode_from_postcode(postcode, cache=postcode_cache)
                 if geo_lat is not None and geo_lon is not None:
                     lat = round(geo_lat, 7)
                     lon = round(geo_lon, 7)
@@ -382,11 +460,11 @@ def main() -> int:
 
         slug = generate_slug(name, town or "", location_id, used_slugs)
 
-        quality_score = parse_int(record.get("qualityScore"))
-        quality_tier = clean_value(record.get("qualityTier")) or "SPARSE"
-        if quality_tier not in tier_counts:
-            tier_counts[quality_tier] = 0
-        tier_counts[quality_tier] += 1
+        data_completeness_score = parse_int(record.get("dataCompletenessScore"))
+        data_completeness_tier = clean_value(record.get("dataCompletenessTier")) or "SPARSE"
+        if data_completeness_tier not in tier_counts:
+            tier_counts[data_completeness_tier] = 0
+        tier_counts[data_completeness_tier] += 1
 
         out_row = {
             "id": location_id,
@@ -422,8 +500,8 @@ def main() -> int:
             "regulated_activities": clean_value(record.get("regulatedActivities")),
             "number_of_beds": parse_int(record.get("numberOfBeds")),
             "ownership_type": clean_value(record.get("ownershipType")),
-            "quality_score": quality_score,
-            "quality_tier": quality_tier,
+            "data_completeness_score": data_completeness_score,
+            "data_completeness_tier": data_completeness_tier,
             "meta_title": meta_title(name, town, service_types=clean_value(record.get("serviceTypes")), provider_type=provider_type),
             "meta_description": meta_description(
                 name,
@@ -473,6 +551,9 @@ def main() -> int:
     print("║ DB schema: db/init.sql                           ║")
     print("║ Report: quality_summary.txt                      ║")
     print("╚══════════════════════════════════════════════════╝")
+
+    if postcode_cache and hasattr(postcode_cache, "close"):
+        postcode_cache.close()
 
     return 0
 

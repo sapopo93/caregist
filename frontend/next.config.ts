@@ -1,47 +1,11 @@
 import { withSentryConfig } from "@sentry/nextjs";
 import type { NextConfig } from "next";
 
-function deriveApiBaseFromAppUrl(appUrlRaw?: string) {
-  if (!appUrlRaw) return undefined;
-
-  try {
-    const appUrl = new URL(appUrlRaw.startsWith("http") ? appUrlRaw : `https://${appUrlRaw}`);
-    if (appUrl.hostname === "caregist.co.uk" || appUrl.hostname === "www.caregist.co.uk") {
-      return `${appUrl.protocol}//api.caregist.co.uk`;
-    }
-  } catch {
-    return undefined;
-  }
-
-  return undefined;
-}
-
-function deriveApiBaseFromConfiguredAppUrl() {
-  return (
-    deriveApiBaseFromAppUrl(process.env.APP_URL) ||
-    deriveApiBaseFromAppUrl(process.env.NEXT_PUBLIC_APP_URL) ||
-    deriveApiBaseFromAppUrl(process.env.VERCEL_PROJECT_PRODUCTION_URL) ||
-    deriveApiBaseFromAppUrl(process.env.VERCEL_URL)
-  );
-}
-
-function isLocalApiBase(value?: string) {
-  if (!value) return false;
-  try {
-    const url = new URL(value);
-    return ["localhost", "127.0.0.1", "0.0.0.0"].includes(url.hostname);
-  } catch {
-    return false;
-  }
-}
-
+// The legacy standalone API subdomain is retired — Vercel Services now binds
+// the frontend to the backend via CAREGIST_BACKEND_URL (see vercel.json), so
+// there is no app-URL-derived API host to fall back to.
 function resolveApiBaseForProduction(value?: string) {
-  const derivedApiBase = deriveApiBaseFromConfiguredAppUrl();
-  if (value && derivedApiBase && isLocalApiBase(value)) {
-    console.warn("[caregist] Ignoring localhost API URL for production app URL — deriving API host from app URL.");
-    return derivedApiBase;
-  }
-  return value || derivedApiBase;
+  return value;
 }
 
 function failOrWarn(message: string) {
@@ -58,6 +22,7 @@ function validateServerApiEnv() {
     process.env.NEXT_PUBLIC_API_KEY;
 
   const serverApiBase =
+    process.env.CAREGIST_BACKEND_URL ||
     resolveApiBaseForProduction(process.env.API_URL) ||
     resolveApiBaseForProduction(process.env.NEXT_PUBLIC_API_URL) ||
     process.env.APP_URL ||
@@ -71,17 +36,11 @@ function validateServerApiEnv() {
     );
   }
 
-  if (!serverApiKey) {
-    failOrWarn(
-      "[caregist] Missing API_KEY/API_MASTER_KEY. Server-rendered search and provider pages will fail authentication.",
-    );
-  }
-
-  if (process.env.API_KEY === "dev_key_change_me") {
+  if (serverApiKey && process.env.API_KEY === "dev_key_change_me") {
     failOrWarn("[caregist] API_KEY is still set to the placeholder dev key.");
   }
 
-  if (process.env.API_MASTER_KEY === "change_me_in_production") {
+  if (serverApiKey && process.env.API_MASTER_KEY === "change_me_in_production") {
     failOrWarn("[caregist] API_MASTER_KEY is still set to the placeholder production value.");
   }
 
@@ -100,8 +59,18 @@ validateServerApiEnv();
 
 const nextConfig: NextConfig = {
   devIndicators: false,
+  outputFileTracingIncludes: {
+    "/": ["./data/directory-fallback-full.csv"],
+    "/search": ["./data/directory-fallback-full.csv"],
+    "/lead-list": ["./data/directory-fallback-full.csv"],
+    "/provider/[slug]": ["./data/directory-fallback-full.csv"],
+    "/api/export": ["./data/directory-fallback-full.csv"],
+    "/api/health/directory": ["./data/directory-fallback-full.csv"],
+    "/api/v1/service-types": ["./data/directory-fallback-full.csv"],
+  },
   async rewrites() {
     const apiBase =
+      process.env.CAREGIST_BACKEND_URL ||
       resolveApiBaseForProduction(process.env.NEXT_PUBLIC_API_URL) ||
       resolveApiBaseForProduction(process.env.API_URL) ||
       "http://localhost:8000";
@@ -122,20 +91,8 @@ const nextConfig: NextConfig = {
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
           { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
-          {
-            key: "Content-Security-Policy",
-            value: [
-              "default-src 'self'",
-              "script-src 'self' 'unsafe-inline'",
-              "style-src 'self' 'unsafe-inline'",
-              "img-src 'self' data: https:",
-              "font-src 'self' https://fonts.gstatic.com",
-              "connect-src 'self' https://api.stripe.com https://*.sentry.io",
-              "frame-src https://js.stripe.com",
-              "object-src 'none'",
-              "base-uri 'self'",
-            ].join("; "),
-          },
+          // Content-Security-Policy is set per-request (with a nonce) in
+          // proxy.ts so script-src can drop 'unsafe-inline' (F-21).
         ],
       },
     ];

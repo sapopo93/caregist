@@ -39,7 +39,9 @@ def patched_db(mock_conn):
             "monthly_remaining": 100,
         },
     }
-    with patch("api.routers.admin.get_connection", mock_get_connection):
+    with patch("api.routers.admin.get_connection", mock_get_connection), \
+         patch("api.routers.admin.settings.provider_claims_enabled", True), \
+         patch("api.routers.admin.settings.review_publication_enabled", True):
         yield mock_conn
     app.dependency_overrides = {}
 
@@ -105,7 +107,22 @@ async def test_admin_no_key():
 @pytest.mark.asyncio
 async def test_moderate_claim_approve(patched_db):
     mock_conn = patched_db
-    mock_conn.fetchrow.return_value = {"id": 1, "provider_id": "LOC123", "status": "approved"}
+    mock_conn.fetchrow.side_effect = [
+        {
+            "id": 1,
+            "provider_id": "LOC123",
+            "status": "pending",
+            "identity_status": "verified",
+            "authority_status": "verified",
+            "identity_verified_by": "user:10/key:20",
+            "authority_verified_by": "user:11/key:21",
+            "verification_expires_at": "2027-01-01T00:00:00Z",
+            "account_email_verified": True,
+            "has_current_identity_evidence": True,
+            "has_current_authority_evidence": True,
+        },
+        {"id": 1, "provider_id": "LOC123", "status": "approved"},
+    ]
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         resp = await client.patch("/api/v1/admin/claims/1", json={
@@ -114,8 +131,54 @@ async def test_moderate_claim_approve(patched_db):
 
     assert resp.status_code == 200
     assert resp.json()["message"] == "Claim approved."
-    # Verify MARK_PROVIDER_CLAIMED was called
-    assert mock_conn.execute.called
+    # An admin_audit_log row is written for the action (F-45)...
+    admin_audit = next(
+        call.args for call in mock_conn.execute.await_args_list
+        if "INSERT INTO admin_audit_log" in call.args[0]
+    )
+    assert admin_audit[1] == "claim.approved"
+    # ...with the stable, non-spoofable actor (F-16), not a user-controlled name.
+    assert admin_audit[4] == "master"
+
+
+@pytest.mark.asyncio
+async def test_moderate_claim_approval_fails_closed_without_authority_evidence(patched_db):
+    mock_conn = patched_db
+    mock_conn.fetchrow.return_value = {
+        "id": 1,
+        "provider_id": "LOC123",
+        "status": "pending",
+        "identity_status": "verified",
+        "authority_status": "unverified",
+        "identity_verified_by": "user:10/key:20",
+        "authority_verified_by": None,
+        "verification_expires_at": None,
+        "account_email_verified": True,
+        "has_current_identity_evidence": True,
+        "has_current_authority_evidence": False,
+    }
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.patch("/api/v1/admin/claims/1", json={"status": "approved"}, headers=HEADERS)
+
+    assert resp.status_code == 409
+    assert "identity/authority evidence" in resp.json()["detail"]
+    mock_conn.execute.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_moderate_claim_approval_requires_human_gate(patched_db):
+    with patch("api.routers.admin.settings.provider_claims_enabled", False):
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            resp = await client.patch(
+                "/api/v1/admin/claims/1",
+                json={"status": "approved"},
+                headers=HEADERS,
+            )
+
+    assert resp.status_code == 503
+    assert "Human Gate" in resp.json()["detail"]
+    patched_db.fetchrow.assert_not_awaited()
 
 
 @pytest.mark.asyncio
@@ -157,8 +220,29 @@ async def test_moderate_review(patched_db):
         }, headers=HEADERS)
 
     assert resp.status_code == 200
-    # Verify review stats were updated
+    # Verify review stats were updated and the action is audited (F-45).
     assert mock_conn.execute.called
+    admin_audit = next(
+        call.args for call in mock_conn.execute.await_args_list
+        if "INSERT INTO admin_audit_log" in call.args[0]
+    )
+    assert admin_audit[1] == "review.approved"
+    assert admin_audit[4] == "master"
+
+
+@pytest.mark.asyncio
+async def test_moderate_review_approval_requires_publication_gate(patched_db):
+    with patch("api.routers.admin.settings.review_publication_enabled", False):
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            resp = await client.patch(
+                "/api/v1/admin/reviews/1",
+                json={"status": "approved"},
+                headers=HEADERS,
+            )
+
+    assert resp.status_code == 503
+    assert "Human Gate" in resp.json()["detail"]
+    patched_db.fetchrow.assert_not_awaited()
 
 
 @pytest.mark.asyncio

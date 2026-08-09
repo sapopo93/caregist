@@ -1,4 +1,9 @@
-export default function ProviderJsonLd({
+import { headers } from "next/headers";
+import { getProviderHref } from "@/lib/provider-path";
+import { getSiteUrl } from "@/lib/site";
+import { normalizeExternalHttpUrl } from "@/lib/external-url";
+
+export default async function ProviderJsonLd({
   name,
   type,
   address,
@@ -25,18 +30,11 @@ export default function ProviderJsonLd({
   longitude?: number | null;
   slug: string;
 }) {
-  const ratingMap: Record<string, number> = {
-    Outstanding: 5,
-    Good: 4,
-    "Requires Improvement": 2,
-    Inadequate: 1,
-  };
-
   const jsonLd: Record<string, unknown> = {
     "@context": "https://schema.org",
     "@type": ["LocalBusiness", "MedicalOrganization"],
     name,
-    url: `https://caregist.co.uk/provider/${slug}`,
+    url: `${getSiteUrl()}${getProviderHref({ slug })}`,
     ...(type && { additionalType: type }),
     address: {
       "@type": "PostalAddress",
@@ -47,7 +45,7 @@ export default function ProviderJsonLd({
       addressCountry: "GB",
     },
     ...(phone && { telephone: phone }),
-    ...(website && { sameAs: website }),
+    ...(normalizeExternalHttpUrl(website) && { sameAs: normalizeExternalHttpUrl(website) }),
     ...(latitude && longitude && {
       geo: {
         "@type": "GeoCoordinates",
@@ -55,21 +53,14 @@ export default function ProviderJsonLd({
         longitude,
       },
     }),
-    ...(rating && ratingMap[rating] && {
-      aggregateRating: {
-        "@type": "AggregateRating",
-        ratingValue: ratingMap[rating],
-        bestRating: 5,
-        worstRating: 1,
-        ratingCount: 1,
-        reviewCount: 1,
-      },
-    }),
+    ...(rating && { description: `CQC rating: ${rating}` }),
   };
 
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
   return (
     <script
       type="application/ld+json"
+      nonce={nonce}
       dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
     />
   );

@@ -1,12 +1,13 @@
 import ProviderCard from "@/components/ProviderCard";
 import { getClaimHref, getProviderHref, getProviderPathKey } from "@/lib/provider-path";
-import ExportCSVButton from "@/components/ExportCSVButton";
 import PrintButton from "@/components/PrintButton";
 import RatingDistributionBar from "@/components/RatingDistributionBar";
 import EmailCaptureStrip from "@/components/EmailCaptureStrip";
 import TrustSignal from "@/components/TrustSignal";
 import Link from "next/link";
+import { headers } from "next/headers";
 import { getCityProviders } from "@/lib/api";
+import { getSiteUrl } from "@/lib/site";
 
 const RATING_LABELS: Record<string, string> = {
   Outstanding: "Outstanding",
@@ -23,6 +24,7 @@ export default async function CityRatingPage({
   ratingFilter: string | null;
   ratingLabel: string;
 }) {
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
   let results: any = { data: [], meta: { city: slug, total: 0, page: 1, pages: 0, rating_distribution: {} } };
   let error = false;
 
@@ -60,28 +62,28 @@ export default async function CityRatingPage({
         "@type": "LocalBusiness",
         name: p.name,
         address: { "@type": "PostalAddress", addressLocality: p.town, postalCode: p.postcode, addressCountry: "GB" },
-        ...(getProviderPathKey(p) && { url: `https://caregist.co.uk${getProviderHref(p)}` }),
+        ...(getProviderPathKey(p) && { url: `${getSiteUrl()}${getProviderHref(p)}` }),
       },
     })),
   };
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-8">
-      <script
+      {!error && <script
         type="application/ld+json"
+        nonce={nonce}
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
+      />}
 
       {/* AEO Block */}
-      <section className="bg-parchment border-b border-stone rounded-t-lg px-6 py-4 text-sm text-charcoal leading-relaxed mb-6">
+      {!error && <section className="bg-parchment border-b border-stone rounded-t-lg px-6 py-4 text-sm text-charcoal leading-relaxed mb-6">
         <p>{aeo}</p>
-      </section>
+      </section>}
 
       <h1 className="text-3xl font-bold mb-2">{h1}</h1>
       <div className="flex items-center justify-between mb-6">
-        <p className="text-dusk">{total.toLocaleString()} providers</p>
+        <p className="text-dusk">{error ? "Provider count unavailable" : `${total.toLocaleString()} providers`}</p>
         <div className="flex gap-3 items-center print:hidden">
-          <ExportCSVButton exportUrl={`/api/v1/providers/export.csv?q=${encodeURIComponent(city)}${ratingFilter ? `&rating=${encodeURIComponent(ratingFilter)}` : ""}`} />
           <PrintButton />
         </div>
       </div>

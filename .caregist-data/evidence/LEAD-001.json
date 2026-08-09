@@ -1,0 +1,25 @@
+{
+  "status": "pass",
+  "summary": "Lead provenance is attributable to CQC data sources. Every provider/lead originates from the audited CQC pipeline (extract \u2192 clean \u2192 quality audit \u2192 prepare \u2192 import). The pipeline creates immutable snapshots with checksums. The quality_report.json provides per-field completeness. The data-status page (/data-status) shows source freshness. /api/v1/version returns the exact deployed Git SHA for reproducibility. The incremental_update.py handles ongoing data updates with provenance tracking.",
+  "assertions": [
+    "CQC pipeline: immutable snapshot \u2192 deterministic shards \u2192 watermark advance",
+    "Quality audit provides per-field provenance (quality_report.json)",
+    "/data-status shows live source freshness",
+    "/api/v1/version returns deployed Git SHA for exact reproducibility",
+    "Incremental update pipeline with provenance tracking"
+  ],
+  "artifacts": [
+    {
+      "kind": "report",
+      "path": "quality_report.json"
+    },
+    {
+      "kind": "source",
+      "path": "incremental_update.py"
+    },
+    {
+      "kind": "doc",
+      "path": "README.md"
+    }
+  ]
+}

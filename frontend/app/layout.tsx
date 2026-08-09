@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { DM_Sans, Playfair_Display } from "next/font/google";
+import { connection } from "next/server";
 
 import "./globals.css";
 
@@ -8,17 +10,57 @@ import CompareBar from "@/components/CompareBar";
 import CookieConsent from "@/components/CookieConsent";
 import SupportWidgetMount from "@/components/SupportWidgetMount";
 
-const SITE_URL = "https://caregist.co.uk";
+import { getServerApiBase } from "@/lib/server-api-config";
+
+const SITE_URL = "https://www.caregist.co.uk";
+
+async function getDataRefreshDate(): Promise<string | null> {
+  try {
+    const apiBase = getServerApiBase();
+    const response = await fetch(`${apiBase}/api/v1/health/freshness`, {
+      next: { revalidate: 3600 },
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!response.ok) return null;
+    const data = await response.json();
+    const retrievedAt = data?.source?.sourceRetrievedAt;
+    if (!retrievedAt) return null;
+    return new Date(retrievedAt).toLocaleDateString("en-GB", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  } catch {
+    return null;
+  }
+}
+
+const dmSans = DM_Sans({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600"],
+  variable: "--font-dm-sans",
+  display: "swap",
+});
+
+const playfairDisplay = Playfair_Display({
+  subsets: ["latin"],
+  weight: ["700", "800"],
+  variable: "--font-playfair-display",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: "CareGist | CQC Data, Lead Lists, API & Provider Listings",
+  title: "CareGist | CQC Signal Intelligence",
   description:
-    "Search active CQC providers, request filtered lead lists, buy dataset packs, start new-provider intelligence plans, and upgrade provider listings.",
+    "Search CQC-registered services for free and turn verified new registrations and rating changes into evidence-linked team workflows.",
+  icons: {
+    icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
+  },
   openGraph: {
-    title: "CareGist | CQC Data, Lead Lists, API & Provider Listings",
+    title: "CareGist | CQC Signal Intelligence",
     description:
-      "Search active CQC providers, request filtered lead lists, buy dataset packs, start new-provider intelligence plans, and upgrade provider listings.",
+      "Verified CQC new registrations and rating changes with traceable source evidence.",
     siteName: "CareGist",
     type: "website",
     locale: "en_GB",
@@ -26,63 +68,55 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "CareGist | CQC Data, Lead Lists, API & Provider Listings",
+    title: "CareGist | CQC Signal Intelligence",
     description:
-      "Search active CQC providers, request filtered lead lists, buy dataset packs, start new-provider intelligence plans, and upgrade provider listings.",
+      "Verified CQC new registrations and rating changes with traceable source evidence.",
     images: ["/twitter-image"],
   },
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
-  const stripePaymentLink = process.env.STRIPE_PAYMENT_LINK_URL?.trim() || null;
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  await connection();
+  const dataRefreshDate = await getDataRefreshDate();
 
   return (
-    <html lang="en">
+    <html lang="en" className={`${dmSans.variable} ${playfairDisplay.variable}`}>
       <head>
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Lora:ital,wght@0,400;0,500;1,400&family=DM+Sans:wght@300;400;500;600&display=swap"
-          rel="stylesheet"
-        />
       </head>
       <body className="flex min-h-screen flex-col">
-        <header className="border-b border-stone bg-bark px-6 py-4 text-cream">
-          <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4">
+        <header className="relative border-b border-stone bg-bark px-6 py-4 text-cream">
+          <div className="mx-auto flex max-w-6xl items-center justify-between gap-4">
             <Link href="/" className="flex items-center">
               <img src="/logo-lockup-reverse.svg" alt="CareGist" className="h-12 w-auto md:h-14" />
             </Link>
 
-            <div className="flex flex-wrap items-center justify-end gap-4">
-              <nav className="flex flex-wrap items-center gap-5 text-sm font-medium">
-                <Link href="/#products" className="hover:text-amber">
-                  Products
+            <div className="flex items-center justify-end gap-3">
+              <Link
+                href="/pricing"
+                className="rounded-full bg-amber px-4 py-2 text-sm font-semibold text-charcoal transition hover:bg-cream md:hidden"
+              >
+                Radar
+              </Link>
+              <nav className="hidden items-center gap-5 text-sm font-medium md:flex">
+                <Link href="/search" className="hover:text-amber">
+                  Directory
                 </Link>
-                <Link href="/#positioning" className="hover:text-amber">
-                  Who it's for
+                <Link href="/pricing" className="hover:text-amber">
+                  Radar
+                </Link>
+                <Link href="/intelligence-feed" className="hover:text-amber">
+                  Intelligence Feed
                 </Link>
                 <Link href="/why-caregist" className="hover:text-amber">
                   About
                 </Link>
-                <Link href="/search" className="hover:text-amber">
-                  Search
-                </Link>
-                <Link href="/pricing" className="hover:text-amber">
-                  Pricing
-                </Link>
-                <Link href="/api" className="hover:text-amber">
-                  API
-                </Link>
-                <Link href="/lead-list" className="hover:text-amber">
-                  Get a lead list
-                </Link>
-                <a
-                  href={stripePaymentLink ?? "/lead-list"}
-                  target={stripePaymentLink ? "_blank" : undefined}
-                  rel={stripePaymentLink ? "noreferrer noopener" : undefined}
+                <Link
+                  href="/pricing"
                   className="rounded-full bg-amber px-4 py-2 text-sm font-semibold text-charcoal transition hover:bg-cream"
                 >
-                  Buy dataset
-                </a>
+                  Compare plans
+                </Link>
               </nav>
               <AuthNav />
             </div>
@@ -98,7 +132,24 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <footer className="bg-charcoal px-6 py-8 text-sm text-stone">
           <div className="mx-auto max-w-6xl">
             <p className="mb-2">
-              Data source: Care Quality Commission (CQC). CareGist is not an official CQC service.
+              Contains public sector information licensed under the{" "}
+              <a
+                href="https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/"
+                className="underline hover:text-cream"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Open Government Licence v3.0
+              </a>
+              .
+            </p>
+            {dataRefreshDate && (
+              <p className="mb-2 text-dusk">
+                CQC data last updated: {dataRefreshDate}.
+              </p>
+            )}
+            <p className="mb-2 text-dusk">
+              CareGist is not an official CQC service.
             </p>
             <p className="text-dusk">
               If you have concerns about care quality, contact CQC directly at{" "}
@@ -117,34 +168,28 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Link href="/acceptable-use" className="underline hover:text-cream">
                 Acceptable Use
               </Link>
-              <Link href="/review-policy" className="underline hover:text-cream">
-                Review Policy
-              </Link>
               <Link href="/cookies" className="underline hover:text-cream">
                 Cookies
               </Link>
+              <Link href="/data-status" className="underline hover:text-cream">
+                Data Status
+              </Link>
               <Link href="/search" className="underline hover:text-cream">
-                Search
+                Directory
               </Link>
               <Link href="/find-care" className="underline hover:text-cream">
                 Find Care
               </Link>
-              <Link href="/groups" className="underline hover:text-cream">
-                Care Groups
-              </Link>
               <Link href="/pricing" className="underline hover:text-cream">
                 Pricing
               </Link>
-              <Link href="/api" className="underline hover:text-cream">
-                API
+              <Link href="/intelligence-feed" className="underline hover:text-cream">
+                Intelligence Feed
               </Link>
               <Link href="/why-caregist" className="underline hover:text-cream">
                 Why CareGist
               </Link>
-              <Link href="/lead-list" className="underline hover:text-cream">
-                Get a lead list
-              </Link>
-              <a href="mailto:hello@caregist.co.uk" className="underline hover:text-cream">
+              <a href="mailto:support@caregist.co.uk" className="underline hover:text-cream">
                 Contact
               </a>
             </div>

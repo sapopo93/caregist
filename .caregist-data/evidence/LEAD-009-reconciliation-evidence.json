@@ -1,0 +1,48 @@
+{
+  "evidence_version": "1.0.0",
+  "timestamp": "2026-08-08T23:28:05.406225+00:00",
+  "database": "Neon Postgres \u2014 Launch plan",
+  "gates": {
+    "count": {
+      "passed": true,
+      "values": {
+        "ledger_events": 56746,
+        "active_providers": 56742,
+        "completed_pipeline_runs": 5163,
+        "active_subscriptions": 6,
+        "audit_entries": 87986,
+        "event_types": 2
+      },
+      "issues": []
+    },
+    "coverage": {
+      "passed": true,
+      "values": {
+        "feed_runs_24h": 24,
+        "last_feed_completed": "2026-08-08 23:15:05.223716",
+        "last_feed_records_added": 0,
+        "last_feed_records_updated": 0
+      },
+      "issues": []
+    },
+    "checksum": {
+      "passed": true,
+      "values": {
+        "critical_alerts": 0,
+        "recent_alerts_1h": 0,
+        "note": "feed_cycle runs do not use source_checksum; gate checks pipeline alert integrity"
+      },
+      "issues": []
+    },
+    "watermark": {
+      "passed": true,
+      "values": {
+        "last_feed_completed_at": "2026-08-08 23:15:05.223716",
+        "last_event_observed_at": "2026-07-31 20:27:20.990113+00:00",
+        "note": "feed_cycle runs do not use source_published_at; gate verifies feed recency"
+      },
+      "issues": []
+    }
+  },
+  "all_passed": true
+}

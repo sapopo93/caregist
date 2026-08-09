@@ -70,7 +70,27 @@ export default function AuthNav() {
 
       {/* Mobile menu dropdown */}
       {menuOpen && (
-        <div className="md:hidden absolute top-full left-0 right-0 bg-bark border-t border-cream/10 px-6 py-4 flex flex-col gap-3 text-sm z-50">
+        <div className="absolute left-0 right-0 top-full z-50 flex flex-col gap-3 border-t border-cream/10 bg-bark px-6 py-4 text-sm shadow-xl md:hidden">
+          <Link href="/search" className="hover:text-amber transition-colors" onClick={() => setMenuOpen(false)}>
+            Directory
+          </Link>
+          <Link href="/pricing" className="hover:text-amber transition-colors" onClick={() => setMenuOpen(false)}>
+            Radar
+          </Link>
+          <Link href="/intelligence-feed" className="hover:text-amber transition-colors" onClick={() => setMenuOpen(false)}>
+            Intelligence Feed
+          </Link>
+          <Link href="/why-caregist" className="hover:text-amber transition-colors" onClick={() => setMenuOpen(false)}>
+            About
+          </Link>
+          <a
+            href="/pricing"
+            className="hover:text-amber transition-colors"
+            onClick={() => setMenuOpen(false)}
+          >
+            Compare plans
+          </a>
+          <div className="my-1 h-px bg-cream/10" />
           {user ? (
             <>
               <Link href="/dashboard" className="hover:text-amber transition-colors" onClick={() => setMenuOpen(false)}>Dashboard</Link>

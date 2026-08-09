@@ -1,241 +1,146 @@
-import Link from "next/link";
 import type { Metadata } from "next";
+import { Suspense } from "react";
 
 import PricingCTA from "@/components/PricingCTA";
-import ProviderListingCTA from "@/components/ProviderListingCTA";
-import TrackedLink from "@/components/TrackedLink";
+import RetainedPlanFocus from "@/components/RetainedPlanFocus";
 import {
   CQC_INDEPENDENCE_LINE,
-  LAUNCH_PRICING,
-  NEW_REGISTRATION_MONTHLY_AVG,
-  NEW_REGISTRATION_MONTHLY_AVG_CAVEAT,
-  NEW_REGISTRATION_SOURCE_LINE,
-  PLAN_NEXT_STEP,
   PRICING_LADDER,
-  PROVIDER_TIERS,
 } from "@/lib/caregist-config";
+import { pricingPlanCardId } from "@/lib/pricing-plan-path";
 
 export const metadata: Metadata = {
-  title: "CareGist Pricing | New Provider Intelligence, Alerts, Data & Listings",
-  description: "Choose CareGist plans for new-provider alerts, data exports, API workflows, and provider visibility.",
+  title: "CareGist Pricing | CQC Signal Intelligence",
+  description:
+    "Evidence-linked CQC change intelligence for regional compliance firms, national teams, and scoped integrations.",
 };
 
 const PLAN_BADGES: Record<string, string> = {
-  Free: "Entry",
-  "Alerts Pro": "Monitoring only",
-  "Data Starter": "Core intelligence",
-  "Data Pro": "Recommended for teams",
-  "Data Business": "CRM and operations",
-};
-
-const UPGRADE_BOX_TITLE: Record<string, string> = {
-  Enterprise: "Talk to us",
+  "Free Directory": "Discovery",
+  "Radar Regional": "Launch plan",
+  "Radar National": "National teams",
+  "Intelligence Feed Pilot": "Sales-assisted",
+  "Embedded Enterprise": "Quote only",
 };
 
 export default function PricingPage() {
+  const checkoutEnabled =
+    process.env.BILLING_CHECKOUT_ENABLED === "true" &&
+    process.env.RADAR_CHECKOUT_ENABLED === "true";
+  const termsVersion = process.env.B2B_TERMS_VERSION?.trim() || "";
+
   return (
-    <div className="max-w-6xl mx-auto px-6 py-16">
-      <div className="text-center mb-12">
-        <h1 className="text-4xl font-bold mb-4">Pricing for new-provider intelligence and provider visibility</h1>
-        <p className="text-dusk text-lg mb-6" style={{ fontFamily: "Lora" }}>
-          CareGist tracked an average of {NEW_REGISTRATION_MONTHLY_AVG} newly registered CQC providers per
-          month from January to March 2026. Choose plans for new-provider intelligence on the demand side,
-          or provider visibility on the supply side.
+    <main className="mx-auto max-w-6xl px-6 py-16">
+      <header className="mx-auto mb-12 max-w-4xl text-center">
+        <p className="mb-3 font-mono text-xs uppercase tracking-[0.22em] text-clay">
+          CQC signal intelligence
         </p>
-        <div className="inline-flex rounded-lg border border-stone overflow-hidden text-sm font-medium">
-          <a href="#data-plans" className="px-5 py-2 bg-bark text-cream">New-provider intelligence</a>
-          <a href="#provider-plans" className="px-5 py-2 bg-cream text-bark hover:bg-parchment transition-colors">Provider visibility</a>
-        </div>
-      </div>
-
-      <div id="data-plans" className="scroll-mt-8" />
-
-      <div className="mb-8">
-        <h2 className="text-2xl font-extrabold text-bark mb-2">New-provider intelligence plans</h2>
-        <p className="text-sm text-dusk leading-6 max-w-3xl" style={{ fontFamily: "Lora" }}>
-          Use CareGist to find newly registered CQC providers, monitor registration movement, build lead
-          lists, and export opportunities for sales workflows.
+        <h1 className="mb-5 text-4xl font-bold text-bark">
+          Pay for decisions your team can act on—not another provider database
+        </h1>
+        <p className="text-lg leading-8 text-dusk" style={{ fontFamily: "Lora" }}>
+          Radar records verified new registrations and rating changes, preserves the
+          source evidence, and delivers each signal into a repeatable compliance and
+          business-development workflow.
         </p>
-      </div>
+      </header>
 
-      <div className="bg-bark rounded-xl p-6 mb-10">
-        <p className="text-amber font-mono text-xs uppercase tracking-wider mb-4">
-          Launch pricing
-        </p>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          {LAUNCH_PRICING.map((tier) => (
-            <div key={tier.tier} className="flex flex-col">
-              <span className="font-mono text-sm font-bold" style={{ color: tier.color }}>
-                {tier.tier}
-              </span>
-              <span className="font-mono text-sm text-cream">{tier.price}</span>
-            </div>
-          ))}
-        </div>
-        <p className="font-mono text-xs text-dusk mt-4 pt-4 border-t border-white/10">
-          Free is basic provider lookup and limited evaluation. Alerts Pro is for fresh new-provider
-          alerts without heavy exports. Data Starter, Data Pro, and Data Business are the core
-          new-provider intelligence plans for recurring feeds, saved filters, weekly digests, CRM
-          exports, API access, and webhooks.
-        </p>
-      </div>
+      <Suspense fallback={null}>
+        <RetainedPlanFocus />
+      </Suspense>
 
-      <div className="space-y-6">
-        {PRICING_LADDER.map((tier, i) => (
-          <div
-            key={tier.tier}
-            className={`bg-cream border rounded-xl p-6 ${tier.recommended ? "border-2 border-clay shadow-lg ring-2 ring-amber/20" : "border-stone"}`}
-            style={{ borderLeftWidth: 4, borderLeftColor: tier.color }}
-          >
-            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-4">
-              <div>
-                <div className="flex items-center gap-3 mb-1">
-                  <h2 className="text-xl font-bold text-bark">{tier.tier}</h2>
-                  {PLAN_BADGES[tier.tier] && (
-                    <span className={`font-mono text-[10px] px-2 py-0.5 rounded ${tier.recommended ? "bg-amber text-bark font-bold" : "bg-moss/15 text-moss"}`}>
+      <section className="space-y-6" aria-label="CareGist products">
+        {PRICING_LADDER.map((tier) => {
+          const isFree = tier.tier === "Free Directory";
+          const isIntegration =
+            tier.tier === "Intelligence Feed Pilot" || tier.tier === "Embedded Enterprise";
+
+          return (
+            <article
+              key={tier.tier}
+              id={pricingPlanCardId(tier.tier) || undefined}
+              tabIndex={-1}
+              className={`scroll-mt-24 rounded-xl border bg-cream p-6 focus:outline-none focus:ring-4 focus:ring-amber/50 ${
+                tier.recommended
+                  ? "border-2 border-clay shadow-lg ring-2 ring-amber/20"
+                  : "border-stone"
+              }`}
+              style={{ borderLeftWidth: 4, borderLeftColor: tier.color }}
+            >
+              <div className="mb-5 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                <div>
+                  <div className="mb-2 flex flex-wrap items-center gap-3">
+                    <h2 className="text-2xl font-bold text-bark">{tier.tier}</h2>
+                    <span className="rounded bg-parchment px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-dusk">
                       {PLAN_BADGES[tier.tier]}
                     </span>
+                  </div>
+                  <p className="max-w-2xl text-sm text-dusk">{tier.forWho}</p>
+                </div>
+                <div className="shrink-0 md:text-right">
+                  <p className="text-2xl font-bold" style={{ color: tier.color }}>
+                    {tier.price}
+                  </p>
+                  {tier.priceNote && (
+                    <p className="mt-1 max-w-sm font-mono text-xs text-dusk">{tier.priceNote}</p>
                   )}
                 </div>
-                <p className="font-mono text-xs text-dusk">{tier.forWho}</p>
               </div>
-              <div className="md:text-right">
-                <p className="text-2xl font-bold" style={{ color: tier.color }}>
-                  {tier.price}
-                </p>
-                <p className="font-mono text-xs text-dusk mt-1">{tier.priceNote}</p>
+
+              <div className="grid gap-6 md:grid-cols-[1.4fr_1fr]">
+                <div>
+                  <p className="mb-2 font-mono text-[11px] uppercase tracking-[0.16em] text-dusk">
+                    Included
+                  </p>
+                  <ul className="space-y-2">
+                    {tier.includes.map((item) => (
+                      <li key={item} className="text-sm text-charcoal">
+                        <span className="mr-2 text-moss">✓</span>
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="rounded-lg border border-stone bg-parchment p-4">
+                  <p className="mb-1 font-mono text-[11px] uppercase tracking-[0.16em] text-dusk">
+                    Commercial boundary
+                  </p>
+                  <p className="mb-3 text-sm text-bark">{tier.limit}</p>
+                  {tier.pricingLogic && (
+                    <p className="text-sm leading-6 text-dusk">{tier.pricingLogic}</p>
+                  )}
+                </div>
               </div>
-            </div>
 
-            <ul className="space-y-1.5 mb-4">
-              {tier.includes.map((inc) => (
-                <li key={inc} className="font-mono text-sm text-charcoal">
-                  <span className="text-moss">&#10003;</span> {inc}
-                </li>
-              ))}
-            </ul>
+              <div className="mt-6 border-t border-stone pt-5">
+                <PricingCTA
+                  tier={tier.tier}
+                  isFreeTier={isFree}
+                  checkoutEnabled={checkoutEnabled && !isIntegration}
+                  termsVersion={termsVersion}
+                />
+              </div>
+            </article>
+          );
+        })}
+      </section>
 
-            {tier.limit && (
-              <p className="font-mono text-xs text-dusk italic mb-3">{tier.limit}</p>
-            )}
-            {tier.pricingLogic && <p className="text-sm text-dusk mb-4">{tier.pricingLogic}</p>}
-            <div className="mb-4 rounded-lg bg-parchment border border-stone px-4 py-3">
-              <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-dusk mb-1">
-                {UPGRADE_BOX_TITLE[tier.tier] || "Why upgrade next"}
-              </p>
-              <p className="text-sm text-bark">{PLAN_NEXT_STEP[tier.tier.toLowerCase()]}</p>
-            </div>
-
-            <div className="flex flex-col sm:flex-row sm:items-center gap-4 pt-4 border-t border-stone">
-              {tier.tier === "Enterprise" ? (
-                <TrackedLink
-                  href="mailto:enterprise@caregist.co.uk?subject=Enterprise+enquiry"
-                  eventType="enterprise_contact_click"
-                  eventSource="pricing_enterprise_card"
-                  className="inline-block text-center py-2.5 px-6 rounded-lg font-medium text-sm transition-colors border border-clay text-clay hover:bg-clay hover:text-white"
-                >
-                  Contact sales
-                </TrackedLink>
-              ) : (
-                <PricingCTA tier={tier.tier} isFreeTier={i === 0} />
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div id="provider-plans" className="scroll-mt-8 mt-16">
-        <div className="mb-8">
-          <h2 className="text-2xl font-extrabold text-bark mb-2">Provider visibility plans</h2>
-          <p className="text-sm text-dusk leading-6 max-w-3xl" style={{ fontFamily: "Lora" }}>
-            Provider visibility plans are for care providers that want to improve how they appear to
-            families, partners, and local-market searches.
-          </p>
-          <p className="text-sm text-dusk mt-2">
-            First,{" "}
-            <Link href="/search" className="text-clay underline">find your provider page</Link>
-            {" "}and claim it free.
-          </p>
-        </div>
-
-        <div className="bg-moss/10 border border-moss/30 rounded-xl p-5 mb-6 flex items-start gap-4">
-          <span className="text-2xl mt-0.5">&#10003;</span>
-          <div>
-            <p className="font-bold text-moss mb-1">Claiming your listing is always free</p>
-            <p className="text-sm text-dusk">
-              Every claimed provider gets a verified badge and can publish an inspection response at no cost.
-              Upgrade below for photos, descriptions, virtual tours, and sponsored placement.
-            </p>
-          </div>
-        </div>
-
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5">
-          {PROVIDER_TIERS.map((tier, i) => (
-            <div
-              key={tier.tier}
-              className={`bg-cream border rounded-xl p-6 flex flex-col ${i === 0 ? "border-2" : "border"}`}
-              style={{ borderColor: i === 0 ? tier.color : undefined }}
-            >
-              {i === 1 && (
-                <span className="text-xs font-mono font-bold uppercase mb-3 self-start px-2 py-0.5 rounded" style={{ background: tier.color + "22", color: tier.color }}>
-                  Most popular
-                </span>
-              )}
-              <h3 className="text-lg font-bold text-bark mb-1">{tier.label}</h3>
-              <p className="text-2xl font-bold mb-1" style={{ color: tier.color }}>{tier.price}</p>
-              {tier.priceAnnual && (
-                <p className="text-xs text-dusk mb-4">or £{tier.priceAnnual}/yr (save {Math.round((1 - tier.priceAnnual / (tier.priceMonthly * 12)) * 100)}%)</p>
-              )}
-              <ul className="space-y-1.5 mb-6 flex-1">
-                {tier.includes.map((inc) => (
-                  <li key={inc} className="text-sm text-charcoal">
-                    <span className="text-moss mr-1">&#10003;</span>{inc}
-                  </li>
-                ))}
-              </ul>
-              <p className="text-xs text-dusk italic mb-4">{tier.limit}</p>
-                {tier.tier === "claimed" ? (
-                  <Link
-                    href="/search"
-                    className="block text-center py-2.5 rounded-lg text-sm font-medium text-white transition-colors"
-                    style={{ background: tier.color }}
-                  >
-                    Claim free
-                  </Link>
-                ) : tier.tier === "enterprise" ? (
-                  <TrackedLink
-                    href="mailto:enterprise@caregist.co.uk?subject=Provider+Enterprise+enquiry"
-                    eventType="enterprise_contact_click"
-                    eventSource="provider_pricing_enterprise_card"
-                  className="block text-center py-2.5 rounded-lg text-sm font-medium text-white transition-colors"
-                  style={{ background: tier.color }}
-                >
-                  Contact sales
-                  </TrackedLink>
-              ) : (
-                <ProviderListingCTA tier={tier.tier} color={tier.color} />
-              )}
-            </div>
-          ))}
-        </div>
-        <p className="text-center text-xs text-dusk mt-4">All prices exclude VAT · Provider visibility plans are separate from new-provider intelligence plans · Claim your listing first at no cost</p>
-      </div>
-
-      <div className="text-center mt-10">
-        <p className="text-bark font-semibold mb-2">Need a custom plan?</p>
-        <p className="text-sm text-dusk">
-          Enterprise paths cover large teams, commissioners, data buyers, multi-site groups, and custom integrations.{" "}
-          <TrackedLink href="mailto:enterprise@caregist.co.uk" eventType="enterprise_contact_click" eventSource="pricing_footer">
-            <span className="text-clay underline">Contact sales</span>
-          </TrackedLink>
+      <section className="mt-10 rounded-xl border border-stone bg-parchment p-6">
+        <h2 className="mb-2 text-xl font-bold text-bark">What we do not sell</h2>
+        <p className="text-sm leading-6 text-dusk">
+          CareGist does not sell static data packs, paid listing rank, speculative vacancy
+          claims, or predictive scores. Radar launches with two traceable signal types:
+          new registrations and rating changes. A verified raw event still ships when an
+          explanation is unavailable.
         </p>
-      </div>
+      </section>
 
-      <div className="text-center mt-6 text-xs text-dusk space-y-1">
-        <p>All prices exclude VAT. Cancel anytime.</p>
-        <p>{NEW_REGISTRATION_MONTHLY_AVG_CAVEAT}</p>
-        <p>{NEW_REGISTRATION_SOURCE_LINE} {CQC_INDEPENDENCE_LINE}</p>
-      </div>
-    </div>
+      <footer className="mt-8 space-y-2 text-center text-xs text-dusk">
+        <p>CareGist is not currently VAT registered, so VAT is not currently charged.</p>
+        <p>
+          CQC information is reused under the Open Government Licence v3.0. {CQC_INDEPENDENCE_LINE}
+        </p>
+      </footer>
+    </main>
   );
 }

@@ -1,0 +1,25 @@
+{
+  "status": "pass",
+  "summary": "Consent and lawful basis are enforced through explicit opt-in mechanisms. The signup page (frontend/app/signup/page.tsx) and login page implement user authentication with session management. Post-verification test validates account verification. The CSP header restricts external connections to approved domains. TPS/CTPS screening data ensures leads respect do-not-contact preferences. The production README mandates that all commercial/unapproved paths default to false \u2014 explicit governance approval required for any capability. Cookie policy and privacy policy are publicly accessible.",
+  "assertions": [
+    "Signup with post-verification flow (post-verification.test.ts)",
+    "TPS/CTPS screening data in leads/ directory",
+    "CSP enforces approved domains only (connect-src: api.stripe.com, *.sentry.io)",
+    "README: all commercial paths default to false until governance-approved",
+    "Cookie policy and privacy policy publicly accessible"
+  ],
+  "artifacts": [
+    {
+      "kind": "source",
+      "path": "frontend/app/signup/page.tsx"
+    },
+    {
+      "kind": "test",
+      "path": "frontend/lib/post-verification.test.ts"
+    },
+    {
+      "kind": "data",
+      "path": "leads/caregist_tps_screen.csv"
+    }
+  ]
+}

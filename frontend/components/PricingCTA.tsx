@@ -8,31 +8,42 @@ import { PLAN_PRIMARY_CTA } from "@/lib/caregist-config";
 
 const TIER_RANK: Record<string, number> = {
   free: 0,
-  "alerts-pro": 1,
-  "data-starter": 2,
-  "data-pro": 3,
-  "data-business": 4,
-  enterprise: 5,
-  starter: 2,
-  pro: 3,
-  business: 4,
+  "free-directory": 0,
+  "radar-regional": 1,
+  "radar-national": 2,
+  "intelligence-feed-pilot": 3,
+  "embedded-enterprise": 4,
+  starter: 0,
+  pro: 0,
+  business: 0,
 };
 
 const BILLING_TIER: Record<string, string | null> = {
   free: null,
-  "alerts-pro": "alerts-pro",
-  "data-starter": "starter",
-  "data-pro": "pro",
-  "data-business": "business",
-  enterprise: null,
+  "free-directory": null,
+  "radar-regional": "radar-regional",
+  "radar-national": "radar-national",
+  "intelligence-feed-pilot": null,
+  "embedded-enterprise": null,
 };
 
-export default function PricingCTA({ tier, isFreeTier }: { tier: string; isFreeTier: boolean }) {
+export default function PricingCTA({
+  tier,
+  isFreeTier,
+  checkoutEnabled,
+  termsVersion,
+}: {
+  tier: string;
+  isFreeTier: boolean;
+  checkoutEnabled: boolean;
+  termsVersion: string;
+}) {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [currentTier, setCurrentTier] = useState("free");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [businessUseConfirmed, setBusinessUseConfirmed] = useState(false);
 
   useEffect(() => {
     const stored = localStorage.getItem("caregist_user");
@@ -45,7 +56,7 @@ export default function PricingCTA({ tier, isFreeTier }: { tier: string; isFreeT
 
   const tierKey = tier.toLowerCase().replace(/\s+/g, "-");
   const billingTier = BILLING_TIER[tierKey] ?? null;
-  const targetTier = tierKey === "enterprise" ? null : tierKey;
+  const targetTier = billingTier ? tierKey : null;
   const ctaLabel = PLAN_PRIMARY_CTA[tierKey] || "Contact sales";
   const isCurrentTier = currentTier === tierKey;
   const currentRank = TIER_RANK[currentTier] ?? 0;
@@ -53,6 +64,10 @@ export default function PricingCTA({ tier, isFreeTier }: { tier: string; isFreeT
 
   async function handleUpgrade(target: string) {
     if (!user) return;
+    if (!checkoutEnabled || !termsVersion || !businessUseConfirmed) {
+      setError("Confirm business use and authority after reviewing the current B2B terms.");
+      return;
+    }
     setLoading(true);
     setError("");
     void trackEvent("pricing_cta_click", "pricing_card", { tier: tierKey, target_tier: target, action: "upgrade" });
@@ -63,7 +78,12 @@ export default function PricingCTA({ tier, isFreeTier }: { tier: string; isFreeT
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: user.email, tier: target }),
+        body: JSON.stringify({
+          email: user.email,
+          tier: target,
+          terms_version: termsVersion,
+          business_use_confirmed: businessUseConfirmed,
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -90,14 +110,14 @@ export default function PricingCTA({ tier, isFreeTier }: { tier: string; isFreeT
   if (isFreeTier) {
     return (
       <Link
-        href={user ? "/dashboard" : "/signup"}
+        href="/search"
         className="inline-block text-center py-2.5 px-6 rounded-lg font-medium text-sm transition-colors border border-clay text-clay hover:bg-clay hover:text-white"
         onClick={() => {
-          void trackEvent("pricing_cta_click", "pricing_card", { tier: tierKey, target_tier: "free", action: user ? "review_free" : "signup_free" });
+          void trackEvent("pricing_cta_click", "pricing_card", { tier: tierKey, target_tier: "free", action: "open_directory" });
           void trackEvent("plan_selection", "pricing_card", { source_tier: tierKey, target_tier: "free" });
         }}
       >
-        {user ? "Review entitlements" : ctaLabel}
+        {ctaLabel}
       </Link>
     );
   }
@@ -114,6 +134,32 @@ export default function PricingCTA({ tier, isFreeTier }: { tier: string; isFreeT
     );
   }
 
+  if (!checkoutEnabled || !termsVersion) {
+    return (
+      <div className="flex flex-col items-start gap-2">
+        <button disabled className="py-2.5 px-6 rounded-lg font-medium text-sm border border-stone text-dusk opacity-70">
+          Paid checkout unavailable
+        </button>
+        <p className="text-xs text-dusk">Checkout opens only after the legal and seven-day source-readiness gates pass.</p>
+      </div>
+    );
+  }
+
+  const businessConfirmation = (
+    <label className="mt-3 flex max-w-md items-start gap-2 text-xs text-dusk">
+      <input
+        type="checkbox"
+        checked={businessUseConfirmed}
+        onChange={(event) => setBusinessUseConfirmed(event.target.checked)}
+        className="mt-0.5"
+      />
+      <span>
+        I am buying for a business and have authority to bind it to the{" "}
+        <Link href="/terms" className="text-clay underline">B2B terms</Link>.
+      </span>
+    </label>
+  );
+
   if (user && isCurrentTier) {
     return (
       <div className="flex flex-col items-start gap-2">
@@ -124,11 +170,12 @@ export default function PricingCTA({ tier, isFreeTier }: { tier: string; isFreeT
           <>
             <button
               onClick={() => void handleUpgrade(billingTier)}
-              disabled={loading}
+              disabled={loading || !businessUseConfirmed}
               className="inline-block text-center py-2.5 px-6 rounded-lg font-medium text-sm transition-colors border border-clay text-clay hover:bg-clay hover:text-white disabled:opacity-50"
             >
               {loading ? "Redirecting..." : ctaLabel}
             </button>
+            {businessConfirmation}
             {error && <p className="text-alert text-xs mt-1">{error}</p>}
           </>
         )}
@@ -141,11 +188,12 @@ export default function PricingCTA({ tier, isFreeTier }: { tier: string; isFreeT
       <div>
         <button
           onClick={() => void handleUpgrade(billingTier)}
-          disabled={loading}
+          disabled={loading || !businessUseConfirmed}
           className="inline-block text-center py-2.5 px-6 rounded-lg font-medium text-sm transition-colors border border-clay text-clay hover:bg-clay hover:text-white disabled:opacity-50"
         >
           {loading ? "Redirecting..." : ctaLabel}
         </button>
+        {businessConfirmation}
         {error && <p className="text-alert text-xs mt-2">{error}</p>}
       </div>
     );

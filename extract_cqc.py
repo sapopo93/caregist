@@ -46,7 +46,6 @@ INTERMEDIATE_PROVIDERS_LIST = "_providers_list.ndjson"
 INTERMEDIATE_LOCATIONS_LIST = "_locations_list.ndjson"
 INTERMEDIATE_PROVIDERS_DETAIL = "_providers_detail.ndjson"
 INTERMEDIATE_LOCATIONS_DETAIL = "_locations_detail.ndjson"
-INTERMEDIATE_PROVIDER_CACHE = "_provider_cache.sqlite"
 
 
 def log_line(log_path: Path, message: str) -> None:
@@ -187,7 +186,6 @@ def reset_outputs(output_dir: Path) -> None:
         INTERMEDIATE_LOCATIONS_LIST,
         INTERMEDIATE_PROVIDERS_DETAIL,
         INTERMEDIATE_LOCATIONS_DETAIL,
-        INTERMEDIATE_PROVIDER_CACHE,
     ]:
         path = output_dir / filename
         if path.exists():
@@ -688,12 +686,8 @@ def build_combined_row(location: dict[str, Any], provider: dict[str, Any]) -> tu
     return row, provider_flat, location_flat
 
 
-def build_provider_cache(provider_ndjson: Path, sqlite_path: Path, log_path: Path) -> None:
-    if sqlite_path.exists():
-        sqlite_path.unlink()
-
-    conn = sqlite3.connect(sqlite_path)
-    conn.execute("PRAGMA journal_mode=WAL;")
+def build_provider_cache(provider_ndjson: Path, log_path: Path) -> sqlite3.Connection:
+    conn = sqlite3.connect(":memory:")
     conn.execute("CREATE TABLE providers (provider_id TEXT PRIMARY KEY, payload TEXT NOT NULL)")
 
     inserted = 0
@@ -720,8 +714,8 @@ def build_provider_cache(provider_ndjson: Path, sqlite_path: Path, log_path: Pat
                 conn.commit()
 
     conn.commit()
-    conn.close()
-    log_line(log_path, f"PROVIDER_CACHE_BUILT records={inserted} path={sqlite_path}")
+    log_line(log_path, f"PROVIDER_CACHE_BUILT records={inserted} storage=memory")
+    return conn
 
 
 def load_provider(conn: sqlite3.Connection, provider_id: str, cache: dict[str, dict[str, Any]]) -> dict[str, Any]:
@@ -748,7 +742,7 @@ def load_provider(conn: sqlite3.Connection, provider_id: str, cache: dict[str, d
 
 def combined_columns(
     location_ndjson: Path,
-    provider_cache_db: Path,
+    conn: sqlite3.Connection,
     log_path: Path,
 ) -> list[str]:
     base_cols = [
@@ -806,7 +800,6 @@ def combined_columns(
 
     dynamic: set[str] = set()
 
-    conn = sqlite3.connect(provider_cache_db)
     provider_cache: dict[str, dict[str, Any]] = {}
 
     scanned = 0
@@ -831,7 +824,6 @@ def combined_columns(
             dynamic.update({f"location.{k}" for k in location_flat.keys()})
             scanned += 1
 
-    conn.close()
     log_line(log_path, f"COMBINED_COLUMNS_DISCOVERED locations_scanned={scanned} dynamic_columns={len(dynamic)}")
     return base_cols + sorted(dynamic)
 
@@ -841,52 +833,51 @@ def build_combined_csv(
     provider_ndjson: Path,
     location_ndjson: Path,
     output_csv: Path,
-    provider_cache_db: Path,
     log_path: Path,
 ) -> int:
-    build_provider_cache(provider_ndjson, provider_cache_db, log_path)
-    fieldnames = combined_columns(location_ndjson, provider_cache_db, log_path)
+    conn = build_provider_cache(provider_ndjson, log_path)
+    try:
+        fieldnames = combined_columns(location_ndjson, conn, log_path)
+        provider_cache: dict[str, dict[str, Any]] = {}
 
-    conn = sqlite3.connect(provider_cache_db)
-    provider_cache: dict[str, dict[str, Any]] = {}
+        rows_written = 0
+        with output_csv.open("w", newline="", encoding="utf-8") as fh_out:
+            writer = csv.DictWriter(fh_out, fieldnames=fieldnames, extrasaction="ignore")
+            writer.writeheader()
 
-    rows_written = 0
-    with output_csv.open("w", newline="", encoding="utf-8") as fh_out:
-        writer = csv.DictWriter(fh_out, fieldnames=fieldnames, extrasaction="ignore")
-        writer.writeheader()
+            with location_ndjson.open("r", encoding="utf-8") as fh_in:
+                for line in fh_in:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        location = json.loads(line)
+                    except json.JSONDecodeError:
+                        continue
 
-        with location_ndjson.open("r", encoding="utf-8") as fh_in:
-            for line in fh_in:
-                line = line.strip()
-                if not line:
-                    continue
-                try:
-                    location = json.loads(line)
-                except json.JSONDecodeError:
-                    continue
+                    pid = str(first_non_empty([
+                        deep_get(location, "providerId"),
+                        deep_get(location, "providerID"),
+                        deep_get(location, "provider_id"),
+                    ], default="")).strip()
+                    provider = load_provider(conn, pid, provider_cache)
 
-                pid = str(first_non_empty([
-                    deep_get(location, "providerId"),
-                    deep_get(location, "providerID"),
-                    deep_get(location, "provider_id"),
-                ], default="")).strip()
-                provider = load_provider(conn, pid, provider_cache)
+                    row, provider_flat, location_flat = build_combined_row(location, provider)
+                    for key, value in provider_flat.items():
+                        row[f"provider.{key}"] = value
+                    for key, value in location_flat.items():
+                        row[f"location.{key}"] = value
 
-                row, provider_flat, location_flat = build_combined_row(location, provider)
-                for key, value in provider_flat.items():
-                    row[f"provider.{key}"] = value
-                for key, value in location_flat.items():
-                    row[f"location.{key}"] = value
+                    writer.writerow(row)
+                    rows_written += 1
 
-                writer.writerow(row)
-                rows_written += 1
+                    if rows_written % 500 == 0:
+                        log_line(log_path, f"COMBINED_PROGRESS rows_written={rows_written}")
 
-                if rows_written % 500 == 0:
-                    log_line(log_path, f"COMBINED_PROGRESS rows_written={rows_written}")
-
-    conn.close()
-    log_line(log_path, f"COMBINED_COMPLETE rows_written={rows_written} output={output_csv}")
-    return rows_written
+        log_line(log_path, f"COMBINED_COMPLETE rows_written={rows_written} output={output_csv}")
+        return rows_written
+    finally:
+        conn.close()
 
 
 def write_failed_ids(path: Path, failed_ids: set[str]) -> None:
@@ -902,7 +893,7 @@ def pick_best_source(detail_path: Path, list_path: Path) -> Path:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Extract CQC providers and locations with checkpoint/resume.")
+    parser = argparse.ArgumentParser(description="Extract CQC providers and locations with fresh outputs by default.")
     parser.add_argument("--base-url", default=DEFAULT_BASE_URL, help="CQC API base URL")
     parser.add_argument("--per-page", type=int, default=DEFAULT_PER_PAGE, help="Page size for list endpoints")
     parser.add_argument("--timeout", type=int, default=DEFAULT_TIMEOUT, help="Request timeout seconds")
@@ -918,7 +909,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--detail-workers", type=int, default=1, help="Parallel workers for detail endpoints")
     parser.add_argument("--output-dir", default=".", help="Directory to write outputs")
     parser.add_argument("--reset", action="store_true", help="Remove existing outputs before starting")
-    parser.add_argument("--rebuild-csv", action="store_true", help="Rebuild raw_combined.csv from cached NDJSON without API calls")
+    parser.add_argument("--resume", action="store_true", help="Resume from existing checkpoint and intermediate NDJSON")
     return parser.parse_args()
 
 
@@ -931,7 +922,7 @@ def main() -> int:
     checkpoint_path = output_dir / OUTPUT_CHECKPOINT
     failed_ids_path = output_dir / OUTPUT_FAILED_IDS
 
-    if args.reset:
+    if args.reset or not args.resume:
         reset_outputs(output_dir)
 
     log_line(log_path, "=== CQC EXTRACTION START ===")
@@ -940,34 +931,6 @@ def main() -> int:
     checkpoint = checkpoint_mgr.load()
 
     failed_ids = set(str(item) for item in checkpoint.get("failed_ids", []))
-
-    # Rebuild CSV from cached NDJSON without making API calls
-    if args.rebuild_csv:
-        providers_detail = output_dir / INTERMEDIATE_PROVIDERS_DETAIL
-        locations_detail = output_dir / INTERMEDIATE_LOCATIONS_DETAIL
-        providers_list = output_dir / INTERMEDIATE_PROVIDERS_LIST
-        locations_list = output_dir / INTERMEDIATE_LOCATIONS_LIST
-        raw_combined_csv = output_dir / OUTPUT_RAW_COMBINED
-        provider_cache_db = output_dir / INTERMEDIATE_PROVIDER_CACHE
-
-        provider_source = pick_best_source(providers_detail, providers_list)
-        location_source = pick_best_source(locations_detail, locations_list)
-
-        if not location_source.exists() or not provider_source.exists():
-            print("Cannot rebuild: cached NDJSON files not found. Run full extraction first.")
-            return 1
-
-        log_line(log_path, "REBUILD_CSV_START (from cached NDJSON)")
-        combined_count = build_combined_csv(
-            provider_ndjson=provider_source,
-            location_ndjson=location_source,
-            output_csv=raw_combined_csv,
-            provider_cache_db=provider_cache_db,
-            log_path=log_path,
-        )
-        log_line(log_path, f"REBUILD_CSV_COMPLETE rows_written={combined_count}")
-        print(f"Rebuilt raw_combined.csv from cached NDJSON: {combined_count} rows")
-        return 0
 
     client = ApiClient(
         base_url=args.base_url,
@@ -986,7 +949,6 @@ def main() -> int:
     raw_providers_json = output_dir / OUTPUT_RAW_PROVIDERS
     raw_locations_json = output_dir / OUTPUT_RAW_LOCATIONS
     raw_combined_csv = output_dir / OUTPUT_RAW_COMBINED
-    provider_cache_db = output_dir / INTERMEDIATE_PROVIDER_CACHE
 
     try:
         providers_count = run_paginated_extraction(
@@ -1064,7 +1026,6 @@ def main() -> int:
                 provider_ndjson=provider_source,
                 location_ndjson=location_source,
                 output_csv=raw_combined_csv,
-                provider_cache_db=provider_cache_db,
                 log_path=log_path,
             )
         else:

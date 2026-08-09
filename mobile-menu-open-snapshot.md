@@ -1,0 +1,95 @@
+- generic [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e3]:
+      - link "CareGist" [ref=e4] [cursor=pointer]:
+        - /url: /
+        - img "CareGist" [ref=e5]
+      - generic [ref=e6]:
+        - navigation [ref=e7]:
+          - link "Products" [ref=e8] [cursor=pointer]:
+            - /url: /#products
+          - link "Who it's for" [ref=e9] [cursor=pointer]:
+            - /url: /#positioning
+          - link "About" [ref=e10] [cursor=pointer]:
+            - /url: /why-caregist
+          - link "Search" [ref=e11] [cursor=pointer]:
+            - /url: /search
+          - link "Pricing" [ref=e12] [cursor=pointer]:
+            - /url: /pricing
+          - link "API" [ref=e13] [cursor=pointer]:
+            - /url: /api
+          - link "Get a lead list" [ref=e14] [cursor=pointer]:
+            - /url: /lead-list
+          - link "Buy dataset" [ref=e15] [cursor=pointer]:
+            - /url: /lead-list
+        - button "Close menu" [active] [ref=e113]:
+          - img [ref=e17]
+        - generic [ref=e114]:
+          - link "Log In" [ref=e115] [cursor=pointer]:
+            - /url: /login
+          - link "Sign Up" [ref=e116] [cursor=pointer]:
+            - /url: /signup
+  - main [ref=e19]:
+    - generic [ref=e20]:
+      - link "Back to search" [ref=e21] [cursor=pointer]:
+        - /url: /search
+      - generic [ref=e22]:
+        - generic [ref=e23]:
+          - generic [ref=e24]:
+            - paragraph [ref=e25]: Social Care Org
+            - heading "London Care (East London)" [level=1] [ref=e26]
+            - paragraph [ref=e27]: Unit 6, Textile House, 33 Chatham Place, London, E9 6PE
+          - generic [ref=e28]: Good
+        - generic [ref=e29]:
+          - generic [ref=e30]:
+            - paragraph [ref=e31]: Inspection
+            - paragraph [ref=e32]: "Last inspection: 27 March 2023"
+          - generic [ref=e33]:
+            - paragraph [ref=e34]: Phone
+            - paragraph [ref=e35]: 02089 868425
+          - generic [ref=e36]:
+            - paragraph [ref=e37]: Beds
+            - paragraph [ref=e38]: Not published
+        - generic [ref=e39]:
+          - generic [ref=e40]:
+            - generic [ref=e41]
+            - generic [ref=e59]
+          - generic [ref=e74]:
+            - generic [ref=e75]
+            - generic [ref=e86]
+  - contentinfo [ref=e93]:
+    - generic [ref=e94]:
+      - paragraph [ref=e95]: "Data source: Care Quality Commission (CQC). CareGist is not an official CQC service."
+      - paragraph [ref=e96]:
+        - text: If you have concerns about care quality, contact CQC directly at
+        - link "cqc.org.uk/contact-us" [ref=e97] [cursor=pointer]:
+          - /url: https://www.cqc.org.uk/contact-us
+        - text: or call 03000 616161.
+      - generic [ref=e98]:
+        - link "Privacy Policy" [ref=e99] [cursor=pointer]:
+          - /url: /privacy
+        - link "Terms of Service" [ref=e100] [cursor=pointer]:
+          - /url: /terms
+        - link "Acceptable Use" [ref=e101] [cursor=pointer]:
+          - /url: /acceptable-use
+        - link "Review Policy" [ref=e102] [cursor=pointer]:
+          - /url: /review-policy
+        - link "Cookies" [ref=e103] [cursor=pointer]:
+          - /url: /cookies
+        - link "Search" [ref=e104] [cursor=pointer]:
+          - /url: /search
+        - link "Find Care" [ref=e105] [cursor=pointer]:
+          - /url: /find-care
+        - link "Care Groups" [ref=e106] [cursor=pointer]:
+          - /url: /groups
+        - link "Pricing" [ref=e107] [cursor=pointer]:
+          - /url: /pricing
+        - link "API" [ref=e108] [cursor=pointer]:
+          - /url: /api
+        - link "Why CareGist" [ref=e109] [cursor=pointer]:
+          - /url: /why-caregist
+        - link "Get a lead list" [ref=e110] [cursor=pointer]:
+          - /url: /lead-list
+        - link "Contact" [ref=e111] [cursor=pointer]:
+          - /url: mailto:hello@caregist.co.uk
+  - alert [ref=e112]

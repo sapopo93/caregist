@@ -3,6 +3,11 @@ Allow: /
 Disallow: /api/
 Disallow: /admin/
 Disallow: /dashboard/
+Disallow: /provider-dashboard/
+Disallow: /login
+Disallow: /signup
+Disallow: /forgot-password
+Disallow: /verify-email
 
-Sitemap: https://caregist.co.uk/sitemap.xml
-Sitemap: https://caregist.co.uk/provider-sitemap-index.xml
+Sitemap: https://www.caregist.co.uk/sitemap.xml
+Sitemap: https://www.caregist.co.uk/provider-sitemap-index.xml

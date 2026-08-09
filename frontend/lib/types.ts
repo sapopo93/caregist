@@ -9,7 +9,7 @@ export interface Provider {
   region: string | null;
   overall_rating: string | null;
   service_types: string | null;
-  quality_tier: string | null;
+  data_completeness_tier: string | null;
   phone: string | null;
   email: string | null;
   website: string | null;
@@ -21,7 +21,7 @@ export interface Provider {
   regulated_activities: string | null;
   number_of_beds: number | null;
   ownership_type: string | null;
-  quality_score: number | null;
+  data_completeness_score: number | null;
   rating_safe: string | null;
   rating_effective: string | null;
   rating_caring: string | null;

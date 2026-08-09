@@ -6,45 +6,42 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Find Care Near You | CareGist Directory",
   description:
-    "Search CQC-rated care providers by postcode and radius. CareGist keeps directory and claiming flows available while the launch product centres on care-provider data intelligence.",
-  alternates: { canonical: "https://caregist.co.uk/find-care" },
+    "Search CQC-registered care providers by postcode and radius, then verify material details with CQC and the provider.",
 };
 
 export default function FindCarePage() {
   return (
     <div className="max-w-3xl mx-auto px-6 py-12">
-      {/* Hero image */}
-      <div className="rounded-xl overflow-hidden mb-8 h-40 relative">
-        <img
-          src="https://images.unsplash.com/photo-1576765608535-5f04d1e3f289?w=800&q=40&auto=format"
-          alt="Care home garden"
-          className="w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-bark/30 to-transparent" />
+      <div className="rounded-xl mb-8 h-40 bg-gradient-to-br from-moss/25 via-parchment to-clay/20" aria-hidden="true">
       </div>
 
       {/* AEO block */}
       <section className="bg-parchment border-b border-stone px-6 py-4 rounded-t-lg text-sm text-charcoal leading-relaxed mb-8">
         <p>
           Search CQC-registered care providers in England by postcode and radius.
-          Find care homes, nursing homes, home care agencies, and more — rated by the Care Quality Commission. This directory remains available as a secondary entry point alongside CareGist&apos;s dashboard, exports, and API workflows.
+          Find care homes, nursing homes, home care agencies, and other services using
+          published CQC information. CareGist is a discovery aid, not a care-placement,
+          medical, safeguarding, or regulatory service.
         </p>
       </section>
 
       <h1 className="text-3xl font-bold mb-2">Find CQC-rated care near you</h1>
-      <p className="text-dusk mb-8" style={{ fontFamily: "Lora" }}>
-        Enter your postcode to browse local providers. If you need a recurring new-provider lead feed, operational monitoring, or bulk exports, CareGist&apos;s pricing and New Provider Lead Feed are the stronger starting point.
+      <p className="text-dusk mb-8">
+        Enter your postcode to browse local providers. Always confirm availability,
+        services, fees, suitability, and the current regulatory record directly with the
+        provider and CQC before making a care decision.
       </p>
 
       <div className="bg-cream border border-stone rounded-lg p-4 mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <p className="text-xs uppercase tracking-[0.18em] text-dusk mb-1">Operational workflows</p>
+          <p className="text-xs uppercase tracking-[0.18em] text-dusk mb-1">Free directory</p>
           <p className="text-sm text-bark">
-            Teams using CareGist for newly registered provider intelligence, exports, and monitoring should start with the lead feed.
+            Search factual provider records freely. Compliance and quality-improvement
+            teams can compare evidence-linked Radar plans separately.
           </p>
         </div>
         <div className="flex gap-3 text-sm">
-          <a href="/search" className="text-clay underline">Open New Provider Lead Feed</a>
+          <a href="/search" className="text-clay underline">Open provider search</a>
           <a href="/pricing" className="text-clay underline">See pricing</a>
         </div>
       </div>

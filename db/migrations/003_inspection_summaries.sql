@@ -51,11 +51,6 @@ SET inspection_summary =
     WHEN specialisms IS NOT NULL AND specialisms != '' THEN
       ' Specialises in: ' || REPLACE(LOWER(specialisms), '|', ', ') || '.'
     ELSE ''
-  END ||
-  CASE
-    WHEN quality_score IS NOT NULL THEN
-      ' CareGist quality score: ' || quality_score || '/100.'
-    ELSE ''
   END
 WHERE overall_rating IS NOT NULL AND overall_rating != '';
 

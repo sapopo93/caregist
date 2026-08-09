@@ -102,3 +102,39 @@ export function describeFetchError(err: unknown): string {
   }
   return "Something went wrong. Please try again.";
 }
+
+type ErrorObject = Record<string, unknown>;
+
+function legacyMessageFromDetail(detail: unknown): string | undefined {
+  if (typeof detail === "string" && detail.trim()) return detail.trim();
+
+  if (Array.isArray(detail)) {
+    const messages = detail
+      .map((item) => {
+        if (typeof item === "string") return item.trim();
+        if (item && typeof item === "object") {
+          const message = (item as ErrorObject).msg;
+          return typeof message === "string" ? message.trim() : "";
+        }
+        return "";
+      })
+      .filter(Boolean);
+    if (messages.length) return messages.join(" ");
+  }
+
+  if (detail && typeof detail === "object") {
+    const message = (detail as ErrorObject).message;
+    if (typeof message === "string" && message.trim()) return message.trim();
+  }
+
+  return undefined;
+}
+
+/** Compatibility adapter for forms not yet migrated to structured errors. */
+export function apiErrorMessage(payload: unknown, fallback: string): string {
+  if (payload && typeof payload === "object" && !Array.isArray(payload)) {
+    const detail = (payload as ErrorObject).detail;
+    return legacyMessageFromDetail(detail) ?? fallback;
+  }
+  return legacyMessageFromDetail(payload) ?? fallback;
+}

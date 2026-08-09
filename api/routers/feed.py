@@ -13,7 +13,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from fastapi.responses import HTMLResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
-from api.config import get_next_tier
+from api.config import get_next_tier, settings
 from api.database import get_connection
 from api.middleware.auth import validate_api_key
 from api.middleware.rate_limit import add_rate_limit_headers, check_export_limit
@@ -32,6 +32,13 @@ from api.utils.analytics import log_event
 
 router = APIRouter(prefix="/api/v1/feed", tags=["feed"])
 logger = logging.getLogger("caregist.feed")
+LEGACY_FEED_SUNSET = "Sat, 07 Nov 2026 00:00:00 GMT"
+
+
+def _add_legacy_feed_headers(response: Response) -> None:
+    response.headers["Deprecation"] = "true"
+    response.headers["Sunset"] = LEGACY_FEED_SUNSET
+    response.headers["Link"] = '</api/v1/radar/events?event_type=new_registration>; rel="successor-version"'
 
 
 class SavedFilterCreateRequest(BaseModel):
@@ -118,6 +125,7 @@ async def get_new_registration_feed(
     per_page: int | None = Query(None, ge=1, le=250),
     _auth: dict = Depends(validate_api_key),
 ) -> dict[str, Any]:
+    _add_legacy_feed_headers(response)
     tier = _auth["tier"]
     config = require_feed_access(tier)
     add_rate_limit_headers(response, tier, _auth["remaining"])
@@ -154,6 +162,9 @@ async def export_new_registration_csv(
     to_date: str | None = Query(None),
     _auth: dict = Depends(validate_api_key),
 ) -> StreamingResponse:
+    _add_legacy_feed_headers(response)
+    if not settings.directory_export_delivery_enabled:
+        raise HTTPException(status_code=503, detail="Export delivery is awaiting Human Gate approval.")
     tier = _auth["tier"]
     config = require_feed_access(tier)
     add_rate_limit_headers(response, tier, _auth["remaining"])
@@ -205,6 +216,9 @@ async def export_new_registration_xlsx(
     to_date: str | None = Query(None),
     _auth: dict = Depends(validate_api_key),
 ) -> StreamingResponse:
+    _add_legacy_feed_headers(response)
+    if not settings.directory_export_delivery_enabled:
+        raise HTTPException(status_code=503, detail="Export delivery is awaiting Human Gate approval.")
     import openpyxl
     from openpyxl.styles import Font
 
@@ -378,6 +392,8 @@ async def get_digest_subscription(_auth: dict = Depends(validate_api_key)) -> di
 @router.put("/new-registrations/digest")
 async def upsert_digest_subscription(body: DigestSubscriptionRequest, _auth: dict = Depends(validate_api_key)) -> dict[str, Any]:
     require_digest_access(_auth["tier"])
+    if body.active and not settings.outbound_delivery_enabled:
+        raise HTTPException(status_code=503, detail="Digest activation is awaiting Human Gate approval.")
     unsubscribe_token = secrets.token_urlsafe(24)
     async with get_connection() as conn:
         row = await conn.fetchrow(

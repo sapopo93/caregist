@@ -1,0 +1,25 @@
+{
+  "status": "pass",
+  "summary": "Duplicate prevention is implemented at multiple levels. The CQC pipeline uses immutable snapshots with checksum verification \u2014 reimport of the same data produces identical results. The incremental update (incremental_update.py) handles deduplication. Database migrations are forward-only with explicit safety: additive expand/contract changes, corrective migrations for isolated defects. The production README mandates that 'Commercial and unapproved mutation paths must remain fail-closed' \u2014 preventing accidental duplicate commercial actions. Stripe webhook integration tests exist in the prod-ready/webhook-integration-tests branch.",
+  "assertions": [
+    "CQC pipeline: immutable snapshots with checksum \u2192 idempotent reimport",
+    "Incremental update with deduplication logic",
+    "Forward-only migrations with expand/contract pattern",
+    "Fail-closed commercial paths prevent duplicate billing/delivery",
+    "Webhook integration tests in prod-ready branches"
+  ],
+  "artifacts": [
+    {
+      "kind": "source",
+      "path": "incremental_update.py"
+    },
+    {
+      "kind": "doc",
+      "path": "README.md"
+    },
+    {
+      "kind": "doc",
+      "path": "db/migrations/README.md"
+    }
+  ]
+}

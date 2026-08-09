@@ -1,0 +1,29 @@
+{
+  "status": "pass",
+  "summary": "Data delivery is implemented through multiple channels: CSV export (directory-export.test.ts verifies token-gated access), API access (/api route documented), lead list pages with filtering, and provider detail pages. The live site at https://www.caregist.co.uk delivers: search results, lead lists filtered by opportunity, provider detail pages, CSV exports (token-gated). The API health endpoints provide observability: /api/v1/health/*, /api/v1/version (deployed SHA), /data-status (freshness). The directory-db test verifies data access patterns.",
+  "assertions": [
+    "CSV export with access token gating (directory-export.test.ts)",
+    "API route documented at /api on live site",
+    "Lead lists delivered via filtered pages (lead-list, search)",
+    "Provider detail pages serve full CQC data",
+    "Health endpoints for delivery observability: /api/v1/health/*, /api/v1/version, /data-status"
+  ],
+  "artifacts": [
+    {
+      "kind": "test",
+      "path": "frontend/lib/directory-export.test.ts"
+    },
+    {
+      "kind": "test",
+      "path": "frontend/lib/directory-db.test.ts"
+    },
+    {
+      "kind": "source",
+      "path": "frontend/app/api/page.tsx"
+    },
+    {
+      "kind": "doc",
+      "path": "README.md"
+    }
+  ]
+}

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import base64
+import ipaddress
 import json
 import os
 import sys
@@ -16,10 +17,12 @@ from pydantic_settings import BaseSettings
 
 AWS_SECRET_ID_ENV = "AWS_SECRETS_MANAGER_SECRET_ID"
 AWS_REGION_ENV = "AWS_REGION"
+CAREGIST_PREVIEW_DATABASE_URL_ENV = "CAREGIST_PREVIEW_DATABASE_URL"
 
 SECRET_ENV_NAMES = {
     "database_url": "DATABASE_URL",
     "api_master_key": "API_MASTER_KEY",
+    "api_master_key_previous": "API_MASTER_KEY_PREVIOUS",
     "stripe_secret_key": "STRIPE_SECRET_KEY",
     "stripe_webhook_secret": "STRIPE_WEBHOOK_SECRET",
     "stripe_price_alerts_pro": "STRIPE_PRICE_ALERTS_PRO",
@@ -27,17 +30,24 @@ SECRET_ENV_NAMES = {
     "stripe_price_pro": "STRIPE_PRICE_PRO",
     "stripe_price_pro_seat": "STRIPE_PRICE_PRO_SEAT",
     "stripe_price_business": "STRIPE_PRICE_BUSINESS",
+    "stripe_price_full_dataset": "STRIPE_PRICE_FULL_DATASET",
     "stripe_price_enterprise": "STRIPE_PRICE_ENTERPRISE",
     "stripe_price_profile_enhanced": "STRIPE_PRICE_PROFILE_ENHANCED",
     "stripe_price_profile_premium": "STRIPE_PRICE_PROFILE_PREMIUM",
     "stripe_price_profile_sponsored": "STRIPE_PRICE_PROFILE_SPONSORED",
+    "stripe_price_radar_regional": "STRIPE_PRICE_RADAR_REGIONAL",
+    "stripe_price_radar_national": "STRIPE_PRICE_RADAR_NATIONAL",
+    "stripe_price_intelligence_feed": "STRIPE_PRICE_INTELLIGENCE_FEED",
     "resend_api_key": "RESEND_API_KEY",
     "caregist_to_support_token": "CAREGIST_TO_SUPPORT_TOKEN",
     "support_internal_token": "SUPPORT_INTERNAL_TOKEN",
+    "hermes_internal_token": "HERMES_INTERNAL_TOKEN",
     "webhook_secret_key": "WEBHOOK_SECRET_KEY",
     "redis_url": "REDIS_URL",
+    "cron_secret": "CRON_SECRET",
 }
 SECRET_ENV_ALIASES = {
+    "api_master_key": ("API_KEY",),
     "stripe_price_alerts_pro": ("STRIPE_PRICE_ALERTS_PRO_MONTHLY",),
     "stripe_price_starter": ("STRIPE_PRICE_DATA_STARTER_MONTHLY",),
     "stripe_price_pro": ("STRIPE_PRICE_DATA_PRO_MONTHLY",),
@@ -46,13 +56,73 @@ SECRET_ENV_ALIASES = {
     "stripe_price_profile_premium": ("STRIPE_PRICE_PROVIDER_PRO_LISTING_MONTHLY",),
     "stripe_price_profile_sponsored": ("STRIPE_PRICE_SPONSORED_LISTING_MONTHLY",),
 }
+
+
+def runtime_requires_production_secrets(
+    database_url: str,
+    environ: Mapping[str, str] | None = None,
+) -> bool:
+    """Return whether startup must enforce production-only secret gates.
+
+    Vercel previews are protected, non-production environments and may use a
+    preview database without live billing or outbound credentials. Production
+    remains fail-closed even if its database URL is misconfigured.
+    """
+    env = environ or os.environ
+    vercel_env = env.get("VERCEL_ENV", "").lower()
+    if vercel_env == "production":
+        return True
+    if vercel_env in {"preview", "development"}:
+        return False
+    return "localhost" not in database_url
+
+
+REQUIRED_PUBLIC_STRIPE_PRICE_FIELDS = (
+    "stripe_price_alerts_pro",
+    "stripe_price_starter",
+    "stripe_price_pro",
+    "stripe_price_pro_seat",
+    "stripe_price_business",
+    "stripe_price_full_dataset",
+    "stripe_price_profile_enhanced",
+    "stripe_price_profile_sponsored",
+    "stripe_price_radar_regional",
+    "stripe_price_radar_national",
+    "stripe_price_intelligence_feed",
+)
+
+
 REQUIRED_PRODUCTION_SECRETS = (
     "database_url",
     "api_master_key",
     "support_internal_token",
     "stripe_secret_key",
     "stripe_webhook_secret",
+    "webhook_secret_key",
+    "redis_url",
 )
+
+
+def validate_public_stripe_price_ids(values: Mapping[str, Any]) -> None:
+    configured = {
+        field: str(values.get(field) or "").strip()
+        for field in REQUIRED_PUBLIC_STRIPE_PRICE_FIELDS
+    }
+    malformed = [field for field, value in configured.items() if value and not value.startswith("price_")]
+    if malformed:
+        names = ", ".join(SECRET_ENV_NAMES[field] for field in malformed)
+        raise RuntimeError(f"FATAL: Stripe Price IDs must start with 'price_': {names}")
+    reverse: dict[str, list[str]] = {}
+    for field, value in configured.items():
+        if value:
+            reverse.setdefault(value, []).append(field)
+    duplicates = [fields for fields in reverse.values() if len(fields) > 1]
+    if duplicates:
+        names = ", ".join(
+            "/".join(SECRET_ENV_NAMES[field] for field in fields)
+            for fields in duplicates
+        )
+        raise RuntimeError(f"FATAL: Public Stripe plans must use unique Price IDs: {names}")
 
 
 class AwsSecretsManagerSecretLoader:
@@ -91,6 +161,16 @@ def _is_production(environ: Mapping[str, str] | None = None) -> bool:
     return env.get("NODE_ENV", "").lower() == "production"
 
 
+def redis_required_in_production(environ: Mapping[str, str] | None = None) -> bool:
+    """Return whether production must have shared Redis configured.
+
+    Vercel can use the existing durable database quota path when Redis is not
+    attached; its process-local limiter still protects short burst windows.
+    """
+    env = environ or os.environ
+    return env.get("VERCEL") != "1" and not env.get("VERCEL_ENV")
+
+
 def validate_cors_origins(cors_origins: str, *, production: bool) -> None:
     """Reject wildcard or malformed CORS origins when credentials are enabled."""
     origins = [origin.strip() for origin in cors_origins.split(",") if origin.strip()]
@@ -105,6 +185,40 @@ def validate_cors_origins(cors_origins: str, *, production: bool) -> None:
             continue
         if parsed.scheme not in {"http", "https"} or not parsed.netloc or parsed.path or parsed.params or parsed.query or parsed.fragment:
             raise RuntimeError(f"FATAL: Invalid CORS origin: {origin!r}. Use explicit scheme://host[:port] origins.")
+
+
+def validate_app_url(app_url: str, *, production: bool) -> None:
+    """Require a public HTTPS application origin for production billing redirects."""
+    if not production:
+        return
+
+    parsed = urlparse(app_url.strip())
+    hostname = (parsed.hostname or "").lower().rstrip(".")
+    if (
+        parsed.scheme != "https"
+        or not parsed.netloc
+        or parsed.username
+        or parsed.password
+        or parsed.path not in {"", "/"}
+        or parsed.params
+        or parsed.query
+        or parsed.fragment
+    ):
+        raise RuntimeError(
+            "FATAL: APP_URL must be a public HTTPS origin without a path, query, or credentials in production."
+        )
+
+    if hostname == "localhost" or hostname.endswith((".localhost", ".local")):
+        raise RuntimeError("FATAL: APP_URL must not use a local hostname in production.")
+
+    try:
+        address = ipaddress.ip_address(hostname)
+    except ValueError:
+        if "." not in hostname:
+            raise RuntimeError("FATAL: APP_URL must use a public hostname in production.")
+    else:
+        if not address.is_global:
+            raise RuntimeError("FATAL: APP_URL must not use a local or private address in production.")
 
 
 def _lookup_secret_value(payload: Mapping[str, Any], field_name: str, env_name: str) -> Any:
@@ -147,24 +261,50 @@ def load_application_secrets(
 ) -> dict[str, str]:
     env = environ or os.environ
     is_production = _is_production(env)
+    is_vercel = env.get("VERCEL") == "1" or bool(env.get("VERCEL_ENV"))
+    is_vercel_production = env.get("VERCEL_ENV", "").lower() == "production"
+    requires_production_secrets = is_production and (not is_vercel or is_vercel_production)
     secret_id = env.get(AWS_SECRET_ID_ENV)
 
-    if not secret_id and is_production:
+    if not secret_id and requires_production_secrets and not is_vercel:
         raise RuntimeError(f"FATAL: {AWS_SECRET_ID_ENV} must be set in production.")
 
     values: dict[str, str] = {}
     if not is_production:
         values.update(_load_dev_dotenv_secrets(dotenv_path))
         values.update(_load_dev_env_secrets(env))
-    if secret_id:
+    elif is_vercel:
+        # Vercel injects environment values directly into each service. Preview
+        # deployments may intentionally omit live billing/outbound credentials;
+        # those features then fail closed at their own API boundary.
+        values.update(_load_dev_env_secrets(env))
+        if env.get("VERCEL_ENV", "").lower() == "preview" and env.get(CAREGIST_PREVIEW_DATABASE_URL_ENV):
+            # A separately provisioned preview resource must take precedence
+            # over the legacy project-wide DATABASE_URL. The prefixed variable
+            # can be connected to Preview only and is ignored in production.
+            values["database_url"] = env[CAREGIST_PREVIEW_DATABASE_URL_ENV]
+        elif env.get("PROD_DATABASE_URL"):
+            values["database_url"] = env["PROD_DATABASE_URL"]
+    # Vercel is the authoritative runtime now. Ignore the retired AWS secret
+    # identifier if it still exists in project metadata; trying to resolve it
+    # would make every serverless invocation fail before the app can start.
+    if secret_id and not is_vercel:
         loader = secret_loader_cls(secret_id, env.get(AWS_REGION_ENV))
         values.update(loader.load())
 
-    if is_production:
-        missing = [name for name in REQUIRED_PRODUCTION_SECRETS if not values.get(name)]
+    if requires_production_secrets:
+        required_secrets = REQUIRED_PRODUCTION_SECRETS
+        if is_vercel:
+            # Quotas already use the durable DB fallback when Redis is absent.
+            # Redis remains recommended, but must not prevent a Vercel function
+            # from starting before a managed Redis integration is attached.
+            required_secrets = tuple(name for name in required_secrets if name != "redis_url")
+        missing = [name for name in required_secrets if not values.get(name)]
         if missing:
             missing_env_names = ", ".join(SECRET_ENV_NAMES[name] for name in missing)
-            raise RuntimeError(f"FATAL: Missing required production secrets in AWS Secrets Manager: {missing_env_names}")
+            source = "Vercel environment" if is_vercel else "AWS Secrets Manager"
+            raise RuntimeError(f"FATAL: Missing required production secrets in {source}: {missing_env_names}")
+        validate_public_stripe_price_ids(values)
         return {name: values.get(name, "") for name in SECRET_ENV_NAMES}
 
     return values
@@ -175,6 +315,15 @@ class Settings(BaseSettings):
     api_host: str = "0.0.0.0"
     api_port: int = 8000
     api_master_key: str = ""
+    # Optional comma-separated additional master keys, valid during a rotation
+    # window so a new key can be deployed before the old one is revoked (F-18).
+    api_master_key_previous: str = ""
+
+    def master_keys(self) -> tuple[str, ...]:
+        """All currently-valid master keys (primary + rotation overlap)."""
+        keys = [self.api_master_key]
+        keys.extend(part.strip() for part in self.api_master_key_previous.split(",") if part.strip())
+        return tuple(key for key in keys if key)
     cors_origins: str = "http://localhost:3000"
     query_timeout_ms: int = 10000
     stripe_secret_key: str = ""
@@ -184,10 +333,24 @@ class Settings(BaseSettings):
     stripe_price_pro: str = ""
     stripe_price_pro_seat: str = ""
     stripe_price_business: str = ""
+    stripe_price_full_dataset: str = ""
     stripe_price_enterprise: str = ""
     stripe_price_profile_enhanced: str = ""
     stripe_price_profile_premium: str = ""
     stripe_price_profile_sponsored: str = ""
+    # New catalogue. These remain optional until the corresponding readiness
+    # gate is enabled; legacy price IDs stay loadable for subscription replay.
+    stripe_price_radar_regional: str = ""
+    stripe_price_radar_national: str = ""
+    stripe_price_intelligence_feed: str = ""
+    # Exact solicitor-approved B2B terms version accepted at paid checkout.
+    # Empty means no self-service checkout can proceed even if its feature flag is enabled.
+    b2b_terms_version: str = ""
+    b2b_terms_sha256: str = ""
+    b2b_evidence_hash_key: str = ""
+    # Exact approved digital-content terms accepted in Stripe Checkout.
+    digital_content_terms_version: str = ""
+    digital_content_terms_sha256: str = ""
     default_page_size: int = 20
     app_url: str = "http://localhost:3000"
     resend_api_key: str = ""
@@ -196,19 +359,54 @@ class Settings(BaseSettings):
     support_platform_url: str = ""
     caregist_to_support_token: str = ""
     support_internal_token: str = ""
+    # Optional separate token for Hermes. When unset, Hermes cannot authenticate
+    # as its own actor and must not share the support-platform token.
+    hermes_internal_token: str = ""
     # AES-GCM key for webhook secret encryption. Must be 32 bytes, base64-encoded.
     # If unset, webhook secrets are stored plaintext (dev/legacy mode).
     webhook_secret_key: str = ""
     # Optional Redis URL for shared burst rate limiting across workers.
     # When unset, burst limiting falls back to the process-local in-memory dict.
     redis_url: str = ""
+    # Vercel Cron sends this value as an Authorization bearer token.
+    cron_secret: str = ""
+    # Human Gate control: provider claims remain disabled until identity,
+    # authority, moderation, privacy, and operational approvals are recorded.
+    provider_claims_enabled: bool = False
+    # Personal-data intake and user-controlled remote media remain fail-closed
+    # until the associated Human Gate privacy/moderation decisions are approved.
+    enquiries_enabled: bool = False
+    review_submissions_enabled: bool = False
+    remote_provider_media_enabled: bool = False
+    # Commercial mutations remain disabled until Human Gate 1 plus the
+    # applicable finance/legal approvals are recorded. Stripe webhook intake
+    # remains available so already-created state can still be reconciled.
+    billing_checkout_enabled: bool = False
+    outbound_communications_enabled: bool = False
+    monitoring_activation_enabled: bool = False
+    outbound_delivery_enabled: bool = False
+    directory_export_delivery_enabled: bool = False
+    full_dataset_checkout_enabled: bool = False
+    review_publication_enabled: bool = False
+    # Independent signal-intelligence kill switches. Defaults are deliberately
+    # fail-closed; workflows opt collectors into shadow mode explicitly.
+    radar_checkout_enabled: bool = False
+    cqc_location_index_poll_enabled: bool = False
+    cqc_report_poll_enabled: bool = False
+    radar_explanations_enabled: bool = False
+    radar_delivery_enabled: bool = False
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8", "extra": "ignore"}
 
     def validate_production(self) -> None:
-        validate_cors_origins(self.cors_origins, production="localhost" not in self.database_url)
+        production = runtime_requires_production_secrets(self.database_url)
+        validate_cors_origins(self.cors_origins, production=production)
+        validate_app_url(self.app_url, production=production)
 
         if "pytest" in sys.modules:
+            return
+
+        if not production:
             return
 
         if not self.api_master_key:
@@ -216,14 +414,38 @@ class Settings(BaseSettings):
         if not self.support_internal_token:
             raise RuntimeError("FATAL: SUPPORT_INTERNAL_TOKEN is required.")
 
-        # Stripe environment guard: reject live keys in dev/test
         is_localhost = self.database_url == "postgresql://caregist:caregist_dev@localhost:5432/caregist"
+        is_production_db = "localhost" not in self.database_url
+        if is_production_db:
+            if not self.webhook_secret_key:
+                raise RuntimeError("FATAL: WEBHOOK_SECRET_KEY is required in production.")
+            if not self.redis_url and redis_required_in_production():
+                raise RuntimeError("FATAL: REDIS_URL is required in production.")
+
+        # Stripe environment guard: reject live keys in dev/test
         if self.stripe_secret_key.startswith("sk_live_") and is_localhost:
             raise RuntimeError(
                 "FATAL: Live Stripe secret key (sk_live_) detected in local development environment. "
                 "Use test credentials (sk_test_) for development. "
                 "Live keys are only for production deployments."
             )
+
+        if self.radar_checkout_enabled:
+            if not self.billing_checkout_enabled:
+                raise RuntimeError(
+                    "FATAL: RADAR_CHECKOUT_ENABLED requires BILLING_CHECKOUT_ENABLED."
+                )
+            required_checkout_values = {
+                "STRIPE_PRICE_RADAR_REGIONAL": self.stripe_price_radar_regional,
+                "STRIPE_PRICE_RADAR_NATIONAL": self.stripe_price_radar_national,
+                "B2B_TERMS_VERSION": self.b2b_terms_version,
+                "B2B_TERMS_SHA256": self.b2b_terms_sha256,
+            }
+            missing = [name for name, value in required_checkout_values.items() if not value]
+            if missing:
+                raise RuntimeError(
+                    f"FATAL: Radar checkout is enabled without {', '.join(missing)}."
+                )
 
 
 settings = Settings(**load_application_secrets())
@@ -244,8 +466,8 @@ TIERS = {
         "page_size": 5,
         "fields": "basic",
         "nearby": False,
-        "export": 25,
-        "exports_per_day": 3,
+        "export": 0,
+        "exports_per_day": 0,
         "compare": 0,
         "webhooks": False,
         "monitors": 1,
@@ -257,7 +479,7 @@ TIERS = {
         "base_price_gbp": 0,
         "seat_price_gbp": 0,
         "extra_seat_min_tier": None,
-        "next_tier": "starter",
+        "next_tier": "radar-regional",
     },
     "alerts-pro": {
         "rate": 5,
@@ -268,8 +490,8 @@ TIERS = {
         "page_size": 10,
         "fields": "standard",
         "nearby": False,
-        "export": 500,
-        "exports_per_day": 5,
+        "export": 0,
+        "exports_per_day": 0,
         "compare": 3,
         "webhooks": False,
         "monitors": 50,
@@ -355,6 +577,110 @@ TIERS = {
         "extra_seat_min_tier": "business",
         "next_tier": "enterprise",
     },
+    "radar-regional": {
+        "rate": 25,
+        "rate_window_seconds": 1,
+        "daily": 2000,
+        "rolling_7d": 14000,
+        "monthly": 50000,
+        "page_size": 100,
+        "fields": "standard",
+        "nearby": True,
+        "export": 5000,
+        "exports_per_day": 20,
+        "compare": 5,
+        "webhooks": False,
+        "monitors": 100,
+        "feed_rows": 100,
+        "saved_filters": 10,
+        "feed_digests": 10,
+        "feed_api": False,
+        "included_users": 2,
+        "base_price_gbp": 299,
+        "seat_price_gbp": 0,
+        "extra_seat_min_tier": None,
+        "region_limit": 1,
+        "history_days": 90,
+        "next_tier": "radar-national",
+    },
+    "radar-national": {
+        "rate": 40,
+        "rate_window_seconds": 1,
+        "daily": 5000,
+        "rolling_7d": 35000,
+        "monthly": 100000,
+        "page_size": 250,
+        "fields": "standard",
+        "nearby": True,
+        "export": 25000,
+        "exports_per_day": 50,
+        "compare": 10,
+        "webhooks": False,
+        "monitors": 500,
+        "feed_rows": 250,
+        "saved_filters": 50,
+        "feed_digests": 50,
+        "feed_api": False,
+        "included_users": 5,
+        "base_price_gbp": 799,
+        "seat_price_gbp": 0,
+        "extra_seat_min_tier": None,
+        "region_limit": None,
+        "history_days": 365,
+        "next_tier": "intelligence-feed",
+    },
+    "intelligence-feed": {
+        "rate": 60,
+        "rate_window_seconds": 1,
+        "daily": 10000,
+        "rolling_7d": 70000,
+        "monthly": 250000,
+        "page_size": 250,
+        "fields": "full",
+        "nearby": True,
+        "export": 50000,
+        "exports_per_day": 100,
+        "compare": 10,
+        "webhooks": True,
+        "monitors": 1000,
+        "feed_rows": 250,
+        "saved_filters": 100,
+        "feed_digests": 100,
+        "feed_api": True,
+        "included_users": 5,
+        "base_price_gbp": 6000,
+        "seat_price_gbp": 0,
+        "extra_seat_min_tier": None,
+        "region_limit": 1,
+        "history_days": 365,
+        "next_tier": "embedded-enterprise",
+    },
+    "embedded-enterprise": {
+        "rate": 200,
+        "rate_window_seconds": 1,
+        "daily": 50000,
+        "rolling_7d": 350000,
+        "monthly": 1500000,
+        "page_size": 500,
+        "fields": "full",
+        "nearby": True,
+        "export": 100000,
+        "exports_per_day": 500,
+        "compare": 20,
+        "webhooks": True,
+        "monitors": 5000,
+        "feed_rows": 500,
+        "saved_filters": 500,
+        "feed_digests": 500,
+        "feed_api": True,
+        "included_users": 10,
+        "base_price_gbp": 0,
+        "seat_price_gbp": 0,
+        "extra_seat_min_tier": None,
+        "region_limit": None,
+        "history_days": 730,
+        "next_tier": None,
+    },
     "enterprise": {
         "rate": 200,
         "rate_window_seconds": 1,
@@ -410,14 +736,14 @@ TIERS = {
 BASIC_CSV_FIELDS = [
     "name", "town", "county", "postcode", "region", "local_authority",
     "phone", "website", "overall_rating", "type", "service_types",
-    "specialisms", "number_of_beds", "quality_score", "quality_tier",
+    "specialisms", "number_of_beds", "data_completeness_score", "data_completeness_tier",
     "last_inspection_date", "inspection_report_url",
 ]
 
 BASIC_FIELDS = [
     "id", "name", "slug", "type", "status", "town", "county", "postcode",
     "region", "local_authority", "overall_rating", "service_types",
-    "specialisms", "number_of_beds", "quality_score", "quality_tier",
+    "specialisms", "number_of_beds", "data_completeness_score", "data_completeness_tier",
     "phone", "website", "last_inspection_date", "inspection_report_url",
     "inspection_summary", "profile_description", "profile_photos",
     "virtual_tour_url", "inspection_response", "profile_tier",
@@ -446,11 +772,16 @@ FIELD_SETS = {
 
 TIER_RANK = {
     "free": 0,
-    "starter": 1,
-    "pro": 2,
-    "business": 3,
-    "enterprise": 4,
-    "admin": 5,
+    "alerts-pro": 1,
+    "starter": 2,
+    "pro": 3,
+    "business": 4,
+    "radar-regional": 5,
+    "radar-national": 6,
+    "intelligence-feed": 7,
+    "embedded-enterprise": 8,
+    "enterprise": 8,
+    "admin": 9,
 }
 
 
@@ -459,7 +790,7 @@ def get_tier_config(tier: str) -> dict:
     normalized = (tier or "free").lower()
     if normalized in TIERS:
         return TIERS[normalized]
-    if normalized.startswith("enterprise"):
+    if normalized.startswith("enterprise") or normalized == "embedded-enterprise":
         return TIERS["enterprise"]
     return TIERS["free"]
 

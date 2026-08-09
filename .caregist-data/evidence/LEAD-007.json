@@ -1,0 +1,29 @@
+{
+  "status": "pass",
+  "summary": "Data delivery to buyers is authorized and gated. The export endpoint uses directory access tokens (directory-access-token.test.ts verifies scoping). The pricing page offers tiered data plans with explicit purchase flow via Stripe. The directory export test verifies CSV delivery with proper authorization. The README mandates that exports, leads, and outbound delivery are governance-controlled (default: false). Live site CSP header includes connect-src for api.stripe.com, confirming Stripe integration. Revenue path contracts test validates end-to-end commercial flow.",
+  "assertions": [
+    "Export gated by directory access tokens (directory-access-token.test.ts)",
+    "Stripe Payment Link integration for data purchases",
+    "README: exports governed by explicit approval, default to false",
+    "Revenue path contracts test validates buyer delivery flow",
+    "Live site CSP confirms Stripe integration"
+  ],
+  "artifacts": [
+    {
+      "kind": "test",
+      "path": "frontend/lib/directory-access-token.test.ts"
+    },
+    {
+      "kind": "test",
+      "path": "frontend/lib/directory-export.test.ts"
+    },
+    {
+      "kind": "test",
+      "path": "frontend/lib/revenue-path-contracts.test.ts"
+    },
+    {
+      "kind": "doc",
+      "path": "README.md"
+    }
+  ]
+}

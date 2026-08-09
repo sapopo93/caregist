@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import html
 import json
 import logging
 import time
@@ -416,6 +417,8 @@ async def deliver_new_registration_event(conn, event_payload: dict[str, Any]) ->
     HTTP deliveries for all matching subscriptions run concurrently via asyncio.gather.
     DB updates (log + subscription stats) are then applied serially after all HTTP work completes.
     """
+    if not settings.outbound_delivery_enabled:
+        return 0
     rows = await conn.fetch(
         """
         SELECT id, url, secret, filter_config
@@ -531,18 +534,21 @@ def build_weekly_digest_html(filters: dict[str, Any], rows: list[dict[str, Any]]
     filter_lines = []
     for key, value in filters.items():
         if value:
-            filter_lines.append(f"<li><strong>{key.replace('_', ' ').title()}:</strong> {value}</li>")
+            filter_lines.append(
+                f"<li><strong>{html.escape(key.replace('_', ' ').title())}:</strong> "
+                f"{html.escape(str(value))}</li>"
+            )
 
     items = "".join(
         f"""
         <tr>
           <td style="padding:10px 12px;border-bottom:1px solid #E8E0D0">
-            <a href="{_provider_profile_url(row)}" style="color:#6B4C35;text-decoration:none;font-weight:600">{row['name']}</a>
-            <div style="font-size:12px;color:#8a6a4a;margin-top:2px">{row['town'] or ''} · {row['region'] or ''}</div>
+            <a href="{html.escape(_provider_profile_url(row), quote=True)}" style="color:#6B4C35;text-decoration:none;font-weight:600">{html.escape(str(row['name'] or ''))}</a>
+            <div style="font-size:12px;color:#8a6a4a;margin-top:2px">{html.escape(str(row['town'] or ''))} · {html.escape(str(row['region'] or ''))}</div>
           </td>
-          <td style="padding:10px 12px;border-bottom:1px solid #E8E0D0">{row['service_types'] or '—'}</td>
-          <td style="padding:10px 12px;border-bottom:1px solid #E8E0D0">{row['local_authority'] or '—'}</td>
-          <td style="padding:10px 12px;border-bottom:1px solid #E8E0D0">{row['effective_date']}</td>
+          <td style="padding:10px 12px;border-bottom:1px solid #E8E0D0">{html.escape(str(row['service_types'] or '—'))}</td>
+          <td style="padding:10px 12px;border-bottom:1px solid #E8E0D0">{html.escape(str(row['local_authority'] or '—'))}</td>
+          <td style="padding:10px 12px;border-bottom:1px solid #E8E0D0">{html.escape(str(row['effective_date']))}</td>
         </tr>
         """
         for row in rows
@@ -578,6 +584,8 @@ def build_weekly_digest_html(filters: dict[str, Any], rows: list[dict[str, Any]]
 
 
 async def queue_weekly_new_registration_digests(conn, *, reference_date: date | None = None) -> dict[str, int]:
+    if not settings.outbound_delivery_enabled:
+        return {"subscriptions": 0, "queued": 0, "skipped": 0}
     reference_date = reference_date or datetime.now(timezone.utc).date()
     digest_key = digest_key_for_week(reference_date)
     week_start = reference_date - timedelta(days=7)

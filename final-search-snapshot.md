@@ -1,0 +1,295 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e3]:
+      - link "CareGist" [ref=e4] [cursor=pointer]:
+        - /url: /
+        - img "CareGist" [ref=e5]
+      - generic [ref=e6]:
+        - navigation [ref=e7]:
+          - link "Products" [ref=e8] [cursor=pointer]:
+            - /url: /#products
+          - link "Who it's for" [ref=e9] [cursor=pointer]:
+            - /url: /#positioning
+          - link "About" [ref=e10] [cursor=pointer]:
+            - /url: /why-caregist
+          - link "Search" [ref=e11] [cursor=pointer]:
+            - /url: /search
+          - link "Pricing" [ref=e12] [cursor=pointer]:
+            - /url: /pricing
+          - link "API" [ref=e13] [cursor=pointer]:
+            - /url: /api
+          - link "Get a lead list" [ref=e14] [cursor=pointer]:
+            - /url: /lead-list
+          - link "Buy dataset" [ref=e15] [cursor=pointer]:
+            - /url: /lead-list
+        - navigation [ref=e16]:
+          - link "Log In" [ref=e17] [cursor=pointer]:
+            - /url: /login
+          - link "Sign Up" [ref=e18] [cursor=pointer]:
+            - /url: /signup
+  - main [ref=e19]:
+    - generic [ref=e20]:
+      - generic [ref=e21]:
+        - generic [ref=e22]:
+          - paragraph [ref=e23]: CQC directory
+          - heading "Search the public CareGist directory" [level=2] [ref=e24]
+          - paragraph [ref=e25]: Browse active CQC providers with 24 results per page and filters for region, service type, and rating.
+        - generic [ref=e26]:
+          - generic [ref=e27]:
+            - generic [ref=e28]: Name or town
+            - textbox "Name or town" [ref=e29]:
+              - /placeholder: London, Ipswich, Henley House...
+              - text: East London
+          - generic [ref=e30]:
+            - generic [ref=e31]: Region
+            - combobox "Region" [ref=e32]:
+              - option "All regions" [selected]
+              - option "East"
+              - option "East Midlands"
+              - option "London"
+              - option "North East"
+              - option "North West"
+              - option "South East"
+              - option "South West"
+              - option "Wales"
+              - option "West Midlands"
+              - option "Yorkshire & Humberside"
+          - generic [ref=e33]:
+            - generic [ref=e34]: Service type
+            - combobox "Service type" [ref=e35]:
+              - option "All service types"
+              - option "Ambulances"
+              - option "Blood And Transplant Service"
+              - option "Clinic"
+              - option "Community Health Service"
+              - option "Community Services - Healthcare"
+              - option "Community Services - Learning Disabilities"
+              - option "Community Services - Mental Health"
+              - option "Community Services - Nursing"
+              - option "Community Services - Substance Abuse"
+              - option "Dentist"
+              - option "Diagnosis/Screening"
+              - option "Doctors/Gps"
+              - option "Home Hospice Care"
+              - option "Homecare Agencies" [selected]
+              - option "Hospice"
+              - option "Hospital"
+              - option "Hospitals - Mental Health/Capacity"
+              - option "Hyperbaric Chamber Services"
+              - option "Long-Term Conditions"
+              - option "Mobile Doctors"
+              - option "Nursing Homes"
+              - option "Phone/Online Advice"
+              - option "Prison Healthcare"
+              - option "Rehabilitation (Illness/Injury)"
+              - option "Rehabilitation (Substance Abuse)"
+              - option "Residential Homes"
+              - option "Shared Lives"
+              - option "Specialist College Service"
+              - option "Supported Housing"
+              - option "Supported Living"
+              - option "Urgent Care Centres"
+          - generic [ref=e36]:
+            - generic [ref=e37]: Rating
+            - combobox "Rating" [ref=e38]:
+              - option "All ratings" [selected]
+              - option "Outstanding"
+              - option "Good"
+              - option "Requires Improvement"
+              - option "Inadequate"
+              - option "Inspected But Not Rated"
+              - option "No Published Rating"
+              - option "Not Yet Inspected"
+              - option "Insufficient Evidence To Rate"
+          - button "Update search" [ref=e40]
+      - generic [ref=e41]:
+        - generic [ref=e42]:
+          - generic [ref=e43]:
+            - generic [ref=e44]:
+              - paragraph [ref=e45]: Results
+              - heading "19 providers" [level=1] [ref=e46]
+              - paragraph [ref=e47]: Matching "East London" with your selected filters.
+            - paragraph [ref=e48]: Page 1 of 1
+          - generic [ref=e49]:
+            - article [ref=e50]:
+              - generic [ref=e51]
+              - generic [ref=e58]
+              - paragraph [ref=e61]: "Specialisms: Caring For Adults Over 65 Yrs, Caring For Adults Under 65 Yrs, Caring For Children"
+              - generic [ref=e62]
+              - link "View provider details" [ref=e66] [cursor=pointer]:
+                - /url: /provider/east-london-care-and-support-limited-london
+            - article [ref=e67]:
+              - generic [ref=e68]
+              - generic [ref=e76]: Homecare Agencies
+              - paragraph [ref=e77]: "Specialisms: Caring For Adults Over 65 Yrs, Caring For Adults Under 65 Yrs, Dementia"
+              - generic [ref=e78]
+              - link "View provider details" [ref=e82] [cursor=pointer]:
+                - /url: /provider/east-london-city-home-care-london
+            - article [ref=e83]:
+              - generic [ref=e84]
+              - generic [ref=e91]
+              - paragraph [ref=e94]: "Specialisms: Caring For Adults Over 65 Yrs, Caring For Adults Under 65 Yrs, Learning Disabilities"
+              - generic [ref=e95]
+              - link "View provider details" [ref=e99] [cursor=pointer]:
+                - /url: /provider/advance-bexley-kent-and-east-london-domicilary-care-and-supported-living-services-bexleyheath
+            - article [ref=e100]:
+              - generic [ref=e101]
+              - generic [ref=e108]
+              - paragraph [ref=e111]: "Specialisms: Caring For Adults Over 65 Yrs, Caring For Adults Under 65 Yrs, Learning Disabilities"
+              - generic [ref=e112]
+              - link "View provider details" [ref=e116] [cursor=pointer]:
+                - /url: /provider/advance-essex-and-east-london-southend-on-sea
+            - article [ref=e117]:
+              - generic [ref=e118]
+              - generic [ref=e125]
+              - paragraph [ref=e128]: "Specialisms: Caring For Adults Over 65 Yrs, Caring For Adults Under 65 Yrs, Caring For Children"
+              - generic [ref=e129]
+              - link "View provider details" [ref=e133] [cursor=pointer]:
+                - /url: /provider/aspire-care-services-east-london-romford
+            - article [ref=e134]:
+              - generic [ref=e135]
+              - generic [ref=e142]
+              - paragraph [ref=e145]: "Specialisms: Caring For People Whose Rights Are Restricted Under The Mental Health Act, Dementia, Eating Disorders"
+              - generic [ref=e146]
+              - link "View provider details" [ref=e150] [cursor=pointer]:
+                - /url: /provider/caring-hands-east-london-ltd-ilford
+            - article [ref=e151]:
+              - generic [ref=e152]
+              - generic [ref=e160]: Homecare Agencies
+              - paragraph [ref=e161]: "Specialisms: Caring For Adults Over 65 Yrs, Dementia, Physical Disabilities"
+              - generic [ref=e162]
+              - link "View provider details" [ref=e166] [cursor=pointer]:
+                - /url: /provider/community-of-refugees-from-vietnam-east-london-london
+            - article [ref=e167]:
+              - generic [ref=e168]
+              - generic [ref=e175]
+              - paragraph [ref=e178]: "Specialisms: Caring For Adults Over 65 Yrs, Caring For Adults Under 65 Yrs, Caring For Children"
+              - generic [ref=e179]
+              - link "View provider details" [ref=e183] [cursor=pointer]:
+                - /url: /provider/crossroads-care-south-east-london-erith
+            - article [ref=e184]:
+              - generic [ref=e185]
+              - generic [ref=e193]: Homecare Agencies
+              - paragraph [ref=e194]: "Specialisms: Caring For Adults Over 65 Yrs, Caring For Adults Under 65 Yrs, Caring For Children"
+              - generic [ref=e195]
+              - link "View provider details" [ref=e199] [cursor=pointer]:
+                - /url: /provider/goldsmith-personnel-limited-east-london-london
+            - article [ref=e200]:
+              - generic [ref=e201]
+              - generic [ref=e209]: Homecare Agencies
+              - paragraph [ref=e210]: "Specialisms: Caring For Adults Over 65 Yrs, Caring For Adults Under 65 Yrs, Caring For Children"
+              - generic [ref=e211]
+              - link "View provider details" [ref=e215] [cursor=pointer]:
+                - /url: /provider/london-care-east-london-london
+            - article [ref=e216]:
+              - generic [ref=e217]
+              - generic [ref=e224]
+              - paragraph [ref=e227]: "Specialisms: Caring For Adults Over 65 Yrs, Caring For Adults Under 65 Yrs, Caring For Children"
+              - generic [ref=e228]
+              - link "View provider details" [ref=e232] [cursor=pointer]:
+                - /url: /provider/mother-care-east-london-ltd-romford
+            - article [ref=e233]:
+              - generic [ref=e234]
+              - generic [ref=e242]: Homecare Agencies
+              - paragraph [ref=e243]: "Specialisms: Caring For Adults Over 65 Yrs, Caring For Adults Under 65 Yrs, Learning Disabilities"
+              - generic [ref=e244]
+              - link "View provider details" [ref=e248] [cursor=pointer]:
+                - /url: /provider/precious-homes-east-london-london
+            - article [ref=e249]:
+              - generic [ref=e250]
+              - generic [ref=e258]: Homecare Agencies
+              - paragraph [ref=e259]: "Specialisms: Caring For Adults Over 65 Yrs, Caring For Adults Under 65 Yrs, Caring For Children"
+              - generic [ref=e260]
+              - link "View provider details" [ref=e264] [cursor=pointer]:
+                - /url: /provider/soma-healthcare-east-london-london
+            - article [ref=e265]:
+              - generic [ref=e266]
+              - generic [ref=e274]: Homecare Agencies
+              - paragraph [ref=e275]: "Specialisms: Caring For Adults Over 65 Yrs, Caring For Adults Under 65 Yrs, Dementia"
+              - generic [ref=e276]
+              - link "View provider details" [ref=e280] [cursor=pointer]:
+                - /url: /provider/south-east-london-london
+            - article [ref=e281]:
+              - generic [ref=e282]
+              - generic [ref=e290]: Homecare Agencies
+              - paragraph [ref=e291]: "Specialisms: Caring For Adults Over 65 Yrs, Caring For Adults Under 65 Yrs, Dementia"
+              - generic [ref=e292]
+              - link "View provider details" [ref=e296] [cursor=pointer]:
+                - /url: /provider/south-east-london-care-limited-london
+            - article [ref=e297]:
+              - generic [ref=e298]
+              - generic [ref=e306]: Homecare Agencies
+              - paragraph [ref=e307]: "Specialisms: Caring For Adults Over 65 Yrs, Caring For Adults Under 65 Yrs, Dementia"
+              - generic [ref=e308]
+              - link "View provider details" [ref=e312] [cursor=pointer]:
+                - /url: /provider/sylvian-care-south-east-london-london
+            - article [ref=e313]:
+              - generic [ref=e314]
+              - generic [ref=e322]: Homecare Agencies
+              - paragraph [ref=e323]: "Specialisms: Caring For Adults Over 65 Yrs, Caring For Adults Under 65 Yrs, Dementia"
+              - generic [ref=e324]
+              - link "View provider details" [ref=e328] [cursor=pointer]:
+                - /url: /provider/visiting-angels-east-london-romford
+            - article [ref=e329]:
+              - generic [ref=e330]
+              - generic [ref=e338]: Homecare Agencies
+              - paragraph [ref=e339]: "Specialisms: Caring For Adults Over 65 Yrs, Caring For Adults Under 65 Yrs, Dementia"
+              - generic [ref=e340]
+              - link "View provider details" [ref=e344] [cursor=pointer]:
+                - /url: /provider/westminster-homecare-limited-north-east-london-woodford-green
+            - article [ref=e345]:
+              - generic [ref=e346]
+              - generic [ref=e354]: Homecare Agencies
+              - paragraph [ref=e355]: "Specialisms: Caring For Adults Over 65 Yrs, Caring For Adults Under 65 Yrs, Dementia"
+              - generic [ref=e356]
+              - link "View provider details" [ref=e360] [cursor=pointer]:
+                - /url: /provider/whitmore-care-uk-east-london-london
+        - complementary [ref=e361]:
+          - generic [ref=e362]:
+            - paragraph [ref=e363]: Monetisation
+            - heading "Get a filtered lead pack" [level=2] [ref=e364]
+            - paragraph [ref=e365]: Capture the exact segment a buyer wants, issue a temporary export token, and fulfil the list manually while demand is still being validated.
+            - link "Get a lead list" [ref=e366] [cursor=pointer]:
+              - /url: /lead-list?service_type=Homecare+Agencies
+          - generic [ref=e367]:
+            - paragraph [ref=e368]: Checkout
+            - heading "Buy the full dataset" [level=2] [ref=e369]
+            - paragraph [ref=e370]: For full-dataset or regional-pack buyers, send them straight to the configured Stripe Payment Link.
+            - link "Buy full dataset / regional pack" [ref=e371] [cursor=pointer]:
+              - /url: /lead-list
+  - contentinfo [ref=e372]:
+    - generic [ref=e373]:
+      - paragraph [ref=e374]: "Data source: Care Quality Commission (CQC). CareGist is not an official CQC service."
+      - paragraph [ref=e375]:
+        - text: If you have concerns about care quality, contact CQC directly at
+        - link "cqc.org.uk/contact-us" [ref=e376] [cursor=pointer]:
+          - /url: https://www.cqc.org.uk/contact-us
+        - text: or call 03000 616161.
+      - generic [ref=e377]:
+        - link "Privacy Policy" [ref=e378] [cursor=pointer]:
+          - /url: /privacy
+        - link "Terms of Service" [ref=e379] [cursor=pointer]:
+          - /url: /terms
+        - link "Acceptable Use" [ref=e380] [cursor=pointer]:
+          - /url: /acceptable-use
+        - link "Review Policy" [ref=e381] [cursor=pointer]:
+          - /url: /review-policy
+        - link "Cookies" [ref=e382] [cursor=pointer]:
+          - /url: /cookies
+        - link "Search" [ref=e383] [cursor=pointer]:
+          - /url: /search
+        - link "Find Care" [ref=e384] [cursor=pointer]:
+          - /url: /find-care
+        - link "Care Groups" [ref=e385] [cursor=pointer]:
+          - /url: /groups
+        - link "Pricing" [ref=e386] [cursor=pointer]:
+          - /url: /pricing
+        - link "API" [ref=e387] [cursor=pointer]:
+          - /url: /api
+        - link "Why CareGist" [ref=e388] [cursor=pointer]:
+          - /url: /why-caregist
+        - link "Get a lead list" [ref=e389] [cursor=pointer]:
+          - /url: /lead-list
+        - link "Contact" [ref=e390] [cursor=pointer]:
+          - /url: mailto:hello@caregist.co.uk
+  - alert [ref=e391]

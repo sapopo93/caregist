@@ -1,17 +1,7 @@
 import CityRatingPage from "@/components/CityRatingPage";
-import { getTopCities } from "@/lib/api";
 import type { Metadata } from "next";
 
-export const revalidate = 86400; // ISR: regenerate daily
-
-export async function generateStaticParams() {
-  try {
-    const res = await getTopCities();
-    return (res.data || []).slice(0, 500).map((c: any) => ({ slug: c.slug }));
-  } catch {
-    return [];
-  }
-}
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
@@ -19,7 +9,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   return {
     title: `Outstanding Care Homes in ${city} — CQC Rated | CareGist`,
     description: `Find Outstanding-rated care homes in ${city}. CQC inspection data, ratings, and provider details.`,
-    alternates: { canonical: `https://caregist.co.uk/outstanding-care-homes/${slug}` },
+    alternates: { canonical: `https://www.caregist.co.uk/outstanding-care-homes/${slug}` },
   };
 }
 

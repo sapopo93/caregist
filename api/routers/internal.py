@@ -8,11 +8,13 @@ import json
 import logging
 import time
 from datetime import datetime, timezone
+from importlib import import_module
 from typing import Any
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Header
 from pydantic import BaseModel, Field
 
+from api.config import settings
 from api.database import get_connection
 from api.middleware.internal_auth import validate_internal_token
 from api.services.pipeline_health import get_pipeline_health
@@ -24,6 +26,11 @@ router = APIRouter(prefix="/internal", tags=["internal"])
 
 REMEDIATION_RATE_LIMIT = 10
 REMEDIATION_RATE_WINDOW_SECONDS = 60
+HERMES_ALLOWED_ACTIONS = {
+    "caregist:run_feed_cycle",
+    "caregist:resume_failed_enquiry_delivery",
+    "caregist:run_smoke_verification",
+}
 _remediation_request_times: list[float] = []
 _remediation_inflight_fingerprints: set[str] = set()
 _remediation_locks: dict[str, asyncio.Lock] = {}
@@ -49,6 +56,27 @@ def _canonical_remediation_payload(request: InternalRemediationRequest) -> str:
 
 def _remediation_fingerprint(request: InternalRemediationRequest) -> str:
     return hashlib.sha256(_canonical_remediation_payload(request).encode("utf-8")).hexdigest()
+
+
+def _internal_actor(auth: dict | None) -> dict[str, str]:
+    actor_name = (auth or {}).get("actor") or "support-platform"
+    return {"type": "internal", "name": str(actor_name)}
+
+
+def _is_hermes_actor(auth: dict | None) -> bool:
+    return _internal_actor(auth)["name"] == "hermes"
+
+
+def _require_idempotency_key(value: str | None) -> str:
+    key = value.strip() if isinstance(value, str) else ""
+    if not key:
+        raise HTTPException(status_code=400, detail="X-Idempotency-Key is required for internal mutations.")
+    return key
+
+
+def _enforce_actor_action_allowlist(auth: dict | None, action: str) -> None:
+    if _is_hermes_actor(auth) and action not in HERMES_ALLOWED_ACTIONS:
+        raise HTTPException(status_code=403, detail="Hermes is not allowed to queue this internal action.")
 
 
 def _check_remediation_rate_limit(now: float | None = None) -> None:
@@ -209,8 +237,8 @@ async def _revalidate_report_schema(_: dict[str, Any]) -> dict[str, Any]:
             "name",
             "slug",
             "overall_rating",
-            "quality_score",
-            "quality_tier",
+            "data_completeness_score",
+            "data_completeness_tier",
             "profile_tier",
             "profile_completeness",
         }
@@ -312,6 +340,59 @@ async def _recompute_profile_completeness(_: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+async def _run_feed_cycle(payload: dict[str, Any]) -> dict[str, Any]:
+    # Import lazily so normal API startup does not depend on operational tooling.
+    feed_cycle = import_module("tools.run_new_registration_feed_cycle")
+
+    skip_digests = bool(payload.get("skipDigests", False))
+    result = await feed_cycle.run_cycle(settings.database_url, skip_digests=skip_digests)
+    return {
+        "action": "caregist:run_feed_cycle",
+        "skipDigests": skip_digests,
+        **result,
+    }
+
+
+async def _run_smoke_verification(_: dict[str, Any]) -> dict[str, Any]:
+    async with get_connection() as conn:
+        await conn.fetchrow("SELECT 1")
+        snapshot = await get_pipeline_health(conn)
+        counts = await conn.fetchrow(
+            """
+            SELECT
+              (SELECT COUNT(*) FROM care_providers WHERE UPPER(status) = 'ACTIVE') AS active_providers,
+              (SELECT COUNT(*) FROM pending_emails WHERE status = 'pending') AS pending_emails
+            """
+        )
+
+    checks = snapshot.get("checks", []) if isinstance(snapshot, dict) else []
+    if isinstance(checks, list):
+        failures = [
+            str(check.get("name"))
+            for check in checks
+            if isinstance(check, dict)
+            and check.get("name")
+            and check.get("ok") is False
+        ]
+    elif isinstance(checks, dict):
+        # Retain compatibility with snapshots produced before checks became
+        # structured objects.
+        failures = [name for name, ok in checks.items() if isinstance(ok, bool) and not ok]
+    else:
+        failures = ["pipeline_health_contract"]
+    readiness_ok = bool(snapshot.get("readiness_ok")) if isinstance(snapshot, dict) else False
+    return {
+        "action": "caregist:run_smoke_verification",
+        "ok": readiness_ok and not failures,
+        "pipelineStatus": snapshot.get("status") if isinstance(snapshot, dict) else "unknown",
+        "readinessOk": readiness_ok,
+        "failedChecks": failures,
+        "activeProviders": int(counts["active_providers"] or 0) if counts else 0,
+        "pendingEmails": int(counts["pending_emails"] or 0) if counts else 0,
+        "verifiedAt": datetime.now(timezone.utc).isoformat(),
+    }
+
+
 ACTION_HANDLERS = {
     "caregist:refresh_profile_projection": _refresh_profile_projection,
     "caregist:retry_profile_update_ingestion": _retry_profile_update_ingestion,
@@ -321,10 +402,18 @@ ACTION_HANDLERS = {
     "caregist:retry_claim_verification": _retry_claim_verification,
     "caregist:resume_failed_enquiry_delivery": _resume_failed_enquiry_delivery,
     "caregist:recompute_profile_completeness": _recompute_profile_completeness,
+    "caregist:run_feed_cycle": _run_feed_cycle,
+    "caregist:run_smoke_verification": _run_smoke_verification,
 }
 
 
-async def _run_internal_task(task_id: str, action: str, payload: dict[str, Any], fingerprint: str | None = None) -> None:
+async def _run_internal_task(
+    task_id: str,
+    action: str,
+    payload: dict[str, Any],
+    fingerprint: str | None = None,
+    actor: dict[str, str] | None = None,
+) -> None:
     try:
         async with get_connection() as conn:
             await conn.execute(
@@ -339,10 +428,11 @@ async def _run_internal_task(task_id: str, action: str, payload: dict[str, Any],
         await asyncio.sleep(0)
         result = await handler(payload)
         await _complete_task(task_id, result)
+        audit_actor = actor or {"type": "internal", "name": "support-platform"}
         await write_audit_log(
             action="internal.remediation.execute",
             outcome="success",
-            actor={"type": "internal", "name": "support-platform"},
+            actor=audit_actor,
             target_type="internal_task",
             target_id=task_id,
             metadata={"remediation_action": action},
@@ -350,10 +440,11 @@ async def _run_internal_task(task_id: str, action: str, payload: dict[str, Any],
     except Exception as exc:
         logger.exception("Internal remediation task failed: %s", exc)
         await _fail_task(task_id, str(exc))
+        audit_actor = actor or {"type": "internal", "name": "support-platform"}
         await write_audit_log(
             action="internal.remediation.execute",
             outcome="failure",
-            actor={"type": "internal", "name": "support-platform"},
+            actor=audit_actor,
             target_type="internal_task",
             target_id=task_id,
             metadata={"remediation_action": action},
@@ -452,40 +543,24 @@ async def internal_remediate(
     x_idempotency_key: str | None = Header(default=None, alias="X-Idempotency-Key"),
     _auth=Depends(validate_internal_token),
 ) -> dict[str, str]:
+    idempotency_key = _require_idempotency_key(x_idempotency_key)
+    _enforce_actor_action_allowlist(_auth, request.action)
+    actor = _internal_actor(_auth)
     _check_remediation_rate_limit()
     fingerprint = _remediation_fingerprint(request)
     lock = _remediation_locks.setdefault(fingerprint, asyncio.Lock())
     async with lock:
         async with get_connection() as conn:
-            if x_idempotency_key:
-                existing = await conn.fetchrow(
-                    """
-                    SELECT id, status
-                    FROM internal_tasks
-                    WHERE idempotency_key = $1
-                    """,
-                    x_idempotency_key,
-                )
-                if existing:
-                    return {"taskId": str(existing["id"]), "status": existing["status"]}
-            else:
-                existing = await conn.fetchrow(
-                    """
-                    SELECT id, status
-                    FROM internal_tasks
-                    WHERE action = $1
-                      AND tenant_id = $2
-                      AND payload = $3::jsonb
-                      AND status IN ('pending', 'running')
-                    ORDER BY created_at DESC
-                    LIMIT 1
-                    """,
-                    request.action,
-                    request.tenantId,
-                    json.dumps(request.payload),
-                )
-                if existing:
-                    return {"taskId": str(existing["id"]), "status": existing["status"]}
+            existing = await conn.fetchrow(
+                """
+                SELECT id, status
+                FROM internal_tasks
+                WHERE idempotency_key = $1
+                """,
+                idempotency_key,
+            )
+            if existing:
+                return {"taskId": str(existing["id"]), "status": existing["status"]}
 
             row = await conn.fetchrow(
                 """
@@ -496,12 +571,12 @@ async def internal_remediate(
                 request.action,
                 request.tenantId,
                 json.dumps(request.payload),
-                x_idempotency_key,
+                idempotency_key,
             )
             await write_audit_log(
                 action="internal.remediation.queue",
                 outcome="success",
-                actor={"type": "internal", "name": "support-platform"},
+                actor=actor,
                 target_type="internal_task",
                 target_id=row["id"],
                 metadata={
@@ -513,7 +588,7 @@ async def internal_remediate(
             )
     task_id = str(row["id"])
     _remediation_inflight_fingerprints.add(fingerprint)
-    background_tasks.add_task(_run_internal_task, task_id, request.action, request.payload, fingerprint)
+    background_tasks.add_task(_run_internal_task, task_id, request.action, request.payload, fingerprint, actor)
     return {"taskId": task_id, "status": "pending"}
 
 

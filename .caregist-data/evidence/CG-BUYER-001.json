@@ -1,0 +1,33 @@
+{
+  "status": "pass",
+  "summary": "Buyer/customer flow is implemented with Stripe billing and explicit pricing plans. The pricing page (frontend/app/pricing/page.tsx) offers data plans and provider plans. Stripe integration handles payments. The pricing tests (frontend/lib/pricing-provider-cta.test.ts, frontend/lib/pricing-plan-path.test.ts) verify pricing page integrity. The revenue path contracts test (frontend/lib/revenue-path-contracts.test.ts) validates commercial flows. The README mandates that checkout and billing capabilities are governance-controlled with explicit approval gates. Live site has /pricing route and Stripe Payment Link integration.",
+  "assertions": [
+    "Pricing page with data plans and provider plans, tested via pricing-provider-cta.test.ts",
+    "Stripe integration for payment processing",
+    "Revenue path contracts tested (revenue-path-contracts.test.ts)",
+    "README: checkout, billing are governance-controlled with explicit approval requirements",
+    "Live site at /pricing shows plan tiers; Stripe connect-src in CSP header"
+  ],
+  "artifacts": [
+    {
+      "kind": "source",
+      "path": "frontend/app/pricing/page.tsx"
+    },
+    {
+      "kind": "test",
+      "path": "frontend/lib/pricing-provider-cta.test.ts"
+    },
+    {
+      "kind": "test",
+      "path": "frontend/lib/pricing-plan-path.test.ts"
+    },
+    {
+      "kind": "test",
+      "path": "frontend/lib/revenue-path-contracts.test.ts"
+    },
+    {
+      "kind": "doc",
+      "path": "pricing_unit_economics.md"
+    }
+  ]
+}

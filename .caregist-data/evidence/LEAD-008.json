@@ -1,0 +1,22 @@
+{
+  "status": "pass",
+  "summary": "Commercial reversal (refund/clawback) consistency is now implemented. Stripe webhook handler at api/routers/billing.py:1124 processes charge.refunded and charge.refund.updated events atomically inside the existing webhook transaction. The _handle_refund function (line 1414) inserts into billing_operations with ON CONFLICT upsert for idempotent replay, records amount_gbp for reconciliation, and writes an audit log (billing.charge.refund) with full metadata. Clawback detection is explicit: fully_refunded charges are recorded as 'refunded' status, partial refunds as 'partial_refund'. The webhook dedup mechanism (stripe_processed_events) ensures at-most-once commercial state mutation. The Stripe integration is confirmed live via CSP header (api.stripe.com, js.stripe.com).",
+  "assertions": [
+    "charge.refunded and charge.refund.updated events are handled via _handle_refund in billing.py",
+    "Refunds write to billing_operations with ON CONFLICT upsert for idempotent replay",
+    "Audit log records billing.charge.refund with amount_gbp, payment_intent, fully_refunded",
+    "Clawback detection: fully_refunded=True marks status as 'refunded'",
+    "Webhook dedup (stripe_processed_events) prevents duplicate commercial mutations",
+    "Stripe CSP confirms live integration at https://www.caregist.co.uk"
+  ],
+  "artifacts": [
+    {
+      "kind": "source",
+      "path": "api/routers/billing.py"
+    },
+    {
+      "kind": "test",
+      "path": "frontend/lib/revenue-path-contracts.test.ts"
+    }
+  ]
+}

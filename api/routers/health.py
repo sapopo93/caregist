@@ -10,6 +10,8 @@ from fastapi.responses import JSONResponse
 from api.database import get_connection
 from api.metrics import render_latest, set_pending_emails
 from api.middleware.internal_auth import validate_internal_token
+from api.release import release_metadata
+from api.middleware.rate_limit import redis_health
 from api.services.pipeline_health import get_pipeline_health
 
 logger = logging.getLogger("caregist.health")
@@ -18,7 +20,7 @@ router = APIRouter(tags=["health"])
 
 @router.get("/metrics")
 async def metrics(_auth: dict = Depends(validate_internal_token)) -> Response:
-    """Prometheus metrics endpoint.
+    """Prometheus metrics endpoint (F-47).
 
     Refreshes the pending-email gauges from the DB, then renders all collectors.
     A DB hiccup must not break scraping, so gauge refresh failures are swallowed.
@@ -39,8 +41,24 @@ async def metrics(_auth: dict = Depends(validate_internal_token)) -> Response:
 
 @router.get("/api/v1/health/liveness")
 async def liveness_check() -> JSONResponse:
-    """Liveness probe that does not touch external dependencies."""
-    return JSONResponse(status_code=200, content={"status": "alive"})
+    """Liveness probe — always 200 while the process can serve requests.
+
+    No external dependencies are touched, so an orchestrator won't kill the pod
+    just because the DB or Redis is briefly unavailable (that's readiness, F-25).
+    """
+    return JSONResponse(
+        status_code=200,
+        content={"status": "alive", "release": release_metadata()},
+    )
+
+
+@router.get("/api/v1/version")
+async def version_check() -> JSONResponse:
+    """Publish the immutable release identity used by deployment smoke tests."""
+    return JSONResponse(
+        status_code=200,
+        content={"application": "caregist-api", "version": "1.0.0", "release": release_metadata()},
+    )
 
 
 @router.get("/api/v1/health")
@@ -49,6 +67,7 @@ async def health_check() -> JSONResponse:
     try:
         async with get_connection() as conn:
             snapshot = await get_pipeline_health(conn)
+        snapshot["release"] = release_metadata()
         return JSONResponse(
             status_code=200,
             content=snapshot,
@@ -65,12 +84,16 @@ async def health_check() -> JSONResponse:
 
 @router.get("/api/v1/health/readiness")
 async def readiness_check() -> JSONResponse:
-    """Readiness check for traffic and automation dependencies."""
+    """Readiness check for traffic and automation dependencies (DB + Redis, F-25)."""
     try:
         async with get_connection() as conn:
             snapshot = await get_pipeline_health(conn)
-        status_code = 200 if snapshot["readiness_ok"] else 503
-        return JSONResponse(status_code=status_code, content=snapshot)
+        redis = await redis_health()
+        snapshot["redis"] = redis
+        snapshot["release"] = release_metadata()
+        ready = bool(snapshot["readiness_ok"]) and redis["ok"]
+        snapshot["readiness_ok"] = ready
+        return JSONResponse(status_code=200 if ready else 503, content=snapshot)
     except Exception as exc:
         logger.error("Readiness check failed: %s", exc)
         return JSONResponse(status_code=503, content={"status": "unhealthy"})
@@ -78,17 +101,24 @@ async def readiness_check() -> JSONResponse:
 
 @router.get("/api/v1/health/freshness")
 async def freshness_check() -> JSONResponse:
-    """Freshness check focused on the new-registration wedge SLA."""
+    """Publish CQC source watermark and derived-feed freshness."""
     try:
         async with get_connection() as conn:
             snapshot = await get_pipeline_health(conn)
-        status_code = 200 if snapshot["feed_fresh"] else 503
+        freshness_ok = snapshot.get("freshness_ok", snapshot["feed_fresh"])
+        status_code = 200 if freshness_ok else 503
         return JSONResponse(
             status_code=status_code,
             content={
-                "status": "healthy" if snapshot["feed_fresh"] else "stale",
+                "status": "healthy" if freshness_ok else "stale",
+                "freshness_ok": freshness_ok,
+                "source_fresh": snapshot.get("source_fresh", False),
                 "feed_fresh": snapshot["feed_fresh"],
+                "source": snapshot.get("source"),
+                "units": snapshot.get("units"),
+                "generated_at": snapshot.get("generated_at"),
                 "checks": snapshot["checks"],
+                "release": release_metadata(),
             },
         )
     except Exception as exc:

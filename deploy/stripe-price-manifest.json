@@ -1,0 +1,151 @@
+{
+  "schema_version": 2,
+  "catalog_version": "2026-08",
+  "currency": "gbp",
+  "checkout_enabled": false,
+  "products": {
+    "radar-regional": {
+      "environment_product": "STRIPE_PRODUCT_RADAR_REGIONAL",
+      "environment_price": "STRIPE_PRICE_RADAR_REGIONAL",
+      "unit_amount": 29900,
+      "interval": "month",
+      "lookup_key": "radar_regional_gbp_monthly_v1",
+      "sale_channel": "self-serve-gated",
+      "stripe": {
+        "test": {
+          "product_id": "prod_V2WsV3wis15Jwl",
+          "price_id": "price_1U2Rol4mijLHzRRk9aku2utp"
+        },
+        "live": {
+          "product_id": "prod_V2WyLyVAIOkj3v",
+          "price_id": "price_1U2Ruk4mijLHzRRk8zoP3Sk3"
+        }
+      }
+    },
+    "radar-national": {
+      "environment_product": "STRIPE_PRODUCT_RADAR_NATIONAL",
+      "environment_price": "STRIPE_PRICE_RADAR_NATIONAL",
+      "unit_amount": 79900,
+      "interval": "month",
+      "lookup_key": "radar_national_gbp_monthly_v1",
+      "sale_channel": "self-serve-gated",
+      "stripe": {
+        "test": {
+          "product_id": "prod_V2WtFqQyMHHTeL",
+          "price_id": "price_1U2RpS4mijLHzRRkyKjdbowD"
+        },
+        "live": {
+          "product_id": "prod_V2WzvW9HP6GNqn",
+          "price_id": "price_1U2Rv74mijLHzRRk89djyvzJ"
+        }
+      }
+    },
+    "intelligence-feed": {
+      "environment_product": "STRIPE_PRODUCT_INTELLIGENCE_FEED",
+      "environment_price": "STRIPE_PRICE_INTELLIGENCE_FEED",
+      "unit_amount": 600000,
+      "interval": "year",
+      "lookup_key": "intelligence_feed_pilot_gbp_yearly_v1",
+      "sale_channel": "sales-assisted-private",
+      "stripe": {
+        "test": {
+          "product_id": "prod_V2Wt2FzFFo7TSC",
+          "price_id": "price_1U2Rpz4mijLHzRRkxB5qkYxj"
+        },
+        "live": {
+          "product_id": "prod_V2X0AQSpU9mMoT",
+          "price_id": "price_1U2RwH4mijLHzRRkKD6tqmJb"
+        }
+      }
+    },
+    "embedded-enterprise": {
+      "environment_product": "STRIPE_PRODUCT_EMBEDDED_ENTERPRISE",
+      "environment_price": null,
+      "unit_amount": null,
+      "interval": null,
+      "lookup_key": null,
+      "sale_channel": "quote-invoice-only",
+      "stripe": {
+        "test": {
+          "product_id": "prod_V2Wu413jJUJ8Rs",
+          "price_id": null,
+          "archived_price_ids": [
+            "price_1U2Rqc4mijLHzRRkMuXCzw77"
+          ]
+        },
+        "live": {
+          "product_id": "prod_V2X00UjsuvNWzO",
+          "price_id": null,
+          "archived_price_ids": [
+            "price_1U2Rwh4mijLHzRRkDupuBrvX"
+          ]
+        }
+      }
+    }
+  },
+  "legacy_live_catalogue": [
+    {
+      "name": "CareGist Full Dataset",
+      "product_id": "prod_UhOqZxiHUzhmiK",
+      "price_id": "price_1Ti02Q4mijLHzRRknbzodrKL",
+      "active_subscriptions": null,
+      "status": "archived"
+    },
+    {
+      "name": "CQC Premium Compliance Suite",
+      "product_id": "prod_UO6TIqiL02a2ua",
+      "price_id": "price_1TPKGA4mijLHzRRkunCpzWiU",
+      "active_subscriptions": null,
+      "status": "archived"
+    },
+    {
+      "name": "CareGist Extra Seat",
+      "product_id": "prod_UNknbKd1ScRZv0",
+      "price_id": "price_1TOzIM4mijLHzRRkfT8ZZox4",
+      "active_subscriptions": 0,
+      "status": "archived"
+    },
+    {
+      "name": "CareGist Sponsored Listing",
+      "product_id": "prod_UN9BT3oQn8d8pp",
+      "price_id": "price_1TOOta4mijLHzRRkj1hKfoX9",
+      "active_subscriptions": 0,
+      "status": "archived"
+    },
+    {
+      "name": "CareGist Provider Pro Listing",
+      "product_id": "prod_UN99zTLeL11tMN",
+      "price_id": "price_1TOOr44mijLHzRRkAme7hUeF",
+      "active_subscriptions": 0,
+      "status": "archived"
+    },
+    {
+      "name": "CareGist Data Business",
+      "product_id": "prod_UN94yCf0GfZ0cF",
+      "price_id": "price_1TOOmU4mijLHzRRktUfmJkCF",
+      "active_subscriptions": 0,
+      "status": "archived"
+    },
+    {
+      "name": "CareGist Data Pro",
+      "product_id": "prod_UN91DV71QmMgnV",
+      "price_id": "price_1TOOjL4mijLHzRRkujdV9W7t",
+      "active_subscriptions": 0,
+      "status": "archived"
+    },
+    {
+      "name": "CareGist Data Starter",
+      "product_id": "prod_UN8yNMt0evJz86",
+      "price_id": "price_1TOOgl4mijLHzRRkUADmx9zh",
+      "active_subscriptions": 0,
+      "status": "archived"
+    },
+    {
+      "name": "CareGist Alerts Pro",
+      "product_id": "prod_UN8vnmJxbBS40i",
+      "price_id": "price_1TOOdq4mijLHzRRkY5qTbR9s",
+      "active_subscriptions": 0,
+      "status": "archived"
+    }
+  ]
+}

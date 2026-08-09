@@ -1,12 +1,20 @@
 """Shared test fixtures for API tests."""
 
-import asyncio
 import os
 from unittest.mock import AsyncMock, MagicMock, patch
 
-# Set required env vars before any api.* imports so pydantic Settings() can initialise.
-os.environ.setdefault("API_MASTER_KEY", "test-master-key-for-pytest")
-os.environ.setdefault("SUPPORT_INTERNAL_TOKEN", "test-internal-token-for-pytest")
+# Force hermetic, non-production settings before any api.* imports. Explicit
+# assignment is intentional: developer shells and the local .env may contain
+# production values, which must never leak into test collection or DB access.
+os.environ.update(
+    {
+        "DATABASE_URL": "postgresql://caregist:caregist_dev@localhost:5432/caregist",
+        "APP_URL": "http://localhost:3000",
+        "CORS_ORIGINS": "http://localhost:3000",
+        "API_MASTER_KEY": "test-master-key-for-pytest",
+        "SUPPORT_INTERNAL_TOKEN": "test-internal-token-for-pytest",
+    }
+)
 
 import pytest
 

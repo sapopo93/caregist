@@ -32,11 +32,20 @@ def test_free_plan_launch_limits_match_public_pricing():
     assert config["rate"] == 2
     assert config["daily"] == 20
     assert config["rolling_7d"] == 60
-    assert config["export"] == 25
+    assert config["export"] == 0
     assert config["monitors"] == 1
     assert config["feed_rows"] == 10
     assert config["saved_filters"] == 0
     assert config["feed_digests"] == 0
+
+
+def test_alerts_pro_is_alerting_only_not_bulk_export():
+    config = get_tier_config("alerts-pro")
+
+    assert config["monitors"] == 50
+    assert config["export"] == 0
+    assert config["feed_rows"] == 0
+    assert config["feed_api"] is False
 
 
 def test_pro_and_business_seat_entitlements_are_persistable():
@@ -62,3 +71,18 @@ def test_feed_limits_scale_by_plan():
     assert pro["feed_rows"] == 50
     assert pro["saved_filters"] == 20
     assert business["webhooks"] is True
+
+
+def test_commercial_base_prices_match_the_public_monthly_ladder():
+    expected_gbp = {
+        "free": 0,
+        "alerts-pro": 49,
+        "starter": 99,
+        "pro": 199,
+        "business": 499,
+    }
+
+    assert {
+        tier: get_tier_config(tier)["base_price_gbp"]
+        for tier in expected_gbp
+    } == expected_gbp

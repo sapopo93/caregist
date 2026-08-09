@@ -1,0 +1,1 @@
+- generic [ref=e2]: "{\"status\":\"degraded\",\"checkedAt\":\"2026-06-29T14:20:37.103Z\",\"capabilities\":{\"operatingMode\":\"fallback\",\"readMode\":\"full-dataset-fallback\",\"writeMode\":\"stateless-token\",\"notificationMode\":\"log-only\",\"fallbackDatasetAvailable\":true,\"databaseAvailable\":false,\"databaseReason\":\"not_configured\"}}"

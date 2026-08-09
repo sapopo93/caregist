@@ -108,14 +108,14 @@ Complete all checks before touching any key.
 
 ## Price ID Safety Check (2 min)
 
-After any rotation, confirm the `STRIPE_PRICE_*` env vars still reference **live** price IDs (format: `price_...`), not test IDs (format: `price_test_...`). Rotations sometimes surface staging config that has leaked into production.
+After any rotation, confirm the required `STRIPE_PRICE_*` variables are present and distinct. Stripe Price IDs use the `price_...` prefix in both test and live mode, so the identifier format cannot prove which mode owns a Price. Confirm mode in the Stripe Dashboard (or with an explicitly approved online check) before production use.
 
-On EC2, run:
+On EC2, run the secret-safe offline verifier. It reports status only and never prints configured values:
 ```bash
-grep 'STRIPE_PRICE_' /home/caregist/CareGist/.env
+python3 tools/verify_stripe_release.py --mode live --env-file /home/caregist/CareGist/.env
 ```
 
-Verify the following vars are all present and start with `price_` (not `price_test_`):
+Verify the following sold-plan variables are all present, distinct, and start with `price_`:
 
 | Variable | Expected format |
 |---|---|
@@ -125,10 +125,11 @@ Verify the following vars are all present and start with `price_` (not `price_te
 | `STRIPE_PRICE_PRO_SEAT` | `price_...` |
 | `STRIPE_PRICE_BUSINESS` | `price_...` |
 | `STRIPE_PRICE_PROFILE_ENHANCED` | `price_...` |
-| `STRIPE_PRICE_PROFILE_PREMIUM` | `price_...` |
 | `STRIPE_PRICE_PROFILE_SPONSORED` | `price_...` |
 
-If any value starts with `price_test_`, stop. Replace it with the correct live price ID from the Stripe Dashboard → Products.
+`STRIPE_PRICE_PROFILE_PREMIUM` is currently not part of the public sold-plan manifest. If it is enabled again, add it to `deploy/stripe-price-manifest.json`, the verifier, and the public pricing contract in the same reviewed change.
+
+The offline verifier cannot confirm Price ownership, activity, currency, amount, recurrence, or tax behaviour. Confirm those fields against `deploy/stripe-price-manifest.json` in live-mode Stripe before release.
 
 ---
 

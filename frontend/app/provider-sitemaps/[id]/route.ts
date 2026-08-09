@@ -1,35 +1,44 @@
 import { NextResponse } from "next/server";
 
 import { getProviderHref } from "@/lib/provider-path";
-import { getPublicApiBase } from "@/lib/server-api-config";
+import { getServerApiBase } from "@/lib/server-api-config";
+import { getSiteUrl } from "@/lib/site";
 
-const BASE = "https://caregist.co.uk";
-const PAGE_SIZE = 50000;
+const PAGE_SIZE = 5000;
 
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
+  const base = getSiteUrl();
   const page = Number(id);
-  if (!Number.isFinite(page) || page < 0) {
+  if (!Number.isSafeInteger(page) || page < 0) {
     return new NextResponse("Invalid sitemap page", { status: 400 });
   }
 
-  const apiBase = getPublicApiBase();
-  const res = await fetch(`${apiBase}/api/v1/sitemaps/providers?offset=${page * PAGE_SIZE}&limit=${PAGE_SIZE}`, {
-    next: { revalidate: 86400 },
-  });
+  let res: Response;
+  try {
+    const apiBase = getServerApiBase();
+    res = await fetch(`${apiBase}/api/v1/sitemaps/providers?offset=${page * PAGE_SIZE}&limit=${PAGE_SIZE}`, {
+      next: { revalidate: 86400 },
+    });
+  } catch {
+    return new NextResponse("Provider sitemap unavailable", { status: 503 });
+  }
 
   if (!res.ok) {
     return new NextResponse("Provider sitemap unavailable", { status: 503 });
   }
 
   const payload = await res.json();
+  if (!Array.isArray(payload.data) || payload.data.length === 0) {
+    return new NextResponse("Provider sitemap page not found", { status: 404 });
+  }
   const urls = (payload.data || [])
     .map((row: { id?: string | null; slug?: string | null; updated_at?: string | null }) => `
       <url>
-        <loc>${BASE}${getProviderHref(row)}</loc>
+        <loc>${base}${getProviderHref(row)}</loc>
         ${row.updated_at ? `<lastmod>${row.updated_at}</lastmod>` : ""}
         <changefreq>daily</changefreq>
         <priority>0.6</priority>

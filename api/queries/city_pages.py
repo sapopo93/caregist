@@ -1,14 +1,22 @@
 """SQL queries for city/SEO page endpoints."""
 
 PROVIDERS_BY_CITY = """
-SELECT id, name, slug, type, overall_rating, quality_score, quality_tier,
+SELECT id, name, slug, type, overall_rating, data_completeness_score, data_completeness_tier,
        postcode, town, service_types, phone, is_claimed, last_inspection_date,
        address_line1
 FROM care_providers
 WHERE LOWER(REPLACE(town, ' ', '-')) = $1
   AND ($2::text IS NULL OR overall_rating = $2)
   AND ($3::text IS NULL OR type = $3)
-ORDER BY quality_score DESC NULLS LAST
+ORDER BY CASE overall_rating
+           WHEN 'Outstanding' THEN 1
+           WHEN 'Good' THEN 2
+           WHEN 'Requires Improvement' THEN 3
+           WHEN 'Inadequate' THEN 4
+           ELSE 5
+         END ASC,
+         last_inspection_date DESC NULLS LAST,
+         name ASC
 LIMIT $4 OFFSET $5
 """
 

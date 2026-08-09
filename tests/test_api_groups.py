@@ -42,7 +42,7 @@ async def test_public_groups_list_works_without_api_key(patched_groups_db):
             "ri_count": 19,
             "inadequate_count": 0,
             "not_inspected_count": 49,
-            "avg_quality_score": 98.7,
+            "avg_data_completeness_score": 98.7,
             "pct_good_or_outstanding": 91.7,
             "total_beds": 1900,
             "regions": ["London"],
@@ -89,14 +89,14 @@ async def test_public_group_detail_works_without_api_key_and_excludes_unnamed_gr
             "ri_count": 19,
             "inadequate_count": 0,
             "not_inspected_count": 49,
-            "avg_quality_score": 98.7,
+            "avg_data_completeness_score": 98.7,
             "pct_good_or_outstanding": 91.7,
             "total_beds": 1900,
             "regions": ["London"],
             "provider_types": ["Social Care Org"],
             "latest_inspection": "2024-01-24",
         },
-        {"avg_quality_score": 82.1, "pct_good_or_outstanding": 74.2},
+        {"avg_data_completeness_score": 82.1, "pct_good_or_outstanding": 74.2},
     ]
     conn.fetch.return_value = []
     remaining = {

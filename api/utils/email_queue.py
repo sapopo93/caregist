@@ -16,6 +16,7 @@ EMAIL_PROCESSING_STALE_SECONDS = 900
 # Max concurrent Resend API calls per batch. Keeps us well under Resend's
 # default 10 rps rate limit even on large batches.
 _SEND_CONCURRENCY = 5
+_RETRY_BACKOFF_SECONDS = (300, 900, 1800)
 
 
 async def _claim_pending_emails(conn, batch_size: int) -> list[dict[str, Any]]:
@@ -54,6 +55,11 @@ async def _claim_pending_emails(conn, batch_size: int) -> list[dict[str, Any]]:
 
 def _next_failure_status(attempts: int) -> str:
     return "failed" if attempts + 1 >= 3 else "pending"
+
+
+def _retry_delay_seconds(attempts: int) -> int:
+    idx = min(max(attempts, 0), len(_RETRY_BACKOFF_SECONDS) - 1)
+    return _RETRY_BACKOFF_SECONDS[idx]
 
 
 async def queue_email(
@@ -169,13 +175,50 @@ async def process_email_queue(batch_size: int = 20) -> int:
                         UPDATE pending_emails
                         SET attempts = attempts + 1,
                             status = $2,
-                            processing_started_at = NULL
+                            processing_started_at = NULL,
+                            send_after = NOW() + make_interval(secs => $3)
                         WHERE id = $1
                         """,
                         result["id"],
                         _next_failure_status(int(result["attempts"] or 0)),
+                        _retry_delay_seconds(int(result["attempts"] or 0)),
                     )
     except Exception as exc:
         logger.error("Email queue update phase failed: %s", exc)
 
     return sent
+
+
+async def get_dead_letter_emails(conn, *, older_than_hours: int = 24, limit: int = 100) -> list[dict[str, Any]]:
+    """Return permanently-failed emails older than the cutoff (F-44 dead-letter).
+
+    These have exhausted their retries and need human attention; nothing in the
+    normal queue path will ever retry them again.
+    """
+    rows = await conn.fetch(
+        """
+        SELECT id, to_email, subject, attempts, created_at
+        FROM pending_emails
+        WHERE status = 'failed'
+          AND created_at < NOW() - make_interval(hours => $1)
+        ORDER BY created_at ASC
+        LIMIT $2
+        """,
+        older_than_hours,
+        limit,
+    )
+    return [dict(row) for row in rows]
+
+
+async def count_dead_letter_emails(conn, *, older_than_hours: int = 24) -> int:
+    """Count permanently-failed emails older than the cutoff (F-44)."""
+    value = await conn.fetchval(
+        """
+        SELECT COUNT(*)
+        FROM pending_emails
+        WHERE status = 'failed'
+          AND created_at < NOW() - make_interval(hours => $1)
+        """,
+        older_than_hours,
+    )
+    return int(value or 0)

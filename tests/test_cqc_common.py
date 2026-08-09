@@ -1,6 +1,5 @@
 """Tests for cqc_common.py shared utilities."""
 
-import pytest
 
 from cqc_common import (
     ensure_list,

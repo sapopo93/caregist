@@ -1,0 +1,19 @@
+# Ruff configuration (F-52).
+# Conservative ruleset focused on real bugs, not style churn, so it can gate CI
+# without a large pre-existing-violation backlog.
+target-version = "py312"
+line-length = 140
+
+[lint]
+# F  = pyflakes (undefined names, unused imports, f-string mistakes)
+# E9 = syntax / IndentationError
+# B  = flake8-bugbear (likely bugs: mutable defaults, etc.)
+select = ["F", "E9", "B"]
+# B008 (function call in default arg) is the FastAPI Depends() idiom — expected.
+# B904 (raise ... from) is intentional exception translation in our routers;
+#   enabling it would be a large, churny retrofit with no behavioural benefit.
+ignore = ["B008", "B904"]
+
+[lint.per-file-ignores]
+# Tests intentionally use broad patterns and fixtures.
+"tests/**" = ["B011"]

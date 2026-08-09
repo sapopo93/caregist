@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "project": {
+    "initializedAt": "2026-06-30T11:49:16.322Z",
+    "merchantDisplayName": "H-Kay Limited",
+    "merchantId": "acct_1T1PuL4mijLHzRRk",
+    "projectId": "project_61UxO7YudkVQaqbBU16UAnri93E9zaXHtPQ6Dy7a4Q88",
+    "projectName": "CareGist"
+  },
+  "providers": {
+    "neon": {
+      "accountRequestId": "facctrq_61UxOCorNk0i0DyXa16UAnri93E9zaXHtPQ6Dy7a4XSi",
+      "configuration": {},
+      "linkedAt": "2026-06-30T12:00:05.906Z",
+      "providerId": "prvdr_61UH8uNXFdoJUJOtT54AC",
+      "providerName": "Neon",
+      "redirectUrl": null,
+      "requestedAt": "2026-06-30T11:54:44.902Z",
+      "status": "complete"
+    }
+  },
+  "resources": {
+    "neon-production-plan": {
+      "configuration": {},
+      "createdAt": "2026-06-30T12:02:56.445Z",
+      "lastRevealedAt": "2026-06-30T12:02:56.723Z",
+      "lastStatus": "complete",
+      "name": "neon-production-plan",
+      "providerId": "prvdr_61UH8uNXFdoJUJOtT54AC",
+      "providerName": "Neon",
+      "resourceId": "fres_61UxOKlhLEey1W9FX16UAnri93E9zaXHtPQ6Dy7a43MO",
+      "serviceId": "free"
+    },
+    "neon-staging-plan": {
+      "configuration": {},
+      "createdAt": "2026-06-30T12:00:14.642Z",
+      "lastRevealedAt": "2026-06-30T12:00:14.919Z",
+      "lastStatus": "complete",
+      "name": "neon-staging-plan",
+      "providerId": "prvdr_61UH8uNXFdoJUJOtT54AC",
+      "providerName": "Neon",
+      "resourceId": "fres_61UxOI2MsfJQhVIVm16UAnri93E9zaXHtPQ6Dy7a4LGq",
+      "serviceId": "free"
+    },
+    "production-db": {
+      "configuration": {},
+      "createdAt": "2026-06-30T12:03:00.139Z",
+      "lastRevealedAt": "2026-06-30T12:03:00.434Z",
+      "lastStatus": "complete",
+      "name": "production-db",
+      "providerId": "prvdr_61UH8uNXFdoJUJOtT54AC",
+      "providerName": "Neon",
+      "resourceId": "fres_61UxOKoN46oTrDVKC16UAnri93E9zaXHtPQ6Dy7a4Pea",
+      "serviceId": "postgres"
+    },
+    "staging-db": {
+      "configuration": {},
+      "createdAt": "2026-06-30T12:00:19.516Z",
+      "lastRevealedAt": "2026-06-30T12:00:19.789Z",
+      "lastStatus": "complete",
+      "name": "staging-db",
+      "providerId": "prvdr_61UH8uNXFdoJUJOtT54AC",
+      "providerName": "Neon",
+      "resourceId": "fres_61UxOIDsdQYD5wtFa16UAnri93E9zaXHtPQ6Dy7a4Qqm",
+      "serviceId": "postgres"
+    }
+  },
+  "activeEnvironment": "production"
+}

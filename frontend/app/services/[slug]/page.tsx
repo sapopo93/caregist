@@ -1,18 +1,17 @@
 import SearchBar from "@/components/SearchBar";
 import ProviderCard from "@/components/ProviderCard";
-import ExportCSVButton from "@/components/ExportCSVButton";
 import PrintButton from "@/components/PrintButton";
 import Link from "next/link";
 import { searchProviders } from "@/lib/api";
 import type { Metadata } from "next";
 
 const SERVICE_MAP: Record<string, string> = {
-  "care-homes": "Residential Homes",
-  "nursing-homes": "Nursing Homes",
-  "home-care": "Homecare Agencies",
-  "gp-surgeries": "Doctors/Gps",
-  "dental": "Dentist",
-  "supported-living": "Supported Living",
+  "care-homes": "residential-care-homes",
+  "nursing-homes": "nursing-care-homes",
+  "home-care": "home-care",
+  "gp-surgeries": "primary-medical-care",
+  "dental": "dental-services",
+  "supported-living": "supported-living",
 };
 
 const DISPLAY_NAMES: Record<string, string> = {
@@ -62,9 +61,10 @@ export default async function ServiceTypePage({
       <h1 className="text-3xl font-bold mb-2">{displayName} in England</h1>
 
       <div className="flex items-center justify-between mb-6">
-        <p className="text-dusk">{results.meta.total.toLocaleString()} providers (page {results.meta.page} of {results.meta.pages})</p>
+        <p className="text-dusk">
+          {error ? "Provider count unavailable" : `${results.meta.total.toLocaleString()} providers (page ${results.meta.page} of ${results.meta.pages})`}
+        </p>
         <div className="flex gap-3 items-center print:hidden">
-          <ExportCSVButton exportUrl={`/api/v1/providers/export.csv?service_type=${encodeURIComponent(serviceType)}`} />
           <PrintButton />
         </div>
       </div>

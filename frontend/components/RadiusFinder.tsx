@@ -239,7 +239,7 @@ export default function RadiusFinder() {
                   const rows = exportRows.map((r) =>
                     `"${r.name}","${r.town}","${r.postcode}","${Number(r.distance_miles).toFixed(2)}","${TYPE_LABELS[r.type] || r.type}","${r.overall_rating || ""}","${r.last_inspection_date || ""}"`
                   ).join("\n");
-                  const footer = total > exportRows.length ? `\n"Showing ${exportRows.length} of ${total} total results. Visit caregist.co.uk for the full dataset."` : "";
+                  const footer = total > exportRows.length ? `\n"Showing ${exportRows.length} of ${total} total results. Visit caregist.co.uk to search the directory."` : "";
                   const blob = new Blob([header + rows + footer], { type: "text/csv" });
                   const url = URL.createObjectURL(blob);
                   const a = document.createElement("a");

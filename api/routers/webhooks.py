@@ -2,12 +2,9 @@
 
 from __future__ import annotations
 
-import ipaddress
 import logging
 import json
 import secrets
-import socket
-from urllib.parse import urlparse
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field, HttpUrl
@@ -17,37 +14,10 @@ from api.database import get_connection
 from api.middleware.auth import validate_api_key
 from api.services.new_registration_feed import coerce_json_object
 from api.utils.crypto import encrypt_webhook_secret
+from api.utils.webhook_delivery import assert_public_webhook_url
 
 logger = logging.getLogger("caregist.webhooks")
 router = APIRouter(prefix="/webhooks", tags=["webhooks"])
-
-_PRIVATE_NETWORKS = [
-    ipaddress.ip_network("127.0.0.0/8"),
-    ipaddress.ip_network("10.0.0.0/8"),
-    ipaddress.ip_network("172.16.0.0/12"),
-    ipaddress.ip_network("192.168.0.0/16"),
-    ipaddress.ip_network("169.254.0.0/16"),
-    ipaddress.ip_network("::1/128"),
-    ipaddress.ip_network("fd00::/8"),
-]
-
-
-def _assert_public_url(url: str) -> None:
-    """Raise HTTPException if the webhook URL resolves to a private/reserved IP (SSRF guard)."""
-    hostname = urlparse(url).hostname
-    if not hostname:
-        raise HTTPException(status_code=400, detail="Invalid webhook URL.")
-    try:
-        results = socket.getaddrinfo(hostname, None)
-    except socket.gaierror:
-        raise HTTPException(status_code=400, detail="Webhook URL hostname could not be resolved.")
-    for _, _, _, _, sockaddr in results:
-        ip = ipaddress.ip_address(sockaddr[0])
-        if any(ip in net for net in _PRIVATE_NETWORKS):
-            raise HTTPException(
-                status_code=400,
-                detail="Webhook URL must be a public internet address.",
-            )
 
 _WEBHOOK_TIERS = {"business", "enterprise", "admin"}
 
@@ -85,7 +55,10 @@ async def register_webhook(
 
     user_id = _auth["user_id"]
     url = str(body.url)
-    _assert_public_url(url)
+    try:
+        assert_public_webhook_url(url)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     secret = secrets.token_hex(32)
     stored_secret = (
         encrypt_webhook_secret(secret, settings.webhook_secret_key)

@@ -1,0 +1,489 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e3]:
+      - link "CareGist" [ref=e4] [cursor=pointer]:
+        - /url: /
+        - img "CareGist" [ref=e5]
+      - generic [ref=e6]:
+        - navigation [ref=e7]:
+          - link "Products" [ref=e8] [cursor=pointer]:
+            - /url: /#products
+          - link "Who it's for" [ref=e9] [cursor=pointer]:
+            - /url: /#positioning
+          - link "About" [ref=e10] [cursor=pointer]:
+            - /url: /why-caregist
+          - link "Search" [ref=e11] [cursor=pointer]:
+            - /url: /search
+          - link "Pricing" [ref=e12] [cursor=pointer]:
+            - /url: /pricing
+          - link "API" [ref=e13] [cursor=pointer]:
+            - /url: /api
+          - link "Get a lead list" [ref=e14] [cursor=pointer]:
+            - /url: /lead-list
+          - link "Buy dataset" [ref=e15] [cursor=pointer]:
+            - /url: /lead-list
+        - navigation [ref=e16]:
+          - link "Log In" [ref=e17] [cursor=pointer]:
+            - /url: /login
+          - link "Sign Up" [ref=e18] [cursor=pointer]:
+            - /url: /signup
+  - main [ref=e19]:
+    - generic [ref=e20]:
+      - generic [ref=e21]:
+        - generic [ref=e22]:
+          - paragraph [ref=e23]: CQC directory
+          - heading "Search the public CareGist directory" [level=2] [ref=e24]
+          - paragraph [ref=e25]: Browse active CQC providers with 24 results per page and filters for region, service type, and rating.
+        - generic [ref=e26]:
+          - generic [ref=e27]:
+            - generic [ref=e28]: Name or town
+            - textbox "Name or town" [ref=e29]:
+              - /placeholder: London, Ipswich, Henley House...
+              - text: East London
+          - generic [ref=e30]:
+            - generic [ref=e31]: Region
+            - combobox "Region" [ref=e32]:
+              - option "All regions" [selected]
+              - option "East"
+              - option "East Midlands"
+              - option "London"
+              - option "North East"
+              - option "North West"
+              - option "South East"
+              - option "South West"
+              - option "Wales"
+              - option "West Midlands"
+              - option "Yorkshire & Humberside"
+          - generic [ref=e33]:
+            - generic [ref=e34]: Service type
+            - combobox "Service type" [ref=e35]:
+              - option "All service types"
+              - option "Ambulances"
+              - option "Blood And Transplant Service"
+              - option "Clinic"
+              - option "Community Health Service"
+              - option "Community Services - Healthcare"
+              - option "Community Services - Learning Disabilities"
+              - option "Community Services - Mental Health"
+              - option "Community Services - Nursing"
+              - option "Community Services - Substance Abuse"
+              - option "Dentist"
+              - option "Diagnosis/Screening"
+              - option "Doctors/Gps"
+              - option "Home Hospice Care"
+              - option "Homecare Agencies" [selected]
+              - option "Hospice"
+              - option "Hospital"
+              - option "Hospitals - Mental Health/Capacity"
+              - option "Hyperbaric Chamber Services"
+              - option "Long-Term Conditions"
+              - option "Mobile Doctors"
+              - option "Nursing Homes"
+              - option "Phone/Online Advice"
+              - option "Prison Healthcare"
+              - option "Rehabilitation (Illness/Injury)"
+              - option "Rehabilitation (Substance Abuse)"
+              - option "Residential Homes"
+              - option "Shared Lives"
+              - option "Specialist College Service"
+              - option "Supported Housing"
+              - option "Supported Living"
+              - option "Urgent Care Centres"
+          - generic [ref=e36]:
+            - generic [ref=e37]: Rating
+            - combobox "Rating" [ref=e38]:
+              - option "All ratings" [selected]
+              - option "Outstanding"
+              - option "Good"
+              - option "Requires Improvement"
+              - option "Inadequate"
+              - option "Inspected But Not Rated"
+              - option "No Published Rating"
+              - option "Not Yet Inspected"
+              - option "Insufficient Evidence To Rate"
+          - button "Update search" [ref=e40]
+      - generic [ref=e41]:
+        - generic [ref=e42]:
+          - generic [ref=e43]:
+            - generic [ref=e44]:
+              - paragraph [ref=e45]: Results
+              - heading "19 providers" [level=1] [ref=e46]
+              - paragraph [ref=e47]: Matching "East London" with your selected filters.
+            - paragraph [ref=e48]: Page 1 of 1
+          - generic [ref=e49]:
+            - article [ref=e50]:
+              - generic [ref=e51]:
+                - generic [ref=e52]:
+                  - paragraph [ref=e53]: Social Care Org
+                  - heading "East London Care And Support Limited" [level=3] [ref=e54]:
+                    - link "East London Care And Support Limited" [ref=e55] [cursor=pointer]:
+                      - /url: /provider/east-london-care-and-support-limited-london
+                  - paragraph [ref=e56]: London, E13 8QP
+                - generic [ref=e57]: Good
+              - generic [ref=e58]:
+                - generic [ref=e59]: Community Services - Nursing
+                - generic [ref=e60]: Homecare Agencies
+              - paragraph [ref=e61]: "Specialisms: Caring For Adults Over 65 Yrs, Caring For Adults Under 65 Yrs, Caring For Children"
+              - generic [ref=e62]:
+                - generic [ref=e63]: 02074 733018
+                - generic [ref=e64]: "Last inspection: 20 Jan 2020"
+              - link "View provider details" [ref=e66] [cursor=pointer]:
+                - /url: /provider/east-london-care-and-support-limited-london
+            - article [ref=e67]:
+              - generic [ref=e68]:
+                - generic [ref=e69]:
+                  - paragraph [ref=e70]: Social Care Org
+                  - heading "East London- City Home Care" [level=3] [ref=e71]:
+                    - link "East London- City Home Care" [ref=e72] [cursor=pointer]:
+                      - /url: /provider/east-london-city-home-care-london
+                  - paragraph [ref=e73]: London, E10 6RA
+                - generic [ref=e74]: Not Yet Inspected
+              - generic [ref=e76]: Homecare Agencies
+              - paragraph [ref=e77]: "Specialisms: Caring For Adults Over 65 Yrs, Caring For Adults Under 65 Yrs, Dementia"
+              - generic [ref=e78]:
+                - generic [ref=e79]: 07743 165702
+                - generic [ref=e80]: "Last inspection: 23 Jul 2019"
+              - link "View provider details" [ref=e82] [cursor=pointer]:
+                - /url: /provider/east-london-city-home-care-london
+            - article [ref=e83]:
+              - generic [ref=e84]:
+                - generic [ref=e85]:
+                  - paragraph [ref=e86]: Social Care Org
+                  - heading "Advance Bexley, Kent and East London Domicilary Care and Supported Living Services" [level=3] [ref=e87]:
+                    - link "Advance Bexley, Kent and East London Domicilary Care and Supported Living Services" [ref=e88] [cursor=pointer]:
+                      - /url: /provider/advance-bexley-kent-and-east-london-domicilary-care-and-supported-living-services-bexleyheath
+                  - paragraph [ref=e89]: Bexleyheath, Oxfordshire, DA6 8NW
+                - generic [ref=e90]: Not Yet Inspected
+              - generic [ref=e91]:
+                - generic [ref=e92]: Homecare Agencies
+                - generic [ref=e93]: Supported Living
+              - paragraph [ref=e94]: "Specialisms: Caring For Adults Over 65 Yrs, Caring For Adults Under 65 Yrs, Learning Disabilities"
+              - generic [ref=e95]:
+                - generic [ref=e96]: 03330 124307
+                - generic [ref=e97]: "Last inspection: 14 Feb 2023"
+              - link "View provider details" [ref=e99] [cursor=pointer]:
+                - /url: /provider/advance-bexley-kent-and-east-london-domicilary-care-and-supported-living-services-bexleyheath
+            - article [ref=e100]:
+              - generic [ref=e101]:
+                - generic [ref=e102]:
+                  - paragraph [ref=e103]: Social Care Org
+                  - heading "Advance Essex and East London" [level=3] [ref=e104]:
+                    - link "Advance Essex and East London" [ref=e105] [cursor=pointer]:
+                      - /url: /provider/advance-essex-and-east-london-southend-on-sea
+                  - paragraph [ref=e106]: Southend-on-sea, Oxfordshire, SS2 6LD
+                - generic [ref=e107]: Not Yet Inspected
+              - generic [ref=e108]:
+                - generic [ref=e109]: Homecare Agencies
+                - generic [ref=e110]: Supported Living
+              - paragraph [ref=e111]: "Specialisms: Caring For Adults Over 65 Yrs, Caring For Adults Under 65 Yrs, Learning Disabilities"
+              - generic [ref=e112]:
+                - generic [ref=e113]: 07714 799918
+                - generic [ref=e114]: "Last inspection: 14 Feb 2023"
+              - link "View provider details" [ref=e116] [cursor=pointer]:
+                - /url: /provider/advance-essex-and-east-london-southend-on-sea
+            - article [ref=e117]:
+              - generic [ref=e118]:
+                - generic [ref=e119]:
+                  - paragraph [ref=e120]: Social Care Org
+                  - heading "Aspire Care Services - East London" [level=3] [ref=e121]:
+                    - link "Aspire Care Services - East London" [ref=e122] [cursor=pointer]:
+                      - /url: /provider/aspire-care-services-east-london-romford
+                  - paragraph [ref=e123]: Romford, RM6 6PY
+                - generic [ref=e124]: Good
+              - generic [ref=e125]:
+                - generic [ref=e126]: Homecare Agencies
+                - generic [ref=e127]: Supported Living
+              - paragraph [ref=e128]: "Specialisms: Caring For Adults Over 65 Yrs, Caring For Adults Under 65 Yrs, Caring For Children"
+              - generic [ref=e129]:
+                - generic [ref=e130]: 02085 864442
+                - generic [ref=e131]: "Last inspection: 08 Nov 2022"
+              - link "View provider details" [ref=e133] [cursor=pointer]:
+                - /url: /provider/aspire-care-services-east-london-romford
+            - article [ref=e134]:
+              - generic [ref=e135]:
+                - generic [ref=e136]:
+                  - paragraph [ref=e137]: Social Care Org
+                  - heading "Caring Hands East London Ltd" [level=3] [ref=e138]:
+                    - link "Caring Hands East London Ltd" [ref=e139] [cursor=pointer]:
+                      - /url: /provider/caring-hands-east-london-ltd-ilford
+                  - paragraph [ref=e140]: Ilford, IG1 3AD
+                - generic [ref=e141]: Good
+              - generic [ref=e142]:
+                - generic [ref=e143]: Homecare Agencies
+                - generic [ref=e144]: Supported Living
+              - paragraph [ref=e145]: "Specialisms: Caring For People Whose Rights Are Restricted Under The Mental Health Act, Dementia, Eating Disorders"
+              - generic [ref=e146]:
+                - generic [ref=e147]: 02084 780525
+                - generic [ref=e148]: "Last inspection: 17 Aug 2023"
+              - link "View provider details" [ref=e150] [cursor=pointer]:
+                - /url: /provider/caring-hands-east-london-ltd-ilford
+            - article [ref=e151]:
+              - generic [ref=e152]:
+                - generic [ref=e153]:
+                  - paragraph [ref=e154]: Social Care Org
+                  - heading "Community of Refugees from Vietnam - East London" [level=3] [ref=e155]:
+                    - link "Community of Refugees from Vietnam - East London" [ref=e156] [cursor=pointer]:
+                      - /url: /provider/community-of-refugees-from-vietnam-east-london-london
+                  - paragraph [ref=e157]: London, E14 6RN
+                - generic [ref=e158]: Good
+              - generic [ref=e160]: Homecare Agencies
+              - paragraph [ref=e161]: "Specialisms: Caring For Adults Over 65 Yrs, Dementia, Physical Disabilities"
+              - generic [ref=e162]:
+                - generic [ref=e163]: 02075 384986
+                - generic [ref=e164]: "Last inspection: 23 Jan 2020"
+              - link "View provider details" [ref=e166] [cursor=pointer]:
+                - /url: /provider/community-of-refugees-from-vietnam-east-london-london
+            - article [ref=e167]:
+              - generic [ref=e168]:
+                - generic [ref=e169]:
+                  - paragraph [ref=e170]: Social Care Org
+                  - heading "Crossroads Care South East London" [level=3] [ref=e171]:
+                    - link "Crossroads Care South East London" [ref=e172] [cursor=pointer]:
+                      - /url: /provider/crossroads-care-south-east-london-erith
+                  - paragraph [ref=e173]: Erith, Kent, DA8 1TA
+                - generic [ref=e174]: Good
+              - generic [ref=e175]:
+                - generic [ref=e176]: Homecare Agencies
+                - generic [ref=e177]: Supported Living
+              - paragraph [ref=e178]: "Specialisms: Caring For Adults Over 65 Yrs, Caring For Adults Under 65 Yrs, Caring For Children"
+              - generic [ref=e179]:
+                - generic [ref=e180]: 01322 336086
+                - generic [ref=e181]: "Last inspection: 03 Apr 2019"
+              - link "View provider details" [ref=e183] [cursor=pointer]:
+                - /url: /provider/crossroads-care-south-east-london-erith
+            - article [ref=e184]:
+              - generic [ref=e185]:
+                - generic [ref=e186]:
+                  - paragraph [ref=e187]: Social Care Org
+                  - heading "Goldsmith Personnel Limited (East London)" [level=3] [ref=e188]:
+                    - link "Goldsmith Personnel Limited (East London)" [ref=e189] [cursor=pointer]:
+                      - /url: /provider/goldsmith-personnel-limited-east-london-london
+                  - paragraph [ref=e190]: London, E17 3AB
+                - generic [ref=e191]: Good
+              - generic [ref=e193]: Homecare Agencies
+              - paragraph [ref=e194]: "Specialisms: Caring For Adults Over 65 Yrs, Caring For Adults Under 65 Yrs, Caring For Children"
+              - generic [ref=e195]:
+                - generic [ref=e196]: 02085 093766
+                - generic [ref=e197]: "Last inspection: 23 May 2018"
+              - link "View provider details" [ref=e199] [cursor=pointer]:
+                - /url: /provider/goldsmith-personnel-limited-east-london-london
+            - article [ref=e200]:
+              - generic [ref=e201]:
+                - generic [ref=e202]:
+                  - paragraph [ref=e203]: Social Care Org
+                  - heading "London Care (East London)" [level=3] [ref=e204]:
+                    - link "London Care (East London)" [ref=e205] [cursor=pointer]:
+                      - /url: /provider/london-care-east-london-london
+                  - paragraph [ref=e206]: London, E9 6PE
+                - generic [ref=e207]: Good
+              - generic [ref=e209]: Homecare Agencies
+              - paragraph [ref=e210]: "Specialisms: Caring For Adults Over 65 Yrs, Caring For Adults Under 65 Yrs, Caring For Children"
+              - generic [ref=e211]:
+                - generic [ref=e212]: 02089 868425
+                - generic [ref=e213]: "Last inspection: 27 Mar 2023"
+              - link "View provider details" [ref=e215] [cursor=pointer]:
+                - /url: /provider/london-care-east-london-london
+            - article [ref=e216]:
+              - generic [ref=e217]:
+                - generic [ref=e218]:
+                  - paragraph [ref=e219]: Social Care Org
+                  - heading "Mother Care East London Ltd" [level=3] [ref=e220]:
+                    - link "Mother Care East London Ltd" [ref=e221] [cursor=pointer]:
+                      - /url: /provider/mother-care-east-london-ltd-romford
+                  - paragraph [ref=e222]: Romford, RM7 8EL
+                - generic [ref=e223]: Not Yet Inspected
+              - generic [ref=e224]:
+                - generic [ref=e225]: Homecare Agencies
+                - generic [ref=e226]: Supported Living
+              - paragraph [ref=e227]: "Specialisms: Caring For Adults Over 65 Yrs, Caring For Adults Under 65 Yrs, Caring For Children"
+              - generic [ref=e228]:
+                - generic [ref=e229]: 07894 469492
+                - generic [ref=e230]: "Last inspection: Inspection date not published"
+              - link "View provider details" [ref=e232] [cursor=pointer]:
+                - /url: /provider/mother-care-east-london-ltd-romford
+            - article [ref=e233]:
+              - generic [ref=e234]:
+                - generic [ref=e235]:
+                  - paragraph [ref=e236]: Social Care Org
+                  - heading "Precious Homes East London" [level=3] [ref=e237]:
+                    - link "Precious Homes East London" [ref=e238] [cursor=pointer]:
+                      - /url: /provider/precious-homes-east-london-london
+                  - paragraph [ref=e239]: London, E16 3EZ
+                - generic [ref=e240]: Not Yet Inspected
+              - generic [ref=e242]: Homecare Agencies
+              - paragraph [ref=e243]: "Specialisms: Caring For Adults Over 65 Yrs, Caring For Adults Under 65 Yrs, Learning Disabilities"
+              - generic [ref=e244]:
+                - generic [ref=e245]: 02074 764616
+                - generic [ref=e246]: "Last inspection: 29 Jul 2022"
+              - link "View provider details" [ref=e248] [cursor=pointer]:
+                - /url: /provider/precious-homes-east-london-london
+            - article [ref=e249]:
+              - generic [ref=e250]:
+                - generic [ref=e251]:
+                  - paragraph [ref=e252]: Social Care Org
+                  - heading "Soma Healthcare (East London)" [level=3] [ref=e253]:
+                    - link "Soma Healthcare (East London)" [ref=e254] [cursor=pointer]:
+                      - /url: /provider/soma-healthcare-east-london-london
+                  - paragraph [ref=e255]: London, SE10 9JP
+                - generic [ref=e256]: Good
+              - generic [ref=e258]: Homecare Agencies
+              - paragraph [ref=e259]: "Specialisms: Caring For Adults Over 65 Yrs, Caring For Adults Under 65 Yrs, Caring For Children"
+              - generic [ref=e260]:
+                - generic [ref=e261]: 02070 934710
+                - generic [ref=e262]: "Last inspection: 04 Jul 2023"
+              - link "View provider details" [ref=e264] [cursor=pointer]:
+                - /url: /provider/soma-healthcare-east-london-london
+            - article [ref=e265]:
+              - generic [ref=e266]:
+                - generic [ref=e267]:
+                  - paragraph [ref=e268]: Social Care Org
+                  - heading "South East London" [level=3] [ref=e269]:
+                    - link "South East London" [ref=e270] [cursor=pointer]:
+                      - /url: /provider/south-east-london-london
+                  - paragraph [ref=e271]: London, SE11 4RE
+                - generic [ref=e272]: Not Yet Inspected
+              - generic [ref=e274]: Homecare Agencies
+              - paragraph [ref=e275]: "Specialisms: Caring For Adults Over 65 Yrs, Caring For Adults Under 65 Yrs, Dementia"
+              - generic [ref=e276]:
+                - generic [ref=e277]: 02082 082149
+                - generic [ref=e278]: "Last inspection: Inspection date not published"
+              - link "View provider details" [ref=e280] [cursor=pointer]:
+                - /url: /provider/south-east-london-london
+            - article [ref=e281]:
+              - generic [ref=e282]:
+                - generic [ref=e283]:
+                  - paragraph [ref=e284]: Social Care Org
+                  - heading "South East London Care Limited" [level=3] [ref=e285]:
+                    - link "South East London Care Limited" [ref=e286] [cursor=pointer]:
+                      - /url: /provider/south-east-london-care-limited-london
+                  - paragraph [ref=e287]: London, SE28 8AN
+                - generic [ref=e288]: Not Yet Inspected
+              - generic [ref=e290]: Homecare Agencies
+              - paragraph [ref=e291]: "Specialisms: Caring For Adults Over 65 Yrs, Caring For Adults Under 65 Yrs, Dementia"
+              - generic [ref=e292]:
+                - generic [ref=e293]: 02082 260290
+                - generic [ref=e294]: "Last inspection: Inspection date not published"
+              - link "View provider details" [ref=e296] [cursor=pointer]:
+                - /url: /provider/south-east-london-care-limited-london
+            - article [ref=e297]:
+              - generic [ref=e298]:
+                - generic [ref=e299]:
+                  - paragraph [ref=e300]: Social Care Org
+                  - heading "Sylvian Care South East London" [level=3] [ref=e301]:
+                    - link "Sylvian Care South East London" [ref=e302] [cursor=pointer]:
+                      - /url: /provider/sylvian-care-south-east-london-london
+                  - paragraph [ref=e303]: London, E15 2TP
+                - generic [ref=e304]: Not Yet Inspected
+              - generic [ref=e306]: Homecare Agencies
+              - paragraph [ref=e307]: "Specialisms: Caring For Adults Over 65 Yrs, Caring For Adults Under 65 Yrs, Dementia"
+              - generic [ref=e308]:
+                - generic [ref=e309]: 02033 552887
+                - generic [ref=e310]: "Last inspection: Inspection date not published"
+              - link "View provider details" [ref=e312] [cursor=pointer]:
+                - /url: /provider/sylvian-care-south-east-london-london
+            - article [ref=e313]:
+              - generic [ref=e314]:
+                - generic [ref=e315]:
+                  - paragraph [ref=e316]: Social Care Org
+                  - heading "Visiting Angels East London" [level=3] [ref=e317]:
+                    - link "Visiting Angels East London" [ref=e318] [cursor=pointer]:
+                      - /url: /provider/visiting-angels-east-london-romford
+                  - paragraph [ref=e319]: Romford, RM3 0BS
+                - generic [ref=e320]: Not Yet Inspected
+              - generic [ref=e322]: Homecare Agencies
+              - paragraph [ref=e323]: "Specialisms: Caring For Adults Over 65 Yrs, Caring For Adults Under 65 Yrs, Dementia"
+              - generic [ref=e324]:
+                - generic [ref=e325]: 07951 057105
+                - generic [ref=e326]: "Last inspection: Inspection date not published"
+              - link "View provider details" [ref=e328] [cursor=pointer]:
+                - /url: /provider/visiting-angels-east-london-romford
+            - article [ref=e329]:
+              - generic [ref=e330]:
+                - generic [ref=e331]:
+                  - paragraph [ref=e332]: Social Care Org
+                  - heading "Westminster Homecare Limited – North East London" [level=3] [ref=e333]:
+                    - link "Westminster Homecare Limited – North East London" [ref=e334] [cursor=pointer]:
+                      - /url: /provider/westminster-homecare-limited-north-east-london-woodford-green
+                  - paragraph [ref=e335]: Woodford Green, IG8 8HD
+                - generic [ref=e336]: Good
+              - generic [ref=e338]: Homecare Agencies
+              - paragraph [ref=e339]: "Specialisms: Caring For Adults Over 65 Yrs, Caring For Adults Under 65 Yrs, Dementia"
+              - generic [ref=e340]:
+                - generic [ref=e341]: 02083 702830
+                - generic [ref=e342]: "Last inspection: 09 Jan 2020"
+              - link "View provider details" [ref=e344] [cursor=pointer]:
+                - /url: /provider/westminster-homecare-limited-north-east-london-woodford-green
+            - article [ref=e345]:
+              - generic [ref=e346]:
+                - generic [ref=e347]:
+                  - paragraph [ref=e348]: Social Care Org
+                  - heading "Whitmore Care UK (East London)" [level=3] [ref=e349]:
+                    - link "Whitmore Care UK (East London)" [ref=e350] [cursor=pointer]:
+                      - /url: /provider/whitmore-care-uk-east-london-london
+                  - paragraph [ref=e351]: London, SE16 2UG
+                - generic [ref=e352]: Not Yet Inspected
+              - generic [ref=e354]: Homecare Agencies
+              - paragraph [ref=e355]: "Specialisms: Caring For Adults Over 65 Yrs, Caring For Adults Under 65 Yrs, Dementia"
+              - generic [ref=e356]:
+                - generic [ref=e357]: 07939 519322
+                - generic [ref=e358]: "Last inspection: Inspection date not published"
+              - link "View provider details" [ref=e360] [cursor=pointer]:
+                - /url: /provider/whitmore-care-uk-east-london-london
+        - complementary [ref=e361]:
+          - generic [ref=e362]:
+            - paragraph [ref=e363]: Monetisation
+            - heading "Get a filtered lead pack" [level=2] [ref=e364]
+            - paragraph [ref=e365]: Capture the exact segment a buyer wants, issue a temporary export token, and fulfil the list manually while demand is still being validated.
+            - link "Get a lead list" [ref=e366] [cursor=pointer]:
+              - /url: /lead-list?service_type=Homecare+Agencies
+          - generic [ref=e367]:
+            - paragraph [ref=e368]: Checkout
+            - heading "Buy the full dataset" [level=2] [ref=e369]
+            - paragraph [ref=e370]: For full-dataset or regional-pack buyers, send them straight to the configured Stripe Payment Link.
+            - link "Buy full dataset / regional pack" [ref=e371] [cursor=pointer]:
+              - /url: /lead-list
+  - generic [ref=e373]:
+    - paragraph [ref=e375]:
+      - text: We use cookies for site functionality and to analyse traffic. Read our
+      - link "cookie policy" [ref=e376] [cursor=pointer]:
+        - /url: /cookies
+      - text: .
+    - generic [ref=e377]:
+      - button "Accept all" [ref=e378]
+      - button "Essential only" [ref=e379]
+  - contentinfo [ref=e380]:
+    - generic [ref=e381]:
+      - paragraph [ref=e382]: "Data source: Care Quality Commission (CQC). CareGist is not an official CQC service."
+      - paragraph [ref=e383]:
+        - text: If you have concerns about care quality, contact CQC directly at
+        - link "cqc.org.uk/contact-us" [ref=e384] [cursor=pointer]:
+          - /url: https://www.cqc.org.uk/contact-us
+        - text: or call 03000 616161.
+      - generic [ref=e385]:
+        - link "Privacy Policy" [ref=e386] [cursor=pointer]:
+          - /url: /privacy
+        - link "Terms of Service" [ref=e387] [cursor=pointer]:
+          - /url: /terms
+        - link "Acceptable Use" [ref=e388] [cursor=pointer]:
+          - /url: /acceptable-use
+        - link "Review Policy" [ref=e389] [cursor=pointer]:
+          - /url: /review-policy
+        - link "Cookies" [ref=e390] [cursor=pointer]:
+          - /url: /cookies
+        - link "Search" [ref=e391] [cursor=pointer]:
+          - /url: /search
+        - link "Find Care" [ref=e392] [cursor=pointer]:
+          - /url: /find-care
+        - link "Care Groups" [ref=e393] [cursor=pointer]:
+          - /url: /groups
+        - link "Pricing" [ref=e394] [cursor=pointer]:
+          - /url: /pricing
+        - link "API" [ref=e395] [cursor=pointer]:
+          - /url: /api
+        - link "Why CareGist" [ref=e396] [cursor=pointer]:
+          - /url: /why-caregist
+        - link "Get a lead list" [ref=e397] [cursor=pointer]:
+          - /url: /lead-list
+        - link "Contact" [ref=e398] [cursor=pointer]:
+          - /url: mailto:hello@caregist.co.uk
+  - alert [ref=e399]

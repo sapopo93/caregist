@@ -1,0 +1,753 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow, noarchive">
+  <title>CareGist Procurement Collateral — Governed Redesign (Internal Draft)</title>
+  <style>
+    :root {
+      --clay: #a85f3c;
+      --bark: #5b3e2b;
+      --parchment: #f5efe4;
+      --moss: #40523c;
+      --stone: #d6cfc4;
+      --cream: #fffdf9;
+      --charcoal: #2b2520;
+      --muted: #61584f;
+      --amber-soft: #f4e3c2;
+      --clay-soft: #f1ddd2;
+      --moss-soft: #e0e8de;
+      --danger: #7f1d1d;
+      --danger-soft: #fef2f2;
+      --white: #ffffff;
+      --font-display: Georgia, "Times New Roman", serif;
+      --font-body: Georgia, "Times New Roman", serif;
+      --font-ui: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    html { background: #e8e0d5; color: var(--charcoal); }
+    body { margin: 0; font-family: var(--font-ui); font-size: 15px; line-height: 1.48; }
+    button, a { font: inherit; }
+    p, li, td, th { overflow-wrap: anywhere; }
+    p { margin: 0 0 0.72rem; }
+    h1, h2, h3 { margin: 0; color: var(--bark); font-family: var(--font-display); line-height: 1.12; }
+    h1 { max-width: 16ch; font-size: clamp(2.2rem, 5vw, 4.1rem); letter-spacing: -0.035em; }
+    h2 { font-size: 1.62rem; letter-spacing: -0.018em; }
+    h3 { font-size: 1.05rem; }
+    strong { font-weight: 700; }
+
+    .screen-toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      align-items: center;
+      padding: 0.65rem 1rem;
+      background: var(--charcoal);
+      color: var(--white);
+      font-size: 0.82rem;
+      box-shadow: 0 4px 14px rgb(43 37 32 / 20%);
+    }
+    .screen-toolbar button {
+      border: 1px solid var(--stone);
+      border-radius: 0.45rem;
+      background: var(--cream);
+      color: var(--charcoal);
+      padding: 0.45rem 0.8rem;
+      cursor: pointer;
+      font-weight: 700;
+    }
+    .screen-toolbar button:focus-visible { outline: 3px solid #f8c86e; outline-offset: 2px; }
+
+    .document { width: min(100%, 980px); margin: 2rem auto; }
+    .page {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      min-height: 1120px;
+      margin: 0 0 2rem;
+      padding: 54px 58px 42px;
+      border: 1px solid var(--stone);
+      background: var(--cream);
+      box-shadow: 0 20px 55px rgb(60 45 33 / 14%);
+    }
+    .page.vendor { border-top: 8px solid var(--clay); }
+    .page.internal { border-top: 8px solid var(--moss); }
+    .page::after {
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      width: 105px;
+      height: 105px;
+      border-radius: 100% 0 0;
+      background: linear-gradient(135deg, transparent 48%, rgb(168 95 60 / 9%) 49%);
+      content: "";
+      pointer-events: none;
+    }
+    .page.internal::after { background: linear-gradient(135deg, transparent 48%, rgb(64 82 60 / 10%) 49%); }
+
+    .approval-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      margin: -54px -58px 30px;
+      padding: 10px 58px;
+      background: var(--danger);
+      color: var(--white);
+      font-size: 0.73rem;
+      font-weight: 800;
+      letter-spacing: 0.105em;
+      line-height: 1.3;
+      text-transform: uppercase;
+    }
+    .approval-bar .scope { font-weight: 600; letter-spacing: 0.035em; text-align: right; }
+
+    .brand-row, .title-row, .section-heading, .footer-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1.25rem;
+    }
+    .brand { display: inline-flex; align-items: center; gap: 0.72rem; }
+    .brand-mark {
+      position: relative;
+      display: grid;
+      width: 42px;
+      height: 42px;
+      place-items: center;
+      border-radius: 11px;
+      background: var(--clay);
+      color: var(--white);
+      font: 700 1.15rem/1 var(--font-display);
+    }
+    .brand-mark::after {
+      position: absolute;
+      right: -3px;
+      bottom: -3px;
+      width: 11px;
+      height: 11px;
+      border: 2px solid var(--cream);
+      border-radius: 4px;
+      background: #c8842c;
+      content: "";
+    }
+    .brand-word { color: var(--bark); font: 700 1.5rem/1 var(--font-display); letter-spacing: -0.035em; }
+    .brand-word em { color: var(--clay); font-style: normal; }
+    .doc-id { color: var(--muted); font-size: 0.7rem; letter-spacing: 0.08em; text-align: right; text-transform: uppercase; }
+
+    .eyebrow, .section-kicker, .chip {
+      color: var(--clay);
+      font-size: 0.7rem;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+    .internal .eyebrow, .internal .section-kicker { color: var(--moss); }
+    .title-block { margin: 34px 0 26px; }
+    .title-block .eyebrow { margin-bottom: 0.65rem; }
+    .lede { max-width: 60ch; margin: 0.9rem 0 0; color: var(--muted); font: 1.05rem/1.58 var(--font-body); }
+    .page-number {
+      flex: 0 0 auto;
+      color: var(--stone);
+      font: 700 5rem/0.8 var(--font-display);
+      letter-spacing: -0.08em;
+    }
+
+    .status-panel {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.85rem;
+      margin: 0 0 24px;
+      padding: 14px 16px;
+      border: 1px solid #e6b8b8;
+      border-left: 5px solid var(--danger);
+      border-radius: 8px;
+      background: var(--danger-soft);
+      color: #541515;
+    }
+    .status-icon {
+      display: grid;
+      width: 29px;
+      height: 29px;
+      place-items: center;
+      border-radius: 50%;
+      background: var(--danger);
+      color: var(--white);
+      font-weight: 900;
+    }
+    .status-panel p { margin: 0; }
+
+    .hero-card {
+      position: relative;
+      margin: 0 0 24px;
+      padding: 22px 24px;
+      border-radius: 12px;
+      background: var(--bark);
+      color: var(--white);
+    }
+    .internal .hero-card { background: var(--moss); }
+    .hero-card .chip { color: #f4d8c9; }
+    .internal .hero-card .chip { color: #dbe9d8; }
+    .hero-card h2 { margin: 0.25rem 0 0.65rem; color: var(--white); }
+    .hero-card p { margin-bottom: 0; color: #fffaf4; }
+
+    .section { margin-top: 22px; }
+    .section-heading { align-items: flex-end; margin-bottom: 12px; border-bottom: 1px solid var(--stone); padding-bottom: 8px; }
+    .section-heading h2 { font-size: 1.42rem; }
+    .section-heading .section-kicker { flex: 0 0 auto; }
+
+    .criteria-grid, .control-grid, .claim-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .criterion, .control-card, .claim-card {
+      border: 1px solid var(--stone);
+      border-radius: 10px;
+      background: #fbf7f0;
+      padding: 15px 16px;
+    }
+    .criterion { display: grid; grid-template-columns: auto 1fr; gap: 0.7rem; }
+    .criterion-number {
+      display: grid;
+      width: 28px;
+      height: 28px;
+      place-items: center;
+      border-radius: 50%;
+      background: var(--clay-soft);
+      color: var(--bark);
+      font-size: 0.76rem;
+      font-weight: 900;
+    }
+    .criterion h3, .control-card h3, .claim-card h3 { margin-bottom: 0.32rem; }
+    .criterion p, .control-card p, .claim-card p { margin: 0; color: var(--muted); font-size: 0.86rem; line-height: 1.45; }
+
+    .note-strip {
+      margin-top: 14px;
+      padding: 13px 15px;
+      border-left: 4px solid var(--clay);
+      background: var(--clay-soft);
+      color: #4d3022;
+      font-size: 0.88rem;
+    }
+    .internal .note-strip { border-left-color: var(--moss); background: var(--moss-soft); color: #243322; }
+
+    .table-wrap { width: 100%; }
+    table { width: 100%; border-collapse: collapse; border-spacing: 0; font-size: 0.81rem; line-height: 1.35; }
+    caption { padding: 0 0 0.55rem; color: var(--muted); font-size: 0.75rem; text-align: left; }
+    th, td { border: 1px solid #c8c0b5; padding: 10px 11px; text-align: left; vertical-align: top; }
+    thead th { background: var(--bark); color: var(--white); font-size: 0.75rem; letter-spacing: 0.02em; }
+    .internal thead th { background: var(--moss); }
+    tbody th { width: 28%; background: #f0ebe3; color: var(--charcoal); font-weight: 750; }
+    tbody tr:nth-child(even) td { background: #fbf7f0; }
+
+    .warning-box {
+      margin-top: 14px;
+      border: 1px solid #d8aa65;
+      border-radius: 10px;
+      background: #fff8e9;
+      overflow: hidden;
+    }
+    .warning-box .warning-title {
+      padding: 9px 13px;
+      background: #6a461e;
+      color: var(--white);
+      font-size: 0.7rem;
+      font-weight: 850;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+    }
+    .warning-body { padding: 13px 15px; color: #4a3520; font: 0.81rem/1.48 var(--font-body); }
+    .warning-body p:last-child { margin-bottom: 0; }
+
+    .claim-grid { gap: 9px; }
+    .claim-card { padding: 11px 12px; background: #f8f5ef; }
+    .claim-card h3 { font: 800 0.75rem/1.3 var(--font-ui); letter-spacing: 0.04em; }
+    .claim-card p { font-size: 0.76rem; }
+    .claim-status { color: var(--danger); font-weight: 850; }
+
+    .quote-card {
+      margin-top: 12px;
+      border-left: 5px solid var(--moss);
+      background: #eef3ec;
+      padding: 16px 18px;
+      color: #263525;
+      font: italic 0.91rem/1.56 var(--font-body);
+    }
+    .quote-card p:last-child { margin-bottom: 0; }
+    .copy-label {
+      display: inline-block;
+      margin-bottom: 0.55rem;
+      border-radius: 100px;
+      background: var(--danger);
+      color: var(--white);
+      padding: 0.26rem 0.6rem;
+      font: 800 0.64rem/1.3 var(--font-ui);
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+    }
+    .subject { margin-bottom: 0.75rem; font-family: var(--font-ui); font-style: normal; font-weight: 800; }
+
+    .mini-list { margin: 0; padding: 0; list-style: none; }
+    .mini-list li { position: relative; margin: 0.35rem 0; padding-left: 1.25rem; color: var(--muted); font-size: 0.82rem; }
+    .mini-list li::before { position: absolute; left: 0; color: var(--moss); content: "✓"; font-weight: 900; }
+
+    .page-footer { margin-top: auto; padding-top: 18px; }
+    .footer-rule { height: 1px; margin-bottom: 10px; background: var(--stone); }
+    .footer-row { align-items: flex-start; color: var(--muted); font-size: 0.66rem; line-height: 1.4; }
+    .footer-row p { margin: 0; }
+    .independence { max-width: 70%; }
+    .footer-status { max-width: 27%; color: var(--danger); font-weight: 850; text-align: right; text-transform: uppercase; }
+
+    .provenance {
+      margin-top: 12px;
+      padding: 11px 13px;
+      border: 1px dashed #9c9287;
+      background: #faf7f1;
+      color: var(--muted);
+      font-size: 0.73rem;
+    }
+
+    @media (max-width: 700px) {
+      body { font-size: 14px; }
+      .screen-toolbar { position: static; flex-wrap: wrap; text-align: center; }
+      .document { margin: 0; width: 100%; }
+      .page { min-height: 0; margin: 0 0 14px; padding: 26px 20px 24px; border-right: 0; border-left: 0; box-shadow: none; }
+      .approval-bar { align-items: flex-start; margin: -26px -20px 24px; padding: 10px 20px; }
+      .approval-bar .scope { font-size: 0.62rem; }
+      .title-block { margin: 27px 0 21px; }
+      .brand-row, .title-row { align-items: flex-start; }
+      .page-number { font-size: 3.3rem; }
+      .criteria-grid, .control-grid, .claim-grid { grid-template-columns: 1fr; }
+      .hero-card { padding: 18px; }
+      h1 { font-size: clamp(2rem, 11vw, 3rem); }
+      .independence, .footer-status { max-width: none; }
+      .footer-row { flex-direction: column; }
+      .footer-status { text-align: left; }
+    }
+
+    @media (max-width: 390px) {
+      .doc-id { display: none; }
+      .approval-bar { display: block; }
+      .approval-bar .scope { margin-top: 0.2rem; text-align: left; }
+      .status-panel { grid-template-columns: 1fr; }
+      .status-icon { width: 25px; height: 25px; }
+      .section-heading { align-items: flex-start; flex-direction: column; gap: 0.2rem; }
+      .table-wrap { overflow: visible; }
+      table.responsive, table.responsive caption, table.responsive tbody, table.responsive tr, table.responsive th, table.responsive td { display: block; width: 100%; }
+      table.responsive caption { padding-bottom: 0.7rem; }
+      table.responsive thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
+      table.responsive tbody tr { margin-bottom: 12px; border: 1px solid #bfb6aa; border-radius: 8px; overflow: hidden; }
+      table.responsive tbody th { padding: 9px 10px; border: 0; border-bottom: 1px solid #c8c0b5; background: var(--bark); color: var(--white); }
+      .internal table.responsive tbody th { background: var(--moss); }
+      table.responsive tbody td { display: grid; grid-template-columns: minmax(7.1rem, 42%) 1fr; gap: 0.55rem; border: 0; border-bottom: 1px solid #ddd6cd; padding: 9px 10px; background: var(--cream); }
+      table.responsive tbody td:last-child { border-bottom: 0; }
+      table.responsive tbody td::before { color: var(--bark); content: attr(data-label); font-size: 0.7rem; font-weight: 850; letter-spacing: 0.03em; }
+      .internal table.responsive tbody td::before { color: var(--moss); }
+      .quote-card { padding: 14px; }
+    }
+
+    @media print {
+      @page { size: A4; margin: 0; }
+      html, body { background: var(--white); print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+      body { font-size: 9.15pt; line-height: 1.4; }
+      .screen-toolbar { display: none !important; }
+      .document { width: auto; margin: 0; }
+      .page {
+        width: 210mm;
+        height: 297mm;
+        min-height: 297mm;
+        margin: 0;
+        padding: 12.5mm 14mm 11mm;
+        border: 0;
+        border-top: 4mm solid var(--clay);
+        box-shadow: none;
+        break-after: page;
+        page-break-after: always;
+        overflow: hidden;
+      }
+      .page.internal { border-top-color: var(--moss); }
+      .page:last-child { break-after: auto; page-break-after: auto; }
+      .approval-bar { margin: -12.5mm -14mm 7mm; padding: 2.5mm 14mm; font-size: 6.8pt; }
+      .brand-mark { width: 9mm; height: 9mm; border-radius: 2.2mm; font-size: 10pt; }
+      .brand-word { font-size: 15pt; }
+      .title-block { margin: 7mm 0 5mm; }
+      h1 { font-size: 28pt; }
+      h2 { font-size: 15pt; }
+      h3 { font-size: 9.2pt; }
+      .lede { font-size: 9.5pt; }
+      .page-number { font-size: 42pt; }
+      .status-panel { margin-bottom: 4mm; padding: 3mm 3.5mm; }
+      .hero-card { margin-bottom: 4mm; padding: 4mm 4.5mm; }
+      .section { margin-top: 4mm; }
+      .section-heading { margin-bottom: 2.3mm; padding-bottom: 1.5mm; }
+      .section-heading h2 { font-size: 13pt; }
+      .criteria-grid { gap: 2.5mm; }
+      .criterion { padding: 3mm; }
+      .criterion p, .control-card p, .claim-card p { font-size: 7.6pt; }
+      .note-strip { margin-top: 2.5mm; padding: 2.5mm 3mm; font-size: 7.6pt; }
+      table { font-size: 7.1pt; }
+      th, td { padding: 2.1mm 2.4mm; }
+      caption { font-size: 6.7pt; }
+      .warning-box { margin-top: 2.5mm; }
+      .warning-box .warning-title { padding: 1.8mm 2.5mm; font-size: 6.1pt; }
+      .warning-body { padding: 2.5mm 3mm; font-size: 7pt; line-height: 1.4; }
+      .claim-grid { gap: 2mm; }
+      .claim-card { padding: 2.2mm 2.5mm; }
+      .claim-card h3 { font-size: 6.8pt; }
+      .claim-card p { font-size: 6.4pt; }
+      .quote-card { margin-top: 2.5mm; padding: 3mm 3.4mm; font-size: 7.5pt; line-height: 1.45; }
+      .copy-label { font-size: 5.7pt; }
+      .provenance { margin-top: 2.5mm; padding: 2.4mm; font-size: 6.3pt; }
+      .page-footer { padding-top: 3mm; }
+      .footer-rule { margin-bottom: 2mm; }
+      .footer-row { font-size: 5.8pt; }
+    }
+  </style>
+</head>
+<body>
+  <div class="screen-toolbar" role="region" aria-label="Draft document controls">
+    <strong>Internal design proof · four A4 pages</strong>
+    <span>Publication and use are blocked pending independent QA and Human Gate 2.</span>
+    <button type="button" onclick="window.print()">Print / save PDF</button>
+  </div>
+
+  <main class="document">
+    <article class="page vendor" aria-labelledby="vendor-title-1">
+      <div class="approval-bar">
+        <span>Not approved for publication</span>
+        <span class="scope">Vendor-facing concept · draft terms only</span>
+      </div>
+
+      <header>
+        <div class="brand-row">
+          <div class="brand" aria-label="CareGist">
+            <span class="brand-mark" aria-hidden="true">Cg</span>
+            <span class="brand-word">Care<em>Gist</em></span>
+          </div>
+          <div class="doc-id">Procurement collateral<br>Vendor offer · page 1 of 2</div>
+        </div>
+        <div class="title-row title-block">
+          <div>
+            <div class="eyebrow">Software vendor pilot offer</div>
+            <h1 id="vendor-title-1">Qualified demos, clearly defined.</h1>
+            <p class="lede">A governed redesign of the supplied pilot offer. Commercial terms and source wording remain unapproved drafts for verification and review.</p>
+          </div>
+          <div class="page-number" aria-hidden="true">01</div>
+        </div>
+      </header>
+
+      <aside class="status-panel" aria-label="Publication status">
+        <div class="status-icon" aria-hidden="true">!</div>
+        <p><strong>Review copy only.</strong> Do not quote, accept, send, publish or use for pricing. UK Country Pack verification, claim evidence, independent QA and Human Gate 2 are outstanding.</p>
+      </aside>
+
+      <section class="hero-card" aria-labelledby="buying-heading">
+        <div class="chip">Supplied draft proposition</div>
+        <h2 id="buying-heading">What the source says you are buying</h2>
+        <p>An attended, qualified product demo with a new care provider. Every appointment we book is backed by a documented audit. “Qualified” means all four of the following, evidenced in a pre-demo brief sent to you 48 hours in advance:</p>
+      </section>
+
+      <section class="section" aria-labelledby="criteria-heading">
+        <div class="section-heading">
+          <h2 id="criteria-heading">The four supplied qualification criteria</h2>
+          <span class="section-kicker">All four required</span>
+        </div>
+        <div class="criteria-grid">
+          <div class="criterion">
+            <span class="criterion-number">01</span>
+            <div>
+              <h3>Documented need</h3>
+              <p>The provider has confirmed care management software as a live purchase need in a recorded audit call.</p>
+            </div>
+          </div>
+          <div class="criterion">
+            <span class="criterion-number">02</span>
+            <div>
+              <h3>Decision-maker present</h3>
+              <p>The registered manager, nominated individual or director attends the demo in person or by video.</p>
+            </div>
+          </div>
+          <div class="criterion">
+            <span class="criterion-number">03</span>
+            <div>
+              <h3>Budget stated</h3>
+              <p>An indicative monthly budget has been stated and falls within your published pricing.</p>
+            </div>
+          </div>
+          <div class="criterion">
+            <span class="criterion-number">04</span>
+            <div>
+              <h3>90-day purchase window</h3>
+              <p>The provider intends to select a platform within 90 days, mapped to their CQC registration or inspection timeline.</p>
+            </div>
+          </div>
+        </div>
+        <div class="note-strip"><strong>Supplied replacement condition:</strong> If any of the four criteria turn out not to hold, or the provider does not attend, the appointment is not billable and is replaced free of charge. You only pay for demos that happen with people who meet the definition.</div>
+      </section>
+
+      <section class="section" aria-labelledby="control-heading-1">
+        <div class="section-heading">
+          <h2 id="control-heading-1">Before this can become an offer</h2>
+          <span class="section-kicker">Control gates</span>
+        </div>
+        <div class="control-grid">
+          <div class="control-card"><h3>Evidence</h3><p>Validate every objective claim and operational promise against approved sources.</p></div>
+          <div class="control-card"><h3>Approval</h3><p>Independent QA must be separate from production, followed by Human Gate 2.</p></div>
+        </div>
+      </section>
+
+      <footer class="page-footer">
+        <div class="footer-rule"></div>
+        <div class="footer-row">
+          <p class="independence"><strong>CQC independence:</strong> CareGist is independent of the Care Quality Commission (CQC). CQC does not endorse or approve CareGist, this draft or any supplier.</p>
+          <p class="footer-status">Not approved for publication<br>Internal design proof</p>
+        </div>
+      </footer>
+    </article>
+
+    <article class="page vendor" aria-labelledby="vendor-title-2">
+      <div class="approval-bar">
+        <span>Not approved for publication</span>
+        <span class="scope">Vendor-facing concept · draft terms only</span>
+      </div>
+
+      <header>
+        <div class="brand-row">
+          <div class="brand" aria-label="CareGist">
+            <span class="brand-mark" aria-hidden="true">Cg</span>
+            <span class="brand-word">Care<em>Gist</em></span>
+          </div>
+          <div class="doc-id">Procurement collateral<br>Vendor offer · page 2 of 2</div>
+        </div>
+        <div class="title-row title-block">
+          <div>
+            <div class="eyebrow">Supplied commercial schedule</div>
+            <h1 id="vendor-title-2">Pilot terms for review.</h1>
+            <p class="lede">Values below reproduce the supplied draft. They are not a quotation, price approval, tax position or commitment.</p>
+          </div>
+          <div class="page-number" aria-hidden="true">02</div>
+        </div>
+      </header>
+
+      <aside class="status-panel" aria-label="Commercial status">
+        <div class="status-icon" aria-hidden="true">!</div>
+        <p><strong>Draft supplied terms.</strong> Pricing authority has not been verified. Do not transact, invoice, promise exclusivity or present VAT treatment as approved.</p>
+      </aside>
+
+      <section aria-labelledby="pricing-heading">
+        <div class="section-heading">
+          <h2 id="pricing-heading">Pilot pricing</h2>
+          <span class="section-kicker">Source terms preserved</span>
+        </div>
+        <div class="table-wrap">
+          <table class="responsive">
+            <caption>Commercial schedule transcribed from supplied source artwork; all entries are unapproved drafts.</caption>
+            <thead>
+              <tr><th scope="col">Term</th><th scope="col">Pilot terms (first 10 weeks)</th><th scope="col">Standard terms (post-pilot)</th></tr>
+            </thead>
+            <tbody>
+              <tr><th scope="row">Setup / onboarding fee</th><td data-label="Pilot terms">£0</td><td data-label="Standard terms">£0</td></tr>
+              <tr><th scope="row">Price per attended qualified demo</th><td data-label="Pilot terms">£175 + VAT</td><td data-label="Standard terms">£250 + VAT</td></tr>
+              <tr><th scope="row">Volume commitment</th><td data-label="Pilot terms">Minimum 5 demos</td><td data-label="Standard terms">Monthly cap agreed by category</td></tr>
+              <tr><th scope="row">Conversion bonus (optional)</th><td data-label="Pilot terms">None — flat fee only</td><td data-label="Standard terms">10% of first-year contract value, self-reported quarterly</td></tr>
+              <tr><th scope="row">Category exclusivity</th><td data-label="Pilot terms">Not available</td><td data-label="Standard terms">Earned at ≥25% demo-to-trial conversion; +£95 per demo premium</td></tr>
+              <tr><th scope="row">Payment terms</th><td data-label="Pilot terms">Invoiced fortnightly, 14 days</td><td data-label="Standard terms">Invoiced monthly, 14 days</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <aside class="warning-box" aria-labelledby="source-claims-title">
+        <div class="warning-title" id="source-claims-title">Source wording retained for verification — not cleared for vendor use</div>
+        <div class="warning-body">
+          <p>Every month, new care providers in England move through registration and must choose a care management platform before their first inspection. They are actively in-market, unbranded, and unreachable through your normal channels — they don’t attend trade shows yet, they aren’t on switch-vendor lists, and by the time they appear in public data they have already bought. CareGist works with these providers from pre-registration onwards through a structured Launch Procurement Audit, which means we know what they need, their budget, and their decision deadline before you ever pick up the phone.</p>
+          <p><strong>Why the price is fair — the market context:</strong> Generic UK pay-per-appointment providers charge anywhere from £20 for unqualified bookings to £200+ for complex B2B, and fully qualified, decision-maker-verified B2B meetings trade internationally at £240–£600 each. Our pilot rate of £175 sits deliberately below the qualified-meeting market despite being higher-intent than anything a generic agency can produce, because we want conversion data as much as you do.</p>
+        </div>
+      </aside>
+
+      <section class="section" aria-labelledby="claim-register-heading">
+        <div class="section-heading">
+          <h2 id="claim-register-heading">Compact claim register</h2>
+          <span class="section-kicker">Publication blockers</span>
+        </div>
+        <div class="claim-grid">
+          <div class="claim-card"><h3>C-01 · Market / timing assertions</h3><p><span class="claim-status">Unverified.</span> Provider volume, buying stage, channel reachability and inspection timing require approved evidence.</p></div>
+          <div class="claim-card"><h3>C-02 · Qualification / delivery</h3><p><span class="claim-status">Unverified.</span> Audit records, 48-hour briefs, decision-maker attendance and replacement operation require proof.</p></div>
+          <div class="claim-card"><h3>C-03 · Price comparison</h3><p><span class="claim-status">Unverified.</span> £20–£200+ and £240–£600 benchmarks require dated, like-for-like sources and legal review.</p></div>
+          <div class="claim-card"><h3>C-04 · Commercial schedule</h3><p><span class="claim-status">Unapproved.</span> Price, VAT wording, conversion reporting, exclusivity and payment terms need authorised sign-off.</p></div>
+        </div>
+      </section>
+
+      <footer class="page-footer">
+        <div class="footer-rule"></div>
+        <div class="footer-row">
+          <p class="independence"><strong>CQC independence:</strong> CareGist is independent of the Care Quality Commission (CQC). CQC does not endorse or approve CareGist, this draft or any supplier.</p>
+          <p class="footer-status">Not approved for publication<br>Internal design proof</p>
+        </div>
+      </footer>
+    </article>
+
+    <article class="page internal" aria-labelledby="internal-title-1">
+      <div class="approval-bar">
+        <span>Not approved for publication</span>
+        <span class="scope">Internal audit guide · do not contact or share</span>
+      </div>
+
+      <header>
+        <div class="brand-row">
+          <div class="brand" aria-label="CareGist">
+            <span class="brand-mark" aria-hidden="true">Cg</span>
+            <span class="brand-word">Care<em>Gist</em></span>
+          </div>
+          <div class="doc-id">Procurement collateral<br>Internal guide · page 1 of 2</div>
+        </div>
+        <div class="title-row title-block">
+          <div>
+            <div class="eyebrow">Launch Procurement Audit · internal</div>
+            <h1 id="internal-title-1">A useful call, not a forced booking.</h1>
+            <p class="lede">A structured 45-minute guide for later operational, privacy and legal review. It is not authorised for live outreach or personal-data processing.</p>
+          </div>
+          <div class="page-number" aria-hidden="true">03</div>
+        </div>
+      </header>
+
+      <aside class="status-panel" aria-label="Internal use status">
+        <div class="status-icon" aria-hidden="true">!</div>
+        <p><strong>Script development only.</strong> Do not contact providers, record calls, collect details or share information. UK GDPR wording and process controls have not been approved.</p>
+      </aside>
+
+      <section class="hero-card" aria-labelledby="offer-sentence-heading">
+        <div class="chip">The supplied offer in one sentence</div>
+        <h2 id="offer-sentence-heading">Launch Procurement Audit</h2>
+        <p>A free 45-minute Launch Procurement Audit that maps every purchase a new provider must make on the road to registration and first placements, sequences it against their CQC timeline, and ends with a written procurement plan plus a curated shortlist for whichever decision is due next.</p>
+      </section>
+
+      <div class="note-strip"><strong>Supplied operating principle:</strong> The audit is genuinely free and genuinely useful even if the provider buys nothing through us. It is also our qualification engine: every supplier appointment CareGist books is backed by an audit, which is what lets us charge suppliers premium rates. Never compromise the audit’s honesty to force a booking — the audit relationship is the asset.</div>
+
+      <section class="section" aria-labelledby="call-structure-heading">
+        <div class="section-heading">
+          <h2 id="call-structure-heading">The 45-minute call structure</h2>
+          <span class="section-kicker">Draft sequence</span>
+        </div>
+        <div class="table-wrap">
+          <table class="responsive">
+            <caption>Supplied call structure. Consent language and data-sharing process require privacy review before any use.</caption>
+            <thead><tr><th scope="col">Time</th><th scope="col">Segment</th><th scope="col">Purpose</th></tr></thead>
+            <tbody>
+              <tr><th scope="row">0–5</th><td data-label="Segment">Frame and consent</td><td data-label="Purpose">Set expectations; get recorded consent to hold their details and share them with shortlisted suppliers only on their instruction (UK GDPR).</td></tr>
+              <tr><th scope="row">5–15</th><td data-label="Segment">Registration position</td><td data-label="Purpose">Where they are in the CQC process — this anchors every purchase deadline.</td></tr>
+              <tr><th scope="row">15–35</th><td data-label="Segment">Procurement map</td><td data-label="Purpose">Walk the purchase categories in lifecycle order; capture status, budget and deadline for each.</td></tr>
+              <tr><th scope="row">35–42</th><td data-label="Segment">Prioritise and commit</td><td data-label="Purpose">Agree the next one or two decisions; offer the shortlist and, if wanted, booked introductions.</td></tr>
+              <tr><th scope="row">42–45</th><td data-label="Segment">Close</td><td data-label="Purpose">Confirm what they’ll receive in writing within 48 hours; book the follow-up trigger point.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="section" aria-labelledby="guardrails-heading">
+        <div class="section-heading">
+          <h2 id="guardrails-heading">Pre-use guardrails</h2>
+          <span class="section-kicker">Required first</span>
+        </div>
+        <ul class="mini-list">
+          <li>Approve lawful basis, privacy information, retention, recording and supplier-sharing workflow.</li>
+          <li>Verify every CQC-timeline, purchasing, shortlist, fulfilment and pricing statement.</li>
+          <li>Train staff, test the process and define escalation; do not improvise regulated advice.</li>
+        </ul>
+      </section>
+
+      <footer class="page-footer">
+        <div class="footer-rule"></div>
+        <div class="footer-row">
+          <p class="independence"><strong>CQC independence:</strong> CareGist is independent of the Care Quality Commission (CQC). CQC does not endorse or approve CareGist, this draft or any supplier.</p>
+          <p class="footer-status">Not approved for publication<br>Internal design proof</p>
+        </div>
+      </footer>
+    </article>
+
+    <article class="page internal" aria-labelledby="internal-title-2">
+      <div class="approval-bar">
+        <span>Not approved for publication</span>
+        <span class="scope">Internal script · do not send or use</span>
+      </div>
+
+      <header>
+        <div class="brand-row">
+          <div class="brand" aria-label="CareGist">
+            <span class="brand-mark" aria-hidden="true">Cg</span>
+            <span class="brand-word">Care<em>Gist</em></span>
+          </div>
+          <div class="doc-id">Procurement collateral<br>Internal guide · page 2 of 2</div>
+        </div>
+        <div class="title-row title-block">
+          <div>
+            <div class="eyebrow">Draft outreach and opening frame</div>
+            <h1 id="internal-title-2">Source copy, held behind the gate.</h1>
+            <p class="lede">The supplied wording is retained below for verification. Highlighted copy must not be sent, spoken or adapted for live use.</p>
+          </div>
+          <div class="page-number" aria-hidden="true">04</div>
+        </div>
+      </header>
+
+      <aside class="status-panel" aria-label="Outreach status">
+        <div class="status-icon" aria-hidden="true">!</div>
+        <p><strong>No outreach authorised.</strong> Bracketed placeholders must never be populated with personal or provider data in this draft. Claims, privacy wording and service delivery remain unverified.</p>
+      </aside>
+
+      <section aria-labelledby="outreach-heading">
+        <div class="section-heading">
+          <h2 id="outreach-heading">Outreach message</h2>
+          <span class="section-kicker">Email / LinkedIn · supplied as ~90 words</span>
+        </div>
+        <div class="quote-card">
+          <span class="copy-label">Draft source copy · do not send</span>
+          <p class="subject">Subject: The 14 purchases between you and registration</p>
+          <p>Hi [name] — congratulations on [service name]’s registration application. Between now and your first placements you’ll make around 14 significant purchases — insurance, care software, training, policies, payroll, recruitment — and the sequencing matters as much as the choices: buy in the wrong order and you burn cash before revenue, or worse, hit inspection unprepared.</p>
+          <p>I run CareGist, a procurement concierge for new providers. We offer a free 45-minute Launch Procurement Audit: you leave with a written purchase plan sequenced against your CQC timeline, and a vetted shortlist for whatever decision is next. No fee, no obligation — suppliers pay us, and only when you choose to meet them.</p>
+          <p>Worth 45 minutes this week?</p>
+        </div>
+      </section>
+
+      <section class="section" aria-labelledby="opening-heading">
+        <div class="section-heading">
+          <h2 id="opening-heading">Opening frame</h2>
+          <span class="section-kicker">Say this, roughly · after approval only</span>
+        </div>
+        <div class="quote-card">
+          <span class="copy-label">Draft source copy · do not use</span>
+          <p>“This call is for you, not for suppliers. In 45 minutes we’ll map every purchase between you and your first placements, put them in the right order against your registration timeline, and flag where providers typically overspend or buy too early. You’ll get the plan in writing within 48 hours. Where a decision is due soon, I can also give you a shortlist of two or three vetted suppliers — and if you want, book the calls for you. Suppliers pay us a booking fee; you never pay us anything, and nothing goes to any supplier unless you say so. Sound fair?”</p>
+        </div>
+      </section>
+
+      <section class="section" aria-labelledby="flags-heading">
+        <div class="section-heading">
+          <h2 id="flags-heading">Claims and compliance flags</h2>
+          <span class="section-kicker">Open blockers</span>
+        </div>
+        <div class="claim-grid">
+          <div class="claim-card"><h3>C-05 · “Around 14” / sequencing</h3><p><span class="claim-status">Unverified.</span> Count, categories, cash/inspection consequences and typical overspend require evidence.</p></div>
+          <div class="claim-card"><h3>C-06 · Free / fulfilment promises</h3><p><span class="claim-status">Unapproved.</span> “Free”, written plan within 48 hours and “you never pay” require operational and legal confirmation.</p></div>
+          <div class="claim-card"><h3>C-07 · “Vetted” / shortlist</h3><p><span class="claim-status">Unverified.</span> Define vetting standard, conflicts, supplier eligibility, monitoring and disclosure.</p></div>
+          <div class="claim-card"><h3>C-08 · Privacy / introductions</h3><p><span class="claim-status">Blocked.</span> UK GDPR references are not a complete consent, recording or data-sharing mechanism.</p></div>
+        </div>
+      </section>
+
+      <aside class="provenance"><strong>Provenance:</strong> Produced from the 29 July 2026 CareGist procurement-collateral task brief, existing CareGist earth-tone brand HTML and two supplied source screenshots. Human contribution: task brief, brand source and source copy. AI contribution: transcription support, information architecture, British-English copy framing, responsive HTML/CSS and governance labelling. No stock media, third-party likenesses, testimonials or generated imagery used. Source licences/ownership were not independently verified.</aside>
+
+      <footer class="page-footer">
+        <div class="footer-rule"></div>
+        <div class="footer-row">
+          <p class="independence"><strong>CQC independence:</strong> CareGist is independent of the Care Quality Commission (CQC). CQC does not endorse or approve CareGist, this draft or any supplier.</p>
+          <p class="footer-status">Not approved for publication<br>Independent QA required</p>
+        </div>
+      </footer>
+    </article>
+  </main>
+</body>
+</html>

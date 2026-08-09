@@ -8,7 +8,6 @@ from httpx import ASGITransport, AsyncClient
 
 from api.main import app
 from api.services.new_registration_feed import (
-    FeedFilters,
     build_weekly_digest_html,
     coerce_json_object,
     deliver_new_registration_event,
@@ -127,6 +126,39 @@ async def test_deliver_new_registration_event_skips_already_delivered(mock_conn)
 
 
 @pytest.mark.asyncio
+async def test_deliver_new_registration_event_records_mocked_success_end_to_end(mock_conn):
+    mock_conn.fetch.return_value = [
+        {
+            "id": 10,
+            "url": "https://example.com/webhook",
+            "secret": "secret",
+            "filter_config": {"region": "London"},
+        }
+    ]
+    mock_conn.fetchrow.side_effect = [
+        None,
+        {"id": 22, "delivered_at": None, "attempt_count": 0},
+    ]
+    event = {
+        "dedupe_key": "new_registration:LOC1:2026-04-01",
+        "name": "Sunrise",
+        "region": "London",
+        "effective_date": "2026-04-01",
+    }
+
+    with patch(
+        "api.services.new_registration_feed.deliver_webhook",
+        new=AsyncMock(return_value=(True, 1, 202, None)),
+    ) as deliver_mock:
+        delivered = await deliver_new_registration_event(mock_conn, event)
+
+    assert delivered == 1
+    deliver_mock.assert_awaited_once()
+    assert any("UPDATE webhook_delivery_log" in call.args[0] for call in mock_conn.execute.await_args_list)
+    assert any("UPDATE webhook_subscriptions" in call.args[0] for call in mock_conn.execute.await_args_list)
+
+
+@pytest.mark.asyncio
 async def test_queue_weekly_new_registration_digests_is_idempotent(mock_conn):
     _subscription_row = [
         {
@@ -238,6 +270,25 @@ def test_digest_helpers_render_expected_content():
     assert "https://caregist.co.uk/provider/LOC1" in fallback_html
 
 
+def test_digest_escapes_untrusted_provider_content():
+    rendered = build_weekly_digest_html(
+        {"region": "<img src=x onerror=alert(1)>"},
+        [{
+            "slug": "safe-slug",
+            "name": "<script>alert(1)</script>",
+            "town": "<b>Town</b>",
+            "region": "London",
+            "local_authority": "Camden",
+            "service_types": "Home care",
+            "effective_date": "2026-04-01",
+        }],
+        "2026-W15",
+    )
+
+    assert "<script>" not in rendered
+    assert "<img src=x" not in rendered
+
+
 @pytest.fixture
 def patched_feed_dependencies(mock_conn):
     @asynccontextmanager
@@ -310,3 +361,25 @@ async def test_feed_export_is_blocked_for_free_tier(mock_conn):
 
     assert response.status_code == 403
     assert "Starter" in response.json()["detail"]
+
+@pytest.fixture(autouse=True)
+def _enable_delivery_for_service_unit_tests():
+    with patch("api.services.new_registration_feed.settings.outbound_delivery_enabled", True), \
+         patch("api.routers.feed.settings.directory_export_delivery_enabled", True):
+        yield
+
+
+@pytest.mark.asyncio
+async def test_delivery_services_fail_closed_without_touching_database():
+    conn = AsyncMock()
+    event = {"event_id": 1}
+
+    with patch("api.services.new_registration_feed.settings.outbound_delivery_enabled", False):
+        assert await deliver_new_registration_event(conn, event) == 0
+        assert await queue_weekly_new_registration_digests(conn) == {
+            "subscriptions": 0,
+            "queued": 0,
+            "skipped": 0,
+        }
+
+    conn.fetch.assert_not_awaited()

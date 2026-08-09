@@ -1,0 +1,62 @@
+- generic [active] [ref=e1] [box=0,0,1440,6707]:
+  - banner [ref=e2] [box=0,0,1440,89]:
+    - generic [ref=e3] [box=144,16,1152,56]:
+      - link "CareGist" [ref=e4] [cursor=pointer] [box=144,16,239,56]:
+        - /url: /
+        - img "CareGist" [ref=e5] [box=144,16,239,56]
+      - generic [ref=e6] [box=515,26,781,36]:
+        - navigation [ref=e7] [box=515,26,630,36]
+        - navigation [ref=e16] [box=1161,28,135,32]
+  - main [ref=e19] [box=0,89,1440,6470]:
+    - generic [ref=e20] [box=144,89,1152,6470]:
+      - generic [ref=e21] [box=168,129,1104,242]:
+        - generic [ref=e22] [box=193,154,768,98]
+        - generic [ref=e26] [box=193,276,1054,71]
+      - generic [ref=e41] [box=168,403,1104,6116]:
+        - generic [ref=e42] [box=168,403,752,6116]
+        - complementary [ref=e361] [box=952,403,320,6116]
+  - generic [ref=e373] [box=272,946,896,38]:
+    - paragraph [ref=e375] [box=272,955,630,20]:
+      - text: We use cookies for site functionality and to analyse traffic. Read our
+      - link "cookie policy" [ref=e376] [cursor=pointer] [box=716,956,85,19]:
+        - /url: /cookies
+      - text: .
+    - generic [ref=e377] [box=918,946,250,38]:
+      - button "Accept all" [ref=e378] [box=918,946,106,38]
+      - button "Essential only" [ref=e379] [box=1036,946,132,38]
+  - contentinfo [ref=e380] [box=0,6559,1440,148]:
+    - generic [ref=e381] [box=144,6591,1152,84]:
+      - paragraph [ref=e382] [box=144,6591,1152,20]: "Data source: Care Quality Commission (CQC). CareGist is not an official CQC service."
+      - paragraph [ref=e383] [box=144,6619,1152,20]:
+        - text: If you have concerns about care quality, contact CQC directly at
+        - link "cqc.org.uk/contact-us" [ref=e384] [cursor=pointer] [box=564,6620,145,19]:
+          - /url: https://www.cqc.org.uk/contact-us
+        - text: or call 03000 616161.
+      - generic [ref=e385] [box=144,6655,1152,20]:
+        - link "Privacy Policy" [ref=e386] [cursor=pointer] [box=144,6655,89,20]:
+          - /url: /privacy
+        - link "Terms of Service" [ref=e387] [cursor=pointer] [box=249,6655,108,20]:
+          - /url: /terms
+        - link "Acceptable Use" [ref=e388] [cursor=pointer] [box=373,6655,102,20]:
+          - /url: /acceptable-use
+        - link "Review Policy" [ref=e389] [cursor=pointer] [box=491,6655,87,20]:
+          - /url: /review-policy
+        - link "Cookies" [ref=e390] [cursor=pointer] [box=594,6655,52,20]:
+          - /url: /cookies
+        - link "Search" [ref=e391] [cursor=pointer] [box=662,6655,45,20]:
+          - /url: /search
+        - link "Find Care" [ref=e392] [cursor=pointer] [box=722,6655,62,20]:
+          - /url: /find-care
+        - link "Care Groups" [ref=e393] [cursor=pointer] [box=800,6655,82,20]:
+          - /url: /groups
+        - link "Pricing" [ref=e394] [cursor=pointer] [box=898,6655,44,20]:
+          - /url: /pricing
+        - link "API" [ref=e395] [cursor=pointer] [box=958,6655,21,20]:
+          - /url: /api
+        - link "Why CareGist" [ref=e396] [cursor=pointer] [box=995,6655,90,20]:
+          - /url: /why-caregist
+        - link "Get a lead list" [ref=e397] [cursor=pointer] [box=1100,6655,89,20]:
+          - /url: /lead-list
+        - link "Contact" [ref=e398] [cursor=pointer] [box=1205,6655,53,20]:
+          - /url: mailto:hello@caregist.co.uk
+  - alert [ref=e399] [box=-1,-1,1,1]

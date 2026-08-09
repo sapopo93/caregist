@@ -5,38 +5,20 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { trackEvent } from "@/lib/analytics";
 import { normalizeApiError, describeFetchError } from "@/lib/api-error";
+import { normalizePostVerificationPath } from "@/lib/post-verification";
 
 const PLAN_COPY: Record<string, { title: string; body: string }> = {
   free: {
     title: "Start with Free",
     body: "Built for evaluation: test the dashboard, browse provider data, and monitor one provider before moving into a paid workflow.",
   },
-  "alerts-pro": {
-    title: "Start Alerts Pro",
-    body: "Alerts Pro is for monitoring provider watchlists, rating movement, and weekly market alerts.",
+  "radar-regional": {
+    title: "Start Radar Regional",
+    body: "For compliance firms turning verified CQC changes in one England region into a repeatable team workflow.",
   },
-  "data-starter": {
-    title: "Start Data Starter",
-    body: "Data Starter is the first core new-provider intelligence plan for weekly feed exports and saved views.",
-  },
-  "data-pro": {
-    title: "Start Data Pro",
-    body: "Data Pro is for small teams using CareGist as a recurring new-provider sales workflow.",
-  },
-  "data-business": {
-    title: "Start Data Business",
-    body: "Data Business is for teams pushing provider intelligence into CRM, outbound, and internal systems.",
-  },
-};
-
-const PROVIDER_TIER_COPY: Record<string, { title: string; body: string }> = {
-  enhanced: {
-    title: "Upgrade to Provider Pro Listing",
-    body: "Create your account to claim your listing and unlock a Provider Pro Listing — description, photos, and virtual tour.",
-  },
-  sponsored: {
-    title: "Upgrade to Sponsored Listing",
-    body: "Create your account to claim your listing and unlock a Sponsored Listing — top placement, sponsored badge, and maximum visibility.",
+  "radar-national": {
+    title: "Start Radar National",
+    body: "For national compliance and business-development teams needing all-England evidence-linked CQC signals.",
   },
 };
 
@@ -44,7 +26,6 @@ function SignupForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const plan = searchParams.get("plan") || "free";
-  const providerTier = searchParams.get("provider_tier") || "";
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -56,9 +37,9 @@ function SignupForm() {
   useEffect(() => {
     const stored = localStorage.getItem("caregist_user");
     if (stored) {
-      router.replace(plan !== "free" || providerTier ? `/pricing` : "/dashboard");
+      router.replace(plan !== "free" ? "/pricing" : "/dashboard");
     }
-  }, [plan, providerTier, router]);
+  }, [plan, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,12 +47,17 @@ function SignupForm() {
     setLoading(true);
 
     try {
-      void trackEvent("plan_selection", "signup_form", { plan, provider_tier: providerTier || undefined });
+      void trackEvent("plan_selection", "signup_form", { plan });
 
       const res = await fetch("/api/v1/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, name, password }),
+        body: JSON.stringify({
+          email,
+          name,
+          password,
+          plan,
+        }),
       });
 
       const data = await res.json().catch(() => ({}));
@@ -87,14 +73,14 @@ function SignupForm() {
       }
 
       let next: string;
-      if (providerTier) {
-        next = `/login?provider_tier=${providerTier}`;
-      } else if (plan !== "free") {
+      if (plan !== "free") {
         next = `/login?upgrade=${plan}`;
       } else {
         next = "/login";
       }
-      router.push(`/verify-email?email=${encodeURIComponent(email)}&next=${encodeURIComponent(next)}`);
+      const safeNext = normalizePostVerificationPath(next) || "/login";
+      localStorage.setItem("caregist_post_verify_path", safeNext);
+      router.push(`/verify-email?email=${encodeURIComponent(email)}&next=${encodeURIComponent(safeNext)}`);
     } catch (err) {
       setError(describeFetchError(err));
     } finally {
@@ -105,14 +91,10 @@ function SignupForm() {
   return (
     <div className="max-w-md mx-auto px-6 py-16">
       <h1 className="text-3xl font-bold text-center mb-2">
-        {providerTier
-          ? (PROVIDER_TIER_COPY[providerTier]?.title ?? "Create your provider account")
-          : (PLAN_COPY[plan]?.title ?? "Create your account")}
+        {PLAN_COPY[plan]?.title ?? "Create your account"}
       </h1>
       <p className="text-dusk text-center mb-8">
-        {providerTier
-          ? (PROVIDER_TIER_COPY[providerTier]?.body ?? "Create your CareGist account.")
-          : (PLAN_COPY[plan]?.body ?? "Create your CareGist account.")}
+        {PLAN_COPY[plan]?.body ?? "Create your CareGist account."}
       </p>
       <p className="text-xs text-dusk text-center mb-6">
         We&apos;ll ask you to verify your email before you log in or start billing.
@@ -169,8 +151,6 @@ function SignupForm() {
         >
           {loading
             ? "Creating account..."
-            : providerTier
-            ? "Create account and claim listing"
             : plan === "free"
             ? "Create evaluation account"
             : `Continue to ${plan.charAt(0).toUpperCase()}${plan.slice(1)}`}

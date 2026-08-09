@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import asyncio
+import logging
+import os
+from collections.abc import Mapping
 from contextlib import asynccontextmanager
 
 try:
@@ -12,13 +15,15 @@ except ImportError:  # pragma: no cover - optional observability dependency in l
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from api.config import settings
+from api.config import runtime_requires_production_secrets, settings
 from api.database import close_pool, init_pool
 from api.logging_config import setup_logging
 
 # Structured JSON logs in production, human-readable locally
 setup_logging(json_output="localhost" not in settings.database_url)
-from api.routers import admin, analytics, api_applications, auth, billing, city_pages, claims, comparisons, enquiries, feed, groups, health, internal, provider_profile, providers, public_tools, region_stats, regions, reviews, sitemaps, subscribe, webhooks
+from api.routers import admin, analytics, api_applications, auth, billing, city_pages, claims, comparisons, cron, enquiries, feed, groups, health, internal, provider_profile, providers, public_tools, radar, region_stats, regions, reviews, sitemaps, subscribe, webhooks
+
+_logger = logging.getLogger("caregist.app")
 
 if sentry_sdk and settings.sentry_dsn:
     sentry_sdk.init(
@@ -26,7 +31,7 @@ if sentry_sdk and settings.sentry_dsn:
         traces_sample_rate=0.1,
         profiles_sample_rate=0.1,
         environment="production" if "localhost" not in settings.database_url else "development",
-        release=f"caregist-api@1.0.0",
+        release="caregist-api@1.0.0",
     )
 
 
@@ -45,18 +50,47 @@ async def _email_drain_loop() -> None:
             _log.warning("Email drain loop error: %s", exc)
 
 
+def should_start_email_drain(environ: Mapping[str, str] | None = None) -> bool:
+    """Long-running workers are replaced by Vercel Cron in serverless runtimes."""
+    env = environ or os.environ
+    return env.get("VERCEL") != "1"
+
+
+async def _initialize_database() -> bool:
+    """Initialize the pool, permitting an explicit degraded preview only.
+
+    Production remains fail-closed. A protected preview can still serve its
+    liveness probe and return honest 503 responses from database-backed health
+    checks when its isolated database credential is absent or invalid.
+    """
+    try:
+        await init_pool()
+        return True
+    except Exception:
+        if runtime_requires_production_secrets(settings.database_url):
+            raise
+        _logger.exception("Preview database unavailable; starting in degraded mode")
+        return False
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    await init_pool()
+    database_ready = await _initialize_database()
     billing.init_stripe()
-    drain_task = asyncio.create_task(_email_drain_loop())
+    drain_task = (
+        asyncio.create_task(_email_drain_loop())
+        if database_ready and should_start_email_drain()
+        else None
+    )
     yield
-    drain_task.cancel()
-    try:
-        await drain_task
-    except asyncio.CancelledError:
-        pass
-    await close_pool()
+    if drain_task is not None:
+        drain_task.cancel()
+        try:
+            await drain_task
+        except asyncio.CancelledError:
+            pass
+    if database_ready:
+        await close_pool()
 
 
 _is_local = "localhost" in settings.database_url
@@ -85,6 +119,15 @@ from api.metrics import MetricsMiddleware
 app.add_middleware(MetricsMiddleware)
 
 
+from api.metrics import MetricsMiddleware
+from api.middleware.request_id import RequestIdMiddleware
+
+# Record request latency/volume for /metrics (F-47), then bind a request id
+# (F-39) as the outermost layer.
+app.add_middleware(MetricsMiddleware)
+app.add_middleware(RequestIdMiddleware)
+
+
 @app.middleware("http")
 async def security_headers_middleware(request, call_next):
     response = await call_next(request)
@@ -97,11 +140,7 @@ async def security_headers_middleware(request, call_next):
     return response
 
 
-import logging
-
 from fastapi.responses import JSONResponse
-
-_logger = logging.getLogger("caregist.app")
 
 
 @app.exception_handler(Exception)
@@ -113,7 +152,10 @@ async def global_exception_handler(request, exc):
 
 
 app.include_router(health.router)
+app.include_router(cron.router)
 app.include_router(internal.router)
+# Compatibility alias for agent/support integrations that use the public API prefix.
+app.include_router(internal.router, prefix="/api/v1")
 app.include_router(auth.router)
 app.include_router(analytics.router)
 app.include_router(billing.router)
@@ -124,6 +166,7 @@ app.include_router(admin.router)
 app.include_router(groups.router)
 app.include_router(provider_profile.router)
 app.include_router(providers.router)
+app.include_router(radar.router)
 app.include_router(feed.router)
 app.include_router(regions.router)
 app.include_router(subscribe.router)

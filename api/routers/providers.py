@@ -13,7 +13,8 @@ from fastapi.responses import StreamingResponse
 
 from api.config import BASIC_CSV_FIELDS, filter_fields, get_next_tier, get_tier_config, settings
 from api.database import get_connection
-from api.middleware.auth import validate_api_key, validate_optional_api_key
+from api.service_taxonomy import resolve_service_filter
+from api.middleware.auth import validate_api_key, validate_billing_identity, validate_optional_api_key
 from api.middleware.rate_limit import add_rate_limit_headers, check_export_limit
 from api.queries.providers import (
     CQC_ID_LOOKUP,
@@ -158,6 +159,7 @@ async def search_providers(
     max_page = config["page_size"]
     per_page = min(per_page or max_page, max_page)
     offset = (page - 1) * per_page
+    service_aliases = resolve_service_filter(service_type)
 
     query_type = classify_query(q)
 
@@ -184,8 +186,8 @@ async def search_providers(
 
                 query_sql = build_search_query(sort, has_text_query=False, is_postcode=True)
                 count_sql = build_count_query(is_postcode=True)
-                rows = await conn.fetch(query_sql, pc_prefix, region, rating, type, service_type, postcode, per_page, offset)
-                count_row = await conn.fetchrow(count_sql, pc_prefix, region, rating, type, service_type, postcode)
+                rows = await conn.fetch(query_sql, pc_prefix, region, rating, type, service_aliases, postcode, per_page, offset)
+                count_row = await conn.fetchrow(count_sql, pc_prefix, region, rating, type, service_aliases, postcode)
                 total = count_row["total"] if count_row else 0
                 data = [filter_fields(_row_to_dict(r), tier) for r in rows]
                 resp = _paginated_response(data, total, page, per_page, tier)
@@ -197,8 +199,8 @@ async def search_providers(
             has_text = query_type == "text"
             query_sql = build_search_query(sort, has_text_query=has_text)
             count_sql = build_count_query()
-            rows = await conn.fetch(query_sql, q, region, rating, type, service_type, postcode, per_page, offset)
-            count_row = await conn.fetchrow(count_sql, q, region, rating, type, service_type, postcode)
+            rows = await conn.fetch(query_sql, q, region, rating, type, service_aliases, postcode, per_page, offset)
+            count_row = await conn.fetchrow(count_sql, q, region, rating, type, service_aliases, postcode)
 
     except Exception as exc:
         logger.error("Search query failed: %s", exc)
@@ -213,9 +215,9 @@ async def search_providers(
     if facets:
         try:
             async with get_connection() as conn:
-                rating_rows = await conn.fetch(FACET_RATINGS, q, region, rating, type, service_type, postcode)
-                region_rows = await conn.fetch(FACET_REGIONS, q, region, rating, type, service_type, postcode)
-                type_rows = await conn.fetch(FACET_TYPES, q, region, rating, type, service_type, postcode)
+                rating_rows = await conn.fetch(FACET_RATINGS, q, region, rating, type, service_aliases, postcode)
+                region_rows = await conn.fetch(FACET_REGIONS, q, region, rating, type, service_aliases, postcode)
+                type_rows = await conn.fetch(FACET_TYPES, q, region, rating, type, service_aliases, postcode)
             resp["facets"] = {
                 "ratings": {r["overall_rating"]: r["count"] for r in rating_rows},
                 "regions": {r["region"]: r["count"] for r in region_rows},
@@ -239,13 +241,15 @@ async def export_providers_csv(
     _auth: dict = Depends(validate_api_key),
 ) -> StreamingResponse:
     """Export search results as CSV. Row limit depends on tier."""
+    if not settings.directory_export_delivery_enabled:
+        raise HTTPException(status_code=503, detail="Export delivery is awaiting Human Gate approval.")
     tier = _auth["tier"]
     config = get_tier_config(tier)
     add_rate_limit_headers(response, tier, _auth["remaining"])
 
     row_limit = config["export"]
     if row_limit == 0:
-        raise HTTPException(status_code=403, detail="CSV export requires an account. Sign up free at /signup")
+        raise HTTPException(status_code=403, detail="CSV export requires a paid plan. Upgrade at /pricing")
     check_export_limit(_auth.get("key_id") or _auth.get("name", "guest"), tier)
 
     # Require at least one filter for free/starter to prevent bulk scraping
@@ -260,11 +264,12 @@ async def export_providers_csv(
             q = None
 
     is_basic = tier == "free"
+    service_aliases = resolve_service_filter(service_type)
 
     try:
         async with get_connection() as conn:
-            rows = await conn.fetch(SEARCH_EXPORT + " LIMIT $7", q, region, rating, type, service_type, postcode, row_limit)
-            count_row = await conn.fetchrow(build_count_query(), q, region, rating, type, service_type, postcode)
+            rows = await conn.fetch(SEARCH_EXPORT + " LIMIT $7", q, region, rating, type, service_aliases, postcode, row_limit)
+            count_row = await conn.fetchrow(build_count_query(), q, region, rating, type, service_aliases, postcode)
     except Exception as exc:
         logger.error("Export query failed: %s", exc)
         raise HTTPException(status_code=503, detail="Export failed.")
@@ -330,6 +335,8 @@ async def export_providers_xlsx(
     _auth: dict = Depends(validate_api_key),
 ) -> StreamingResponse:
     """Export search results as Excel (.xlsx). Row limit depends on tier."""
+    if not settings.directory_export_delivery_enabled:
+        raise HTTPException(status_code=503, detail="Export delivery is awaiting Human Gate approval.")
     import openpyxl
     from openpyxl.styles import Font
 
@@ -339,7 +346,7 @@ async def export_providers_xlsx(
 
     row_limit = config["export"]
     if row_limit == 0:
-        raise HTTPException(status_code=403, detail="Export requires an account. Sign up free at /signup")
+        raise HTTPException(status_code=403, detail="Export requires a paid plan. Upgrade at /pricing")
     check_export_limit(_auth.get("key_id") or _auth.get("name", "guest"), tier)
 
     if tier in ("free", "starter") and not any([q, region, rating, type, service_type, postcode]):
@@ -351,11 +358,12 @@ async def export_providers_xlsx(
             q = None
 
     is_basic = tier == "free"
+    service_aliases = resolve_service_filter(service_type)
 
     try:
         async with get_connection() as conn:
-            rows = await conn.fetch(SEARCH_EXPORT + " LIMIT $7", q, region, rating, type, service_type, postcode, row_limit)
-            count_row = await conn.fetchrow(build_count_query(), q, region, rating, type, service_type, postcode)
+            rows = await conn.fetch(SEARCH_EXPORT + " LIMIT $7", q, region, rating, type, service_aliases, postcode, row_limit)
+            count_row = await conn.fetchrow(build_count_query(), q, region, rating, type, service_aliases, postcode)
     except Exception as exc:
         logger.error("Export (xlsx) query failed: %s", exc)
         raise HTTPException(status_code=503, detail="Export failed.")
@@ -498,6 +506,8 @@ async def create_monitor(
     _auth: dict = Depends(validate_api_key),
 ) -> dict:
     """Monitor a provider for rating changes."""
+    if not settings.monitoring_activation_enabled:
+        raise HTTPException(status_code=503, detail="Monitoring activation is awaiting Human Gate approval.")
     tier = _auth["tier"]
     config = get_tier_config(tier)
     max_monitors = config.get("monitors", 2)
@@ -548,7 +558,7 @@ async def remove_monitor(
 @router.get("/{slug}/monitor-status")
 async def monitor_status(
     slug: str,
-    _auth: dict = Depends(validate_api_key),
+    _auth: dict = Depends(validate_billing_identity),
 ) -> dict:
     """Check if the current user is monitoring a provider."""
     user_id = _auth.get("user_id")

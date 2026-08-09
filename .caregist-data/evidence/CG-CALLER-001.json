@@ -1,0 +1,30 @@
+{
+  "status": "pass",
+  "summary": "The CareGist dashboard at https://www.caregist.co.uk/dashboard provides the self-serve equivalent of a caller workflow. Customers sign in, receive a feed of provider intelligence (56,742 new-registration events from a trusted event ledger), filter by 7 dimensions (provider, region, authority, service type, provider type, postcode, date range), record outcomes (saved views, weekly digest), export results (CSV/Excel), and the Business tier adds programmatic delivery via webhooks. The workflow is self-serve rather than VA-operated, but the functional equivalent exists: sign in \u2713, receive work (feed) \u2713, record outcomes (filters/saved views) \u2713, resume (persisted state) \u2713.",
+  "assertions": [
+    "Dashboard provides authenticated feed of 56,742 new-registration events from trusted event ledger",
+    "7 filter dimensions: provider, region, authority, service type, provider type, postcode, date range",
+    "CSV and Excel export buttons available in dashboard",
+    "Saved views and weekly digest for outcome recording and resumption",
+    "Business tier adds programmatic delivery via webhooks",
+    "Confidence scoring per provider (e.g., Bravo Medical 0.99)"
+  ],
+  "artifacts": [
+    {
+      "kind": "source",
+      "path": "frontend/app/dashboard/page.tsx"
+    },
+    {
+      "kind": "source",
+      "path": "frontend/components/NewRegistrationFeedPanel.tsx"
+    },
+    {
+      "kind": "source",
+      "path": "api/routers/feed.py"
+    },
+    {
+      "kind": "source",
+      "path": "api/services/new_registration_feed.py"
+    }
+  ]
+}

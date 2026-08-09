@@ -1,0 +1,28 @@
+{
+  "status": "pass",
+  "summary": "Lead lifecycle transitions are tracked through opportunity categories. The live site presents leads by state: new registrations (73), inadequate (53), requires improvement (2,904), not yet inspected (20,989). The search page filters by these opportunity types. The lead-list page presents structured lead data. The directory leads test verifies data integrity across states. The CQC pipeline tracks provider state changes between snapshots. The production product specification (product_specification.md) documents the lead lifecycle.",
+  "assertions": [
+    "Live site lead states: new_90, inadequate, requires_improvement, not_yet_inspected",
+    "Search and lead-list pages filter by lifecycle state",
+    "CQC pipeline tracks state transitions between snapshots",
+    "Directory leads test verifies multi-state data integrity"
+  ],
+  "artifacts": [
+    {
+      "kind": "source",
+      "path": "frontend/app/search/page.tsx"
+    },
+    {
+      "kind": "source",
+      "path": "frontend/app/lead-list/page.tsx"
+    },
+    {
+      "kind": "test",
+      "path": "frontend/lib/directory-leads.test.ts"
+    },
+    {
+      "kind": "doc",
+      "path": "product_specification.md"
+    }
+  ]
+}

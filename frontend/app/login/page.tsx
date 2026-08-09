@@ -51,25 +51,6 @@ function LoginForm() {
 
       const params = new URLSearchParams(window.location.search);
       const upgrade = params.get("upgrade");
-      const providerTier = params.get("provider_tier");
-
-      if (providerTier) {
-        try {
-          const claimsRes = await fetch("/api/v1/claims/my-providers", {
-            credentials: "include",
-          });
-          const claimsData = await claimsRes.json();
-          const providers: { slug: string }[] = claimsData.providers || [];
-          if (providers.length > 0) {
-            router.push(`/provider-dashboard/${providers[0].slug}?upgrade_tier=${providerTier}`);
-          } else {
-            router.push(`/search?claim_intent=${providerTier}`);
-          }
-        } catch {
-          router.push(`/search?claim_intent=${providerTier}`);
-        }
-        return;
-      }
 
       router.push(upgrade ? `/pricing?highlight=${upgrade}` : "/dashboard");
     } catch (err) {
