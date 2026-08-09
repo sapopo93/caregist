@@ -12,7 +12,7 @@ import SupportWidgetMount from "@/components/SupportWidgetMount";
 
 import { getServerApiBase } from "@/lib/server-api-config";
 
-const SITE_URL = "https://caregist.co.uk";
+const SITE_URL = "https://www.caregist.co.uk";
 
 async function getDataRefreshDate(): Promise<string | null> {
   try {
@@ -51,16 +51,16 @@ const playfairDisplay = Playfair_Display({
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: "CareGist | Search UK CQC Care Providers",
+  title: "CareGist | CQC Signal Intelligence",
   description:
-    "Track CQC market movement, new registrations, Inadequate providers, Requires Improvement providers, and care-sector opportunity lists.",
+    "Search CQC-registered services for free and turn verified new registrations and rating changes into evidence-linked team workflows.",
   icons: {
     icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
   },
   openGraph: {
-    title: "CareGist | Search UK CQC Care Providers",
+    title: "CareGist | CQC Signal Intelligence",
     description:
-      "Track CQC market movement, new registrations, Inadequate providers, Requires Improvement providers, and care-sector opportunity lists.",
+      "Verified CQC new registrations and rating changes with traceable source evidence.",
     siteName: "CareGist",
     type: "website",
     locale: "en_GB",
@@ -68,9 +68,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "CareGist | Search UK CQC Care Providers",
+    title: "CareGist | CQC Signal Intelligence",
     description:
-      "Track CQC market movement, new registrations, Inadequate providers, Requires Improvement providers, and care-sector opportunity lists.",
+      "Verified CQC new registrations and rating changes with traceable source evidence.",
     images: ["/twitter-image"],
   },
 };
@@ -93,32 +93,29 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
             <div className="flex items-center justify-end gap-3">
               <Link
-                href="/search?opportunity=new_90"
+                href="/pricing"
                 className="rounded-full bg-amber px-4 py-2 text-sm font-semibold text-charcoal transition hover:bg-cream md:hidden"
               >
-                Lists
+                Radar
               </Link>
               <nav className="hidden items-center gap-5 text-sm font-medium md:flex">
-                <Link href="/search?opportunity=new_90" className="hover:text-amber">
-                  Opportunity lists
-                </Link>
-                <Link href="/lead-list" className="hover:text-amber">
-                  Lead lists
+                <Link href="/search" className="hover:text-amber">
+                  Directory
                 </Link>
                 <Link href="/pricing" className="hover:text-amber">
-                  Pricing
+                  Radar
                 </Link>
-                <Link href="/api" className="hover:text-amber">
-                  API
+                <Link href="/intelligence-feed" className="hover:text-amber">
+                  Intelligence Feed
                 </Link>
                 <Link href="/why-caregist" className="hover:text-amber">
                   About
                 </Link>
                 <Link
-                  href="/lead-list?opportunity=new_90"
+                  href="/pricing"
                   className="rounded-full bg-amber px-4 py-2 text-sm font-semibold text-charcoal transition hover:bg-cream"
                 >
-                  Get intelligence
+                  Compare plans
                 </Link>
               </nav>
               <AuthNav />
@@ -171,9 +168,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <Link href="/acceptable-use" className="underline hover:text-cream">
                 Acceptable Use
               </Link>
-              <Link href="/review-policy" className="underline hover:text-cream">
-                Review Policy
-              </Link>
               <Link href="/cookies" className="underline hover:text-cream">
                 Cookies
               </Link>
@@ -181,27 +175,21 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 Data Status
               </Link>
               <Link href="/search" className="underline hover:text-cream">
-                Opportunity lists
+                Directory
               </Link>
               <Link href="/find-care" className="underline hover:text-cream">
                 Find Care
               </Link>
-              <Link href="/groups" className="underline hover:text-cream">
-                Care Groups
-              </Link>
               <Link href="/pricing" className="underline hover:text-cream">
                 Pricing
               </Link>
-              <Link href="/api" className="underline hover:text-cream">
-                API
+              <Link href="/intelligence-feed" className="underline hover:text-cream">
+                Intelligence Feed
               </Link>
               <Link href="/why-caregist" className="underline hover:text-cream">
                 Why CareGist
               </Link>
-              <Link href="/lead-list" className="underline hover:text-cream">
-                Get intelligence
-              </Link>
-              <a href="mailto:hello@caregist.co.uk" className="underline hover:text-cream">
+              <a href="mailto:support@caregist.co.uk" className="underline hover:text-cream">
                 Contact
               </a>
             </div>

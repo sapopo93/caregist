@@ -23,6 +23,12 @@ BASELINE_REVERSIBLE_FROM = 36
 LEGACY_DUPLICATE_MIGRATIONS = {
     34: frozenset({"034_named_care_groups_view.sql", "034_verification_token_expiry.sql"}),
 }
+# Migration 047 was approved, applied, and frozen before this repository-wide
+# checker began running in CI. Keep the exception exact and filename-scoped so
+# new destructive migrations still require an explicit approval environment.
+FROZEN_APPROVED_DESTRUCTIVE_MIGRATIONS = frozenset(
+    {"047_expand_analytics_provider_reference.sql"}
+)
 
 DESTRUCTIVE_SQL_RE = re.compile(
     r"\b(DROP\s+(TABLE|COLUMN|SCHEMA|DATABASE)|ALTER\s+TABLE\s+\S+\s+ALTER\s+COLUMN\s+\S+\s+TYPE)\b",
@@ -139,7 +145,12 @@ def check_governance(root: str | Path = ".") -> list[GovernanceFinding]:
                 )
             )
 
-        if number >= BASELINE_REVERSIBLE_FROM and DESTRUCTIVE_SQL_RE.search(text) and not approved_destructive:
+        if (
+            number >= BASELINE_REVERSIBLE_FROM
+            and DESTRUCTIVE_SQL_RE.search(text)
+            and migration_path.name not in FROZEN_APPROVED_DESTRUCTIVE_MIGRATIONS
+            and not approved_destructive
+        ):
             findings.append(
                 GovernanceFinding(
                     "destructive_sql_requires_approval",

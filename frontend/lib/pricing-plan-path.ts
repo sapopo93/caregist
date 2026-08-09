@@ -1,10 +1,9 @@
 const PLAN_SLUGS = new Set([
-  "free",
-  "alerts-pro",
-  "data-starter",
-  "data-pro",
-  "data-business",
-  "enterprise",
+  "free-directory",
+  "radar-regional",
+  "radar-national",
+  "intelligence-feed-pilot",
+  "embedded-enterprise",
 ]);
 
 export function normalizePricingPlanSlug(value: string | null | undefined): string | null {
@@ -17,4 +16,3 @@ export function pricingPlanCardId(value: string | null | undefined): string | nu
   const plan = normalizePricingPlanSlug(value);
   return plan ? `plan-${plan}` : null;
 }
-

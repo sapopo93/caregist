@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 
 import DeleteAccountButton from "@/components/DeleteAccountButton";
 import NewRegistrationFeedPanel from "@/components/NewRegistrationFeedPanel";
+import RadarPanel from "@/components/RadarPanel";
 import { trackEvent } from "@/lib/analytics";
 import { clearBrowserAuthState, isAuthExpiredResponse } from "@/lib/auth-session";
 import { PLAN_LIMIT_SUMMARY, PLAN_NEXT_STEP, PLAN_PRIMARY_CTA } from "@/lib/caregist-config";
@@ -30,9 +31,6 @@ type ProviderAnalytics = {
 };
 
 const CHART_COLORS = ["#C1784F", "#4A5E45", "#D4943A", "#6B4C35", "#7E9B79", "#8C7E6A", "#2B2520", "#C44444"];
-const CHECKOUT_ENABLED = process.env.NEXT_PUBLIC_BILLING_CHECKOUT_ENABLED === "true";
-const B2B_TERMS_VERSION = process.env.NEXT_PUBLIC_B2B_TERMS_VERSION || "";
-
 export default function DashboardPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
@@ -50,10 +48,7 @@ export default function DashboardPage() {
   const [providerAnalytics, setProviderAnalytics] = useState<ProviderAnalytics | null>(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
   const [analyticsError, setAnalyticsError] = useState("");
-  const [seatDraft, setSeatDraft] = useState(0);
-  const [seatLoading, setSeatLoading] = useState(false);
   const [seatError, setSeatError] = useState("");
-  const [businessUseConfirmed, setBusinessUseConfirmed] = useState(false);
   const [cancelLoading, setCancelLoading] = useState(false);
   const [cancelError, setCancelError] = useState("");
   const [loadError, setLoadError] = useState(false);
@@ -99,7 +94,6 @@ export default function DashboardPage() {
           localStorage.setItem("caregist_tier", data.tier);
           window.dispatchEvent(new Event("caregist_auth_change"));
         }
-        setSeatDraft(data?.entitlements?.extra_seats || 0);
       })
       .catch(() => setLoadError(true));
     fetch("/api/v1/auth/team-keys", { credentials: "include" })
@@ -231,21 +225,33 @@ export default function DashboardPage() {
       cta: PLAN_PRIMARY_CTA.free,
       next: PLAN_NEXT_STEP.free,
     },
+    "radar-regional": {
+      limit: PLAN_LIMIT_SUMMARY["radar-regional"],
+      features: "One England region, 2 users, two verified launch signals, 10 saved views, and 90-day event export.",
+      cta: "Compare Radar National",
+      next: PLAN_NEXT_STEP["radar-regional"],
+    },
+    "radar-national": {
+      limit: PLAN_LIMIT_SUMMARY["radar-national"],
+      features: "All England, 5 users, two verified launch signals, 50 saved views and provider lists, and 365-day event export.",
+      cta: "Discuss an Intelligence Feed pilot",
+      next: PLAN_NEXT_STEP["radar-national"],
+    },
     starter: {
       limit: PLAN_LIMIT_SUMMARY.starter,
-      features: "First real workflow: new registration feed, recurring exports, saved views, weekly digest, and 15 provider watchlists.",
+      features: "Historical compatibility access retained under the existing subscription.",
       cta: PLAN_PRIMARY_CTA.starter,
       next: PLAN_NEXT_STEP.starter,
     },
     pro: {
       limit: PLAN_LIMIT_SUMMARY.pro,
-      features: "Small-team production use: broader feed coverage, 5,000-row exports, 100 monitors, 3 named access seats, and daily operational headroom.",
+      features: "Historical compatibility access and named-user allowance retained under the existing subscription.",
       cta: PLAN_PRIMARY_CTA.pro,
       next: PLAN_NEXT_STEP.pro,
     },
     business: {
       limit: PLAN_LIMIT_SUMMARY.business,
-      features: "Operational integration: full fields, signed feed webhooks, 10,000-row exports, 500 monitors, and stronger admin support.",
+      features: "Historical integration access retained while a controlled Feed migration is agreed.",
       cta: PLAN_PRIMARY_CTA.business,
       next: PLAN_NEXT_STEP.business,
     },
@@ -260,58 +266,12 @@ export default function DashboardPage() {
       : tier === "business"
         ? "10 included users"
         : "1 included user";
-  const upgradeHref = tier === "business" ? "mailto:enterprise@caregist.co.uk?subject=CareGist+Enterprise" : "/pricing";
-  const supportsSeatCheckout = tier === "pro" || tier === "business";
+  const upgradeHref = tier === "radar-national"
+    ? "/intelligence-feed"
+    : tier === "business"
+      ? "mailto:enterprise@caregist.co.uk?subject=CareGist+Enterprise"
+      : "/pricing";
   const quickStartApiKey = revealedApiKey ? `${revealedApiKey.slice(0, 20)}...` : "cg_your_key";
-
-  async function handleSeatUpdate() {
-    if (!supportsSeatCheckout || !user) return;
-    if (!CHECKOUT_ENABLED || !B2B_TERMS_VERSION || !businessUseConfirmed) {
-      setSeatError("Paid changes are unavailable or require B2B authority confirmation.");
-      return;
-    }
-    setSeatLoading(true);
-    setSeatError("");
-    void trackEvent("seat_addon_interaction", "dashboard_team_card", { tier, extra_seats: seatDraft });
-
-    try {
-      const res = await fetch("/api/v1/billing/checkout", {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: user.email,
-          tier,
-          extra_seats: seatDraft,
-          terms_version: B2B_TERMS_VERSION,
-          business_use_confirmed: businessUseConfirmed,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setSeatError(data.detail || "Could not update seats.");
-        return;
-      }
-      if (data.updated) {
-        setSubscription((current: any) => current ? {
-          ...current,
-          entitlements: {
-            ...current.entitlements,
-            extra_seats: data.extra_seats,
-            max_users: (current.entitlements?.included_users || 0) + data.extra_seats,
-          },
-        } : current);
-        return;
-      }
-      if (data.checkout_url) {
-        window.location.href = data.checkout_url;
-      }
-    } catch {
-      setSeatError("Could not update seats.");
-    } finally {
-      setSeatLoading(false);
-    }
-  }
 
   async function handleCancellation() {
     setCancelLoading(true);
@@ -427,7 +387,7 @@ export default function DashboardPage() {
         </button>
       </div>
       <p className="text-dusk mb-8">
-        Welcome back, {user.name}. This workspace is built to turn newly registered UK care providers into a recurring commercial workflow, backed by a trusted event ledger.
+        Welcome back, {user.name}. This workspace keeps CQC change signals, source evidence, saved views, and team actions on one trusted event ledger.
       </p>
 
       <div className="bg-cream border border-stone rounded-lg p-6 mb-6">
@@ -435,7 +395,7 @@ export default function DashboardPage() {
           <h2 className="text-xl font-bold">Your plan</h2>
           <span className="px-3 py-1 rounded-full bg-moss text-white text-sm font-medium capitalize">{tier}</span>
         </div>
-        <p className="text-dusk text-sm mb-1">Rate limit: {info.limit}</p>
+        <p className="text-dusk text-sm mb-1">Scope: {info.limit}</p>
         <p className="text-dusk text-sm mb-1">Includes: {info.features}</p>
         <p className="text-dusk text-sm mb-4">Users: {seatSummary}</p>
         <div className="rounded-lg bg-parchment border border-stone p-4">
@@ -491,12 +451,17 @@ export default function DashboardPage() {
       />
 
       {subscriptionReady ? (
-        <NewRegistrationFeedPanel tier={tier} upgradeHref={upgradeHref} />
+        <>
+          <RadarPanel tier={tier} />
+          {["starter", "pro", "business", "enterprise", "alerts-pro"].includes(tier) && (
+            <NewRegistrationFeedPanel tier={tier} upgradeHref={upgradeHref} />
+          )}
+        </>
       ) : (
         <section className="bg-cream border border-stone rounded-lg p-6 mb-6">
-          <h2 className="text-2xl font-bold mb-2">New registration feed</h2>
+          <h2 className="text-2xl font-bold mb-2">Radar</h2>
           <p className="text-dusk text-sm">
-            {loadError ? "The feed is paused until your account plan can be verified." : "Loading your plan and feed access…"}
+            {loadError ? "Radar is paused until your account plan can be verified." : "Loading your plan and Radar access…"}
           </p>
         </section>
       )}
@@ -505,7 +470,7 @@ export default function DashboardPage() {
         <div className="bg-cream border border-stone rounded-lg p-6">
           <h2 className="text-xl font-bold mb-3">Data explorer</h2>
           <p className="text-dusk text-sm mb-4">
-            Search and profile the wider provider universe once the new registration feed has identified where you want to focus.
+            Search the wider provider directory and follow the official source link before acting on a record.
           </p>
           <div className="flex gap-4">
             <Link href="/search" className="text-sm text-clay underline">Open explorer</Link>
@@ -515,7 +480,7 @@ export default function DashboardPage() {
         <div className="bg-cream border border-stone rounded-lg p-6">
           <h2 className="text-xl font-bold mb-3">Provider claiming</h2>
           <p className="text-dusk text-sm mb-4">
-            Provider claiming remains available, but it is secondary to the recurring intelligence wedge.
+            Claims and correction requests remain free. CareGist does not sell paid ranking.
           </p>
           <div className="flex gap-4">
             <Link href="/find-care" className="text-sm text-clay underline">Find a provider to claim</Link>
@@ -524,6 +489,8 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {["starter", "pro", "business", "enterprise"].includes(tier) && (
+      <>
       <div className="bg-cream border border-stone rounded-lg p-6 mb-6">
         <h2 className="text-xl font-bold mb-3">API access</h2>
         <p className="text-dusk text-sm mb-4">
@@ -561,11 +528,6 @@ export default function DashboardPage() {
         <p className="text-sm text-dusk mt-3">
           Pass this as <code className="bg-parchment px-1 rounded">X-API-Key</code> in API requests.
         </p>
-        {tier === "free" && (
-          <p className="text-xs text-dusk mt-3">
-            Free is built for evaluation. Upgrade to Starter when you need recurring feed exports, saved views, weekly digests, or a workflow you will run more than occasionally.
-          </p>
-        )}
       </div>
 
       <div className="grid md:grid-cols-2 gap-6">
@@ -573,58 +535,12 @@ export default function DashboardPage() {
           <h2 className="text-xl font-bold mb-3">Team and attribution</h2>
           <p className="text-dusk text-sm mb-3">
             {tier === "pro" || tier === "business"
-              ? `This plan includes named access seats so teams can avoid shared passwords and keep activity attributable. ${seatSummary}.`
-              : "Free and Starter are single-seat tiers. Upgrade to Pro when multiple people need their own named access and clearer accountability."}
+              ? `Your historical plan retains its named-access allowance: ${seatSummary}.`
+              : "Your historical plan remains supported with its existing access allowance."}
           </p>
           <p className="text-xs text-dusk mb-4">
-            {tier === "pro" || tier === "business"
-              ? "Additional named access seats are £15 per seat per month in total and are provisioned against your current plan entitlements."
-              : "Pro includes 3 named access seats. Additional seats are £15 per seat per month in total."}
+            Additional seats are no longer sold. Contact support to discuss a controlled migration to the current catalogue.
           </p>
-          {supportsSeatCheckout && (
-            <div className="rounded-lg bg-parchment border border-stone p-4 mb-4">
-              <p className="text-[11px] uppercase tracking-[0.18em] text-dusk mb-2">Seat planning</p>
-              <div className="flex items-center gap-3 mb-2">
-                <label htmlFor="seat-count" className="text-sm text-bark">Extra seats</label>
-                <input
-                  id="seat-count"
-                  type="number"
-                  min={0}
-                  max={50}
-                  value={seatDraft}
-                  onChange={(e) => setSeatDraft(Math.max(0, Math.min(50, Number(e.target.value) || 0)))}
-                  className="w-24 px-3 py-2 rounded border border-stone bg-white text-sm"
-                />
-                <button
-                  onClick={() => void handleSeatUpdate()}
-                  disabled={seatLoading || !CHECKOUT_ENABLED || !businessUseConfirmed}
-                  className="px-4 py-2 bg-clay text-white rounded-lg text-sm hover:bg-bark transition-colors disabled:opacity-50"
-                >
-                  {seatLoading ? "Updating..." : "Update seats"}
-                </button>
-              </div>
-              {CHECKOUT_ENABLED && B2B_TERMS_VERSION ? (
-                <label className="mb-2 flex items-start gap-2 text-xs text-dusk">
-                  <input
-                    type="checkbox"
-                    checked={businessUseConfirmed}
-                    onChange={(event) => setBusinessUseConfirmed(event.target.checked)}
-                    className="mt-0.5"
-                  />
-                  <span>
-                    I am acting for a business and can bind it to the{" "}
-                    <Link href="/terms" className="text-clay underline">current B2B terms</Link>.
-                  </span>
-                </label>
-              ) : (
-                <p className="mb-2 text-xs text-alert">Paid subscription changes are currently unavailable.</p>
-              )}
-              <p className="text-xs text-dusk">
-                Add named access seats without moving to a different plan immediately. This updates your current subscription quantity.
-              </p>
-              {seatError && <p className="text-xs text-alert mt-2">{seatError}</p>}
-            </div>
-          )}
           {(tier === "pro" || tier === "business") && (
             <div className="rounded-lg bg-parchment border border-stone p-4 mb-4">
               <p className="text-[11px] uppercase tracking-[0.18em] text-dusk mb-2">Named access keys</p>
@@ -682,30 +598,30 @@ export default function DashboardPage() {
             className="text-clay underline text-sm"
             onClick={() => void trackEvent("upgrade_click", "dashboard_team_card", { tier })}
           >
-            {tier === "business" ? "Contact sales" : tier === "pro" ? "Upgrade to Business" : "Upgrade to Pro"}
+            Discuss a current-product migration
           </Link>
         </div>
 
         <div className="bg-cream border border-stone rounded-lg p-6">
           <h2 className="text-xl font-bold mb-3">Webhooks and integrations</h2>
           <p className="text-dusk text-sm mb-3">
-            Business and Enterprise can register outbound webhooks for the new registration feed and provider rating changes. Starter and Pro keep the focus on dashboard, exports, digests, and direct API use.
+            Existing integration entitlements remain supported. New integrations use a scoped Intelligence Feed pilot with canonical events and signed delivery.
           </p>
           <p className="text-xs text-dusk mb-4">
-            Supported webhook events are <code className="bg-parchment px-1 rounded">feed.new_registration</code> and <code className="bg-parchment px-1 rounded">provider.rating_changed</code>.
+            Current Feed delivery uses <code className="bg-parchment px-1 rounded">radar.event.created</code>; the event type remains in the signed payload. Historical event aliases remain compatibility-only.
           </p>
           <Link
-            href={tier === "business" ? "/api" : "/pricing"}
+            href="/intelligence-feed"
             className="text-clay underline text-sm"
             onClick={() => void trackEvent("upgrade_click", "dashboard_webhook_card", { tier, target: "business" })}
           >
-            {tier === "business" ? "Review webhook docs" : "Upgrade to Business"}
+            Explore the Feed pilot
           </Link>
           {(tier === "business" || tier === "enterprise") && (
             <div className="mt-4 rounded-lg bg-parchment border border-stone p-4">
               <p className="text-[11px] uppercase tracking-[0.18em] text-dusk mb-2">Delivery status</p>
               {webhooks.length === 0 ? (
-                <p className="text-xs text-dusk">No webhooks registered yet. Use the API docs to register your first endpoint.</p>
+                <p className="text-xs text-dusk">No compatibility webhooks are registered for this account.</p>
               ) : (
                 <div className="space-y-3">
                   {webhooks.map((webhook) => (
@@ -724,18 +640,20 @@ export default function DashboardPage() {
       <div className="bg-cream border border-stone rounded-lg p-6 mt-6">
         <h2 className="text-xl font-bold mb-3">Quick start</h2>
         <p className="text-dusk text-sm mb-4">
-          Typical flow: filter newly registered providers, export the current patch, save the view, then automate recurring delivery through the API or signed webhooks when the workflow proves out.
+          Existing integration customers can continue using their compatibility endpoint while a controlled migration to the canonical Feed is agreed.
         </p>
         <div className="bg-charcoal text-cream rounded-lg p-4 text-sm font-mono overflow-x-auto">
-          <p className="text-dusk"># Query the new registration feed for London</p>
+          <p className="text-dusk"># Historical compatibility endpoint</p>
           <p>curl -H &quot;X-API-Key: {quickStartApiKey}&quot; \</p>
-          <p>&nbsp; &quot;https://api.caregist.co.uk/api/v1/feed/new-registrations?region=London&quot;</p>
+          <p>&nbsp; &quot;https://www.caregist.co.uk/api/v1/feed/new-registrations?region=London&quot;</p>
         </div>
         <div className="mt-4 flex gap-4 text-sm">
-          <Link href="/api" className="text-clay underline">API documentation</Link>
+          <Link href="/intelligence-feed" className="text-clay underline">Intelligence Feed pilot</Link>
           <Link href="/pricing" className="text-clay underline">Pricing and entitlements</Link>
         </div>
       </div>
+      </>
+      )}
 
       <div className="mt-8 border border-red-200 rounded-lg p-6">
         <h2 className="text-xl font-bold text-red-600 mb-2">Danger zone</h2>
@@ -759,16 +677,7 @@ function ProviderAnalyticsSection({
   error: string;
   tier: string;
 }) {
-  if (!["starter", "pro", "business", "enterprise"].includes(tier)) {
-    return (
-      <div className="bg-cream border border-stone rounded-lg p-6 mb-6">
-        <h2 className="text-xl font-bold mb-2">Provider type analytics</h2>
-        <p className="text-sm text-dusk">
-          Upgrade to Starter or above to see provider mix, service-type distribution, and new-registration growth charts.
-        </p>
-      </div>
-    );
-  }
+  if (!["starter", "pro", "business", "enterprise"].includes(tier)) return null;
 
   return (
     <section className="mb-6">

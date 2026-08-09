@@ -1,6 +1,5 @@
 import SearchBar from "@/components/SearchBar";
 import ProviderCard from "@/components/ProviderCard";
-import ExportCSVButton from "@/components/ExportCSVButton";
 import PrintButton from "@/components/PrintButton";
 import RatingDistributionBar from "@/components/RatingDistributionBar";
 import EmailCaptureStrip from "@/components/EmailCaptureStrip";
@@ -10,6 +9,7 @@ import { getProviderHref, getProviderPathKey } from "@/lib/provider-path";
 import Link from "next/link";
 import { headers } from "next/headers";
 import type { Metadata } from "next";
+import { getSiteUrl } from "@/lib/site";
 
 const REGION_MAP: Record<string, string> = {
   "south-east": "South East",
@@ -30,7 +30,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   return {
     title: `${name} CQC Care Providers — Ratings & Inspection Data | CareGist`,
     description: `Browse CQC-rated care providers in ${name}. Rating distribution, top providers, and inspection data.`,
-    alternates: { canonical: `https://caregist.co.uk/region/${slug}` },
+    alternates: { canonical: `${getSiteUrl()}/region/${slug}` },
   };
 }
 
@@ -98,7 +98,7 @@ export default async function RegionPage({
         item: {
           "@type": "LocalBusiness",
           name: p.name,
-          ...(getProviderPathKey(p) && { url: `https://caregist.co.uk${getProviderHref(p)}` }),
+          ...(getProviderPathKey(p) && { url: `${getSiteUrl()}${getProviderHref(p)}` }),
         },
       })),
     }),
@@ -119,7 +119,6 @@ export default async function RegionPage({
       <div className="flex items-center justify-between mb-6">
         <p className="text-dusk">{error ? "Provider count unavailable" : `${totalProviders.toLocaleString()} providers`}</p>
         <div className="flex gap-3 items-center print:hidden">
-          <ExportCSVButton exportUrl={`/api/v1/providers/export.csv?${isRegion ? `region=${encodeURIComponent(REGION_MAP[slug])}` : `q=${encodeURIComponent(displayName)}`}`} />
           <PrintButton />
         </div>
       </div>

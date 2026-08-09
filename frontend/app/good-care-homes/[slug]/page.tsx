@@ -9,7 +9,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   return {
     title: `Good Care Homes in ${city} — CQC Rated | CareGist`,
     description: `Find Good-rated care homes in ${city}. CQC inspection data, ratings, and provider details.`,
-    alternates: { canonical: `https://caregist.co.uk/good-care-homes/${slug}` },
+    alternates: { canonical: `https://www.caregist.co.uk/good-care-homes/${slug}` },
   };
 }
 

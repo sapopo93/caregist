@@ -11,9 +11,9 @@ import { parseDirectorySearchParams } from "@/lib/directory-filters";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "CQC Opportunity Lists | New Registrations & At-Risk Providers | CareGist",
+  title: "Search CQC-registered Care Services | CareGist",
   description:
-    "Find CQC market movement lists: newly registered providers, Inadequate providers, Requires Improvement providers, and Not Yet Inspected services.",
+    "Search factual CQC location records by name, region, service type, rating, and registration recency.",
 };
 
 export default async function SearchPage({
@@ -24,13 +24,6 @@ export default async function SearchPage({
   const rawParams = await searchParams;
   const filters = parseDirectorySearchParams(rawParams);
   const opportunity = getDirectoryOpportunity(filters.opportunity);
-  const leadParams = new URLSearchParams();
-  if (filters.region) leadParams.set("region", filters.region);
-  if (filters.serviceType) leadParams.set("service_type", filters.serviceType);
-  if (filters.rating) leadParams.set("rating", filters.rating);
-  if (filters.opportunity) leadParams.set("opportunity", filters.opportunity);
-  const leadListHref = leadParams.toString() ? `/lead-list?${leadParams.toString()}` : "/lead-list";
-
   const [optionsResult, resultsResult] = await Promise.allSettled([
     getDirectoryFilterOptions(),
     searchDirectoryProviders(filters),
@@ -51,8 +44,8 @@ export default async function SearchPage({
         rating={filters.rating}
         opportunity={filters.opportunity}
         titleHeading="h1"
-        title={opportunity ? opportunity.label : "Search CQC opportunity lists"}
-        description="Find buyer-ready lists from CQC data: new registrations, quality-risk providers, uninspected services, and regional segments."
+        title={opportunity ? opportunity.label : "Search CQC-registered care services"}
+        description="Filter factual CQC location records. Segment labels describe published registration or rating state and are not predictions or recommendations."
         submitLabel="Update search"
       />
 
@@ -72,14 +65,14 @@ export default async function SearchPage({
               <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-clay">
-                    {opportunity ? "Opportunity list" : "Provider intelligence"}
+                    {opportunity ? "Factual segment" : "Provider directory"}
                   </p>
                   <h2 className="mt-2 text-3xl font-extrabold text-bark">
                     {results.total.toLocaleString()} provider{results.total === 1 ? "" : "s"}
                   </h2>
                   <p className="mt-2 text-sm text-dusk">
                     {opportunity
-                      ? `${opportunity.shortLabel} for ${opportunity.audience.toLowerCase()}.`
+                      ? `${opportunity.shortLabel}, based on the published registration or rating fields.`
                       : filters.query
                       ? `Matching "${filters.query}" with your selected filters.`
                       : "Filtered across the full active provider directory."}
@@ -123,31 +116,33 @@ export default async function SearchPage({
 
         <aside className="min-w-0 space-y-4">
           <div className="rounded-xl border border-stone bg-cream p-6 shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-clay">Lead lists</p>
-            <h2 className="mt-2 text-2xl font-bold text-bark">Get a filtered lead pack</h2>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-clay">Radar</p>
+            <h2 className="mt-2 text-2xl font-bold text-bark">Need to know what changes next?</h2>
             <p className="mt-3 text-sm leading-6 text-dusk">
-              Keep this opportunity segment and request a CSV list for outreach, research, or CRM upload.
+              Radar records new registrations and rating changes as evidence-linked events, with team views and bounded event history.
             </p>
             <Link
-              href={leadListHref}
+              href="/pricing"
               className="mt-5 inline-flex rounded-full bg-clay px-4 py-2 text-sm font-semibold text-white hover:bg-bark"
             >
-              Get a lead list
+              Compare Radar plans
             </Link>
           </div>
 
           <div className="rounded-xl border border-stone bg-cream p-6 shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-clay">Wider access</p>
-            <h2 className="mt-2 text-2xl font-bold text-bark">Need the wider market view?</h2>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-clay">Source discipline</p>
+            <h2 className="mt-2 text-2xl font-bold text-bark">Verify before acting</h2>
             <p className="mt-3 text-sm leading-6 text-dusk">
-              Use this route when you need regional packs, full-market exports, or a recurring feed
-              beyond one filtered opportunity segment.
+              Directory records can lag or change. Follow the official CQC source link on a provider
+              profile before making a care, compliance, or commercial decision.
             </p>
             <a
-              href="/lead-list"
+              href="https://www.cqc.org.uk/care-services"
+              target="_blank"
+              rel="noopener noreferrer"
               className="mt-5 inline-flex rounded-full border border-clay px-4 py-2 text-sm font-semibold text-clay hover:bg-parchment"
             >
-              Request wider access
+              Open CQC search
             </a>
           </div>
         </aside>

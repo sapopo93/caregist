@@ -39,12 +39,7 @@ export default function CookieConsent() {
     };
   }, [visible]);
 
-  function accept() {
-    localStorage.setItem("caregist_cookie_consent", "accepted");
-    setVisible(false);
-  }
-
-  function decline() {
+  function dismiss() {
     localStorage.setItem("caregist_cookie_consent", "essential_only");
     setVisible(false);
   }
@@ -61,7 +56,7 @@ export default function CookieConsent() {
       <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-start sm:items-center gap-3">
         <div className="flex-1 text-sm">
           <p>
-            We use cookies for site functionality and to analyse traffic.
+            We use strictly necessary storage for sign-in, security, and requested preferences. We do not use advertising cookies.
             Read our{" "}
             <Link href="/cookies" className="text-amber underline">cookie policy</Link>.
           </p>
@@ -69,17 +64,10 @@ export default function CookieConsent() {
         <div className="flex gap-3">
           <button
             type="button"
-            onClick={accept}
+            onClick={dismiss}
             className="px-5 py-2 bg-clay text-white rounded-lg text-sm font-medium hover:bg-amber transition-colors"
           >
-            Accept all
-          </button>
-          <button
-            type="button"
-            onClick={decline}
-            className="px-5 py-2 border border-cream/30 text-cream rounded-lg text-sm font-medium hover:bg-cream/10 transition-colors"
-          >
-            Essential only
+            Continue
           </button>
         </div>
       </div>

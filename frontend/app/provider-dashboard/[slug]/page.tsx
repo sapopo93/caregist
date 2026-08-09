@@ -6,21 +6,14 @@ import Link from "next/link";
 import { PROVIDER_TIERS } from "@/lib/caregist-config";
 import { getProviderHref } from "@/lib/provider-path";
 
-const CHECKOUT_ENABLED = process.env.NEXT_PUBLIC_BILLING_CHECKOUT_ENABLED === "true";
-const B2B_TERMS_VERSION = process.env.NEXT_PUBLIC_B2B_TERMS_VERSION || "";
-
 export default function ProviderDashboardPage({ params }: { params: Promise<{ slug: string }> }) {
   const router = useRouter();
   const [slug, setSlug] = useState("");
   const [provider, setProvider] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [upgrading, setUpgrading] = useState<string | null>(null);
-  const [userEmail, setUserEmail] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [upgradeBannerTier, setUpgradeBannerTier] = useState<string | null>(null);
-  const [businessUseConfirmed, setBusinessUseConfirmed] = useState(false);
 
   // Form state
   const [description, setDescription] = useState("");
@@ -38,79 +31,14 @@ export default function ProviderDashboardPage({ params }: { params: Promise<{ sl
   useEffect(() => {
     params.then(({ slug: s }) => {
       setSlug(s);
-      try {
-        const stored = localStorage.getItem("caregist_user");
-        if (stored) setUserEmail(JSON.parse(stored).email || "");
-      } catch {}
       const loggedIn = !!localStorage.getItem("caregist_user");
       if (!loggedIn) {
         router.push("/login");
         return;
       }
       fetchProfile(s);
-      if (typeof window !== "undefined") {
-        const url = new URL(window.location.href);
-        // Show success banner if returning from Stripe checkout
-        if (url.searchParams.get("upgraded") === "1") {
-          setSuccess("Your profile has been upgraded. It may take a moment to activate — refresh if you don't see the new editor.");
-          url.searchParams.delete("upgraded");
-          window.history.replaceState({}, "", url.toString());
-        }
-        // Auto-trigger upgrade prompt if coming from pricing CTA
-        const upgradeTier = url.searchParams.get("upgrade_tier");
-        if (upgradeTier && ["enhanced", "premium", "sponsored"].includes(upgradeTier)) {
-          setUpgradeBannerTier(upgradeTier);
-          url.searchParams.delete("upgrade_tier");
-          window.history.replaceState({}, "", url.toString());
-        }
-      }
     });
   }, [params, router]);
-
-  async function handleUpgrade(tier: string) {
-    if (!CHECKOUT_ENABLED || !B2B_TERMS_VERSION) {
-      setError("Paid listing checkout is currently unavailable.");
-      return;
-    }
-    if (!businessUseConfirmed) {
-      setError("Confirm business use and authority after reviewing the B2B terms.");
-      return;
-    }
-    if (!userEmail) {
-      setError("Could not determine your account email. Please log out and log in again.");
-      return;
-    }
-    setUpgrading(tier);
-    setError("");
-    try {
-      const res = await fetch("/api/v1/billing/profile-checkout", {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          slug,
-          tier,
-          email: userEmail,
-          terms_version: B2B_TERMS_VERSION,
-          business_use_confirmed: businessUseConfirmed,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || "Failed to start checkout.");
-      if (data.updated) {
-        setProvider((current: any) => current ? { ...current, profile_tier: data.tier } : current);
-        setUpgradeBannerTier(null);
-        setSuccess(data.unchanged ? "This is already your active listing plan." : "Your listing plan has been updated.");
-        setUpgrading(null);
-        return;
-      }
-      if (!data.checkout_url) throw new Error("Checkout did not return a secure payment link.");
-      window.location.href = data.checkout_url;
-    } catch (err: any) {
-      setError(err.message);
-      setUpgrading(null);
-    }
-  }
 
   async function fetchProfile(s: string) {
     try {
@@ -219,57 +147,16 @@ export default function ProviderDashboardPage({ params }: { params: Promise<{ sl
       </div>
       <p className="text-dusk mb-8">{provider.name}</p>
 
-      {CHECKOUT_ENABLED && B2B_TERMS_VERSION ? (
-        <label className="mb-6 flex max-w-2xl items-start gap-2 rounded-lg border border-stone bg-cream p-4 text-sm text-dusk">
-          <input
-            type="checkbox"
-            checked={businessUseConfirmed}
-            onChange={(event) => setBusinessUseConfirmed(event.target.checked)}
-            className="mt-1"
-          />
-          <span>
-            I am purchasing for a business and have authority to bind it to the{" "}
-            <Link href="/terms" className="text-clay underline">current B2B terms</Link>.
-          </span>
-        </label>
-      ) : (
-        <p className="mb-6 rounded-lg border border-stone bg-cream p-4 text-sm text-dusk">
-          Paid provider upgrades are unavailable while legal, privacy, finance, and release gates remain open.
-        </p>
-      )}
-
-      {upgradeBannerTier && (
-        <div className="bg-clay/10 border border-clay rounded-lg p-6 mb-6 flex items-center justify-between gap-4">
-          <div>
-            <p className="font-semibold text-bark mb-1">
-              Ready to upgrade to {upgradeBannerTier.charAt(0).toUpperCase() + upgradeBannerTier.slice(1)} Profile
-            </p>
-            <p className="text-sm text-dusk">Complete your payment below to activate your listing upgrade.</p>
-          </div>
-          <div className="flex gap-3 shrink-0">
-            <button
-              onClick={() => void handleUpgrade(upgradeBannerTier)}
-              disabled={upgrading === upgradeBannerTier || !CHECKOUT_ENABLED || !businessUseConfirmed}
-              className="px-5 py-2 bg-clay text-white rounded-lg text-sm font-medium hover:bg-bark transition-colors disabled:opacity-50"
-            >
-              {upgrading === upgradeBannerTier ? "Redirecting..." : "Upgrade now"}
-            </button>
-            <button
-              onClick={() => setUpgradeBannerTier(null)}
-              className="px-3 py-2 text-dusk text-sm hover:text-bark transition-colors"
-            >
-              Dismiss
-            </button>
-          </div>
-        </div>
-      )}
+      <p className="mb-6 rounded-lg border border-moss/20 bg-moss/5 p-4 text-sm text-dusk">
+        Provider claims and corrections are free. Paid listing rank and provider-profile upgrades are no longer sold.
+      </p>
 
       {!isClaimedByUser && (
         <div className="bg-amber/10 border border-amber rounded-lg p-6 mb-6 text-center">
           <p className="font-semibold text-bark mb-2">This listing is not claimed</p>
-          <p className="text-sm text-dusk mb-4">Claim this listing to edit your profile and respond to inspections.</p>
+          <p className="text-sm text-dusk mb-4">Claim requests are free when the provider verification intake is available.</p>
           <Link href={`/claim/${slug}`} className="px-6 py-2 bg-clay text-white rounded-lg text-sm hover:bg-bark transition-colors">
-            Claim this listing
+            View claim availability
           </Link>
         </div>
       )}
@@ -347,37 +234,6 @@ export default function ProviderDashboardPage({ params }: { params: Promise<{ sl
             </div>
           </div>
 
-          {/* Upgrade upsell for other features */}
-          <div className="bg-cream border border-stone rounded-lg p-6 mb-6">
-            <p className="font-semibold text-bark mb-1">Want to add photos and a description?</p>
-            <p className="text-sm text-dusk mb-4">
-              Upgrade to an Enhanced Profile to add photos, a description, and a virtual tour link.
-            </p>
-            {error && <p className="text-alert text-xs mb-3">{error}</p>}
-            <div className="grid grid-cols-3 gap-4">
-              {PROVIDER_TIERS.filter((t) => t.tier === "enhanced" || t.tier === "sponsored").map((t, i) => (
-                <div key={t.tier} className={`bg-parchment rounded-lg p-4 text-center flex flex-col gap-2 ${i === 0 ? "border-2 border-clay" : "border border-stone"}`}>
-                  <p className="font-bold text-bark text-sm">{t.label}</p>
-                  <p className="text-xl font-bold text-clay">£{t.priceMonthly}<span className="text-xs text-dusk">/mo</span></p>
-                  <p className="text-xs text-dusk">{t.photos} photos{t.virtualTour ? " + tour" : ""}</p>
-                  <button
-                    onClick={() => handleUpgrade(t.tier)}
-                    disabled={upgrading !== null || !CHECKOUT_ENABLED || !businessUseConfirmed}
-                    className="mt-auto px-3 py-2 bg-clay text-white rounded-lg text-xs font-medium hover:bg-bark transition-colors disabled:opacity-50"
-                  >
-                    {upgrading === t.tier ? "Redirecting…" : "Get started"}
-                  </button>
-                </div>
-              ))}
-            </div>
-            <p className="text-xs text-dusk text-center mt-3">
-              <Link href="/pricing#provider-plans" className="underline">See full feature comparison</Link>
-              {" · "}
-              <a href="mailto:enterprise@caregist.co.uk?subject=Provider+Enterprise+enquiry" className="underline">
-                Contact Enterprise sales
-              </a>
-            </p>
-          </div>
         </>
       )}
 

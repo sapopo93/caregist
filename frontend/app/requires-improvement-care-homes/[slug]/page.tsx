@@ -9,7 +9,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   return {
     title: `Requires Improvement Care Homes in ${city} — CQC Rated | CareGist`,
     description: `Find care homes rated Requires Improvement in ${city}. CQC inspection data, ratings, and provider details.`,
-    alternates: { canonical: `https://caregist.co.uk/requires-improvement-care-homes/${slug}` },
+    alternates: { canonical: `https://www.caregist.co.uk/requires-improvement-care-homes/${slug}` },
   };
 }
 

@@ -9,7 +9,13 @@ const STATIC_SITEMAP_PATHS: Array<{
 }> = [
   { path: "", changeFrequency: "weekly", priority: 1 },
   { path: "/search", changeFrequency: "weekly", priority: 0.9 },
-  { path: "/lead-list", changeFrequency: "weekly", priority: 0.8 },
+  { path: "/pricing", changeFrequency: "weekly", priority: 0.8 },
+  { path: "/intelligence-feed", changeFrequency: "monthly", priority: 0.7 },
+  { path: "/why-caregist", changeFrequency: "monthly", priority: 0.6 },
+  { path: "/data-status", changeFrequency: "daily", priority: 0.5 },
+  { path: "/find-care", changeFrequency: "monthly", priority: 0.5 },
+  { path: "/acceptable-use", changeFrequency: "monthly", priority: 0.3 },
+  { path: "/cookies", changeFrequency: "monthly", priority: 0.3 },
   { path: "/privacy", changeFrequency: "monthly", priority: 0.3 },
   { path: "/terms", changeFrequency: "monthly", priority: 0.3 },
 ];

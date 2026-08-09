@@ -362,6 +362,11 @@ def test_trusted_event_insert_uses_source_time_and_conflict_safe_return():
         event,
         {"last_updated": "2026-07-29T08:00:00Z"},
     )
-    sql, params = cur.execute.call_args.args
+    sql, params = next(
+        call.args
+        for call in cur.execute.call_args_list
+        if "INSERT INTO trusted_event_ledger" in call.args[0]
+    )
     assert "ON CONFLICT (dedupe_key) DO NOTHING" in sql
-    assert params[-1] == datetime(2026, 7, 29, 8, 0, tzinfo=timezone.utc)
+    assert params[9] == datetime(2026, 7, 29, 8, 0, tzinfo=timezone.utc)
+    assert any("INSERT INTO delivery_outbox" in call.args[0] for call in cur.execute.call_args_list)

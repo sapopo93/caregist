@@ -597,6 +597,18 @@ def clean_location(data: dict[str, Any]) -> dict[str, Any] | None:
     if isinstance(last_inspection, dict):
         inspection_date = last_inspection.get("date") or None
 
+    report_url = None
+    report_candidates = [data.get("lastReport")]
+    reports = data.get("reports")
+    if isinstance(reports, list):
+        report_candidates.extend(reports)
+    for candidate in report_candidates:
+        if not isinstance(candidate, dict):
+            continue
+        report_url = candidate.get("reportUri") or candidate.get("url")
+        if report_url:
+            break
+
     reg_status = normalize_whitespace(data.get("registrationStatus", ""))
     status = "ACTIVE" if "register" in reg_status.lower() and "deregister" not in reg_status.lower() else "INACTIVE"
 
@@ -625,10 +637,12 @@ def clean_location(data: dict[str, Any]) -> dict[str, Any] | None:
         "rating_responsive": kq_ratings.get("responsive", ""),
         "rating_well_led": kq_ratings.get("well_led", ""),
         "last_inspection_date": inspection_date,
+        "inspection_report_url": normalize_whitespace(report_url or "") or None,
         "service_types": "|".join(service_types),
         "specialisms": "|".join(specialisms),
         "number_of_beds": data.get("numberOfBeds"),
         "ownership_type": normalize_whitespace(data.get("ownershipType", "")),
+        "registered_manager_absent_date": parse_any_date(data.get("registeredManagerAbsentDate")) or None,
         "last_updated": data.get("lastUpdated") or data.get("lastUpdatedDate") or data.get("lastUpdatedTimestamp"),
     }
 
@@ -639,6 +653,7 @@ ALLOWED_COLUMNS = frozenset({
     "region", "local_authority", "latitude", "longitude", "phone", "website",
     "overall_rating", "rating_safe", "rating_effective", "rating_caring",
     "rating_responsive", "rating_well_led", "last_inspection_date",
+    "inspection_report_url", "registered_manager_absent_date",
     "service_types", "specialisms", "number_of_beds", "ownership_type",
     "last_updated",
 })
@@ -647,6 +662,14 @@ ALLOWED_COLUMNS = frozenset({
 def upsert_provider(cur, record: dict[str, Any]) -> str:
     """Upsert a single provider record. Returns 'inserted', 'updated', or 'skipped'."""
     # Whitelist columns to prevent SQL injection via dict keys
+    source_context = {
+        key: record.get(key)
+        for key in (
+            "source_snapshot_id", "source_snapshot_sha256", "source_url",
+            "source_checked_at", "source_published_at",
+        )
+        if record.get(key) is not None
+    }
     safe_record = {k: v for k, v in record.items() if k in ALLOWED_COLUMNS}
     if "id" not in safe_record:
         return "skipped"
@@ -701,6 +724,7 @@ def upsert_provider(cur, record: dict[str, Any]) -> str:
 
     current = dict(existing or {})
     current.update(safe_record)
+    current.update(source_context)
     events = build_provider_state_events(existing, current)
     for event in events:
         inserted = _insert_trusted_provider_event(cur, event, current)
@@ -723,12 +747,15 @@ def _insert_trusted_provider_event(
         INSERT INTO trusted_event_ledger (
           entity_type, entity_id, provider_id, location_id, event_type,
           effective_date, old_value, new_value, source, confidence_score,
-          dedupe_key, metadata, source_observed_at
+          dedupe_key, metadata, source_observed_at, entity_level,
+          source_snapshot_id, source_published_at, source_checked_at,
+          source_url, source_snapshot_sha256
         )
         VALUES (
           'care_provider', %s, %s, %s, %s,
           %s, %s, %s, 'cqc_api', 1.0000,
-          %s, %s, %s
+          %s, %s, %s, 'location',
+          %s, %s, %s, %s, %s
         )
         ON CONFLICT (dedupe_key) DO NOTHING
         RETURNING id
@@ -744,9 +771,31 @@ def _insert_trusted_provider_event(
             event.dedupe_key,
             json_value(event.metadata),
             source_observed_at,
+            current.get("source_snapshot_id"),
+            _parse_watermark_datetime(current.get("source_published_at")) or source_observed_at,
+            _parse_watermark_datetime(current.get("source_checked_at")) or datetime.now(timezone.utc),
+            current.get("source_url") or f"https://api.service.cqc.org.uk/public/v1/locations/{event.location_id}",
+            current.get("source_snapshot_sha256"),
         ),
     )
-    return cur.fetchone() is not None
+    inserted = cur.fetchone()
+    if not inserted:
+        return False
+    event_id = int(inserted[0])
+    cur.execute(
+        """
+        INSERT INTO delivery_outbox (
+          organization_id, delivery_subscription_id, event_id
+        )
+        SELECT ds.organization_id, ds.id, %s
+        FROM delivery_subscriptions ds
+        WHERE ds.active = TRUE
+          AND %s = ANY(ds.event_types)
+        ON CONFLICT (delivery_subscription_id, event_id) DO NOTHING
+        """,
+        (event_id, event.event_type),
+    )
+    return True
 
 
 def _project_rating_change(

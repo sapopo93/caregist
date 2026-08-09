@@ -185,6 +185,10 @@ async def _validate_key(api_key: str, *, consume_rate_limit: bool = True) -> dic
                      WHERE s.user_id = ak.user_id
                        AND s.status IN ('active', 'trialing')
                      ORDER BY CASE s.tier
+                         WHEN 'embedded-enterprise' THEN 8
+                         WHEN 'intelligence-feed' THEN 7
+                         WHEN 'radar-national' THEN 6
+                         WHEN 'radar-regional' THEN 5
                          WHEN 'business' THEN 4
                          WHEN 'pro' THEN 3
                          WHEN 'starter' THEN 2
@@ -240,6 +244,10 @@ async def _validate_session(session_token: str, *, consume_rate_limit: bool = Tr
                      WHERE s.user_id = ak.user_id
                        AND s.status IN ('active', 'trialing')
                      ORDER BY CASE s.tier
+                         WHEN 'embedded-enterprise' THEN 8
+                         WHEN 'intelligence-feed' THEN 7
+                         WHEN 'radar-national' THEN 6
+                         WHEN 'radar-regional' THEN 5
                          WHEN 'business' THEN 4
                          WHEN 'pro' THEN 3
                          WHEN 'starter' THEN 2

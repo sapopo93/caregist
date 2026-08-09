@@ -8,23 +8,23 @@ import { PLAN_PRIMARY_CTA } from "@/lib/caregist-config";
 
 const TIER_RANK: Record<string, number> = {
   free: 0,
-  "alerts-pro": 1,
-  "data-starter": 2,
-  "data-pro": 3,
-  "data-business": 4,
-  enterprise: 5,
-  starter: 2,
-  pro: 3,
-  business: 4,
+  "free-directory": 0,
+  "radar-regional": 1,
+  "radar-national": 2,
+  "intelligence-feed-pilot": 3,
+  "embedded-enterprise": 4,
+  starter: 0,
+  pro: 0,
+  business: 0,
 };
 
 const BILLING_TIER: Record<string, string | null> = {
   free: null,
-  "alerts-pro": "alerts-pro",
-  "data-starter": "starter",
-  "data-pro": "pro",
-  "data-business": "business",
-  enterprise: null,
+  "free-directory": null,
+  "radar-regional": "radar-regional",
+  "radar-national": "radar-national",
+  "intelligence-feed-pilot": null,
+  "embedded-enterprise": null,
 };
 
 export default function PricingCTA({
@@ -56,7 +56,7 @@ export default function PricingCTA({
 
   const tierKey = tier.toLowerCase().replace(/\s+/g, "-");
   const billingTier = BILLING_TIER[tierKey] ?? null;
-  const targetTier = tierKey === "enterprise" ? null : tierKey;
+  const targetTier = billingTier ? tierKey : null;
   const ctaLabel = PLAN_PRIMARY_CTA[tierKey] || "Contact sales";
   const isCurrentTier = currentTier === tierKey;
   const currentRank = TIER_RANK[currentTier] ?? 0;
@@ -110,14 +110,14 @@ export default function PricingCTA({
   if (isFreeTier) {
     return (
       <Link
-        href={user ? "/dashboard" : "/signup"}
+        href="/search"
         className="inline-block text-center py-2.5 px-6 rounded-lg font-medium text-sm transition-colors border border-clay text-clay hover:bg-clay hover:text-white"
         onClick={() => {
-          void trackEvent("pricing_cta_click", "pricing_card", { tier: tierKey, target_tier: "free", action: user ? "review_free" : "signup_free" });
+          void trackEvent("pricing_cta_click", "pricing_card", { tier: tierKey, target_tier: "free", action: "open_directory" });
           void trackEvent("plan_selection", "pricing_card", { source_tier: tierKey, target_tier: "free" });
         }}
       >
-        {user ? "Review entitlements" : ctaLabel}
+        {ctaLabel}
       </Link>
     );
   }
@@ -140,7 +140,7 @@ export default function PricingCTA({
         <button disabled className="py-2.5 px-6 rounded-lg font-medium text-sm border border-stone text-dusk opacity-70">
           Paid checkout unavailable
         </button>
-        <p className="text-xs text-dusk">B2B legal, privacy, finance, and data-freshness gates are still open.</p>
+        <p className="text-xs text-dusk">Checkout opens only after the legal and seven-day source-readiness gates pass.</p>
       </div>
     );
   }

@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from contextlib import asynccontextmanager
-from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock
 
 import pytest
@@ -40,56 +38,31 @@ def dataset_settings(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_dataset_checkout_fails_before_stripe_when_no_active_artifact(monkeypatch, dataset_settings):
-    conn = _Conn([None])
-
-    @asynccontextmanager
-    async def connection():
-        yield conn
-
+async def test_dataset_checkout_is_retired_before_database_or_stripe(monkeypatch, dataset_settings):
     create = Mock()
+    connection = Mock()
     monkeypatch.setattr(billing, "get_connection", connection)
     monkeypatch.setattr(billing.stripe.checkout.Session, "create", create)
 
-    with pytest.raises(HTTPException, match="No payment has been taken") as error:
+    with pytest.raises(HTTPException, match="no longer sold") as error:
         await billing.create_dataset_checkout(billing.DatasetCheckoutRequest(email="Buyer@Example.com"))
 
-    assert error.value.status_code == 503
+    assert error.value.status_code == 410
+    connection.assert_not_called()
     create.assert_not_called()
 
 
 @pytest.mark.asyncio
-async def test_dataset_checkout_requires_stripe_waiver_and_binds_artifact(monkeypatch, dataset_settings):
-    artifact = {
-        "id": "11111111-1111-1111-1111-111111111111",
-        "record_count": 56746,
-        "sha256": "c" * 64,
-        "source_watermark": SimpleNamespace(isoformat=lambda: "2026-08-09T08:00:00+00:00"),
-    }
-    first = _Conn([artifact, {"id": "22222222-2222-2222-2222-222222222222"}])
-    second = _Conn([])
-    connections = iter([first, second])
-
-    @asynccontextmanager
-    async def connection():
-        yield next(connections)
-
-    session = SimpleNamespace(id="cs_dataset", url="https://checkout.stripe.test/dataset")
-    create = Mock(return_value=session)
-    monkeypatch.setattr(billing, "get_connection", connection)
+async def test_dataset_checkout_cannot_be_reenabled_by_legacy_flags(monkeypatch, dataset_settings):
+    create = Mock()
+    monkeypatch.setattr(billing, "get_connection", Mock())
     monkeypatch.setattr(billing.stripe.checkout.Session, "create", create)
 
-    result = await billing.create_dataset_checkout(billing.DatasetCheckoutRequest(email="Buyer@Example.com"))
+    with pytest.raises(HTTPException) as error:
+        await billing.create_dataset_checkout(billing.DatasetCheckoutRequest(email="Buyer@Example.com"))
 
-    assert result["record_count"] == 56746
-    kwargs = create.call_args.kwargs
-    assert kwargs["mode"] == "payment"
-    assert kwargs["line_items"] == [{"price": "price_full_dataset", "quantity": 1}]
-    assert kwargs["consent_collection"] == {"terms_of_service": "required"}
-    assert "expressly request immediate supply" in kwargs["custom_text"]["terms_of_service_acceptance"]["message"]
-    assert "lose my statutory right to cancel" in kwargs["custom_text"]["terms_of_service_acceptance"]["message"]
-    assert kwargs["metadata"]["artifact_id"] == artifact["id"]
-    assert "payment_method_types" not in kwargs
+    assert error.value.status_code == 410
+    create.assert_not_called()
 
 
 @pytest.mark.asyncio

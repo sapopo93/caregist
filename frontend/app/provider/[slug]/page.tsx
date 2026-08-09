@@ -2,10 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import EnquiryForm from "@/components/EnquiryForm";
-import ReviewsSection from "@/components/ReviewsSection";
-import { getProviderReviews } from "@/lib/api";
 import { getDirectoryProvider } from "@/lib/directory-db";
+import { normalizeExternalHttpUrl } from "@/lib/external-url";
 import { getProviderHref } from "@/lib/provider-path";
 import { getSiteUrl } from "@/lib/site";
 
@@ -78,24 +76,13 @@ export default async function ProviderPage({ params }: { params: Promise<{ slug:
   }
 
   const providerSlug = provider.slug ?? provider.id;
-  let reviews: any[] = [];
-  let reviewSummary: { count: number; avg_rating: number | null } = { count: 0, avg_rating: null };
-  try {
-    const reviewData = await getProviderReviews(providerSlug);
-    reviews = Array.isArray(reviewData?.data) ? reviewData.data : [];
-    reviewSummary = reviewData?.summary ?? reviewSummary;
-  } catch {
-    // Reviews are supplementary; keep the provider page useful during an API cold start.
-  }
   const serviceTypes = splitPipeValue(provider.service_types);
   const specialisms = splitPipeValue(provider.specialisms);
   const location = [provider.address_line1, provider.address_line2, provider.town, provider.county, provider.postcode]
     .filter(Boolean)
     .join(", ");
-  const leadParams = new URLSearchParams();
-  if (provider.region) leadParams.set("region", provider.region);
-  if (serviceTypes[0]) leadParams.set("service_type", serviceTypes[0]);
-  if (provider.overall_rating) leadParams.set("rating", provider.overall_rating);
+  const providerWebsite = normalizeExternalHttpUrl(provider.website);
+  const inspectionReportUrl = normalizeExternalHttpUrl(provider.inspection_report_url);
 
   return (
     <div className="mx-auto max-w-5xl px-6 py-10">
@@ -206,21 +193,25 @@ export default async function ProviderPage({ params }: { params: Promise<{ slug:
                 {provider.website ? (
                   <p>
                     <span className="font-semibold text-bark">Website:</span>{" "}
-                    <a
-                      href={provider.website}
-                      target="_blank"
-                      rel="noreferrer noopener"
-                      className="break-all text-clay underline"
-                    >
-                      {provider.website}
-                    </a>
+                    {providerWebsite ? (
+                      <a
+                        href={providerWebsite}
+                        target="_blank"
+                        rel="noreferrer noopener"
+                        className="break-all text-clay underline"
+                      >
+                        {provider.website}
+                      </a>
+                    ) : (
+                      <span className="break-all">{provider.website}</span>
+                    )}
                   </p>
                 ) : null}
-                {provider.inspection_report_url ? (
+                {inspectionReportUrl ? (
                   <p>
                     <span className="font-semibold text-bark">CQC report:</span>{" "}
                     <a
-                      href={provider.inspection_report_url}
+                      href={inspectionReportUrl}
                       target="_blank"
                       rel="noreferrer noopener"
                       className="text-clay underline"
@@ -239,39 +230,22 @@ export default async function ProviderPage({ params }: { params: Promise<{ slug:
             </section>
 
             <section className="rounded-3xl border border-stone bg-cream p-6 shadow-sm">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-clay">Monetisation</p>
-              <h2 className="mt-2 text-2xl font-bold text-bark">Want this segment as a CSV?</h2>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-clay">Source discipline</p>
+              <h2 className="mt-2 text-2xl font-bold text-bark">Use the official evidence</h2>
               <p className="mt-3 text-sm leading-6 text-dusk">
-                Request a filtered opportunity list for this provider&apos;s region and service type, or ask for
-                wider market access when the buyer needs more than one segment.
+                This free profile is a discovery aid. Confirm material decisions against
+                the current CQC record. Radar customers receive verified new-registration
+                and rating-change events with source evidence and observation times.
               </p>
-              <div className="mt-5 flex flex-col gap-3">
-                <Link
-                  href={leadParams.toString() ? `/lead-list?${leadParams.toString()}` : "/lead-list"}
-                  className="rounded-full bg-clay px-4 py-2 text-center text-sm font-semibold text-white hover:bg-bark"
-                >
-                  Get a lead list
-                </Link>
-                <a
-                  href="/lead-list"
-                  className="rounded-full border border-clay px-4 py-2 text-center text-sm font-semibold text-clay hover:bg-parchment"
-                >
-                  Request wider access
-                </a>
-              </div>
+              <Link
+                href="/pricing"
+                className="mt-5 block rounded-full bg-clay px-4 py-2 text-center text-sm font-semibold text-white hover:bg-bark"
+              >
+                Compare Radar plans
+              </Link>
             </section>
           </div>
         </div>
-      </div>
-
-      <div className="mt-8">
-        <ReviewsSection
-          slug={providerSlug}
-          reviews={reviews}
-          summary={reviewSummary}
-          providerName={provider.name}
-        />
-        <EnquiryForm slug={providerSlug} providerName={provider.name} />
       </div>
     </div>
   );

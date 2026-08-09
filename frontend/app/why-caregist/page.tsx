@@ -1,172 +1,119 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
-import TrackedLink from "@/components/TrackedLink";
+import { CQC_INDEPENDENCE_LINE } from "@/lib/caregist-config";
 
 export const metadata: Metadata = {
-  title: "Why CareGist — The Intelligence Layer for UK Care-Provider Data",
+  title: "Why CareGist | Evidence-linked CQC Signal Intelligence",
   description:
-    "CareGist makes CQC care-provider data operationally usable with cleaned records, geospatial search, monitoring, dashboard workflows, exports, and API access.",
-  alternates: { canonical: "https://caregist.co.uk/why-caregist" },
+    "CareGist helps compliance and quality-improvement teams turn verified CQC changes into traceable, repeatable work.",
 };
 
-const STATS = [
-  { value: "National", label: "CQC-registered provider coverage", source: "CQC Public Register" },
-  { value: "Dated", label: "Published source watermark and freshness", source: "CareGist pipeline" },
-  { value: "Dashboard", label: "Search, export, and monitoring workflows", source: "CareGist product" },
-  { value: "Grouped", label: "Care organisations normalised for benchmarking", source: "CareGist analysis" },
+const DIFFERENCES = [
+  {
+    title: "Changes, not another provider database",
+    body: "Radar starts with two decision-relevant events: a new CQC registration and a published rating change. The free directory remains available for discovery and checking.",
+  },
+  {
+    title: "Evidence stays attached",
+    body: "Stable CQC location IDs, source URLs, observation timestamps, entity level, and snapshot checksums make each event traceable to the approved source.",
+  },
+  {
+    title: "Safe when interpretation is unavailable",
+    body: "A verified raw event can still be delivered when an explanation does not pass the evidence gate. CareGist does not fill missing facts with a prediction.",
+  },
+  {
+    title: "A workflow your team can repeat",
+    body: "Regional and National Radar combine saved views, explicit provider lists, team actions, outcome feedback, and bounded event history without bundling an API into human-workflow plans.",
+  },
 ];
 
-const CONTEXT_STATS = [
-  { value: "4.8 weeks", label: "Average family search time before choosing care", source: "UK care-seeker research" },
-  { value: "2.2 weeks", label: "Average time from decision to move-in", source: "UK care-seeker research" },
-  { value: "44%", label: "Families who later regret their care choice", source: "UK care-seeker research" },
-];
-
-const VALUE_TABLE = [
-  { challenge: "Raw regulatory data is hard to use in day-to-day work", context: "The public register is valuable, but most teams still need to clean, filter, export, and compare it manually.", howWeHelp: "CareGist packages the same underlying regulatory data into search, exports, monitoring, and API workflows." },
-  { challenge: "Location-aware care market work is cumbersome", context: "Nearby search, coordinates, and local authority grouping matter for matching, analytics, and local market operations.", howWeHelp: "We normalise geospatial data and make nearby search part of the product instead of a separate data engineering task." },
-  { challenge: "Static snapshots go stale quickly in operational teams", context: "Analysts and operators need to know what changed since yesterday, not just what existed in the last downloaded CSV.", howWeHelp: "Provider monitoring and change alerts turn the dataset into a continuous-use workflow." },
-  { challenge: "Most buyers want packaged answers before raw API plumbing", context: "Teams often need to prove value in a dashboard or export before engineering resources are assigned.", howWeHelp: "CareGist leads with dashboard and export workflows while keeping API access available when integration is justified." },
+const BOUNDARIES = [
+  "No predictive provider score, vacancy claim, or guaranteed opportunity label",
+  "No paid listing rank or sponsored provider placement",
+  "No static dataset or commodity regional data pack",
+  "No provider-group conclusion from a location-level event",
+  "No automatic narrative unless the factual evidence gate passes",
+  "No claim that CareGist can detect a change before CQC publishes it",
 ];
 
 export default function WhyCareGistPage() {
   return (
-    <div className="max-w-4xl mx-auto px-6 py-12">
-      <div className="rounded-xl mb-8 h-48 bg-gradient-to-br from-bark via-moss to-clay" aria-hidden="true">
-      </div>
-
-      <div className="text-center mb-12">
-        <h1 className="text-4xl font-bold mb-4">Why CareGist</h1>
-        <p className="text-dusk text-lg max-w-2xl mx-auto" style={{ fontFamily: "Lora" }}>
-          The Care Quality Commission does vital work publishing the raw regulatory register. CareGist builds the operational layer above it.
+    <main className="mx-auto max-w-5xl px-6 py-16">
+      <header className="mb-12 max-w-4xl">
+        <p className="mb-3 font-mono text-xs uppercase tracking-[0.22em] text-clay">
+          Proof before promise
         </p>
-      </div>
-
-      <div className="bg-bark rounded-xl p-8 mb-10">
-        <p className="text-amber font-mono text-xs uppercase tracking-wider mb-6">What CareGist provides</p>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-          {STATS.map((s) => (
-            <div key={s.label} className="text-center">
-              <p className="text-3xl font-bold text-cream">{s.value}</p>
-              <p className="text-stone text-xs mt-1">{s.label}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="bg-parchment border-b border-stone rounded-t-lg px-6 py-4 text-sm text-charcoal leading-relaxed mb-8">
-        <p>
-          CareGist is not a replacement for the regulator. It is the operational layer above it. CQC provides the raw regulatory feed. CareGist cleans, normalises, geocodes, packages, and monitors that data so product teams, operators, and analysts can use it in recurring workflows.
+        <h1 className="mb-5 text-4xl font-extrabold leading-tight text-bark md:text-5xl">
+          CQC signal intelligence built for a decision—not for selling rows
+        </h1>
+        <p className="max-w-3xl text-lg leading-8 text-dusk" style={{ fontFamily: "Lora" }}>
+          Compliance and quality-improvement teams already have access to public CQC
+          records. CareGist&apos;s job is to preserve what changed, show the evidence, and
+          make the next human action easier to prioritise and audit.
         </p>
-      </div>
+      </header>
 
-      <div className="grid grid-cols-2 gap-4 mb-10">
-        {CONTEXT_STATS.map((s) => (
-          <div key={s.label} className="bg-cream border border-stone rounded-lg p-5 text-center">
-            <p className="text-2xl font-bold text-clay">{s.value}</p>
-            <p className="text-xs text-charcoal mt-1">{s.label}</p>
-            <p className="text-[10px] text-dusk mt-1 italic">{s.source}</p>
-          </div>
+      <section className="mb-12 grid gap-5 md:grid-cols-2" aria-label="CareGist differences">
+        {DIFFERENCES.map((item) => (
+          <article key={item.title} className="rounded-xl border border-stone bg-cream p-6 shadow-sm">
+            <h2 className="text-xl font-bold text-bark">{item.title}</h2>
+            <p className="mt-3 text-sm leading-6 text-dusk">{item.body}</p>
+          </article>
         ))}
-      </div>
+      </section>
 
-      <h2 className="text-2xl font-bold mb-6">How CareGist adds value</h2>
-      <div className="space-y-3 mb-10">
-        {VALUE_TABLE.map((row) => (
-          <div key={row.challenge} className="bg-cream border border-stone rounded-lg p-5">
-            <div className="grid md:grid-cols-3 gap-4">
-              <div>
-                <p className="text-xs font-bold text-bark uppercase mb-1">Challenge</p>
-                <p className="text-sm text-charcoal">{row.challenge}</p>
-              </div>
-              <div>
-                <p className="text-xs font-bold text-dusk uppercase mb-1">Context</p>
-                <p className="text-sm text-charcoal">{row.context}</p>
-              </div>
-              <div>
-                <p className="text-xs font-bold text-moss uppercase mb-1">How we help</p>
-                <p className="text-sm text-charcoal">{row.howWeHelp}</p>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="bg-moss/10 border border-moss/20 rounded-xl p-8 mb-10 text-center">
-        <h2 className="text-2xl font-bold text-bark mb-3">Our commitment to accuracy</h2>
-        <p className="text-sm text-charcoal max-w-xl mx-auto mb-4">
-          We do not describe CareGist as live occupancy, live pricing, real-time source data, or an active alert service. The Data Status page publishes the reconciliation watermark actually held; paid monitoring, exports, and delivery remain unavailable until their evidence gates pass.
+      <section className="mb-12 rounded-xl border border-stone bg-parchment p-7">
+        <p className="font-mono text-xs uppercase tracking-[0.18em] text-clay">Commercial focus</p>
+        <h2 className="mt-3 text-2xl font-bold text-bark">Why the first customer is a compliance firm</h2>
+        <p className="mt-3 max-w-3xl text-sm leading-6 text-dusk">
+          A rating change or registration can create immediate review, remediation, or
+          business-development work. One qualified engagement can repay a Radar subscription,
+          while the linked evidence lets a consultant explain exactly why the signal deserved
+          attention. This is a narrower and more defensible promise than generic lead generation.
         </p>
-        <p className="text-xs text-dusk">
-          CareGist is built on CQC data published under the Open Government Licence v3.0. Crown copyright and database right. CareGist is not affiliated with or endorsed by the Care Quality Commission.
+      </section>
+
+      <section className="mb-12 grid gap-7 md:grid-cols-[1.15fr_0.85fr]">
+        <div>
+          <h2 className="text-2xl font-bold text-bark">What CareGist deliberately does not claim</h2>
+          <ul className="mt-5 space-y-3">
+            {BOUNDARIES.map((boundary) => (
+              <li key={boundary} className="flex gap-3 text-sm leading-6 text-charcoal">
+                <span aria-hidden="true" className="text-moss">✓</span>
+                <span>{boundary}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <aside className="rounded-xl bg-charcoal p-6 text-cream">
+          <p className="font-mono text-xs uppercase tracking-[0.18em] text-amber">Source boundary</p>
+          <p className="mt-4 text-sm leading-6 text-stone">
+            CQC controls publication and may delay, correct, remove, or republish information.
+            CareGist publishes separate source and observation timestamps and exposes its current
+            source status before a customer relies on a delivery target.
+          </p>
+          <Link href="/data-status" className="mt-5 inline-flex text-sm font-semibold text-amber underline">
+            Review current data status
+          </Link>
+        </aside>
+      </section>
+
+      <section className="rounded-xl border border-moss/30 bg-moss/10 p-7">
+        <h2 className="text-2xl font-bold text-bark">Independent and traceable</h2>
+        <p className="mt-3 text-sm leading-6 text-charcoal">
+          Contains public sector information licensed under the Open Government Licence
+          v3.0. {CQC_INDEPENDENCE_LINE}
         </p>
-      </div>
-
-      <div className="bg-cream border border-stone rounded-xl p-6 mb-10">
-        <h2 className="text-2xl font-bold text-bark mb-3">Where CareGist fits</h2>
-        <p className="text-sm text-charcoal">
-          CareGist is built for operational, continuous-use workflows on top of the CQC register: recurring search, monitoring, exports, and API access for teams that need a working data layer rather than another static snapshot.
-        </p>
-      </div>
-
-      <h2 className="text-2xl font-bold mb-6">Who CareGist launches for</h2>
-      <div className="grid md:grid-cols-2 gap-4 mb-10">
-        <div className="bg-cream border border-stone rounded-lg p-5">
-          <h3 className="font-bold text-bark mb-2">CareTech teams and product builders</h3>
-          <ul className="space-y-2 text-sm text-charcoal">
-            <li>Provider data with the reconciled source date published on Data Status</li>
-            <li>Stable access layer over the public register</li>
-            <li>Geospatial search, coordinates, local authority, and quality fields</li>
-            <li>Faster path to usable care data without rebuilding a cleaning pipeline</li>
-            <li>Low-friction self-serve starting point</li>
-          </ul>
+        <div className="mt-6 flex flex-wrap gap-3">
+          <Link href="/pricing" className="rounded-lg bg-clay px-5 py-3 text-sm font-semibold text-white hover:bg-bark">
+            Compare Radar plans
+          </Link>
+          <Link href="/search" className="rounded-lg border border-clay px-5 py-3 text-sm font-semibold text-clay hover:bg-cream">
+            Search the free directory
+          </Link>
         </div>
-        <div className="bg-cream border border-stone rounded-lg p-5">
-          <h3 className="font-bold text-bark mb-2">Care groups and operators</h3>
-          <ul className="space-y-2 text-sm text-charcoal">
-            <li>Search local markets now; monitoring remains gated pending production evidence</li>
-            <li>Benchmark group portfolios using the same cleaned dataset</li>
-            <li>Export shortlists and regional views into operating workflows</li>
-            <li>Use dashboard-first access without needing internal engineering support</li>
-            <li>Claim and enrich listings as a secondary workflow</li>
-          </ul>
-        </div>
-        <div className="bg-cream border border-stone rounded-lg p-5">
-          <h3 className="font-bold text-bark mb-2">Commissioners and local authorities</h3>
-          <ul className="space-y-2 text-sm text-charcoal">
-            <li>Group benchmarking across normalised care organisations</li>
-            <li>Regional quality trends and rating distribution</li>
-            <li>Monitoring and exports for market visibility</li>
-            <li>Enriched CSV exports with data-completeness fields and CQC report links</li>
-            <li>Enterprise contact path for procurement-heavy rollouts</li>
-          </ul>
-        </div>
-        <div className="bg-cream border border-stone rounded-lg p-5">
-          <h3 className="font-bold text-bark mb-2">Families and provider claiming</h3>
-          <ul className="space-y-2 text-sm text-charcoal">
-            <li>Directory pages and provider profiles remain available</li>
-            <li>Claimed providers can still add richer profile information</li>
-            <li>Search and browse flows preserve existing directory utility</li>
-            <li>These are valuable secondary motions, not the launch message</li>
-            <li>Operational workflows stay at the centre of the product story</li>
-          </ul>
-        </div>
-      </div>
-
-      <div className="text-center">
-        <p className="text-bark font-semibold mb-4 text-lg">Use the register as a workflow, not just a directory</p>
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <TrackedLink href="/pricing" eventType="homepage_cta_click" eventSource="why_caregist" className="px-8 py-3 bg-clay text-white rounded-lg font-medium hover:bg-bark transition-colors">
-            See pricing
-          </TrackedLink>
-          <TrackedLink href="/api" eventType="homepage_cta_click" eventSource="why_caregist" className="px-8 py-3 border border-clay text-clay rounded-lg font-medium hover:bg-clay hover:text-white transition-colors">
-            Explore API
-          </TrackedLink>
-          <TrackedLink href="/search" eventType="homepage_cta_click" eventSource="why_caregist" className="px-8 py-3 border border-stone text-dusk rounded-lg font-medium hover:border-clay hover:text-clay transition-colors">
-            Open provider search
-          </TrackedLink>
-        </div>
-      </div>
-    </div>
+      </section>
+    </main>
   );
 }

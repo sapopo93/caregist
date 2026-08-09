@@ -1,6 +1,5 @@
 import SearchBar from "@/components/SearchBar";
 import ProviderCard from "@/components/ProviderCard";
-import ExportCSVButton from "@/components/ExportCSVButton";
 import PrintButton from "@/components/PrintButton";
 import Link from "next/link";
 import { searchProviders } from "@/lib/api";
@@ -66,7 +65,6 @@ export default async function ServiceTypePage({
           {error ? "Provider count unavailable" : `${results.meta.total.toLocaleString()} providers (page ${results.meta.page} of ${results.meta.pages})`}
         </p>
         <div className="flex gap-3 items-center print:hidden">
-          <ExportCSVButton exportUrl={`/api/v1/providers/export.csv?service_type=${encodeURIComponent(serviceType)}`} />
           <PrintButton />
         </div>
       </div>

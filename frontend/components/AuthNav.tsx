@@ -71,27 +71,24 @@ export default function AuthNav() {
       {/* Mobile menu dropdown */}
       {menuOpen && (
         <div className="absolute left-0 right-0 top-full z-50 flex flex-col gap-3 border-t border-cream/10 bg-bark px-6 py-4 text-sm shadow-xl md:hidden">
-          <Link href="/search?opportunity=new_90" className="hover:text-amber transition-colors" onClick={() => setMenuOpen(false)}>
-            Opportunity lists
-          </Link>
-          <Link href="/lead-list" className="hover:text-amber transition-colors" onClick={() => setMenuOpen(false)}>
-            Get a lead list
+          <Link href="/search" className="hover:text-amber transition-colors" onClick={() => setMenuOpen(false)}>
+            Directory
           </Link>
           <Link href="/pricing" className="hover:text-amber transition-colors" onClick={() => setMenuOpen(false)}>
-            Pricing
+            Radar
           </Link>
-          <Link href="/api" className="hover:text-amber transition-colors" onClick={() => setMenuOpen(false)}>
-            API
+          <Link href="/intelligence-feed" className="hover:text-amber transition-colors" onClick={() => setMenuOpen(false)}>
+            Intelligence Feed
           </Link>
           <Link href="/why-caregist" className="hover:text-amber transition-colors" onClick={() => setMenuOpen(false)}>
             About
           </Link>
           <a
-            href="/lead-list?opportunity=new_90"
+            href="/pricing"
             className="hover:text-amber transition-colors"
             onClick={() => setMenuOpen(false)}
           >
-            Get intelligence
+            Compare plans
           </a>
           <div className="my-1 h-px bg-cream/10" />
           {user ? (

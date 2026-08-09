@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+import hashlib
 import ipaddress
 import json
 import os
@@ -26,20 +27,52 @@ EXPECTED_WEBHOOK_EVENTS = {
     "customer.subscription.updated",
     "customer.subscription.deleted",
 }
-EXPECTED_MANIFEST = {
-    "schema_version": 1,
-    "currency": "gbp",
-    "interval": "month",
-    "prices": {
-        "STRIPE_PRICE_ALERTS_PRO": {"offering": "alerts-pro", "unit_amount": 4900},
-        "STRIPE_PRICE_STARTER": {"offering": "starter", "unit_amount": 9900},
-        "STRIPE_PRICE_PRO": {"offering": "pro", "unit_amount": 19900},
-        "STRIPE_PRICE_PRO_SEAT": {"offering": "pro-seat", "unit_amount": 1500},
-        "STRIPE_PRICE_BUSINESS": {"offering": "business", "unit_amount": 49900},
-        "STRIPE_PRICE_PROFILE_ENHANCED": {"offering": "profile-enhanced", "unit_amount": 9900},
-        "STRIPE_PRICE_PROFILE_SPONSORED": {"offering": "profile-sponsored", "unit_amount": 14900},
-    },
+EXPECTED_MANIFEST_SHA256 = "bec531624f71c0a688bb19396544b63734836aeeacefd61285644419de1c8930"
+EXPECTED_PRODUCT_KEYS = {
+    "radar-regional",
+    "radar-national",
+    "intelligence-feed",
+    "embedded-enterprise",
 }
+
+
+def canonical_manifest_sha256(manifest: object) -> str:
+    """Return a stable digest for the human-approved catalogue manifest."""
+    canonical = json.dumps(
+        manifest,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=True,
+    ).encode("utf-8")
+    return hashlib.sha256(canonical).hexdigest()
+
+
+def deployment_identifiers(manifest: Mapping[str, object], mode: str) -> dict[str, str]:
+    """Return the non-secret Product and Price IDs required for one Stripe mode."""
+    identifiers: dict[str, str] = {}
+    products = manifest.get("products")
+    if not isinstance(products, Mapping):
+        return identifiers
+
+    for product in products.values():
+        if not isinstance(product, Mapping):
+            continue
+        stripe_modes = product.get("stripe")
+        mode_objects = stripe_modes.get(mode) if isinstance(stripe_modes, Mapping) else None
+        if not isinstance(mode_objects, Mapping):
+            continue
+
+        product_env = product.get("environment_product")
+        product_id = mode_objects.get("product_id")
+        if isinstance(product_env, str) and isinstance(product_id, str):
+            identifiers[product_env] = product_id
+
+        price_env = product.get("environment_price")
+        price_id = mode_objects.get("price_id")
+        if isinstance(price_env, str) and isinstance(price_id, str):
+            identifiers[price_env] = price_id
+
+    return identifiers
 
 
 def read_dotenv(path: Path | None) -> dict[str, str]:
@@ -171,23 +204,72 @@ def run_checks(
     )
     checks.append(("APP_URL", is_public_https_origin(values.get("APP_URL", "")), "public HTTPS origin"))
 
-    price_names = tuple(EXPECTED_MANIFEST["prices"])
-    price_values = [values.get(name, "") for name in price_names]
-    for name, value in zip(price_names, price_values, strict=True):
-        checks.append((name, value.startswith("price_"), "present with Price ID prefix"))
-    checks.append(
-        (
-            "STRIPE_PRICE_IDS_UNIQUE",
-            len(price_values) == len(set(price_values)) and all(price_values),
-            "all required Price IDs are distinct",
-        )
-    )
-
     try:
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         manifest = None
-    checks.append(("APPROVED_PRICE_MANIFEST", manifest == EXPECTED_MANIFEST, "exact approved GBP monthly amounts"))
+    approved_manifest = (
+        isinstance(manifest, Mapping)
+        and manifest.get("schema_version") == 2
+        and manifest.get("catalog_version") == "2026-08"
+        and manifest.get("currency") == "gbp"
+        and manifest.get("checkout_enabled") is False
+        and isinstance(manifest.get("products"), Mapping)
+        and set(manifest["products"]) == EXPECTED_PRODUCT_KEYS
+        and canonical_manifest_sha256(manifest) == EXPECTED_MANIFEST_SHA256
+    )
+    checks.append(
+        (
+            "APPROVED_CATALOGUE_MANIFEST",
+            approved_manifest,
+            "exact approved catalogue 2026-08 and checkout disabled",
+        )
+    )
+
+    identifiers = deployment_identifiers(manifest, mode) if isinstance(manifest, Mapping) else {}
+    product_values: list[str] = []
+    price_values: list[str] = []
+    for name, expected in identifiers.items():
+        value = values.get(name, "")
+        prefix = "prod_" if name.startswith("STRIPE_PRODUCT_") else "price_"
+        checks.append(
+            (
+                name,
+                value == expected and value.startswith(prefix),
+                f"matches approved {mode} catalogue object",
+            )
+        )
+        if prefix == "prod_":
+            product_values.append(value)
+        else:
+            price_values.append(value)
+
+    expected_identifier_count = 7  # four Products; three saleable Prices.
+    checks.append(
+        (
+            "STRIPE_DEPLOYMENT_IDS_COMPLETE",
+            len(identifiers) == expected_identifier_count,
+            "four Product IDs and three Price IDs are declared",
+        )
+    )
+    checks.append(
+        (
+            "STRIPE_PRODUCT_IDS_UNIQUE",
+            len(product_values) == 4
+            and len(product_values) == len(set(product_values))
+            and all(product_values),
+            "all required Product IDs are distinct",
+        )
+    )
+    checks.append(
+        (
+            "STRIPE_PRICE_IDS_UNIQUE",
+            len(price_values) == 3
+            and len(price_values) == len(set(price_values))
+            and all(price_values),
+            "all saleable Price IDs are distinct",
+        )
+    )
 
     migration_ok = False
     try:

@@ -142,23 +142,17 @@ export default async function ComparePage({
           ))}
         </div>
 
-        {/* Community reviews */}
-        <CompareRow label="Community Reviews" cols={ordered.map((p: any) =>
-          p.review_count > 0 && p.avg_review_rating
-            ? `${p.avg_review_rating} stars (${p.review_count})`
-            : "No reviews yet"
-        )} highlight />
       </div>
 
-      {/* Enquiry CTAs */}
+      {/* Profile CTAs */}
       <div className={`grid ${colClass} gap-4 mt-6`}>
         {ordered.map((p: any) => (
           <Link
             key={getProviderPathKey(p) || p.name}
-            href={`${getProviderHref(p)}#enquiry`}
+            href={getProviderHref(p)}
             className="block text-center px-4 py-3 bg-clay text-white rounded-lg font-medium hover:bg-bark transition-colors"
           >
-            Enquire about {p.name.length > 20 ? p.name.slice(0, 20) + "..." : p.name}
+            Open {p.name.length > 20 ? p.name.slice(0, 20) + "..." : p.name}
           </Link>
         ))}
       </div>

@@ -20,13 +20,12 @@ type FeedFilters = {
   to_date: string;
 };
 
-type SortBy = "effective_date" | "name" | "confidence_score" | "region" | "local_authority";
+type SortBy = "effective_date" | "name" | "region" | "local_authority";
 type SortOrder = "asc" | "desc";
 
 const SORT_BY_OPTIONS: Array<{ value: SortBy; label: string }> = [
   { value: "effective_date", label: "Registration date" },
   { value: "name", label: "Provider name" },
-  { value: "confidence_score", label: "Confidence score" },
   { value: "region", label: "Region" },
   { value: "local_authority", label: "Local authority" },
 ];
@@ -40,7 +39,6 @@ type FeedEvent = {
   id?: number;
   provider_location_id?: string;
   effective_date: string;
-  confidence_score: number;
   name: string;
   slug?: string | null;
   service_types?: string;
@@ -318,30 +316,29 @@ export default function NewRegistrationFeedPanel({
   const hasSavedFilterAccess = capabilities.savedFilters;
   const hasDigestAccess = capabilities.digest;
   const canExport = capabilities.export;
-  const supportsWebhooks = tier === "business" || tier === "enterprise";
-
   return (
     <section className="bg-cream border border-stone rounded-lg p-6 mb-6">
       <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 mb-6">
         <div>
-          <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-clay mb-2">Launch wedge</p>
-          <h2 className="text-2xl font-bold mb-2">New registration feed</h2>
+          <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-clay mb-2">Historical compatibility</p>
+          <h2 className="text-2xl font-bold mb-2">New-registration feed</h2>
           <p className="text-dusk text-sm max-w-3xl">
-            Newly registered UK care providers, delivered as a filtered recurring intelligence feed. The feed runs off the trusted event ledger, so exports, digests, API access, and webhooks all read from the same source of truth.
+            Existing customers retain their contracted feed capabilities while CareGist
+            moves new sales to Regional or National Radar and scoped Feed pilots.
           </p>
         </div>
         <div className="rounded-lg bg-parchment border border-stone px-4 py-3 min-w-[16rem]">
           <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-dusk mb-1">Plan fit</p>
           <p className="text-sm text-bark">
             {tier === "free"
-              ? "Free is evaluation only. Starter is the first paid tier for recurring feed workflows."
+              ? "The Free Directory does not include a change feed. Compare the current Radar plans."
               : tier === "alerts-pro"
-                ? "Alerts Pro is for monitoring and alerts. Data Starter unlocks the new-registration feed."
+                ? "This historical alert entitlement remains supported but is no longer sold."
               : tier === "starter"
-                ? "Starter gets the first real recurring feed workflow: filtering, exports, saved views, and one digest."
+                ? "This historical entitlement remains supported while you evaluate a Radar migration."
                 : tier === "pro"
-                  ? "Pro is the recommended small-team production tier for recurring feed use."
-                  : "Business adds programmatic delivery through webhooks and broader operational headroom."}
+                  ? "This historical entitlement remains supported while you evaluate a Radar migration."
+                  : "This historical integration entitlement remains supported; new integrations use the Feed pilot."}
           </p>
         </div>
       </div>
@@ -479,14 +476,14 @@ export default function NewRegistrationFeedPanel({
             )}
             {!canExport && (
               <span className="block mt-1">
-                Free is evaluation only. Starter unlocks recurring exports, saved views, and weekly digest delivery.
+                This historical entitlement does not include event export. Current products are listed on the pricing page.
               </span>
             )}
           </div>
 
           {!capabilities.feed && (
             <p className="text-sm text-dusk mb-4">
-              This plan does not include the new-registration feed. Data Starter is the first feed plan.
+              This historical plan does not include this compatibility feed. No removed plan is available for upgrade.
             </p>
           )}
           {error && <p className="text-sm text-alert mb-4">{error}</p>}
@@ -500,13 +497,12 @@ export default function NewRegistrationFeedPanel({
                   <th className="text-left px-4 py-3">Authority</th>
                   <th className="text-left px-4 py-3">Region</th>
                   <th className="text-left px-4 py-3">Registered</th>
-                  <th className="text-left px-4 py-3">Confidence</th>
                 </tr>
               </thead>
               <tbody>
                 {events.length === 0 && !loading ? (
                   <tr>
-                    <td colSpan={6} className="px-4 py-6 text-center text-dusk">
+                    <td colSpan={5} className="px-4 py-6 text-center text-dusk">
                       No new registrations matched this filter.
                     </td>
                   </tr>
@@ -526,7 +522,6 @@ export default function NewRegistrationFeedPanel({
                         <td className="px-4 py-3 text-dusk">{event.local_authority || "—"}</td>
                         <td className="px-4 py-3 text-dusk">{event.region || "—"}</td>
                         <td className="px-4 py-3 text-dusk">{event.effective_date}</td>
-                        <td className="px-4 py-3 text-dusk">{Number(event.confidence_score || 0).toFixed(2)}</td>
                       </tr>
                     );
                   })
@@ -537,9 +532,7 @@ export default function NewRegistrationFeedPanel({
 
           <div className="flex items-center justify-between mt-4 text-sm">
             <div className="text-dusk">
-              {supportsWebhooks
-                ? "Business webhooks can deliver feed.new_registration payloads from this same ledger."
-                : "Business adds webhook delivery of feed.new_registration for downstream CRM or ops systems."}
+              This surface is not available for new sale. New integrations use a scoped Intelligence Feed pilot.
             </div>
             <div className="flex gap-3">
               <button onClick={() => previousPage && void loadFeed(previousPage, filters, sortBy, sortOrder)} disabled={!previousPage || loading} className="px-3 py-2 border border-stone rounded-lg disabled:opacity-50">
@@ -594,8 +587,8 @@ export default function NewRegistrationFeedPanel({
               </>
             ) : (
               <p className="text-sm text-dusk">
-                Saved feed views start on Starter.{" "}
-                <Link href={upgradeHref} className="text-clay underline">Upgrade</Link>
+                This compatibility entitlement does not include saved views.{" "}
+                <Link href={upgradeHref} className="text-clay underline">Compare current Radar plans</Link>
               </p>
             )}
           </div>
@@ -622,22 +615,20 @@ export default function NewRegistrationFeedPanel({
               </>
             ) : (
               <p className="text-sm text-dusk">
-                Weekly digests start on Starter.{" "}
-                <Link href={upgradeHref} className="text-clay underline">Upgrade</Link>
+                This compatibility entitlement does not include a weekly digest.{" "}
+                <Link href={upgradeHref} className="text-clay underline">Compare current Radar plans</Link>
               </p>
             )}
           </div>
 
           <div className="rounded-lg border border-stone bg-parchment p-4">
-            <h3 className="text-lg font-bold text-bark mb-2">Programmatic delivery</h3>
+            <h3 className="text-lg font-bold text-bark mb-2">Current product boundary</h3>
             <p className="text-xs text-dusk mb-3">
-              Higher tiers can move this wedge from dashboard use into recurring operational delivery.
+              Radar is the human workflow. API and signed-webhook delivery are sold only through a scoped Intelligence Feed pilot.
             </p>
-            <ul className="space-y-2 text-xs text-dusk">
-              <li>Starter: filtered feed view, exports, saved views, one weekly digest.</li>
-              <li>Pro: recommended for small-team production and wider recurring usage.</li>
-              <li>Business: signed webhooks for <code className="bg-white px-1 rounded">feed.new_registration</code>.</li>
-            </ul>
+            <Link href="/intelligence-feed" className="text-xs font-semibold text-clay underline">
+              Review the Feed pilot scope
+            </Link>
           </div>
         </div>
       </div>

@@ -143,8 +143,8 @@ async def test_forgot_password_unknown_email_is_silent_and_issues_no_token():
 @pytest.mark.parametrize(
     ("request_kwargs", "intent_type", "intent_value"),
     [
-        ({"plan": "data-pro"}, "plan", "data-pro"),
-        ({"provider_tier": "sponsored"}, "provider_tier", "sponsored"),
+        ({"plan": "radar-regional"}, "plan", "radar-regional"),
+        ({"plan": "radar-national"}, "plan", "radar-national"),
     ],
 )
 async def test_register_persists_structured_purchase_intent(request_kwargs, intent_type, intent_value):
@@ -184,7 +184,7 @@ def test_register_rejects_multiple_or_unapproved_purchase_intents():
             email="buyer@example.com",
             name="Buyer",
             password="SuperSecret123",
-            plan="data-pro",
+            plan="radar-national",
             provider_tier="enhanced",
         )
 
@@ -476,10 +476,10 @@ async def test_verify_email_rejects_expired_token():
 @pytest.mark.parametrize(
     ("intent_type", "intent_value", "expected_path"),
     [
-        ("plan", "alerts-pro", "/login?upgrade=alerts-pro"),
-        ("plan", "data-business", "/login?upgrade=data-business"),
-        ("provider_tier", "enhanced", "/login?provider_tier=enhanced"),
-        ("provider_tier", "sponsored", "/login?provider_tier=sponsored"),
+        ("plan", "radar-regional", "/login?upgrade=radar-regional"),
+        ("plan", "radar-national", "/login?upgrade=radar-national"),
+        ("plan", "alerts-pro", "/login"),
+        ("provider_tier", "enhanced", "/login"),
         ("plan", "https://evil.example/steal", "/login"),
         ("redirect", "//evil.example", "/login"),
     ],

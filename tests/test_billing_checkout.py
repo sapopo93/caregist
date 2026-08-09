@@ -13,7 +13,6 @@ from api.config import settings
 from api.middleware.auth import validate_billing_identity
 from api.routers import billing as billing_module
 from api.routers.billing import (
-    PRICE_TO_TIER,
     CheckoutRequest,
     ProfileCheckoutRequest,
     cancel_subscription,
@@ -107,8 +106,10 @@ def test_all_billing_routes_use_non_metering_identity_dependency():
 @pytest.fixture(autouse=True)
 def _enable_checkout_for_endpoint_unit_tests():
     with patch("api.routers.billing.settings.billing_checkout_enabled", True), \
+         patch("api.routers.billing.settings.radar_checkout_enabled", True), \
          patch("api.routers.billing.settings.b2b_terms_version", TERMS_VERSION), \
-         patch("api.routers.billing.settings.b2b_terms_sha256", TERMS_SHA256):
+         patch("api.routers.billing.settings.b2b_terms_sha256", TERMS_SHA256), \
+         patch("api.routers.billing._require_radar_commerce_ready", new=AsyncMock()):
         yield
 
 
@@ -119,7 +120,7 @@ async def test_checkout_fails_closed_before_any_billing_mutation():
          patch("api.routers.billing.stripe.checkout.Session.create") as create_session:
         with pytest.raises(HTTPException) as exc:
             await create_checkout(
-                _checkout(email="alice@example.com", tier="starter"),
+                _checkout(email="alice@example.com", tier="radar-regional"),
                 _request(),
                 _browser_auth(),
             )
@@ -138,7 +139,7 @@ async def test_checkout_rejects_stale_terms_before_database_or_stripe():
             await create_checkout(
                 CheckoutRequest(
                     email="alice@example.com",
-                    tier="starter",
+                    tier="radar-regional",
                     terms_version="superseded-version",
                     business_use_confirmed=True,
                 ),
@@ -169,10 +170,7 @@ async def test_free_tier_checkout_is_rejected_without_stripe_or_db(monkeypatch):
 @pytest.mark.asyncio
 async def test_checkout_accepts_display_alias_and_uses_canonical_stripe_tier(monkeypatch):
     monkeypatch.setattr(settings, "stripe_secret_key", "sk_test_checkout")
-    monkeypatch.setattr(settings, "stripe_price_alerts_pro", "price_alerts")
-    monkeypatch.setattr(settings, "stripe_price_starter", "price_starter")
-    monkeypatch.setattr(settings, "stripe_price_pro", "price_pro")
-    monkeypatch.setattr(settings, "stripe_price_business", "price_business")
+    monkeypatch.setattr(settings, "stripe_price_radar_national", "price_radar_national")
     monkeypatch.setattr(settings, "app_url", "https://caregist.co.uk")
 
     conn = AsyncMock()
@@ -192,7 +190,7 @@ async def test_checkout_accepts_display_alias_and_uses_canonical_stripe_tier(mon
     with patch("api.routers.billing.get_connection", mock_get_connection), \
          patch("api.routers.billing.stripe.checkout.Session.create", return_value=created_session) as create_session:
         result = await create_checkout(
-            _checkout(email="alice@example.com", tier=" Data Pro "),
+            _checkout(email="alice@example.com", tier=" Radar National "),
             _request(),
             _browser_auth(),
         )
@@ -200,21 +198,21 @@ async def test_checkout_accepts_display_alias_and_uses_canonical_stripe_tier(mon
     assert result["checkout_url"] == "https://checkout.stripe.test/session"
     create_session.assert_called_once()
     kwargs = create_session.call_args.kwargs
-    assert kwargs["line_items"] == [{"price": "price_pro", "quantity": 1}]
+    assert kwargs["line_items"] == [{"price": "price_radar_national", "quantity": 1}]
     assert kwargs["mode"] == "subscription"
     assert "payment_method_types" not in kwargs
-    assert kwargs["metadata"]["tier"] == "pro"
-    assert kwargs["metadata"]["price_id"] == "price_pro"
+    assert kwargs["metadata"]["tier"] == "radar-national"
+    assert kwargs["metadata"]["price_id"] == "price_radar_national"
     assert kwargs["idempotency_key"] == "caregist-checkout-00000000-0000-0000-0000-000000000001"
     audit_args = next(call.args for call in conn.execute.await_args_list if "INSERT INTO audit_log" in call.args[0])
     assert audit_args[1] == "billing.checkout.create"
-    assert "price_pro" not in repr(audit_args)
+    assert "price_radar_national" not in repr(audit_args)
 
 
 @pytest.mark.asyncio
 async def test_checkout_rejects_another_account_email_without_enumerating(monkeypatch):
     monkeypatch.setattr(settings, "stripe_secret_key", "sk_test_checkout")
-    monkeypatch.setattr(settings, "stripe_price_pro", "price_pro")
+    monkeypatch.setattr(settings, "stripe_price_radar_national", "price_radar_national")
 
     conn = AsyncMock()
     conn.fetchrow = AsyncMock(return_value={"id": 42, "email": "alice@example.com", "stripe_customer_id": "cus_123"})
@@ -227,7 +225,7 @@ async def test_checkout_rejects_another_account_email_without_enumerating(monkey
          patch("api.routers.billing.stripe.checkout.Session.create") as create_session:
         with pytest.raises(HTTPException) as exc:
             await create_checkout(
-                _checkout(email="bob@example.com", tier="pro"),
+                _checkout(email="bob@example.com", tier="radar-national"),
                 _request(),
                 _browser_auth(),
             )
@@ -235,64 +233,40 @@ async def test_checkout_rejects_another_account_email_without_enumerating(monkey
     assert exc.value.status_code == 403
     assert exc.value.detail == "Checkout is only available for the authenticated account."
     assert "bob@example.com" not in exc.value.detail
-    assert "not found" not in exc.value.detail.lower()
     create_session.assert_not_called()
 
 
 @pytest.mark.asyncio
-async def test_profile_checkout_uses_dynamic_payment_methods(monkeypatch):
-    monkeypatch.setattr(settings, "stripe_secret_key", "sk_test_checkout")
-    monkeypatch.setattr(settings, "stripe_price_profile_enhanced", "price_profile_enhanced")
-    monkeypatch.setattr(settings, "app_url", "https://caregist.co.uk")
+async def test_profile_checkout_is_retired_before_database_or_stripe():
+    with patch("api.routers.billing.get_connection") as get_connection, \
+         patch("api.routers.billing.stripe.checkout.Session.create") as create_session:
+        with pytest.raises(HTTPException) as exc:
+            await create_profile_checkout(
+                _profile(slug="claimed-provider", tier="enhanced", email="alice@example.com"),
+                _request(),
+                _browser_auth(),
+            )
 
-    conn = AsyncMock()
-    conn.fetchrow = AsyncMock(
-        side_effect=[
-            {"id": 42, "email": "alice@example.com", "stripe_customer_id": "cus_123"},
-            {"id": "LOC123", "is_claimed": True, "profile_tier": "claimed", "profile_subscription_id": None},
-            {"id": 1},
-        ]
-    )
-
-    @asynccontextmanager
-    async def mock_get_connection():
-        yield conn
-
-    created_session = SimpleNamespace(url="https://checkout.stripe.test/profile", id="cs_profile_123")
-
-    with patch("api.routers.billing.get_connection", mock_get_connection), \
-         patch("api.routers.billing.stripe.checkout.Session.create", return_value=created_session) as create_session:
-        result = await create_profile_checkout(
-            _profile(slug="claimed-provider", tier="enhanced", email="alice@example.com"),
-            _request(),
-            _browser_auth(),
-        )
-
-    assert result["checkout_url"] == "https://checkout.stripe.test/profile"
-    kwargs = create_session.call_args.kwargs
-    assert kwargs["line_items"] == [{"price": "price_profile_enhanced", "quantity": 1}]
-    assert kwargs["mode"] == "subscription"
-    assert "payment_method_types" not in kwargs
-    assert kwargs["idempotency_key"] == "caregist-profile-checkout-provider-LOC123"
+    assert exc.value.status_code == 410
+    get_connection.assert_not_called()
+    create_session.assert_not_called()
 
 
 @pytest.mark.asyncio
 async def test_existing_b2b_same_plan_and_seats_is_noop(monkeypatch):
     monkeypatch.setattr(settings, "stripe_secret_key", "sk_test_checkout")
-    monkeypatch.setattr(settings, "stripe_price_business", "price_business")
-    monkeypatch.setattr(settings, "stripe_price_pro_seat", "price_team_seat")
-    monkeypatch.setitem(PRICE_TO_TIER, "price_team_seat", "pro-seat")
+    monkeypatch.setattr(settings, "stripe_price_radar_national", "price_radar_national")
 
     conn = _transactional(AsyncMock())
     conn.fetchrow = AsyncMock(
         side_effect=[
             {"id": 42, "email": "alice@example.com", "stripe_customer_id": "cus_123"},
             {
-                "tier": "business",
+                "tier": "radar-national",
                 "status": "active",
-                "stripe_subscription_id": "sub_business",
-                "stripe_price_id": "price_business",
-                "extra_seats": 3,
+                "stripe_subscription_id": "sub_radar_national",
+                "stripe_price_id": "price_radar_national",
+                "extra_seats": 0,
             },
         ]
     )
@@ -308,8 +282,7 @@ async def test_existing_b2b_same_plan_and_seats_is_noop(monkeypatch):
                  "customer": "cus_123",
                  "status": "active",
                  "items": {"data": [
-                     {"id": "si_base", "price": {"id": "price_business"}, "quantity": 1},
-                     {"id": "si_seat", "price": {"id": "price_team_seat"}, "quantity": 3},
+                     {"id": "si_base", "price": {"id": "price_radar_national"}, "quantity": 1},
                  ]},
              },
          ), \
@@ -319,15 +292,15 @@ async def test_existing_b2b_same_plan_and_seats_is_noop(monkeypatch):
              new_callable=AsyncMock,
          ) as complete_pending:
         result = await create_checkout(
-            _checkout(email="alice@example.com", tier="business"),
+            _checkout(email="alice@example.com", tier="radar-national"),
             _request(),
-            _browser_auth(tier="business"),
+            _browser_auth(tier="radar-national"),
         )
 
     assert result == {
         "updated": True,
-        "tier": "business",
-        "extra_seats": 3,
+        "tier": "radar-national",
+        "extra_seats": 0,
         "unchanged": True,
     }
     modify.assert_not_called()
@@ -338,24 +311,24 @@ async def test_existing_b2b_same_plan_and_seats_is_noop(monkeypatch):
         owner_type="account",
         owner_id="42",
         operation_type="subscription_change",
-        stripe_object_id="sub_business",
+        stripe_object_id="sub_radar_national",
     )
 
 
 @pytest.mark.asyncio
 async def test_existing_b2b_change_revokes_stale_paid_access_when_stripe_is_past_due(monkeypatch):
     monkeypatch.setattr(settings, "stripe_secret_key", "sk_test_checkout")
-    monkeypatch.setattr(settings, "stripe_price_pro", "price_pro")
+    monkeypatch.setattr(settings, "stripe_price_radar_national", "price_radar_national")
 
     conn = _transactional(AsyncMock())
     conn.fetchrow = AsyncMock(
         side_effect=[
             {"id": 42, "email": "alice@example.com", "stripe_customer_id": "cus_123"},
             {
-                "tier": "pro",
+                "tier": "radar-regional",
                 "status": "active",
-                "stripe_subscription_id": "sub_pro",
-                "stripe_price_id": "price_pro",
+                "stripe_subscription_id": "sub_radar_regional",
+                "stripe_price_id": "price_radar_regional",
                 "extra_seats": 0,
             },
         ]
@@ -371,15 +344,15 @@ async def test_existing_b2b_change_revokes_stale_paid_access_when_stripe_is_past
              return_value={
                  "customer": "cus_123",
                  "status": "past_due",
-                 "items": {"data": [{"id": "si_base", "price": {"id": "price_pro"}, "quantity": 1}]},
+                 "items": {"data": [{"id": "si_base", "price": {"id": "price_radar_regional"}, "quantity": 1}]},
              },
          ), \
          patch("api.routers.billing.stripe.Subscription.modify") as modify:
         with pytest.raises(HTTPException) as exc:
             await create_checkout(
-                _checkout(email="alice@example.com", tier="business"),
+                _checkout(email="alice@example.com", tier="radar-national"),
                 _request(),
-                _browser_auth(tier="pro"),
+                _browser_auth(tier="radar-regional"),
             )
 
     assert exc.value.status_code == 409
@@ -390,11 +363,11 @@ async def test_existing_b2b_change_revokes_stale_paid_access_when_stripe_is_past
 @pytest.mark.parametrize(
     "payload",
     [
-        {"email": "alice@example.com", "tier": "pro", "price_id": "price_business"},
-        {"email": "alice@example.com", "tier": "starter", "price": "price_business"},
-        {"email": "alice@example.com", "tier": "starter", "amount": 0},
-        {"email": "alice@example.com", "tier": "starter", "billing_cadence": "yearly"},
-        {"email": "alice@example.com", "tier": "starter", "mode": "payment"},
+        {"email": "alice@example.com", "tier": "radar-national", "price_id": "price_other"},
+        {"email": "alice@example.com", "tier": "radar-regional", "price": "price_other"},
+        {"email": "alice@example.com", "tier": "radar-regional", "amount": 0},
+        {"email": "alice@example.com", "tier": "radar-regional", "billing_cadence": "yearly"},
+        {"email": "alice@example.com", "tier": "radar-regional", "mode": "payment"},
     ],
 )
 def test_checkout_rejects_client_supplied_pricing_or_cadence_fields(payload):
@@ -404,12 +377,12 @@ def test_checkout_rejects_client_supplied_pricing_or_cadence_fields(payload):
 
 def test_paid_checkout_requires_explicit_business_acceptance_fields():
     with pytest.raises(ValidationError):
-        CheckoutRequest.model_validate({"email": "alice@example.com", "tier": "starter"})
+        CheckoutRequest.model_validate({"email": "alice@example.com", "tier": "radar-regional"})
     with pytest.raises(ValidationError):
         CheckoutRequest.model_validate(
             {
                 "email": "alice@example.com",
-                "tier": "starter",
+                "tier": "radar-regional",
                 "terms_version": TERMS_VERSION,
                 "business_use_confirmed": False,
             }
@@ -493,7 +466,7 @@ async def test_checkout_rejects_unauthenticated_request(monkeypatch):
 
     with pytest.raises(HTTPException) as exc:
         await create_checkout(
-            _checkout(email="alice@example.com", tier="pro"),
+            _checkout(email="alice@example.com", tier="radar-regional"),
             _request(),
             {},
         )
@@ -509,7 +482,7 @@ async def test_checkout_rejects_team_api_key_before_database_or_stripe(monkeypat
          patch("api.routers.billing.stripe.checkout.Session.create") as create_session:
         with pytest.raises(HTTPException) as exc:
             await create_checkout(
-                _checkout(email="alice@example.com", tier="pro"),
+                _checkout(email="alice@example.com", tier="radar-regional"),
                 _request(),
                 {"user_id": 42, "email": "alice@example.com", "is_verified": True, "auth_method": "api_key"},
             )
@@ -540,10 +513,8 @@ async def test_profile_checkout_rejects_another_account_email_without_enumeratin
                 _browser_auth(),
             )
 
-    assert exc.value.status_code == 403
-    assert exc.value.detail == "Checkout is only available for the authenticated account."
-    assert "bob@example.com" not in exc.value.detail
-    assert "not found" not in exc.value.detail.lower()
+    assert exc.value.status_code == 410
+    assert "no longer sold" in exc.value.detail
     create_session.assert_not_called()
 
 
@@ -574,6 +545,6 @@ async def test_profile_checkout_requires_approved_claim_ownership(monkeypatch):
                 _browser_auth(),
             )
 
-    assert exc.value.status_code == 403
-    assert "approved claim" in exc.value.detail
+    assert exc.value.status_code == 410
+    assert "no longer sold" in exc.value.detail
     create_session.assert_not_called()

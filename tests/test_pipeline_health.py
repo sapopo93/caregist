@@ -1,56 +1,119 @@
 from __future__ import annotations
 
 from datetime import UTC, date, datetime, timedelta
-from unittest.mock import AsyncMock
 
 import pytest
 
 from api.services.pipeline_health import get_pipeline_health
 
 
-@pytest.mark.asyncio
-async def test_pipeline_health_publishes_source_watermark_and_explicit_units():
-    now = datetime.now(UTC)
-    conn = AsyncMock()
-    conn.fetchval = AsyncMock(side_effect=[True, True])
-    conn.fetchrow = AsyncMock(
-        side_effect=[
-            {
-                "location_rows": 56_977,
-                "active_location_rows": 56_976,
+class HealthConnection:
+    def __init__(
+        self,
+        *,
+        now: datetime,
+        active_count: int = 56_976,
+        source_count: int = 56_976,
+        latest_event_age: timedelta = timedelta(hours=1),
+        signal_run_age: timedelta = timedelta(minutes=20),
+        total_polls: int = 336,
+        completed_polls: int = 336,
+        measured_events: int = 20,
+        p95_seconds: float | None = 1_800,
+        stuck: int = 0,
+        dead_letter: int = 0,
+        tables: set[str] | None = None,
+    ):
+        self.now = now
+        self.active_count = active_count
+        self.source_count = source_count
+        self.latest_event_age = latest_event_age
+        self.signal_run_age = signal_run_age
+        self.total_polls = total_polls
+        self.completed_polls = completed_polls
+        self.measured_events = measured_events
+        self.p95_seconds = p95_seconds
+        self.stuck = stuck
+        self.dead_letter = dead_letter
+        self.tables = tables or {
+            "pipeline_runs",
+            "trusted_event_ledger",
+            "source_snapshots",
+            "delivery_outbox",
+        }
+
+    async def fetchval(self, query: str, table_name: str):
+        assert "information_schema.tables" in query
+        return table_name in self.tables
+
+    async def fetchrow(self, query: str, *_args):
+        if "FROM care_providers" in query:
+            return {
+                "location_rows": self.active_count + 1,
+                "active_location_rows": self.active_count,
                 "active_provider_organisations": 37_100,
                 "grouped_provider_organisations": 3_200,
                 "named_group_labels": 2_900,
-            },
-            {
-                "run_type": "incremental",
+            }
+        if "WHERE run_type = 'signal_poll'" in query and "LIMIT 1" in query:
+            completed = self.now - self.signal_run_age
+            return {
+                "run_type": "signal_poll",
                 "status": "completed",
-                "started_at": now - timedelta(hours=2),
-                "completed_at": now - timedelta(hours=1),
+                "started_at": completed - timedelta(minutes=5),
+                "completed_at": completed,
                 "error_message": None,
-            },
-            {
+            }
+        if "COUNT(*)::int AS total_polls" in query:
+            return {
+                "total_polls": self.total_polls,
+                "completed_polls": self.completed_polls,
+            }
+        if "run_type IN ('incremental', 'reconciliation')" in query:
+            return {
                 "source_uri": "https://www.cqc.org.uk/current.csv",
-                "source_published_at": now.date(),
-                "source_retrieved_at": now - timedelta(hours=2),
+                "source_published_at": self.now.date(),
+                "source_retrieved_at": self.now - timedelta(hours=2),
                 "source_checksum_sha256": "a" * 64,
-                "source_record_count": 56_976,
+                "source_record_count": self.source_count,
                 "active_records_before": 56_742,
-                "active_records_after": 56_976,
-                "completed_at": now - timedelta(hours=1),
-            },
-            {
-                "latest_observed_at": now - timedelta(hours=1),
-                "latest_effective_date": date.today(),
-            },
-        ]
-    )
+                "active_records_after": self.active_count,
+                "completed_at": self.now - timedelta(hours=1),
+            }
+        if "MAX(observed_at)" in query:
+            return {
+                "latest_observed_at": self.now - self.latest_event_age,
+                "latest_effective_date": date.today() - self.latest_event_age,
+            }
+        if "percentile_cont(0.95)" in query:
+            return {
+                "measured_events": self.measured_events,
+                "p95_seconds": self.p95_seconds,
+            }
+        if "FROM delivery_outbox" in query:
+            return {
+                "pending": self.stuck,
+                "stuck": self.stuck,
+                "dead_letter": self.dead_letter,
+            }
+        raise AssertionError(f"Unexpected health query: {query}")
 
-    result = await get_pipeline_health(conn)
+
+@pytest.mark.asyncio
+async def test_pipeline_health_publishes_independent_readiness_dimensions():
+    now = datetime.now(UTC)
+    result = await get_pipeline_health(HealthConnection(now=now))
 
     assert result["freshness_ok"] is True
+    assert result["commercialReadiness"]["checkoutReady"] is True
     assert result["source"]["sourcePublishedAt"] == now.date().isoformat()
     assert result["source"]["checksumSha256"] == "a" * 64
+    assert result["delivery"] == {
+        "healthy": True,
+        "pending": 0,
+        "stuck": 0,
+        "deadLetter": 0,
+    }
     assert result["units"] == {
         "locationRows": 56_977,
         "activeLocationRows": 56_976,
@@ -63,96 +126,27 @@ async def test_pipeline_health_publishes_source_watermark_and_explicit_units():
 
 
 @pytest.mark.asyncio
-async def test_pipeline_health_fails_closed_when_source_and_database_counts_differ():
+async def test_pipeline_health_fails_commerce_closed_when_counts_differ():
     now = datetime.now(UTC)
-    conn = AsyncMock()
-    conn.fetchval = AsyncMock(side_effect=[True, True])
-    conn.fetchrow = AsyncMock(
-        side_effect=[
-            {
-                "location_rows": 56_743,
-                "active_location_rows": 56_742,
-                "active_provider_organisations": 36_944,
-                "grouped_provider_organisations": 3_000,
-                "named_group_labels": 2_800,
-            },
-            {
-                "run_type": "incremental",
-                "status": "completed",
-                "started_at": now - timedelta(hours=2),
-                "completed_at": now - timedelta(hours=1),
-                "error_message": None,
-            },
-            {
-                "source_uri": "https://www.cqc.org.uk/current.csv",
-                "source_published_at": now.date(),
-                "source_retrieved_at": now - timedelta(hours=2),
-                "source_checksum_sha256": "b" * 64,
-                "source_record_count": 56_976,
-                "active_records_before": 56_742,
-                "active_records_after": 56_742,
-                "completed_at": now - timedelta(hours=1),
-            },
-            {
-                "latest_observed_at": now - timedelta(hours=1),
-                "latest_effective_date": date.today(),
-            },
-        ]
+    result = await get_pipeline_health(
+        HealthConnection(now=now, active_count=56_742, source_count=56_976)
     )
-
-    result = await get_pipeline_health(conn)
 
     assert result["freshness_ok"] is False
     assert result["status"] == "degraded"
     assert result["units"]["countsReconciled"] is False
+    assert result["commercialReadiness"]["checkoutReady"] is False
 
 
 @pytest.mark.asyncio
-async def test_pipeline_health_readiness_stays_ok_when_only_feed_is_stale():
-    """readiness_ok gates traffic-serving (DB tables reachable); feed staleness must NOT
-    fail it, or an upstream CQC publishing lag would take fully-working routes (search,
-    groups, pricing) offline along with it. Staleness is surfaced via freshness_ok /
-    the separate /freshness endpoint for alerting, not as a traffic gate."""
+async def test_quiet_event_market_does_not_make_a_healthy_collector_stale():
     now = datetime.now(UTC)
-    conn = AsyncMock()
-    conn.fetchval = AsyncMock(side_effect=[True, True])
-    conn.fetchrow = AsyncMock(
-        side_effect=[
-            {
-                "location_rows": 56_977,
-                "active_location_rows": 56_976,
-                "active_provider_organisations": 37_100,
-                "grouped_provider_organisations": 3_200,
-                "named_group_labels": 2_900,
-            },
-            {
-                "run_type": "incremental",
-                "status": "completed",
-                "started_at": now - timedelta(hours=2),
-                "completed_at": now - timedelta(hours=1),
-                "error_message": None,
-            },
-            {
-                "source_uri": "https://www.cqc.org.uk/current.csv",
-                "source_published_at": now.date(),
-                "source_retrieved_at": now - timedelta(hours=2),
-                "source_checksum_sha256": "a" * 64,
-                "source_record_count": 56_976,
-                "active_records_before": 56_742,
-                "active_records_after": 56_976,
-                "completed_at": now - timedelta(hours=1),
-            },
-            {
-                # Newest feed event is 9 days old — outside the 168h/7-day SLA.
-                "latest_observed_at": now - timedelta(days=9),
-                "latest_effective_date": date.today() - timedelta(days=9),
-            },
-        ]
+    result = await get_pipeline_health(
+        HealthConnection(now=now, latest_event_age=timedelta(days=9))
     )
 
-    result = await get_pipeline_health(conn)
-
-    assert result["feed_fresh"] is False
+    assert result["feed_fresh"] is True
+    assert result["eventActivity"]["informational"] is True
     assert result["readiness_ok"] is True
-    assert result["freshness_ok"] is False
-    assert result["status"] == "degraded"
+    assert result["freshness_ok"] is True
+    assert result["status"] == "healthy"

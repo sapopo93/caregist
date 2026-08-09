@@ -30,7 +30,7 @@ export default function ComparisonActions({ slugs }: { slugs: string[] }) {
       });
       if (res.status === 403) {
         const data = await res.json().catch(() => ({}));
-        setError(data.detail || "Limit reached. Upgrade for more.");
+        setError(data.detail || "Your account limit has been reached.");
         return;
       }
       if (res.ok) {
@@ -93,9 +93,9 @@ export default function ComparisonActions({ slugs }: { slugs: string[] }) {
           <a
             href="/pricing"
             className="underline"
-            onClick={() => void trackEvent("upgrade_click", "comparison_limit_prompt", { target_tier: "starter" })}
+            onClick={() => void trackEvent("upgrade_click", "comparison_limit_prompt", { target_tier: "radar-regional" })}
           >
-            Upgrade to Starter
+            View current products
           </a>
         </span>
       )}

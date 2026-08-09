@@ -42,8 +42,10 @@ def _browser_auth(**values) -> dict:
 @pytest.fixture(autouse=True)
 def _enable_checkout_for_endpoint_unit_tests():
     with patch.object(settings, "billing_checkout_enabled", True), \
+         patch.object(settings, "radar_checkout_enabled", True), \
          patch.object(settings, "b2b_terms_version", TERMS_VERSION), \
-         patch.object(settings, "b2b_terms_sha256", TERMS_SHA256):
+         patch.object(settings, "b2b_terms_sha256", TERMS_SHA256), \
+         patch.object(billing, "_require_radar_commerce_ready", new=AsyncMock()):
         yield
 
 
@@ -217,16 +219,16 @@ async def test_checkout_completion_persists_authoritative_non_entitled_status(mo
 @pytest.mark.asyncio
 async def test_existing_account_change_rejects_subscription_customer_mismatch(monkeypatch):
     monkeypatch.setattr(settings, "stripe_secret_key", "sk_test_checkout")
-    monkeypatch.setattr(settings, "stripe_price_pro", "price_pro")
+    monkeypatch.setattr(settings, "stripe_price_radar_national", "price_radar_national")
 
     connections = []
     for row in (
         {"id": 42, "email": "alice@example.com", "stripe_customer_id": "cus_owned"},
         {
-            "tier": "starter",
+            "tier": "radar-regional",
             "status": "active",
             "stripe_subscription_id": "sub_123",
-            "stripe_price_id": "price_starter",
+            "stripe_price_id": "price_radar_regional",
             "extra_seats": 0,
         },
     ):
@@ -245,7 +247,7 @@ async def test_existing_account_change_rejects_subscription_customer_mismatch(mo
     ), patch.object(billing.stripe.Subscription, "modify") as modify:
         with pytest.raises(HTTPException) as exc:
             await billing.create_checkout(
-                _checkout(email="alice@example.com", tier="pro"),
+                _checkout(email="alice@example.com", tier="radar-national"),
                 _request(),
                 _browser_auth(),
             )
@@ -286,26 +288,26 @@ async def test_existing_provider_change_rejects_subscription_customer_mismatch(m
                 _browser_auth(),
             )
 
-    assert exc.value.status_code == 409
-    assert "already has a paid subscription" in exc.value.detail
+    assert exc.value.status_code == 410
+    assert "no longer sold" in exc.value.detail
 
 
 @pytest.mark.asyncio
 async def test_price_rotation_replaces_persisted_old_base_item_by_id(monkeypatch):
     """Changing a plan must target Stripe's live subscription item id, not a stale Price id."""
     monkeypatch.setattr(settings, "stripe_secret_key", "sk_test_checkout")
-    monkeypatch.setattr(settings, "stripe_price_pro", "price_new_pro")
-    monkeypatch.setitem(billing.PRICE_TO_TIER, "price_new_pro", "pro")
-    monkeypatch.delitem(billing.PRICE_TO_TIER, "price_old_starter", raising=False)
+    monkeypatch.setattr(settings, "stripe_price_radar_national", "price_new_radar_national")
+    monkeypatch.setitem(billing.PRICE_TO_TIER, "price_new_radar_national", "radar-national")
+    monkeypatch.delitem(billing.PRICE_TO_TIER, "price_old_radar_regional", raising=False)
 
     connections = []
     for row in (
         {"id": 42, "email": "alice@example.com", "stripe_customer_id": "cus_123"},
         {
-            "tier": "starter",
+            "tier": "radar-regional",
             "status": "active",
             "stripe_subscription_id": "sub_123",
-            "stripe_price_id": "price_old_starter",
+            "stripe_price_id": "price_old_radar_regional",
             "extra_seats": 0,
         },
         None,
@@ -325,7 +327,7 @@ async def test_price_rotation_replaces_persisted_old_base_item_by_id(monkeypatch
         "status": "active",
         "items": {
             "data": [
-                {"id": "si_old_base", "price": {"id": "price_old_starter"}, "quantity": 1},
+                {"id": "si_old_base", "price": {"id": "price_old_radar_regional"}, "quantity": 1},
             ]
         },
     }
@@ -335,7 +337,7 @@ async def test_price_rotation_replaces_persisted_old_base_item_by_id(monkeypatch
         "status": "active",
         "items": {
             "data": [
-                {"id": "si_old_base", "price": {"id": "price_new_pro"}, "quantity": 1},
+                {"id": "si_old_base", "price": {"id": "price_new_radar_national"}, "quantity": 1},
             ]
         },
     }
@@ -344,14 +346,14 @@ async def test_price_rotation_replaces_persisted_old_base_item_by_id(monkeypatch
          patch.object(billing.stripe.Subscription, "retrieve", return_value=source), \
          patch.object(billing.stripe.Subscription, "modify", return_value=changed) as modify:
         result = await billing.create_checkout(
-            _checkout(email="alice@example.com", tier="pro"),
+            _checkout(email="alice@example.com", tier="radar-national"),
             _request(),
-            _browser_auth(tier="starter"),
+            _browser_auth(tier="radar-regional"),
         )
 
-    assert result["tier"] == "pro"
+    assert result["tier"] == "radar-national"
     assert modify.call_args.kwargs["items"] == [
-        {"id": "si_old_base", "price": "price_new_pro", "quantity": 1}
+        {"id": "si_old_base", "price": "price_new_radar_national", "quantity": 1}
     ]
 
 
@@ -359,16 +361,16 @@ async def test_price_rotation_replaces_persisted_old_base_item_by_id(monkeypatch
 async def test_account_plan_finalization_rolls_back_as_one_unit_on_audit_failure(monkeypatch):
     """A post-Stripe local failure must leave the transaction to roll everything back."""
     monkeypatch.setattr(settings, "stripe_secret_key", "sk_test_checkout")
-    monkeypatch.setattr(settings, "stripe_price_pro", "price_new_pro")
-    monkeypatch.setitem(billing.PRICE_TO_TIER, "price_new_pro", "pro")
+    monkeypatch.setattr(settings, "stripe_price_radar_national", "price_new_radar_national")
+    monkeypatch.setitem(billing.PRICE_TO_TIER, "price_new_radar_national", "radar-national")
 
     rows = [
         {"id": 42, "email": "alice@example.com", "stripe_customer_id": "cus_123"},
         {
-            "tier": "starter",
+            "tier": "radar-regional",
             "status": "active",
             "stripe_subscription_id": "sub_123",
-            "stripe_price_id": "price_old_starter",
+            "stripe_price_id": "price_old_radar_regional",
             "extra_seats": 0,
         },
         None,
@@ -390,13 +392,13 @@ async def test_account_plan_finalization_rolls_back_as_one_unit_on_audit_failure
         "id": "sub_123",
         "customer": "cus_123",
         "status": "active",
-        "items": {"data": [{"id": "si_base", "price": {"id": "price_old_starter"}, "quantity": 1}]},
+        "items": {"data": [{"id": "si_base", "price": {"id": "price_old_radar_regional"}, "quantity": 1}]},
     }
     changed = {
         "id": "sub_123",
         "customer": "cus_123",
         "status": "active",
-        "items": {"data": [{"id": "si_base", "price": {"id": "price_new_pro"}, "quantity": 1}]},
+        "items": {"data": [{"id": "si_base", "price": {"id": "price_new_radar_national"}, "quantity": 1}]},
     }
 
     complete = AsyncMock()
@@ -407,9 +409,9 @@ async def test_account_plan_finalization_rolls_back_as_one_unit_on_audit_failure
          patch.object(billing, "write_audit_log", AsyncMock(side_effect=RuntimeError("audit unavailable"))):
         with pytest.raises(RuntimeError, match="audit unavailable"):
             await billing.create_checkout(
-                _checkout(email="alice@example.com", tier="pro"),
+                _checkout(email="alice@example.com", tier="radar-national"),
                 _request(),
-                _browser_auth(tier="starter"),
+                _browser_auth(tier="radar-regional"),
             )
 
     assert final_transaction.exit_type is RuntimeError
@@ -590,7 +592,7 @@ async def test_pending_operation_reuses_same_fingerprint_and_rejects_a_different
 @pytest.mark.asyncio
 async def test_checkout_reuses_reserved_session_without_creating_another(monkeypatch):
     monkeypatch.setattr(settings, "stripe_secret_key", "sk_test_checkout")
-    monkeypatch.setattr(settings, "stripe_price_starter", "price_starter")
+    monkeypatch.setattr(settings, "stripe_price_radar_regional", "price_radar_regional")
     conn = AsyncMock()
     conn.fetchrow = AsyncMock(
         side_effect=[
@@ -614,7 +616,7 @@ async def test_checkout_reuses_reserved_session_without_creating_another(monkeyp
         billing, "_reserve_billing_operation", reserve
     ), patch.object(billing.stripe.checkout.Session, "create") as create_session:
         result = await billing.create_checkout(
-            _checkout(email="alice@example.com", tier="starter"),
+            _checkout(email="alice@example.com", tier="radar-regional"),
             _request(),
             _browser_auth(),
         )

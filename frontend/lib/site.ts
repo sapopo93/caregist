@@ -12,11 +12,15 @@ export function getSiteUrl(): string {
     }
 
     try {
-      return new URL(candidate.startsWith("http") ? candidate : `https://${candidate}`).toString().replace(/\/$/, "");
+      const url = new URL(candidate.startsWith("http") ? candidate : `https://${candidate}`);
+      if (url.hostname === "caregist.co.uk" || url.hostname === "www.caregist.co.uk") {
+        return "https://www.caregist.co.uk";
+      }
+      return url.toString().replace(/\/$/, "");
     } catch {
       continue;
     }
   }
 
-  return "https://caregist.co.uk";
+  return "https://www.caregist.co.uk";
 }

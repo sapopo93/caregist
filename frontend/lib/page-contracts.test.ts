@@ -28,26 +28,39 @@ describe("page contracts", () => {
     assert.equal(existsSync(resolve(appRoot, "app/provider/[slug]/loading.tsx")), false);
   });
 
-  it("provider pages expose working review, enquiry and provider-claim journeys", () => {
+  it("provider pages keep free claims while removing retired enquiry and review sales journeys", () => {
     const source = readAppFile("app/provider/[slug]/page.tsx");
+    const structuredData = readAppFile("components/ProviderJsonLd.tsx");
 
-    assert.match(source, /import EnquiryForm from/);
-    assert.match(source, /import ReviewsSection from/);
-    assert.match(source, /getProviderReviews/);
-    assert.match(source, /<ReviewsSection/);
-    assert.match(source, /<EnquiryForm\s+slug=\{providerSlug\}\s+providerName=\{provider\.name\}/);
+    assert.doesNotMatch(source, /EnquiryForm|ReviewsSection|getProviderReviews/);
+    assert.doesNotMatch(source, /lead-list|Want this segment as a CSV|Get a lead list/);
     assert.match(source, /href=\{`\/claim\/\$\{encodeURIComponent\(providerSlug\)\}`\}/);
+    assert.match(source, /normalizeExternalHttpUrl/);
+    assert.doesNotMatch(structuredData, /AggregateRating|reviewCount/);
   });
 
-  it("lead-list page renders the lead request form with query defaults", () => {
+  it("permanently retires the commodity lead-list page", () => {
     const source = readAppFile("app/lead-list/page.tsx");
 
-    assert.match(source, /LeadRequestForm/);
-    assert.match(source, /buildLeadListDefaults/);
-    assert.match(source, /buildLeadListExportHref/);
-    assert.match(source, /searchParams/);
-    assert.match(source, /defaults=\{defaults\}/);
-    assert.match(source, /showExportDownload\s*=\s*submitted\s*\|\|\s*Boolean\(exportHref\)/);
+    assert.match(source, /permanentRedirect\("\/pricing"\)/);
+    assert.doesNotMatch(source, /LeadRequestForm|buildLeadListExportHref/);
+  });
+
+  it("does not advertise commodity provider exports on public directory pages", () => {
+    const sources = [
+      readAppFile("components/CityRatingPage.tsx"),
+      readAppFile("app/region/[slug]/page.tsx"),
+      readAppFile("app/services/[slug]/page.tsx"),
+    ].join("\n");
+
+    assert.doesNotMatch(sources, /ExportCSVButton|providers\/export\.csv/);
+  });
+
+  it("retires the public review-policy surface with a permanent redirect", () => {
+    const source = readAppFile("app/review-policy/page.tsx");
+
+    assert.match(source, /permanentRedirect\("\/terms"\)/);
+    assert.doesNotMatch(source, /star rating|submit a review|moderation/i);
   });
 
   it("export API maps token lookup failures to unauthorized responses", () => {
@@ -61,14 +74,14 @@ describe("page contracts", () => {
     assert.ok(tokenLookup < catchBlockStart);
   });
 
-  it("commercial directory routes fail closed until Human Gate approval", () => {
+  it("removed lead intake is gone while historical directory export stays gated", () => {
     const exportSource = readAppFile("app/api/export/route.ts");
     const leadSource = readAppFile("app/api/leads/request/route.ts");
 
     assert.match(exportSource, /DIRECTORY_EXPORT_DELIVERY_ENABLED/);
     assert.match(exportSource, /status:\s*503/);
-    assert.match(leadSource, /DIRECTORY_LEAD_INTAKE_ENABLED/);
-    assert.match(leadSource, /hold[\s\S]*human-gate/);
+    assert.match(leadSource, /status:\s*410/);
+    assert.doesNotMatch(leadSource, /DIRECTORY_LEAD_INTAKE_ENABLED|createLeadAndToken/);
   });
 
   it("paid checkout renders an explicit unavailable state until every gate is configured", () => {
@@ -115,21 +128,40 @@ describe("page contracts", () => {
     assert.match(termsSource, /not currently VAT registered/);
   });
 
-  it("opportunity lead requests use signed stateless export tokens", () => {
+  it("does not issue opportunity lead-list tokens", () => {
     const source = readAppFile("app/api/leads/request/route.ts");
-    const opportunityBranch = source.indexOf("if (normalized.opportunity)");
-    const databaseTokenCall = source.indexOf("await createLeadAndToken");
-
-    assert.ok(opportunityBranch >= 0);
-    assert.ok(databaseTokenCall > opportunityBranch);
-    assert.match(source, /return\s+redirectWithStatelessToken\([\s\S]*normalized[\s\S]*Opportunity-specific scopes/);
+    assert.match(source, /status:\s*410/);
+    assert.doesNotMatch(source, /opportunity|createLeadAndToken|redirectWithStatelessToken/);
   });
 
-  it("privacy policy covers lead requests and export access tokens", () => {
+  it("privacy policy covers Radar report processing and outcome tracking", () => {
     const source = readAppFile("app/privacy/page.tsx");
 
-    assert.match(source, /Lead-list requests/);
-    assert.match(source, /Export access tokens/);
-    assert.match(source, /90 days after expiry/);
+    assert.match(source, /Account and organisation data/);
+    assert.match(source, /CQC source and report data/);
+    assert.match(source, /optional outcomes/);
+    assert.match(source, /Open Government Licence v3\.0/);
+    assert.match(source, /H-Kay Limited/);
+    assert.doesNotMatch(source, /Draft v2\.0|Henry Mlalazi trading as CareGist/);
+  });
+
+  it("keeps the legal operator consistent and removes retired API tiers", () => {
+    const sources = [
+      readAppFile("app/privacy/page.tsx"),
+      readAppFile("app/terms/page.tsx"),
+      readAppFile("app/acceptable-use/page.tsx"),
+    ];
+    const combined = sources.join("\n");
+
+    for (const source of sources) assert.match(source, /H-Kay Limited/);
+    assert.doesNotMatch(combined, /Henry Mlalazi trading as CareGist/);
+    assert.doesNotMatch(combined, /Alerts Pro|Data Starter|Data Pro|Data Business|Extra Seat/);
+  });
+
+  it("does not claim that browser storage contains an API key", () => {
+    const source = readAppFile("app/cookies/page.tsx");
+
+    assert.doesNotMatch(source, /Store your API key/i);
+    assert.match(source, /No password, API key, or signing secret is intentionally stored/);
   });
 });

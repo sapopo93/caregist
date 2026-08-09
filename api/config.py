@@ -35,6 +35,9 @@ SECRET_ENV_NAMES = {
     "stripe_price_profile_enhanced": "STRIPE_PRICE_PROFILE_ENHANCED",
     "stripe_price_profile_premium": "STRIPE_PRICE_PROFILE_PREMIUM",
     "stripe_price_profile_sponsored": "STRIPE_PRICE_PROFILE_SPONSORED",
+    "stripe_price_radar_regional": "STRIPE_PRICE_RADAR_REGIONAL",
+    "stripe_price_radar_national": "STRIPE_PRICE_RADAR_NATIONAL",
+    "stripe_price_intelligence_feed": "STRIPE_PRICE_INTELLIGENCE_FEED",
     "resend_api_key": "RESEND_API_KEY",
     "caregist_to_support_token": "CAREGIST_TO_SUPPORT_TOKEN",
     "support_internal_token": "SUPPORT_INTERNAL_TOKEN",
@@ -83,6 +86,9 @@ REQUIRED_PUBLIC_STRIPE_PRICE_FIELDS = (
     "stripe_price_full_dataset",
     "stripe_price_profile_enhanced",
     "stripe_price_profile_sponsored",
+    "stripe_price_radar_regional",
+    "stripe_price_radar_national",
+    "stripe_price_intelligence_feed",
 )
 
 
@@ -94,7 +100,6 @@ REQUIRED_PRODUCTION_SECRETS = (
     "stripe_webhook_secret",
     "webhook_secret_key",
     "redis_url",
-    *REQUIRED_PUBLIC_STRIPE_PRICE_FIELDS,
 )
 
 
@@ -333,6 +338,11 @@ class Settings(BaseSettings):
     stripe_price_profile_enhanced: str = ""
     stripe_price_profile_premium: str = ""
     stripe_price_profile_sponsored: str = ""
+    # New catalogue. These remain optional until the corresponding readiness
+    # gate is enabled; legacy price IDs stay loadable for subscription replay.
+    stripe_price_radar_regional: str = ""
+    stripe_price_radar_national: str = ""
+    stripe_price_intelligence_feed: str = ""
     # Exact solicitor-approved B2B terms version accepted at paid checkout.
     # Empty means no self-service checkout can proceed even if its feature flag is enabled.
     b2b_terms_version: str = ""
@@ -378,6 +388,13 @@ class Settings(BaseSettings):
     directory_export_delivery_enabled: bool = False
     full_dataset_checkout_enabled: bool = False
     review_publication_enabled: bool = False
+    # Independent signal-intelligence kill switches. Defaults are deliberately
+    # fail-closed; workflows opt collectors into shadow mode explicitly.
+    radar_checkout_enabled: bool = False
+    cqc_location_index_poll_enabled: bool = False
+    cqc_report_poll_enabled: bool = False
+    radar_explanations_enabled: bool = False
+    radar_delivery_enabled: bool = False
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8", "extra": "ignore"}
 
@@ -413,6 +430,23 @@ class Settings(BaseSettings):
                 "Live keys are only for production deployments."
             )
 
+        if self.radar_checkout_enabled:
+            if not self.billing_checkout_enabled:
+                raise RuntimeError(
+                    "FATAL: RADAR_CHECKOUT_ENABLED requires BILLING_CHECKOUT_ENABLED."
+                )
+            required_checkout_values = {
+                "STRIPE_PRICE_RADAR_REGIONAL": self.stripe_price_radar_regional,
+                "STRIPE_PRICE_RADAR_NATIONAL": self.stripe_price_radar_national,
+                "B2B_TERMS_VERSION": self.b2b_terms_version,
+                "B2B_TERMS_SHA256": self.b2b_terms_sha256,
+            }
+            missing = [name for name, value in required_checkout_values.items() if not value]
+            if missing:
+                raise RuntimeError(
+                    f"FATAL: Radar checkout is enabled without {', '.join(missing)}."
+                )
+
 
 settings = Settings(**load_application_secrets())
 settings.validate_production()
@@ -445,7 +479,7 @@ TIERS = {
         "base_price_gbp": 0,
         "seat_price_gbp": 0,
         "extra_seat_min_tier": None,
-        "next_tier": "starter",
+        "next_tier": "radar-regional",
     },
     "alerts-pro": {
         "rate": 5,
@@ -543,6 +577,110 @@ TIERS = {
         "extra_seat_min_tier": "business",
         "next_tier": "enterprise",
     },
+    "radar-regional": {
+        "rate": 25,
+        "rate_window_seconds": 1,
+        "daily": 2000,
+        "rolling_7d": 14000,
+        "monthly": 50000,
+        "page_size": 100,
+        "fields": "standard",
+        "nearby": True,
+        "export": 5000,
+        "exports_per_day": 20,
+        "compare": 5,
+        "webhooks": False,
+        "monitors": 100,
+        "feed_rows": 100,
+        "saved_filters": 10,
+        "feed_digests": 10,
+        "feed_api": False,
+        "included_users": 2,
+        "base_price_gbp": 299,
+        "seat_price_gbp": 0,
+        "extra_seat_min_tier": None,
+        "region_limit": 1,
+        "history_days": 90,
+        "next_tier": "radar-national",
+    },
+    "radar-national": {
+        "rate": 40,
+        "rate_window_seconds": 1,
+        "daily": 5000,
+        "rolling_7d": 35000,
+        "monthly": 100000,
+        "page_size": 250,
+        "fields": "standard",
+        "nearby": True,
+        "export": 25000,
+        "exports_per_day": 50,
+        "compare": 10,
+        "webhooks": False,
+        "monitors": 500,
+        "feed_rows": 250,
+        "saved_filters": 50,
+        "feed_digests": 50,
+        "feed_api": False,
+        "included_users": 5,
+        "base_price_gbp": 799,
+        "seat_price_gbp": 0,
+        "extra_seat_min_tier": None,
+        "region_limit": None,
+        "history_days": 365,
+        "next_tier": "intelligence-feed",
+    },
+    "intelligence-feed": {
+        "rate": 60,
+        "rate_window_seconds": 1,
+        "daily": 10000,
+        "rolling_7d": 70000,
+        "monthly": 250000,
+        "page_size": 250,
+        "fields": "full",
+        "nearby": True,
+        "export": 50000,
+        "exports_per_day": 100,
+        "compare": 10,
+        "webhooks": True,
+        "monitors": 1000,
+        "feed_rows": 250,
+        "saved_filters": 100,
+        "feed_digests": 100,
+        "feed_api": True,
+        "included_users": 5,
+        "base_price_gbp": 6000,
+        "seat_price_gbp": 0,
+        "extra_seat_min_tier": None,
+        "region_limit": 1,
+        "history_days": 365,
+        "next_tier": "embedded-enterprise",
+    },
+    "embedded-enterprise": {
+        "rate": 200,
+        "rate_window_seconds": 1,
+        "daily": 50000,
+        "rolling_7d": 350000,
+        "monthly": 1500000,
+        "page_size": 500,
+        "fields": "full",
+        "nearby": True,
+        "export": 100000,
+        "exports_per_day": 500,
+        "compare": 20,
+        "webhooks": True,
+        "monitors": 5000,
+        "feed_rows": 500,
+        "saved_filters": 500,
+        "feed_digests": 500,
+        "feed_api": True,
+        "included_users": 10,
+        "base_price_gbp": 0,
+        "seat_price_gbp": 0,
+        "extra_seat_min_tier": None,
+        "region_limit": None,
+        "history_days": 730,
+        "next_tier": None,
+    },
     "enterprise": {
         "rate": 200,
         "rate_window_seconds": 1,
@@ -638,8 +776,12 @@ TIER_RANK = {
     "starter": 2,
     "pro": 3,
     "business": 4,
-    "enterprise": 5,
-    "admin": 6,
+    "radar-regional": 5,
+    "radar-national": 6,
+    "intelligence-feed": 7,
+    "embedded-enterprise": 8,
+    "enterprise": 8,
+    "admin": 9,
 }
 
 
@@ -648,7 +790,7 @@ def get_tier_config(tier: str) -> dict:
     normalized = (tier or "free").lower()
     if normalized in TIERS:
         return TIERS[normalized]
-    if normalized.startswith("enterprise"):
+    if normalized.startswith("enterprise") or normalized == "embedded-enterprise":
         return TIERS["enterprise"]
     return TIERS["free"]
 

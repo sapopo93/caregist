@@ -1,295 +1,214 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Terms of Service | CareGist",
-  description: "Terms governing your use of the CareGist Directory. Includes eligibility, payments, intellectual property, acceptable use, and liability.",
+  title: "Business Terms of Service | CareGist",
+  description: "Terms governing the CareGist Directory, Radar, Intelligence Feed Pilot, and Embedded Enterprise services.",
 };
 
 export default function TermsPage() {
   return (
-    <div className="max-w-3xl mx-auto px-6 py-12">
-      <h1 className="text-3xl font-bold mb-2">Terms of Service</h1>
-      <p className="text-dusk text-sm mb-6">Last updated: 9 August 2026</p>
+    <main className="mx-auto max-w-3xl px-6 py-12">
+      <h1 className="mb-2 text-3xl font-bold">Business Terms of Service</h1>
+      <p className="mb-8 text-sm text-dusk">Version 2.0 · In force from 9 August 2026</p>
 
-      <div className="prose prose-sm text-charcoal space-y-6" style={{ fontFamily: "Lora" }}>
-
+      <div className="prose prose-sm space-y-7 text-charcoal" style={{ fontFamily: "Lora" }}>
         <section>
           <p>
-            These Terms of Service (&quot;Terms&quot;) govern your use of the CareGist Directory
-            website (the &quot;Service&quot;), operated by Henry Mlalazi trading as CareGist
-            (&quot;CareGist&quot;, &quot;we&quot;, &quot;us&quot;, &quot;our&quot;).
+            These terms govern use of CareGist by a business, public body, charity, or
+            professional customer. CareGist is operated by <strong>H-Kay Limited</strong>,
+            registered in England and Wales under company number <strong>10417923</strong>,
+            with registered office at C/O Bilberry Accountants Ltd, Castle Court, 41
+            London Road, Reigate, England, RH2 9RJ (&quot;CareGist&quot;, &quot;we&quot;,
+            &quot;us&quot;). If you accept these terms for an organisation, you confirm that
+            you are authorised to bind it.
           </p>
           <p>
-            By accessing or using the Service, you agree to be bound by these Terms. If you do not
-            agree, do not use the Service.
+            The paid services are not offered for personal, family, or household use.
+            A person seeking care should use the free directory and verify information
+            directly with CQC and the provider.
           </p>
         </section>
 
         <section>
-          <h2 className="text-xl font-bold text-bark mt-8 mb-3">1. About the Service</h2>
-          <p>
-            CareGist Directory is a searchable directory of CQC-registered care providers in England.
-            It provides:
-          </p>
-          <ul className="list-disc pl-6 space-y-1">
-            <li>Search and browse functionality for care providers by location, service type, and rating</li>
-            <li>Provider detail pages with CQC data, ratings, and contact information</li>
-            <li>Lead enquiry services connecting care sector buyers with registered providers</li>
-            <li>Paid access to exported lead data and contact information</li>
+          <h2 className="mb-3 mt-8 text-xl font-bold text-bark">1. Products and scope</h2>
+          <ul className="list-disc space-y-1 pl-6">
+            <li><strong>Free Directory:</strong> provider search, profiles, source dates, and free correction or claim requests when verification intake is available.</li>
+            <li><strong>Radar Regional:</strong> one contracted England region, 2 users, 10 saved views, and 90 days of event export.</li>
+            <li><strong>Radar National:</strong> all England, 5 users, 50 saved views or lists, 365 days of event export, and onboarding.</li>
+            <li><strong>Intelligence Feed Pilot:</strong> a sales-assisted, contracted API and webhook pilot with a stated region, signal, and delivery scope.</li>
+            <li><strong>Embedded Enterprise:</strong> a separately contracted white-label or regulated-use service.</li>
           </ul>
           <p className="mt-2">
-            The Service uses public sector information from the <strong>Care Quality Commission
-            (CQC)</strong>, licensed under the Open Government Licence v3.0. CareGist is{" "}
-            <strong>not affiliated with, endorsed by, or connected to the CQC</strong>.
+            Radar does not include API or webhook access. Additional seats are not sold
+            separately at launch. A written order form, pilot statement, or enterprise
+            agreement prevails over these terms for its expressly stated scope.
           </p>
         </section>
 
         <section>
-          <h2 className="text-xl font-bold text-bark mt-8 mb-3">2. Eligibility</h2>
+          <h2 className="mb-3 mt-8 text-xl font-bold text-bark">2. Source data and evidence</h2>
           <p>
-            You must be at least 18 years old to use the Service. By using the Service, you represent
-            that you are 18 or older.
+            CareGist reuses CQC public information under the Open Government Licence
+            v3.0. CareGist is independent of and is not endorsed by CQC. Source systems
+            may delay, correct, remove, or republish information. CareGist records when
+            it checked and observed a source; those timestamps are not a statement that
+            the underlying change occurred at that time.
+          </p>
+          <p>
+            A location-level signal must not be treated as a provider-group conclusion.
+            Customers must check the linked official evidence before making a regulated,
+            clinical, safeguarding, employment, credit, or other high-impact decision.
           </p>
         </section>
 
         <section>
-          <h2 className="text-xl font-bold text-bark mt-8 mb-3">3. Accounts</h2>
-          <ul className="list-disc pl-6 space-y-1">
-            <li>You are responsible for maintaining the confidentiality of your account credentials</li>
-            <li>You are responsible for all activity under your account</li>
-            <li>You must provide accurate, complete information when creating an account</li>
-            <li>We reserve the right to suspend or terminate accounts that violate these Terms</li>
+          <h2 className="mb-3 mt-8 text-xl font-bold text-bark">3. Explanations and ranking</h2>
+          <p>
+            CareGist may attach a plain-language explanation to a verified event only
+            after its factual claims pass the applicable evidence gate. If generation,
+            extraction, or evaluation fails, the verified raw event may be delivered
+            without a narrative. Source facts and CareGist interpretation are labelled
+            separately.
+          </p>
+          <p>
+            Initial ranking uses explainable factors such as recency, contracted
+            territory, service type, explicit provider lists, and the organisation&apos;s
+            recorded actions. CareGist does not sell predictive scores, vacancy claims,
+            or guaranteed commercial opportunities.
+          </p>
+        </section>
+
+        <section>
+          <h2 className="mb-3 mt-8 text-xl font-bold text-bark">4. Accounts and organisations</h2>
+          <ul className="list-disc space-y-1 pl-6">
+            <li>Users must be at least 18 and provide accurate account information.</li>
+            <li>Each organisation controls its members, saved views, provider lists, actions, outcomes, subscriptions, and deliveries.</li>
+            <li>Credentials must not be shared outside the named organisation users.</li>
+            <li>Owners and admins are responsible for member access and territory configuration.</li>
+            <li>Customers must promptly report suspected unauthorised access.</li>
           </ul>
         </section>
 
         <section>
-          <h2 className="text-xl font-bold text-bark mt-8 mb-3">4. Payments and Lead Purchases</h2>
-
-          <h3 className="text-lg font-semibold text-bark mt-4 mb-2">4.1 Payment Processing</h3>
+          <h2 className="mb-3 mt-8 text-xl font-bold text-bark">5. Customer data and outcomes</h2>
           <p>
-            Payments are processed by <strong>Stripe</strong>, a third-party payment processor. By
-            making a purchase, you agree to Stripe&apos;s terms of service. We do not store full
-            payment card details.
+            Customers may save provider lists, actions, and optional outcomes such as
+            contacted, meeting booked, engagement won, or not relevant. The customer
+            is responsible for having a lawful basis for personal data it submits and
+            must not upload special-category data, patient data, care records, or other
+            data that the product does not request.
           </p>
-
-          <h3 className="text-lg font-semibold text-bark mt-4 mb-2">4.2 Lead Data</h3>
           <p>
-            Lead data provided through the Service includes information from CQC public records and,
-            where applicable, lead enquiry submissions. We do not guarantee:
+            CareGist does not place customer data into report-narrative prompts. Any
+            enterprise processing terms or customer-owned list integration must be
+            agreed in the applicable contract or data-processing agreement.
           </p>
-          <ul className="list-disc pl-6 space-y-1">
-            <li>That a provider is currently accepting new clients</li>
-            <li>The accuracy of any provider&apos;s contact details (sourced from CQC and displayed as published)</li>
-            <li>That any provider will respond to your enquiry</li>
+        </section>
+
+        <section>
+          <h2 className="mb-3 mt-8 text-xl font-bold text-bark">6. Fees, subscription and cancellation</h2>
+          <p>
+            Current prices and included limits are shown on the pricing page or in the
+            signed order form. CareGist is not currently VAT registered, so VAT is not
+            currently charged. Stripe processes self-serve payments; CareGist does not
+            store full card details.
+          </p>
+          <p>
+            Radar subscriptions renew for the displayed billing period until cancelled.
+            Cancellation takes effect at the end of the current paid period unless law
+            or an agreed order form requires otherwise. Customers can use billing
+            management or contact support. Feed and Embedded terms, renewal, service
+            levels, and termination are set out in the signed agreement.
+          </p>
+          <p>
+            Historical one-off digital-content purchases remain governed by the terms
+            and express immediate-supply consent captured at their checkout. This does
+            not affect remedies that cannot lawfully be excluded. No new static dataset
+            product is offered under this catalogue.
+          </p>
+        </section>
+
+        <section>
+          <h2 className="mb-3 mt-8 text-xl font-bold text-bark">7. Availability and delivery targets</h2>
+          <p>
+            Public statements labelled as a target are not a guaranteed service level.
+            Any contracted service level applies only when written into the relevant
+            Feed or Embedded agreement. Upstream CQC unavailability, delay, correction,
+            and schema change can affect collection and delivery.
+          </p>
+          <p>
+            CareGist may pause a collector, signal type, explanation, outbound delivery,
+            or checkout to protect accuracy, security, or tenant isolation.
+          </p>
+        </section>
+
+        <section>
+          <h2 className="mb-3 mt-8 text-xl font-bold text-bark">8. Acceptable use</h2>
+          <p>Customers must not:</p>
+          <ul className="list-disc space-y-1 pl-6">
+            <li>use the service unlawfully or to send unlawful unsolicited communications;</li>
+            <li>attempt to access another organisation&apos;s data or bypass plan scope;</li>
+            <li>misrepresent CareGist output as official CQC advice or a guaranteed prediction;</li>
+            <li>use a signal as the sole basis for a high-impact decision about a person;</li>
+            <li>interfere with, reverse engineer, or overload the service.</li>
           </ul>
+          <p className="mt-2">The <a href="/acceptable-use" className="text-clay underline">Acceptable Use Policy</a> also applies.</p>
+        </section>
 
-          <h3 className="text-lg font-semibold text-bark mt-4 mb-2">4.3 Digital content, cancellation and refunds</h3>
+        <section>
+          <h2 className="mb-3 mt-8 text-xl font-bold text-bark">9. Intellectual property and licence</h2>
           <p>
-            A purchased dataset is digital content. At checkout, you may expressly request that we
-            supply it immediately, before the end of the 14-day cancellation period, and acknowledge
-            that you lose the statutory right to cancel once download access is provided. We will not
-            begin immediate supply unless you give both confirmations using the required checkout box.
+            CQC data remains subject to its source rights and the Open Government
+            Licence. CareGist owns or licenses its original software, event modelling,
+            explanations, interface, and branding. During a paid term, the customer may
+            use included outputs for its internal business purpose. White-label,
+            redistribution, sublicensing, or embedding requires a written agreement.
           </p>
-          <p className="mt-2">
-            This cancellation waiver does not affect your statutory remedies if digital content is
-            faulty, misdescribed, or not supplied with reasonable care and skill. If the dataset is
-            materially inaccurate or unusable, contact us within 14 days so we can investigate and
-            provide an appropriate remedy, which may include repair, replacement, or refund. Contact{" "}
-            <a href="mailto:henry.mlalazi@gmail.com" className="text-clay underline">
-              henry.mlalazi@gmail.com
-            </a>
-            .
-          </p>
-
-          <h3 className="text-lg font-semibold text-bark mt-4 mb-2">4.4 Pricing</h3>
           <p>
-            Pricing is displayed on the Service and may change. Changes do not affect purchases
-            already made. CareGist is not currently VAT registered, so VAT is not currently charged.
+            Exports must retain the supplied CQC/Open Government Licence attribution
+            and CareGist source metadata.
           </p>
         </section>
 
         <section>
-          <h2 className="text-xl font-bold text-bark mt-8 mb-3">5. Intellectual Property</h2>
-
-          <h3 className="text-lg font-semibold text-bark mt-4 mb-2">5.1 Our Content</h3>
+          <h2 className="mb-3 mt-8 text-xl font-bold text-bark">10. Disclaimers and liability</h2>
           <p>
-            The CareGist Directory website design, search functionality, lead system, branding, and
-            original content are owned by or licensed to CareGist. All rights reserved.
+            CQC information and third-party links are provided as published and may be
+            incomplete, delayed, or corrected. CareGist does not guarantee a rating
+            change, closure, expansion, engagement, or other commercial result.
           </p>
-
-          <h3 className="text-lg font-semibold text-bark mt-4 mb-2">5.2 CQC Data</h3>
           <p>
-            CQC data displayed on the Service is:
-          </p>
-          <ul className="list-disc pl-6 space-y-1">
-            <li>&copy; Care Quality Commission, used under the Open Government Licence v3.0</li>
-            <li>Not owned by CareGist</li>
-            <li>Provided for informational purposes</li>
-          </ul>
-
-          <h3 className="text-lg font-semibold text-bark mt-4 mb-2">5.3 User Content</h3>
-          <p>
-            By submitting lead enquiries or other content through the Service, you grant CareGist a
-            non-exclusive, royalty-free licence to use that content to provide the Service (including
-            sharing with the provider you are enquiring about).
+            To the fullest extent permitted by law, neither party is liable for indirect
+            or consequential loss. CareGist&apos;s aggregate liability under self-serve Radar
+            is limited to fees paid for that service in the preceding 12 months. A signed
+            enterprise agreement may set a different cap. Nothing excludes liability
+            that cannot lawfully be limited, including fraud or death or personal injury
+            caused by negligence.
           </p>
         </section>
 
         <section>
-          <h2 className="text-xl font-bold text-bark mt-8 mb-3">6. Acceptable Use</h2>
-          <p>You agree not to:</p>
-          <ul className="list-disc pl-6 space-y-1">
-            <li>Use the Service for any unlawful purpose</li>
-            <li>Scrape, harvest, or bulk-download data from the Service without permission</li>
-            <li>Submit false or misleading lead enquiries</li>
-            <li>Impersonate any person or entity</li>
-            <li>Interfere with the operation of the Service</li>
-            <li>Use the Service to send unsolicited communications (spam)</li>
-            <li>Reverse engineer or attempt to extract the source code</li>
-          </ul>
-          <p className="mt-2">
-            See our{" "}
-            <a href="/acceptable-use" className="text-clay underline">
-              Acceptable Use Policy
-            </a>{" "}
-            for full details.
+          <h2 className="mb-3 mt-8 text-xl font-bold text-bark">11. Suspension, termination and changes</h2>
+          <p>
+            CareGist may suspend access where reasonably necessary for security,
+            non-payment, unlawful use, tenant protection, or material breach. Where
+            practical, notice and an opportunity to remedy will be given. Material terms
+            changes will be notified to registered customers and will not retrospectively
+            alter a completed purchase.
           </p>
         </section>
 
         <section>
-          <h2 className="text-xl font-bold text-bark mt-8 mb-3">7. Third-Party Links and Data</h2>
-
-          <h3 className="text-lg font-semibold text-bark mt-4 mb-2">7.1 CQC Data</h3>
+          <h2 className="mb-3 mt-8 text-xl font-bold text-bark">12. Governing law and contact</h2>
           <p>
-            Care provider information displayed on the Service is sourced from the{" "}
-            <strong>Care Quality Commission</strong> and is provided <strong>&quot;as is&quot;</strong>.
-            CareGist:
-          </p>
-          <ul className="list-disc pl-6 space-y-1">
-            <li>Does not verify, endorse, or guarantee the accuracy of CQC data</li>
-            <li>Displays data as published by CQC</li>
-            <li>
-              Encourages users to verify information with CQC directly at{" "}
-              <a href="https://www.cqc.org.uk" className="text-clay underline" target="_blank" rel="noopener noreferrer">
-                www.cqc.org.uk
-              </a>{" "}
-              for critical decisions
-            </li>
-          </ul>
-
-          <h3 className="text-lg font-semibold text-bark mt-4 mb-2">7.2 External Links</h3>
-          <p>
-            The Service contains links to third-party websites (e.g., provider websites, CQC
-            inspection reports). We are not responsible for the content or practices of these sites.
+            These terms are governed by the laws of England and Wales and the courts of
+            England and Wales have exclusive jurisdiction, subject to any mandatory law.
+            Questions may be sent to{" "}
+            <a href="mailto:legal@caregist.co.uk" className="text-clay underline">legal@caregist.co.uk</a>{" "}
+            or by post to H-Kay Limited at the registered office stated above.
           </p>
         </section>
-
-        <section>
-          <h2 className="text-xl font-bold text-bark mt-8 mb-3">8. Disclaimers</h2>
-          <p>
-            THE SERVICE IS PROVIDED ON AN &quot;AS IS&quot; AND &quot;AS AVAILABLE&quot; BASIS,
-            WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO:
-          </p>
-          <ul className="list-disc pl-6 space-y-1">
-            <li>Accuracy, completeness, or timeliness of CQC data</li>
-            <li>Availability of the Service (we aim for high availability but do not guarantee uninterrupted service)</li>
-            <li>Fitness for a particular purpose</li>
-            <li>Non-infringement</li>
-          </ul>
-          <p className="mt-2">
-            Care provider information is sourced from CQC public data.{" "}
-            <strong>
-              Always verify critical information directly with CQC or the provider before making care
-              decisions.
-            </strong>
-          </p>
-        </section>
-
-        <section>
-          <h2 className="text-xl font-bold text-bark mt-8 mb-3">9. Limitation of Liability</h2>
-          <p>To the fullest extent permitted by applicable law:</p>
-          <ul className="list-disc pl-6 space-y-1">
-            <li>
-              CareGist shall not be liable for any indirect, incidental, special, consequential, or
-              punitive damages
-            </li>
-            <li>
-              CareGist&apos;s total liability for any claim relating to the Service shall not exceed
-              the amount paid by you to CareGist in the 12 months preceding the claim, or &pound;100
-              if no payment was made
-            </li>
-            <li>
-              Nothing in these Terms limits liability for death or personal injury caused by
-              negligence, fraud, or any liability that cannot be excluded by law
-            </li>
-          </ul>
-        </section>
-
-        <section>
-          <h2 className="text-xl font-bold text-bark mt-8 mb-3">10. Indemnification</h2>
-          <p>
-            You agree to indemnify and hold harmless CareGist and its operators from any claims,
-            damages, or expenses arising from:
-          </p>
-          <ul className="list-disc pl-6 space-y-1">
-            <li>Your use of the Service</li>
-            <li>Your violation of these Terms</li>
-            <li>Your violation of any third-party rights</li>
-          </ul>
-        </section>
-
-        <section>
-          <h2 className="text-xl font-bold text-bark mt-8 mb-3">11. Termination</h2>
-          <p>
-            We may suspend or terminate your access to the Service at any time, with or without cause,
-            without prior notice. Upon termination:
-          </p>
-          <ul className="list-disc pl-6 space-y-1">
-            <li>Your right to use the Service ceases immediately</li>
-            <li>Data retention follows our{" "}
-              <a href="/privacy" className="text-clay underline">Privacy Policy</a>
-            </li>
-            <li>Any outstanding payment obligations survive termination</li>
-          </ul>
-        </section>
-
-        <section>
-          <h2 className="text-xl font-bold text-bark mt-8 mb-3">12. Changes to Terms</h2>
-          <p>
-            We reserve the right to modify these Terms at any time. Changes will be posted on this
-            page with an updated &quot;Last updated&quot; date. Material changes will be notified to
-            registered users. Continued use after changes constitutes acceptance.
-          </p>
-        </section>
-
-        <section>
-          <h2 className="text-xl font-bold text-bark mt-8 mb-3">13. Governing Law</h2>
-          <p>
-            These Terms are governed by the laws of <strong>England and Wales</strong>. Any disputes
-            shall be subject to the exclusive jurisdiction of the English courts.
-          </p>
-        </section>
-
-        <section>
-          <h2 className="text-xl font-bold text-bark mt-8 mb-3">14. Contact</h2>
-          <p>
-            For questions about these Terms:
-          </p>
-          <ul className="list-disc pl-6 space-y-1">
-            <li>
-              <strong>Email:</strong>{" "}
-              <a href="mailto:henry.mlalazi@gmail.com" className="text-clay underline">
-                henry.mlalazi@gmail.com
-              </a>
-            </li>
-          </ul>
-        </section>
-
-        <p className="italic text-dusk mt-8 pt-4 border-t border-stone">
-          These Terms of Service are effective from 8 August 2026.
-        </p>
-
       </div>
-    </div>
+    </main>
   );
 }

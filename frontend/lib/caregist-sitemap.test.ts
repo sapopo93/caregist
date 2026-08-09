@@ -3,7 +3,7 @@ import { test } from "node:test";
 
 import { buildCareGistRobots, buildCareGistSitemap } from "./caregist-sitemap.ts";
 
-const BASE_URL = "https://caregist.co.uk";
+const BASE_URL = "https://www.caregist.co.uk";
 
 test("static sitemap preserves the public non-provider routes without fabricated freshness", () => {
   const entries = buildCareGistSitemap(BASE_URL);
@@ -13,7 +13,13 @@ test("static sitemap preserves the public non-provider routes without fabricated
     [
       BASE_URL,
       `${BASE_URL}/search`,
-      `${BASE_URL}/lead-list`,
+      `${BASE_URL}/pricing`,
+      `${BASE_URL}/intelligence-feed`,
+      `${BASE_URL}/why-caregist`,
+      `${BASE_URL}/data-status`,
+      `${BASE_URL}/find-care`,
+      `${BASE_URL}/acceptable-use`,
+      `${BASE_URL}/cookies`,
       `${BASE_URL}/privacy`,
       `${BASE_URL}/terms`,
     ],

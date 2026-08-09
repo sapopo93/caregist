@@ -50,20 +50,18 @@ describe("revenue path contracts", () => {
   it("keeps every checkout-backed public price aligned with the approved monthly ladder", () => {
     const dataPrices = Object.fromEntries(PRICING_LADDER.map(({ tier, price }) => [tier, price]));
     assert.deepEqual(dataPrices, {
-      Free: "£0",
-      "Alerts Pro": "£49/mo",
-      "Data Starter": "£99/mo",
-      "Data Pro": "£199/mo",
-      "Data Business": "£499/mo",
-      Enterprise: "Contact us",
+      "Free Directory": "£0",
+      "Radar Regional": "£299/mo",
+      "Radar National": "£799/mo",
+      "Intelligence Feed Pilot": "From £6,000/yr",
+      "Embedded Enterprise": "Annual quote",
     });
 
     const providerPrices = Object.fromEntries(PROVIDER_TIERS.map(({ tier, price }) => [tier, price]));
     assert.deepEqual(providerPrices, {
       claimed: "£0",
-      enhanced: "£99/location/mo",
-      sponsored: "£149/location/mo",
-      enterprise: "Contact",
+      enhanced: "Existing subscription",
+      sponsored: "Existing subscription",
     });
   });
 
@@ -90,12 +88,11 @@ describe("revenue path contracts", () => {
     assert.match(dashboard, /subscriptionReady \? \(/);
   });
 
-  it("handles an in-place provider plan change without navigating to an undefined checkout", () => {
+  it("removes paid provider-listing checkout while preserving free claims", () => {
     const providerDashboard = source("app/provider-dashboard/[slug]/page.tsx");
 
-    assert.match(providerDashboard, /if \(data\.updated\)/);
-    assert.match(providerDashboard, /profile_tier: data\.tier/);
-    assert.match(providerDashboard, /if \(!data\.checkout_url\) throw new Error/);
+    assert.match(providerDashboard, /Provider claims and corrections are free/);
+    assert.doesNotMatch(providerDashboard, /profile-checkout/);
   });
 
   it("offers a plan/seat change action on the current account plan, not a second charge", () => {
@@ -114,11 +111,10 @@ describe("revenue path contracts", () => {
     assert.match(currentPlanBranch[1], /handleUpgrade/);
   });
 
-  it("does not send the provider Enterprise card to unsupported self-serve checkout", () => {
+  it("does not render removed provider sales cards", () => {
     const dashboard = source("app/provider-dashboard/[slug]/page.tsx");
 
-    assert.match(dashboard, /t\.tier === "enhanced" \|\| t\.tier === "sponsored"/);
-    assert.match(dashboard, /mailto:enterprise@caregist\.co\.uk/);
+    assert.doesNotMatch(dashboard, /Provider Pro|Sponsored Listing|profile-checkout/);
   });
 
   it("backs the cancel-anytime promise with authenticated billing management", () => {

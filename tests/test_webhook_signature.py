@@ -60,6 +60,40 @@ async def test_delivered_payload_passes_published_verifier():
 
 
 @pytest.mark.asyncio
+async def test_rotation_overlap_signs_with_current_and_previous_secrets():
+    captured = {}
+
+    class _Client:
+        def __init__(self, *a, **k):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *a):
+            return False
+
+        async def post(self, _url, content=None, headers=None):
+            captured["body"] = content
+            captured["signature"] = headers["X-CareGist-Signature"]
+            return _Resp()
+
+    secrets = ["whsec_current", "whsec_previous"]
+    with patch.object(webhook_delivery, "assert_public_webhook_url"), \
+         patch.object(webhook_delivery.httpx, "AsyncClient", _Client):
+        assert await deliver_webhook(
+            "https://sub.example.com/hook",
+            secrets,
+            {"event": "radar.event.created", "event_id": "evt_123"},
+        )
+
+    assert captured["signature"].count("v1=") == 2
+    assert verify_signature("whsec_current", captured["body"], captured["signature"])
+    assert verify_signature("whsec_previous", captured["body"], captured["signature"])
+    assert verify_signature(secrets, captured["body"], captured["signature"])
+
+
+@pytest.mark.asyncio
 async def test_deliver_webhook_blocks_private_destination_before_http():
     class _Client:
         def __init__(self, *a, **k):

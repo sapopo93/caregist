@@ -26,6 +26,7 @@ from api.config import (
     settings,
 )
 from api.database import get_connection
+from api.services.pipeline_health import get_pipeline_health
 from api.utils.audit import actor_from_auth, write_audit_log
 
 logger = logging.getLogger("caregist.billing")
@@ -60,6 +61,12 @@ def init_stripe():
         PRICE_TO_TIER[settings.stripe_price_business] = "business"
     if settings.stripe_price_alerts_pro:
         PRICE_TO_TIER[settings.stripe_price_alerts_pro] = "alerts-pro"
+    if settings.stripe_price_radar_regional:
+        PRICE_TO_TIER[settings.stripe_price_radar_regional] = "radar-regional"
+    if settings.stripe_price_radar_national:
+        PRICE_TO_TIER[settings.stripe_price_radar_national] = "radar-national"
+    if settings.stripe_price_intelligence_feed:
+        PRICE_TO_TIER[settings.stripe_price_intelligence_feed] = "intelligence-feed"
     if settings.stripe_price_profile_enhanced:
         PRICE_TO_PROFILE_TIER[settings.stripe_price_profile_enhanced] = "enhanced"
     if settings.stripe_price_profile_premium:
@@ -68,13 +75,20 @@ def init_stripe():
         PRICE_TO_PROFILE_TIER[settings.stripe_price_profile_sponsored] = "sponsored"
 
 
-CHECKOUT_TIERS = {"alerts-pro", "starter", "pro", "business"}
-BASE_PLAN_TIERS = CHECKOUT_TIERS  # kept as an alias for older internal call sites
+LEGACY_SUBSCRIPTION_TIERS = {"alerts-pro", "starter", "pro", "business"}
+SALEABLE_CHECKOUT_TIERS = {"radar-regional", "radar-national"}
+ENTERPRISE_CONTRACT_TIERS = {"intelligence-feed", "embedded-enterprise", "enterprise"}
+# Webhook replay must continue to understand archived prices even though new
+# checkout is restricted to the Radar catalogue.
+CHECKOUT_TIERS = LEGACY_SUBSCRIPTION_TIERS | SALEABLE_CHECKOUT_TIERS | {"intelligence-feed"}
+BASE_PLAN_TIERS = CHECKOUT_TIERS
 ENTITLED_SUBSCRIPTION_STATUSES = {"active", "trialing"}
 CHECKOUT_TIER_ALIASES = {
     "data-starter": "starter",
     "data-pro": "pro",
     "data-business": "business",
+    "radar-regional": "radar-regional",
+    "radar-national": "radar-national",
 }
 
 
@@ -285,8 +299,9 @@ def _profile_subscription_state(
 
 class CheckoutRequest(BaseModel):
     email: EmailStr
-    tier: str  # "alerts-pro", "starter", "pro", or "business"
-    # None on an existing-subscription change means "keep the current seat count".
+    tier: str  # "radar-regional" or "radar-national"
+    # Retained for backwards-compatible request parsing. New Radar plans reject
+    # any value above zero because launch seats are fixed by plan.
     extra_seats: int | None = Field(None, ge=0, le=50)
     terms_version: str = Field(min_length=1, max_length=100)
     business_use_confirmed: Literal[True]
@@ -397,6 +412,9 @@ def _configured_base_price_for_tier(tier: str) -> str | None:
         "starter": settings.stripe_price_starter,
         "pro": settings.stripe_price_pro,
         "business": settings.stripe_price_business,
+        "radar-regional": settings.stripe_price_radar_regional,
+        "radar-national": settings.stripe_price_radar_national,
+        "intelligence-feed": settings.stripe_price_intelligence_feed,
     }
     return price_map.get(tier) or None
 
@@ -478,9 +496,27 @@ async def _persist_subscription_state(
     )
 
 
+async def _require_radar_commerce_ready() -> None:
+    """Fail closed until the seven-day source and latency gate has evidence."""
+    async with get_connection() as conn:
+        health = await get_pipeline_health(conn)
+    readiness = health.get("commercialReadiness") or {}
+    if not readiness.get("checkoutReady", False):
+        raise HTTPException(
+            status_code=503,
+            detail="Radar checkout is waiting for its seven-day source-freshness and delivery-latency gate.",
+        )
+
+
 @router.post("/dataset-checkout", dependencies=[Depends(check_ip_rate_limit)])
 async def create_dataset_checkout(req: DatasetCheckoutRequest) -> dict:
     """Create a one-time Checkout Session tied to an immutable full-dataset artefact."""
+    raise HTTPException(
+        status_code=410,
+        detail="The Full Dataset product is no longer sold. Ask about the scoped Intelligence Feed instead.",
+    )
+
+    # Historical fulfilment code remains below solely for refund/webhook replay.
     if not settings.full_dataset_checkout_enabled:
         raise HTTPException(status_code=503, detail="Dataset checkout is not available yet.")
     if not settings.stripe_secret_key or not settings.stripe_price_full_dataset or not settings.resend_api_key:
@@ -569,7 +605,7 @@ async def create_checkout(
     request: Request,
     _auth: dict = Depends(validate_billing_identity),
 ) -> dict:
-    """Create a Stripe Checkout session for a new plan, or change an existing one.
+    """Create or change a Radar subscription using its fixed seat allowance.
 
     Existing subscriptions used to fail closed to "contact support" for any
     plan/seat change. This now resolves the change through the same
@@ -577,7 +613,7 @@ async def create_checkout(
     checkout, so a race between two change requests fails one of them closed
     (409) instead of silently dropping it.
     """
-    if not settings.billing_checkout_enabled:
+    if not settings.billing_checkout_enabled or not settings.radar_checkout_enabled:
         raise HTTPException(status_code=503, detail="Billing checkout is awaiting Human Gate approval.")
     _verify_contract_acceptance(req.terms_version, req.business_use_confirmed)
     user_id = _require_browser_billing_owner(_auth)
@@ -589,13 +625,28 @@ async def create_checkout(
     tier = _normalize_checkout_tier(req.tier)
     if tier == "free":
         raise HTTPException(status_code=422, detail="The Free plan does not require checkout. Create an account to start free.")
-    if tier not in CHECKOUT_TIERS:
-        if tier == "enterprise":
+    if tier not in SALEABLE_CHECKOUT_TIERS:
+        if tier in ENTERPRISE_CONTRACT_TIERS:
             raise HTTPException(
                 status_code=422,
-                detail="Enterprise plans require custom setup. Contact enterprise@caregist.co.uk to get started.",
+                detail="Intelligence Feed and Embedded Enterprise require a scoped contract. Contact enterprise@caregist.co.uk.",
             )
-        raise HTTPException(status_code=400, detail=f"Invalid tier: {req.tier}. Choose 'alerts-pro', 'starter', 'pro', or 'business'.")
+        if tier in LEGACY_SUBSCRIPTION_TIERS:
+            raise HTTPException(
+                status_code=410,
+                detail="This legacy plan is no longer sold. Choose Radar Regional or Radar National.",
+            )
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid tier: {req.tier}. Choose 'radar-regional' or 'radar-national'.",
+        )
+    if req.extra_seats:
+        raise HTTPException(
+            status_code=422,
+            detail="Additional seats are not sold at launch. Choose Radar National or request an enterprise quote.",
+        )
+
+    await _require_radar_commerce_ready()
 
     requested_extra_seats = req.extra_seats
 
@@ -623,6 +674,11 @@ async def create_checkout(
     if existing_sub:
         subscription_id = existing_sub["stripe_subscription_id"]
         existing_tier = _normalize_checkout_tier(existing_sub["tier"] or "")
+        if existing_tier in LEGACY_SUBSCRIPTION_TIERS:
+            raise HTTPException(
+                status_code=409,
+                detail="Your legacy subscription remains unchanged. Contact support for a controlled Radar migration.",
+            )
         subscription = stripe.Subscription.retrieve(subscription_id)
         if subscription.get("customer") != user.get("stripe_customer_id"):
             raise HTTPException(
@@ -889,7 +945,14 @@ async def create_profile_checkout(
     request: Request,
     _auth: dict = Depends(validate_billing_identity),
 ) -> dict:
-    """Create a Stripe Checkout session for a provider listing tier upgrade."""
+    """Reject removed paid-listing products while free claims remain available."""
+    raise HTTPException(
+        status_code=410,
+        detail="Paid provider listings are no longer sold. Provider claims and corrections remain free.",
+    )
+
+    # Compatibility implementation retained below for webhook/audit history.
+    # It is unreachable by design and can be removed after the deprecation window.
     if not settings.billing_checkout_enabled:
         raise HTTPException(status_code=503, detail="Billing checkout is awaiting Human Gate approval.")
     _verify_contract_acceptance(req.terms_version, req.business_use_confirmed)

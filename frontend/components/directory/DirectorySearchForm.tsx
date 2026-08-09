@@ -42,7 +42,7 @@ export default function DirectorySearchForm({
   return (
     <section className="min-w-0 rounded-xl border border-stone bg-cream p-5 shadow-sm sm:p-6">
       <div className="max-w-3xl">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-clay">CQC opportunity finder</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-clay">CQC directory</p>
         <TitleHeading className="mt-2 text-3xl font-extrabold leading-tight text-bark">
           {title}
         </TitleHeading>
@@ -65,7 +65,7 @@ export default function DirectorySearchForm({
 
         <div>
           <label htmlFor="directory-opportunity" className="mb-1 block text-sm font-medium text-bark">
-            Opportunity
+            Factual segment
           </label>
           <select
             id="directory-opportunity"
@@ -73,7 +73,7 @@ export default function DirectorySearchForm({
             defaultValue={opportunity}
             className="w-full rounded-xl border border-stone bg-white px-4 py-3 text-sm text-charcoal outline-none transition focus:border-clay"
           >
-            <option value="">All opportunities</option>
+            <option value="">All provider records</option>
             {DIRECTORY_OPPORTUNITY_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.shortLabel}

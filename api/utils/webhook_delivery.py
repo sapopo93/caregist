@@ -9,6 +9,7 @@ import ipaddress
 import json
 import logging
 import socket
+from collections.abc import Sequence
 from datetime import datetime, timezone
 from urllib.parse import urlparse
 
@@ -39,12 +40,23 @@ def assert_public_webhook_url(url: str) -> None:
             raise ValueError("Webhook URL must resolve to public internet addresses.")
 
 
-def _sign_payload(secret: str, payload_json: str) -> str:
-    """Return HMAC-SHA256 hex digest of the JSON payload."""
-    return hmac.new(secret.encode(), payload_json.encode(), hashlib.sha256).hexdigest()  # type: ignore[attr-defined]
+SIGNATURE_TOLERANCE_SECONDS = 300
 
 
-def verify_signature(secret: str, payload_body: str | bytes, signature_header: str | None) -> bool:
+def _sign_payload(secret: str, payload_json: str, timestamp: int | None = None) -> str:
+    """Return the HMAC digest for a timestamped payload."""
+    signed = payload_json if timestamp is None else f"{timestamp}.{payload_json}"
+    return hmac.new(secret.encode(), signed.encode(), hashlib.sha256).hexdigest()  # type: ignore[attr-defined]
+
+
+def verify_signature(
+    secret: str | Sequence[str],
+    payload_body: str | bytes,
+    signature_header: str | None,
+    *,
+    now: int | None = None,
+    tolerance_seconds: int = SIGNATURE_TOLERANCE_SECONDS,
+) -> bool:
     """Verify an X-CareGist-Signature header against the raw request body.
 
     This is the consumer-side counterpart to our signing and is the reference
@@ -54,20 +66,51 @@ def verify_signature(secret: str, payload_body: str | bytes, signature_header: s
         if not verify_signature(my_secret, body, request.headers.get("X-CareGist-Signature")):
             return 401
 
-    The header format is ``sha256=<hexdigest>``; comparison is constant-time.
+    The current header format is ``t=<unix>,v1=<hexdigest>`` over
+    ``timestamp.body``. The legacy ``sha256=<hexdigest>`` format remains
+    verifiable during the 90-day compatibility window.
     """
     if not signature_header:
         return False
-    scheme, _, provided = signature_header.partition("=")
-    if scheme != "sha256" or not provided:
-        return False
     if isinstance(payload_body, bytes):
         payload_body = payload_body.decode("utf-8")
-    expected = _sign_payload(secret, payload_body)
-    return hmac.compare_digest(expected, provided)
+    secrets = (secret,) if isinstance(secret, str) else tuple(secret)
+    if not secrets:
+        return False
+    if signature_header.startswith("sha256="):
+        provided = signature_header.removeprefix("sha256=")
+        return bool(provided) and any(
+            hmac.compare_digest(_sign_payload(candidate, payload_body), provided)
+            for candidate in secrets
+        )
+
+    parts: dict[str, list[str]] = {}
+    for item in signature_header.split(","):
+        key, separator, value = item.strip().partition("=")
+        if separator and key and value:
+            parts.setdefault(key, []).append(value)
+    try:
+        timestamp = int(parts["t"][0])
+    except (KeyError, IndexError, ValueError):
+        return False
+    current = int(datetime.now(timezone.utc).timestamp()) if now is None else int(now)
+    if abs(current - timestamp) > tolerance_seconds:
+        return False
+    provided_signatures = parts.get("v1", [])
+    return any(
+        hmac.compare_digest(_sign_payload(candidate, payload_body, timestamp), provided)
+        for candidate in secrets
+        for provided in provided_signatures
+    )
 
 
-async def deliver_webhook(url: str, secret: str, payload: dict, *, return_metadata: bool = False):
+async def deliver_webhook(
+    url: str,
+    secret: str | Sequence[str],
+    payload: dict,
+    *,
+    return_metadata: bool = False,
+):
     """
     Deliver a webhook payload to the given URL.
 
@@ -86,11 +129,23 @@ async def deliver_webhook(url: str, secret: str, payload: dict, *, return_metada
         return False
 
     payload_json = json.dumps(payload, default=str)
-    signature = _sign_payload(secret, payload_json)
+    signature_timestamp = int(datetime.now(timezone.utc).timestamp())
+    secrets = (secret,) if isinstance(secret, str) else tuple(secret)
+    if not secrets:
+        if return_metadata:
+            return False, 0, None, "delivery signing secret is missing"
+        return False
+    signatures = [
+        _sign_payload(candidate, payload_json, signature_timestamp)
+        for candidate in secrets
+    ]
     headers = {
         "Content-Type": "application/json",
-        "X-CareGist-Signature": f"sha256={signature}",
+        "X-CareGist-Signature": ",".join(
+            [f"t={signature_timestamp}", *(f"v1={signature}" for signature in signatures)]
+        ),
         "X-CareGist-Event": payload.get("event", "provider.rating_changed"),
+        "X-CareGist-Event-Id": str(payload.get("event_id") or payload.get("id") or ""),
         "User-Agent": "CareGist-Webhooks/1.0",
     }
 

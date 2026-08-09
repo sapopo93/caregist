@@ -23,6 +23,24 @@ def test_governance_rejects_destructive_migration_without_approval(tmp_path, mon
     assert any(f.rule == "destructive_sql_requires_approval" for f in findings)
 
 
+def test_governance_accepts_only_the_frozen_047_destructive_migration(tmp_path, monkeypatch):
+    migrations = tmp_path / "db" / "migrations"
+    migrations.mkdir(parents=True)
+    (migrations / "047_expand_analytics_provider_reference.sql").write_text(
+        "ALTER TABLE analytics_events ALTER COLUMN provider_id TYPE TEXT;\n",
+        encoding="utf-8",
+    )
+    down = migrations / "down"
+    down.mkdir()
+    (down / "047_expand_analytics_provider_reference.down.sql").write_text(
+        "ALTER TABLE analytics_events ALTER COLUMN provider_id TYPE VARCHAR(20);\n",
+        encoding="utf-8",
+    )
+    monkeypatch.delenv("APPROVED_DESTRUCTIVE", raising=False)
+
+    assert check_governance(tmp_path) == []
+
+
 def test_governance_requires_down_migration_for_numbered_sql(tmp_path):
     migrations = tmp_path / "db" / "migrations"
     migrations.mkdir(parents=True)

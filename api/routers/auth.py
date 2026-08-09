@@ -15,7 +15,7 @@ try:
 except ImportError:  # pragma: no cover - local fallback when bcrypt is unavailable
     bcrypt = None
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Response
-from pydantic import BaseModel, EmailStr, Field, model_validator
+from pydantic import BaseModel, EmailStr, Field
 
 from api.middleware.ip_rate_limit import check_ip_rate_limit
 
@@ -175,14 +175,9 @@ class RegisterRequest(BaseModel):
     email: EmailStr
     name: str = Field(..., max_length=255)
     password: str = Field(..., min_length=MIN_PASSWORD_LENGTH)
-    plan: Literal["free", "alerts-pro", "data-starter", "data-pro", "data-business"] = "free"
-    provider_tier: Literal["enhanced", "sponsored"] | None = None
-
-    @model_validator(mode="after")
-    def validate_single_purchase_intent(self) -> "RegisterRequest":
-        if self.provider_tier and self.plan != "free":
-            raise ValueError("Choose either a data plan or a provider listing, not both.")
-        return self
+    plan: Literal["free", "radar-regional", "radar-national"] = "free"
+    # Kept as a rejected compatibility field so stale public links fail closed.
+    provider_tier: None = None
 
 
 class LoginRequest(BaseModel):
@@ -204,20 +199,12 @@ class ResendVerificationRequest(BaseModel):
 
 
 PLAN_CONTINUATION_PATHS = {
-    "alerts-pro": "/login?upgrade=alerts-pro",
-    "data-starter": "/login?upgrade=data-starter",
-    "data-pro": "/login?upgrade=data-pro",
-    "data-business": "/login?upgrade=data-business",
-}
-PROVIDER_CONTINUATION_PATHS = {
-    "enhanced": "/login?provider_tier=enhanced",
-    "sponsored": "/login?provider_tier=sponsored",
+    "radar-regional": "/login?upgrade=radar-regional",
+    "radar-national": "/login?upgrade=radar-national",
 }
 
 
 def _purchase_intent_for_registration(req: RegisterRequest) -> tuple[str | None, str | None]:
-    if req.provider_tier:
-        return "provider_tier", req.provider_tier
     if req.plan != "free":
         return "plan", req.plan
     return None, None
@@ -227,8 +214,6 @@ def purchase_intent_continuation(intent_type: str | None, intent_value: str | No
     """Build a same-origin continuation from server-owned enum values only."""
     if intent_type == "plan":
         return PLAN_CONTINUATION_PATHS.get(intent_value or "", "/login")
-    if intent_type == "provider_tier":
-        return PROVIDER_CONTINUATION_PATHS.get(intent_value or "", "/login")
     return "/login"
 
 

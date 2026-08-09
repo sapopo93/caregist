@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 
 import { getServerApiBase } from "@/lib/server-api-config";
+import { getSiteUrl } from "@/lib/site";
 
-const BASE = "https://caregist.co.uk";
 const PAGE_SIZE = 5000;
 
 export async function GET() {
+  const base = getSiteUrl();
   let res: Response;
   try {
     const apiBase = getServerApiBase();
@@ -30,7 +31,7 @@ export async function GET() {
 
   const entries = Array.from({ length: pages }, (_, index) => `
     <sitemap>
-      <loc>${BASE}/provider-sitemaps/${index}</loc>
+      <loc>${base}/provider-sitemaps/${index}</loc>
       <lastmod>${now}</lastmod>
     </sitemap>`).join("");
 

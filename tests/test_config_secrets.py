@@ -25,6 +25,9 @@ class FakeSecretLoader:
 
 
 PUBLIC_STRIPE_PRICE_FIELDS = {
+    "stripe_price_radar_regional": "price_radar_regional",
+    "stripe_price_radar_national": "price_radar_national",
+    "stripe_price_intelligence_feed": "price_intelligence_feed",
     "stripe_price_alerts_pro": "price_alerts",
     "stripe_price_starter": "price_starter",
     "stripe_price_pro": "price_pro",
@@ -36,6 +39,9 @@ PUBLIC_STRIPE_PRICE_FIELDS = {
 }
 
 PUBLIC_STRIPE_PRICE_ENV = {
+    "STRIPE_PRICE_RADAR_REGIONAL": "price_radar_regional",
+    "STRIPE_PRICE_RADAR_NATIONAL": "price_radar_national",
+    "STRIPE_PRICE_INTELLIGENCE_FEED": "price_intelligence_feed",
     "STRIPE_PRICE_ALERTS_PRO": "price_alerts",
     "STRIPE_PRICE_STARTER": "price_starter",
     "STRIPE_PRICE_PRO": "price_pro",
@@ -369,7 +375,7 @@ def test_vercel_production_still_requires_webhook_encryption_key():
 
 
 @pytest.mark.parametrize("missing_env_name", sorted(PUBLIC_STRIPE_PRICE_ENV))
-def test_vercel_production_fails_closed_when_a_public_checkout_price_is_missing(missing_env_name):
+def test_vercel_production_allows_price_omission_while_checkout_is_fail_closed(missing_env_name):
     environ = {
         "NODE_ENV": "production",
         "VERCEL": "1",
@@ -384,11 +390,12 @@ def test_vercel_production_fails_closed_when_a_public_checkout_price_is_missing(
     }
     del environ[missing_env_name]
 
-    with pytest.raises(RuntimeError, match=missing_env_name):
-        load_application_secrets(
-            environ=environ,
-            secret_loader_cls=FakeSecretLoader,
-        )
+    secrets = load_application_secrets(
+        environ=environ,
+        secret_loader_cls=FakeSecretLoader,
+    )
+
+    assert secrets["database_url"] == "postgresql://production"
 
 
 def test_vercel_uses_database_quota_fallback_without_redis():

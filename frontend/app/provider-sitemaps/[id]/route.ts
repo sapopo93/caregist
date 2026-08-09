@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 
 import { getProviderHref } from "@/lib/provider-path";
 import { getServerApiBase } from "@/lib/server-api-config";
+import { getSiteUrl } from "@/lib/site";
 
-const BASE = "https://caregist.co.uk";
 const PAGE_SIZE = 5000;
 
 export async function GET(
@@ -11,6 +11,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
+  const base = getSiteUrl();
   const page = Number(id);
   if (!Number.isSafeInteger(page) || page < 0) {
     return new NextResponse("Invalid sitemap page", { status: 400 });
@@ -37,7 +38,7 @@ export async function GET(
   const urls = (payload.data || [])
     .map((row: { id?: string | null; slug?: string | null; updated_at?: string | null }) => `
       <url>
-        <loc>${BASE}${getProviderHref(row)}</loc>
+        <loc>${base}${getProviderHref(row)}</loc>
         ${row.updated_at ? `<lastmod>${row.updated_at}</lastmod>` : ""}
         <changefreq>daily</changefreq>
         <priority>0.6</priority>
