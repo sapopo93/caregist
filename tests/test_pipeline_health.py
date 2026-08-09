@@ -23,6 +23,7 @@ class HealthConnection:
         stuck: int = 0,
         dead_letter: int = 0,
         tables: set[str] | None = None,
+        canonical_columns_ready: bool = True,
     ):
         self.now = now
         self.active_count = active_count
@@ -41,10 +42,14 @@ class HealthConnection:
             "source_snapshots",
             "delivery_outbox",
         }
+        self.canonical_columns_ready = canonical_columns_ready
 
-    async def fetchval(self, query: str, table_name: str):
-        assert "information_schema.tables" in query
-        return table_name in self.tables
+    async def fetchval(self, query: str, *args):
+        if "information_schema.tables" in query:
+            return args[0] in self.tables
+        if "information_schema.columns" in query:
+            return self.canonical_columns_ready
+        raise AssertionError(f"Unexpected health scalar query: {query}")
 
     async def fetchrow(self, query: str, *_args):
         if "FROM care_providers" in query:
@@ -150,3 +155,21 @@ async def test_quiet_event_market_does_not_make_a_healthy_collector_stale():
     assert result["readiness_ok"] is True
     assert result["freshness_ok"] is True
     assert result["status"] == "healthy"
+
+
+@pytest.mark.asyncio
+async def test_pre_migration_schema_is_reported_as_degraded_without_query_failure():
+    result = await get_pipeline_health(
+        HealthConnection(now=datetime.now(UTC), canonical_columns_ready=False)
+    )
+
+    assert result["status"] == "degraded"
+    assert result["readiness_ok"] is False
+    assert result["freshness_ok"] is False
+    assert result["commercialReadiness"]["checkoutReady"] is False
+    schema_check = next(
+        check for check in result["checks"] if check["name"] == "canonical_signal_schema"
+    )
+    assert schema_check["ok"] is False
+    assert schema_check["details"]["pipelineSourceColumnsReady"] is False
+    assert schema_check["details"]["trustedLedgerColumnsReady"] is False

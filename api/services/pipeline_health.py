@@ -61,6 +61,28 @@ async def _table_exists(conn: asyncpg.Connection, table_name: str) -> bool:
     )
 
 
+async def _columns_exist(
+    conn: asyncpg.Connection,
+    table_name: str,
+    column_names: tuple[str, ...],
+) -> bool:
+    """Return whether every required column exists without querying it directly."""
+    return bool(
+        await conn.fetchval(
+            """
+            SELECT COUNT(*) = $3
+            FROM information_schema.columns
+            WHERE table_schema = 'public'
+              AND table_name = $1
+              AND column_name = ANY($2::text[])
+            """,
+            table_name,
+            list(column_names),
+            len(column_names),
+        )
+    )
+
+
 async def get_pipeline_health(conn: asyncpg.Connection) -> dict[str, Any]:
     """Build the operational snapshot used by readiness and checkout gating."""
     now = datetime.now(UTC)
@@ -70,6 +92,39 @@ async def get_pipeline_health(conn: asyncpg.Connection) -> dict[str, Any]:
     trusted_event_ledger_exists = await _table_exists(conn, "trusted_event_ledger")
     source_snapshots_exists = await _table_exists(conn, "source_snapshots")
     delivery_outbox_exists = await _table_exists(conn, "delivery_outbox")
+    pipeline_source_schema_ready = bool(
+        pipeline_runs_exists
+        and await _columns_exist(
+            conn,
+            "pipeline_runs",
+            (
+                "source_uri",
+                "source_published_at",
+                "source_retrieved_at",
+                "source_checksum_sha256",
+                "source_record_count",
+                "active_records_before",
+                "active_records_after",
+            ),
+        )
+    )
+    canonical_ledger_schema_ready = bool(
+        trusted_event_ledger_exists
+        and await _columns_exist(
+            conn,
+            "trusted_event_ledger",
+            (
+                "public_event_id",
+                "schema_version",
+                "entity_level",
+                "source_published_at",
+                "source_checked_at",
+                "source_url",
+                "source_snapshot_sha256",
+                "explanation_status",
+            ),
+        )
+    )
 
     units = await conn.fetchrow(
         """
@@ -118,19 +173,20 @@ async def get_pipeline_health(conn: asyncpg.Connection) -> dict[str, Any]:
               AND started_at >= NOW() - INTERVAL '7 days'
             """
         )
-        latest_source_run = await conn.fetchrow(
-            """
-            SELECT source_uri, source_published_at, source_retrieved_at,
-                   source_checksum_sha256, source_record_count,
-                   active_records_before, active_records_after, completed_at
-            FROM pipeline_runs
-            WHERE run_type IN ('incremental', 'reconciliation')
-              AND status = 'completed'
-              AND source_published_at IS NOT NULL
-            ORDER BY source_published_at DESC, completed_at DESC
-            LIMIT 1
-            """
-        )
+        if pipeline_source_schema_ready:
+            latest_source_run = await conn.fetchrow(
+                """
+                SELECT source_uri, source_published_at, source_retrieved_at,
+                       source_checksum_sha256, source_record_count,
+                       active_records_before, active_records_after, completed_at
+                FROM pipeline_runs
+                WHERE run_type IN ('incremental', 'reconciliation')
+                  AND status = 'completed'
+                  AND source_published_at IS NOT NULL
+                ORDER BY source_published_at DESC, completed_at DESC
+                LIMIT 1
+                """
+            )
 
     latest_event = None
     latency = None
@@ -143,19 +199,20 @@ async def get_pipeline_health(conn: asyncpg.Connection) -> dict[str, Any]:
             WHERE event_type IN ('new_registration', 'rating_changed')
             """
         )
-        latency = await conn.fetchrow(
-            """
-            SELECT COUNT(*)::int AS measured_events,
-                   percentile_cont(0.95) WITHIN GROUP (
-                     ORDER BY EXTRACT(EPOCH FROM (observed_at - source_published_at))
-                   ) AS p95_seconds
-            FROM trusted_event_ledger
-            WHERE event_type IN ('new_registration', 'rating_changed')
-              AND source_published_at IS NOT NULL
-              AND observed_at >= source_published_at
-              AND observed_at >= NOW() - INTERVAL '7 days'
-            """
-        )
+        if canonical_ledger_schema_ready:
+            latency = await conn.fetchrow(
+                """
+                SELECT COUNT(*)::int AS measured_events,
+                       percentile_cont(0.95) WITHIN GROUP (
+                         ORDER BY EXTRACT(EPOCH FROM (observed_at - source_published_at))
+                       ) AS p95_seconds
+                FROM trusted_event_ledger
+                WHERE event_type IN ('new_registration', 'rating_changed')
+                  AND source_published_at IS NOT NULL
+                  AND observed_at >= source_published_at
+                  AND observed_at >= NOW() - INTERVAL '7 days'
+                """
+            )
 
     delivery = None
     if delivery_outbox_exists:
@@ -239,6 +296,16 @@ async def get_pipeline_health(conn: asyncpg.Connection) -> dict[str, Any]:
     }
     checks.extend(
         [
+            {
+                "name": "canonical_signal_schema",
+                "ok": pipeline_source_schema_ready and canonical_ledger_schema_ready,
+                "details": {
+                    "pipelineSourceColumnsReady": pipeline_source_schema_ready,
+                    "trustedLedgerColumnsReady": canonical_ledger_schema_ready,
+                    "sourceSnapshotsReady": source_snapshots_exists,
+                    "deliveryOutboxReady": delivery_outbox_exists,
+                },
+            },
             {"name": "cqc_source_watermark", "ok": source_fresh, "details": source_details},
             {
                 "name": "source_count_reconciliation",
@@ -318,7 +385,12 @@ async def get_pipeline_health(conn: asyncpg.Connection) -> dict[str, Any]:
         ]
     )
 
-    readiness_ok = pipeline_runs_exists and trusted_event_ledger_exists
+    readiness_ok = bool(
+        pipeline_runs_exists
+        and trusted_event_ledger_exists
+        and pipeline_source_schema_ready
+        and canonical_ledger_schema_ready
+    )
     freshness_ok = source_fresh and counts_reconciled and signal_poll_fresh
     checkout_ready = bool(
         readiness_ok
