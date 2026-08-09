@@ -4,7 +4,7 @@ CareGist is a UK care-provider directory and intelligence service built from Car
 
 The live site at https://www.caregist.co.uk serves the Free Directory, provider detail pages, the final Radar/Feed positioning, source-status reporting, and the current legal and licence surfaces. It does not publicly sell legacy data packs, paid listings, extra seats, or predictive products. The live Stripe catalogue contains Radar Regional (£299/month), Radar National (£799/month), Intelligence Feed Pilot (£6,000/year), and quote-only Embedded Enterprise; the three priced products remain checkout-gated. Production contains 56,743 location rows, of which 56,742 are active.
 
-Production and staging Neon resources are currently on the Free plan. Neon documents that Free provides at most six hours of restore history, while CareGist requires an evidenced seven-day window. Production migration `049_cqc_signal_intelligence.sql` and the source-trust shadow run must therefore remain blocked until production is upgraded to Launch, the restore window is configured and evidenced at seven days, and a pre-migration recovery point is recorded.
+Production Neon is on Launch with an evidenced seven-day history window. A point-in-time restore drill, an isolated migration rehearsal, and the production migration chain through `049_cqc_signal_intelligence.sql` passed with provider counts preserved. The recovery branch remains retained. Source collectors may now enter shadow mode, but paid checkout and outbound delivery remain blocked until the seven-day source-trust, legal, billing-lifecycle, and private-pilot gates pass.
 
 ## Production architecture
 
@@ -12,7 +12,7 @@ The canonical deployment is the multi-service configuration in `vercel.json`:
 
 - **Vercel frontend:** Next.js App Router in `frontend/` serves public directory, account, and dashboard routes.
 - **Vercel backend:** FastAPI in `api/` serves `/api/v1/*`, internal tasks, health, metrics, billing, and webhooks.
-- **Neon Postgres:** separate production and staging resources hold the directory, event ledger, reconciliation state, accounts, and billing evidence.
+- **Neon Postgres:** the Launch production project holds the directory, event ledger, reconciliation state, accounts, and billing evidence. Isolated branches provide restore drills and migration rehearsal; no separate staging URL is configured in the local operator environment.
 - **Redis:** shared rate limits and runtime coordination. Production must not rely on the in-process fallback.
 - **Stripe, Resend, and Sentry:** billing, transactional/operational email, and error telemetry respectively. Their capabilities remain gated until the corresponding release evidence is approved.
 

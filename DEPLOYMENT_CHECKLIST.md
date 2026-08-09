@@ -2,7 +2,7 @@
 
 **Last updated:** 2026-08-09
 **Purpose:** Deployment-owner checklist for taking the hardened codebase from staging to production.
-**Rule:** Public directory traffic is allowed. Do not enable paid Radar, source collectors, outbound delivery, or other gated capabilities until every applicable item is complete and evidenced.
+**Rule:** Public directory traffic is allowed. Source collectors may run only in delivery-disabled shadow mode after the recovery and migration gates pass. Do not enable paid Radar, outbound delivery, or other commercial capabilities until every applicable item is complete and evidenced.
 
 ## Current Release-State Snapshot (2026-08-09)
 
@@ -16,13 +16,11 @@ The controlled catalogue-safety release is deployed at https://www.caregist.co.u
 - [x] **Release verification:** the deployed Git SHA is exposed by `/api/v1/version` and `/api/v1/health/liveness`; the exact-commit preview smoke workflow passes.
 - [x] **Local validation:** 551 backend tests and 111 frontend tests pass; Ruff, TypeScript, the Next.js 16.2.12 production build, migration replay, and dependency audits pass.
 - [x] **Customer-surface verification:** public routes, pricing, search-to-provider rendering, CQC attribution, legal pages, checkout denial, and source-status wording were verified with the Chrome browser plugin.
+- [x] **Production recovery:** Neon is on Launch with seven-day history; a pre-migration recovery checkpoint and isolated point-in-time restore passed with 56,743 provider rows, 56,742 active rows, and zero duplicate canonical CQC location IDs.
+- [x] **Database migration:** the pending chain through `049_cqc_signal_intelligence.sql` passed on an isolated Neon branch and production; provider counts were preserved, trusted-ledger public IDs were fully populated, and delivery-outbox RLS is enabled.
 
 ### Items still requiring operator action before taking payments
 
-- [ ] Upgrade the production Neon resource from Free to Launch with explicit billing authority.
-- [ ] Configure and evidence the production restore window at seven days.
-- [ ] Create a pre-migration recovery point and complete an isolated restore drill.
-- [ ] Apply migration `049_cqc_signal_intelligence.sql` only after the recovery evidence is approved.
 - [ ] Run the source collectors in shadow mode for seven consecutive days and pass the poll-completion, rolling-sweep, reconciliation, checksum, and p95 latency thresholds.
 - [ ] Obtain human legal approval for the deployed Terms, Privacy, OGL attribution, digital-content wording, and B2B checkout evidence version.
 - [ ] Exercise Checkout, Portal, duplicate/reordered webhooks, cancellation, and refund lifecycle in Stripe test mode against staging.

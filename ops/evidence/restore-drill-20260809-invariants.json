@@ -5,6 +5,18 @@
     "project_id": "purple-voice-97710924",
     "source_branch_id": "br-nameless-glitter-abix2cgn"
   },
+  "production_migration": {
+    "active_provider_rows": 56742,
+    "delivery_outbox_rls": true,
+    "duplicate_cqc_location_ids": 0,
+    "latest_migration": "049_cqc_signal_intelligence.sql",
+    "null_public_event_ids": 0,
+    "organizations_present": true,
+    "pending_chain_applied": 7,
+    "provider_rows": 56743,
+    "result": "PASS",
+    "source_snapshots_present": true
+  },
   "recovery_checkpoint": {
     "branch_id": "br-flat-art-ab8e7jhb",
     "branch_name": "recovery/pre-migration-20260809T220156Z",

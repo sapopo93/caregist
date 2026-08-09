@@ -21,7 +21,8 @@ def test_authoritative_documents_do_not_claim_paid_release_is_green() -> None:
 
     assert "paid Radar release is not yet approved" in README
     assert "paid Radar release is **NO-GO**" in CHECKLIST
-    assert "Production Neon is on Free" in MASTER_STRATEGY
+    assert "Production Neon is on Launch" in MASTER_STRATEGY
+    assert "Migration 049 is applied in production" in MASTER_STRATEGY
 
 
 def test_operational_checklist_uses_only_the_final_saleable_price_names() -> None:

@@ -15,9 +15,10 @@
 - Recovery checkpoint fork duration: 4.27 seconds
 - Restore-drill RPO: 24.196 seconds between requested restore point and branch creation
 - Restore-drill RTO: under 60 seconds from submit to an available isolated branch; the console did not expose a more precise backend duration
-- Invariant output: `ops/evidence/restore-drill-20260809-invariants.json`, SHA-256 `045cce46dd1b387c65cd2462d5bd12bdd4ea15e967b050ca204daf781dd72ec5`
+- Invariant output: `ops/evidence/restore-drill-20260809-invariants.json`, SHA-256 `3185693608307c3571d24f11f3b885c3a3f5363b5483c4942bb4c4f0bc4f25a7`
 - Isolated migration branch ID (non-secret): `br-silent-lake-abfr5f08`
 - Isolated migration result: all seven pending repository migrations from `043_reconciliation_batches.sql` through `049_cqc_signal_intelligence.sql` applied; provider counts remained 56,743 total and 56,742 active; duplicate canonical CQC location IDs remained zero; the new ledger, tenancy, outbox, and RLS structures were present
+- Production migration result: the same seven-migration chain applied atomically after the isolated pass; migration 049 is the latest ledger entry, provider counts remain 56,743 total and 56,742 active, canonical CQC location IDs remain unique, all trusted-ledger public event IDs are populated, and the delivery outbox has RLS enabled
 - Source watermark/reconciliation result: not exercised by this database restore; collectors and paid checkout remain disabled pending shadow evidence
 - Result: **PASS**
 - Discrepancies found and resolved: the restore verifier queried nonexistent `care_providers.location_id`; it now checks the canonical `care_providers.id`. Migration 048 was not replay-safe against an already provisioned compatibility schema; its table, index, and trigger creation is now idempotent.

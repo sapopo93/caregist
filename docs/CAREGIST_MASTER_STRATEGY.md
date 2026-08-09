@@ -483,12 +483,13 @@ As of 9 August 2026:
   health-gate, and durable-delivery implementation.
 - Python 3.12 validation passes; Ruff passes; 551 backend tests pass.
 - 111 frontend tests, TypeScript, and the Next.js 16.2.12 production build pass.
-- Migration 049 has not been applied to production.
+- Migration 049 is applied in production after an isolated migration rehearsal and point-in-time restore drill; provider counts were preserved and the recovery branch remains retained.
 - The controlled website correction is deployed and its exact release SHA is
   exposed through the public version and liveness endpoints.
-- Production Neon is on Free, which provides at most six hours of restore
-  history. The seven-day recovery gate requires a Launch upgrade and explicit
-  restore-window evidence before migration 049 or source collectors can start.
+- Production Neon is on Launch with an evidenced seven-day history window. The
+  recovery checkpoint, point-in-time restore drill, isolated migration rehearsal,
+  and production migration through 049 passed. Source collectors may now run in
+  delivery-disabled shadow mode; the seven-day source-trust evidence is still open.
 - Production health correctly reports degraded/stale, reconciliation evidence
   is absent for the new source-trust pipeline, and checkout remains fail-closed.
 - Legal approval, production shadow evidence, private-pilot evidence, the
