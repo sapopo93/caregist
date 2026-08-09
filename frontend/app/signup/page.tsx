@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { trackEvent } from "@/lib/analytics";
-import { apiErrorMessage } from "@/lib/api-error";
+import { normalizeApiError, describeFetchError } from "@/lib/api-error";
 import { normalizePostVerificationPath } from "@/lib/post-verification";
 
 const PLAN_COPY: Record<string, { title: string; body: string }> = {
@@ -60,10 +60,15 @@ function SignupForm() {
         }),
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
+      const errInfo = normalizeApiError(res.status, data, "Registration failed. Please try again.");
 
       if (!res.ok) {
-        setError(apiErrorMessage(data, "Registration failed."));
+        if (errInfo.isConflict) {
+          setError("This email is already registered. Please log in instead.");
+          return;
+        }
+        setError(errInfo.message);
         return;
       }
 
@@ -76,8 +81,8 @@ function SignupForm() {
       const safeNext = normalizePostVerificationPath(next) || "/login";
       localStorage.setItem("caregist_post_verify_path", safeNext);
       router.push(`/verify-email?email=${encodeURIComponent(email)}&next=${encodeURIComponent(safeNext)}`);
-    } catch {
-      setError("Something went wrong. Please try again.");
+    } catch (err) {
+      setError(describeFetchError(err));
     } finally {
       setLoading(false);
     }
@@ -96,7 +101,7 @@ function SignupForm() {
       </p>
 
       {error && (
-        <div className="bg-cream border border-alert rounded-lg p-3 mb-4 text-sm text-alert">
+        <div role="alert" className="bg-cream border border-alert rounded-lg p-3 mb-4 text-sm text-alert">
           {error}
         </div>
       )}
@@ -133,7 +138,7 @@ function SignupForm() {
             type="password"
             autoComplete="new-password"
             required
-            minLength={8}
+            minLength={12}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="w-full px-4 py-3 rounded-lg border border-stone bg-cream focus:ring-2 focus:ring-clay focus:outline-none"

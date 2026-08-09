@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { apiErrorMessage } from "@/lib/api-error";
+import { normalizeApiError, describeFetchError } from "@/lib/api-error";
 
 function LoginForm() {
   const router = useRouter();
@@ -33,10 +33,15 @@ function LoginForm() {
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
+      const errInfo = normalizeApiError(res.status, data, "Invalid email or password.");
 
       if (!res.ok) {
-        setError(apiErrorMessage(data, "Login failed."));
+        if (errInfo.isUnverifiedEmail) {
+          router.push(`/verify-email?email=${encodeURIComponent(email)}`);
+          return;
+        }
+        setError(errInfo.message);
         return;
       }
 
@@ -46,29 +51,10 @@ function LoginForm() {
 
       const params = new URLSearchParams(window.location.search);
       const upgrade = params.get("upgrade");
-      const providerTier = params.get("provider_tier");
-
-      if (providerTier) {
-        try {
-          const claimsRes = await fetch("/api/v1/claims/my-providers", {
-            credentials: "include",
-          });
-          const claimsData = await claimsRes.json();
-          const providers: { slug: string }[] = claimsData.providers || [];
-          if (providers.length > 0) {
-            router.push(`/provider-dashboard/${providers[0].slug}?upgrade_tier=${providerTier}`);
-          } else {
-            router.push(`/search?claim_intent=${providerTier}`);
-          }
-        } catch {
-          router.push(`/search?claim_intent=${providerTier}`);
-        }
-        return;
-      }
 
       router.push(upgrade ? `/pricing?highlight=${upgrade}` : "/dashboard");
-    } catch {
-      setError("Something went wrong. Please try again.");
+    } catch (err) {
+      setError(describeFetchError(err));
     } finally {
       setLoading(false);
     }
@@ -91,7 +77,7 @@ function LoginForm() {
       )}
 
       {error && (
-        <div className="bg-cream border border-alert rounded-lg p-3 mb-4 text-sm text-alert">
+        <div role="alert" className="bg-cream border border-alert rounded-lg p-3 mb-4 text-sm text-alert">
           {error}
         </div>
       )}

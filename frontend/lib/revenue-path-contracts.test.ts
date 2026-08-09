@@ -90,9 +90,11 @@ describe("revenue path contracts", () => {
 
   it("removes paid provider-listing checkout while preserving free claims", () => {
     const providerDashboard = source("app/provider-dashboard/[slug]/page.tsx");
+    const login = source("app/login/page.tsx");
 
     assert.match(providerDashboard, /Provider claims and corrections are free/);
     assert.doesNotMatch(providerDashboard, /profile-checkout/);
+    assert.doesNotMatch(login, /provider_tier|upgrade_tier|claim_intent/);
   });
 
   it("offers a plan/seat change action on the current account plan, not a second charge", () => {
