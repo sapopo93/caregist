@@ -60,7 +60,11 @@ jobs:
         env:
           API_MASTER_KEY: ci_test_master_key
           SUPPORT_INTERNAL_TOKEN: ci_test_support_token
-        run: pytest -q
+        # Real-Postgres integration coverage runs in the dedicated migrations
+        # job below. Keeping it out of this unit/service job prevents the test
+        # bootstrap's local DATABASE_URL default from targeting a nonexistent
+        # localhost database on the runner.
+        run: pytest -q --ignore=tests/integration
 
       - name: pip-audit (vulnerabilities)
         # Fail the build on known CVEs in backend deps.
