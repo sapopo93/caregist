@@ -1,0 +1,40 @@
+{
+  "production_project": {
+    "history_retention_days": 7,
+    "neon_plan": "Launch",
+    "project_id": "purple-voice-97710924",
+    "source_branch_id": "br-nameless-glitter-abix2cgn"
+  },
+  "recovery_checkpoint": {
+    "branch_id": "br-flat-art-ab8e7jhb",
+    "branch_name": "recovery/pre-migration-20260809T220156Z",
+    "fork_duration_seconds": 4.27,
+    "migration_049_present": false
+  },
+  "restore_drill": {
+    "active_provider_rows": 56742,
+    "branch_id": "br-young-paper-abfjvrf8",
+    "branch_name": "drill/restore-20260809T220627Z",
+    "created_at": "2026-08-09T22:06:52Z",
+    "duplicate_cqc_location_ids": 0,
+    "latest_migration": "043_trustroute_outbox.sql",
+    "migration_049_present": false,
+    "provider_rows": 56743,
+    "requested_restore_point": "2026-08-09T22:06:27.804Z",
+    "required_migration_present": true,
+    "result": "PASS"
+  },
+  "staging_migration": {
+    "active_provider_rows": 56742,
+    "branch_id": "br-silent-lake-abfr5f08",
+    "branch_name": "staging/migration-049-20260809",
+    "delivery_outbox_rls": true,
+    "duplicate_cqc_location_ids": 0,
+    "latest_migration": "049_cqc_signal_intelligence.sql",
+    "organizations_present": true,
+    "pending_chain_applied": 7,
+    "provider_rows": 56743,
+    "result": "PASS",
+    "source_snapshots_present": true
+  }
+}

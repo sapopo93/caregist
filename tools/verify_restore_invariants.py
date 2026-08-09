@@ -11,6 +11,14 @@ import sys
 from datetime import datetime, timezone
 
 
+DUPLICATE_CQC_LOCATION_IDS_QUERY = """
+    SELECT COUNT(*) FROM (
+      SELECT id FROM care_providers
+      GROUP BY id HAVING COUNT(*) > 1
+    ) duplicates
+"""
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Verify an isolated CareGist database restore")
     parser.add_argument("--database-url", default=os.environ.get("RESTORE_DATABASE_URL"))
@@ -48,14 +56,7 @@ async def verify(args: argparse.Namespace) -> dict:
                 await conn.fetchval("SELECT COUNT(*) FROM care_providers WHERE status = 'ACTIVE'")
             )
             duplicate_location_ids = int(
-                await conn.fetchval(
-                    """
-                    SELECT COUNT(*) FROM (
-                      SELECT location_id FROM care_providers
-                      GROUP BY location_id HAVING COUNT(*) > 1
-                    ) duplicates
-                    """
-                )
+                await conn.fetchval(DUPLICATE_CQC_LOCATION_IDS_QUERY)
             )
             latest_migration = await conn.fetchval(
                 "SELECT filename FROM schema_migrations ORDER BY applied_at DESC, filename DESC LIMIT 1"

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from unittest.mock import AsyncMock, Mock
 
 import pytest
@@ -11,6 +12,12 @@ from api.routers import billing
 
 
 TERMS_SHA = "b" * 64
+MIGRATION_048 = (
+    Path(__file__).resolve().parents[1]
+    / "db"
+    / "migrations"
+    / "048_full_dataset_fulfilment.sql"
+).read_text(encoding="utf-8")
 
 
 class _Conn:
@@ -24,6 +31,14 @@ class _Conn:
     async def execute(self, *args):
         self.executions.append(args)
         return "UPDATE 1"
+
+
+def test_legacy_fulfilment_migration_is_safe_after_schema_drift():
+    """A manually provisioned legacy schema must not block later migrations."""
+    assert MIGRATION_048.count("CREATE TABLE IF NOT EXISTS") == 4
+    assert MIGRATION_048.count("CREATE INDEX IF NOT EXISTS") == 2
+    assert MIGRATION_048.count("CREATE UNIQUE INDEX IF NOT EXISTS") == 1
+    assert "DROP TRIGGER IF EXISTS digital_content_consents_immutable" in MIGRATION_048
 
 
 @pytest.fixture

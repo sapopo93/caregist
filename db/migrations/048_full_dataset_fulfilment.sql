@@ -1,6 +1,6 @@
 -- Immutable full-dataset artefacts, paid orders, consent evidence, and revocable downloads.
 
-CREATE TABLE full_dataset_artifacts (
+CREATE TABLE IF NOT EXISTS full_dataset_artifacts (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   blob_pathname TEXT NOT NULL UNIQUE,
   record_count INTEGER NOT NULL CHECK (record_count > 0),
@@ -13,10 +13,10 @@ CREATE TABLE full_dataset_artifacts (
   CHECK (ogl_attribution = BTRIM(ogl_attribution) AND ogl_attribution <> '')
 );
 
-CREATE UNIQUE INDEX full_dataset_one_active_artifact
+CREATE UNIQUE INDEX IF NOT EXISTS full_dataset_one_active_artifact
   ON full_dataset_artifacts (is_active) WHERE is_active;
 
-CREATE TABLE full_dataset_orders (
+CREATE TABLE IF NOT EXISTS full_dataset_orders (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   artifact_id UUID NOT NULL REFERENCES full_dataset_artifacts(id) ON DELETE RESTRICT,
   stripe_checkout_session_id TEXT UNIQUE,
@@ -37,10 +37,10 @@ CREATE TABLE full_dataset_orders (
   CHECK (currency IS NULL OR currency ~ '^[a-z]{3}$')
 );
 
-CREATE INDEX full_dataset_orders_email_created
+CREATE INDEX IF NOT EXISTS full_dataset_orders_email_created
   ON full_dataset_orders (customer_email, created_at DESC);
 
-CREATE TABLE digital_content_consents (
+CREATE TABLE IF NOT EXISTS digital_content_consents (
   id BIGSERIAL PRIMARY KEY,
   order_id UUID NOT NULL UNIQUE REFERENCES full_dataset_orders(id) ON DELETE RESTRICT,
   stripe_checkout_session_id TEXT NOT NULL UNIQUE,
@@ -64,11 +64,12 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS digital_content_consents_immutable ON digital_content_consents;
 CREATE TRIGGER digital_content_consents_immutable
 BEFORE UPDATE OR DELETE ON digital_content_consents
 FOR EACH ROW EXECUTE FUNCTION prevent_digital_content_consent_mutation();
 
-CREATE TABLE dataset_download_tokens (
+CREATE TABLE IF NOT EXISTS dataset_download_tokens (
   token_hash CHAR(64) PRIMARY KEY CHECK (token_hash ~ '^[0-9a-f]{64}$'),
   order_id UUID NOT NULL REFERENCES full_dataset_orders(id) ON DELETE RESTRICT,
   expires_at TIMESTAMPTZ NOT NULL,
@@ -79,5 +80,5 @@ CREATE TABLE dataset_download_tokens (
   CHECK (expires_at > created_at)
 );
 
-CREATE INDEX dataset_download_tokens_order
+CREATE INDEX IF NOT EXISTS dataset_download_tokens_order
   ON dataset_download_tokens (order_id, expires_at DESC);

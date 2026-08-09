@@ -2,7 +2,7 @@ from argparse import Namespace
 
 import pytest
 
-from tools.verify_restore_invariants import _validate_args
+from tools.verify_restore_invariants import DUPLICATE_CQC_LOCATION_IDS_QUERY, _validate_args
 
 
 def _args(**overrides):
@@ -18,6 +18,11 @@ def _args(**overrides):
 
 def test_restore_baselines_accept_safe_values():
     _validate_args(_args())
+
+
+def test_restore_verifier_uses_canonical_cqc_location_identifier():
+    assert "SELECT id FROM care_providers" in DUPLICATE_CQC_LOCATION_IDS_QUERY
+    assert "SELECT location_id FROM care_providers" not in DUPLICATE_CQC_LOCATION_IDS_QUERY
 
 
 @pytest.mark.parametrize(
