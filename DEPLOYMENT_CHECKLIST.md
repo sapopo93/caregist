@@ -14,7 +14,7 @@ The controlled catalogue-safety release is deployed at https://www.caregist.co.u
 - [x] **Stripe test and live modes reconciled explicitly:** each mode contains exactly four active Products and three active Prices with the approved lookup keys and amounts; all legacy Products and Prices are archived.
 - [x] **Legacy sales paths retired:** `/full-dataset` permanently redirects to `/intelligence-feed`; legacy checkout endpoints remain fail-closed and legacy Price IDs are retained only for subscription replay compatibility.
 - [x] **Release verification:** the deployed Git SHA is exposed by `/api/v1/version` and `/api/v1/health/liveness`; the exact-commit preview smoke workflow passes.
-- [x] **Local validation:** 550 backend tests and 111 frontend tests pass; Ruff, TypeScript, the Next.js 16.2.12 production build, migration replay, and dependency audits pass.
+- [x] **Local validation:** 551 backend tests and 111 frontend tests pass; Ruff, TypeScript, the Next.js 16.2.12 production build, migration replay, and dependency audits pass.
 - [x] **Customer-surface verification:** public routes, pricing, search-to-provider rendering, CQC attribution, legal pages, checkout denial, and source-status wording were verified with the Chrome browser plugin.
 
 ### Items still requiring operator action before taking payments

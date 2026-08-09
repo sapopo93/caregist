@@ -40,6 +40,15 @@ def test_frontend_has_a_deployment_scoped_backend_binding():
     } in bindings
 
 
+def test_local_environment_files_are_excluded_from_vercel_uploads():
+    rules = (ROOT / ".vercelignore").read_text(encoding="utf-8").splitlines()
+    frontend_allow_index = rules.index("!frontend/**")
+
+    for pattern in (".env", ".env.*", "frontend/.env", "frontend/.env.*"):
+        assert pattern in rules
+        assert rules.index(pattern) > frontend_allow_index
+
+
 def test_retired_product_routes_use_edge_level_permanent_redirects():
     config = json.loads((ROOT / "vercel.json").read_text(encoding="utf-8"))
     redirects = {
