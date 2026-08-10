@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import UTC, date, datetime, timedelta
+from contextlib import asynccontextmanager
 
 import pytest
 
@@ -46,6 +47,11 @@ class HealthConnection:
         self.canonical_columns_ready = canonical_columns_ready
         self.source_snapshot_identity_ready = source_snapshot_identity_ready
 
+    @asynccontextmanager
+    async def transaction(self, **options):
+        assert options == {"isolation": "repeatable_read", "readonly": True}
+        yield
+
     async def fetchval(self, query: str, *args):
         if "information_schema.tables" in query:
             return args[0] in self.tables
@@ -77,6 +83,24 @@ class HealthConnection:
             return {
                 "total_polls": self.total_polls,
                 "completed_polls": self.completed_polls,
+            }
+        if "run_type = 'reconciliation'" in query:
+            completed = self.now - timedelta(hours=1)
+            return {
+                "id": 100,
+                "status": "completed",
+                "started_at": completed - timedelta(hours=1),
+                "completed_at": completed,
+                "source_uri": "https://www.cqc.org.uk/current.csv",
+                "source_published_at": self.now.date(),
+                "source_retrieved_at": self.now - timedelta(hours=2),
+                "source_checksum_sha256": "a" * 64,
+                "source_total_count": self.source_count,
+                "checked_count": self.source_count,
+                "success_count": self.source_count,
+                "failure_count": 0,
+                "reconciled_at": completed,
+                "counts_reconciled": self.active_count == self.source_count,
             }
         if "run_type IN ('incremental', 'reconciliation')" in query:
             return {
@@ -144,6 +168,36 @@ async def test_pipeline_health_fails_commerce_closed_when_counts_differ():
     assert result["freshness_ok"] is False
     assert result["status"] == "degraded"
     assert result["units"]["countsReconciled"] is False
+    assert result["commercialReadiness"]["checkoutReady"] is False
+
+
+@pytest.mark.asyncio
+async def test_pipeline_health_fails_closed_on_newer_failed_reconciliation():
+    now = datetime.now(UTC)
+
+    class FailedAttemptConnection(HealthConnection):
+        async def fetchrow(self, query: str, *_args):
+            if "run_type = 'reconciliation'" in query and "counts_reconciled = TRUE" not in query:
+                failed = await super().fetchrow(query, *_args)
+                return {
+                    **failed,
+                    "id": 101,
+                    "status": "failed",
+                    "started_at": now - timedelta(minutes=30),
+                    "completed_at": now - timedelta(minutes=20),
+                    "checked_count": 100,
+                    "success_count": 99,
+                    "failure_count": 1,
+                    "reconciled_at": None,
+                    "counts_reconciled": False,
+                }
+            return await super().fetchrow(query, *_args)
+
+    result = await get_pipeline_health(FailedAttemptConnection(now=now))
+
+    assert result["source"]["freshnessStatus"] == "partial"
+    assert result["source"]["reason"] == "latest_authoritative_attempt_incomplete"
+    assert result["freshness_ok"] is False
     assert result["commercialReadiness"]["checkoutReady"] is False
 
 

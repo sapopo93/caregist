@@ -9,7 +9,7 @@ from typing import Any
 import asyncpg
 
 from api.config import settings
-from api.services.radar import OGL_ATTRIBUTION
+from api.services.radar import OGL_ATTRIBUTION, effective_timing_statement
 from api.utils.crypto import maybe_decrypt
 from api.utils.webhook_delivery import deliver_webhook
 
@@ -54,9 +54,13 @@ def _payload(row: dict[str, Any]) -> dict[str, Any]:
             "name": row.get("name"),
         },
         "change": {"old": _json_value(row.get("old_value")), "new": _json_value(row.get("new_value"))},
-        "effective_at": row["effective_date"].isoformat(),
+        "effective_date": row["effective_date"].isoformat() if row.get("effective_date") else None,
+        "effective_at": row["effective_at"].isoformat() if row.get("effective_at") else None,
+        "effective_date_source": row.get("effective_date_source"),
+        "effective_timing_statement": effective_timing_statement(row),
         "source_published_at": row["source_published_at"].isoformat() if row.get("source_published_at") else None,
         "observed_at": row["observed_at"].isoformat(),
+        "first_observed_at": row["observed_at"].isoformat(),
         "source_checked_at": row["source_checked_at"].isoformat() if row.get("source_checked_at") else None,
         "source": {
             "url": source_url,
@@ -93,7 +97,8 @@ async def _claim_batch(database_url: str, batch_size: int) -> list[dict[str, Any
                        ds.previous_signing_secret_key_id, ds.previous_secret_valid_until,
                        ds.filter_config,
                        tel.public_event_id, tel.schema_version, tel.entity_level,
-                       tel.event_type, tel.effective_date, tel.observed_at,
+                       tel.event_type, tel.effective_date, tel.effective_at,
+                       tel.effective_date_source, tel.observed_at,
                        tel.old_value, tel.new_value, tel.source_published_at,
                        tel.source_checked_at, tel.source_url, tel.source_snapshot_sha256,
                        tel.location_id, tel.provider_id, cp.name, cp.region

@@ -14,6 +14,7 @@ from incremental_update import (
     _finalize_batch,
     _insert_trusted_provider_event,
     _prepare_batch,
+    _sync_reconciliation_run_evidence,
     ALLOWED_COLUMNS,
     CqcActiveSnapshot,
     ChangesFetchError,
@@ -100,6 +101,35 @@ def test_prepare_dry_run_performs_database_reads_without_writes(tmp_path, monkey
     assert _prepare_batch(args, Mock(), cursor) == 0
     assert not manifest_path.exists()
     assert all(str(call.args[0]).lstrip().upper().startswith("SELECT") for call in cursor.execute.call_args_list)
+
+
+def test_reconciliation_evidence_is_derived_from_committed_shard_state():
+    cursor = Mock()
+    batch_id = uuid.UUID("12345678-1234-5678-9234-567812345678")
+
+    _sync_reconciliation_run_evidence(cursor, batch_id)
+
+    sql, params = cursor.execute.call_args.args
+    assert "SUM(s.processed_count)" in sql
+    assert "s.status = 'failed' AND s.processed_count < s.expected_count" in sql
+    assert "checked_count = evidence.processed + evidence.failed" in sql
+    assert "success_count = evidence.processed" in sql
+    assert "failure_count = evidence.failed" in sql
+    assert "'nextOffset', s.next_offset" in sql
+    assert params == (str(batch_id),)
+
+
+def test_reconciliation_authority_requires_atomic_full_coverage_fields():
+    source = Path("incremental_update.py").read_text(encoding="utf-8")
+
+    assert "source_total_count = %s, checked_count = %s" in source
+    assert "success_count = %s, failure_count = 0" in source
+    assert "counts_reconciled = TRUE, reconciled_at = NOW()" in source
+    assert 'json.dumps({"fullCoverage": True, "restartable": False})' in source
+    assert "counts_reconciled = FALSE, reconciled_at = NULL" in source
+    assert "AND counts_reconciled = TRUE AND reconciled_at IS NOT NULL" in source
+    assert "pg_try_advisory_xact_lock" in source
+    assert "shard {shard_index} is still running" in source
 
 
 def test_checkpoint_resume_starts_at_persisted_offset_without_overlap():
@@ -351,6 +381,8 @@ def test_trusted_event_insert_uses_source_time_and_conflict_safe_return():
         location_id="LOC1",
         provider_id="PROV1",
         effective_date=date(2026, 7, 29),
+        effective_at=None,
+        effective_date_source="cqc.registrationDate",
         old_value="ACTIVE",
         new_value="INACTIVE",
         dedupe_key="status_changed:LOC1:abc",
@@ -368,5 +400,37 @@ def test_trusted_event_insert_uses_source_time_and_conflict_safe_return():
         if "INSERT INTO trusted_event_ledger" in call.args[0]
     )
     assert "ON CONFLICT (dedupe_key) DO NOTHING" in sql
-    assert params[9] == datetime(2026, 7, 29, 8, 0, tzinfo=timezone.utc)
+    assert params[6] == "cqc.registrationDate"
+    assert params[11] == datetime(2026, 7, 29, 8, 0, tzinfo=timezone.utc)
+    assert "\n          observed_at," not in sql
     assert any("INSERT INTO delivery_outbox" in call.args[0] for call in cur.execute.call_args_list)
+
+
+def test_trusted_event_insert_keeps_unknown_effective_time_null():
+    cur = Mock()
+    cur.fetchone.return_value = None
+    event = ProviderStateEvent(
+        event_type="status_changed",
+        location_id="LOC1",
+        provider_id="PROV1",
+        effective_date=None,
+        effective_at=None,
+        effective_date_source=None,
+        old_value="ACTIVE",
+        new_value="INACTIVE",
+        dedupe_key="status_changed:LOC1:abc",
+        metadata={"source_last_updated": "2026-07-29T08:00:00Z"},
+    )
+
+    assert not _insert_trusted_provider_event(
+        cur,
+        event,
+        {"last_updated": "2026-07-29T08:00:00Z"},
+    )
+    sql, params = next(
+        call.args
+        for call in cur.execute.call_args_list
+        if "INSERT INTO trusted_event_ledger" in call.args[0]
+    )
+    assert params[4:7] == (None, None, None)
+    assert "ON CONFLICT (dedupe_key) DO NOTHING" in sql

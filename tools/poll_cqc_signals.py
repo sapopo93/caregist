@@ -90,15 +90,49 @@ def _upsert_source_snapshot(
           checksum_sha256, record_count, status
         )
         VALUES (%s, %s, %s, %s, %s, 'verified')
-        ON CONFLICT (source_type, checksum_sha256)
-        DO UPDATE SET source_checked_at = EXCLUDED.source_checked_at,
-                      source_uri = EXCLUDED.source_uri,
-                      record_count = EXCLUDED.record_count
+        ON CONFLICT (source_type, checksum_sha256) DO NOTHING
         RETURNING id
         """,
         (source_type, source_uri, checked_at, checksum_sha256, record_count),
     )
+    row = cur.fetchone()
+    if row:
+        return int(row[0])
+    cur.execute(
+        "SELECT id FROM source_snapshots WHERE source_type = %s AND checksum_sha256 = %s",
+        (source_type, checksum_sha256),
+    )
     return int(cur.fetchone()[0])
+
+
+def _update_run_evidence(
+    cur,
+    run_id: int,
+    *,
+    source_total: int,
+    checked: int,
+    successes: int,
+    failures: int,
+    checkpoint_state: dict,
+) -> None:
+    """Persist collection coverage alongside the provider checkpoint."""
+    cur.execute(
+        """
+        UPDATE pipeline_runs
+        SET source_total_count = %s, checked_count = %s,
+            success_count = %s, failure_count = %s,
+            checkpoint_state = %s::jsonb
+        WHERE id = %s
+        """,
+        (
+            source_total,
+            checked,
+            successes,
+            failures,
+            json.dumps(checkpoint_state, sort_keys=True),
+            run_id,
+        ),
+    )
 
 
 def _record_location_index(
@@ -203,9 +237,30 @@ def run_signal_poll(
         if not lock_acquired:
             return {"skipped": True, "new_ids": 0, "report_candidates": 0, "processed": 0, "events": 0}
 
+        intended_provenance = {
+            "locationIndex": {
+                "enabled": index_enabled,
+                "uri": f"{base_url}/locations" if index_enabled else None,
+            },
+            "reportIndex": {
+                "enabled": report_enabled,
+                "uri": REPORT_INDEX_URL if report_enabled else None,
+            },
+        }
         cur.execute(
-            "INSERT INTO pipeline_runs (run_type, started_at, status) VALUES ('signal_poll', %s, 'running') RETURNING id",
-            (checked_at,),
+            """
+            INSERT INTO pipeline_runs (
+              run_type, started_at, status, source_provenance,
+              checkpoint_state, counts_reconciled, reconciled_at
+            )
+            VALUES ('signal_poll', %s, 'running', %s::jsonb, %s::jsonb, FALSE, NULL)
+            RETURNING id
+            """,
+            (
+                checked_at,
+                json.dumps(intended_provenance, sort_keys=True),
+                json.dumps({"nextOffset": 0, "restartable": False, "restartMode": "fresh_run"}),
+            ),
         )
         run_id = int(cur.fetchone()[0])
         conn.commit()
@@ -257,6 +312,41 @@ def run_signal_poll(
         conn.commit()
 
         ordered_ids = list(dict.fromkeys([*new_ids, *sorted(report_ids), *rolling_ids]))
+        source_provenance = {
+            "locationIndex": {
+                "enabled": index_enabled,
+                "uri": f"{base_url}/locations" if index_enabled else None,
+                "checksumSha256": index_checksum,
+                "snapshotId": index_snapshot_id,
+                "recordCount": len(location_ids),
+            },
+            "reportIndex": {
+                "enabled": report_enabled,
+                "uri": report_uri if report_enabled else None,
+                "checksumSha256": report_checksum,
+                "snapshotId": report_snapshot_id,
+                "recordCount": len(report_ids),
+            },
+        }
+        cur.execute(
+            """
+            UPDATE pipeline_runs
+            SET source_total_count = %s, source_provenance = %s::jsonb,
+                source_uri = %s, source_retrieved_at = %s,
+                source_checksum_sha256 = %s, source_record_count = %s,
+                checkpoint_state = %s::jsonb,
+                counts_reconciled = FALSE, reconciled_at = NULL
+            WHERE id = %s
+            """,
+            (
+                len(ordered_ids), json.dumps(source_provenance, sort_keys=True),
+                f"{base_url}/locations" if index_enabled else report_uri, checked_at,
+                index_checksum if index_enabled else report_checksum,
+                len(location_ids) if index_enabled else len(report_ids),
+                json.dumps({"nextOffset": 0, "restartable": False, "restartMode": "fresh_run"}), run_id,
+            ),
+        )
+        conn.commit()
         events_before = 0
         if ordered_ids:
             cur.execute("SELECT COUNT(*) FROM trusted_event_ledger")
@@ -265,12 +355,44 @@ def run_signal_poll(
         processed = 0
         inserted = 0
         updated = 0
+        failures = 0
+        failure_details: list[dict[str, str]] = []
         for index, location_id in enumerate(ordered_ids, start=1):
             detail = fetch_location_detail(base_url, api_key, location_id)
             if detail is None:
+                failures += 1
+                failure_details.append(
+                    {"locationId": location_id, "reason": "detail_fetch_failed"}
+                )
+                if index % checkpoint_size == 0:
+                    _update_run_evidence(
+                        cur, run_id, source_total=len(ordered_ids), checked=index,
+                        successes=processed, failures=failures,
+                        checkpoint_state={
+                            "nextOffset": index, "lastLocationId": location_id,
+                            "restartable": False, "restartMode": "fresh_run",
+                            "failures": failure_details,
+                        },
+                    )
+                    conn.commit()
                 continue
             record = clean_location(detail)
             if record is None:
+                failures += 1
+                failure_details.append(
+                    {"locationId": location_id, "reason": "detail_clean_failed"}
+                )
+                if index % checkpoint_size == 0:
+                    _update_run_evidence(
+                        cur, run_id, source_total=len(ordered_ids), checked=index,
+                        successes=processed, failures=failures,
+                        checkpoint_state={
+                            "nextOffset": index, "lastLocationId": location_id,
+                            "restartable": False, "restartMode": "fresh_run",
+                            "failures": failure_details,
+                        },
+                    )
+                    conn.commit()
                 continue
             is_report_candidate = location_id in report_ids
             report_url = _absolute_report_url(record.get("inspection_report_url"))
@@ -291,30 +413,48 @@ def run_signal_poll(
             inserted += int(action == "inserted")
             updated += int(action == "updated")
             if index % checkpoint_size == 0:
+                _update_run_evidence(
+                    cur, run_id, source_total=len(ordered_ids), checked=index,
+                    successes=processed, failures=failures,
+                    checkpoint_state={
+                        "nextOffset": index, "lastLocationId": location_id,
+                        "restartable": False, "restartMode": "fresh_run",
+                        "failures": failure_details,
+                    },
+                )
                 conn.commit()
             time.sleep(sleep)
-        conn.commit()
-
         cur.execute("SELECT COUNT(*) FROM trusted_event_ledger")
         events_after = int(cur.fetchone()[0] or 0)
         event_count = max(0, events_after - events_before)
+        _update_run_evidence(
+            cur, run_id, source_total=len(ordered_ids), checked=len(ordered_ids),
+            successes=processed, failures=failures,
+            checkpoint_state={
+                "nextOffset": len(ordered_ids), "restartable": False,
+                "fullCoverage": failures == 0,
+                "failures": failure_details,
+            },
+        )
         cur.execute(
             """
             UPDATE pipeline_runs
-            SET completed_at = NOW(), status = 'completed',
+            SET completed_at = NOW(), status = %s,
                 records_added = %s, records_updated = %s,
                 source_uri = %s, source_retrieved_at = %s,
                 source_checksum_sha256 = %s, source_record_count = %s,
-                error_message = NULL
+                error_message = %s
             WHERE id = %s
             """,
             (
+                "completed" if failures == 0 else "partial",
                 inserted,
                 updated,
                 f"{base_url}/locations" if index_enabled else report_uri,
                 checked_at,
                 index_checksum if index_enabled else report_checksum,
                 len(location_ids) if index_enabled else len(report_ids),
+                None if failures == 0 else f"{failures} source records failed collection",
                 run_id,
             ),
         )
@@ -331,8 +471,22 @@ def run_signal_poll(
         conn.rollback()
         if run_id is not None:
             cur.execute(
-                "UPDATE pipeline_runs SET completed_at = NOW(), status = 'failed', error_message = %s WHERE id = %s",
-                (str(exc)[:4000], run_id),
+                """
+                UPDATE pipeline_runs
+                SET completed_at = NOW(), status = 'failed', error_message = %s,
+                    counts_reconciled = FALSE, reconciled_at = NULL,
+                    checkpoint_state = checkpoint_state || %s::jsonb
+                WHERE id = %s
+                """,
+                (
+                    str(exc)[:4000],
+                    json.dumps({
+                        "restartable": False,
+                        "restartMode": "fresh_run",
+                        "failure": str(exc)[:1000],
+                    }),
+                    run_id,
+                ),
             )
             conn.commit()
         raise
