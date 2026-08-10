@@ -37,7 +37,7 @@ jobs:
           CQC_REPORT_POLL_ENABLED: ${{ vars.CQC_REPORT_POLL_ENABLED || 'false' }}
           RADAR_DELIVERY_ENABLED: "false"
         run: >-
-          python tools/poll_cqc_signals.py
+          python -m tools.poll_cqc_signals
           --sweep-size "${{ inputs.sweep_size || '1200' }}"
           --checkpoint-size 100
           --sleep 0.05
