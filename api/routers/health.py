@@ -12,6 +12,7 @@ from api.metrics import render_latest, set_pending_emails
 from api.middleware.internal_auth import validate_internal_token
 from api.release import release_metadata
 from api.middleware.rate_limit import redis_health
+from api.services.cqc_freshness import get_cqc_freshness
 from api.services.pipeline_health import get_pipeline_health
 
 logger = logging.getLogger("caregist.health")
@@ -101,26 +102,33 @@ async def readiness_check() -> JSONResponse:
 
 @router.get("/api/v1/health/freshness")
 async def freshness_check() -> JSONResponse:
-    """Publish CQC source watermark and derived-feed freshness."""
+    """Publish aggregate evidence from authoritative CQC reconciliations."""
     try:
         async with get_connection() as conn:
-            snapshot = await get_pipeline_health(conn)
-        freshness_ok = snapshot.get("freshness_ok", snapshot["feed_fresh"])
-        status_code = 200 if freshness_ok else 503
+            snapshot = await get_cqc_freshness(conn)
+        snapshot["release"] = release_metadata()
+        return JSONResponse(status_code=200 if snapshot["status"] == "fresh" else 503, content=snapshot)
+    except Exception as exc:
+        logger.error("Freshness check failed: %s", exc)
         return JSONResponse(
-            status_code=status_code,
+            status_code=503,
             content={
-                "status": "healthy" if freshness_ok else "stale",
-                "freshness_ok": freshness_ok,
-                "source_fresh": snapshot.get("source_fresh", False),
-                "feed_fresh": snapshot["feed_fresh"],
-                "source": snapshot.get("source"),
-                "units": snapshot.get("units"),
-                "generated_at": snapshot.get("generated_at"),
-                "checks": snapshot["checks"],
+                "status": "unknown",
+                "source": None,
+                "sourcePublishedAt": None,
+                "sourceRetrievedAt": None,
+                "reconciledAt": None,
+                "totalSourceLocations": None,
+                "checkedLocations": None,
+                "successfullyCheckedLocations": None,
+                "coveragePercentage": None,
+                "successCount": None,
+                "failureCount": None,
+                "countsReconciled": False,
+                "checksumSha256": None,
+                "latestAttempt": None,
+                "reason": "freshness_evidence_query_failed",
+                "message": "Freshness cannot currently be confirmed.",
                 "release": release_metadata(),
             },
         )
-    except Exception as exc:
-        logger.error("Freshness check failed: %s", exc)
-        return JSONResponse(status_code=503, content={"status": "unhealthy"})

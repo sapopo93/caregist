@@ -186,7 +186,9 @@ async def export_events(
 
     output = io.StringIO()
     fields = [
-        "event_id", "event_type", "effective_at", "observed_at", "source_published_at",
+        "event_id", "event_type", "effective_date", "effective_at",
+        "effective_date_source", "effective_timing_statement",
+        "first_observed_at", "observed_at", "source_published_at",
         "cqc_location_id", "cqc_provider_id", "provider_name", "region",
         "local_authority", "old_value", "new_value", "source_url", "data_attribution",
     ]
@@ -197,7 +199,11 @@ async def export_events(
             {
                 "event_id": event["event_id"],
                 "event_type": event["event_type"],
+                "effective_date": event["effective_date"],
                 "effective_at": event["effective_at"],
+                "effective_date_source": event["effective_date_source"],
+                "effective_timing_statement": event["effective_timing_statement"],
+                "first_observed_at": event["first_observed_at"],
                 "observed_at": event["observed_at"],
                 "source_published_at": event["source_published_at"],
                 "cqc_location_id": event["entity"]["cqc_location_id"],

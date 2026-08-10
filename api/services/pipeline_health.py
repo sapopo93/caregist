@@ -7,10 +7,12 @@ latency, and delivery are measured independently.
 
 from __future__ import annotations
 
-from datetime import UTC, date, datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import asyncpg
+
+from api.services.cqc_freshness import get_cqc_freshness
 
 
 SOURCE_FRESHNESS_SLA = timedelta(days=8)
@@ -36,14 +38,6 @@ def _as_utc(value: datetime | None) -> datetime | None:
     if value.tzinfo is None:
         return value.replace(tzinfo=UTC)
     return value.astimezone(UTC)
-
-
-def _source_datetime(value: date | datetime | None) -> datetime | None:
-    if isinstance(value, datetime):
-        return _as_utc(value)
-    if isinstance(value, date):
-        return datetime.combine(value, datetime.min.time(), tzinfo=UTC)
-    return None
 
 
 async def _table_exists(conn: asyncpg.Connection, table_name: str) -> bool:
@@ -105,6 +99,12 @@ async def get_pipeline_health(conn: asyncpg.Connection) -> dict[str, Any]:
                 "source_record_count",
                 "active_records_before",
                 "active_records_after",
+                "source_total_count",
+                "checked_count",
+                "success_count",
+                "failure_count",
+                "reconciled_at",
+                "counts_reconciled",
             ),
         )
     )
@@ -153,7 +153,6 @@ async def get_pipeline_health(conn: asyncpg.Connection) -> dict[str, Any]:
 
     latest_signal_run = None
     poll_window = None
-    latest_source_run = None
     if pipeline_runs_exists:
         latest_signal_run = await conn.fetchrow(
             """
@@ -173,20 +172,7 @@ async def get_pipeline_health(conn: asyncpg.Connection) -> dict[str, Any]:
               AND started_at >= NOW() - INTERVAL '7 days'
             """
         )
-        if pipeline_source_schema_ready:
-            latest_source_run = await conn.fetchrow(
-                """
-                SELECT source_uri, source_published_at, source_retrieved_at,
-                       source_checksum_sha256, source_record_count,
-                       active_records_before, active_records_after, completed_at
-                FROM pipeline_runs
-                WHERE run_type IN ('incremental', 'reconciliation')
-                  AND status = 'completed'
-                  AND source_published_at IS NOT NULL
-                ORDER BY source_published_at DESC, completed_at DESC
-                LIMIT 1
-                """
-            )
+    authoritative_freshness = await get_cqc_freshness(conn, now=now)
 
     latest_event = None
     latency = None
@@ -252,15 +238,16 @@ async def get_pipeline_health(conn: asyncpg.Connection) -> dict[str, Any]:
 
     latest_observed_at = _as_utc(latest_event["latest_observed_at"] if latest_event else None)
     latest_effective_date = latest_event["latest_effective_date"] if latest_event else None
-    source_published_value = latest_source_run["source_published_at"] if latest_source_run else None
-    source_published_at = _source_datetime(source_published_value)
-    source_age = now - source_published_at if source_published_at else None
-    source_fresh = bool(source_age is not None and source_age <= SOURCE_FRESHNESS_SLA)
-    source_location_count = latest_source_run["source_record_count"] if latest_source_run else None
-    active_location_count = int(units["active_location_rows"] or 0)
-    counts_reconciled = bool(
-        source_location_count is not None and active_location_count == int(source_location_count)
+    source_published_value = authoritative_freshness["sourcePublishedAt"]
+    source_retrieved_value = authoritative_freshness["sourceRetrievedAt"]
+    source_retrieved_at = (
+        datetime.fromisoformat(source_retrieved_value) if source_retrieved_value else None
     )
+    source_age = now - source_retrieved_at if source_retrieved_at else None
+    source_fresh = authoritative_freshness["status"] == "fresh"
+    source_location_count = authoritative_freshness["totalSourceLocations"]
+    active_location_count = int(units["active_location_rows"] or 0)
+    counts_reconciled = bool(authoritative_freshness["countsReconciled"])
 
     measured_events = int(latency["measured_events"] or 0) if latency else 0
     p95_seconds = float(latency["p95_seconds"]) if latency and latency["p95_seconds"] is not None else None
@@ -279,18 +266,20 @@ async def get_pipeline_health(conn: asyncpg.Connection) -> dict[str, Any]:
 
     source_details = {
         "source": "Care Quality Commission public directory",
-        "sourceUri": latest_source_run["source_uri"] if latest_source_run else None,
-        "sourcePublishedAt": source_published_value.isoformat() if source_published_value else None,
-        "sourceRetrievedAt": _as_iso(
-            _as_utc(latest_source_run["source_retrieved_at"] if latest_source_run else None)
-        ),
-        "checksumSha256": latest_source_run["source_checksum_sha256"] if latest_source_run else None,
+        "sourceUri": authoritative_freshness["source"],
+        "sourcePublishedAt": source_published_value,
+        "sourceRetrievedAt": source_retrieved_value,
+        "reconciledAt": authoritative_freshness["reconciledAt"],
+        "checksumSha256": authoritative_freshness["checksumSha256"],
         "sourceLocationCount": source_location_count,
+        "checkedLocationCount": authoritative_freshness["checkedLocations"],
+        "successCount": authoritative_freshness["successCount"],
+        "failureCount": authoritative_freshness["failureCount"],
+        "coveragePercentage": authoritative_freshness["coveragePercentage"],
         "activeLocationCount": active_location_count,
-        "previousActiveLocationCount": (
-            latest_source_run["active_records_before"] if latest_source_run else None
-        ),
         "countsReconciled": counts_reconciled,
+        "freshnessStatus": authoritative_freshness["status"],
+        "reason": authoritative_freshness["reason"],
         "ageHours": round(source_age.total_seconds() / 3600, 1) if source_age else None,
         "slaHours": int(SOURCE_FRESHNESS_SLA.total_seconds() // 3600),
     }

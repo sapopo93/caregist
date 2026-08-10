@@ -122,7 +122,7 @@ def test_backend_binding_accepts_stale_signal_for_observability(verifier, monkey
                 {
                     "status": "stale",
                     "release": {"git_sha": "a" * 40},
-                    "source": {"activeLocationCount": 0},
+                    "totalSourceLocations": 0,
                 }
             ),
         ),

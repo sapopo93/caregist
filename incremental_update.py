@@ -740,20 +740,23 @@ def _insert_trusted_provider_event(
     current: dict[str, Any],
 ) -> bool:
     source_observed_at = _parse_watermark_datetime(current.get("last_updated"))
+
     def json_value(value: Any) -> Json:
         return Json(value, dumps=lambda obj: json.dumps(obj, default=str))
+
     cur.execute(
         """
         INSERT INTO trusted_event_ledger (
           entity_type, entity_id, provider_id, location_id, event_type,
-          effective_date, old_value, new_value, source, confidence_score,
+          effective_date, effective_at, effective_date_source,
+          old_value, new_value, source, confidence_score,
           dedupe_key, metadata, source_observed_at, entity_level,
           source_snapshot_id, source_published_at, source_checked_at,
           source_url, source_snapshot_sha256
         )
         VALUES (
           'care_provider', %s, %s, %s, %s,
-          %s, %s, %s, 'cqc_api', 1.0000,
+          %s, %s, %s, %s, %s, 'cqc_api', 1.0000,
           %s, %s, %s, 'location',
           %s, %s, %s, %s, %s
         )
@@ -766,6 +769,8 @@ def _insert_trusted_provider_event(
             event.location_id,
             event.event_type,
             event.effective_date,
+            event.effective_at,
+            event.effective_date_source,
             json_value(event.old_value),
             json_value(event.new_value),
             event.dedupe_key,
@@ -881,6 +886,46 @@ def _record_alert_state(cur, alert_key: str, severity: str, details: dict[str, A
     )
 
 
+def _sync_reconciliation_run_evidence(cur, batch_id: uuid.UUID) -> None:
+    """Derive bounded run coverage from committed shard checkpoints."""
+    cur.execute(
+        """
+        UPDATE pipeline_runs AS p
+        SET checked_count = evidence.processed + evidence.failed,
+            success_count = evidence.processed,
+            failure_count = evidence.failed,
+            checkpoint_state = p.checkpoint_state || jsonb_build_object(
+              'shards', evidence.shards,
+              'restartable', evidence.failed > 0 OR evidence.processed < b.location_count
+            )
+        FROM reconciliation_batches AS b
+        CROSS JOIN LATERAL (
+          SELECT
+            COALESCE(SUM(s.processed_count), 0)::int AS processed,
+            COUNT(*) FILTER (
+              WHERE s.status = 'failed' AND s.processed_count < s.expected_count
+            )::int AS failed,
+            COALESCE(
+              jsonb_agg(
+                jsonb_build_object(
+                  'shardIndex', s.shard_index,
+                  'status', s.status,
+                  'expectedCount', s.expected_count,
+                  'nextOffset', s.next_offset,
+                  'processedCount', s.processed_count
+                ) ORDER BY s.shard_index
+              ),
+              '[]'::jsonb
+            ) AS shards
+          FROM reconciliation_shards AS s
+          WHERE s.batch_id = b.id
+        ) AS evidence
+        WHERE b.id = %s AND p.id = b.pipeline_run_id
+        """,
+        (str(batch_id),),
+    )
+
+
 def _prepare_batch(args: argparse.Namespace, conn, cur) -> int:
     batch_id = _parse_batch_id(args.batch_id)
     manifest_path = _require_manifest_path(args.snapshot_manifest)
@@ -919,7 +964,38 @@ def _prepare_batch(args: argparse.Namespace, conn, cur) -> int:
         raise ChangesFetchError(f"Reconciliation batch {active_batch[0]} is still active.")
 
     cur.execute(
-        "INSERT INTO pipeline_runs (run_type, status) VALUES ('reconciliation', 'running') RETURNING id"
+        """
+        INSERT INTO pipeline_runs (
+          run_type, status, source_total_count, source_provenance,
+          source_uri, source_published_at, source_retrieved_at,
+          source_checksum_sha256, source_record_count, checkpoint_state,
+          counts_reconciled, reconciled_at
+        )
+        VALUES (
+          'reconciliation', 'running', %s, %s::jsonb,
+          %s, %s, %s, %s, %s, %s::jsonb, FALSE, NULL
+        )
+        RETURNING id
+        """,
+        (
+            len(snapshot.location_ids),
+            json.dumps({
+                "kind": "cqc_directory_csv",
+                "uri": snapshot.source_uri,
+                "publishedAt": snapshot.source_published_at,
+                "retrievedAt": snapshot.retrieved_at.isoformat(),
+                "checksumSha256": snapshot.checksum_sha256,
+                "manifestChecksumSha256": manifest["manifestChecksumSha256"],
+            }, sort_keys=True),
+            snapshot.source_uri, snapshot.source_published_at, snapshot.retrieved_at,
+            snapshot.checksum_sha256, len(snapshot.location_ids),
+            json.dumps({
+                "batchId": str(batch_id),
+                "shardCount": args.shard_count,
+                "restartable": True,
+                "restarts": {},
+            }),
+        ),
     )
     pipeline_run_id = int(cur.fetchone()[0])
     cur.execute(
@@ -946,7 +1022,11 @@ def _prepare_batch(args: argparse.Namespace, conn, cur) -> int:
             ("Manifest file could not be published after batch creation", str(batch_id)),
         )
         cur.execute(
-            "UPDATE pipeline_runs SET status = 'failed', completed_at = NOW(), error_message = %s WHERE id = %s",
+            """UPDATE pipeline_runs
+               SET status = 'failed', completed_at = NOW(), error_message = %s,
+                   counts_reconciled = FALSE, reconciled_at = NULL,
+                   checkpoint_state = checkpoint_state || '{"restartable": true}'::jsonb
+               WHERE id = %s""",
             ("Manifest file could not be published after batch creation", pipeline_run_id),
         )
         conn.commit()
@@ -1036,6 +1116,22 @@ def _run_shard(args: argparse.Namespace, conn, cur, api_key: str | None) -> int:
             (str(batch_id), shard_index),
         )
         cur.execute("UPDATE reconciliation_batches SET status = 'running' WHERE id = %s", (str(batch_id),))
+        cur.execute(
+            """
+            UPDATE pipeline_runs
+            SET status = 'running', completed_at = NULL, error_message = NULL,
+                failure_count = 0, counts_reconciled = FALSE, reconciled_at = NULL,
+                checkpoint_state = jsonb_set(
+                  checkpoint_state,
+                  ARRAY['restarts', %s],
+                  to_jsonb(COALESCE((checkpoint_state #>> ARRAY['restarts', %s])::int, 0) + %s),
+                  TRUE
+                )
+            WHERE id = (SELECT pipeline_run_id FROM reconciliation_batches WHERE id = %s)
+            """,
+            (str(shard_index), str(shard_index), int(offset > 0), str(batch_id)),
+        )
+        _sync_reconciliation_run_evidence(cur, batch_id)
         conn.commit()
 
         for checkpoint_offset, checkpoint in checkpoint_slices(ids, offset, args.checkpoint_size):
@@ -1072,6 +1168,7 @@ def _run_shard(args: argparse.Namespace, conn, cur, api_key: str | None) -> int:
                 """,
                 (offset, offset, totals["inserted"], totals["updated"], str(batch_id), shard_index),
             )
+            _sync_reconciliation_run_evidence(cur, batch_id)
             conn.commit()
             print(f"Shard {shard_index}: committed {offset}/{len(ids)}")
 
@@ -1083,6 +1180,7 @@ def _run_shard(args: argparse.Namespace, conn, cur, api_key: str | None) -> int:
             """,
             (str(batch_id), shard_index),
         )
+        _sync_reconciliation_run_evidence(cur, batch_id)
         conn.commit()
         return 0
     except Exception as exc:
@@ -1104,6 +1202,7 @@ def _run_shard(args: argparse.Namespace, conn, cur, api_key: str | None) -> int:
             cur, f"reconciliation_shard_failed:{batch_id}:{shard_index}", "error",
             {"batchId": str(batch_id), "shardIndex": shard_index, "error": str(exc)[:1000]},
         )
+        _sync_reconciliation_run_evidence(cur, batch_id)
         conn.commit()
         raise
     finally:
@@ -1133,6 +1232,22 @@ def _finalize_batch(args: argparse.Namespace, conn, cur) -> int:
     shard_count, location_count = _validate_manifest_for_batch(cur, manifest, batch_id)
     validate_shard_coordinates(shard_count)
     ids = manifest["locationIds"]
+
+    if not args.dry_run:
+        # Freeze shard ownership before evaluating completion. Shard workers use
+        # the same advisory keys, so no worker can still be committing (or
+        # restart) between the coverage proof and the atomic watermark write.
+        cur.execute("SELECT pg_advisory_xact_lock(hashtextextended('cqc-reconciliation-finalizer', 0))")
+        for shard_index in range(shard_count):
+            lock_key = f"cqc-reconciliation:{batch_id}:{shard_index}"
+            cur.execute(
+                "SELECT pg_try_advisory_xact_lock(hashtextextended(%s, 0))",
+                (lock_key,),
+            )
+            if not cur.fetchone()[0]:
+                raise ChangesFetchError(
+                    f"Batch finalization refused: shard {shard_index} is still running."
+                )
 
     cur.execute(
         """
@@ -1176,12 +1291,13 @@ def _finalize_batch(args: argparse.Namespace, conn, cur) -> int:
         conn.rollback()
         return 0
 
-    cur.execute("SELECT pg_advisory_xact_lock(hashtextextended('cqc-reconciliation-finalizer', 0))")
     cur.execute(
         """
         SELECT source_published_at, source_checksum_sha256
         FROM pipeline_runs
-        WHERE status = 'completed' AND source_published_at IS NOT NULL
+        WHERE run_type = 'reconciliation' AND status = 'completed'
+          AND counts_reconciled = TRUE AND reconciled_at IS NOT NULL
+          AND source_published_at IS NOT NULL
         ORDER BY source_published_at DESC, completed_at DESC LIMIT 1
         """
     )
@@ -1225,13 +1341,21 @@ def _finalize_batch(args: argparse.Namespace, conn, cur) -> int:
             records_updated = %s, source_uri = %s, source_published_at = %s,
             source_retrieved_at = %s, source_checksum_sha256 = %s,
             source_record_count = %s, active_records_before = %s,
-            active_records_after = %s, error_message = NULL
+            active_records_after = %s,
+            source_total_count = %s, checked_count = %s,
+            success_count = %s, failure_count = 0,
+            counts_reconciled = TRUE, reconciled_at = NOW(),
+            checkpoint_state = checkpoint_state || %s::jsonb,
+            error_message = NULL
         WHERE id = %s
         """,
         (
             inserted, updated, manifest["sourceUri"], manifest["sourcePublishedAt"],
             manifest["sourceRetrievedAt"], manifest["sourceChecksumSha256"], location_count,
-            active_before, active_after, pipeline_run_id,
+            active_before, active_after,
+            location_count, location_count, location_count,
+            json.dumps({"fullCoverage": True, "restartable": False}),
+            pipeline_run_id,
         ),
     )
     cur.execute(
@@ -1290,7 +1414,9 @@ def _abort_batch(args: argparse.Namespace, conn, cur) -> int:
         cur.execute(
             """
             UPDATE pipeline_runs
-            SET status = 'failed', completed_at = NOW(), error_message = %s
+            SET status = 'failed', completed_at = NOW(), error_message = %s,
+                counts_reconciled = FALSE, reconciled_at = NULL,
+                checkpoint_state = checkpoint_state || '{"restartable": true, "fullCoverage": false}'::jsonb
             WHERE id = %s
             """,
             (reason, pipeline_run_id),
@@ -1339,7 +1465,10 @@ def _run_reconciliation_phase(args: argparse.Namespace, api_key: str | None, dat
                 )
                 cur.execute(
                     """
-                    UPDATE pipeline_runs SET status = 'failed', completed_at = NOW(), error_message = %s
+                    UPDATE pipeline_runs
+                    SET status = 'failed', completed_at = NOW(), error_message = %s,
+                        counts_reconciled = FALSE, reconciled_at = NULL,
+                        checkpoint_state = checkpoint_state || '{"restartable": true, "fullCoverage": false}'::jsonb
                     WHERE id = (SELECT pipeline_run_id FROM reconciliation_batches WHERE id = %s)
                     """,
                     (str(exc)[:4000], args.batch_id),
