@@ -14,6 +14,7 @@ from incremental_update import (
     _finalize_batch,
     _insert_trusted_provider_event,
     _prepare_batch,
+    _project_rating_change,
     _sync_reconciliation_run_evidence,
     ALLOWED_COLUMNS,
     CqcActiveSnapshot,
@@ -363,6 +364,28 @@ def test_should_process_list_scan_record_respects_since_watermark():
 
 def test_upsert_allows_last_updated_watermark_column():
     assert "last_updated" in ALLOWED_COLUMNS
+
+
+def test_rating_projection_targets_the_existing_partial_unique_index():
+    cur = Mock()
+    event = ProviderStateEvent(
+        event_type="rating_changed",
+        location_id="LOC1",
+        provider_id="PROV1",
+        effective_date=None,
+        effective_at=None,
+        effective_date_source=None,
+        old_value="Good",
+        new_value="Outstanding",
+        dedupe_key="rating_changed:LOC1:abc",
+        metadata={},
+    )
+
+    _project_rating_change(cur, event, {"name": "Provider"})
+
+    sql = cur.execute.call_args.args[0]
+    assert "ON CONFLICT (event_dedupe_key)" in sql
+    assert "WHERE event_dedupe_key IS NOT NULL" in sql
 
 
 def test_cli_requires_explicit_batch_phase_and_has_no_global_run_lock():
