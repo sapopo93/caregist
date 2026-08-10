@@ -24,6 +24,7 @@ class HealthConnection:
         dead_letter: int = 0,
         tables: set[str] | None = None,
         canonical_columns_ready: bool = True,
+        source_snapshot_identity_ready: bool = True,
     ):
         self.now = now
         self.active_count = active_count
@@ -43,12 +44,15 @@ class HealthConnection:
             "delivery_outbox",
         }
         self.canonical_columns_ready = canonical_columns_ready
+        self.source_snapshot_identity_ready = source_snapshot_identity_ready
 
     async def fetchval(self, query: str, *args):
         if "information_schema.tables" in query:
             return args[0] in self.tables
         if "information_schema.columns" in query:
             return self.canonical_columns_ready
+        if "FROM pg_index" in query:
+            return self.source_snapshot_identity_ready
         raise AssertionError(f"Unexpected health scalar query: {query}")
 
     async def fetchrow(self, query: str, *_args):
@@ -173,3 +177,22 @@ async def test_pre_migration_schema_is_reported_as_degraded_without_query_failur
     assert schema_check["ok"] is False
     assert schema_check["details"]["pipelineSourceColumnsReady"] is False
     assert schema_check["details"]["trustedLedgerColumnsReady"] is False
+
+
+@pytest.mark.asyncio
+async def test_missing_source_snapshot_identity_is_reported_as_not_ready():
+    result = await get_pipeline_health(
+        HealthConnection(
+            now=datetime.now(UTC),
+            source_snapshot_identity_ready=False,
+        )
+    )
+
+    assert result["status"] == "degraded"
+    assert result["readiness_ok"] is False
+    assert result["commercialReadiness"]["checkoutReady"] is False
+    schema_check = next(
+        check for check in result["checks"] if check["name"] == "canonical_signal_schema"
+    )
+    assert schema_check["ok"] is False
+    assert schema_check["details"]["sourceSnapshotIdentityReady"] is False

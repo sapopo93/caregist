@@ -83,6 +83,41 @@ async def _columns_exist(
     )
 
 
+async def unique_index_exists(
+    conn: asyncpg.Connection,
+    table_name: str,
+    column_names: tuple[str, ...],
+) -> bool:
+    """Return whether an unconditional unique index covers exactly these columns."""
+    return bool(
+        await conn.fetchval(
+            """
+            SELECT EXISTS (
+              SELECT 1
+              FROM pg_index AS index_record
+              JOIN pg_class AS table_record ON table_record.oid = index_record.indrelid
+              JOIN pg_namespace AS namespace_record ON namespace_record.oid = table_record.relnamespace
+              WHERE namespace_record.nspname = 'public'
+                AND table_record.relname = $1
+                AND index_record.indisunique
+                AND index_record.indpred IS NULL
+                AND index_record.indexprs IS NULL
+                AND (
+                  SELECT ARRAY_AGG(attribute_record.attname::TEXT ORDER BY key_record.ordinality)
+                  FROM UNNEST(index_record.indkey::SMALLINT[]) WITH ORDINALITY
+                    AS key_record(attnum, ordinality)
+                  JOIN pg_attribute AS attribute_record
+                    ON attribute_record.attrelid = table_record.oid
+                   AND attribute_record.attnum = key_record.attnum
+                ) = $2::TEXT[]
+            )
+            """,
+            table_name,
+            list(column_names),
+        )
+    )
+
+
 async def get_pipeline_health(conn: asyncpg.Connection) -> dict[str, Any]:
     """Build the operational snapshot used by readiness and checkout gating."""
     now = datetime.now(UTC)
@@ -92,6 +127,14 @@ async def get_pipeline_health(conn: asyncpg.Connection) -> dict[str, Any]:
     trusted_event_ledger_exists = await _table_exists(conn, "trusted_event_ledger")
     source_snapshots_exists = await _table_exists(conn, "source_snapshots")
     delivery_outbox_exists = await _table_exists(conn, "delivery_outbox")
+    source_snapshot_identity_ready = bool(
+        source_snapshots_exists
+        and await unique_index_exists(
+            conn,
+            "source_snapshots",
+            ("source_type", "checksum_sha256"),
+        )
+    )
     pipeline_source_schema_ready = bool(
         pipeline_runs_exists
         and await _columns_exist(
@@ -298,11 +341,16 @@ async def get_pipeline_health(conn: asyncpg.Connection) -> dict[str, Any]:
         [
             {
                 "name": "canonical_signal_schema",
-                "ok": pipeline_source_schema_ready and canonical_ledger_schema_ready,
+                "ok": (
+                    pipeline_source_schema_ready
+                    and canonical_ledger_schema_ready
+                    and source_snapshot_identity_ready
+                ),
                 "details": {
                     "pipelineSourceColumnsReady": pipeline_source_schema_ready,
                     "trustedLedgerColumnsReady": canonical_ledger_schema_ready,
                     "sourceSnapshotsReady": source_snapshots_exists,
+                    "sourceSnapshotIdentityReady": source_snapshot_identity_ready,
                     "deliveryOutboxReady": delivery_outbox_exists,
                 },
             },
@@ -390,6 +438,7 @@ async def get_pipeline_health(conn: asyncpg.Connection) -> dict[str, Any]:
         and trusted_event_ledger_exists
         and pipeline_source_schema_ready
         and canonical_ledger_schema_ready
+        and source_snapshot_identity_ready
     )
     freshness_ok = source_fresh and counts_reconciled and signal_poll_fresh
     checkout_ready = bool(
