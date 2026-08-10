@@ -57,6 +57,33 @@ def test_health_accepts_exact_deployed_sha(verifier, monkeypatch):
     verifier.verify_health()
 
 
+def test_health_accepts_read_only_fallback_with_writes_fail_closed(verifier, monkeypatch):
+    verifier.EXPECTED_GIT_SHA = "a" * 40
+    payload = {
+        "status": "degraded",
+        "release": {"gitSha": "a" * 40},
+        "capabilities": {
+            "operatingMode": "fallback",
+            "readMode": "full-dataset-fallback",
+            "writeMode": "unavailable",
+            "notificationMode": "log-only",
+            "databaseAvailable": False,
+            "databaseReason": "not_configured",
+        },
+    }
+    monkeypatch.setattr(
+        verifier,
+        "fetch",
+        lambda _path: verifier.Response(
+            200,
+            {"content-type": "application/json"},
+            json.dumps(payload),
+        ),
+    )
+
+    verifier.verify_health()
+
+
 def test_provider_sitemap_requires_xml_index(verifier, monkeypatch):
     monkeypatch.setattr(
         verifier,

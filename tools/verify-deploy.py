@@ -113,7 +113,10 @@ def verify_health() -> None:
     assert_true(status in {"ok", "degraded"}, f"health status was {status!r}")
     assert_true(operating_mode in {"database", "fallback"}, f"unexpected operatingMode {operating_mode!r}")
     assert_true(read_mode in {"database", "full-dataset-fallback"}, f"unexpected readMode {read_mode!r}")
-    assert_true(write_mode in {"database", "stateless-token"}, f"unexpected writeMode {write_mode!r}")
+    assert_true(
+        write_mode in {"database", "stateless-token", "unavailable"},
+        f"unexpected writeMode {write_mode!r}",
+    )
     assert_true(notification_mode in {"email", "log-only"}, f"unexpected notificationMode {notification_mode!r}")
     if EXPECTED_GIT_SHA:
         assert_true(
