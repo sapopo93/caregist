@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+import json
 from datetime import UTC, datetime
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from tools import poll_cqc_signals
 
@@ -102,6 +103,56 @@ def test_report_index_extraction_keeps_only_cqc_location_ids():
     assert location_ids == {"1-12345", "1-678901"}
     assert content == b"report index"
     assert source_url.startswith("https://www.cqc.org.uk/search/all")
+
+
+def test_source_snapshot_checksum_conflict_preserves_original_observation():
+    cursor = Mock()
+    cursor.fetchone.side_effect = [None, (41,)]
+
+    snapshot_id = poll_cqc_signals._upsert_source_snapshot(
+        cursor,
+        source_type="cqc_location_index",
+        source_uri="https://api.service.cqc.org.uk/public/v1/locations",
+        checksum_sha256="a" * 64,
+        record_count=12,
+        checked_at=datetime(2026, 8, 10, tzinfo=UTC),
+    )
+
+    assert snapshot_id == 41
+    insert_sql = cursor.execute.call_args_list[0].args[0]
+    assert "ON CONFLICT (source_type, checksum_sha256) DO NOTHING" in insert_sql
+    assert "DO UPDATE" not in insert_sql
+    assert "SELECT id FROM source_snapshots" in cursor.execute.call_args_list[1].args[0]
+
+
+def test_signal_run_evidence_persists_bounded_checkpoint_counts():
+    cursor = Mock()
+
+    poll_cqc_signals._update_run_evidence(
+        cursor,
+        91,
+        source_total=10,
+        checked=7,
+        successes=6,
+        failures=1,
+        checkpoint_state={"nextOffset": 7, "restartable": True},
+    )
+
+    sql, params = cursor.execute.call_args.args
+    assert "source_total_count = %s" in sql
+    assert "checked_count = %s" in sql
+    assert "success_count = %s" in sql
+    assert "failure_count = %s" in sql
+    assert params[:4] == (10, 7, 6, 1)
+    assert json.loads(params[4]) == {"nextOffset": 7, "restartable": True}
+
+
+def test_signal_poll_records_bounded_per_location_failure_reasons():
+    source = Path("tools/poll_cqc_signals.py").read_text(encoding="utf-8")
+
+    assert '"reason": "detail_fetch_failed"' in source
+    assert '"reason": "detail_clean_failed"' in source
+    assert '"failures": failure_details' in source
 
 
 def test_main_kill_switch_skips_without_reading_credentials(monkeypatch):

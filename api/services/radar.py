@@ -156,7 +156,8 @@ def build_radar_query(
     args.append(limit + 1)
     query = f"""
         SELECT tel.id, tel.public_event_id, tel.schema_version, tel.entity_level,
-               tel.event_type, tel.effective_date, tel.observed_at,
+               tel.event_type, tel.effective_date, tel.effective_at,
+               tel.effective_date_source, tel.observed_at,
                tel.old_value, tel.new_value, tel.metadata,
                tel.source_published_at, tel.source_checked_at,
                tel.source_url, tel.source_snapshot_sha256,
@@ -194,6 +195,19 @@ def _json_value(value: Any, fallback: Any) -> Any:
     return value
 
 
+def effective_timing_statement(row: Any) -> str:
+    """Describe CQC effective timing without substituting CareGist observation time."""
+    if row["effective_at"]:
+        return f"CQC published the effective timestamp as {row['effective_at'].isoformat()}."
+    if row["effective_date"]:
+        return f"CQC published the effective date as {row['effective_date'].isoformat()}."
+    observed_at = row["observed_at"]
+    return (
+        "CQC did not publish an effective timestamp; CareGist first observed "
+        f"this change at {observed_at.isoformat()}."
+    )
+
+
 def canonical_event(row: Any, *, matched_region: str | None = None) -> dict[str, Any]:
     source_url = (
         row["source_url"]
@@ -222,9 +236,13 @@ def canonical_event(row: Any, *, matched_region: str | None = None) -> dict[str,
             "old": _json_value(row["old_value"], row["old_value"]),
             "new": _json_value(row["new_value"], row["new_value"]),
         },
-        "effective_at": row["effective_date"].isoformat(),
+        "effective_date": row["effective_date"].isoformat() if row["effective_date"] else None,
+        "effective_at": row["effective_at"].isoformat() if row["effective_at"] else None,
+        "effective_date_source": row["effective_date_source"],
+        "effective_timing_statement": effective_timing_statement(row),
         "source_published_at": row["source_published_at"].isoformat() if row["source_published_at"] else None,
         "observed_at": row["observed_at"].isoformat(),
+        "first_observed_at": row["observed_at"].isoformat(),
         "source_checked_at": row["source_checked_at"].isoformat() if row["source_checked_at"] else None,
         "source": {
             "url": source_url,

@@ -113,6 +113,8 @@ def _event_row(explanation_status: str) -> dict:
         "entity_level": "location",
         "event_type": "rating_changed",
         "effective_date": date(2026, 8, 8),
+        "effective_at": None,
+        "effective_date_source": "cqc.registrationDate",
         "observed_at": datetime(2026, 8, 8, 12, tzinfo=UTC),
         "old_value": '"Good"',
         "new_value": '"Requires improvement"',
@@ -147,6 +149,11 @@ def test_unreviewed_explanation_never_leaks_draft_narrative():
 
     assert event["change"] == {"old": "Good", "new": "Requires improvement"}
     assert event["entity"]["level"] == "location"
+    assert event["effective_date"] == "2026-08-08"
+    assert event["effective_at"] is None
+    assert event["effective_date_source"] == "cqc.registrationDate"
+    assert event["effective_timing_statement"] == "CQC published the effective date as 2026-08-08."
+    assert event["first_observed_at"] == "2026-08-08T12:00:00+00:00"
     assert event["explanation"] == {
         "status": "pending",
         "facts": [],
@@ -163,3 +170,22 @@ def test_published_explanation_keeps_fact_and_interpretation_separate():
     assert event["explanation"]["facts"] == ["Medicines records were incomplete."]
     assert event["explanation"]["interpretation"] == ["Compliance support may be relevant."]
     assert event["source"]["snapshot_sha256"] == "a" * 64
+
+
+def test_event_with_no_cqc_effective_time_keeps_effective_fields_null():
+    row = _event_row("not_requested")
+    row.update(
+        effective_date=None,
+        effective_at=None,
+        effective_date_source=None,
+    )
+
+    event = canonical_event(row)
+
+    assert event["effective_date"] is None
+    assert event["effective_at"] is None
+    assert event["effective_date_source"] is None
+    assert event["effective_timing_statement"] == (
+        "CQC did not publish an effective timestamp; CareGist first observed "
+        "this change at 2026-08-08T12:00:00+00:00."
+    )

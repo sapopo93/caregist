@@ -14,7 +14,7 @@ import { getServerApiBase } from "@/lib/server-api-config";
 
 const SITE_URL = "https://www.caregist.co.uk";
 
-async function getDataRefreshDate(): Promise<string | null> {
+async function getDataCurrentAsOf(): Promise<string | null> {
   try {
     const apiBase = getServerApiBase();
     const response = await fetch(`${apiBase}/api/v1/health/freshness`, {
@@ -23,12 +23,15 @@ async function getDataRefreshDate(): Promise<string | null> {
     });
     if (!response.ok) return null;
     const data = await response.json();
-    const retrievedAt = data?.source?.sourceRetrievedAt;
+    if (data?.status !== "fresh") return null;
+    const retrievedAt = data?.sourceRetrievedAt;
     if (!retrievedAt) return null;
-    return new Date(retrievedAt).toLocaleDateString("en-GB", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
+    const retrieved = new Date(retrievedAt);
+    if (Number.isNaN(retrieved.getTime())) return null;
+    return retrieved.toLocaleString("en-GB", {
+      dateStyle: "long",
+      timeStyle: "short",
+      timeZone: "UTC",
     });
   } catch {
     return null;
@@ -77,7 +80,7 @@ export const metadata: Metadata = {
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   await connection();
-  const dataRefreshDate = await getDataRefreshDate();
+  const dataCurrentAsOf = await getDataCurrentAsOf();
 
   return (
     <html lang="en" className={`${dmSans.variable} ${playfairDisplay.variable}`}>
@@ -143,9 +146,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               </a>
               .
             </p>
-            {dataRefreshDate && (
+            {dataCurrentAsOf && (
               <p className="mb-2 text-dusk">
-                CQC data last updated: {dataRefreshDate}.
+                Data current as of {dataCurrentAsOf} UTC.
               </p>
             )}
             <p className="mb-2 text-dusk">
