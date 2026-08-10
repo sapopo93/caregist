@@ -815,7 +815,9 @@ def _project_rating_change(
           old_rating, new_rating, inspection_date, event_dedupe_key
         )
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-        ON CONFLICT (event_dedupe_key) DO NOTHING
+        ON CONFLICT (event_dedupe_key)
+        WHERE event_dedupe_key IS NOT NULL
+        DO NOTHING
         """,
         (
             event.location_id,
