@@ -57,6 +57,88 @@ def test_health_accepts_exact_deployed_sha(verifier, monkeypatch):
     verifier.verify_health()
 
 
+def test_health_accepts_read_only_fallback_with_writes_fail_closed(verifier, monkeypatch):
+    verifier.EXPECTED_GIT_SHA = "a" * 40
+    payload = {
+        "status": "degraded",
+        "release": {"gitSha": "a" * 40},
+        "capabilities": {
+            "operatingMode": "fallback",
+            "readMode": "full-dataset-fallback",
+            "writeMode": "unavailable",
+            "notificationMode": "log-only",
+            "databaseAvailable": False,
+            "databaseReason": "not_configured",
+        },
+    }
+    monkeypatch.setattr(
+        verifier,
+        "fetch",
+        lambda _path: verifier.Response(
+            200,
+            {"content-type": "application/json"},
+            json.dumps(payload),
+        ),
+    )
+
+    assert verifier.verify_health() == "fallback"
+
+
+def test_health_rejects_contradictory_fallback_capabilities(verifier, monkeypatch):
+    payload = {
+        "status": "ok",
+        "release": {"gitSha": "a" * 40},
+        "capabilities": {
+            "operatingMode": "fallback",
+            "readMode": "database",
+            "writeMode": "database",
+            "notificationMode": "email",
+            "databaseAvailable": True,
+            "databaseReason": None,
+        },
+    }
+    monkeypatch.setattr(
+        verifier,
+        "fetch",
+        lambda _path: verifier.Response(
+            200,
+            {"content-type": "application/json"},
+            json.dumps(payload),
+        ),
+    )
+
+    with pytest.raises(verifier.SmokeFailure, match="fallback status"):
+        verifier.verify_health()
+
+
+def test_main_skips_backend_only_paths_when_frontend_is_in_fallback_mode(verifier, monkeypatch):
+    calls = []
+    monkeypatch.setattr(verifier, "ATTEMPTS", 1)
+    monkeypatch.setattr(verifier, "SKIP_BACKEND_PATHS", False)
+    monkeypatch.setattr(verifier, "verify_health", lambda: "fallback")
+    monkeypatch.setattr(verifier, "verify_data_status", lambda: calls.append("data-status"))
+    monkeypatch.setattr(
+        verifier,
+        "verify_backend_binding",
+        lambda: pytest.fail("fallback smoke must not claim to verify the unavailable backend"),
+    )
+    monkeypatch.setattr(
+        verifier,
+        "verify_provider_sitemap",
+        lambda _count: pytest.fail("fallback smoke must not claim to verify backend sitemap"),
+    )
+    monkeypatch.setattr(verifier, "verify_search", lambda _count: calls.append("search"))
+    monkeypatch.setattr(verifier, "verify_provider_page", lambda _count: calls.append("provider"))
+    monkeypatch.setattr(
+        verifier,
+        "verify_export_requires_token",
+        lambda: calls.append("export") or False,
+    )
+
+    assert verifier.main() == 0
+    assert calls == ["data-status", "search", "provider", "export"]
+
+
 def test_provider_sitemap_requires_xml_index(verifier, monkeypatch):
     monkeypatch.setattr(
         verifier,
