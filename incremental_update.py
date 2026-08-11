@@ -739,10 +739,31 @@ def upsert_provider(cur, record: dict[str, Any]) -> str:
     else:
         cols_str = ", ".join(cols + ["updated_at", "created_at"])
         placeholders = ", ".join(["%s"] * (len(cols) + 2))
-        cur.execute(
-            f"INSERT INTO care_providers ({cols_str}) VALUES ({placeholders})",
-            vals + [now, now],
-        )
+        insert_sql = f"INSERT INTO care_providers ({cols_str}) VALUES ({placeholders})"
+        cur.execute("SAVEPOINT provider_slug_insert")
+        try:
+            cur.execute(insert_sql, vals + [now, now])
+        except psycopg2.errors.UniqueViolation as exc:
+            # Concurrent shards can both observe a free base slug. Retry only
+            # slug collisions with the immutable location ID suffix; all other
+            # uniqueness failures remain fatal and fail closed.
+            if "care_providers_slug_key" not in str(exc):
+                cur.execute("ROLLBACK TO SAVEPOINT provider_slug_insert")
+                raise
+            cur.execute("ROLLBACK TO SAVEPOINT provider_slug_insert")
+            id_suffix = _slugify(safe_record["id"], separator="-") or safe_record["id"].lower()
+            safe_record["slug"] = f"{safe_record['slug']}-{id_suffix}"
+            cols = list(safe_record.keys())
+            vals = [safe_record[c] for c in cols]
+            cols_str = ", ".join(cols + ["updated_at", "created_at"])
+            placeholders = ", ".join(["%s"] * (len(cols) + 2))
+            cur.execute(
+                f"INSERT INTO care_providers ({cols_str}) VALUES ({placeholders})",
+                vals + [now, now],
+            )
+            cur.execute("RELEASE SAVEPOINT provider_slug_insert")
+        else:
+            cur.execute("RELEASE SAVEPOINT provider_slug_insert")
         action = "inserted"
 
     current = dict(existing or {})
