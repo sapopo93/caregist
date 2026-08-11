@@ -118,6 +118,16 @@ def verify_health() -> str:
         f"unexpected writeMode {write_mode!r}",
     )
     assert_true(notification_mode in {"email", "log-only"}, f"unexpected notificationMode {notification_mode!r}")
+    if operating_mode == "fallback":
+        assert_true(status == "degraded", f"fallback status was {status!r}")
+        assert_true(
+            read_mode == "full-dataset-fallback",
+            f"fallback readMode was {read_mode!r}",
+        )
+        assert_true(
+            database_available is False,
+            f"fallback databaseAvailable was {database_available!r}",
+        )
     if EXPECTED_GIT_SHA:
         assert_true(
             release_git_sha == EXPECTED_GIT_SHA,
