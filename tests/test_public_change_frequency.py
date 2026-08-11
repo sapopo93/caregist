@@ -46,20 +46,6 @@ async def test_public_change_frequency_reports_substantive_events_and_collection
         ],
         [
             {
-                "day": date(2026, 8, 8),
-                "run_type": "signal_poll",
-                "status": "completed",
-                "runs": 2,
-                "latest_run_at": datetime(2026, 8, 8, 12, 0, tzinfo=timezone.utc),
-            },
-            {
-                "day": date(2026, 8, 10),
-                "run_type": "signal_poll",
-                "status": "completed",
-                "runs": 2,
-                "latest_run_at": datetime(2026, 8, 10, 12, 0, tzinfo=timezone.utc),
-            },
-            {
                 "day": date(2026, 8, 9),
                 "run_type": "reconciliation",
                 "status": "completed",
@@ -110,9 +96,9 @@ async def test_public_change_frequency_reports_substantive_events_and_collection
     assert payload["summary"]["activeChangeDays"] == 2
     assert payload["summary"]["quietDays"] == 1
     assert payload["summary"]["longestQuietStreakDays"] == 1
-    assert payload["summary"]["changesEveryDay"] is False
-    assert payload["summary"]["changesAtLeastEveryThreeDays"] is True
-    assert payload["summary"]["changesAtLeastWeekly"] is True
+    assert payload["summary"]["changesEveryDay"] is None
+    assert payload["summary"]["changesAtLeastEveryThreeDays"] is None
+    assert payload["summary"]["changesAtLeastWeekly"] is None
     assert payload["byEventType"] == {
         "newRegistration": 1,
         "ratingChanged": 2,
@@ -120,10 +106,10 @@ async def test_public_change_frequency_reports_substantive_events_and_collection
         "ownershipChanged": 0,
         "groupMovement": 0,
     }
-    assert payload["collectionCoverage"]["daysWithSuccessfulCollection"] == 3
-    assert payload["collectionCoverage"]["coverageRatio"] == 1.0
+    assert payload["collectionCoverage"]["daysWithSuccessfulCollection"] == 1
+    assert payload["collectionCoverage"]["coverageRatio"] == pytest.approx(0.33333)
     assert payload["collectionCoverage"]["interpretationReliable"] is False
-    assert payload["collectionCoverage"]["completedRuns"] == 5
+    assert payload["collectionCoverage"]["completedRuns"] == 1
     assert payload["collectionCoverage"]["failedRuns"] == 1
     assert payload["collectionCoverage"]["authoritativeStatus"] == "partial"
     assert payload["collectionCoverage"]["reason"] == "latest_authoritative_attempt_incomplete"

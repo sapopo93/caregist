@@ -201,6 +201,7 @@ async def cqc_change_frequency(
     coverage_days = len(completed_collection_days)
     coverage_ratio = round(coverage_days / days, 5)
     authoritative_status = str(authoritative_freshness.get("status") or "unknown")
+    interpretation_reliable = coverage_days == days and authoritative_status == "fresh"
 
     return {
         "data": {
@@ -214,17 +215,27 @@ async def cqc_change_frequency(
                 "activeChangeDays": active_change_days,
                 "quietDays": quiet_days,
                 "longestQuietStreakDays": longest_quiet_streak,
-                "changesEveryDay": observed_any_change and quiet_days == 0,
-                "changesAtLeastEveryThreeDays": observed_any_change and longest_quiet_streak <= 2,
-                "changesAtLeastWeekly": observed_any_change and longest_quiet_streak <= 6,
+                "changesEveryDay": (
+                    observed_any_change and quiet_days == 0
+                    if interpretation_reliable
+                    else None
+                ),
+                "changesAtLeastEveryThreeDays": (
+                    observed_any_change and longest_quiet_streak <= 2
+                    if interpretation_reliable
+                    else None
+                ),
+                "changesAtLeastWeekly": (
+                    observed_any_change and longest_quiet_streak <= 6
+                    if interpretation_reliable
+                    else None
+                ),
             },
             "byEventType": event_type_totals,
             "collectionCoverage": {
                 "daysWithSuccessfulCollection": coverage_days,
                 "coverageRatio": coverage_ratio,
-                "interpretationReliable": (
-                    coverage_days == days and authoritative_status == "fresh"
-                ),
+                "interpretationReliable": interpretation_reliable,
                 "completedRuns": completed_runs,
                 "failedRuns": failed_runs,
                 "latestSuccessfulRunAt": (
