@@ -92,6 +92,9 @@ async def test_internal_pipeline_endpoint_returns_snapshot_and_recent_runs():
     assert payload["status"] == "healthy"
     assert payload["ledger"]["totalNewRegistrationEvents"] == 123
     assert payload["recentRuns"][0]["runType"] == "feed_cycle"
+    recent_runs_sql = conn.fetch.await_args.args[0]
+    assert "'signal_poll'" in recent_runs_sql
+    assert "'reconciliation'" in recent_runs_sql
 
 
 @pytest.mark.asyncio
