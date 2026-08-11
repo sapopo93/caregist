@@ -57,6 +57,8 @@ DEFAULT_DATA_PAGE_URL = "https://www.cqc.org.uk/about-us/transparency/using-cqc-
 DEFAULT_SLEEP = 0.15
 DEFAULT_LOOKBACK_DAYS = 7
 DEFAULT_MAX_RETRIES = 3
+DETAIL_MAX_RETRIES = 5
+DETAIL_MAX_BACKOFF_SECONDS = 30
 RETRYABLE_STATUS_CODES = {408, 429, 500, 502, 503, 504}
 MIN_EXPECTED_ACTIVE_LOCATIONS = 50_000
 MAX_ACTIVE_COUNT_DROP_RATIO = 0.05
@@ -517,21 +519,42 @@ def resolve_since(cur, explicit_since: str | None, *, now: datetime | None = Non
 def fetch_location_detail(base_url: str, api_key: str | None, location_id: str) -> dict[str, Any] | None:
     """Fetch full detail for a single location."""
     url = f"{base_url}/locations/{location_id}"
-    for attempt in range(1, DEFAULT_MAX_RETRIES + 1):
+    attempts: list[str] = []
+    for attempt in range(1, DETAIL_MAX_RETRIES + 1):
         try:
             resp = requests.get(url, headers=api_headers(api_key), timeout=30)
             if resp.status_code == 200:
-                return resp.json()
-            if resp.status_code in RETRYABLE_STATUS_CODES and attempt < DEFAULT_MAX_RETRIES:
-                time.sleep(attempt)
+                try:
+                    return resp.json()
+                except ValueError as exc:
+                    attempts.append(f"{attempt}:json:{type(exc).__name__}")
+                    if attempt == DETAIL_MAX_RETRIES:
+                        break
+            elif resp.status_code not in RETRYABLE_STATUS_CODES:
+                raise ChangesFetchError(
+                    f"Detail fetch failed for {location_id}: status={resp.status_code}; "
+                    f"attempts={','.join(attempts) or '1'}"
+                )
+            else:
+                attempts.append(f"{attempt}:status:{resp.status_code}")
+            if attempt < DETAIL_MAX_RETRIES:
+                retry_after = resp.headers.get("Retry-After")
+                try:
+                    delay = min(float(retry_after), DETAIL_MAX_BACKOFF_SECONDS) if retry_after else 0.0
+                except (TypeError, ValueError):
+                    delay = 0.0
+                time.sleep(max(delay, min(2 ** (attempt - 1), DETAIL_MAX_BACKOFF_SECONDS)))
                 continue
-            return None
-        except Exception:
-            if attempt < DEFAULT_MAX_RETRIES:
-                time.sleep(attempt)
+        except ChangesFetchError:
+            raise
+        except requests.RequestException as exc:
+            attempts.append(f"{attempt}:exception:{type(exc).__name__}")
+            if attempt < DETAIL_MAX_RETRIES:
+                time.sleep(min(2 ** (attempt - 1), DETAIL_MAX_BACKOFF_SECONDS))
                 continue
-            return None
-
+    raise ChangesFetchError(
+        f"Detail fetch failed for {location_id}: exhausted retries; attempts={','.join(attempts)}"
+    )
 
 def clean_location(data: dict[str, Any]) -> dict[str, Any] | None:
     """Extract and clean key fields from a location detail response."""

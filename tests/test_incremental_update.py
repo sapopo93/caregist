@@ -24,6 +24,7 @@ from incremental_update import (
     checkpoint_slices,
     fetch_active_location_snapshot,
     fetch_changes,
+    fetch_location_detail,
     fetch_recent_via_list_scan,
     normalize_database_url,
     partition_location_ids,
@@ -38,6 +39,48 @@ def test_normalize_database_url_rewrites_neon_pooler_hosts():
     assert normalize_database_url(
         "postgresql://user:pass@ep-example-123-pooler.eu-west-2.aws.neon.tech/db?sslmode=require"
     ) == "postgresql://user:pass@ep-example-123.eu-west-2.aws.neon.tech/db?sslmode=require"
+
+
+def test_fetch_location_detail_retries_transient_status_and_honors_bounded_delay(monkeypatch):
+    import incremental_update as iu
+
+    responses = [
+        SimpleNamespace(status_code=429, headers={"Retry-After": "0"}),
+        SimpleNamespace(status_code=503, headers={}),
+        SimpleNamespace(status_code=200, headers={}, json=lambda: {"locationId": "1-123456"}),
+    ]
+    sleeps: list[float] = []
+    monkeypatch.setattr(iu.requests, "get", lambda *args, **kwargs: responses.pop(0))
+    monkeypatch.setattr(iu.time, "sleep", sleeps.append)
+
+    assert fetch_location_detail("https://api.service.cqc.org.uk/public/v1", "key", "1-123456") == {
+        "locationId": "1-123456"
+    }
+    assert sleeps == [1, 2]
+
+
+def test_fetch_location_detail_preserves_sanitized_failure_evidence(monkeypatch):
+    import incremental_update as iu
+
+    response = SimpleNamespace(status_code=503, headers={})
+    monkeypatch.setattr(iu.requests, "get", lambda *args, **kwargs: response)
+    monkeypatch.setattr(iu.time, "sleep", lambda _: None)
+
+    with pytest.raises(ChangesFetchError, match=r"1-123456.*status:503"):
+        fetch_location_detail("https://api.service.cqc.org.uk/public/v1", "key", "1-123456")
+
+
+def test_fetch_location_detail_fails_closed_on_terminal_status(monkeypatch):
+    import incremental_update as iu
+
+    monkeypatch.setattr(
+        iu.requests,
+        "get",
+        lambda *args, **kwargs: SimpleNamespace(status_code=404, headers={}),
+    )
+
+    with pytest.raises(ChangesFetchError, match=r"status=404"):
+        fetch_location_detail("https://api.service.cqc.org.uk/public/v1", "key", "1-123456")
     assert normalize_database_url(
         "postgresql://user:pass@db.example.com/app"
     ) == "postgresql://user:pass@db.example.com/app"
