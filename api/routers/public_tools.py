@@ -10,6 +10,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from api.database import get_connection
 from api.middleware.ip_rate_limit import check_public_rate_limit
 from api.queries.public_tools import (
+    CHANGE_FREQUENCY_COLLECTION_COVERAGE,
+    CHANGE_FREQUENCY_DAILY,
     GET_CACHED_POSTCODE,
     INSERT_POSTCODE_CACHE,
     NEARBY_PUBLIC_COUNT,
@@ -19,6 +21,18 @@ from api.utils.analytics import log_event
 
 logger = logging.getLogger("caregist.public_tools")
 router = APIRouter(prefix="/api/v1/tools", tags=["tools"])
+
+
+def _longest_quiet_streak(event_counts: list[int]) -> int:
+    longest = 0
+    current = 0
+    for count in event_counts:
+        if count == 0:
+            current += 1
+            longest = max(longest, current)
+        else:
+            current = 0
+    return longest
 
 
 async def _geocode_postcode(postcode: str) -> tuple[float, float]:
@@ -114,4 +128,112 @@ async def radius_search(
             "lat": lat,
             "lon": lon,
         },
+    }
+
+
+@router.get("/cqc-change-frequency")
+async def cqc_change_frequency(
+    days: int = Query(90, ge=1, le=365),
+    _ip=Depends(check_public_rate_limit),
+) -> dict:
+    """Report aggregate substantive CQC changes and collection coverage."""
+    try:
+        async with get_connection() as conn:
+            daily_rows = await conn.fetch(CHANGE_FREQUENCY_DAILY, days)
+            coverage_rows = await conn.fetch(CHANGE_FREQUENCY_COLLECTION_COVERAGE, days)
+    except Exception as exc:
+        logger.error("CQC change-frequency report failed: %s", exc)
+        raise HTTPException(status_code=503, detail="Change-frequency report is unavailable.")
+
+    daily = []
+    event_type_totals = {
+        "newRegistration": 0,
+        "ratingChanged": 0,
+        "statusChanged": 0,
+        "ownershipChanged": 0,
+        "groupMovement": 0,
+    }
+    event_counts: list[int] = []
+    for row in daily_rows:
+        event_count = int(row["events"] or 0)
+        event_counts.append(event_count)
+        event_types = {
+            "newRegistration": int(row["new_registrations"] or 0),
+            "ratingChanged": int(row["rating_changes"] or 0),
+            "statusChanged": int(row["status_changes"] or 0),
+            "ownershipChanged": int(row["ownership_changes"] or 0),
+            "groupMovement": int(row["group_movements"] or 0),
+        }
+        for event_type, count in event_types.items():
+            event_type_totals[event_type] += count
+        daily.append(
+            {
+                "date": row["day"].isoformat(),
+                "eventCount": event_count,
+                "byEventType": event_types,
+            }
+        )
+
+    completed_collection_days = {
+        row["day"] for row in coverage_rows if row["status"] == "completed"
+    }
+    completed_runs = sum(
+        int(row["runs"] or 0) for row in coverage_rows if row["status"] == "completed"
+    )
+    failed_runs = sum(
+        int(row["runs"] or 0) for row in coverage_rows if row["status"] == "failed"
+    )
+    latest_successful_run = max(
+        (
+            row["latest_run_at"]
+            for row in coverage_rows
+            if row["status"] == "completed" and row["latest_run_at"] is not None
+        ),
+        default=None,
+    )
+    active_change_days = sum(1 for count in event_counts if count > 0)
+    quiet_days = len(event_counts) - active_change_days
+    longest_quiet_streak = _longest_quiet_streak(event_counts)
+    event_count = sum(event_counts)
+    observed_any_change = event_count > 0
+    coverage_days = len(completed_collection_days)
+    coverage_ratio = round(coverage_days / days, 5)
+
+    return {
+        "data": {
+            "period": {
+                "from": daily[0]["date"] if daily else None,
+                "to": daily[-1]["date"] if daily else None,
+                "days": days,
+            },
+            "summary": {
+                "eventCount": event_count,
+                "activeChangeDays": active_change_days,
+                "quietDays": quiet_days,
+                "longestQuietStreakDays": longest_quiet_streak,
+                "changesEveryDay": observed_any_change and quiet_days == 0,
+                "changesAtLeastEveryThreeDays": observed_any_change and longest_quiet_streak <= 2,
+                "changesAtLeastWeekly": observed_any_change and longest_quiet_streak <= 6,
+            },
+            "byEventType": event_type_totals,
+            "collectionCoverage": {
+                "daysWithSuccessfulCollection": coverage_days,
+                "coverageRatio": coverage_ratio,
+                "interpretationReliable": coverage_days == days,
+                "completedRuns": completed_runs,
+                "failedRuns": failed_runs,
+                "latestSuccessfulRunAt": (
+                    latest_successful_run.isoformat() if latest_successful_run else None
+                ),
+            },
+            "daily": daily,
+            "methodology": {
+                "changeSource": "trusted_event_ledger",
+                "changeTime": "observed_at",
+                "refreshWritesExcluded": True,
+                "warning": (
+                    "Observed change cadence is conclusive only when collection coverage is complete."
+                ),
+            },
+        }
     }

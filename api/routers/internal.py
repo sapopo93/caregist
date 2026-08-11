@@ -493,7 +493,7 @@ async def internal_pipeline_status(_auth=Depends(validate_internal_token)) -> di
             """
             SELECT run_type, status, started_at, completed_at, records_added, records_updated, error_message
             FROM pipeline_runs
-            WHERE run_type IN ('incremental', 'feed_cycle')
+            WHERE run_type IN ('incremental', 'feed_cycle', 'signal_poll', 'reconciliation')
             ORDER BY started_at DESC
             LIMIT 10
             """
