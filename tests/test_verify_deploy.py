@@ -81,7 +81,24 @@ def test_health_accepts_read_only_fallback_with_writes_fail_closed(verifier, mon
         ),
     )
 
-    verifier.verify_health()
+    assert verifier.verify_health() == "fallback"
+
+
+def test_main_skips_backend_only_paths_when_frontend_is_in_fallback_mode(verifier, monkeypatch):
+    monkeypatch.setattr(verifier, "ATTEMPTS", 1)
+    monkeypatch.setattr(verifier, "SKIP_BACKEND_PATHS", False)
+    monkeypatch.setattr(verifier, "verify_health", lambda: "fallback")
+    monkeypatch.setattr(verifier, "verify_data_status", lambda: None)
+    monkeypatch.setattr(
+        verifier,
+        "verify_backend_binding",
+        lambda: pytest.fail("fallback smoke must not claim to verify the unavailable backend"),
+    )
+    monkeypatch.setattr(verifier, "verify_search", lambda _count: None)
+    monkeypatch.setattr(verifier, "verify_provider_page", lambda _count: None)
+    monkeypatch.setattr(verifier, "verify_export_requires_token", lambda: False)
+
+    assert verifier.main() == 0
 
 
 def test_provider_sitemap_requires_xml_index(verifier, monkeypatch):

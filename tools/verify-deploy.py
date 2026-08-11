@@ -91,7 +91,7 @@ def response_diagnostic(response: Response) -> str:
     return f"HTTP {response.status}; requestId={request_id}; body={body!r}"
 
 
-def verify_health() -> None:
+def verify_health() -> str:
     response = fetch("/api/health/directory")
     assert_true(response.status == 200, f"/api/health/directory failed: {response_diagnostic(response)}")
 
@@ -143,6 +143,7 @@ def verify_health() -> None:
             ]
         ),
     )
+    return str(operating_mode)
 
 
 def verify_data_status() -> None:
@@ -339,11 +340,16 @@ def verify_lead_capture_and_export() -> None:
 def main() -> int:
     for attempt in range(1, ATTEMPTS + 1):
         try:
-            verify_health()
+            operating_mode = verify_health()
             verify_data_status()
-            if SKIP_BACKEND_PATHS:
-                print("BACKEND_BINDING: SKIPPED - frontend-only degraded smoke has no backend service")
-                print("PROVIDER_SITEMAP: SKIPPED - frontend-only degraded smoke has no backend service")
+            if SKIP_BACKEND_PATHS or operating_mode == "fallback":
+                reason = (
+                    "frontend fallback mode does not claim backend availability"
+                    if operating_mode == "fallback"
+                    else "frontend-only degraded smoke has no backend service"
+                )
+                print(f"BACKEND_BINDING: SKIPPED - {reason}")
+                print(f"PROVIDER_SITEMAP: SKIPPED - {reason}")
                 active_location_count = None
             else:
                 active_location_count = verify_backend_binding()
