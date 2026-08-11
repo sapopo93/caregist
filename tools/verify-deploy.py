@@ -164,11 +164,14 @@ def verify_backend_binding() -> int | None:
         raise SmokeFailure(f"backend freshness binding returned invalid JSON: {error}") from error
 
     status = payload.get("status")
-    assert_true(status in {"healthy", "stale"}, f"backend freshness returned unexpected status {status!r}")
-    active_location_count = (payload.get("source") or {}).get("activeLocationCount")
+    assert_true(
+        status in {"fresh", "stale", "partial", "unknown"},
+        f"backend freshness returned unexpected status {status!r}",
+    )
+    active_location_count = payload.get("totalSourceLocations")
     assert_true(
         active_location_count is None or (isinstance(active_location_count, int) and active_location_count >= 0),
-        f"backend freshness returned invalid activeLocationCount {active_location_count!r}",
+        f"backend freshness returned invalid totalSourceLocations {active_location_count!r}",
     )
     backend_sha = str((payload.get("release") or {}).get("git_sha") or "").lower()
     if EXPECTED_GIT_SHA:

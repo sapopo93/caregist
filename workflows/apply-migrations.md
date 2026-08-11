@@ -56,7 +56,7 @@ Follow `workflows/neon-pitr-restore-drill.md` to verify the history window and c
 
 The confirmation flag records operator intent; it does not create or verify a recovery point. Do not use it until the provider evidence exists.
 
-## Migration Files (Current: 47 files, through 047)
+## Migration Files (Current: 50 files, through 050)
 
 | # | File | Changes |
 |---|------|---------|
@@ -83,6 +83,9 @@ The confirmation flag records operator intent; it does not create or verify a re
 | 045 | signup_purchase_intent.sql | Persists validated signup purchase intent across email verification |
 | 046 | billing_operations.sql | Adds a durable, idempotent Stripe billing operations reservation ledger |
 | 047 | expand_analytics_provider_reference.sql | Widens analytics_events.provider_id to hold canonical slugs |
+| 048 | full_dataset_fulfilment.sql | Adds governed full-dataset artefact and order fulfilment records |
+| 049 | cqc_signal_intelligence.sql | Adds canonical CQC source, signal, Radar, and delivery schema |
+| 050 | source_snapshot_identity.sql | Repairs duplicate source snapshots and enforces collector upsert identity |
 
 After migration:
 

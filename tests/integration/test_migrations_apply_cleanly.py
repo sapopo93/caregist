@@ -10,8 +10,11 @@ shared fixtures in tests/integration/conftest.py.
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
+from api.services.pipeline_health import unique_index_exists
 from tests.integration.conftest import apply_full_schema
 
 asyncpg = pytest.importorskip("asyncpg")
@@ -75,5 +78,118 @@ async def test_active_subscription_uniqueness_is_enforced(fresh_db):
             "VALUES ($1, 'business', 'canceled')",
             user_id,
         )
+    finally:
+        await conn.close()
+
+
+async def test_source_snapshot_identity_migration_repairs_a_preexisting_table(fresh_db):
+    conn = await asyncpg.connect(fresh_db)
+    try:
+        await apply_full_schema(conn)
+        await conn.execute(
+            "ALTER TABLE source_snapshots "
+            "DROP CONSTRAINT IF EXISTS source_snapshots_source_type_checksum_sha256_key"
+        )
+        await conn.execute("DROP INDEX IF EXISTS uniq_source_snapshots_identity")
+        assert not await unique_index_exists(
+            conn,
+            "source_snapshots",
+            ("source_type", "checksum_sha256"),
+        )
+
+        checksum = "a" * 64
+        canonical_id = await conn.fetchval(
+            """
+            INSERT INTO source_snapshots (
+              source_type, source_uri, source_checked_at, checksum_sha256, record_count
+            ) VALUES ('cqc_location_index', 'https://example.test/first', NOW(), $1, 10)
+            RETURNING id
+            """,
+            checksum,
+        )
+        duplicate_id = await conn.fetchval(
+            """
+            INSERT INTO source_snapshots (
+              source_type, source_uri, source_checked_at, checksum_sha256, record_count
+            ) VALUES ('cqc_location_index', 'https://example.test/second', NOW(), $1, 10)
+            RETURNING id
+            """,
+            checksum,
+        )
+        await conn.execute(
+            """
+            INSERT INTO care_providers (id, name, slug, status)
+            VALUES ('1-TEST', 'Migration test provider', 'migration-test-provider', 'ACTIVE')
+            """
+        )
+        await conn.execute(
+            """
+            INSERT INTO trusted_event_ledger (
+              entity_type, entity_id, event_type, effective_date, source,
+              dedupe_key, source_snapshot_id
+            ) VALUES ('location', '1-TEST', 'new_registration', CURRENT_DATE,
+                      'migration-test', 'migration-test-event', $1)
+            """,
+            duplicate_id,
+        )
+        await conn.execute(
+            """
+            INSERT INTO cqc_location_index_entries (
+              location_id, first_seen_at, last_seen_at, last_snapshot_id
+            ) VALUES ('1-TEST', NOW(), NOW(), $1)
+            """,
+            duplicate_id,
+        )
+        await conn.execute(
+            """
+            INSERT INTO report_documents (
+              cqc_location_id, source_snapshot_id, source_url, blob_uri, sha256
+            ) VALUES ('1-TEST', $1, 'https://example.test/report',
+                      's3://example.test/report', $2)
+            """,
+            duplicate_id,
+            "b" * 64,
+        )
+
+        migration = (
+            Path(__file__).resolve().parents[2]
+            / "db/migrations/050_source_snapshot_identity.sql"
+        ).read_text(encoding="utf-8")
+        await conn.execute(migration)
+
+        assert await unique_index_exists(
+            conn,
+            "source_snapshots",
+            ("source_type", "checksum_sha256"),
+        )
+        assert await conn.fetchval(
+            "SELECT COUNT(*) FROM source_snapshots "
+            "WHERE source_type = 'cqc_location_index' AND checksum_sha256 = $1",
+            checksum,
+        ) == 1
+        assert await conn.fetchval(
+            "SELECT source_snapshot_id FROM trusted_event_ledger "
+            "WHERE dedupe_key = 'migration-test-event'"
+        ) == canonical_id
+        assert await conn.fetchval(
+            "SELECT last_snapshot_id FROM cqc_location_index_entries "
+            "WHERE location_id = '1-TEST'"
+        ) == canonical_id
+        assert await conn.fetchval(
+            "SELECT source_snapshot_id FROM report_documents WHERE cqc_location_id = '1-TEST'"
+        ) == canonical_id
+
+        upserted_id = await conn.fetchval(
+            """
+            INSERT INTO source_snapshots (
+              source_type, source_uri, source_checked_at, checksum_sha256, record_count
+            ) VALUES ('cqc_location_index', 'https://example.test/upsert', NOW(), $1, 10)
+            ON CONFLICT (source_type, checksum_sha256)
+            DO UPDATE SET source_checked_at = EXCLUDED.source_checked_at
+            RETURNING id
+            """,
+            checksum,
+        )
+        assert upserted_id == canonical_id
     finally:
         await conn.close()

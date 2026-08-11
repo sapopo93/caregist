@@ -40,19 +40,7 @@ async def test_health_endpoint_returns_degraded_snapshot():
         "status": "degraded",
         "readiness_ok": False,
         "feed_fresh": False,
-        "checks": {
-            "database": "ok",
-            "incremental_fresh": False,
-            "feed_cycle_fresh": False,
-            "email_backlog_healthy": True,
-            "email_processing_healthy": True,
-            "last_incremental_completed_at": None,
-            "last_feed_cycle_completed_at": None,
-            "latest_new_registration_observed_at": None,
-            "new_registration_events_last_24h": 0,
-            "pending_email_count": 0,
-            "stuck_processing_email_count": 0,
-        },
+        "checks": {"database": "ok"},
     }
 
     with patch.dict("os.environ", {"CAREGIST_RELEASE_SHA": "a" * 40}), \
@@ -174,31 +162,85 @@ async def test_freshness_endpoint_returns_503_when_feed_stale():
         yield conn
 
     snapshot = {
-        "status": "degraded",
-        "readiness_ok": False,
-        "feed_fresh": False,
-        "checks": {
-            "database": "ok",
-            "incremental_fresh": False,
-            "feed_cycle_fresh": False,
-            "email_backlog_healthy": True,
-            "email_processing_healthy": True,
-            "last_incremental_completed_at": None,
-            "last_feed_cycle_completed_at": None,
-            "latest_new_registration_observed_at": None,
-            "new_registration_events_last_24h": 0,
-            "pending_email_count": 0,
-            "stuck_processing_email_count": 0,
-        },
+        "status": "stale",
+        "source": "https://api.service.cqc.org.uk/public/v1/locations",
+        "sourcePublishedAt": "2026-04-01",
+        "sourceRetrievedAt": "2026-04-01T09:00:00+00:00",
+        "reconciledAt": "2026-04-01T09:05:00+00:00",
+        "reason": "latest_successful_retrieval_exceeds_freshness_sla",
+        "message": "Freshness cannot currently be confirmed.",
     }
 
     with patch("api.routers.health.get_connection", mock_get_connection), \
-         patch("api.routers.health.get_pipeline_health", new=AsyncMock(return_value=snapshot)):
+         patch("api.routers.health.get_cqc_freshness", new=AsyncMock(return_value=snapshot)):
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.get("/api/v1/health/freshness")
 
     assert response.status_code == 503
     assert response.json()["status"] == "stale"
+
+
+@pytest.mark.asyncio
+async def test_freshness_endpoint_returns_stable_public_evidence():
+    conn = AsyncMock()
+
+    @asynccontextmanager
+    async def mock_get_connection():
+        yield conn
+
+    snapshot = {
+        "status": "fresh",
+        "source": "https://api.service.cqc.org.uk/public/v1/locations",
+        "sourcePublishedAt": "2026-08-10",
+        "sourceRetrievedAt": "2026-08-10T21:00:00+00:00",
+        "reconciledAt": "2026-08-10T21:05:00+00:00",
+        "totalSourceLocations": 56_742,
+        "checkedLocations": 56_742,
+        "successfullyCheckedLocations": 56_742,
+        "coveragePercentage": 100.0,
+        "successCount": 56_742,
+        "failureCount": 0,
+        "countsReconciled": True,
+        "checksumSha256": "a" * 64,
+        "latestAttempt": None,
+        "reason": None,
+        "message": "CareGist data is current as of 10 August 2026 at 21:00 UTC.",
+    }
+
+    with patch.dict("os.environ", {"CAREGIST_RELEASE_SHA": "a" * 40}), \
+         patch("api.routers.health.get_connection", mock_get_connection), \
+         patch("api.routers.health.get_cqc_freshness", new=AsyncMock(return_value=snapshot)):
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            first = await client.get("/api/v1/health/freshness")
+            second = await client.get("/api/v1/health/freshness")
+
+    assert first.status_code == 200
+    assert first.json() == second.json()
+    assert first.json()["release"] == {"git_sha": "a" * 40}
+    assert "generated_at" not in first.json()
+
+
+@pytest.mark.asyncio
+async def test_freshness_endpoint_query_failure_returns_complete_unknown_contract():
+    @asynccontextmanager
+    async def mock_get_connection():
+        yield AsyncMock()
+
+    with patch("api.routers.health.get_connection", mock_get_connection), \
+         patch(
+             "api.routers.health.get_cqc_freshness",
+             new=AsyncMock(side_effect=RuntimeError("database unavailable")),
+         ):
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get("/api/v1/health/freshness")
+
+    payload = response.json()
+    assert response.status_code == 503
+    assert payload["status"] == "unknown"
+    assert payload["sourceRetrievedAt"] is None
+    assert payload["reconciledAt"] is None
+    assert payload["countsReconciled"] is False
+    assert payload["reason"] == "freshness_evidence_query_failed"
 
 
 @pytest.mark.asyncio

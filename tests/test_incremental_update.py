@@ -14,6 +14,8 @@ from incremental_update import (
     _finalize_batch,
     _insert_trusted_provider_event,
     _prepare_batch,
+    _project_rating_change,
+    _sync_reconciliation_run_evidence,
     ALLOWED_COLUMNS,
     CqcActiveSnapshot,
     ChangesFetchError,
@@ -22,6 +24,7 @@ from incremental_update import (
     checkpoint_slices,
     fetch_active_location_snapshot,
     fetch_changes,
+    fetch_location_detail,
     fetch_recent_via_list_scan,
     normalize_database_url,
     partition_location_ids,
@@ -36,6 +39,48 @@ def test_normalize_database_url_rewrites_neon_pooler_hosts():
     assert normalize_database_url(
         "postgresql://user:pass@ep-example-123-pooler.eu-west-2.aws.neon.tech/db?sslmode=require"
     ) == "postgresql://user:pass@ep-example-123.eu-west-2.aws.neon.tech/db?sslmode=require"
+
+
+def test_fetch_location_detail_retries_transient_status_and_honors_bounded_delay(monkeypatch):
+    import incremental_update as iu
+
+    responses = [
+        SimpleNamespace(status_code=429, headers={"Retry-After": "0"}),
+        SimpleNamespace(status_code=503, headers={}),
+        SimpleNamespace(status_code=200, headers={}, json=lambda: {"locationId": "1-123456"}),
+    ]
+    sleeps: list[float] = []
+    monkeypatch.setattr(iu.requests, "get", lambda *args, **kwargs: responses.pop(0))
+    monkeypatch.setattr(iu.time, "sleep", sleeps.append)
+
+    assert fetch_location_detail("https://api.service.cqc.org.uk/public/v1", "key", "1-123456") == {
+        "locationId": "1-123456"
+    }
+    assert sleeps == [1, 2]
+
+
+def test_fetch_location_detail_preserves_sanitized_failure_evidence(monkeypatch):
+    import incremental_update as iu
+
+    response = SimpleNamespace(status_code=503, headers={})
+    monkeypatch.setattr(iu.requests, "get", lambda *args, **kwargs: response)
+    monkeypatch.setattr(iu.time, "sleep", lambda _: None)
+
+    with pytest.raises(ChangesFetchError, match=r"1-123456.*status:503"):
+        fetch_location_detail("https://api.service.cqc.org.uk/public/v1", "key", "1-123456")
+
+
+def test_fetch_location_detail_fails_closed_on_terminal_status(monkeypatch):
+    import incremental_update as iu
+
+    monkeypatch.setattr(
+        iu.requests,
+        "get",
+        lambda *args, **kwargs: SimpleNamespace(status_code=404, headers={}),
+    )
+
+    with pytest.raises(ChangesFetchError, match=r"status=404"):
+        fetch_location_detail("https://api.service.cqc.org.uk/public/v1", "key", "1-123456")
     assert normalize_database_url(
         "postgresql://user:pass@db.example.com/app"
     ) == "postgresql://user:pass@db.example.com/app"
@@ -100,6 +145,35 @@ def test_prepare_dry_run_performs_database_reads_without_writes(tmp_path, monkey
     assert _prepare_batch(args, Mock(), cursor) == 0
     assert not manifest_path.exists()
     assert all(str(call.args[0]).lstrip().upper().startswith("SELECT") for call in cursor.execute.call_args_list)
+
+
+def test_reconciliation_evidence_is_derived_from_committed_shard_state():
+    cursor = Mock()
+    batch_id = uuid.UUID("12345678-1234-5678-9234-567812345678")
+
+    _sync_reconciliation_run_evidence(cursor, batch_id)
+
+    sql, params = cursor.execute.call_args.args
+    assert "SUM(s.processed_count)" in sql
+    assert "s.status = 'failed' AND s.processed_count < s.expected_count" in sql
+    assert "checked_count = evidence.processed + evidence.failed" in sql
+    assert "success_count = evidence.processed" in sql
+    assert "failure_count = evidence.failed" in sql
+    assert "'nextOffset', s.next_offset" in sql
+    assert params == (str(batch_id),)
+
+
+def test_reconciliation_authority_requires_atomic_full_coverage_fields():
+    source = Path("incremental_update.py").read_text(encoding="utf-8")
+
+    assert "source_total_count = %s, checked_count = %s" in source
+    assert "success_count = %s, failure_count = 0" in source
+    assert "counts_reconciled = TRUE, reconciled_at = NOW()" in source
+    assert 'json.dumps({"fullCoverage": True, "restartable": False})' in source
+    assert "counts_reconciled = FALSE, reconciled_at = NULL" in source
+    assert "AND counts_reconciled = TRUE AND reconciled_at IS NOT NULL" in source
+    assert "pg_try_advisory_xact_lock" in source
+    assert "shard {shard_index} is still running" in source
 
 
 def test_checkpoint_resume_starts_at_persisted_offset_without_overlap():
@@ -335,6 +409,28 @@ def test_upsert_allows_last_updated_watermark_column():
     assert "last_updated" in ALLOWED_COLUMNS
 
 
+def test_rating_projection_targets_the_existing_partial_unique_index():
+    cur = Mock()
+    event = ProviderStateEvent(
+        event_type="rating_changed",
+        location_id="LOC1",
+        provider_id="PROV1",
+        effective_date=None,
+        effective_at=None,
+        effective_date_source=None,
+        old_value="Good",
+        new_value="Outstanding",
+        dedupe_key="rating_changed:LOC1:abc",
+        metadata={},
+    )
+
+    _project_rating_change(cur, event, {"name": "Provider"})
+
+    sql = cur.execute.call_args.args[0]
+    assert "ON CONFLICT (event_dedupe_key)" in sql
+    assert "WHERE event_dedupe_key IS NOT NULL" in sql
+
+
 def test_cli_requires_explicit_batch_phase_and_has_no_global_run_lock():
     source = Path("incremental_update.py").read_text(encoding="utf-8")
 
@@ -351,6 +447,8 @@ def test_trusted_event_insert_uses_source_time_and_conflict_safe_return():
         location_id="LOC1",
         provider_id="PROV1",
         effective_date=date(2026, 7, 29),
+        effective_at=None,
+        effective_date_source="cqc.registrationDate",
         old_value="ACTIVE",
         new_value="INACTIVE",
         dedupe_key="status_changed:LOC1:abc",
@@ -368,5 +466,37 @@ def test_trusted_event_insert_uses_source_time_and_conflict_safe_return():
         if "INSERT INTO trusted_event_ledger" in call.args[0]
     )
     assert "ON CONFLICT (dedupe_key) DO NOTHING" in sql
-    assert params[9] == datetime(2026, 7, 29, 8, 0, tzinfo=timezone.utc)
+    assert params[6] == "cqc.registrationDate"
+    assert params[11] == datetime(2026, 7, 29, 8, 0, tzinfo=timezone.utc)
+    assert "\n          observed_at," not in sql
     assert any("INSERT INTO delivery_outbox" in call.args[0] for call in cur.execute.call_args_list)
+
+
+def test_trusted_event_insert_keeps_unknown_effective_time_null():
+    cur = Mock()
+    cur.fetchone.return_value = None
+    event = ProviderStateEvent(
+        event_type="status_changed",
+        location_id="LOC1",
+        provider_id="PROV1",
+        effective_date=None,
+        effective_at=None,
+        effective_date_source=None,
+        old_value="ACTIVE",
+        new_value="INACTIVE",
+        dedupe_key="status_changed:LOC1:abc",
+        metadata={"source_last_updated": "2026-07-29T08:00:00Z"},
+    )
+
+    assert not _insert_trusted_provider_event(
+        cur,
+        event,
+        {"last_updated": "2026-07-29T08:00:00Z"},
+    )
+    sql, params = next(
+        call.args
+        for call in cur.execute.call_args_list
+        if "INSERT INTO trusted_event_ledger" in call.args[0]
+    )
+    assert params[4:7] == (None, None, None)
+    assert "ON CONFLICT (dedupe_key) DO NOTHING" in sql
