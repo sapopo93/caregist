@@ -25,6 +25,7 @@ from incremental_update import (
     fetch_active_location_snapshot,
     fetch_changes,
     fetch_location_detail,
+    clean_location,
     fetch_recent_via_list_scan,
     normalize_database_url,
     partition_location_ids,
@@ -81,6 +82,17 @@ def test_fetch_location_detail_fails_closed_on_terminal_status(monkeypatch):
 
     with pytest.raises(ChangesFetchError, match=r"status=404"):
         fetch_location_detail("https://api.service.cqc.org.uk/public/v1", "key", "1-123456")
+
+
+def test_clean_location_uses_active_directory_membership_over_lagging_detail_status():
+    detail = {
+        "locationId": "1-123456",
+        "name": "Example Care",
+        "registrationStatus": "Deregistered",
+    }
+
+    assert clean_location(detail)["status"] == "INACTIVE"
+    assert clean_location(detail, directory_active=True)["status"] == "ACTIVE"
     assert normalize_database_url(
         "postgresql://user:pass@db.example.com/app"
     ) == "postgresql://user:pass@db.example.com/app"
