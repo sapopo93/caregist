@@ -556,8 +556,14 @@ def fetch_location_detail(base_url: str, api_key: str | None, location_id: str) 
         f"Detail fetch failed for {location_id}: exhausted retries; attempts={','.join(attempts)}"
     )
 
-def clean_location(data: dict[str, Any]) -> dict[str, Any] | None:
-    """Extract and clean key fields from a location detail response."""
+def clean_location(data: dict[str, Any], *, directory_active: bool = False) -> dict[str, Any] | None:
+    """Extract and clean key fields from a location detail response.
+
+    ``directory_active`` is used only when the record came from the current
+    CQC active-location directory snapshot.  That snapshot is the authority
+    for the active set; detail ``registrationStatus`` can lag during CQC
+    directory publication and must not turn an in-snapshot location inactive.
+    """
     location_id = data.get("locationId", "")
     if not location_id:
         return None
@@ -633,7 +639,9 @@ def clean_location(data: dict[str, Any]) -> dict[str, Any] | None:
             break
 
     reg_status = normalize_whitespace(data.get("registrationStatus", ""))
-    status = "ACTIVE" if "register" in reg_status.lower() and "deregister" not in reg_status.lower() else "INACTIVE"
+    status = "ACTIVE" if directory_active else (
+        "ACTIVE" if "register" in reg_status.lower() and "deregister" not in reg_status.lower() else "INACTIVE"
+    )
 
     return {
         "id": location_id,
@@ -1188,7 +1196,10 @@ def _run_shard(args: argparse.Namespace, conn, cur, api_key: str | None) -> int:
                 detail = fetch_location_detail(args.base_url, api_key, location_id)
                 if detail is None:
                     raise ChangesFetchError(f"Detail fetch failed for {location_id}")
-                record = clean_location(detail)
+                # The immutable manifest is built from CQC's active-location
+                # directory.  Detail registration status may lag that source;
+                # preserve directory membership as the authoritative status.
+                record = clean_location(detail, directory_active=True)
                 if record is None:
                     raise ChangesFetchError(f"Detail cleaning failed for {location_id}")
                 checkpoint_counts[upsert_provider(cur, record)] += 1
