@@ -1,7 +1,8 @@
 """Shared fixtures for integration tests that need a real Postgres.
 
-Skipped unless CAREGIST_TEST_DATABASE_URL (or DATABASE_URL) is set. PostGIS is
-optional — init.sql is shimmed to plain TEXT when the extension is unavailable.
+Skipped unless the explicit CAREGIST_TEST_DATABASE_URL is set. The URL must
+target an isolated local host. PostGIS is optional — init.sql is shimmed to
+plain TEXT when the extension is unavailable.
 """
 
 from __future__ import annotations
@@ -9,6 +10,7 @@ from __future__ import annotations
 import os
 import re
 from pathlib import Path
+from urllib.parse import urlparse
 
 import pytest
 
@@ -18,7 +20,16 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 INIT_SQL = REPO_ROOT / "db" / "init.sql"
 MIGRATIONS_DIR = REPO_ROOT / "db" / "migrations"
 
-DATABASE_URL = os.getenv("CAREGIST_TEST_DATABASE_URL") or os.getenv("DATABASE_URL")
+DATABASE_URL = os.getenv("CAREGIST_TEST_DATABASE_URL")
+
+
+def validate_test_database_url(value: str) -> None:
+    parsed = urlparse(value)
+    if parsed.hostname not in {"localhost", "127.0.0.1", "::1"}:
+        raise RuntimeError("CAREGIST_TEST_DATABASE_URL must target an isolated local host.")
+    database = parsed.path.removeprefix("/")
+    if database in {"caregist", "caregist_prod", "production"}:
+        raise RuntimeError("CAREGIST_TEST_DATABASE_URL must not target a production database.")
 
 
 def shim_init_without_postgis(sql: str) -> str:
@@ -59,7 +70,8 @@ async def apply_full_schema(conn) -> list[str]:
 async def fresh_db():
     """Create and drop an isolated database with the full schema applied."""
     if not DATABASE_URL:
-        pytest.skip("Set CAREGIST_TEST_DATABASE_URL to run integration tests.")
+        pytest.skip("Set the explicit isolated CAREGIST_TEST_DATABASE_URL to run integration tests.")
+    validate_test_database_url(DATABASE_URL)
 
     admin = await asyncpg.connect(DATABASE_URL)
     dbname = f"caregist_ittest_{os.getpid()}"

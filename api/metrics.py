@@ -59,6 +59,22 @@ if _ENABLED:
         "Current pending_emails queue depth by status.",
         labelnames=("status",),
     )
+    CRM_AI_WORKER_AGE_SECONDS = Gauge(
+        "caregist_crm_ai_worker_age_seconds",
+        "Seconds since the CRM AI worker heartbeat.",
+    )
+    CRM_AI_MONTHLY_SPEND_USD = Gauge(
+        "caregist_crm_ai_monthly_spend_usd",
+        "Recorded DeepSeek usage cost in the current UTC month.",
+    )
+    CRM_RETENTION_EXPIRED_BACKLOG = Gauge(
+        "caregist_crm_retention_expired_backlog",
+        "CRM recordings at or beyond expiry that are not confirmed deleted.",
+    )
+    CRM_RETENTION_FAILURES = Gauge(
+        "caregist_crm_retention_failures",
+        "Expired CRM recordings currently carrying deletion errors.",
+    )
 
 
 def observe_request(*, method: str, route: str, tier: str, status: int, duration: float) -> None:
@@ -86,6 +102,19 @@ def set_pending_emails(status: str, count: int) -> None:
     if not _ENABLED:
         return
     PENDING_EMAILS.labels(status).set(count)
+
+
+def set_crm_operations(
+    *, worker_age_seconds: float | None, monthly_spend_usd: float,
+    expired_backlog: int, retention_failures: int,
+) -> None:
+    if not _ENABLED:
+        return
+    if worker_age_seconds is not None:
+        CRM_AI_WORKER_AGE_SECONDS.set(worker_age_seconds)
+    CRM_AI_MONTHLY_SPEND_USD.set(monthly_spend_usd)
+    CRM_RETENTION_EXPIRED_BACKLOG.set(expired_backlog)
+    CRM_RETENTION_FAILURES.set(retention_failures)
 
 
 def render_latest() -> tuple[bytes, str]:

@@ -30,6 +30,9 @@ cryptography>=43.0.0
 # Shared burst/quota rate limiting across workers (api/middleware/rate_limit.py).
 # Falls back to in-memory if REDIS_URL is unset; production must run Redis.
 redis>=5.0.0
+twilio>=9.0.0
+python-multipart>=0.0.20
+svix==1.99.1
 # Prometheus metrics exposed at /metrics (api/metrics.py).
 prometheus-client==0.26.0
 

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { normalizeApiError, describeFetchError } from "@/lib/api-error";
+import { normalizeLoginRedirect } from "@/lib/login-redirect";
 
 function LoginForm() {
   const router = useRouter();
@@ -51,8 +52,9 @@ function LoginForm() {
 
       const params = new URLSearchParams(window.location.search);
       const upgrade = params.get("upgrade");
+      const redirect = normalizeLoginRedirect(params.get("redirect"));
 
-      router.push(upgrade ? `/pricing?highlight=${upgrade}` : "/dashboard");
+      router.push(upgrade ? `/pricing?highlight=${upgrade}` : redirect || "/dashboard");
     } catch (err) {
       setError(describeFetchError(err));
     } finally {

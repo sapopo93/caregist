@@ -363,6 +363,18 @@ async def validate_billing_identity(
     raise HTTPException(status_code=401, detail="Missing API key. Pass X-API-Key header or log in.")
 
 
+async def validate_session_identity(
+    caregist_session: str | None = Cookie(default=None),
+) -> dict:
+    """Authenticate a browser workspace without consuming product-data quota."""
+    session_cookie = _cookie_value(caregist_session)
+    if not session_cookie:
+        raise HTTPException(status_code=401, detail="A verified browser session is required.")
+    auth = await _validate_session(session_cookie, consume_rate_limit=False)
+    auth["auth_method"] = "session"
+    return auth
+
+
 async def validate_optional_api_key(
     request: Request,
     api_key: str | None = Security(api_key_header),

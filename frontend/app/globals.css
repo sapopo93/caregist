@@ -3,11 +3,11 @@
 
 @theme {
   /* CareGist Brand Palette */
-  --color-clay: #C1784F;
+  --color-clay: #95542F;
   --color-bark: #6B4C35;
   --color-parchment: #F5EFE4;
   --color-moss: #4A5E45;
-  --color-dusk: #8C7E6A;
+  --color-dusk: #655B4E;
   --color-stone: #D6CFC4;
   --color-cream: #FDFAF5;
   --color-charcoal: #2B2520;
@@ -18,7 +18,7 @@
   --sp-accent-foreground: #FDFAF5;
   --sp-surface: #FDFAF5;
   --sp-border: #D6CFC4;
-  --sp-muted: #8C7E6A;
+  --sp-muted: #655B4E;
 }
 
 @layer base {

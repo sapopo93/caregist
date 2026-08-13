@@ -54,3 +54,27 @@ alerts:
     severity: critical
     configured: false
     evidence_id: null
+  - id: crm-ai-worker-stale
+    signal: caregist_crm_ai_worker_age_seconds exceeds 120 while CRM AI is enabled
+    cadence: 1m
+    severity: critical
+    configured: false
+    evidence_id: null
+  - id: crm-ai-monthly-spend
+    signal: caregist_crm_ai_monthly_spend_usd reaches 80% of CRM_AI_MONTHLY_CAP_USD
+    cadence: 5m
+    severity: warning
+    configured: false
+    evidence_id: null
+  - id: crm-retention-expired-backlog
+    signal: caregist_crm_retention_expired_backlog is greater than zero
+    cadence: 1m
+    severity: critical
+    configured: false
+    evidence_id: null
+  - id: crm-retention-deletion-failure
+    signal: caregist_crm_retention_failures is greater than zero
+    cadence: 1m
+    severity: critical
+    configured: false
+    evidence_id: null

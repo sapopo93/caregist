@@ -6,7 +6,12 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from fastapi import HTTPException
 
-from api.middleware.auth import hash_api_key, validate_api_key, validate_billing_identity
+from api.middleware.auth import (
+    hash_api_key,
+    validate_api_key,
+    validate_billing_identity,
+    validate_session_identity,
+)
 from api.routers.auth import LoginRequest, TeamKeyCreateRequest, create_team_key, logout_session, reveal_key, rotate_key, router
 from api.routers.comparisons import _get_user_id
 
@@ -287,6 +292,29 @@ async def test_billing_identity_does_not_consume_exhausted_product_quota():
     assert auth["auth_method"] == "session"
     assert auth["remaining"] == {}
     quota_check.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_workspace_session_identity_does_not_consume_product_quota():
+    session_auth = {
+        "user_id": 42,
+        "tier": "free",
+        "is_verified": True,
+        "remaining": {},
+    }
+    validator = AsyncMock(return_value=session_auth)
+    with patch("api.middleware.auth._validate_session", validator):
+        auth = await validate_session_identity(caregist_session="cs_workspace_session")
+
+    assert auth["auth_method"] == "session"
+    validator.assert_awaited_once_with("cs_workspace_session", consume_rate_limit=False)
+
+
+@pytest.mark.asyncio
+async def test_workspace_session_identity_rejects_missing_cookie():
+    with pytest.raises(HTTPException) as exc:
+        await validate_session_identity(caregist_session=None)
+    assert exc.value.status_code == 401
 
 
 @pytest.mark.asyncio

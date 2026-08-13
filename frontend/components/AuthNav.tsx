@@ -39,7 +39,7 @@ export default function AuthNav() {
   return (
     <>
       {/* Desktop auth actions only. Primary site navigation lives in the shared header. */}
-      <nav className="hidden md:flex gap-4 text-sm items-center">
+      <nav aria-label="Account" className="hidden md:flex gap-4 text-sm items-center">
         {user ? (
           <>
             <Link href="/dashboard" className="hover:text-amber transition-colors">Dashboard</Link>

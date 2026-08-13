@@ -49,5 +49,41 @@ services:
     ports:
       - "8000:8000"
 
+  crm-ai-worker:
+    profiles: ["crm-ai"]
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://caregist:${DB_PASSWORD:-caregist_dev}@db:5432/caregist
+      CRM_ENABLED: ${CRM_ENABLED:-false}
+      CRM_CALLING_ENABLED: ${CRM_CALLING_ENABLED:-false}
+      CRM_AI_ENABLED: ${CRM_AI_ENABLED:-false}
+      CRM_RECORDING_ENABLED: ${CRM_RECORDING_ENABLED:-false}
+      CRM_RECORDING_NOTICE_VERSION: ${CRM_RECORDING_NOTICE_VERSION:-}
+      CRM_PILOT_MODE: ${CRM_PILOT_MODE:-true}
+      CRM_ALLOWED_TEST_NUMBERS: ${CRM_ALLOWED_TEST_NUMBERS:-}
+      OUTBOUND_COMMUNICATIONS_ENABLED: ${OUTBOUND_COMMUNICATIONS_ENABLED:-false}
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID:-}
+      TWILIO_API_KEY_SID: ${TWILIO_API_KEY_SID:-}
+      TWILIO_API_KEY_SECRET: ${TWILIO_API_KEY_SECRET:-}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN:-}
+      TWILIO_TWIML_APP_SID: ${TWILIO_TWIML_APP_SID:-}
+      TWILIO_PHONE_NUMBER: ${TWILIO_PHONE_NUMBER:-}
+      TWILIO_WEBHOOK_BASE_URL: ${TWILIO_WEBHOOK_BASE_URL:-}
+      CRM_AI_API_KEY: ${CRM_AI_API_KEY:-}
+      CRM_AI_PSEUDONYM_KEY: ${CRM_AI_PSEUDONYM_KEY:-}
+      CRM_RECORDING_S3_ENDPOINT_URL: ${CRM_RECORDING_S3_ENDPOINT_URL:-}
+      CRM_RECORDING_S3_ACCESS_KEY_ID: ${CRM_RECORDING_S3_ACCESS_KEY_ID:-}
+      CRM_RECORDING_S3_SECRET_ACCESS_KEY: ${CRM_RECORDING_S3_SECRET_ACCESS_KEY:-}
+      CRM_RECORDING_S3_BUCKET: ${CRM_RECORDING_S3_BUCKET:-}
+    volumes:
+      - whisper-cache:/root/.cache/huggingface
+
 volumes:
   pgdata:
+  whisper-cache:

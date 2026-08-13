@@ -8,6 +8,7 @@ const PROTECTED_ROUTES = [
   "/dashboard",
   "/provider-dashboard",
   "/admin",
+  "/crm",
 ];
 
 /**
@@ -18,7 +19,7 @@ const PROTECTED_ROUTES = [
  * bootstrap scripts load the rest of the bundle. style-src keeps 'unsafe-inline'
  * (Tailwind/Next inject inline styles; style injection is a far lower XSS risk).
  */
-function buildCsp(nonce: string): string {
+function buildCsp(nonce: string, crmVoice = false): string {
   const isDev = process.env.NODE_ENV !== "production";
   const scriptSrc = isDev
     ? `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' 'unsafe-eval'`
@@ -29,7 +30,10 @@ function buildCsp(nonce: string): string {
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "img-src 'self' data:",
     "font-src 'self' https://fonts.gstatic.com",
-    "connect-src 'self' https://api.stripe.com https://*.sentry.io",
+    crmVoice
+      ? "connect-src 'self' https://api.stripe.com https://*.sentry.io https://*.twilio.com wss://*.twilio.com"
+      : "connect-src 'self' https://api.stripe.com https://*.sentry.io",
+    crmVoice ? "media-src 'self' blob: https://sdk.twilio.com" : "media-src 'self'",
     "frame-src https://js.stripe.com",
     "object-src 'none'",
     "base-uri 'self'",
@@ -37,8 +41,12 @@ function buildCsp(nonce: string): string {
   ].join("; ");
 }
 
-function withCsp(response: NextResponse, nonce: string): NextResponse {
-  response.headers.set("Content-Security-Policy", buildCsp(nonce));
+function withCsp(response: NextResponse, nonce: string, crmVoice = false): NextResponse {
+  response.headers.set("Content-Security-Policy", buildCsp(nonce, crmVoice));
+  response.headers.set(
+    "Permissions-Policy",
+    crmVoice ? "camera=(), microphone=(self), geolocation=()" : "camera=(), microphone=(), geolocation=()",
+  );
   response.headers.set("x-nonce", nonce);
   return response;
 }
@@ -49,22 +57,23 @@ function withCsp(response: NextResponse, nonce: string): NextResponse {
  */
 export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
+  const crmVoice = pathname.startsWith("/crm");
 
   // One nonce per request; forwarded to the app so Next applies it to its
   // framework scripts and Server Components can nonce their own inline scripts.
   const nonce = crypto.randomUUID().replace(/-/g, "");
-  const csp = buildCsp(nonce);
+  const csp = buildCsp(nonce, crmVoice);
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-nonce", nonce);
   // Next.js reads the nonce from the request's Content-Security-Policy header to
   // automatically stamp it onto its own bootstrap scripts.
   requestHeaders.set("Content-Security-Policy", csp);
   const passThrough = () =>
-    withCsp(NextResponse.next({ request: { headers: requestHeaders } }), nonce);
+    withCsp(NextResponse.next({ request: { headers: requestHeaders } }), nonce, crmVoice);
   const redirectToLogin = () => {
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("redirect", pathname);
-    return withCsp(NextResponse.redirect(loginUrl), nonce);
+    return withCsp(NextResponse.redirect(loginUrl), nonce, false);
   };
 
   // Public routes still receive the CSP, but skip the auth check.

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+from collections.abc import Mapping
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from typing import AsyncGenerator
@@ -20,6 +22,20 @@ class OrganizationContext:
     role: str
     plan_tier: str
     scope_config: dict
+
+
+def normalize_scope_config(value: object) -> dict:
+    """Return a JSON object regardless of the asyncpg JSON codec in use."""
+    if value is None:
+        return {}
+    if isinstance(value, str):
+        try:
+            value = json.loads(value)
+        except json.JSONDecodeError as exc:
+            raise ValueError("Organization scope configuration is invalid JSON.") from exc
+    if not isinstance(value, Mapping):
+        raise ValueError("Organization scope configuration must be a JSON object.")
+    return dict(value)
 
 
 async def resolve_organization_context(user_id: int, fallback_tier: str) -> OrganizationContext:
@@ -47,7 +63,7 @@ async def resolve_organization_context(user_id: int, fallback_tier: str) -> Orga
         user_id=user_id,
         role=row["role"],
         plan_tier=row["plan_tier"] or fallback_tier,
-        scope_config=dict(row["scope_config"] or {}),
+        scope_config=normalize_scope_config(row["scope_config"]),
     )
 
 

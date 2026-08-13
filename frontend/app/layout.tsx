@@ -101,7 +101,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               >
                 Radar
               </Link>
-              <nav className="hidden items-center gap-5 text-sm font-medium md:flex">
+              <nav aria-label="Primary" className="hidden items-center gap-5 text-sm font-medium md:flex">
                 <Link href="/search" className="hover:text-amber">
                   Directory
                 </Link>
@@ -147,21 +147,21 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               .
             </p>
             {dataCurrentAsOf && (
-              <p className="mb-2 text-dusk">
+              <p className="mb-2 text-stone">
                 Data current as of {dataCurrentAsOf} UTC.
               </p>
             )}
-            <p className="mb-2 text-dusk">
+            <p className="mb-2 text-stone">
               CareGist is not an official CQC service.
             </p>
-            <p className="text-dusk">
+            <p className="text-stone">
               If you have concerns about care quality, contact CQC directly at{" "}
               <a href="https://www.cqc.org.uk/contact-us" className="underline hover:text-cream">
                 cqc.org.uk/contact-us
               </a>{" "}
               or call 03000 616161.
             </p>
-            <div className="mt-4 flex flex-wrap gap-4 text-dusk">
+            <div className="mt-4 flex flex-wrap gap-4 text-stone">
               <Link href="/privacy" className="underline hover:text-cream">
                 Privacy Policy
               </Link>

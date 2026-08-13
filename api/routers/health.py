@@ -7,8 +7,9 @@ import logging
 from fastapi import APIRouter, Depends, Response
 from fastapi.responses import JSONResponse
 
+from api.config import settings
 from api.database import get_connection
-from api.metrics import render_latest, set_pending_emails
+from api.metrics import render_latest, set_crm_operations, set_pending_emails
 from api.middleware.internal_auth import validate_internal_token
 from api.release import release_metadata
 from api.middleware.rate_limit import redis_health
@@ -17,6 +18,52 @@ from api.services.pipeline_health import get_pipeline_health
 
 logger = logging.getLogger("caregist.health")
 router = APIRouter(tags=["health"])
+
+
+async def _crm_operations(conn) -> dict:
+    if not (settings.crm_recording_enabled or settings.crm_ai_enabled):
+        return {"enabled": False, "ok": True}
+    async with conn.transaction():
+        await conn.execute("SELECT set_config('caregist.worker', 'crm_health', true)")
+        row = await conn.fetchrow(
+            """
+            SELECT
+              EXTRACT(EPOCH FROM (NOW() - heartbeat.last_seen_at)) AS worker_age_seconds,
+              heartbeat.status AS worker_status,
+              COALESCE((SELECT SUM(cost_usd) FROM crm_ai_usage_attempts
+                        WHERE incurred_at >= date_trunc('month', NOW())), 0) AS monthly_spend_usd,
+              (SELECT COUNT(*) FROM crm_recordings
+               WHERE expires_at <= NOW() AND status <> 'deleted') AS expired_backlog,
+              (SELECT COUNT(*) FROM crm_recordings
+               WHERE expires_at <= NOW() AND status = 'error') AS retention_failures
+            FROM (SELECT 1) anchor
+            LEFT JOIN crm_worker_heartbeats heartbeat ON heartbeat.worker_name = 'crm_ai'
+            """
+        )
+    result = dict(row)
+    worker_required = settings.crm_ai_enabled
+    worker_ok = not worker_required or (
+        result["worker_age_seconds"] is not None
+        and float(result["worker_age_seconds"]) <= 120
+        and result["worker_status"] != "error"
+    )
+    result.update(
+        enabled=True,
+        worker_required=worker_required,
+        worker_ok=worker_ok,
+        retention_ok=int(result["expired_backlog"]) == 0,
+    )
+    result["ok"] = result["worker_ok"] and result["retention_ok"]
+    set_crm_operations(
+        worker_age_seconds=(
+            float(result["worker_age_seconds"])
+            if result["worker_age_seconds"] is not None else None
+        ),
+        monthly_spend_usd=float(result["monthly_spend_usd"]),
+        expired_backlog=int(result["expired_backlog"]),
+        retention_failures=int(result["retention_failures"]),
+    )
+    return result
 
 
 @router.get("/metrics")
@@ -31,6 +78,7 @@ async def metrics(_auth: dict = Depends(validate_internal_token)) -> Response:
             rows = await conn.fetch(
                 "SELECT status, COUNT(*) AS n FROM pending_emails GROUP BY status"
             )
+            await _crm_operations(conn)
         for row in rows:
             set_pending_emails(row["status"], int(row["n"]))
     except Exception as exc:
@@ -68,6 +116,7 @@ async def health_check() -> JSONResponse:
     try:
         async with get_connection() as conn:
             snapshot = await get_pipeline_health(conn)
+            snapshot["crm_operations"] = await _crm_operations(conn)
         snapshot["release"] = release_metadata()
         return JSONResponse(
             status_code=200,
@@ -89,10 +138,11 @@ async def readiness_check() -> JSONResponse:
     try:
         async with get_connection() as conn:
             snapshot = await get_pipeline_health(conn)
+            snapshot["crm_operations"] = await _crm_operations(conn)
         redis = await redis_health()
         snapshot["redis"] = redis
         snapshot["release"] = release_metadata()
-        ready = bool(snapshot["readiness_ok"]) and redis["ok"]
+        ready = bool(snapshot["readiness_ok"]) and redis["ok"] and snapshot["crm_operations"]["ok"]
         snapshot["readiness_ok"] = ready
         return JSONResponse(status_code=200 if ready else 503, content=snapshot)
     except Exception as exc:

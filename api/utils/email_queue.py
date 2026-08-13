@@ -45,7 +45,8 @@ async def _claim_pending_emails(conn, batch_size: int) -> list[dict[str, Any]]:
             processing_started_at = NOW()
         FROM candidates
         WHERE pe.id = candidates.id
-        RETURNING pe.id, pe.to_email, pe.subject, pe.html_body, pe.attempts
+        RETURNING pe.id, pe.to_email, pe.subject, pe.html_body, pe.attempts,
+                  pe.idempotency_key
         """,
         batch_size,
         EMAIL_PROCESSING_STALE_SECONDS,
@@ -133,7 +134,12 @@ async def process_email_queue(batch_size: int = 20) -> int:
             try:
                 resp = await client.post(
                     "https://api.resend.com/emails",
-                    headers={"Authorization": f"Bearer {settings.resend_api_key}"},
+                    headers={
+                        "Authorization": f"Bearer {settings.resend_api_key}",
+                        "Idempotency-Key": (
+                            str(row.get("idempotency_key") or f"pending-email-{row['id']}")[:256]
+                        ),
+                    },
                     json={
                         "from": settings.enquiry_from_email or "CareGist <noreply@caregist.co.uk>",
                         "to": [row["to_email"]],
@@ -141,13 +147,29 @@ async def process_email_queue(batch_size: int = 20) -> int:
                         "html": row["html_body"],
                     },
                 )
-                success = resp.status_code in (200, 201)
+                provider_message_id = None
+                if resp.status_code in (200, 201):
+                    try:
+                        provider_message_id = str(resp.json().get("id") or "").strip() or None
+                    except (TypeError, ValueError):
+                        provider_message_id = None
+                success = resp.status_code in (200, 201) and provider_message_id is not None
                 if not success:
                     logger.warning("Resend returned %s for email %s", resp.status_code, row["id"])
-                return {"id": row["id"], "attempts": row["attempts"], "success": success}
+                return {
+                    "id": row["id"],
+                    "attempts": row["attempts"],
+                    "success": success,
+                    "provider_message_id": provider_message_id,
+                }
             except Exception as exc:
                 logger.warning("Failed to send email %s: %s", row["id"], exc)
-                return {"id": row["id"], "attempts": row["attempts"], "success": False}
+                return {
+                    "id": row["id"],
+                    "attempts": row["attempts"],
+                    "success": False,
+                    "provider_message_id": None,
+                }
 
     async with httpx.AsyncClient(timeout=10) as client:
         results = await asyncio.gather(*[_send_one(client, row) for row in rows])
@@ -163,10 +185,12 @@ async def process_email_queue(batch_size: int = 20) -> int:
                         UPDATE pending_emails
                         SET status = 'sent',
                             sent_at = NOW(),
+                            provider_message_id = $2,
                             processing_started_at = NULL
                         WHERE id = $1
                         """,
                         result["id"],
+                        result["provider_message_id"],
                     )
                     sent += 1
                 else:

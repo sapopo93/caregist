@@ -8,6 +8,7 @@ import json
 import os
 import sys
 from collections.abc import Mapping
+from decimal import Decimal
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
@@ -39,12 +40,22 @@ SECRET_ENV_NAMES = {
     "stripe_price_radar_national": "STRIPE_PRICE_RADAR_NATIONAL",
     "stripe_price_intelligence_feed": "STRIPE_PRICE_INTELLIGENCE_FEED",
     "resend_api_key": "RESEND_API_KEY",
+    "resend_webhook_secret": "RESEND_WEBHOOK_SECRET",
     "caregist_to_support_token": "CAREGIST_TO_SUPPORT_TOKEN",
     "support_internal_token": "SUPPORT_INTERNAL_TOKEN",
     "hermes_internal_token": "HERMES_INTERNAL_TOKEN",
     "webhook_secret_key": "WEBHOOK_SECRET_KEY",
     "redis_url": "REDIS_URL",
     "cron_secret": "CRON_SECRET",
+    "twilio_account_sid": "TWILIO_ACCOUNT_SID",
+    "twilio_api_key_sid": "TWILIO_API_KEY_SID",
+    "twilio_api_key_secret": "TWILIO_API_KEY_SECRET",
+    "twilio_auth_token": "TWILIO_AUTH_TOKEN",
+    "crm_recording_s3_access_key_id": "CRM_RECORDING_S3_ACCESS_KEY_ID",
+    "crm_recording_s3_secret_access_key": "CRM_RECORDING_S3_SECRET_ACCESS_KEY",
+    "crm_screening_hash_key": "CRM_SCREENING_HASH_KEY",
+    "crm_ai_api_key": "CRM_AI_API_KEY",
+    "crm_ai_pseudonym_key": "CRM_AI_PSEUDONYM_KEY",
 }
 SECRET_ENV_ALIASES = {
     "api_master_key": ("API_KEY",),
@@ -395,6 +406,56 @@ class Settings(BaseSettings):
     cqc_report_poll_enabled: bool = False
     radar_explanations_enabled: bool = False
     radar_delivery_enabled: bool = False
+    # CRM is an isolated internal workspace. Calling needs both this CRM gate
+    # and the global outbound-communications gate so it cannot be enabled by a
+    # partial deployment.
+    crm_enabled: bool = False
+    crm_calling_enabled: bool = False
+    crm_pilot_mode: bool = True
+    crm_recording_enabled: bool = False
+    crm_recording_retention_days: int = 30
+    crm_recording_notice_version: str = ""
+    crm_recording_s3_endpoint_url: str = ""
+    crm_recording_s3_region: str = "auto"
+    crm_recording_s3_bucket: str = ""
+    crm_recording_s3_access_key_id: str = ""
+    crm_recording_s3_secret_access_key: str = ""
+    crm_email_campaigns_enabled: bool = False
+    crm_email_sender_postal_address: str = ""
+    crm_screening_hash_key: str = ""
+    # Text messaging is deliberately absent from the UK CRM. South African
+    # messaging will be implemented as a separate regional capability.
+    crm_uk_sms_enabled: bool = False
+    crm_ai_enabled: bool = False
+    # Transcription runs only in the separate local worker. Model loading in a
+    # serverless request would make retention and availability depend on a web
+    # timeout, and remote transcription would expose unredacted call audio.
+    crm_transcription_model: str = "small.en"
+    crm_transcription_device: str = "cpu"
+    crm_transcription_compute_type: str = "int8"
+    crm_transcription_cpu_threads: int = 4
+    crm_transcription_timeout_seconds: int = 900
+    crm_ai_base_url: str = "https://api.deepseek.com/v1"
+    crm_ai_api_key: str = ""
+    crm_ai_model: str = "deepseek-v4-flash"
+    crm_ai_pseudonym_key: str = ""
+    crm_ai_monthly_cap_usd: Decimal = Decimal("10.00")
+    # Current DeepSeek V4 Flash cache-miss prices. These are configurable so a
+    # price change can fail closed without a code release.
+    crm_ai_input_price_usd_per_million: Decimal = Decimal("0.14")
+    crm_ai_cache_hit_price_usd_per_million: Decimal = Decimal("0.0028")
+    crm_ai_output_price_usd_per_million: Decimal = Decimal("0.28")
+    resend_webhook_secret: str = ""
+    crm_allowed_test_numbers: str = ""
+    twilio_account_sid: str = ""
+    twilio_api_key_sid: str = ""
+    twilio_api_key_secret: str = ""
+    twilio_auth_token: str = ""
+    twilio_twiml_app_sid: str = ""
+    twilio_phone_number: str = ""
+    twilio_region: str = "ie1"
+    twilio_edge: str = "dublin"
+    twilio_webhook_base_url: str = ""
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8", "extra": "ignore"}
 
@@ -402,6 +463,110 @@ class Settings(BaseSettings):
         production = runtime_requires_production_secrets(self.database_url)
         validate_cors_origins(self.cors_origins, production=production)
         validate_app_url(self.app_url, production=production)
+
+        # CRM safety gates are environment-independent invariants. Keep them
+        # active in tests and previews so a partial configuration cannot be
+        # promoted into a callable deployment.
+        if self.crm_recording_retention_days != 30:
+            raise RuntimeError("FATAL: CRM recording retention must match the approved 30-day policy.")
+        if self.crm_uk_sms_enabled:
+            raise RuntimeError("FATAL: UK SMS is outside the approved CareGist CRM scope.")
+        if self.crm_recording_enabled:
+            if not self.crm_calling_enabled:
+                raise RuntimeError("FATAL: CRM recording requires CRM_CALLING_ENABLED.")
+            required_recording = {
+                "CRM_RECORDING_NOTICE_VERSION": self.crm_recording_notice_version,
+                "CRM_RECORDING_S3_ENDPOINT_URL": self.crm_recording_s3_endpoint_url,
+                "CRM_RECORDING_S3_BUCKET": self.crm_recording_s3_bucket,
+                "CRM_RECORDING_S3_ACCESS_KEY_ID": self.crm_recording_s3_access_key_id,
+                "CRM_RECORDING_S3_SECRET_ACCESS_KEY": self.crm_recording_s3_secret_access_key,
+            }
+            missing_recording = [name for name, value in required_recording.items() if not value]
+            if missing_recording:
+                raise RuntimeError(
+                    "FATAL: CRM recording is enabled without approved notice and private storage: "
+                    + ", ".join(missing_recording)
+                )
+        if self.crm_email_campaigns_enabled and (
+            not self.crm_enabled
+            or not self.outbound_communications_enabled
+            or not self.resend_api_key
+            or not self.resend_webhook_secret
+            or not self.crm_email_sender_postal_address.strip()
+        ):
+            raise RuntimeError(
+                "FATAL: CRM email campaigns require CRM_ENABLED, OUTBOUND_COMMUNICATIONS_ENABLED, "
+                "RESEND_API_KEY, RESEND_WEBHOOK_SECRET, and CRM_EMAIL_SENDER_POSTAL_ADDRESS."
+            )
+        if self.crm_ai_enabled:
+            required_ai = {
+                "CRM_AI_API_KEY": self.crm_ai_api_key,
+                "CRM_AI_PSEUDONYM_KEY": self.crm_ai_pseudonym_key,
+            }
+            missing_ai = [name for name, value in required_ai.items() if not value]
+            if missing_ai:
+                raise RuntimeError("FATAL: CRM AI is enabled without " + ", ".join(missing_ai) + ".")
+            if not self.crm_recording_enabled:
+                raise RuntimeError("FATAL: CRM AI requires CRM_RECORDING_ENABLED.")
+            if len(self.crm_ai_pseudonym_key) < 32:
+                raise RuntimeError("FATAL: CRM_AI_PSEUDONYM_KEY must contain at least 32 characters.")
+            if (
+                self.crm_transcription_model != "small.en"
+                or self.crm_transcription_device != "cpu"
+                or self.crm_transcription_compute_type != "int8"
+            ):
+                raise RuntimeError(
+                    "FATAL: CRM transcription must use local small.en on CPU with int8."
+                )
+            if self.crm_ai_model != "deepseek-v4-flash":
+                raise RuntimeError("FATAL: CRM routine AI must use deepseek-v4-flash.")
+            ai_url = urlparse(self.crm_ai_base_url)
+            if (
+                ai_url.scheme != "https"
+                or ai_url.hostname != "api.deepseek.com"
+                or ai_url.username
+                or ai_url.password
+                or ai_url.query
+                or ai_url.fragment
+                or ai_url.path.rstrip("/") not in {"", "/v1"}
+            ):
+                raise RuntimeError(
+                    "FATAL: CRM_AI_BASE_URL must be the approved HTTPS DeepSeek API origin."
+                )
+            if self.crm_ai_monthly_cap_usd <= 0:
+                raise RuntimeError("FATAL: CRM_AI_MONTHLY_CAP_USD must be greater than zero.")
+            if (
+                self.crm_ai_input_price_usd_per_million <= 0
+                or self.crm_ai_cache_hit_price_usd_per_million <= 0
+                or self.crm_ai_output_price_usd_per_million <= 0
+            ):
+                raise RuntimeError("FATAL: CRM AI token prices must be greater than zero.")
+        if self.crm_calling_enabled:
+            if not self.crm_enabled or not self.outbound_communications_enabled:
+                raise RuntimeError(
+                    "FATAL: CRM calling requires CRM_ENABLED and OUTBOUND_COMMUNICATIONS_ENABLED."
+                )
+            required_twilio = {
+                "TWILIO_ACCOUNT_SID": self.twilio_account_sid,
+                "TWILIO_API_KEY_SID": self.twilio_api_key_sid,
+                "TWILIO_API_KEY_SECRET": self.twilio_api_key_secret,
+                "TWILIO_AUTH_TOKEN": self.twilio_auth_token,
+                "TWILIO_TWIML_APP_SID": self.twilio_twiml_app_sid,
+                "TWILIO_PHONE_NUMBER": self.twilio_phone_number,
+                "TWILIO_WEBHOOK_BASE_URL": self.twilio_webhook_base_url,
+            }
+            if self.crm_pilot_mode:
+                required_twilio["CRM_ALLOWED_TEST_NUMBERS"] = self.crm_allowed_test_numbers
+            else:
+                required_twilio["CRM_SCREENING_HASH_KEY"] = self.crm_screening_hash_key
+            missing_twilio = [name for name, value in required_twilio.items() if not value]
+            if missing_twilio:
+                raise RuntimeError(
+                    "FATAL: CRM calling is enabled without required settings: "
+                    + ", ".join(missing_twilio)
+                )
+            if not self.crm_pilot_mode and len(self.crm_screening_hash_key) < 32:
+                raise RuntimeError("FATAL: CRM_SCREENING_HASH_KEY must contain at least 32 characters.")
 
         if "pytest" in sys.modules:
             return
