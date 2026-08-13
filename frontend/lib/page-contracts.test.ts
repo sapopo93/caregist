@@ -84,6 +84,14 @@ describe("page contracts", () => {
     assert.doesNotMatch(leadSource, /DIRECTORY_LEAD_INTAKE_ENABLED|createLeadAndToken/);
   });
 
+  it("keeps generated feed exports alive through the native save dialog", () => {
+    const feedSource = readAppFile("components/NewRegistrationFeedPanel.tsx");
+
+    assert.match(feedSource, /document\.body\.appendChild\(anchor\)/);
+    assert.match(feedSource, /window\.addEventListener\("beforeunload"/);
+    assert.doesNotMatch(feedSource, /anchor\.click\(\);\s*window\.URL\.revokeObjectURL\(url\)/);
+  });
+
   it("paid checkout renders an explicit unavailable state until every gate is configured", () => {
     const pricingCtaSource = readAppFile("components/PricingCTA.tsx");
     const layoutSource = readAppFile("app/layout.tsx");

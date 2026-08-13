@@ -229,8 +229,12 @@ export default function NewRegistrationFeedPanel({
       const anchor = document.createElement("a");
       anchor.href = url;
       anchor.download = format === "csv" ? "new-registrations.csv" : "new-registrations.xlsx";
+      document.body.appendChild(anchor);
       anchor.click();
-      window.URL.revokeObjectURL(url);
+      anchor.remove();
+      // Keep the object URL alive while the browser's native Save dialog is
+      // open. Revoking it synchronously leaves macOS Chrome unable to save.
+      window.addEventListener("beforeunload", () => window.URL.revokeObjectURL(url), { once: true });
       void trackEvent("new_registration_feed_export", "dashboard_feed_panel", { tier, format });
     } catch {
       setError(`Could not export ${format.toUpperCase()}.`);
