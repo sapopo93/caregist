@@ -147,7 +147,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               .
             </p>
             {dataCurrentAsOf && (
-              <p className="mb-2 text-stone">
+              <p className="mb-2 text-dusk">
                 Data current as of {dataCurrentAsOf} UTC.
               </p>
             )}

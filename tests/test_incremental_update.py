@@ -14,6 +14,7 @@ from incremental_update import (
     _finalize_batch,
     _insert_trusted_provider_event,
     _prepare_batch,
+    _project_rating_change,
     _sync_reconciliation_run_evidence,
     ALLOWED_COLUMNS,
     CqcActiveSnapshot,
@@ -23,6 +24,8 @@ from incremental_update import (
     checkpoint_slices,
     fetch_active_location_snapshot,
     fetch_changes,
+    fetch_location_detail,
+    clean_location,
     fetch_recent_via_list_scan,
     normalize_database_url,
     partition_location_ids,
@@ -37,6 +40,59 @@ def test_normalize_database_url_rewrites_neon_pooler_hosts():
     assert normalize_database_url(
         "postgresql://user:pass@ep-example-123-pooler.eu-west-2.aws.neon.tech/db?sslmode=require"
     ) == "postgresql://user:pass@ep-example-123.eu-west-2.aws.neon.tech/db?sslmode=require"
+
+
+def test_fetch_location_detail_retries_transient_status_and_honors_bounded_delay(monkeypatch):
+    import incremental_update as iu
+
+    responses = [
+        SimpleNamespace(status_code=429, headers={"Retry-After": "0"}),
+        SimpleNamespace(status_code=503, headers={}),
+        SimpleNamespace(status_code=200, headers={}, json=lambda: {"locationId": "1-123456"}),
+    ]
+    sleeps: list[float] = []
+    monkeypatch.setattr(iu.requests, "get", lambda *args, **kwargs: responses.pop(0))
+    monkeypatch.setattr(iu.time, "sleep", sleeps.append)
+
+    assert fetch_location_detail("https://api.service.cqc.org.uk/public/v1", "key", "1-123456") == {
+        "locationId": "1-123456"
+    }
+    assert sleeps == [1, 2]
+
+
+def test_fetch_location_detail_preserves_sanitized_failure_evidence(monkeypatch):
+    import incremental_update as iu
+
+    response = SimpleNamespace(status_code=503, headers={})
+    monkeypatch.setattr(iu.requests, "get", lambda *args, **kwargs: response)
+    monkeypatch.setattr(iu.time, "sleep", lambda _: None)
+
+    with pytest.raises(ChangesFetchError, match=r"1-123456.*status:503"):
+        fetch_location_detail("https://api.service.cqc.org.uk/public/v1", "key", "1-123456")
+
+
+def test_fetch_location_detail_fails_closed_on_terminal_status(monkeypatch):
+    import incremental_update as iu
+
+    monkeypatch.setattr(
+        iu.requests,
+        "get",
+        lambda *args, **kwargs: SimpleNamespace(status_code=404, headers={}),
+    )
+
+    with pytest.raises(ChangesFetchError, match=r"status=404"):
+        fetch_location_detail("https://api.service.cqc.org.uk/public/v1", "key", "1-123456")
+
+
+def test_clean_location_uses_active_directory_membership_over_lagging_detail_status():
+    detail = {
+        "locationId": "1-123456",
+        "name": "Example Care",
+        "registrationStatus": "Deregistered",
+    }
+
+    assert clean_location(detail)["status"] == "INACTIVE"
+    assert clean_location(detail, directory_active=True)["status"] == "ACTIVE"
     assert normalize_database_url(
         "postgresql://user:pass@db.example.com/app"
     ) == "postgresql://user:pass@db.example.com/app"
@@ -363,6 +419,28 @@ def test_should_process_list_scan_record_respects_since_watermark():
 
 def test_upsert_allows_last_updated_watermark_column():
     assert "last_updated" in ALLOWED_COLUMNS
+
+
+def test_rating_projection_targets_the_existing_partial_unique_index():
+    cur = Mock()
+    event = ProviderStateEvent(
+        event_type="rating_changed",
+        location_id="LOC1",
+        provider_id="PROV1",
+        effective_date=None,
+        effective_at=None,
+        effective_date_source=None,
+        old_value="Good",
+        new_value="Outstanding",
+        dedupe_key="rating_changed:LOC1:abc",
+        metadata={},
+    )
+
+    _project_rating_change(cur, event, {"name": "Provider"})
+
+    sql = cur.execute.call_args.args[0]
+    assert "ON CONFLICT (event_dedupe_key)" in sql
+    assert "WHERE event_dedupe_key IS NOT NULL" in sql
 
 
 def test_cli_requires_explicit_batch_phase_and_has_no_global_run_lock():

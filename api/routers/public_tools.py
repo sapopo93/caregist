@@ -17,6 +17,7 @@ from api.queries.public_tools import (
     NEARBY_PUBLIC_COUNT,
     NEARBY_PUBLIC_QUERY,
 )
+from api.services.cqc_freshness import get_cqc_freshness
 from api.utils.analytics import log_event
 
 logger = logging.getLogger("caregist.public_tools")
@@ -141,6 +142,7 @@ async def cqc_change_frequency(
         async with get_connection() as conn:
             daily_rows = await conn.fetch(CHANGE_FREQUENCY_DAILY, days)
             coverage_rows = await conn.fetch(CHANGE_FREQUENCY_COLLECTION_COVERAGE, days)
+            authoritative_freshness = await get_cqc_freshness(conn)
     except Exception as exc:
         logger.error("CQC change-frequency report failed: %s", exc)
         raise HTTPException(status_code=503, detail="Change-frequency report is unavailable.")
@@ -198,6 +200,8 @@ async def cqc_change_frequency(
     observed_any_change = event_count > 0
     coverage_days = len(completed_collection_days)
     coverage_ratio = round(coverage_days / days, 5)
+    authoritative_status = str(authoritative_freshness.get("status") or "unknown")
+    interpretation_reliable = coverage_days == days and authoritative_status == "fresh"
 
     return {
         "data": {
@@ -211,20 +215,40 @@ async def cqc_change_frequency(
                 "activeChangeDays": active_change_days,
                 "quietDays": quiet_days,
                 "longestQuietStreakDays": longest_quiet_streak,
-                "changesEveryDay": observed_any_change and quiet_days == 0,
-                "changesAtLeastEveryThreeDays": observed_any_change and longest_quiet_streak <= 2,
-                "changesAtLeastWeekly": observed_any_change and longest_quiet_streak <= 6,
+                "changesEveryDay": (
+                    observed_any_change and quiet_days == 0
+                    if interpretation_reliable
+                    else None
+                ),
+                "changesAtLeastEveryThreeDays": (
+                    observed_any_change and longest_quiet_streak <= 2
+                    if interpretation_reliable
+                    else None
+                ),
+                "changesAtLeastWeekly": (
+                    observed_any_change and longest_quiet_streak <= 6
+                    if interpretation_reliable
+                    else None
+                ),
             },
             "byEventType": event_type_totals,
             "collectionCoverage": {
                 "daysWithSuccessfulCollection": coverage_days,
                 "coverageRatio": coverage_ratio,
-                "interpretationReliable": coverage_days == days,
+                "interpretationReliable": interpretation_reliable,
                 "completedRuns": completed_runs,
                 "failedRuns": failed_runs,
                 "latestSuccessfulRunAt": (
                     latest_successful_run.isoformat() if latest_successful_run else None
                 ),
+                "authoritativeStatus": authoritative_status,
+                "sourceRetrievedAt": authoritative_freshness.get("sourceRetrievedAt"),
+                "reconciledAt": authoritative_freshness.get("reconciledAt"),
+                "authoritativeCoveragePercentage": authoritative_freshness.get(
+                    "coveragePercentage"
+                ),
+                "countsReconciled": bool(authoritative_freshness.get("countsReconciled")),
+                "reason": authoritative_freshness.get("reason"),
             },
             "daily": daily,
             "methodology": {

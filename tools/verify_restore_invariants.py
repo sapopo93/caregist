@@ -42,6 +42,8 @@ def _validate_args(args: argparse.Namespace) -> None:
 async def verify(args: argparse.Namespace) -> dict:
     import asyncpg
 
+    from api.services.pipeline_health import unique_index_exists
+
     conn = await asyncpg.connect(args.database_url, command_timeout=30)
     try:
         async with conn.transaction(readonly=True):
@@ -58,6 +60,11 @@ async def verify(args: argparse.Namespace) -> dict:
             duplicate_location_ids = int(
                 await conn.fetchval(DUPLICATE_CQC_LOCATION_IDS_QUERY)
             )
+            source_snapshot_identity_present = await unique_index_exists(
+                conn,
+                "source_snapshots",
+                ("source_type", "checksum_sha256"),
+            )
             latest_migration = await conn.fetchval(
                 "SELECT filename FROM schema_migrations ORDER BY applied_at DESC, filename DESC LIMIT 1"
             )
@@ -69,6 +76,7 @@ async def verify(args: argparse.Namespace) -> dict:
         "provider_rows_at_least_baseline": provider_rows >= args.minimum_provider_rows,
         "active_provider_rows_at_least_baseline": active_provider_rows >= args.minimum_active_provider_rows,
         "location_ids_unique": duplicate_location_ids == 0,
+        "source_snapshot_identity_present": source_snapshot_identity_present,
     }
     return {
         "checked_at": datetime.now(timezone.utc).isoformat(),

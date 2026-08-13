@@ -46,22 +46,15 @@ async def test_public_change_frequency_reports_substantive_events_and_collection
         ],
         [
             {
-                "day": date(2026, 8, 8),
-                "run_type": "signal_poll",
+                "day": date(2026, 8, 9),
+                "run_type": "reconciliation",
                 "status": "completed",
-                "runs": 2,
-                "latest_run_at": datetime(2026, 8, 8, 12, 0, tzinfo=timezone.utc),
-            },
-            {
-                "day": date(2026, 8, 10),
-                "run_type": "signal_poll",
-                "status": "completed",
-                "runs": 2,
-                "latest_run_at": datetime(2026, 8, 10, 12, 0, tzinfo=timezone.utc),
+                "runs": 1,
+                "latest_run_at": datetime(2026, 8, 9, 11, 0, tzinfo=timezone.utc),
             },
             {
                 "day": date(2026, 8, 9),
-                "run_type": "signal_poll",
+                "run_type": "reconciliation",
                 "status": "failed",
                 "runs": 1,
                 "latest_run_at": datetime(2026, 8, 9, 12, 0, tzinfo=timezone.utc),
@@ -73,7 +66,22 @@ async def test_public_change_frequency_reports_substantive_events_and_collection
     async def mock_get_connection():
         yield conn
 
-    with patch("api.routers.public_tools.get_connection", mock_get_connection):
+    with (
+        patch("api.routers.public_tools.get_connection", mock_get_connection),
+        patch(
+            "api.routers.public_tools.get_cqc_freshness",
+            new=AsyncMock(
+                return_value={
+                    "status": "partial",
+                    "sourceRetrievedAt": None,
+                    "reconciledAt": None,
+                    "coveragePercentage": None,
+                    "countsReconciled": False,
+                    "reason": "latest_authoritative_attempt_incomplete",
+                }
+            ),
+        ),
+    ):
         app.dependency_overrides[check_public_rate_limit] = lambda: None
         try:
             async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
@@ -88,9 +96,9 @@ async def test_public_change_frequency_reports_substantive_events_and_collection
     assert payload["summary"]["activeChangeDays"] == 2
     assert payload["summary"]["quietDays"] == 1
     assert payload["summary"]["longestQuietStreakDays"] == 1
-    assert payload["summary"]["changesEveryDay"] is False
-    assert payload["summary"]["changesAtLeastEveryThreeDays"] is True
-    assert payload["summary"]["changesAtLeastWeekly"] is True
+    assert payload["summary"]["changesEveryDay"] is None
+    assert payload["summary"]["changesAtLeastEveryThreeDays"] is None
+    assert payload["summary"]["changesAtLeastWeekly"] is None
     assert payload["byEventType"] == {
         "newRegistration": 1,
         "ratingChanged": 2,
@@ -98,11 +106,13 @@ async def test_public_change_frequency_reports_substantive_events_and_collection
         "ownershipChanged": 0,
         "groupMovement": 0,
     }
-    assert payload["collectionCoverage"]["daysWithSuccessfulCollection"] == 2
-    assert payload["collectionCoverage"]["coverageRatio"] == pytest.approx(0.66667)
+    assert payload["collectionCoverage"]["daysWithSuccessfulCollection"] == 1
+    assert payload["collectionCoverage"]["coverageRatio"] == pytest.approx(0.33333)
     assert payload["collectionCoverage"]["interpretationReliable"] is False
-    assert payload["collectionCoverage"]["completedRuns"] == 4
+    assert payload["collectionCoverage"]["completedRuns"] == 1
     assert payload["collectionCoverage"]["failedRuns"] == 1
+    assert payload["collectionCoverage"]["authoritativeStatus"] == "partial"
+    assert payload["collectionCoverage"]["reason"] == "latest_authoritative_attempt_incomplete"
     assert len(payload["daily"]) == 3
 
     daily_sql, daily_days = conn.fetch.await_args_list[0].args
@@ -111,8 +121,13 @@ async def test_public_change_frequency_reports_substantive_events_and_collection
     assert "trusted_event_ledger" in daily_sql
     assert "care_providers" not in daily_sql
     assert "AT TIME ZONE 'UTC'" in daily_sql
-    assert "signal_poll" in coverage_sql
-    assert "reconciliation" in coverage_sql
+    assert "run_type = 'reconciliation'" in coverage_sql
+    assert "counts_reconciled = TRUE" in coverage_sql
+    assert "checked_count = source_total_count" in coverage_sql
+    assert "success_count = checked_count" in coverage_sql
+    assert "failure_count = 0" in coverage_sql
+    assert "signal_poll" not in coverage_sql
+    assert "incremental" not in coverage_sql
     assert "AT TIME ZONE 'UTC'" in coverage_sql
 
 

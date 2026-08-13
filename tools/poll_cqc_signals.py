@@ -357,8 +357,35 @@ def run_signal_poll(
         updated = 0
         failures = 0
         failure_details: list[dict[str, str]] = []
+        skipped_not_found: list[str] = []
         for index, location_id in enumerate(ordered_ids, start=1):
-            detail = fetch_location_detail(base_url, api_key, location_id)
+            try:
+                detail = fetch_location_detail(base_url, api_key, location_id)
+            except ChangesFetchError as exc:
+                # The CQC location index includes historical/transitioning
+                # IDs whose detail endpoint may legitimately return 404. The
+                # index observation is still valid evidence; record the
+                # disappearance explicitly without turning a clean shadow
+                # poll into a false provider-data failure. Other fetch errors
+                # remain fail-closed and are recorded as failures.
+                if "status=404" in str(exc):
+                    skipped_not_found.append(location_id)
+                    if index % checkpoint_size == 0:
+                        _update_run_evidence(
+                            cur, run_id, source_total=len(ordered_ids), checked=index,
+                            successes=processed, failures=failures,
+                            checkpoint_state={
+                                "nextOffset": index, "lastLocationId": location_id,
+                                "restartable": False, "restartMode": "fresh_run",
+                                "failures": failure_details,
+                                "skippedNotFound": skipped_not_found,
+                            },
+                        )
+                        conn.commit()
+                    continue
+                failures += 1
+                failure_details.append({"locationId": location_id, "reason": str(exc)[:500]})
+                continue
             if detail is None:
                 failures += 1
                 failure_details.append(
@@ -372,6 +399,7 @@ def run_signal_poll(
                             "nextOffset": index, "lastLocationId": location_id,
                             "restartable": False, "restartMode": "fresh_run",
                             "failures": failure_details,
+                            "skippedNotFound": skipped_not_found,
                         },
                     )
                     conn.commit()
@@ -390,6 +418,7 @@ def run_signal_poll(
                             "nextOffset": index, "lastLocationId": location_id,
                             "restartable": False, "restartMode": "fresh_run",
                             "failures": failure_details,
+                            "skippedNotFound": skipped_not_found,
                         },
                     )
                     conn.commit()

@@ -83,7 +83,21 @@ SELECT (started_at AT TIME ZONE 'UTC')::date AS day,
 FROM pipeline_runs, bounds
 WHERE started_at >= start_date
   AND started_at < end_date + INTERVAL '1 day'
-  AND run_type IN ('signal_poll', 'incremental', 'reconciliation')
+  AND run_type = 'reconciliation'
+  AND (
+    status <> 'completed'
+    OR (
+      counts_reconciled = TRUE
+      AND reconciled_at IS NOT NULL
+      AND source_retrieved_at IS NOT NULL
+      AND source_checksum_sha256 IS NOT NULL
+      AND LENGTH(source_checksum_sha256) = 64
+      AND source_total_count IS NOT NULL
+      AND checked_count = source_total_count
+      AND success_count = checked_count
+      AND failure_count = 0
+    )
+  )
 GROUP BY (started_at AT TIME ZONE 'UTC')::date, run_type, status
 ORDER BY (started_at AT TIME ZONE 'UTC')::date, run_type, status
 """
