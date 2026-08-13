@@ -21,7 +21,11 @@ router = APIRouter(tags=["health"])
 
 
 async def _crm_operations(conn) -> dict:
-    if not (settings.crm_recording_enabled or settings.crm_ai_enabled):
+    if not (
+        settings.crm_recording_enabled
+        or settings.crm_ai_enabled
+        or settings.crm_tps_automation_enabled
+    ):
         return {"enabled": False, "ok": True}
     async with conn.transaction():
         await conn.execute("SELECT set_config('caregist.worker', 'crm_health', true)")
@@ -36,6 +40,19 @@ async def _crm_operations(conn) -> dict:
                WHERE expires_at <= NOW() AND status <> 'deleted') AS expired_backlog,
               (SELECT COUNT(*) FROM crm_recordings
                WHERE expires_at <= NOW() AND status = 'error') AS retention_failures
+              ,(SELECT COUNT(*) FROM crm_tps_automation_settings
+                WHERE enabled = TRUE) AS tps_enabled_organizations
+              ,(SELECT COUNT(*) FROM crm_tps_automation_settings
+                WHERE enabled = TRUE
+                  AND (last_run_at IS NULL OR last_run_at < NOW() - INTERVAL '3 minutes'))
+                AS tps_stale_organizations
+              ,(SELECT COUNT(*) FROM crm_tps_automation_settings
+                WHERE enabled = TRUE AND last_error IS NOT NULL)
+                AS tps_failed_organizations
+              ,(SELECT COUNT(*) FROM crm_tps_screening_jobs
+                WHERE status IN ('queued', 'retryable', 'processing')) AS tps_pending_jobs
+              ,(SELECT COUNT(*) FROM crm_tps_screening_jobs
+                WHERE status = 'review_required') AS tps_review_jobs
             FROM (SELECT 1) anchor
             LEFT JOIN crm_worker_heartbeats heartbeat ON heartbeat.worker_name = 'crm_ai'
             """
@@ -52,8 +69,15 @@ async def _crm_operations(conn) -> dict:
         worker_required=worker_required,
         worker_ok=worker_ok,
         retention_ok=int(result["expired_backlog"]) == 0,
+        tps_ok=(
+            not settings.crm_tps_automation_enabled
+            or (
+                int(result["tps_stale_organizations"]) == 0
+                and int(result["tps_failed_organizations"]) == 0
+            )
+        ),
     )
-    result["ok"] = result["worker_ok"] and result["retention_ok"]
+    result["ok"] = result["worker_ok"] and result["retention_ok"] and result["tps_ok"]
     set_crm_operations(
         worker_age_seconds=(
             float(result["worker_age_seconds"])
@@ -62,6 +86,10 @@ async def _crm_operations(conn) -> dict:
         monthly_spend_usd=float(result["monthly_spend_usd"]),
         expired_backlog=int(result["expired_backlog"]),
         retention_failures=int(result["retention_failures"]),
+        tps_stale_organizations=int(result["tps_stale_organizations"]),
+        tps_failed_organizations=int(result["tps_failed_organizations"]),
+        tps_pending_jobs=int(result["tps_pending_jobs"]),
+        tps_review_jobs=int(result["tps_review_jobs"]),
     )
     return result
 

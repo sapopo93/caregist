@@ -11,6 +11,7 @@ from api.utils.email_queue import process_email_queue
 from api.services.crm_campaigns import finalize_campaigns
 from api.services.crm_recording_ingest import process_recording_jobs
 from api.services.crm_retention import cleanup_twilio_sources, purge_expired_recordings
+from api.services.crm_tps_automation import process_tps_automation
 from tools.run_new_registration_feed_cycle import run_cycle as run_feed_cycle
 
 router = APIRouter(prefix="/api/v1/cron", tags=["cron"])
@@ -52,3 +53,11 @@ async def maintain_crm(authorization: str | None = Header(default=None)) -> dict
         "retention": retention,
         "campaigns_completed": campaigns_completed,
     }
+
+
+@router.get("/crm-tps-automation")
+async def run_crm_tps_automation(authorization: str | None = Header(default=None)) -> dict[str, object]:
+    """Screen and materialise a bounded set of filtered CQC registrations."""
+    _require_cron_secret(authorization)
+    result = await process_tps_automation(limit=50)
+    return {"ok": True, **result}

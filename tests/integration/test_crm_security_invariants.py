@@ -16,6 +16,8 @@ pytestmark = pytest.mark.asyncio
 ROOT = Path(__file__).resolve().parents[2]
 MIGRATION_054 = ROOT / "db/migrations/054_crm_completion_controls.sql"
 DOWN_054 = ROOT / "db/migrations/down/054_crm_completion_controls.down.sql"
+MIGRATION_055 = ROOT / "db/migrations/055_crm_tps_automation.sql"
+DOWN_055 = ROOT / "db/migrations/down/055_crm_tps_automation.down.sql"
 
 
 async def _seed_two_tenants(conn):
@@ -103,6 +105,229 @@ async def test_migration_054_rolls_back_and_reapplies_cleanly(fresh_db):
             "SELECT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_crm_deals_contact_tenant')"
         )
     finally:
+        await conn.close()
+
+
+async def test_migration_055_rolls_back_reapplies_and_forces_worker_rls(fresh_db):
+    conn = await asyncpg.connect(fresh_db)
+    try:
+        await apply_full_schema(conn)
+        assert await conn.fetchval(
+            "SELECT relforcerowsecurity FROM pg_class WHERE relname = 'crm_tps_screening_jobs'"
+        )
+
+        async with conn.transaction():
+            await conn.execute(DOWN_055.read_text(encoding="utf-8"))
+        assert not await conn.fetchval(
+            "SELECT to_regclass('public.crm_tps_screening_jobs') IS NOT NULL"
+        )
+        assert not await conn.fetchval(
+            "SELECT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'crm_contacts_tps_worker_policy')"
+        )
+
+        async with conn.transaction():
+            await conn.execute(MIGRATION_055.read_text(encoding="utf-8"))
+        assert await conn.fetchval(
+            "SELECT relforcerowsecurity FROM pg_class WHERE relname = 'crm_tps_screening_jobs'"
+        )
+
+        user_one, _, organization_one, _, _, _ = await _seed_two_tenants(conn)
+        await conn.execute(
+            "INSERT INTO care_providers (id, name, slug, phone) "
+            "VALUES ('1-tps-test', 'TPS Test Provider', 'tps-test-provider', '020 8081 4220')"
+        )
+        async with conn.transaction():
+            await conn.execute("SELECT set_config('caregist.user_id', $1, true)", str(user_one))
+            await conn.execute(
+                "INSERT INTO crm_tps_automation_settings "
+                "(organization_id, enabled, assigned_user_id, configured_by_user_id, registered_from) "
+                "VALUES ($1, true, $2, $2, DATE '2026-08-01')",
+                organization_one,
+                user_one,
+            )
+            await conn.execute(
+                "INSERT INTO crm_tps_screening_jobs (organization_id, provider_id, phone_e164) "
+                "VALUES ($1, '1-tps-test', '+442080814220')",
+                organization_one,
+            )
+            assert await conn.fetchval("SELECT COUNT(*) FROM crm_tps_screening_jobs") == 1
+
+        async with conn.transaction():
+            await conn.execute("SELECT set_config('caregist.user_id', '', true)")
+            await conn.execute("SELECT set_config('caregist.worker', 'crm_retention', true)")
+            assert await conn.fetchval("SELECT COUNT(*) FROM crm_tps_screening_jobs") == 0
+
+        async with conn.transaction():
+            await conn.execute("SELECT set_config('caregist.user_id', '', true)")
+            await conn.execute("SELECT set_config('caregist.worker', 'crm_health', true)")
+            assert await conn.fetchval("SELECT COUNT(*) FROM crm_tps_automation_settings") == 1
+            assert await conn.fetchval("SELECT COUNT(*) FROM crm_tps_screening_jobs") == 1
+
+        async with conn.transaction():
+            await conn.execute("SELECT set_config('caregist.user_id', '', true)")
+            await conn.execute("SELECT set_config('caregist.worker', 'crm_tps', true)")
+            assert await conn.fetchval("SELECT COUNT(*) FROM crm_tps_screening_jobs") == 1
+    finally:
+        await conn.close()
+
+
+async def test_tps_worker_materialises_blocked_provider_without_enabling_email(fresh_db, monkeypatch):
+    from api import database
+    from api.services import crm_tps_automation
+
+    conn = await asyncpg.connect(fresh_db)
+    pool = None
+    previous_pool = database._pool
+    try:
+        await apply_full_schema(conn)
+        user_one, _, organization_one, _, _, _ = await _seed_two_tenants(conn)
+        await conn.execute(
+            """
+            INSERT INTO care_providers (
+              id, provider_id, name, slug, phone, email, region, service_types
+            ) VALUES (
+              '1-TPS-BLOCKED', 'ORG-TPS-BLOCKED', 'Blocked CQC Organisation',
+              'blocked-cqc-organisation', '020 8081 4220', 'office@example.test',
+              'London', 'Homecare Agencies'
+            )
+            """
+        )
+        await conn.execute(
+            """
+            INSERT INTO care_providers (
+              id, provider_id, name, slug, phone, email, region, service_types
+            ) VALUES (
+              '1-TPS-MALFORMED', 'ORG-TPS-MALFORMED', 'Malformed CQC Organisation',
+              'malformed-cqc-organisation', 'not-a-phone', 'other@example.test',
+              'London', 'Homecare Agencies'
+            )
+            """
+        )
+        await conn.execute(
+            """
+            INSERT INTO trusted_event_ledger (
+              entity_type, entity_id, provider_id, location_id, event_type,
+              effective_date, source, dedupe_key
+            ) VALUES (
+              'location', '1-TPS-MALFORMED', 'ORG-TPS-MALFORMED', '1-TPS-MALFORMED',
+              'new_registration', DATE '2026-08-11', 'integration-test',
+              'tps-automation-malformed-provider'
+            )
+            """
+        )
+        await conn.execute(
+            """
+            INSERT INTO trusted_event_ledger (
+              entity_type, entity_id, provider_id, location_id, event_type,
+              effective_date, source, dedupe_key
+            ) VALUES (
+              'location', '1-TPS-BLOCKED', 'ORG-TPS-BLOCKED', '1-TPS-BLOCKED',
+              'new_registration', DATE '2026-08-10', 'integration-test',
+              'tps-automation-blocked-provider'
+            )
+            """
+        )
+        async with conn.transaction():
+            await conn.execute("SELECT set_config('caregist.user_id', $1, true)", str(user_one))
+            await conn.execute(
+                """
+                INSERT INTO crm_tps_automation_settings (
+                  organization_id, enabled, assigned_user_id, configured_by_user_id,
+                  registered_from, filter_config
+                ) VALUES ($1, true, $2, $2, DATE '2026-08-01', '{"region":"London"}'::jsonb)
+                """,
+                organization_one,
+                user_one,
+            )
+
+        pool = await asyncpg.create_pool(fresh_db, min_size=1, max_size=3)
+        database._pool = pool
+        monkeypatch.setattr(crm_tps_automation.settings, "crm_screening_hash_key", "h" * 32)
+
+        assert await crm_tps_automation.seed_tps_jobs() == 2
+        job = await crm_tps_automation._claim_job()
+        assert job is not None
+        assert job["phone_e164"] == "+442080814220"
+        result = crm_tps_automation.parse_tpscheck_result(
+            {"e164": "+442080814220", "valid": True, "tps": True, "ctps": False},
+            "+442080814220",
+        )
+        usage_attempt_id = await crm_tps_automation._reserve_usage_attempt(job)
+        await crm_tps_automation._record_provider_result(job, result, 200, usage_attempt_id)
+        await crm_tps_automation._persist_result(job, result, 200)
+
+        async with conn.transaction():
+            await conn.execute("SELECT set_config('caregist.user_id', $1, true)", str(user_one))
+            contact = await conn.fetchrow(
+                """
+                SELECT id, owner_user_id, company_name, email, phone_e164, lifecycle_stage,
+                       subscriber_type, email_marketing_basis, phone_screening_status
+                FROM crm_contacts
+                WHERE organization_id = $1 AND provider_id = '1-TPS-BLOCKED'
+                """,
+                organization_one,
+            )
+            suppression = await conn.fetchrow(
+                """
+                SELECT channel, reason FROM crm_suppressions
+                WHERE organization_id = $1 AND phone_e164 = '+442080814220'
+                """,
+                organization_one,
+            )
+            completed = await conn.fetchrow(
+                """
+                SELECT status, screening_status, result_payload IS NOT NULL AS has_payload
+                FROM crm_tps_screening_jobs
+                WHERE organization_id = $1 AND provider_id = '1-TPS-BLOCKED'
+                """,
+                organization_one,
+            )
+            malformed = await conn.fetchrow(
+                """
+                SELECT status, phone_e164, last_error FROM crm_tps_screening_jobs
+                WHERE organization_id = $1 AND provider_id = '1-TPS-MALFORMED'
+                """,
+                organization_one,
+            )
+            usage = await conn.fetchrow(
+                """
+                SELECT outcome, screening_status, result_sha256 IS NOT NULL AS has_hash
+                FROM crm_tps_usage_attempts WHERE organization_id = $1
+                """,
+                organization_one,
+            )
+
+        assert dict(contact) == {
+            "id": contact["id"],
+            "owner_user_id": user_one,
+            "company_name": "Blocked CQC Organisation",
+            "email": "office@example.test",
+            "phone_e164": "+442080814220",
+            "lifecycle_stage": "assigned",
+            "subscriber_type": "unknown",
+            "email_marketing_basis": "none",
+            "phone_screening_status": "tps",
+        }
+        assert dict(suppression) == {"channel": "call", "reason": "tps"}
+        assert dict(completed) == {
+            "status": "completed",
+            "screening_status": "tps",
+            "has_payload": True,
+        }
+        assert dict(malformed) == {
+            "status": "review_required",
+            "phone_e164": None,
+            "last_error": "Provider phone is not a possible UK number",
+        }
+        assert dict(usage) == {
+            "outcome": "result",
+            "screening_status": "tps",
+            "has_hash": True,
+        }
+    finally:
+        database._pool = previous_pool
+        if pool is not None:
+            await pool.close()
         await conn.close()
 
 

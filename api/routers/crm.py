@@ -488,7 +488,7 @@ async def create_contact(body: ContactRequest, _auth: dict = Depends(validate_se
                     row["id"], cached["status"], cached["source"],
                     cached["source_reference"], cached["screened_at"],
                 )
-                if cached["status"] in {"tps", "ctps"}:
+                if cached["status"] in {"tps", "ctps", "invalid"}:
                     await conn.execute(
                         """
                         INSERT INTO crm_suppressions (
@@ -565,7 +565,7 @@ async def create_task(contact_id: UUID, body: TaskRequest, _auth: dict = Depends
         contact = await conn.fetchrow(
             """
             SELECT c.id, c.phone_e164,
-                   c.phone_screening_status IN ('tps', 'ctps') OR EXISTS (
+                   c.phone_screening_status IN ('tps', 'ctps', 'invalid') OR EXISTS (
                      SELECT 1 FROM crm_suppressions suppression
                      WHERE suppression.organization_id = c.organization_id
                        AND suppression.phone_e164 = c.phone_e164

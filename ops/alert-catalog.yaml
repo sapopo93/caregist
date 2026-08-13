@@ -78,3 +78,15 @@ alerts:
     severity: critical
     configured: false
     evidence_id: null
+  - id: crm-tps-worker-stale-or-failed
+    signal: caregist_crm_tps_stale_organizations or caregist_crm_tps_failed_organizations is greater than zero
+    cadence: 1m
+    severity: critical
+    configured: false
+    evidence_id: null
+  - id: crm-tps-review-backlog
+    signal: caregist_crm_tps_review_jobs is greater than zero
+    cadence: 5m
+    severity: warning
+    configured: false
+    evidence_id: null

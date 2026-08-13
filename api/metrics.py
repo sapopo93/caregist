@@ -75,6 +75,22 @@ if _ENABLED:
         "caregist_crm_retention_failures",
         "Expired CRM recordings currently carrying deletion errors.",
     )
+    CRM_TPS_STALE_ORGANIZATIONS = Gauge(
+        "caregist_crm_tps_stale_organizations",
+        "Enabled CRM organisations whose TPS automation has missed its run SLA.",
+    )
+    CRM_TPS_FAILED_ORGANIZATIONS = Gauge(
+        "caregist_crm_tps_failed_organizations",
+        "Enabled CRM organisations whose latest TPS automation run reported an error.",
+    )
+    CRM_TPS_PENDING_JOBS = Gauge(
+        "caregist_crm_tps_pending_jobs",
+        "TPS screening jobs waiting or currently processing.",
+    )
+    CRM_TPS_REVIEW_JOBS = Gauge(
+        "caregist_crm_tps_review_jobs",
+        "TPS screening jobs requiring owner or administrator review.",
+    )
 
 
 def observe_request(*, method: str, route: str, tier: str, status: int, duration: float) -> None:
@@ -106,7 +122,9 @@ def set_pending_emails(status: str, count: int) -> None:
 
 def set_crm_operations(
     *, worker_age_seconds: float | None, monthly_spend_usd: float,
-    expired_backlog: int, retention_failures: int,
+    expired_backlog: int, retention_failures: int, tps_stale_organizations: int = 0,
+    tps_failed_organizations: int = 0, tps_pending_jobs: int = 0,
+    tps_review_jobs: int = 0,
 ) -> None:
     if not _ENABLED:
         return
@@ -115,6 +133,10 @@ def set_crm_operations(
     CRM_AI_MONTHLY_SPEND_USD.set(monthly_spend_usd)
     CRM_RETENTION_EXPIRED_BACKLOG.set(expired_backlog)
     CRM_RETENTION_FAILURES.set(retention_failures)
+    CRM_TPS_STALE_ORGANIZATIONS.set(tps_stale_organizations)
+    CRM_TPS_FAILED_ORGANIZATIONS.set(tps_failed_organizations)
+    CRM_TPS_PENDING_JOBS.set(tps_pending_jobs)
+    CRM_TPS_REVIEW_JOBS.set(tps_review_jobs)
 
 
 def render_latest() -> tuple[bytes, str]:

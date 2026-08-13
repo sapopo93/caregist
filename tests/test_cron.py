@@ -99,3 +99,41 @@ async def test_cron_crm_maintenance_runs_bounded_workers():
     source_cleanup.assert_awaited_once_with(limit=50)
     retention.assert_awaited_once_with(limit=50)
     assert call_order == ["recordings", "twilio_sources", "retention", "campaigns"]
+
+
+@pytest.mark.asyncio
+async def test_cron_tps_automation_requires_bearer_secret():
+    with patch("api.routers.cron.settings.cron_secret", "cron-test-secret"):
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get("/api/v1/cron/crm-tps-automation")
+
+    assert response.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_cron_tps_automation_runs_bounded_worker():
+    result = {
+        "skipped": False,
+        "seeded": 50,
+        "provider_plan": "Starter",
+        "credits_remaining_before_run": 10_000,
+        "checked": 50,
+        "processed": 50,
+        "clear": 45,
+        "suppressed": 5,
+        "failed": 0,
+    }
+    worker = AsyncMock(return_value=result)
+    with (
+        patch("api.routers.cron.settings.cron_secret", "cron-test-secret"),
+        patch("api.routers.cron.process_tps_automation", new=worker),
+    ):
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get(
+                "/api/v1/cron/crm-tps-automation",
+                headers={"Authorization": "Bearer cron-test-secret"},
+            )
+
+    assert response.status_code == 200
+    assert response.json() == {"ok": True, **result}
+    worker.assert_awaited_once_with(limit=50)

@@ -54,6 +54,7 @@ SECRET_ENV_NAMES = {
     "crm_recording_s3_access_key_id": "CRM_RECORDING_S3_ACCESS_KEY_ID",
     "crm_recording_s3_secret_access_key": "CRM_RECORDING_S3_SECRET_ACCESS_KEY",
     "crm_screening_hash_key": "CRM_SCREENING_HASH_KEY",
+    "crm_tpscheck_api_key": "CRM_TPSCHECK_API_KEY",
     "crm_ai_api_key": "CRM_AI_API_KEY",
     "crm_ai_pseudonym_key": "CRM_AI_PSEUDONYM_KEY",
 }
@@ -423,6 +424,9 @@ class Settings(BaseSettings):
     crm_email_campaigns_enabled: bool = False
     crm_email_sender_postal_address: str = ""
     crm_screening_hash_key: str = ""
+    crm_tps_automation_enabled: bool = False
+    crm_tpscheck_api_key: str = ""
+    crm_tpscheck_base_url: str = "https://api.tpscheck.uk"
     # Text messaging is deliberately absent from the UK CRM. South African
     # messaging will be implemented as a separate regional capability.
     crm_uk_sms_enabled: bool = False
@@ -471,6 +475,28 @@ class Settings(BaseSettings):
             raise RuntimeError("FATAL: CRM recording retention must match the approved 30-day policy.")
         if self.crm_uk_sms_enabled:
             raise RuntimeError("FATAL: UK SMS is outside the approved CareGist CRM scope.")
+        if self.crm_tps_automation_enabled:
+            if not self.crm_enabled:
+                raise RuntimeError("FATAL: TPS automation requires CRM_ENABLED.")
+            if len(self.crm_screening_hash_key) < 32:
+                raise RuntimeError(
+                    "FATAL: TPS automation requires CRM_SCREENING_HASH_KEY with at least 32 characters."
+                )
+            if not self.crm_tpscheck_api_key:
+                raise RuntimeError("FATAL: TPS automation requires CRM_TPSCHECK_API_KEY.")
+            tps_url = urlparse(self.crm_tpscheck_base_url)
+            if (
+                tps_url.scheme != "https"
+                or tps_url.hostname != "api.tpscheck.uk"
+                or tps_url.username
+                or tps_url.password
+                or tps_url.query
+                or tps_url.fragment
+                or tps_url.path.rstrip("/")
+            ):
+                raise RuntimeError(
+                    "FATAL: CRM_TPSCHECK_BASE_URL must be the approved TPSCheck HTTPS origin."
+                )
         if self.crm_recording_enabled:
             if not self.crm_calling_enabled:
                 raise RuntimeError("FATAL: CRM recording requires CRM_CALLING_ENABLED.")

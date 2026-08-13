@@ -9,6 +9,14 @@ from httpx import ASGITransport, AsyncClient
 from api.main import app
 
 
+class _Transaction:
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, *_args):
+        return False
+
+
 @pytest.mark.asyncio
 async def test_preview_database_failure_starts_explicitly_degraded():
     with patch("api.main.init_pool", new=AsyncMock(side_effect=RuntimeError("database unavailable"))), \
@@ -91,6 +99,48 @@ async def test_health_endpoint_does_not_drain_email_queue():
     assert response.status_code == 200
     assert response.json()["status"] == "healthy"
     drain.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_crm_health_fails_closed_when_tps_cron_is_stale():
+    from api.routers import health
+
+    conn = AsyncMock()
+    conn.transaction = lambda: _Transaction()
+    conn.fetchrow = AsyncMock(
+        return_value={
+            "worker_age_seconds": None,
+            "worker_status": None,
+            "monthly_spend_usd": 0,
+            "expired_backlog": 0,
+            "retention_failures": 0,
+            "tps_enabled_organizations": 1,
+            "tps_stale_organizations": 1,
+            "tps_failed_organizations": 0,
+            "tps_pending_jobs": 25,
+            "tps_review_jobs": 2,
+        }
+    )
+    with (
+        patch.object(health.settings, "crm_recording_enabled", False),
+        patch.object(health.settings, "crm_ai_enabled", False),
+        patch.object(health.settings, "crm_tps_automation_enabled", True),
+        patch("api.routers.health.set_crm_operations") as metrics,
+    ):
+        result = await health._crm_operations(conn)
+
+    assert result["tps_ok"] is False
+    assert result["ok"] is False
+    metrics.assert_called_once_with(
+        worker_age_seconds=None,
+        monthly_spend_usd=0.0,
+        expired_backlog=0,
+        retention_failures=0,
+        tps_stale_organizations=1,
+        tps_failed_organizations=0,
+        tps_pending_jobs=25,
+        tps_review_jobs=2,
+    )
 
 
 @pytest.mark.asyncio

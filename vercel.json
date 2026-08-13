@@ -104,6 +104,10 @@
     {
       "path": "/api/v1/cron/crm-maintenance",
       "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/v1/cron/crm-tps-automation",
+      "schedule": "* * * * *"
     }
   ]
 }

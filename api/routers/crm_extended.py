@@ -36,6 +36,7 @@ from api.services.crm_recordings import (
     recording_object_key,
     validate_twilio_recording_sid,
 )
+from api.services.new_registration_feed import coerce_json_object
 
 
 router = APIRouter(prefix="/api/v1/crm", tags=["crm"])
@@ -53,12 +54,53 @@ class MarketingPreferenceRequest(BaseModel):
 
 
 class PhoneScreeningRequest(BaseModel):
-    status: Literal["clear", "tps", "ctps", "consent_override"]
+    status: Literal["clear", "tps", "ctps", "invalid", "consent_override"]
     source: Literal["tps_ctps_licence", "approved_provider", "specific_consent"]
     source_reference: str = Field(min_length=1, max_length=500)
     screened_at: datetime
 
     model_config = {"extra": "forbid"}
+
+
+class TpsAutomationRequest(BaseModel):
+    enabled: bool
+    assigned_user_id: int = Field(gt=0)
+    registered_from: date
+    filters: dict[str, str] = Field(default_factory=dict)
+    max_monthly_checks: int = Field(default=10_000, ge=1, le=10_000)
+    per_run_limit: int = Field(default=50, ge=1, le=50)
+
+    model_config = {"extra": "forbid"}
+
+
+TPS_AUTOMATION_FILTER_FIELDS = {
+    "q", "region", "local_authority", "service_type", "provider_type",
+    "postcode_prefix", "from_date", "to_date",
+}
+
+
+def _validated_tps_filters(raw_filters: dict[str, str]) -> dict[str, str]:
+    if set(raw_filters) - TPS_AUTOMATION_FILTER_FIELDS:
+        raise HTTPException(status_code=422, detail="TPS automation contains an unsupported feed filter.")
+    filters: dict[str, str] = {}
+    for key, raw_value in raw_filters.items():
+        if not isinstance(raw_value, str):
+            raise HTTPException(status_code=422, detail="TPS automation filter values must be text.")
+        value = raw_value.strip()
+        if not value:
+            continue
+        if len(value) > 160:
+            raise HTTPException(status_code=422, detail="TPS automation contains an oversized feed filter.")
+        if key in {"from_date", "to_date"}:
+            try:
+                date.fromisoformat(value)
+            except ValueError as exc:
+                raise HTTPException(status_code=422, detail=f"{key} must be an ISO date.") from exc
+        filters[key] = value
+    if filters.get("from_date") and filters.get("to_date"):
+        if date.fromisoformat(filters["from_date"]) > date.fromisoformat(filters["to_date"]):
+            raise HTTPException(status_code=422, detail="TPS automation from_date must not follow to_date.")
+    return filters
 
 
 class DealRequest(BaseModel):
@@ -208,7 +250,7 @@ async def update_phone_screening(
             """,
             contact_id, context.organization_id, body.status, json.dumps(evidence), screened_at,
         )
-        if body.status in {"tps", "ctps"}:
+        if body.status in {"tps", "ctps", "invalid"}:
             await conn.execute(
                 """
                 INSERT INTO crm_suppressions (
@@ -226,7 +268,7 @@ async def update_phone_screening(
                 """
                 DELETE FROM crm_suppressions
                 WHERE organization_id = $1 AND phone_e164 = $2 AND channel = 'call'
-                  AND reason IN ('tps', 'ctps')
+                  AND reason IN ('tps', 'ctps', 'invalid')
                 """,
                 context.organization_id, contact["phone_e164"],
             )
@@ -288,7 +330,7 @@ async def import_phone_screenings(
         if not phone or not phone.startswith("+44"):
             raise HTTPException(status_code=422, detail=f"Row {row_number} has no valid UK E.164 number.")
         status = (row.get("status") or "").strip().lower()
-        if status not in {"clear", "tps", "ctps"}:
+        if status not in {"clear", "tps", "ctps", "invalid"}:
             raise HTTPException(status_code=422, detail=f"Row {row_number} has an invalid screening status.")
         try:
             screened_at = datetime.fromisoformat((row.get("screened_at") or "").strip().replace("Z", "+00:00"))
@@ -387,7 +429,7 @@ async def import_phone_screenings(
                 """,
                 contact["id"], status, json.dumps(evidence), screened_at,
             )
-            if status in {"tps", "ctps"}:
+            if status in {"tps", "ctps", "invalid"}:
                 suppressed_count += 1
                 await conn.execute(
                     """
@@ -407,7 +449,7 @@ async def import_phone_screenings(
                     """
                     DELETE FROM crm_suppressions
                     WHERE organization_id = $1 AND phone_e164 = $2 AND channel = 'call'
-                      AND reason IN ('tps', 'ctps')
+                      AND reason IN ('tps', 'ctps', 'invalid')
                     """,
                     context.organization_id, contact["phone_e164"],
                 )
@@ -438,6 +480,141 @@ async def import_phone_screenings(
         "suppressed": suppressed_count,
         "unmatched": len(records) - matched,
     }
+
+
+@router.get("/tps-automation")
+async def tps_automation_status(
+    _auth: dict = Depends(validate_session_identity),
+) -> dict[str, Any]:
+    """Owner/admin diagnostics; operators never receive automation internals."""
+    context = await crm._context(_auth)
+    _require_manager(context)
+    async with crm.tenant_connection(context) as conn:
+        automation = await conn.fetchrow(
+            """
+            SELECT enabled, assigned_user_id, registered_from, filter_config, max_monthly_checks,
+                   per_run_limit, last_run_at, last_success_at, last_error, updated_at
+            FROM crm_tps_automation_settings
+            WHERE organization_id = $1
+            """,
+            context.organization_id,
+        )
+        members = await conn.fetch(
+            """
+            SELECT member.user_id, member.role,
+                   COALESCE(NULLIF(users.name, ''), users.email) AS name
+            FROM organization_members member
+            JOIN users ON users.id = member.user_id
+            WHERE member.organization_id = $1
+            ORDER BY CASE member.role WHEN 'member' THEN 0 WHEN 'admin' THEN 1 ELSE 2 END,
+                     member.created_at
+            """,
+            context.organization_id,
+        )
+        counts = await conn.fetchrow(
+            """
+            SELECT COUNT(*)::int AS total,
+                   COUNT(*) FILTER (WHERE status IN ('queued', 'retryable'))::int AS pending,
+                   COUNT(*) FILTER (WHERE status = 'processing')::int AS processing,
+                   COUNT(*) FILTER (WHERE status = 'completed' AND screening_status = 'clear')::int AS clear,
+                   COUNT(*) FILTER (
+                     WHERE status = 'completed' AND screening_status IN ('tps', 'ctps', 'invalid')
+                   )::int AS suppressed,
+                   COUNT(*) FILTER (WHERE status = 'review_required')::int AS review_required
+            FROM crm_tps_screening_jobs
+            WHERE organization_id = $1
+            """,
+            context.organization_id,
+        )
+        usage_this_month = await conn.fetchval(
+            """
+            SELECT COUNT(*) FROM crm_tps_usage_attempts
+            WHERE organization_id = $1
+              AND request_started_at >= date_trunc('month', NOW())
+            """,
+            context.organization_id,
+        )
+    automation_payload = dict(automation) if automation else None
+    if automation_payload is not None:
+        automation_payload["filters"] = coerce_json_object(automation_payload.pop("filter_config"))
+    return {
+        "feature_enabled": settings.crm_tps_automation_enabled,
+        "credential_configured": bool(settings.crm_tpscheck_api_key),
+        "settings": automation_payload,
+        "members": [dict(member) for member in members],
+        "jobs": dict(counts or {}),
+        "checks_this_month": int(usage_this_month or 0),
+    }
+
+
+@router.put("/tps-automation")
+async def configure_tps_automation(
+    body: TpsAutomationRequest,
+    _auth: dict = Depends(validate_session_identity),
+) -> dict[str, Any]:
+    """Configure background ingestion without exposing controls to operators."""
+    context = await crm._context(_auth)
+    _require_manager(context)
+    if body.enabled and not settings.crm_tps_automation_enabled:
+        raise HTTPException(status_code=503, detail="TPS automation is disabled in this environment.")
+    if body.enabled and not settings.crm_tpscheck_api_key:
+        raise HTTPException(status_code=503, detail="TPSCheck credentials are not configured.")
+    filters = _validated_tps_filters(body.filters)
+    async with crm.tenant_connection(context) as conn:
+        member = await conn.fetchval(
+            """
+            SELECT 1 FROM organization_members
+            WHERE organization_id = $1 AND user_id = $2
+            """,
+            context.organization_id,
+            body.assigned_user_id,
+        )
+        if not member:
+            raise HTTPException(status_code=422, detail="The assigned operator is not an organization member.")
+        row = await conn.fetchrow(
+            """
+            INSERT INTO crm_tps_automation_settings (
+              organization_id, enabled, assigned_user_id, configured_by_user_id,
+              registered_from, filter_config, max_monthly_checks, per_run_limit
+            ) VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7, $8)
+            ON CONFLICT (organization_id) DO UPDATE SET
+              enabled = EXCLUDED.enabled,
+              assigned_user_id = EXCLUDED.assigned_user_id,
+              configured_by_user_id = EXCLUDED.configured_by_user_id,
+              registered_from = EXCLUDED.registered_from,
+              filter_config = EXCLUDED.filter_config,
+              max_monthly_checks = EXCLUDED.max_monthly_checks,
+              per_run_limit = EXCLUDED.per_run_limit,
+              last_error = NULL,
+              updated_at = NOW()
+            RETURNING enabled, assigned_user_id, registered_from, filter_config,
+                      max_monthly_checks, per_run_limit, updated_at
+            """,
+            context.organization_id,
+            body.enabled,
+            body.assigned_user_id,
+            context.user_id,
+            body.registered_from,
+            json.dumps(filters),
+            body.max_monthly_checks,
+            body.per_run_limit,
+        )
+        await crm._required_audit(
+            conn,
+            action="crm.tps_automation.configure",
+            context=context,
+            target_type="organization",
+            target_id=context.organization_id,
+            metadata={
+                "enabled": body.enabled,
+                "assigned_user_id": body.assigned_user_id,
+                "registered_from": body.registered_from.isoformat(),
+                "filters": filters,
+                "max_monthly_checks": body.max_monthly_checks,
+                "per_run_limit": body.per_run_limit,
+            },
+        )
+    return dict(row)
 
 
 @router.post("/contacts/{contact_id}/deals", status_code=201)
