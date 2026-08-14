@@ -55,7 +55,7 @@ jobs:
                   )
                   constraint = await conn.fetchval(
                       "SELECT pg_get_constraintdef(oid) FROM pg_constraint "
-                      "WHERE conname = 'chk_users_signup_intent_type'",
+                      "WHERE conname = 'users_signup_purchase_intent_valid'",
                   )
                   if not applied or not constraint or "radar-regional" not in constraint or "radar-national" not in constraint:
                       raise SystemExit("Radar signup intent migration verification failed")
