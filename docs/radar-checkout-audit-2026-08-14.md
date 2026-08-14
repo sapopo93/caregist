@@ -1,5 +1,68 @@
 # CareGist Radar checkout audit — 2026-08-14
 
+> **Release addendum — 2026-08-14 06:00 UTC:** The original audit below records
+> the pre-release state. The owner subsequently directed that both paid products
+> be opened immediately. The following production changes supersede the original
+> “do not enable” conclusion; the unchanged historical audit remains below for
+> traceability.
+
+## Production release addendum
+
+- Deployed release: `201a0c0e9376d9337cc872eab1876ae5a64e5dbb`
+- Vercel deployment: `dpl_8fZUaDPzk9WLUL9sKsqSD5tBss7D` (`READY`, aliased to
+  `https://www.caregist.co.uk`)
+- Live database: migrations 055 and 056 applied; migration history and
+  `users_signup_purchase_intent_valid` were verified in the production database.
+- Checkout switches: billing and Radar checkout enabled. The operational-readiness
+  requirement is explicitly overridden by configuration following the owner's
+  instruction; terms acceptance and all Stripe configuration checks remain fail-closed.
+- Business Terms: version 2.0, SHA-256
+  `55e95bcec0b5f58cecb819406c8d415145d78b6fec475e29b3fc907942f5f810`.
+- Stripe webhook `we_1TLKZI4mijLHzRRkzoD75vqv`: corrected to
+  `https://www.caregist.co.uk/api/v1/billing/webhook`, status enabled, with exactly
+  the seven application-handled checkout, subscription, expiry, and refund events.
+- Stripe customer emails: successful-payment receipts and refund emails enabled
+  and verified after a settings-page reload. Replies route to
+  `support@caregist.co.uk`.
+- CareGist customer emails: successful fulfillment now queues an idempotent
+  “Your CareGist Radar access is ready” message; subscription termination queues
+  an idempotent “Your CareGist Radar subscription has ended” message.
+
+### Live non-charging buyer verification
+
+Two fresh, verified accounts delivering to `henry.mlalazi@gmail.com` exercised the
+production buyer journey. Verification emails arrived with SPF, DKIM, and DMARC
+passing. No card details were submitted and no charge or subscription was created.
+
+| Step | Regional | National |
+|---|---:|---:|
+| Public CTA enabled | PASS | PASS |
+| Signup intent persisted | PASS | PASS |
+| Verification email delivered | PASS | PASS |
+| Verified login returns to selected plan | PASS | PASS |
+| Business Terms acceptance required | PASS | PASS |
+| Live Stripe Checkout created | PASS | PASS |
+| Hosted amount | £299/month | £799/month |
+| Live Price | `price_1U2Ruk4mijLHzRRk8zoP3Sk3` | `price_1U2Rv74mijLHzRRk89djyvzJ` |
+| Success/cancel URLs | PASS | PASS |
+| Successful charge | NOT RUN | NOT RUN |
+| Webhook entitlement + access email | TESTED IN CODE; NOT LIVE-CHARGED | TESTED IN CODE; NOT LIVE-CHARGED |
+
+The Regional and National sessions are live-mode, open, and unpaid. They will
+expire automatically. The pending-operation lock correctly prevented the first
+buyer from opening a concurrent second billing change.
+
+### Current release conclusion
+
+Customers can select either paid product and reach the correct live Stripe payment
+screen. The prior button, schema, webhook-routing, event-coverage, and receipt-email
+blockers are fixed. A real paid purchase and its resulting live entitlement/email
+cannot be truthfully marked end-to-end PASS until a valid payment method completes
+one live session. Automated coverage proves the webhook state transition,
+idempotency, entitlement update, success polling, access-ready email, cancellation,
+revocation, and termination email; it does not replace that final live commercial
+transaction.
+
 ## Executive conclusion
 
 **Radar checkout is not safe to enable yet.** The £299/month Regional and £799/month National Stripe Products and Prices are correct in both test and live mode, and the core code has strong signature, ownership, payment-state, and event-deduplication controls. However, the deployed integration cannot currently complete an end-to-end purchase:
