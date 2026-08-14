@@ -30,14 +30,16 @@ jobs:
         run: python tools/check_migration_governance.py
       - name: Apply forward-only production migrations
         env:
-          PROD_DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+          # The production pipeline is provisioned with DATABASE_URL. Map it
+          # explicitly to the migration tool's guarded production variable.
+          PROD_DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: >-
           python db/apply_migrations.py
           --target production
           --confirm-production-backup
       - name: Verify Radar checkout schema
         env:
-          PROD_DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+          PROD_DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
           python - <<'PY'
           import asyncio
@@ -82,8 +84,8 @@ jobs:
 
       - name: Check freshness and notify operations
         env:
-          DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           ENQUIRY_FROM_EMAIL: ${{ secrets.ENQUIRY_FROM_EMAIL }}
           PIPELINE_ALERT_EMAIL: ops@caregist.co.uk
-        run: python tools/check_new_registration_pipeline.py --notify
+        run: python -m tools.check_new_registration_pipeline --notify
