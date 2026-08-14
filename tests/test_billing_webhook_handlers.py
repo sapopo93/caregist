@@ -185,6 +185,79 @@ async def test_checkout_completed_accepts_alerts_pro_metadata(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_checkout_completed_queues_idempotent_activation_email(monkeypatch):
+    monkeypatch.setitem(billing.PRICE_TO_TIER, "price_radar_regional", "radar-regional")
+    monkeypatch.setattr(billing.settings, "app_url", "https://www.caregist.co.uk")
+    monkeypatch.setattr(
+        billing.stripe.Subscription,
+        "retrieve",
+        lambda _subscription_id: {
+            "customer": "cus_radar",
+            "status": "active",
+            "items": {"data": [{"id": "si_radar", "price": {"id": "price_radar_regional"}, "quantity": 1}]},
+        },
+    )
+    conn = AsyncMock()
+    conn.fetchrow = AsyncMock(
+        return_value={
+            "user_id": 123,
+            "terms_version": "b2b-2026-08-02",
+            "terms_sha256": TERMS_SHA256,
+            "business_use_confirmed": True,
+        }
+    )
+    monkeypatch.setattr(billing, "_persist_subscription_state", AsyncMock())
+    monkeypatch.setattr(billing, "write_audit_log", AsyncMock())
+
+    await billing._handle_checkout_completed(
+        conn,
+        {
+            "id": "cs_radar",
+            "metadata": {
+                "user_id": "123",
+                "tier": "radar-regional",
+                "extra_seats": "0",
+                "price_id": "price_radar_regional",
+                "terms_version": "b2b-2026-08-02",
+                "business_use_confirmed": "true",
+                "terms_sha256": TERMS_SHA256,
+            },
+            "subscription": "sub_radar",
+            "customer": "cus_radar",
+            "customer_details": {"email": " Alice@Example.com "},
+            "payment_status": "paid",
+        },
+    )
+
+    email_call = next(call.args for call in conn.execute.await_args_list if "pending_emails" in call.args[0])
+    assert email_call[1] == "alice@example.com"
+    assert "Radar Regional" in email_call[2]
+    assert email_call[3] == "radar-subscription-activated:sub_radar"
+
+
+@pytest.mark.asyncio
+async def test_subscription_deleted_queues_idempotent_cancellation_email(monkeypatch):
+    conn = AsyncMock()
+    conn.fetchrow = AsyncMock(
+        return_value={
+            "user_id": 123,
+            "tier": "radar-regional",
+            "stripe_price_id": "price_radar_regional",
+            "email": "alice@example.com",
+        }
+    )
+    monkeypatch.setattr(billing, "_persist_subscription_state", AsyncMock())
+    monkeypatch.setattr(billing, "write_audit_log", AsyncMock())
+
+    await billing._handle_subscription_deleted(conn, {"id": "sub_radar"})
+
+    email_call = next(call.args for call in conn.execute.await_args_list if "pending_emails" in call.args[0])
+    assert email_call[1] == "alice@example.com"
+    assert "returned to Free" in email_call[2]
+    assert email_call[3] == "radar-subscription-canceled:sub_radar"
+
+
+@pytest.mark.asyncio
 async def test_checkout_completed_without_valid_payment_fails_closed(monkeypatch):
     monkeypatch.setitem(billing.PRICE_TO_TIER, "price_alerts_pro", "alerts-pro")
     persist = AsyncMock()

@@ -662,7 +662,8 @@ async def create_checkout(
             detail="Additional seats are not sold at launch. Choose Radar National or request an enterprise quote.",
         )
 
-    await _require_radar_commerce_ready()
+    if settings.radar_checkout_require_operational_readiness:
+        await _require_radar_commerce_ready()
 
     requested_extra_seats = req.extra_seats
 
@@ -1640,6 +1641,26 @@ async def _handle_checkout_completed(conn, session: dict) -> None:
             "UPDATE users SET stripe_customer_id = $1 WHERE id = $2",
             customer_id, int(user_id),
         )
+    customer_email = (session.get("customer_details") or {}).get("email")
+    if customer_email:
+        safe_tier = html.escape(actual_tier.replace("-", " ").title())
+        safe_dashboard_url = html.escape(f"{settings.app_url}/dashboard", quote=True)
+        await conn.execute(
+            """
+            INSERT INTO pending_emails (to_email, subject, html_body, idempotency_key)
+            VALUES ($1, 'Your CareGist Radar access is ready', $2, $3)
+            ON CONFLICT (idempotency_key) WHERE idempotency_key IS NOT NULL DO NOTHING
+            """,
+            str(customer_email).strip().lower(),
+            (
+                f"<p>Your {safe_tier} subscription is active.</p>"
+                f'<p><a href="{safe_dashboard_url}">Open your CareGist dashboard</a> '
+                "to start using Radar.</p>"
+                "<p>Your payment receipt and invoices are managed by Stripe. "
+                "You can manage or cancel billing from the dashboard.</p>"
+            ),
+            f"radar-subscription-activated:{subscription_id}",
+        )
     await conn.execute(
         """
         UPDATE billing_operations
@@ -1753,7 +1774,14 @@ async def _handle_subscription_deleted(conn, subscription: dict) -> None:
     sub_id = subscription.get("id")
 
     sub_row = await conn.fetchrow(
-        "SELECT user_id, tier, stripe_price_id FROM subscriptions WHERE stripe_subscription_id = $1", sub_id
+        """
+        SELECT subscriptions.user_id, subscriptions.tier, subscriptions.stripe_price_id,
+               users.email
+        FROM subscriptions
+        JOIN users ON users.id = subscriptions.user_id
+        WHERE subscriptions.stripe_subscription_id = $1
+        """,
+        sub_id,
     )
     if sub_row:
         await _persist_subscription_state(
@@ -1773,6 +1801,22 @@ async def _handle_subscription_deleted(conn, subscription: dict) -> None:
             metadata={"user_id": int(sub_row["user_id"]), "tier": "free"},
             conn=conn,
         )
+        customer_email = sub_row.get("email")
+        if customer_email:
+            safe_dashboard_url = html.escape(f"{settings.app_url}/dashboard", quote=True)
+            await conn.execute(
+                """
+                INSERT INTO pending_emails (to_email, subject, html_body, idempotency_key)
+                VALUES ($1, 'Your CareGist Radar subscription has ended', $2, $3)
+                ON CONFLICT (idempotency_key) WHERE idempotency_key IS NOT NULL DO NOTHING
+                """,
+                str(customer_email).strip().lower(),
+                (
+                    "<p>Your CareGist Radar subscription has ended and your account has returned to Free.</p>"
+                    f'<p><a href="{safe_dashboard_url}">Open your dashboard</a> to review your current access.</p>'
+                ),
+                f"radar-subscription-canceled:{sub_id}",
+            )
         logger.info("Subscription %s canceled, user downgraded to free", sub_id)
 
     # Provider profile cancellation

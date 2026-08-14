@@ -46,7 +46,7 @@ def test_modified_manifest_fails_exact_approved_catalogue_check(tmp_path):
     assert (
         "APPROVED_CATALOGUE_MANIFEST",
         False,
-        "exact approved catalogue 2026-08 and checkout disabled",
+        "exact approved catalogue 2026-08 and checkout enabled",
     ) in checks
 
 

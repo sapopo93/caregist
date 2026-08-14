@@ -403,6 +403,10 @@ class Settings(BaseSettings):
     # Independent signal-intelligence kill switches. Defaults are deliberately
     # fail-closed; workflows opt collectors into shadow mode explicitly.
     radar_checkout_enabled: bool = False
+    # Keep operational readiness fail-closed by default. Production may only
+    # disable this additional gate through an explicit, auditable release
+    # decision; the general and Radar checkout kill switches still apply.
+    radar_checkout_require_operational_readiness: bool = True
     cqc_location_index_poll_enabled: bool = False
     cqc_report_poll_enabled: bool = False
     radar_explanations_enabled: bool = False

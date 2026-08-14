@@ -2,7 +2,7 @@
   "schema_version": 2,
   "catalog_version": "2026-08",
   "currency": "gbp",
-  "checkout_enabled": false,
+  "checkout_enabled": true,
   "products": {
     "radar-regional": {
       "environment_product": "STRIPE_PRODUCT_RADAR_REGIONAL",

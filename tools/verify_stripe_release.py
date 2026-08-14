@@ -27,7 +27,7 @@ EXPECTED_WEBHOOK_EVENTS = {
     "customer.subscription.updated",
     "customer.subscription.deleted",
 }
-EXPECTED_MANIFEST_SHA256 = "bec531624f71c0a688bb19396544b63734836aeeacefd61285644419de1c8930"
+EXPECTED_MANIFEST_SHA256 = "66860dbd7143625e69b6c37650b6824805c4d7a27f81f293c2e3099b38ea2df6"
 EXPECTED_PRODUCT_KEYS = {
     "radar-regional",
     "radar-national",
@@ -213,7 +213,7 @@ def run_checks(
         and manifest.get("schema_version") == 2
         and manifest.get("catalog_version") == "2026-08"
         and manifest.get("currency") == "gbp"
-        and manifest.get("checkout_enabled") is False
+        and manifest.get("checkout_enabled") is True
         and isinstance(manifest.get("products"), Mapping)
         and set(manifest["products"]) == EXPECTED_PRODUCT_KEYS
         and canonical_manifest_sha256(manifest) == EXPECTED_MANIFEST_SHA256
@@ -222,7 +222,7 @@ def run_checks(
         (
             "APPROVED_CATALOGUE_MANIFEST",
             approved_manifest,
-            "exact approved catalogue 2026-08 and checkout disabled",
+            "exact approved catalogue 2026-08 and checkout enabled",
         )
     )
 

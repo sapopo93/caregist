@@ -212,6 +212,39 @@ async def test_checkout_accepts_display_alias_and_uses_canonical_stripe_tier(mon
 
 
 @pytest.mark.asyncio
+async def test_checkout_can_use_explicit_operational_readiness_override(monkeypatch):
+    monkeypatch.setattr(settings, "stripe_secret_key", "sk_test_checkout")
+    monkeypatch.setattr(settings, "stripe_price_radar_regional", "price_radar_regional")
+    monkeypatch.setattr(settings, "radar_checkout_require_operational_readiness", False)
+
+    conn = AsyncMock()
+    conn.fetchrow = AsyncMock(
+        side_effect=[
+            {"id": 42, "email": "alice@example.com", "stripe_customer_id": "cus_123"},
+            None,
+        ]
+    )
+
+    @asynccontextmanager
+    async def mock_get_connection():
+        yield conn
+
+    created_session = SimpleNamespace(url="https://checkout.stripe.test/session", id="cs_test_override")
+    readiness = AsyncMock()
+    with patch("api.routers.billing.get_connection", mock_get_connection), \
+         patch("api.routers.billing._require_radar_commerce_ready", readiness), \
+         patch("api.routers.billing.stripe.checkout.Session.create", return_value=created_session):
+        result = await create_checkout(
+            _checkout(email="alice@example.com", tier="radar-regional"),
+            _request(),
+            _browser_auth(),
+        )
+
+    assert result["session_id"] == "cs_test_override"
+    readiness.assert_not_awaited()
+
+
+@pytest.mark.asyncio
 async def test_checkout_return_requires_matching_stripe_and_local_entitlement(monkeypatch):
     monkeypatch.setattr(settings, "stripe_secret_key", "sk_test_checkout")
     conn = AsyncMock()

@@ -170,7 +170,7 @@ export default function PricingCTA({
           <>
             <button
               onClick={() => void handleUpgrade(billingTier)}
-              disabled={loading || !businessUseConfirmed}
+              disabled={loading}
               className="inline-block text-center py-2.5 px-6 rounded-lg font-medium text-sm transition-colors border border-clay text-clay hover:bg-clay hover:text-white disabled:opacity-50"
             >
               {loading ? "Redirecting..." : ctaLabel}
@@ -188,7 +188,7 @@ export default function PricingCTA({
       <div>
         <button
           onClick={() => void handleUpgrade(billingTier)}
-          disabled={loading || !businessUseConfirmed}
+          disabled={loading}
           className="inline-block text-center py-2.5 px-6 rounded-lg font-medium text-sm transition-colors border border-clay text-clay hover:bg-clay hover:text-white disabled:opacity-50"
         >
           {loading ? "Redirecting..." : ctaLabel}
