@@ -59,6 +59,48 @@ async def test_upgrade_retiers_all_active_keys(fresh_db):
         await conn.close()
 
 
+async def test_first_paid_subscription_supersedes_registration_free_row(fresh_db):
+    from api.routers.billing import _persist_subscription_state
+
+    conn = await asyncpg.connect(fresh_db)
+    try:
+        await apply_full_schema(conn)
+        user_id = await _make_user_with_keys(conn, "registered@test.com", 1, tier="free")
+        await conn.execute(
+            "INSERT INTO subscriptions (user_id, tier, status) VALUES ($1, 'free', 'active')",
+            user_id,
+        )
+
+        await _persist_subscription_state(
+            conn,
+            user_id,
+            "sub_radar_regional",
+            "radar-regional",
+            "active",
+            stripe_price_id="price_radar_regional",
+        )
+
+        rows = await conn.fetch(
+            "SELECT stripe_subscription_id, tier, status FROM subscriptions "
+            "WHERE user_id = $1 ORDER BY created_at, id",
+            user_id,
+        )
+        assert [dict(row) for row in rows] == [
+            {"stripe_subscription_id": None, "tier": "free", "status": "superseded"},
+            {
+                "stripe_subscription_id": "sub_radar_regional",
+                "tier": "radar-regional",
+                "status": "active",
+            },
+        ]
+        assert await conn.fetchval(
+            "SELECT tier FROM api_keys WHERE user_id = $1 AND is_active = TRUE",
+            user_id,
+        ) == "radar-regional"
+    finally:
+        await conn.close()
+
+
 async def test_downgrade_deactivates_excess_keys(fresh_db):
     from api.routers.billing import _persist_subscription_state
 

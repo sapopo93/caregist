@@ -11,7 +11,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Literal
 
 import stripe
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Path, Request
 from pydantic import BaseModel, EmailStr, Field
 
 from api.middleware.auth import validate_billing_identity
@@ -441,6 +441,22 @@ async def _persist_subscription_state(
 ) -> None:
     entitlements = get_subscription_entitlements(tier, extra_seats)
     rate_limit = get_tier_config(tier)["rate"]
+    if status in ENTITLED_SUBSCRIPTION_STATUSES:
+        # Registration provisions an active Free placeholder row. Retire that
+        # row (or any older entitled row) before inserting the first Stripe
+        # subscription, otherwise uniq_active_sub_per_user rejects fulfillment
+        # and Stripe retries can never grant the paid entitlement.
+        await conn.execute(
+            """
+            UPDATE subscriptions
+            SET status = 'superseded', updated_at = NOW()
+            WHERE user_id = $1
+              AND status IN ('active', 'trialing')
+              AND stripe_subscription_id IS DISTINCT FROM $2
+            """,
+            user_id,
+            subscription_id,
+        )
     await conn.execute(
         """
         INSERT INTO subscriptions (
@@ -1118,6 +1134,79 @@ async def get_subscription(_auth: dict = Depends(validate_billing_identity)) -> 
             sub["current_period_end"].isoformat() if sub and sub["current_period_end"] else None
         ),
         "entitlements": entitlements,
+    }
+
+
+@router.get("/checkout-session/{session_id}")
+async def get_checkout_session_status(
+    session_id: str = Path(
+        ...,
+        min_length=12,
+        max_length=255,
+        pattern=r"^cs_(?:test|live)_[A-Za-z0-9]+$",
+    ),
+    _auth: dict = Depends(validate_billing_identity),
+) -> dict:
+    """Verify a Checkout return without trusting its browser-supplied ID.
+
+    Stripe payment state and the local subscription row must both agree before
+    the client may present the purchase as fulfilled. This endpoint is read-only:
+    webhooks remain the sole authority that grants or revokes entitlements.
+    """
+    user_id = _require_browser_billing_owner(_auth)
+    if not settings.stripe_secret_key:
+        raise HTTPException(status_code=503, detail="Billing not configured.")
+
+    async with get_connection() as conn:
+        user = await conn.fetchrow(
+            "SELECT stripe_customer_id FROM users WHERE id = $1",
+            user_id,
+        )
+    if not user or not user.get("stripe_customer_id"):
+        raise HTTPException(status_code=404, detail="Checkout session was not found for this account.")
+
+    try:
+        session = stripe.checkout.Session.retrieve(session_id)
+    except stripe.InvalidRequestError as exc:
+        raise HTTPException(
+            status_code=404,
+            detail="Checkout session was not found for this account.",
+        ) from exc
+    metadata = session.get("metadata") or {}
+    if (
+        metadata.get("user_id") != str(user_id)
+        or session.get("customer") != user.get("stripe_customer_id")
+    ):
+        raise HTTPException(status_code=404, detail="Checkout session was not found for this account.")
+
+    subscription_id = session.get("subscription")
+    local_subscription = None
+    if subscription_id:
+        async with get_connection() as conn:
+            local_subscription = await conn.fetchrow(
+                """
+                SELECT tier, status
+                FROM subscriptions
+                WHERE user_id = $1 AND stripe_subscription_id = $2
+                """,
+                user_id,
+                subscription_id,
+            )
+
+    payment_valid = session.get("payment_status") in {"paid", "no_payment_required"}
+    checkout_complete = session.get("status") == "complete"
+    entitlement_ready = bool(
+        payment_valid
+        and checkout_complete
+        and local_subscription
+        and local_subscription["status"] in ENTITLED_SUBSCRIPTION_STATUSES
+        and local_subscription["tier"] != "free"
+    )
+    return {
+        "checkout_status": session.get("status"),
+        "payment_status": session.get("payment_status"),
+        "entitlement_ready": entitlement_ready,
+        "tier": local_subscription["tier"] if entitlement_ready else None,
     }
 
 

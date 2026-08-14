@@ -19,6 +19,7 @@ from api.routers.billing import (
     create_billing_portal,
     create_checkout,
     create_profile_checkout,
+    get_checkout_session_status,
     router,
 )
 
@@ -88,6 +89,7 @@ def isolate_persisted_billing_operations(monkeypatch):
 def test_all_billing_routes_use_non_metering_identity_dependency():
     guarded_paths = {
         "/api/v1/billing/checkout",
+        "/api/v1/billing/checkout-session/{session_id}",
         "/api/v1/billing/profile-checkout",
         "/api/v1/billing/subscription",
         "/api/v1/billing/subscription/cancel",
@@ -207,6 +209,78 @@ async def test_checkout_accepts_display_alias_and_uses_canonical_stripe_tier(mon
     audit_args = next(call.args for call in conn.execute.await_args_list if "INSERT INTO audit_log" in call.args[0])
     assert audit_args[1] == "billing.checkout.create"
     assert "price_radar_national" not in repr(audit_args)
+
+
+@pytest.mark.asyncio
+async def test_checkout_return_requires_matching_stripe_and_local_entitlement(monkeypatch):
+    monkeypatch.setattr(settings, "stripe_secret_key", "sk_test_checkout")
+    conn = AsyncMock()
+    conn.fetchrow = AsyncMock(
+        side_effect=[
+            {"stripe_customer_id": "cus_123"},
+            {"tier": "radar-regional", "status": "active"},
+        ]
+    )
+
+    @asynccontextmanager
+    async def mock_get_connection():
+        yield conn
+
+    with patch("api.routers.billing.get_connection", mock_get_connection), \
+         patch(
+             "api.routers.billing.stripe.checkout.Session.retrieve",
+             return_value={
+                 "id": "cs_test_return123",
+                 "customer": "cus_123",
+                 "subscription": "sub_123",
+                 "status": "complete",
+                 "payment_status": "paid",
+                 "metadata": {"user_id": "42"},
+             },
+         ):
+        result = await get_checkout_session_status(
+            "cs_test_return123",
+            _browser_auth(),
+        )
+
+    assert result == {
+        "checkout_status": "complete",
+        "payment_status": "paid",
+        "entitlement_ready": True,
+        "tier": "radar-regional",
+    }
+
+
+@pytest.mark.asyncio
+async def test_checkout_return_hides_another_accounts_session(monkeypatch):
+    monkeypatch.setattr(settings, "stripe_secret_key", "sk_test_checkout")
+    conn = AsyncMock()
+    conn.fetchrow.return_value = {"stripe_customer_id": "cus_123"}
+
+    @asynccontextmanager
+    async def mock_get_connection():
+        yield conn
+
+    with patch("api.routers.billing.get_connection", mock_get_connection), \
+         patch(
+             "api.routers.billing.stripe.checkout.Session.retrieve",
+             return_value={
+                 "id": "cs_test_other123",
+                 "customer": "cus_other",
+                 "subscription": "sub_other",
+                 "status": "complete",
+                 "payment_status": "paid",
+                 "metadata": {"user_id": "99"},
+             },
+         ):
+        with pytest.raises(HTTPException) as exc:
+            await get_checkout_session_status(
+                "cs_test_other123",
+                _browser_auth(),
+            )
+
+    assert exc.value.status_code == 404
+    assert "not found" in exc.value.detail.lower()
 
 
 @pytest.mark.asyncio

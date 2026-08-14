@@ -9,6 +9,7 @@ import NewRegistrationFeedPanel from "@/components/NewRegistrationFeedPanel";
 import RadarPanel from "@/components/RadarPanel";
 import { trackEvent } from "@/lib/analytics";
 import { clearBrowserAuthState, isAuthExpiredResponse } from "@/lib/auth-session";
+import { pollCheckoutReturn } from "@/lib/checkout-return";
 import { PLAN_LIMIT_SUMMARY, PLAN_NEXT_STEP, PLAN_PRIMARY_CTA } from "@/lib/caregist-config";
 
 type CountDatum = {
@@ -52,6 +53,7 @@ export default function DashboardPage() {
   const [cancelLoading, setCancelLoading] = useState(false);
   const [cancelError, setCancelError] = useState("");
   const [loadError, setLoadError] = useState(false);
+  const [checkoutReturnStatus, setCheckoutReturnStatus] = useState<"idle" | "confirming" | "confirmed" | "delayed">("idle");
   const [newKeyName, setNewKeyName] = useState("");
   const [newKeyEmail, setNewKeyEmail] = useState("");
   const [newKeyValue, setNewKeyValue] = useState("");
@@ -75,7 +77,17 @@ export default function DashboardPage() {
     if (stored) setUser(JSON.parse(stored));
     setTier(t);
 
-    fetch("/api/v1/billing/subscription", { credentials: "include" })
+    const applySubscription = (data: any) => {
+      if (!data) return;
+      setSubscription(data);
+      setSubscriptionReady(true);
+      if (data?.tier) {
+        setTier(data.tier);
+        localStorage.setItem("caregist_tier", data.tier);
+        window.dispatchEvent(new Event("caregist_auth_change"));
+      }
+    };
+    const loadSubscription = () => fetch("/api/v1/billing/subscription", { credentials: "include" })
       .then(async (res) => {
         const data = await res.json();
         if (isAuthExpiredResponse(res.status, data?.detail)) {
@@ -84,18 +96,42 @@ export default function DashboardPage() {
         }
         if (!res.ok) throw new Error(data?.detail || "Could not load subscription.");
         return data;
-      })
-      .then((data) => {
-        if (!data) return;
-        setSubscription(data);
-        setSubscriptionReady(true);
-        if (data?.tier) {
-          setTier(data.tier);
-          localStorage.setItem("caregist_tier", data.tier);
-          window.dispatchEvent(new Event("caregist_auth_change"));
+      });
+
+    const params = new URLSearchParams(window.location.search);
+    const sessionId = params.get("session_id");
+    if (sessionId) {
+      setCheckoutReturnStatus("confirming");
+      void pollCheckoutReturn(async () => {
+        const res = await fetch(`/api/v1/billing/checkout-session/${encodeURIComponent(sessionId)}`, {
+          credentials: "include",
+        });
+        const data = await res.json().catch(() => ({}));
+        if (isAuthExpiredResponse(res.status, data?.detail)) {
+          await handleExpiredSession();
+          throw new Error("Session expired");
         }
-      })
-      .catch(() => setLoadError(true));
+        if (!res.ok) throw new Error(data?.detail || "Could not verify checkout.");
+        return data;
+      }).then(async (checkout) => {
+        if (!checkout.entitlement_ready) {
+          setCheckoutReturnStatus("delayed");
+          await loadSubscription().then(applySubscription);
+          return;
+        }
+        await loadSubscription().then(applySubscription);
+        setCheckoutReturnStatus("confirmed");
+        void trackEvent("upgrade_conversion", "dashboard_checkout_return", {
+          tier: checkout.tier,
+          session_id: sessionId,
+        });
+      }).catch(() => {
+        setCheckoutReturnStatus("delayed");
+        setLoadError(true);
+      });
+    } else {
+      void loadSubscription().then(applySubscription).catch(() => setLoadError(true));
+    }
     fetch("/api/v1/auth/team-keys", { credentials: "include" })
       .then(async (res) => {
         const data = await res.json();
@@ -168,11 +204,8 @@ export default function DashboardPage() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
-    const sessionId = params.get("session_id");
     const billingStatus = params.get("billing");
-    if (sessionId) {
-      void trackEvent("upgrade_conversion", "dashboard_checkout_return", { tier, session_id: sessionId });
-    } else if (billingStatus === "updated") {
+    if (billingStatus === "updated") {
       void trackEvent("upgrade_conversion", "dashboard_subscription_update", { tier });
     }
   }, [tier]);
@@ -375,6 +408,21 @@ export default function DashboardPage() {
       {loadError && (
         <div className="bg-amber-50 border border-amber-300 rounded-lg px-4 py-3 mb-6 text-sm text-amber-800">
           Some account data could not be loaded — please refresh the page.
+        </div>
+      )}
+      {checkoutReturnStatus === "confirming" && (
+        <div className="bg-cream border border-stone rounded-lg px-4 py-3 mb-6 text-sm text-bark">
+          Payment returned successfully. Confirming your Radar access…
+        </div>
+      )}
+      {checkoutReturnStatus === "confirmed" && (
+        <div className="bg-moss/10 border border-moss/30 rounded-lg px-4 py-3 mb-6 text-sm text-moss">
+          Payment and Radar access are confirmed.
+        </div>
+      )}
+      {checkoutReturnStatus === "delayed" && (
+        <div className="bg-amber-50 border border-amber-300 rounded-lg px-4 py-3 mb-6 text-sm text-amber-800">
+          Payment returned, but Radar access is not confirmed yet. Refresh shortly; no duplicate payment is needed. Contact support if this persists.
         </div>
       )}
       <div className="flex items-center justify-between mb-2">

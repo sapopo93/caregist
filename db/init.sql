@@ -129,7 +129,13 @@ CREATE TABLE IF NOT EXISTS users (
   updated_at TIMESTAMP DEFAULT NOW(),
   CONSTRAINT users_signup_purchase_intent_valid CHECK (
     (signup_intent_type IS NULL AND signup_intent_value IS NULL)
-    OR (signup_intent_type = 'plan' AND signup_intent_value IN ('alerts-pro', 'data-starter', 'data-pro', 'data-business'))
+    OR (
+      signup_intent_type = 'plan'
+      AND signup_intent_value IN (
+        'alerts-pro', 'data-starter', 'data-pro', 'data-business',
+        'radar-regional', 'radar-national'
+      )
+    )
     OR (signup_intent_type = 'provider_tier' AND signup_intent_value IN ('enhanced', 'sponsored'))
   )
 );

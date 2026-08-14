@@ -82,6 +82,26 @@ async def test_active_subscription_uniqueness_is_enforced(fresh_db):
         await conn.close()
 
 
+async def test_radar_signup_purchase_intents_are_enforced(fresh_db):
+    conn = await asyncpg.connect(fresh_db)
+    try:
+        applied = await apply_full_schema(conn)
+        assert "056_radar_signup_purchase_intent.sql" in applied
+
+        await conn.execute(
+            "INSERT INTO users (email, password_hash, name, signup_intent_type, signup_intent_value) "
+            "VALUES ('regional@test.com', 'x', 'Regional', 'plan', 'radar-regional'), "
+            "('national@test.com', 'x', 'National', 'plan', 'radar-national')"
+        )
+        with pytest.raises(asyncpg.CheckViolationError):
+            await conn.execute(
+                "INSERT INTO users (email, password_hash, name, signup_intent_type, signup_intent_value) "
+                "VALUES ('invalid@test.com', 'x', 'Invalid', 'plan', 'embedded-enterprise')"
+            )
+    finally:
+        await conn.close()
+
+
 async def test_source_snapshot_identity_migration_repairs_a_preexisting_table(fresh_db):
     conn = await asyncpg.connect(fresh_db)
     try:
