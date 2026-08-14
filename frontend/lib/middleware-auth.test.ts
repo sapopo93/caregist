@@ -44,10 +44,12 @@ describe("frontend auth proxy source", () => {
     assert.match(source, /matcher:\s*\[[\s\S]*"\/api"/);
   });
 
-  it("does not prerender nonce-dependent city rating pages", () => {
+  it("permanently redirects legacy city pages to accurate directory filters", () => {
     for (const pageSource of cityRatingPages) {
       assert.match(pageSource, /export const dynamic = "force-dynamic"/);
-      assert.doesNotMatch(pageSource, /generateStaticParams/);
+      assert.match(pageSource, /permanentRedirect\(/);
+      assert.match(pageSource, /service_type=residential-care-homes/);
+      assert.doesNotMatch(pageSource, /CityRatingPage/);
     }
   });
 });

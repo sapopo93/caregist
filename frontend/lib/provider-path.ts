@@ -17,8 +17,3 @@ export function getProviderHref(provider: ProviderPathSource): string {
   const key = getProviderPathKey(provider);
   return key ? `/provider/${encodeURIComponent(key)}` : "/search";
 }
-
-export function getClaimHref(provider: ProviderPathSource): string {
-  const key = getProviderPathKey(provider);
-  return key ? `/claim/${encodeURIComponent(key)}` : "/pricing";
-}

@@ -42,8 +42,8 @@ export default function ApiApplicationForm() {
   if (status === "success") {
     return (
       <div className="bg-moss/10 border border-moss/30 rounded-lg p-8 text-center">
-        <p className="text-moss font-semibold text-lg">Application received!</p>
-        <p className="text-dusk mt-2">We&apos;ll review your application within 2 business days and be in touch.</p>
+        <p className="text-moss font-semibold text-lg">Pilot enquiry received</p>
+        <p className="text-dusk mt-2">We&apos;ll review your proposed scope within 2 business days and be in touch.</p>
       </div>
     );
   }
@@ -120,7 +120,7 @@ export default function ApiApplicationForm() {
         disabled={status === "loading"}
         className="w-full py-3 bg-clay text-white rounded-lg font-medium hover:bg-bark transition-colors disabled:opacity-50"
       >
-        {status === "loading" ? "Submitting..." : "Apply for API Access"}
+        {status === "loading" ? "Submitting..." : "Submit pilot enquiry"}
       </button>
     </form>
   );

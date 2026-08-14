@@ -128,6 +128,7 @@ export default function RadiusFinder() {
   });
   const visibleResults = emailGated ? sortedResults.slice(0, 3) : sortedResults;
   const hiddenCount = emailGated ? Math.max(0, sortedResults.length - 3) : 0;
+  const radiusLabel = `${radius} mile${radius === 1 ? "" : "s"}`;
 
   return (
     <div>
@@ -213,14 +214,14 @@ export default function RadiusFinder() {
 
       {/* Results */}
       {searched && results.length === 0 && (
-        <p className="text-center text-dusk py-8">No providers found within {radius} miles of {postcode}.</p>
+        <p className="text-center text-dusk py-8">No providers found within {radiusLabel} of {postcode}.</p>
       )}
 
       {visibleResults.length > 0 && (
         <>
           <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
             <p className="text-sm text-dusk">
-              Showing {visibleResults.length} of {total} providers within {radius} miles of {postcode.toUpperCase()}.
+              Showing {visibleResults.length} of {total} providers within {radiusLabel} of {postcode.toUpperCase()}.
             </p>
             <div className="flex gap-3 items-center">
               <select
@@ -293,7 +294,7 @@ export default function RadiusFinder() {
                 {hiddenCount} more providers found
               </p>
               <p className="text-stone text-sm mb-4">
-                Enter your email to see all {total} providers within {radius} miles.
+                Enter your email to see all {total} providers within {radiusLabel}.
               </p>
               <div className="max-w-md mx-auto">
                 <EmailCaptureStrip

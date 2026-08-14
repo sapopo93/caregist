@@ -88,11 +88,11 @@ describe("revenue path contracts", () => {
     assert.match(dashboard, /subscriptionReady \? \(/);
   });
 
-  it("removes paid provider-listing checkout while preserving free claims", () => {
+  it("removes paid provider-listing checkout and unavailable claim intake", () => {
     const providerDashboard = source("app/provider-dashboard/[slug]/page.tsx");
     const login = source("app/login/page.tsx");
 
-    assert.match(providerDashboard, /Provider claims and corrections are free/);
+    assert.match(providerDashboard, /Provider verification intake is not currently open/);
     assert.doesNotMatch(providerDashboard, /profile-checkout/);
     assert.doesNotMatch(login, /provider_tier|upgrade_tier|claim_intent/);
   });

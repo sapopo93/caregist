@@ -1,4 +1,5 @@
 import type { DirectoryProviderSummary } from "@/lib/directory-db";
+import CompareButton from "@/components/CompareButton";
 import { getProviderHref } from "@/lib/provider-path";
 
 function splitPipeValue(value: string | null): string[] {
@@ -56,8 +57,11 @@ export default function DirectoryProviderCard({ provider }: { provider: Director
           <p className="mt-2 break-words text-sm text-dusk">{formatLocation(provider)}</p>
         </div>
 
-        <div className="max-w-full rounded-full border border-stone bg-white px-3 py-1 text-sm font-semibold text-bark">
-          {provider.overall_rating ?? "Rating not published"}
+        <div className="flex max-w-full shrink-0 flex-wrap items-center justify-end gap-2">
+          <CompareButton slug={provider.slug ?? provider.id} name={provider.name} />
+          <div className="rounded-full border border-stone bg-white px-3 py-1 text-sm font-semibold text-bark">
+            {provider.overall_rating ?? "Rating not published"}
+          </div>
         </div>
       </div>
 

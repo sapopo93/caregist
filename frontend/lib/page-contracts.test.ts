@@ -28,15 +28,22 @@ describe("page contracts", () => {
     assert.equal(existsSync(resolve(appRoot, "app/provider/[slug]/loading.tsx")), false);
   });
 
-  it("provider pages keep free claims while removing retired enquiry and review sales journeys", () => {
+  it("provider pages remove unavailable claim, enquiry, and review journeys", () => {
     const source = readAppFile("app/provider/[slug]/page.tsx");
     const structuredData = readAppFile("components/ProviderJsonLd.tsx");
 
     assert.doesNotMatch(source, /EnquiryForm|ReviewsSection|getProviderReviews/);
     assert.doesNotMatch(source, /lead-list|Want this segment as a CSV|Get a lead list/);
-    assert.match(source, /href=\{`\/claim\/\$\{encodeURIComponent\(providerSlug\)\}`\}/);
+    assert.doesNotMatch(source, /\/claim\//);
     assert.match(source, /normalizeExternalHttpUrl/);
     assert.doesNotMatch(structuredData, /AggregateRating|reviewCount/);
+  });
+
+  it("removes unrelated and unavailable public routes", () => {
+    assert.equal(existsSync(resolve(appRoot, "app/story-video/page.tsx")), false);
+    assert.equal(existsSync(resolve(appRoot, "app/claim/[slug]/page.tsx")), false);
+    assert.equal(existsSync(resolve(appRoot, "components/CityRatingPage.tsx")), false);
+    assert.doesNotMatch(readAppFile("app/dashboard/page.tsx"), /Find a provider to claim|\/claim\//);
   });
 
   it("permanently retires the commodity lead-list page", () => {
@@ -48,7 +55,6 @@ describe("page contracts", () => {
 
   it("does not advertise commodity provider exports on public directory pages", () => {
     const sources = [
-      readAppFile("components/CityRatingPage.tsx"),
       readAppFile("app/region/[slug]/page.tsx"),
       readAppFile("app/services/[slug]/page.tsx"),
     ].join("\n");

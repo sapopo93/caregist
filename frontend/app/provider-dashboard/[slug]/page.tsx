@@ -154,10 +154,7 @@ export default function ProviderDashboardPage({ params }: { params: Promise<{ sl
       {!isClaimedByUser && (
         <div className="bg-amber/10 border border-amber rounded-lg p-6 mb-6 text-center">
           <p className="font-semibold text-bark mb-2">This listing is not claimed</p>
-          <p className="text-sm text-dusk mb-4">Claim requests are free when the provider verification intake is available.</p>
-          <Link href={`/claim/${slug}`} className="px-6 py-2 bg-clay text-white rounded-lg text-sm hover:bg-bark transition-colors">
-            View claim availability
-          </Link>
+          <p className="text-sm text-dusk">Provider verification intake is not currently open. No claim or profile-control right is available from this page.</p>
         </div>
       )}
 

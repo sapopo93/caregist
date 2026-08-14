@@ -75,7 +75,6 @@ export default async function ProviderPage({ params }: { params: Promise<{ slug:
     notFound();
   }
 
-  const providerSlug = provider.slug ?? provider.id;
   const serviceTypes = splitPipeValue(provider.service_types);
   const specialisms = splitPipeValue(provider.specialisms);
   const location = [provider.address_line1, provider.address_line2, provider.town, provider.county, provider.postcode]
@@ -221,12 +220,6 @@ export default async function ProviderPage({ params }: { params: Promise<{ slug:
                   </p>
                 ) : null}
               </div>
-              <Link
-                href={`/claim/${encodeURIComponent(providerSlug)}`}
-                className="mt-5 block rounded-full border border-clay px-4 py-2 text-center text-sm font-semibold text-clay hover:bg-parchment"
-              >
-                Claim or manage this profile
-              </Link>
             </section>
 
             <section className="rounded-3xl border border-stone bg-cream p-6 shadow-sm">

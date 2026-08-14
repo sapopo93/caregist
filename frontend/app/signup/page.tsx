@@ -22,6 +22,11 @@ const PLAN_COPY: Record<string, { title: string; body: string }> = {
   },
 };
 
+const PLAN_LABELS: Record<string, string> = {
+  "radar-regional": "Radar Regional",
+  "radar-national": "Radar National",
+};
+
 function SignupForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -153,7 +158,7 @@ function SignupForm() {
             ? "Creating account..."
             : plan === "free"
             ? "Create evaluation account"
-            : `Continue to ${plan.charAt(0).toUpperCase()}${plan.slice(1)}`}
+            : `Continue to ${PLAN_LABELS[plan] ?? "checkout"}`}
         </button>
       </form>
 

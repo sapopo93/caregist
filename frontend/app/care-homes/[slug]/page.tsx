@@ -1,19 +1,8 @@
-import CityRatingPage from "@/components/CityRatingPage";
-import type { Metadata } from "next";
+import { permanentRedirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
-export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
-  const { slug } = await params;
-  const city = slug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-  return {
-    title: `Care Homes in ${city} — CQC Rated | CareGist`,
-    description: `Browse all CQC-rated care homes in ${city}. Inspection data, ratings, and provider details.`,
-    alternates: { canonical: `https://www.caregist.co.uk/care-homes/${slug}` },
-  };
-}
-
 export default async function AllCareHomesPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  return <CityRatingPage slug={slug} ratingFilter={null} ratingLabel="All" />;
+  permanentRedirect(`/search?q=${encodeURIComponent(slug.replace(/-/g, " "))}&service_type=residential-care-homes`);
 }

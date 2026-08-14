@@ -28,13 +28,20 @@ export default function ComparisonActions({ slugs }: { slugs: string[] }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ slug_list: slugs }),
       });
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 401) {
+        setShowLogin(true);
+        return;
+      }
       if (res.status === 403) {
-        const data = await res.json().catch(() => ({}));
         setError(data.detail || "Your account limit has been reached.");
         return;
       }
+      if (!res.ok) {
+        setError(data.detail || "Failed to save. Please try again.");
+        return;
+      }
       if (res.ok) {
-        const data = await res.json().catch(() => ({}));
         setSaved(true);
         if (data.data?.share_token) setShareToken(data.data.share_token);
       }

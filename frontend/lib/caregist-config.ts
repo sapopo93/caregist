@@ -5,14 +5,14 @@ import type { PricingTier } from "@/lib/types";
 export const PRICING_LADDER: PricingTier[] = [
   {
     tier: "Free Directory",
-    forWho: "Provider discovery, source checking, and availability-gated free profile correction",
+    forWho: "Provider discovery and official-source checking",
     color: "#10b981",
     price: "£0",
     priceNote: "",
     includes: [
       "Search CQC-registered providers",
       "Browse profiles, ratings, source dates, and official links",
-      "Request a free correction or claim when verification intake is available",
+      "Report factual record issues to CareGist support",
     ],
     limit: "No Radar workspace, event history, API, or webhooks.",
     pricingLogic: "",

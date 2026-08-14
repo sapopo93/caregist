@@ -526,13 +526,13 @@ export default function DashboardPage() {
           </div>
         </div>
         <div className="bg-cream border border-stone rounded-lg p-6">
-          <h2 className="text-xl font-bold mb-3">Provider claiming</h2>
+          <h2 className="text-xl font-bold mb-3">Provider records</h2>
           <p className="text-dusk text-sm mb-4">
-            Claims and correction requests remain free. CareGist does not sell paid ranking.
+            Browse factual CQC records and report a data issue to CareGist support. CareGist does not sell paid ranking.
           </p>
           <div className="flex gap-4">
-            <Link href="/find-care" className="text-sm text-clay underline">Find a provider to claim</Link>
             <Link href="/search" className="text-sm text-clay underline">Browse providers</Link>
+            <a href="mailto:support@caregist.co.uk?subject=Provider+record+correction" className="text-sm text-clay underline">Report a data issue</a>
           </div>
         </div>
       </div>

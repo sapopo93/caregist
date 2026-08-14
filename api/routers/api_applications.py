@@ -54,14 +54,14 @@ async def submit_api_application(
 
     await queue_email(
         req.contact_email,
-        "CareGist API — Application Received",
+        "CareGist Intelligence Feed — Pilot Enquiry Received",
         f"<p>Hi {req.contact_name},</p>"
-        f"<p>Thanks for applying for CareGist API access. We'll review your application within 48 hours.</p>"
+        f"<p>Thanks for your CareGist Intelligence Feed pilot enquiry. We'll review your proposed scope within 2 business days.</p>"
         f"<p>Company: {req.company_name}<br>Use case: {req.use_case[:200]}</p>"
         f"<p>— The CareGist Team</p>",
     )
 
     return {
         "data": dict(row) if row else {},
-        "message": "Application received. We'll be in touch within 2 business days.",
+        "message": "Pilot enquiry received. We'll be in touch within 2 business days.",
     }

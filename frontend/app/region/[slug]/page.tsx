@@ -208,8 +208,8 @@ export default async function RegionPage({
       <div className="mt-8">
         <EmailCaptureStrip
           source={`region_${slug}`}
-          heading={`Request product updates for ${displayName}`}
-          subheading="Rating-change alerts are not yet active; register interest for availability updates."
+          heading={`Get CareGist updates for ${displayName}`}
+          subheading="Receive evidence-linked CQC signal updates and product availability notices. Unsubscribe anytime."
         />
       </div>
 
