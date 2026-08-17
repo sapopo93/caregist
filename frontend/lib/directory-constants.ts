@@ -25,7 +25,7 @@ export const DEFAULT_SERVICE_TYPE_OPTIONS = [
 export const DEFAULT_RATING_OPTIONS = [
   "Outstanding",
   "Good",
-  "Requires Improvement",
+  "Requires improvement",
   "Inadequate",
   "Inspected But Not Rated",
   "No Published Rating",

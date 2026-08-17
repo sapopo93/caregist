@@ -16,7 +16,7 @@ const DIFFERENCES = [
   },
   {
     title: "Evidence stays attached",
-    body: "Stable CQC location IDs, source URLs, observation timestamps, entity level, and snapshot checksums make each event traceable to the approved source.",
+    body: "Stable CQC location IDs, source URLs, observation timestamps, and entity level keep events tied to the approved source. Data Status reports the reconciled snapshot and any checksum currently available.",
   },
   {
     title: "Safe when interpretation is unavailable",

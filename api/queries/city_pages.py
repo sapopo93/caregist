@@ -6,13 +6,13 @@ SELECT id, name, slug, type, overall_rating, data_completeness_score, data_compl
        address_line1
 FROM care_providers
 WHERE LOWER(REPLACE(town, ' ', '-')) = $1
-  AND ($2::text IS NULL OR overall_rating = $2)
+  AND ($2::text IS NULL OR LOWER(BTRIM(overall_rating)) = LOWER(BTRIM($2)))
   AND ($3::text IS NULL OR type = $3)
-ORDER BY CASE overall_rating
-           WHEN 'Outstanding' THEN 1
-           WHEN 'Good' THEN 2
-           WHEN 'Requires Improvement' THEN 3
-           WHEN 'Inadequate' THEN 4
+ORDER BY CASE LOWER(BTRIM(overall_rating))
+           WHEN 'outstanding' THEN 1
+           WHEN 'good' THEN 2
+           WHEN 'requires improvement' THEN 3
+           WHEN 'inadequate' THEN 4
            ELSE 5
          END ASC,
          last_inspection_date DESC NULLS LAST,
@@ -24,7 +24,7 @@ COUNT_BY_CITY = """
 SELECT COUNT(*) as total
 FROM care_providers
 WHERE LOWER(REPLACE(town, ' ', '-')) = $1
-  AND ($2::text IS NULL OR overall_rating = $2)
+  AND ($2::text IS NULL OR LOWER(BTRIM(overall_rating)) = LOWER(BTRIM($2)))
   AND ($3::text IS NULL OR type = $3)
 """
 

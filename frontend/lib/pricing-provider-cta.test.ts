@@ -32,6 +32,14 @@ describe("pricing page — final catalogue regression", () => {
     );
   });
 
+  it("server-renders paid CTAs from live commercial readiness", () => {
+    assert.match(src, /loadCommercialCheckoutReadiness\(getServerApiBase\(\)\)/);
+    assert.match(src, /RADAR_CHECKOUT_ENABLED === "true" &&\s*checkoutReady/);
+    assert.match(src, /export const dynamic = "force-dynamic"/);
+    assert.match(ctaSrc, /if \(!checkoutEnabled \|\| !termsVersion\)/);
+    assert.match(ctaSrc, /Paid checkout unavailable/);
+  });
+
   it("keeps Feed and Embedded sales-assisted", () => {
     assert.ok(
       ctaSrc.includes("enterprise@caregist.co.uk"),

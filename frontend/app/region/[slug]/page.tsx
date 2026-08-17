@@ -74,9 +74,11 @@ export default async function RegionPage({
       // Stats unavailable — page still works without rich sections
     }
 
-    const searchTerm = stats?.local_authority || displayName;
+    // Local-authority pages use an exact authority filter. A loose text query can
+    // mix providers whose names or addresses merely mention the same place.
+    const localAuthority = stats?.local_authority || displayName;
     try {
-      results = await searchProviders({ q: searchTerm, page: page || "1" });
+      results = await searchProviders({ local_authority: localAuthority, page: page || "1" });
     } catch (e: any) {
       if (e?.message === "warming_up") warmingUp = true;
       error = true;

@@ -37,6 +37,7 @@ from api.queries.providers import (
     build_count_query,
     build_search_query,
     classify_query,
+    postcode_search_prefix,
 )
 from api.queries.admin import (
     PROVIDER_TYPE_DISTRIBUTION,
@@ -125,6 +126,7 @@ async def search_providers(
     type: str | None = Query(None),
     service_type: str | None = Query(None),
     postcode: str | None = Query(None, max_length=10),
+    local_authority: str | None = Query(None, max_length=120),
     sort: str = Query(DEFAULT_SORT),
     page: int = Query(1, ge=1),
     per_page: int | None = Query(None, ge=1, le=500),
@@ -176,18 +178,32 @@ async def search_providers(
 
             # Postcode search — route to ILIKE prefix match
             if query_type == "postcode":
-                # Strip spaces and use as postcode filter, clear q for FTS
-                pc = q.strip().upper().replace(" ", "")
-                # Insert a space before the last 3 chars for standard format matching
-                if len(pc) > 3:
-                    pc_prefix = pc[:-3]
-                else:
-                    pc_prefix = pc
+                pc_prefix = postcode_search_prefix(q)
 
                 query_sql = build_search_query(sort, has_text_query=False, is_postcode=True)
                 count_sql = build_count_query(is_postcode=True)
-                rows = await conn.fetch(query_sql, pc_prefix, region, rating, type, service_aliases, postcode, per_page, offset)
-                count_row = await conn.fetchrow(count_sql, pc_prefix, region, rating, type, service_aliases, postcode)
+                rows = await conn.fetch(
+                    query_sql,
+                    pc_prefix,
+                    region,
+                    rating,
+                    type,
+                    service_aliases,
+                    postcode,
+                    local_authority,
+                    per_page,
+                    offset,
+                )
+                count_row = await conn.fetchrow(
+                    count_sql,
+                    pc_prefix,
+                    region,
+                    rating,
+                    type,
+                    service_aliases,
+                    postcode,
+                    local_authority,
+                )
                 total = count_row["total"] if count_row else 0
                 data = [filter_fields(_row_to_dict(r), tier) for r in rows]
                 resp = _paginated_response(data, total, page, per_page, tier)
@@ -199,8 +215,28 @@ async def search_providers(
             has_text = query_type == "text"
             query_sql = build_search_query(sort, has_text_query=has_text)
             count_sql = build_count_query()
-            rows = await conn.fetch(query_sql, q, region, rating, type, service_aliases, postcode, per_page, offset)
-            count_row = await conn.fetchrow(count_sql, q, region, rating, type, service_aliases, postcode)
+            rows = await conn.fetch(
+                query_sql,
+                q,
+                region,
+                rating,
+                type,
+                service_aliases,
+                postcode,
+                local_authority,
+                per_page,
+                offset,
+            )
+            count_row = await conn.fetchrow(
+                count_sql,
+                q,
+                region,
+                rating,
+                type,
+                service_aliases,
+                postcode,
+                local_authority,
+            )
 
     except Exception as exc:
         logger.error("Search query failed: %s", exc)
@@ -215,9 +251,15 @@ async def search_providers(
     if facets:
         try:
             async with get_connection() as conn:
-                rating_rows = await conn.fetch(FACET_RATINGS, q, region, rating, type, service_aliases, postcode)
-                region_rows = await conn.fetch(FACET_REGIONS, q, region, rating, type, service_aliases, postcode)
-                type_rows = await conn.fetch(FACET_TYPES, q, region, rating, type, service_aliases, postcode)
+                rating_rows = await conn.fetch(
+                    FACET_RATINGS, q, region, rating, type, service_aliases, postcode, local_authority
+                )
+                region_rows = await conn.fetch(
+                    FACET_REGIONS, q, region, rating, type, service_aliases, postcode, local_authority
+                )
+                type_rows = await conn.fetch(
+                    FACET_TYPES, q, region, rating, type, service_aliases, postcode, local_authority
+                )
             resp["facets"] = {
                 "ratings": {r["overall_rating"]: r["count"] for r in rating_rows},
                 "regions": {r["region"]: r["count"] for r in region_rows},
@@ -268,8 +310,20 @@ async def export_providers_csv(
 
     try:
         async with get_connection() as conn:
-            rows = await conn.fetch(SEARCH_EXPORT + " LIMIT $7", q, region, rating, type, service_aliases, postcode, row_limit)
-            count_row = await conn.fetchrow(build_count_query(), q, region, rating, type, service_aliases, postcode)
+            rows = await conn.fetch(
+                SEARCH_EXPORT + " LIMIT $8",
+                q,
+                region,
+                rating,
+                type,
+                service_aliases,
+                postcode,
+                None,
+                row_limit,
+            )
+            count_row = await conn.fetchrow(
+                build_count_query(), q, region, rating, type, service_aliases, postcode, None
+            )
     except Exception as exc:
         logger.error("Export query failed: %s", exc)
         raise HTTPException(status_code=503, detail="Export failed.")
@@ -362,8 +416,20 @@ async def export_providers_xlsx(
 
     try:
         async with get_connection() as conn:
-            rows = await conn.fetch(SEARCH_EXPORT + " LIMIT $7", q, region, rating, type, service_aliases, postcode, row_limit)
-            count_row = await conn.fetchrow(build_count_query(), q, region, rating, type, service_aliases, postcode)
+            rows = await conn.fetch(
+                SEARCH_EXPORT + " LIMIT $8",
+                q,
+                region,
+                rating,
+                type,
+                service_aliases,
+                postcode,
+                None,
+                row_limit,
+            )
+            count_row = await conn.fetchrow(
+                build_count_query(), q, region, rating, type, service_aliases, postcode, None
+            )
     except Exception as exc:
         logger.error("Export (xlsx) query failed: %s", exc)
         raise HTTPException(status_code=503, detail="Export failed.")

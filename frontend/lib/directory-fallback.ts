@@ -80,6 +80,10 @@ function daysSince(value: string | null) {
   return Math.floor((Date.now() - date.getTime()) / 86_400_000);
 }
 
+function normalizedRating(value: string | null) {
+  return (value ?? "").trim().toLowerCase();
+}
+
 function matchesOpportunity(provider: FallbackProvider, opportunity: DirectoryOpportunity | "") {
   switch (opportunity) {
     case "new_90": {
@@ -89,9 +93,11 @@ function matchesOpportunity(provider: FallbackProvider, opportunity: DirectoryOp
     case "inadequate":
       return provider.overall_rating === "Inadequate";
     case "requires_improvement":
-      return provider.overall_rating === "Requires Improvement";
+      return normalizedRating(provider.overall_rating) === "requires improvement";
     case "not_yet_inspected":
-      return provider.overall_rating === "Not Yet Inspected";
+      return ["", "not yet inspected", "no published rating"].includes(
+        normalizedRating(provider.overall_rating),
+      );
     case "stale_inspection": {
       const ageDays = daysSince(provider.last_inspection_date);
       return ageDays === null || ageDays > 365 * 3;
@@ -112,6 +118,7 @@ function buildSearchScore(provider: FallbackProvider, query: string) {
     [provider.name, 5],
     [provider.town, 4],
     [provider.county, 3],
+    [provider.postcode, 4],
     [provider.region, 3],
     [provider.service_types, 2],
     [provider.specialisms, 1],
@@ -254,7 +261,7 @@ export async function searchFallbackProviders(filters: DirectorySearchParams) {
         return false;
       }
 
-      if (filters.rating && provider.overall_rating !== filters.rating) {
+      if (filters.rating && normalizedRating(provider.overall_rating) !== normalizedRating(filters.rating)) {
         return false;
       }
 
@@ -298,7 +305,7 @@ export async function listFallbackProvidersForExport(scope: DirectoryExportScope
         return false;
       }
 
-      if (scope.rating && provider.overall_rating !== scope.rating) {
+      if (scope.rating && normalizedRating(provider.overall_rating) !== normalizedRating(scope.rating)) {
         return false;
       }
 

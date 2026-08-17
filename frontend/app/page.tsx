@@ -54,7 +54,8 @@ const DIFFERENCE = [
   },
   {
     title: "Evidence travels with the signal",
-    body: "Source URL, observation times, entity level, and snapshot checksum make every displayed claim traceable.",
+    body: "Source URL, observation times, and entity level support traceability. Reconciled snapshot metadata, including a checksum when available, is reported on Data Status.",
+    href: "/data-status",
   },
   {
     title: "Safe when intelligence is incomplete",
@@ -135,6 +136,11 @@ export default async function HomePage() {
               <article key={item.title} className="rounded-xl border border-stone bg-cream p-6 shadow-sm">
                 <h3 className="text-xl font-bold text-bark">{item.title}</h3>
                 <p className="mt-3 text-sm leading-6 text-dusk">{item.body}</p>
+                {"href" in item && item.href ? (
+                  <Link href={item.href} className="mt-4 inline-flex text-sm font-semibold text-clay underline">
+                    Review Data Status
+                  </Link>
+                ) : null}
               </article>
             ))}
           </div>

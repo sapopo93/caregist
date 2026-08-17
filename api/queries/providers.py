@@ -6,6 +6,9 @@ import re
 _POSTCODE_RE = re.compile(
     r"^[A-Z]{1,2}\d[A-Z\d]?\s*\d?[A-Z]{0,2}$", re.IGNORECASE
 )
+_FULL_POSTCODE_RE = re.compile(
+    r"^([A-Z]{1,2}\d[A-Z\d]?)(\d[A-Z]{2})$", re.IGNORECASE
+)
 
 # CQC location ID pattern — e.g. "1-123456789" or "1-2881562896"
 _CQC_ID_RE = re.compile(r"^1-\d{5,12}$")
@@ -44,7 +47,10 @@ SEARCH_WHERE = f"""
 WHERE UPPER(status) = 'ACTIVE'
   AND ($1::text IS NULL OR {_TSVECTOR} @@ plainto_tsquery('english', $1))
   AND ($2::text IS NULL OR region = ANY(string_to_array($2, ',')))
-  AND ($3::text IS NULL OR overall_rating = ANY(string_to_array($3, ',')))
+  AND ($3::text IS NULL OR LOWER(BTRIM(overall_rating)) = ANY(
+        SELECT LOWER(BTRIM(value))
+        FROM unnest(string_to_array($3, ',')) AS rating_value(value)
+      ))
   AND ($4::text IS NULL OR type = $4)
   AND ($5::text[] IS NULL OR EXISTS (
         SELECT 1
@@ -52,6 +58,7 @@ WHERE UPPER(status) = 'ACTIVE'
         WHERE LOWER(BTRIM(service_label)) = ANY($5)
       ))
   AND ($6::text IS NULL OR postcode ILIKE $6 || '%')
+  AND ($7::text IS NULL OR local_authority = $7)
 """
 
 # Postcode-specific WHERE — used when query looks like a UK postcode
@@ -59,7 +66,10 @@ SEARCH_WHERE_POSTCODE = """
 WHERE UPPER(status) = 'ACTIVE'
   AND postcode ILIKE $1 || '%'
   AND ($2::text IS NULL OR region = ANY(string_to_array($2, ',')))
-  AND ($3::text IS NULL OR overall_rating = ANY(string_to_array($3, ',')))
+  AND ($3::text IS NULL OR LOWER(BTRIM(overall_rating)) = ANY(
+        SELECT LOWER(BTRIM(value))
+        FROM unnest(string_to_array($3, ',')) AS rating_value(value)
+      ))
   AND ($4::text IS NULL OR type = $4)
   AND ($5::text[] IS NULL OR EXISTS (
         SELECT 1
@@ -67,6 +77,7 @@ WHERE UPPER(status) = 'ACTIVE'
         WHERE LOWER(BTRIM(service_label)) = ANY($5)
       ))
   AND ($6::text IS NULL OR postcode ILIKE $6 || '%')
+  AND ($7::text IS NULL OR local_authority = $7)
 """
 
 # CQC ID direct lookup
@@ -86,9 +97,9 @@ SORT_OPTIONS = {
     "relevance": _promote_sponsored("name ASC"),
     "name": _promote_sponsored("name ASC"),
     "name_desc": _promote_sponsored("name DESC"),
-    "rating": _promote_sponsored("CASE overall_rating WHEN 'Outstanding' THEN 1 WHEN 'Good' THEN 2 WHEN 'Requires Improvement' THEN 3 WHEN 'Inadequate' THEN 4 ELSE 5 END ASC, name ASC"),
+    "rating": _promote_sponsored("CASE LOWER(BTRIM(overall_rating)) WHEN 'outstanding' THEN 1 WHEN 'good' THEN 2 WHEN 'requires improvement' THEN 3 WHEN 'inadequate' THEN 4 ELSE 5 END ASC, name ASC"),
     "beds": _promote_sponsored("number_of_beds DESC NULLS LAST, name ASC"),
-    "quality": _promote_sponsored("CASE overall_rating WHEN 'Outstanding' THEN 1 WHEN 'Good' THEN 2 WHEN 'Requires Improvement' THEN 3 WHEN 'Inadequate' THEN 4 ELSE 5 END ASC, name ASC"),
+    "quality": _promote_sponsored("CASE LOWER(BTRIM(overall_rating)) WHEN 'outstanding' THEN 1 WHEN 'good' THEN 2 WHEN 'requires improvement' THEN 3 WHEN 'inadequate' THEN 4 ELSE 5 END ASC, name ASC"),
     "newest": _promote_sponsored("registration_date DESC NULLS LAST, name ASC"),
 }
 
@@ -110,6 +121,13 @@ def classify_query(q: str | None) -> str:
     return "text"
 
 
+def postcode_search_prefix(q: str) -> str:
+    """Return the outward code for full postcodes, preserving outward-only input."""
+    compact = re.sub(r"\s+", "", q).upper()
+    full_postcode = _FULL_POSTCODE_RE.fullmatch(compact)
+    return full_postcode.group(1) if full_postcode else compact
+
+
 def build_search_query(sort: str, has_text_query: bool = False, is_postcode: bool = False) -> str:
     """Build the search SQL. Uses ranked select + ts_rank when text query is present."""
     if is_postcode:
@@ -124,7 +142,7 @@ def build_search_query(sort: str, has_text_query: bool = False, is_postcode: boo
         select = SEARCH_SELECT
         where = SEARCH_WHERE
         order = SORT_OPTIONS.get(sort, SORT_OPTIONS[DEFAULT_SORT])
-    return f"{select}\n{where}\nORDER BY {order}\nLIMIT $7 OFFSET $8"
+    return f"{select}\n{where}\nORDER BY {order}\nLIMIT $8 OFFSET $9"
 
 
 def build_count_query(is_postcode: bool = False) -> str:
@@ -182,7 +200,7 @@ WHERE geom IS NOT NULL
   AND UPPER(status) = 'ACTIVE'
   AND ST_DWithin(geom::geography, ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography, $3 * 1000)
   AND ($4::text IS NULL OR type = $4)
-  AND ($5::text IS NULL OR overall_rating = $5)
+  AND ($5::text IS NULL OR LOWER(BTRIM(overall_rating)) = LOWER(BTRIM($5)))
 ORDER BY distance_km ASC
 LIMIT $6 OFFSET $7
 """
@@ -194,7 +212,7 @@ WHERE geom IS NOT NULL
   AND UPPER(status) = 'ACTIVE'
   AND ST_DWithin(geom::geography, ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography, $3 * 1000)
   AND ($4::text IS NULL OR type = $4)
-  AND ($5::text IS NULL OR overall_rating = $5)
+  AND ($5::text IS NULL OR LOWER(BTRIM(overall_rating)) = LOWER(BTRIM($5)))
 """
 
 REGIONS_QUERY = """

@@ -2,6 +2,7 @@ import SearchBar from "@/components/SearchBar";
 import ProviderCard from "@/components/ProviderCard";
 import PrintButton from "@/components/PrintButton";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { searchProviders } from "@/lib/api";
 import type { Metadata } from "next";
 
@@ -25,7 +26,8 @@ const DISPLAY_NAMES: Record<string, string> = {
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
-  const name = DISPLAY_NAMES[slug] || slug;
+  if (!(slug in SERVICE_MAP)) notFound();
+  const name = DISPLAY_NAMES[slug];
   return {
     title: `${name} in England | CareGist`,
     description: `Browse CQC-rated ${name.toLowerCase()} across England. Ratings, inspections, and contact details.`,
@@ -41,8 +43,9 @@ export default async function ServiceTypePage({
 }) {
   const { slug } = await params;
   const { page } = await searchParams;
-  const serviceType = SERVICE_MAP[slug] || slug;
-  const displayName = DISPLAY_NAMES[slug] || slug;
+  if (!(slug in SERVICE_MAP)) notFound();
+  const serviceType = SERVICE_MAP[slug];
+  const displayName = DISPLAY_NAMES[slug];
 
   let results = { data: [], meta: { total: 0, page: 1, per_page: 20, pages: 0 } };
   let error = false;

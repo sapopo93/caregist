@@ -39,11 +39,46 @@ describe("page contracts", () => {
     assert.doesNotMatch(structuredData, /AggregateRating|reviewCount/);
   });
 
-  it("removes unrelated and unavailable public routes", () => {
-    assert.equal(existsSync(resolve(appRoot, "app/story-video/page.tsx")), false);
-    assert.equal(existsSync(resolve(appRoot, "app/claim/[slug]/page.tsx")), false);
+  it("handles retired stranger-facing routes without generic 404 pages", () => {
+    const storySource = readAppFile("app/story-video/page.tsx");
+    const claimSource = readAppFile("app/claim/[slug]/page.tsx");
+
+    assert.match(storySource, /permanentRedirect\("\/why-caregist"\)/);
+    assert.match(claimSource, /Provider claims are unavailable/);
+    assert.match(claimSource, /\/search\?q=/);
+    assert.match(claimSource, /cqc\.org\.uk\/care-services\/find-care-service/);
     assert.equal(existsSync(resolve(appRoot, "components/CityRatingPage.tsx")), false);
     assert.doesNotMatch(readAppFile("app/dashboard/page.tsx"), /Find a provider to claim|\/claim\//);
+  });
+
+  it("returns a real 404 for unknown service slugs", () => {
+    const source = readAppFile("app/services/[slug]/page.tsx");
+
+    assert.match(source, /import\s+\{\s*notFound\s*\}\s+from\s+"next\/navigation"/);
+    assert.match(source, /if \(!\(slug in SERVICE_MAP\)\) notFound\(\)/);
+    assert.doesNotMatch(source, /SERVICE_MAP\[slug\] \|\| slug/);
+  });
+
+  it("uses exact geography fields for region and local-authority pages", () => {
+    const source = readAppFile("app/region/[slug]/page.tsx");
+
+    assert.match(source, /searchProviders\(\{ region: REGION_MAP\[slug\]/);
+    assert.match(source, /searchProviders\(\{ local_authority: localAuthority/);
+    assert.doesNotMatch(source, /searchProviders\(\{ q:/);
+  });
+
+  it("keeps the free radius directory ungated", () => {
+    const source = readAppFile("components/RadiusFinder.tsx");
+
+    assert.doesNotMatch(source, /EmailCaptureStrip|emailGated|slice\(0, 3\)/);
+    assert.match(source, /const visibleResults = sortedResults/);
+  });
+
+  it("redirects Requires Improvement city pages with the stored rating casing", () => {
+    const source = readAppFile("app/requires-improvement-care-homes/[slug]/page.tsx");
+
+    assert.match(source, /rating=Requires\+improvement/);
+    assert.doesNotMatch(source, /rating=Requires\+Improvement/);
   });
 
   it("permanently retires the commodity lead-list page", () => {
@@ -106,6 +141,23 @@ describe("page contracts", () => {
     assert.match(pricingCtaSource, /business_use_confirmed/);
     assert.match(pricingCtaSource, /terms_version/);
     assert.doesNotMatch(layoutSource, /STRIPE_PAYMENT_LINK_URL/);
+  });
+
+  it("does not claim that a snapshot checksum is always available", () => {
+    const homeSource = readAppFile("app/page.tsx");
+    const whySource = readAppFile("app/why-caregist/page.tsx");
+    const feedSource = readAppFile("app/intelligence-feed/page.tsx");
+    const publicClaims = [homeSource, whySource, feedSource].join("\n");
+
+    assert.doesNotMatch(publicClaims, /snapshot checksums? make/i);
+    assert.doesNotMatch(publicClaims, /snapshot checksum travel/i);
+    assert.match(homeSource, /checksum when available/);
+    assert.match(homeSource, /href=\{item\.href\}/);
+    assert.match(whySource, /checksum currently available/);
+    assert.match(whySource, /href="\/data-status"/);
+    assert.match(feedSource, /"snapshot_sha256": null/);
+    assert.match(feedSource, /current availability is shown on Data Status/);
+    assert.match(feedSource, /href=\{item\.href\}/);
   });
 
   it("keeps provider-result navigation on reliable document requests", () => {

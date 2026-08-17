@@ -7,7 +7,6 @@ import {
   DEFAULT_RATING_OPTIONS,
   DEFAULT_REGION_OPTIONS,
   DEFAULT_SERVICE_TYPE_OPTIONS,
-  type DirectoryOpportunity,
 } from "./directory-constants.ts";
 import { classifyDirectoryDatabaseError, type DirectoryDatabaseStatus } from "./directory-db-status.ts";
 import {
@@ -26,6 +25,11 @@ import {
 } from "./directory-fallback.ts";
 import type { DirectorySearchParams } from "./directory-filters.ts";
 import type { NormalizedLeadRequest } from "./directory-leads.ts";
+import {
+  buildDirectoryTextSearchClause,
+  buildOpportunityClause,
+  buildRatingClause,
+} from "./directory-query-clauses.ts";
 
 export interface DirectoryProviderSummary {
   id: string;
@@ -168,23 +172,6 @@ export async function getDirectoryDatabaseStatus(): Promise<DirectoryDatabaseSta
   }
 }
 
-function buildOpportunityClause(opportunity: DirectoryOpportunity | "") {
-  switch (opportunity) {
-    case "new_90":
-      return "registration_date >= CURRENT_DATE - INTERVAL '90 days'";
-    case "inadequate":
-      return "overall_rating = 'Inadequate'";
-    case "requires_improvement":
-      return "overall_rating = 'Requires Improvement'";
-    case "not_yet_inspected":
-      return "overall_rating = 'Not Yet Inspected'";
-    case "stale_inspection":
-      return "(last_inspection_date IS NULL OR last_inspection_date < CURRENT_DATE - INTERVAL '3 years')";
-    default:
-      return "";
-  }
-}
-
 function buildWhereClause(
   filters: Pick<DirectorySearchParams, "query" | "region" | "serviceType" | "rating" | "opportunity">,
 ) {
@@ -201,17 +188,7 @@ function buildWhereClause(
     params.push(filters.query);
     tsQueryIndex = params.length;
 
-    clauses.push(
-      `(
-        name ILIKE $${ilikeIndex}
-        OR town ILIKE $${ilikeIndex}
-        OR county ILIKE $${ilikeIndex}
-        OR region ILIKE $${ilikeIndex}
-        OR service_types ILIKE $${ilikeIndex}
-        OR specialisms ILIKE $${ilikeIndex}
-        OR ${searchVector} @@ websearch_to_tsquery('english', $${tsQueryIndex})
-      )`,
-    );
+    clauses.push(buildDirectoryTextSearchClause(ilikeIndex, tsQueryIndex, searchVector));
   }
 
   if (filters.region) {
@@ -234,7 +211,7 @@ function buildWhereClause(
 
   if (filters.rating) {
     params.push(filters.rating);
-    clauses.push(`overall_rating = $${params.length}`);
+    clauses.push(buildRatingClause(params.length));
   }
 
   const opportunityClause = buildOpportunityClause(filters.opportunity);
@@ -430,8 +407,14 @@ export async function getDirectoryOpportunityStats(): Promise<DirectoryOpportuni
           COUNT(*)::int AS total_providers,
           COUNT(*) FILTER (WHERE registration_date >= CURRENT_DATE - INTERVAL '90 days')::int AS new_last_90_days,
           COUNT(*) FILTER (WHERE overall_rating = 'Inadequate')::int AS inadequate,
-          COUNT(*) FILTER (WHERE overall_rating = 'Requires Improvement')::int AS requires_improvement,
-          COUNT(*) FILTER (WHERE overall_rating = 'Not Yet Inspected')::int AS not_yet_inspected,
+          COUNT(*) FILTER (
+            WHERE lower(btrim(overall_rating)) = 'requires improvement'
+          )::int AS requires_improvement,
+          COUNT(*) FILTER (
+            WHERE lower(btrim(coalesce(overall_rating, ''))) IN (
+              '', 'not yet inspected', 'no published rating'
+            )
+          )::int AS not_yet_inspected,
           COUNT(*) FILTER (
             WHERE last_inspection_date IS NULL OR last_inspection_date < CURRENT_DATE - INTERVAL '3 years'
           )::int AS stale_inspection

@@ -7,7 +7,11 @@ import {
   CQC_INDEPENDENCE_LINE,
   PRICING_LADDER,
 } from "@/lib/caregist-config";
+import { loadCommercialCheckoutReadiness } from "@/lib/commercial-readiness";
 import { pricingPlanCardId } from "@/lib/pricing-plan-path";
+import { getServerApiBase } from "@/lib/server-api-config";
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "CareGist Pricing | CQC Signal Intelligence",
@@ -23,10 +27,12 @@ const PLAN_BADGES: Record<string, string> = {
   "Embedded Enterprise": "Quote only",
 };
 
-export default function PricingPage() {
+export default async function PricingPage() {
+  const checkoutReady = await loadCommercialCheckoutReadiness(getServerApiBase());
   const checkoutEnabled =
     process.env.BILLING_CHECKOUT_ENABLED === "true" &&
-    process.env.RADAR_CHECKOUT_ENABLED === "true";
+    process.env.RADAR_CHECKOUT_ENABLED === "true" &&
+    checkoutReady;
   const termsVersion = process.env.B2B_TERMS_VERSION?.trim() || "";
 
   return (
