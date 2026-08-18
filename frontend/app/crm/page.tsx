@@ -1,7 +1,7 @@
 "use client";
 
-import { Call, Device } from "@twilio/voice-sdk";
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import CrmDialler, { CrmDiallerHandle } from "./dialler";
 
 
 type CrmContact = {
@@ -255,7 +255,6 @@ export default function CrmPage() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [note, setNote] = useState("");
-  const [callStatus, setCallStatus] = useState("Idle");
   const [callSessionId, setCallSessionId] = useState<string | null>(null);
   const [awaitingDisposition, setAwaitingDisposition] = useState(false);
   const [dispositionGroup, setDispositionGroup] = useState<string | null>(null);
@@ -264,14 +263,13 @@ export default function CrmPage() {
   const [standaloneTaskType, setStandaloneTaskType] = useState("call");
   const [standaloneTaskTitle, setStandaloneTaskTitle] = useState("");
   const [standaloneTaskPriority, setStandaloneTaskPriority] = useState("normal");
-  const [activeCall, setActiveCall] = useState<Call | null>(null);
   const [callActionPending, setCallActionPending] = useState(false);
   const [campaignDraftId, setCampaignDraftId] = useState<string | null>(null);
   const [recipientIds, setRecipientIds] = useState<string[]>([]);
   const [confirmCampaign, setConfirmCampaign] = useState(false);
   const [pendingLostDeal, setPendingLostDeal] = useState<CrmDeal | null>(null);
   const [lossReason, setLossReason] = useState("");
-  const deviceRef = useRef<Device | null>(null);
+  const diallerRef = useRef<CrmDiallerHandle | null>(null);
   const callActionRef = useRef(false);
 
   const selected = summary?.contacts.find((contact) => contact.id === selectedId) || null;
@@ -308,7 +306,6 @@ export default function CrmPage() {
       if (data.pending_disposition_call) {
         setCallSessionId(data.pending_disposition_call.id);
         setAwaitingDisposition(true);
-        setCallStatus("Previous call ended — choose the outcome below");
       }
       setError("");
     } catch (caught) {
@@ -346,7 +343,6 @@ export default function CrmPage() {
 
   useEffect(() => {
     void loadSummary();
-    return () => deviceRef.current?.destroy();
   }, [loadSummary]);
 
   useEffect(() => {
@@ -365,7 +361,7 @@ export default function CrmPage() {
   }, [tab, manager, loadCampaigns, loadReport, summary?.features.email_campaigns_enabled]);
 
   useEffect(() => {
-    if (!summary || manager || callSessionId || activeCall) return;
+    if (!summary || manager || callSessionId) return;
     const unresolved = summary.recent_calls.find(
       (call) => TERMINAL_CALL_STATUSES.has(call.status) && call.disposition === null,
     );
@@ -373,8 +369,7 @@ export default function CrmPage() {
     setCallSessionId(unresolved.id);
     setSelectedId(unresolved.contact_id);
     setAwaitingDisposition(true);
-    setCallStatus("Call ended — choose the outcome below");
-  }, [activeCall, callSessionId, manager, summary]);
+  }, [callSessionId, manager, summary]);
 
   async function createContact(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -493,66 +488,35 @@ export default function CrmPage() {
     }
   }
 
-  async function startCall() {
+  function startCall() {
     if (!selected || !summary?.calling.enabled || !readiness.ready || callActionRef.current) return;
-    callActionRef.current = true;
-    setCallActionPending(true);
     setError("");
     setNotice("");
-    setCallStatus("Checking permission and connecting…");
-    try {
-      const tokenData = await jsonRequest("/api/v1/crm/twilio/token");
-      const authorization = await jsonRequest(
-        `/api/v1/crm/contacts/${selected.id}/calls/authorize`,
-        { method: "POST" },
-      );
-      deviceRef.current?.destroy();
-      const device = new Device(tokenData.token, {
-        edge: tokenData.edge,
-        logLevel: "warn",
-        closeProtection: true,
-      });
-      device.on("error", (twilioError) => {
-        setError(`Calling error: ${twilioError.message}`);
-        setCallStatus("Failed");
-      });
-      deviceRef.current = device;
-      setCallSessionId(authorization.id);
-      setAwaitingDisposition(false);
-      setDispositionGroup(null);
-      setCallbackAt("");
-      const call = await device.connect({ params: { authorization: authorization.authorization } });
-      setActiveCall(call);
-      setCallStatus("Connecting…");
-      call.on("accept", () => setCallStatus("Connected"));
-      call.on("ringing", () => setCallStatus("Ringing…"));
-      call.on("disconnect", () => {
-        setCallStatus("Call ended — choose the outcome below");
-        setActiveCall(null);
-        setAwaitingDisposition(true);
-      });
-      call.on("cancel", () => {
-        setCallStatus("Call cancelled — choose the outcome below");
-        setActiveCall(null);
-        setAwaitingDisposition(true);
-      });
-      call.on("error", (twilioError) => {
-        setError(`Call failed: ${twilioError.message}`);
-        setCallStatus("Failed — choose the outcome below");
-        setActiveCall(null);
-        setAwaitingDisposition(true);
-      });
-    } catch (caught) {
-      setCallStatus("Idle");
-      setCallSessionId(null);
-      setAwaitingDisposition(false);
-      showError(caught, "Could not start the call.");
-      await loadSummary();
-    } finally {
-      callActionRef.current = false;
-      setCallActionPending(false);
-    }
+    void diallerRef.current?.start();
   }
+
+  const handleDiallerSession = (sessionId: string) => {
+    setCallSessionId(sessionId);
+    setAwaitingDisposition(false);
+    setDispositionGroup(null);
+    setCallbackAt("");
+  };
+
+  const handleDiallerEnded = () => setAwaitingDisposition(true);
+
+  const handleDiallerError = (message: string) => setError(message);
+
+  const handleDiallerStartFailure = (message: string) => {
+    setCallSessionId(null);
+    setAwaitingDisposition(false);
+    setError(message);
+    void loadSummary();
+  };
+
+  const handleDiallerReset = () => {
+    setCallSessionId(null);
+    setAwaitingDisposition(false);
+  };
 
   async function disposition(value: string, group: string) {
     if (!callSessionId || callActionRef.current) return;
@@ -581,7 +545,6 @@ export default function CrmPage() {
       setAwaitingDisposition(false);
       setDispositionGroup(null);
       setCallbackAt("");
-      setCallStatus("Outcome saved");
       showNotice(`${label(value)} saved. You can start the next call.`);
       await loadSummary();
     } catch (caught) {
@@ -752,6 +715,19 @@ export default function CrmPage() {
 
   return (
     <div className="min-h-screen bg-[#f4f1ea] px-4 py-6 lg:px-8">
+      <CrmDialler
+        ref={diallerRef}
+        contactId={selected?.id ?? null}
+        callingEnabled={Boolean(summary?.calling.enabled)}
+        readinessReady={readiness.ready}
+        awaitingDisposition={awaitingDisposition}
+        onCallSession={handleDiallerSession}
+        onCallEnded={handleDiallerEnded}
+        onCallError={handleDiallerError}
+        onStartFailure={handleDiallerStartFailure}
+        onCallReset={handleDiallerReset}
+        onCallPending={setCallActionPending}
+      />
       <div className="mx-auto max-w-[1500px]">
         <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
           <div>
@@ -829,10 +805,9 @@ export default function CrmPage() {
                   <div className="rounded-2xl bg-charcoal p-5 text-cream">
                     <div className="flex flex-wrap items-center justify-between gap-4">
                       <div className="flex items-center gap-3"><span className={`h-4 w-4 rounded-full ${readiness.tone}`} /><div><div className="font-bold">{readiness.title}</div><div className="mt-1 text-xs text-stone">{readiness.detail}</div></div></div>
-                      {activeCall ? <button onClick={() => activeCall.disconnect()} className="rounded-xl bg-alert px-6 py-3 font-bold text-white">End call</button> : <button onClick={() => void startCall()} disabled={!summary?.calling.enabled || !readiness.ready || Boolean(callSessionId) || callActionPending} className="rounded-xl bg-amber px-6 py-3 font-bold text-charcoal disabled:cursor-not-allowed disabled:opacity-40">{callActionPending ? "Connecting…" : readiness.ready ? "Call contact" : "Calling blocked"}</button>}
+                      <button onClick={() => void startCall()} disabled={!summary?.calling.enabled || !readiness.ready || Boolean(callSessionId) || callActionPending} className="rounded-xl bg-amber px-6 py-3 font-bold text-charcoal disabled:cursor-not-allowed disabled:opacity-40">{callActionPending ? "Connecting…" : readiness.ready ? "Call contact" : "Calling blocked"}</button>
                     </div>
-                    <div role="status" aria-live="polite" className="mt-4 rounded-lg bg-white/10 px-3 py-2 text-sm">{callStatus}</div>
-                    {callSessionId && awaitingDisposition && !activeCall && (
+                    {callSessionId && awaitingDisposition && (
                       <div className="mt-4 border-t border-dusk pt-4">
                         <p className="mb-3 text-sm font-semibold">What happened? Choose one before the next call.</p>
                         <div className="grid gap-2 sm:grid-cols-2">
