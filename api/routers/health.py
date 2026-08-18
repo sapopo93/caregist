@@ -21,12 +21,23 @@ router = APIRouter(tags=["health"])
 
 
 async def _crm_operations(conn) -> dict:
+    calling = {
+        "enabled": bool(
+            settings.crm_enabled
+            and settings.crm_calling_enabled
+            and settings.outbound_communications_enabled
+        ),
+        "crm_enabled": bool(settings.crm_enabled),
+        "recording_enabled": bool(settings.crm_recording_enabled),
+        "ai_enabled": bool(settings.crm_ai_enabled),
+        "tps_automation_enabled": bool(settings.crm_tps_automation_enabled),
+    }
     if not (
         settings.crm_recording_enabled
         or settings.crm_ai_enabled
         or settings.crm_tps_automation_enabled
     ):
-        return {"enabled": False, "ok": True}
+        return {"enabled": False, "ok": True, "calling": calling}
     async with conn.transaction():
         await conn.execute("SELECT set_config('caregist.worker', 'crm_health', true)")
         row = await conn.fetchrow(
@@ -66,6 +77,7 @@ async def _crm_operations(conn) -> dict:
     )
     result.update(
         enabled=True,
+        calling=calling,
         worker_required=worker_required,
         worker_ok=worker_ok,
         retention_ok=int(result["expired_backlog"]) == 0,

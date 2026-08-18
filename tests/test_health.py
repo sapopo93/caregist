@@ -144,6 +144,35 @@ async def test_crm_health_fails_closed_when_tps_cron_is_stale():
 
 
 @pytest.mark.asyncio
+async def test_crm_health_reports_calling_without_claiming_ops_are_on():
+    from api.routers import health
+
+    conn = AsyncMock()
+    with (
+        patch.object(health.settings, "crm_enabled", True),
+        patch.object(health.settings, "crm_calling_enabled", True),
+        patch.object(health.settings, "outbound_communications_enabled", True),
+        patch.object(health.settings, "crm_recording_enabled", False),
+        patch.object(health.settings, "crm_ai_enabled", False),
+        patch.object(health.settings, "crm_tps_automation_enabled", False),
+    ):
+        result = await health._crm_operations(conn)
+
+    assert result == {
+        "enabled": False,
+        "ok": True,
+        "calling": {
+            "enabled": True,
+            "crm_enabled": True,
+            "recording_enabled": False,
+            "ai_enabled": False,
+            "tps_automation_enabled": False,
+        },
+    }
+    conn.fetchrow.assert_not_awaited()
+
+
+@pytest.mark.asyncio
 async def test_security_headers_include_hsts_in_production():
     with patch("api.main._is_local", False):
         async with AsyncClient(transport=ASGITransport(app=app), base_url="https://test") as client:
