@@ -205,7 +205,24 @@ const CrmDialler = forwardRef<CrmDiallerHandle, CrmDiallerProps>(function CrmDia
       wireCallEvents(call);
     } catch (caught) {
       if (cancelledRef.current) return;
-      const message = caught instanceof Error ? caught.message : "Could not start the call.";
+      const describe = (value: unknown): string => {
+        if (value instanceof Error) return value.message;
+        if (typeof value === "string") return value;
+        try {
+          const asRecord = value as Record<string, unknown>;
+          const parts: string[] = [];
+          if (typeof asRecord?.message === "string") parts.push(asRecord.message as string);
+          if (typeof asRecord?.code === "number" || typeof asRecord?.code === "string") parts.push(`code ${asRecord.code}`);
+          if (typeof asRecord?.description === "string") parts.push(asRecord.description as string);
+          if (typeof asRecord?.name === "string") parts.push(`(${asRecord.name})`);
+          const flat = JSON.stringify(value);
+          return parts.length ? parts.join(" ") : flat && flat !== "{}" ? flat : String(value);
+        } catch {
+          return String(value);
+        }
+      };
+      const message = describe(caught);
+      console.error("[CrmDialler] start failed:", caught, "| described:", message);
       setTwilioError({ message });
       transition("failed");
       onStartFailure(message);
