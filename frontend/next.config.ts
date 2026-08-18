@@ -89,7 +89,9 @@ const nextConfig: NextConfig = {
           { key: "X-Frame-Options", value: "DENY" },
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+          // Permissions-Policy is owned by proxy.ts. A global deny header
+          // here would combine with the CRM allow-list and block the browser
+          // permission popup on /crm (Twilio 31401).
           { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
           // Content-Security-Policy is set per-request (with a nonce) in
           // proxy.ts so script-src can drop 'unsafe-inline' (F-21).

@@ -7,11 +7,19 @@ import { describe, it } from "node:test";
 const frontendRoot = resolve(import.meta.dirname, "..");
 const source = readFileSync(resolve(frontendRoot, "app/crm/page.tsx"), "utf8");
 const proxySource = readFileSync(resolve(frontendRoot, "proxy.ts"), "utf8");
+const nextConfigSource = readFileSync(resolve(frontendRoot, "next.config.ts"), "utf8");
+const diallerSource = readFileSync(resolve(frontendRoot, "app/crm/dialler.tsx"), "utf8");
 
 
 describe("CareGist CRM safety contracts", () => {
   it("protects the CRM route with authenticated middleware", () => {
     assert.match(proxySource, /"\/crm"/);
+  });
+
+  it("lets /crm request the microphone so the browser permission popup can appear", () => {
+    assert.match(proxySource, /microphone=\(self\)/);
+    assert.doesNotMatch(nextConfigSource, /Permissions-Policy.*microphone/);
+    assert.match(diallerSource, /getUserMedia\(\{ audio: true \}\)/);
   });
 
   it("does not expose or collect Twilio credentials in the browser", () => {

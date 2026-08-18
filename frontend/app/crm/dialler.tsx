@@ -190,6 +190,21 @@ const CrmDialler = forwardRef<CrmDiallerHandle, CrmDiallerProps>(function CrmDia
         { method: "POST" },
       );
       if (cancelledRef.current) return;
+      if (!navigator.mediaDevices?.getUserMedia) {
+        throw new Error("This browser cannot share a microphone. Use Chrome or Edge on https://www.caregist.co.uk/crm.");
+      }
+      try {
+        const mic = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mic.getTracks().forEach((track) => track.stop());
+      } catch (micError) {
+        const denied = micError instanceof DOMException && (micError.name === "NotAllowedError" || micError.name === "PermissionDeniedError");
+        throw new Error(
+          denied
+            ? "Allow the microphone when Chrome asks, then press Call contact again."
+            : "Could not open the microphone. Check the padlock next to the address bar.",
+        );
+      }
+      if (cancelledRef.current) return;
       const device = new Device(tokenData.token, {
         edge: tokenData.edge,
         logLevel: "warn",
