@@ -23,14 +23,15 @@ describe("CareGist CRM safety contracts", () => {
   });
 
   it("does not expose or collect Twilio credentials in the browser", () => {
-    assert.doesNotMatch(source, /TWILIO_ACCOUNT_SID|TWILIO_AUTH_TOKEN|TWILIO_API_KEY_SECRET/);
-    assert.match(source, /\/api\/v1\/crm\/twilio\/token/);
+    const surface = `${source}\n${diallerSource}`;
+    assert.doesNotMatch(surface, /TWILIO_ACCOUNT_SID|TWILIO_AUTH_TOKEN|TWILIO_API_KEY_SECRET/);
+    assert.match(diallerSource, /\/api\/v1\/crm\/twilio\/token/);
   });
 
   it("uses one-time server authorization instead of sending a destination number to Twilio", () => {
-    assert.match(source, /calls\/authorize/);
-    assert.match(source, /params:\s*\{\s*authorization:/);
-    assert.doesNotMatch(source, /params:\s*\{\s*(To|phone|phone_e164):/);
+    assert.match(diallerSource, /calls\/authorize/);
+    assert.match(diallerSource, /params:\s*\{\s*authorization:/);
+    assert.doesNotMatch(diallerSource, /params:\s*\{\s*(To|phone|phone_e164):/);
   });
 
   it("makes phone compliance fool-proof for operators", () => {
@@ -73,6 +74,6 @@ describe("CareGist CRM safety contracts", () => {
     assert.match(source, /option value="follow_up"/);
     assert.match(source, /option value="meeting"/);
     assert.match(source, /callActionRef\.current/);
-    assert.match(source, /const tokenData = await jsonRequest/);
+    assert.match(diallerSource, /const tokenData = await jsonRequest/);
   });
 });
