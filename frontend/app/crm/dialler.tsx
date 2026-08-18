@@ -1,7 +1,7 @@
 "use client";
 
 import { Call, Device } from "@twilio/voice-sdk";
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState, type PointerEvent } from "react";
 
 type DiallerStage =
   | "idle"
@@ -90,11 +90,14 @@ const CrmDialler = forwardRef<CrmDiallerHandle, CrmDiallerProps>(function CrmDia
   const [twilioError, setTwilioError] = useState<TwilioErrorInfo | null>(null);
   const [copied, setCopied] = useState(false);
   const [dismissed, setDismissed] = useState(false);
+  const [offset, setOffset] = useState<{ x: number; y: number } | null>(null);
 
   const deviceRef = useRef<Device | null>(null);
   const activeCallRef = useRef<Call | null>(null);
   const startingRef = useRef(false);
   const cancelledRef = useRef(false);
+  const panelRef = useRef<HTMLElement | null>(null);
+  const dragRef = useRef<{ grabX: number; grabY: number } | null>(null);
 
   const addLog = useCallback((text: string) => {
     setLogLines((lines) => [
@@ -214,6 +217,8 @@ const CrmDialler = forwardRef<CrmDiallerHandle, CrmDiallerProps>(function CrmDia
       deviceRef.current = device;
       onCallSession(authorization.id);
       transition("connecting");
+      await device.register();
+      if (cancelledRef.current) return;
       const call = await device.connect({ params: { authorization: authorization.authorization } });
       if (cancelledRef.current) return;
       activeCallRef.current = call;
@@ -353,6 +358,33 @@ const CrmDialler = forwardRef<CrmDiallerHandle, CrmDiallerProps>(function CrmDia
   const visible = stage !== "idle" || awaitingDisposition;
   if (!visible) return null;
 
+  const startDrag = (event: PointerEvent<HTMLElement>) => {
+    if ((event.target as HTMLElement).closest("button")) return;
+    const panel = panelRef.current;
+    if (!panel) return;
+    const rect = panel.getBoundingClientRect();
+    dragRef.current = { grabX: event.clientX - rect.left, grabY: event.clientY - rect.top };
+    panel.setPointerCapture(event.pointerId);
+  };
+
+  const moveDrag = (event: PointerEvent<HTMLElement>) => {
+    if (!dragRef.current) return;
+    const panel = panelRef.current;
+    const width = panel?.offsetWidth ?? 320;
+    const height = panel?.offsetHeight ?? 280;
+    const x = Math.min(Math.max(8, event.clientX - dragRef.current.grabX), window.innerWidth - width - 8);
+    const y = Math.min(Math.max(8, event.clientY - dragRef.current.grabY), window.innerHeight - height - 8);
+    setOffset({ x, y });
+  };
+
+  const endDrag = () => {
+    dragRef.current = null;
+  };
+
+  const panelStyle = offset
+    ? { left: offset.x, top: offset.y, right: "auto", bottom: "auto" }
+    : { right: 16, bottom: 16, top: "auto", left: "auto" };
+
   const dotClass =
     stage === "connected"
       ? "bg-moss"
@@ -382,7 +414,7 @@ const CrmDialler = forwardRef<CrmDiallerHandle, CrmDiallerProps>(function CrmDia
         type="button"
         onClick={() => setDismissed(false)}
         aria-label={`Reopen call panel — ${pillLabel}`}
-        className="fixed right-4 top-4 z-[100] flex items-center gap-2 rounded-full border border-stone bg-charcoal px-4 py-2 text-sm font-semibold text-cream shadow-xl hover:bg-black/80"
+        className="fixed bottom-4 right-4 z-40 flex items-center gap-2 rounded-full border border-stone bg-charcoal px-4 py-2 text-sm font-semibold text-cream shadow-xl hover:bg-black/80"
       >
         <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${dotClass}`} />
         <span>{pillLabel}</span>
@@ -392,9 +424,15 @@ const CrmDialler = forwardRef<CrmDiallerHandle, CrmDiallerProps>(function CrmDia
 
   return (
     <aside
+      ref={panelRef}
       role="region"
       aria-label="Call dialler"
-      className="fixed right-4 top-4 z-[100] w-80 max-w-[calc(100vw-2rem)] rounded-2xl border border-stone bg-charcoal p-4 text-cream shadow-2xl"
+      onPointerDown={startDrag}
+      onPointerMove={moveDrag}
+      onPointerUp={endDrag}
+      onPointerCancel={endDrag}
+      style={panelStyle}
+      className="fixed z-40 w-80 max-w-[calc(100vw-2rem)] cursor-grab rounded-2xl border border-stone bg-charcoal p-4 text-cream shadow-2xl active:cursor-grabbing"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-start gap-2">

@@ -70,6 +70,13 @@ describe("CareGist CRM safety contracts", () => {
     assert.doesNotMatch(source, /window\.prompt/);
   });
 
+  it("keeps the dialler movable and advances after an outcome", () => {
+    assert.match(diallerSource, /onPointerDown=\{startDrag\}/);
+    assert.match(diallerSource, /device\.register\(\)/);
+    assert.match(diallerSource, /bottom: 16/);
+    assert.match(source, /Next: \$\{contactName\(nextContact\)\}/);
+  });
+
   it("supports general tasks and serializes call actions", () => {
     assert.match(source, /option value="follow_up"/);
     assert.match(source, /option value="meeting"/);

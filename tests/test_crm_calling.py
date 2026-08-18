@@ -74,6 +74,15 @@ def test_twilio_statuses_map_to_constrained_crm_states(twilio_status, crm_status
     assert map_twilio_status(twilio_status) == crm_status
 
 
+def test_open_call_can_be_closed_so_the_operator_can_log_an_outcome():
+    assert crm.close_status_for_disposition("completed") is None
+    assert crm.close_status_for_disposition("authorized") == "failed"
+    assert crm.close_status_for_disposition("initiated") == "failed"
+    with pytest.raises(HTTPException) as exc:
+        crm.close_status_for_disposition("unknown")
+    assert exc.value.status_code == 409
+
+
 def test_unknown_twilio_status_is_rejected():
     with pytest.raises(HTTPException) as exc:
         map_twilio_status("mystery")

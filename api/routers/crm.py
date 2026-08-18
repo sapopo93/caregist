@@ -34,6 +34,16 @@ from api.services.tenant_context import OrganizationContext, resolve_organizatio
 
 router = APIRouter(prefix="/api/v1/crm", tags=["crm"])
 MAX_TWILIO_WEBHOOK_BYTES = 64 * 1024
+_OPEN_CALL_STATUSES = frozenset({"authorized", "initiated", "ringing", "in_progress"})
+
+
+def close_status_for_disposition(status: str) -> str | None:
+    """Return a terminal status to apply, or None when already terminal."""
+    if status in TERMINAL_CALL_STATUSES:
+        return None
+    if status in _OPEN_CALL_STATUSES:
+        return "failed"
+    raise HTTPException(status_code=409, detail="A call can be dispositioned only after it ends.")
 
 
 STAGES = (
@@ -1036,7 +1046,17 @@ async def record_disposition(
         if call["agent_user_id"] != context.user_id and context.role not in {"owner", "admin"}:
             raise HTTPException(status_code=403, detail="Only the calling agent or a manager can disposition this call.")
         if call["status"] not in TERMINAL_CALL_STATUSES:
-            raise HTTPException(status_code=409, detail="A call can be dispositioned only after it ends.")
+            closed = close_status_for_disposition(call["status"])
+            if closed:
+                await conn.execute(
+                    """
+                    UPDATE crm_call_sessions
+                    SET status = $2, ended_at = COALESCE(ended_at, NOW()), updated_at = NOW()
+                    WHERE id = $1 AND status NOT IN ('completed', 'busy', 'no_answer', 'failed', 'canceled')
+                    """,
+                    call_session_id,
+                    closed,
+                )
         if call["disposition"] is not None:
             raise HTTPException(status_code=409, detail="This call already has an operator disposition.")
         await conn.execute(

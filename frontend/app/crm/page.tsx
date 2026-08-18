@@ -545,7 +545,15 @@ export default function CrmPage() {
       setAwaitingDisposition(false);
       setDispositionGroup(null);
       setCallbackAt("");
-      showNotice(`${label(value)} saved. You can start the next call.`);
+      const queue = summary?.contacts || [];
+      const currentIndex = queue.findIndex((contact) => contact.id === selectedId);
+      const nextContact = currentIndex >= 0 ? queue[currentIndex + 1] : undefined;
+      if (nextContact) setSelectedId(nextContact.id);
+      showNotice(
+        nextContact
+          ? `${label(value)} saved. Next: ${contactName(nextContact)}.`
+          : `${label(value)} saved. End of the visible queue.`,
+      );
       await loadSummary();
     } catch (caught) {
       showError(caught, "Could not save the call outcome.");
