@@ -40,6 +40,13 @@ async def test_existing_membership_is_returned_without_writes():
     conn.execute.assert_not_awaited()
 
 
+def test_shared_workspace_is_preferred_over_personal_sandbox():
+    from pathlib import Path
+
+    source = (Path(__file__).parents[1] / "api/services/tenant_context.py").read_text(encoding="utf-8")
+    assert "o.created_by_user_id IS DISTINCT FROM $1" in source
+
+
 @pytest.mark.asyncio
 async def test_missing_membership_is_provisioned_idempotently():
     row = {

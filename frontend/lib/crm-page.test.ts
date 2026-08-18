@@ -66,6 +66,8 @@ describe("CareGist CRM safety contracts", () => {
     assert.match(source, /aria-live="polite"/);
     assert.match(source, /aria-pressed=\{dispositionGroup === value\}/);
     assert.match(source, /aria-label="Add contact"/);
+    assert.match(source, /aria-label="Add teammate to this CRM workspace"/);
+    assert.match(source, /\/api\/v1\/crm\/team\/members/);
     assert.match(source, /id="loss-reason"/);
     assert.doesNotMatch(source, /window\.prompt/);
   });

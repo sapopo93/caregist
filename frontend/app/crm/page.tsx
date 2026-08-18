@@ -269,6 +269,7 @@ export default function CrmPage() {
   const [confirmCampaign, setConfirmCampaign] = useState(false);
   const [pendingLostDeal, setPendingLostDeal] = useState<CrmDeal | null>(null);
   const [lossReason, setLossReason] = useState("");
+  const [teamMembers, setTeamMembers] = useState<Array<{ id: number; email: string; name: string | null; role: string }>>([]);
   const diallerRef = useRef<CrmDiallerHandle | null>(null);
   const callActionRef = useRef(false);
 
@@ -332,6 +333,15 @@ export default function CrmPage() {
     }
   }, []);
 
+  const loadTeam = useCallback(async () => {
+    try {
+      const data = await jsonRequest("/api/v1/crm/team/members");
+      setTeamMembers(Array.isArray(data.data) ? data.data : []);
+    } catch (caught) {
+      showError(caught, "Could not load the workspace team.");
+    }
+  }, []);
+
   const loadCallDetail = useCallback(async (callId: string) => {
     try {
       setCallDetail(await jsonRequest(`/api/v1/crm/calls/${callId}`));
@@ -358,7 +368,8 @@ export default function CrmPage() {
   useEffect(() => {
     if (tab === "campaigns" && summary?.features.email_campaigns_enabled) void loadCampaigns();
     if (tab === "reports" && manager) void loadReport();
-  }, [tab, manager, loadCampaigns, loadReport, summary?.features.email_campaigns_enabled]);
+    if (tab === "compliance" && manager) void loadTeam();
+  }, [tab, manager, loadCampaigns, loadReport, loadTeam, summary?.features.email_campaigns_enabled]);
 
   useEffect(() => {
     if (!summary || manager || callSessionId) return;
@@ -560,6 +571,29 @@ export default function CrmPage() {
     } finally {
       callActionRef.current = false;
       setCallActionPending(false);
+    }
+  }
+
+  async function inviteTeam(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
+    const email = String(form.get("email") || "").trim();
+    if (!email) return;
+    try {
+      const result = await jsonRequest("/api/v1/crm/team/members", {
+        method: "POST",
+        body: JSON.stringify({ email, role: "member" }),
+      });
+      formElement.reset();
+      showNotice(
+        result.already_member
+          ? `${email} is already in this workspace.`
+          : `${email} can now open /crm and will see this queue. They must refresh.`,
+      );
+      await loadTeam();
+    } catch (caught) {
+      showError(caught, "Could not add that teammate.");
     }
   }
 
@@ -930,10 +964,28 @@ export default function CrmPage() {
 
         {tab === "compliance" && (
           !manager ? <div className="rounded-2xl border border-stone bg-cream p-8 text-center"><h2 className="text-2xl font-bold">Safety is automatic</h2><p className="mt-2 text-dusk">Agents do not need to manage TPS/CTPS files or legal evidence. The green, amber and red call status is authoritative.</p></div> : (
-            <div className="grid gap-4 xl:grid-cols-3">
+            <div className="space-y-4">
+              <section className="rounded-2xl border border-stone bg-cream p-5">
+                <h2 className="text-2xl font-bold">Workspace team</h2>
+                <p className="mt-2 text-sm text-dusk">
+                  Each login starts in its own empty CRM. Add a teammate who already has a CareGist account and they will see this queue, not a stale one-contact sandbox.
+                </p>
+                <form onSubmit={inviteTeam} aria-label="Add teammate to this CRM workspace" className="mt-4 flex flex-wrap gap-2">
+                  <input aria-label="Teammate email" name="email" type="email" required placeholder="colleague@email" className="min-w-64 flex-1 rounded-lg border border-stone bg-white px-3 py-2" />
+                  <button className="rounded-lg bg-bark px-4 py-2 font-bold text-white">Add to this workspace</button>
+                </form>
+                <ul className="mt-4 space-y-1 text-sm">
+                  {teamMembers.map((member) => (
+                    <li key={member.id}>{member.name || member.email} · {label(member.role)}</li>
+                  ))}
+                  {!teamMembers.length && <li className="text-dusk">Only you are in this workspace so far.</li>}
+                </ul>
+              </section>
+              <div className="grid gap-4 xl:grid-cols-3">
               <form onSubmit={importScreening} aria-label="Import TPS and CTPS results" className="rounded-2xl border border-stone bg-cream p-5"><h2 className="text-2xl font-bold">Import TPS/CTPS results</h2><p className="mt-2 text-sm text-dusk">Upload once; CareGist updates every matching lead and the private lookup cache.</p><div className="mt-4 space-y-3"><select aria-label="Screening source" name="source" className="w-full rounded-lg border border-stone bg-white px-3 py-2"><option value="tps_ctps_licence">Official TPS/CTPS licence</option><option value="approved_provider">Approved screening provider</option></select><input aria-label="Screening source reference" required name="source_reference" maxLength={500} placeholder="Licence, batch or download reference" className="w-full rounded-lg border border-stone bg-white px-3 py-2" /><label className="block rounded-xl border-2 border-dashed border-stone bg-white p-5 text-center text-sm"><span className="font-semibold">Choose screening CSV</span><input required name="upload" type="file" accept=".csv,text/csv" className="mt-3 block w-full text-xs" /></label><div className="rounded-lg bg-parchment p-3 text-xs text-dusk"><strong>Required columns:</strong> phone_e164, status, screened_at. Status must be clear, tps, ctps or invalid.</div><button disabled={busy} className="w-full rounded-lg bg-bark px-4 py-2 font-bold text-white disabled:opacity-40">Check all matching leads</button></div></form>
               <div className="rounded-2xl border border-stone bg-cream p-5"><h2 className="text-2xl font-bold">Check one contact</h2><p className="mt-2 text-sm text-dusk">Use this only when you have auditable evidence for the selected contact.</p><div className="mt-4 rounded-xl bg-parchment p-3 font-semibold">{selected ? contactName(selected) : "Choose a contact in Call queue"}</div><form onSubmit={recordScreening} aria-label="Record contact screening" className="mt-4 space-y-3"><select aria-label="Screening status" name="status" className="w-full rounded-lg border border-stone bg-white px-3 py-2"><option value="clear">Clear to call</option><option value="tps">On TPS</option><option value="ctps">On CTPS</option><option value="invalid">Invalid number</option><option value="consent_override">Specific consent to CareGist</option></select><select aria-label="Screening evidence source" name="source" className="w-full rounded-lg border border-stone bg-white px-3 py-2"><option value="tps_ctps_licence">Official TPS/CTPS check</option><option value="approved_provider">Approved provider check</option><option value="specific_consent">Specific consent evidence</option></select><input aria-label="Screening evidence reference" required name="reference" maxLength={500} placeholder="Evidence or source reference" className="w-full rounded-lg border border-stone bg-white px-3 py-2" /><button disabled={!selected} className="w-full rounded-lg bg-bark px-4 py-2 font-bold text-white disabled:opacity-40">Save screening</button></form></div>
               <div className="rounded-2xl border border-stone bg-cream p-5"><h2 className="text-2xl font-bold">Email permission</h2><p className="mt-2 text-sm text-dusk">Only eligible contacts can appear in the campaign recipient list.</p><div className="mt-4 rounded-xl bg-parchment p-3 font-semibold">{selected ? contactName(selected) : "Choose a contact in Call queue"}</div><form onSubmit={updateMarketing} aria-label="Record email permission" className="mt-4 space-y-3"><select aria-label="Subscriber type" name="subscriber_type" defaultValue={selected?.subscriber_type || "unknown"} key={`subscriber-${selected?.id}`} className="w-full rounded-lg border border-stone bg-white px-3 py-2"><option value="corporate">Corporate subscriber</option><option value="sole_trader">Sole trader</option><option value="partnership">Partnership</option><option value="individual">Individual</option><option value="unknown">Unknown</option></select><select aria-label="Email marketing basis" name="basis" defaultValue={selected?.email_marketing_basis || "none"} key={`basis-${selected?.id}`} className="w-full rounded-lg border border-stone bg-white px-3 py-2"><option value="none">No marketing permission</option><option value="corporate_subscriber">Corporate B2B</option><option value="consent">Consent</option><option value="soft_opt_in">Soft opt-in</option></select><input aria-label="Email permission evidence reference" name="reference" maxLength={500} placeholder="Consent or source reference" className="w-full rounded-lg border border-stone bg-white px-3 py-2" /><button disabled={!selected} className="w-full rounded-lg bg-bark px-4 py-2 font-bold text-white disabled:opacity-40">Save email permission</button></form><div className="mt-5 rounded-xl border border-alert/30 bg-white p-3 text-xs text-dusk"><strong>Fixed UK rules:</strong> SMS is disabled. Suppression always wins. Recording and AI cannot activate without their independent safety gates.</div></div>
+            </div>
             </div>
           )
         )}
