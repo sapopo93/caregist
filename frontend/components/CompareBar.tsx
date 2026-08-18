@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 
 const STORAGE_KEY = "caregist_compare";
 
@@ -26,7 +25,6 @@ function setCompareList(list: CompareItem[]) {
 
 export default function CompareBar() {
   const [items, setItems] = useState<CompareItem[]>([]);
-  const router = useRouter();
 
   useEffect(() => {
     const sync = () => setItems(getCompareList());
@@ -47,15 +45,10 @@ export default function CompareBar() {
     setCompareList([]);
   }
 
-  function goCompare() {
-    const slugs = items.map((p) => p.slug).join(",");
-    router.push(`/compare?providers=${slugs}`);
-  }
-
   if (items.length === 0) return null;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-bark/95 backdrop-blur text-cream px-4 py-3 z-50 shadow-lg">
+    <div className="fixed bottom-0 left-0 right-0 bg-bark text-cream px-4 py-3 z-[80] shadow-[0_-8px_24px_rgba(0,0,0,0.28)] border-t-2 border-clay">
       <div className="max-w-6xl mx-auto flex items-center justify-between gap-4">
         <div className="flex items-center gap-3 overflow-x-auto">
           <span className="text-sm font-medium whitespace-nowrap">Compare ({items.length}/3):</span>
@@ -70,10 +63,22 @@ export default function CompareBar() {
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <button onClick={clearAll} className="text-xs text-stone hover:text-cream underline">Clear</button>
-          <button onClick={goCompare} disabled={items.length < 2}
-            className="px-4 py-1.5 bg-clay text-white rounded-lg text-sm font-medium hover:bg-amber transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
-            Compare Now
-          </button>
+          {items.length >= 2 ? (
+            <a
+              href={`/compare?providers=${items.map((p) => p.slug).join(",")}`}
+              className="px-4 py-1.5 bg-clay text-white rounded-lg text-sm font-medium hover:bg-amber transition-colors"
+            >
+              Compare Now
+            </a>
+          ) : (
+            <button
+              type="button"
+              disabled
+              className="px-4 py-1.5 bg-clay text-white rounded-lg text-sm font-medium opacity-40 cursor-not-allowed"
+            >
+              Compare Now
+            </button>
+          )}
         </div>
       </div>
     </div>

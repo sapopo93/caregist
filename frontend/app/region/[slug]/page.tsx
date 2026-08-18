@@ -112,8 +112,12 @@ export default async function RegionPage({
       {/* AEO Block */}
       {!error && <section className="bg-parchment border-b border-stone rounded-t-lg px-6 py-4 text-sm text-charcoal leading-relaxed mb-6">
         <p>
-          There are {totalProviders.toLocaleString()} CQC-registered care providers in {displayName}.
+          There are {totalProviders.toLocaleString()} CQC-registered care providers in {displayName}
+          {!isRegion ? " local authority" : ""}.
           {pctGood !== undefined && <> {pctGood}% are rated Good or Outstanding.</>}
+          {" "}
+          This page counts the named {isRegion ? "region" : "local authority"} only.
+          A town or name search can return more providers whose address or trading name mentions {displayName}.
         </p>
       </section>}
 

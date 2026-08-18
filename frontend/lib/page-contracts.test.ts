@@ -56,7 +56,32 @@ describe("page contracts", () => {
 
     assert.match(source, /import\s+\{\s*notFound\s*\}\s+from\s+"next\/navigation"/);
     assert.match(source, /if \(!\(slug in SERVICE_MAP\)\) notFound\(\)/);
+    assert.match(source, /export const dynamicParams = false/);
+    assert.match(source, /export function generateStaticParams/);
     assert.doesNotMatch(source, /SERVICE_MAP\[slug\] \|\| slug/);
+  });
+
+  it("labels unpublished ratings honestly on the homepage", () => {
+    const source = readAppFile("app/page.tsx");
+
+    assert.match(source, /No published rating/);
+    assert.match(source, /no published overall CQC rating/);
+    assert.doesNotMatch(source, /label: "Not yet inspected"/);
+  });
+
+  it("explains local-authority counts are not town-search counts", () => {
+    const source = readAppFile("app/region/[slug]/page.tsx");
+
+    assert.match(source, /This page counts the named/);
+    assert.match(source, /town or name search can return more/);
+  });
+
+  it("exposes a real Compare Now link after two selections", () => {
+    const source = readAppFile("components/CompareBar.tsx");
+
+    assert.match(source, /href=\{\`\/compare\?providers=/);
+    assert.match(source, /Compare Now/);
+    assert.match(source, /z-\[80\]/);
   });
 
   it("uses exact geography fields for region and local-authority pages", () => {

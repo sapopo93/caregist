@@ -40,10 +40,10 @@ const FACT_LINKS: Array<{
     note: "Locations currently carrying this overall CQC rating",
   },
   {
-    label: "Not yet inspected",
+    label: "No published rating",
     href: "/search?opportunity=not_yet_inspected",
     valueKey: "notYetInspected",
-    note: "Locations without a published overall rating",
+    note: "Locations with no published overall CQC rating, including empty and not-yet-inspected records",
   },
 ];
 

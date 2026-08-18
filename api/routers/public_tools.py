@@ -18,6 +18,11 @@ from api.queries.public_tools import (
     NEARBY_PUBLIC_QUERY,
 )
 from api.services.cqc_freshness import get_cqc_freshness
+from api.services.postcode_geocode import (
+    compact_uk_postcode,
+    postcodes_io_fallback_path,
+    postcodes_io_lookup_path,
+)
 from api.utils.analytics import log_event
 
 logger = logging.getLogger("caregist.public_tools")
@@ -36,9 +41,27 @@ def _longest_quiet_streak(event_counts: list[int]) -> int:
     return longest
 
 
+def _coords_from_postcodes_io(payload: dict) -> tuple[float, float] | None:
+    result = payload.get("result") if isinstance(payload, dict) else None
+    if not isinstance(result, dict):
+        return None
+    try:
+        return float(result["latitude"]), float(result["longitude"])
+    except (KeyError, TypeError, ValueError):
+        return None
+
+
+async def _fetch_postcodes_io(path: str) -> tuple[float, float] | None:
+    async with httpx.AsyncClient(timeout=3) as client:
+        resp = await client.get(f"https://api.postcodes.io{path}")
+    if resp.status_code != 200:
+        return None
+    return _coords_from_postcodes_io(resp.json())
+
+
 async def _geocode_postcode(postcode: str) -> tuple[float, float]:
-    """Geocode a UK postcode. Checks cache first, then postcodes.io."""
-    clean = postcode.strip().upper().replace(" ", "")
+    """Geocode a UK postcode or outward district. Cache, then postcodes.io."""
+    clean = compact_uk_postcode(postcode)
 
     try:
         async with get_connection() as conn:
@@ -49,13 +72,14 @@ async def _geocode_postcode(postcode: str) -> tuple[float, float]:
         logger.warning("Postcode cache lookup failed for %s: %s", clean, exc)
 
     try:
-        async with httpx.AsyncClient(timeout=3) as client:
-            resp = await client.get(f"https://api.postcodes.io/postcodes/{clean}")
-            if resp.status_code != 200:
-                raise HTTPException(status_code=422, detail="Invalid or unrecognised postcode.")
-            data = resp.json()
-            lat = data["result"]["latitude"]
-            lon = data["result"]["longitude"]
+        coords = await _fetch_postcodes_io(postcodes_io_lookup_path(clean))
+        if coords is None:
+            fallback = postcodes_io_fallback_path(clean)
+            if fallback:
+                coords = await _fetch_postcodes_io(fallback)
+        if coords is None:
+            raise HTTPException(status_code=422, detail="Invalid or unrecognised postcode.")
+        lat, lon = coords
     except HTTPException:
         raise
     except Exception as exc:

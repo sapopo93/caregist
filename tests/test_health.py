@@ -302,6 +302,20 @@ async def test_liveness_always_ok():
 
 
 @pytest.mark.asyncio
+async def test_version_publishes_platform_sha_ahead_of_stale_pin():
+    with patch.dict(
+        "os.environ",
+        {"CAREGIST_RELEASE_SHA": "f" * 40, "VERCEL_GIT_COMMIT_SHA": "a" * 40},
+        clear=False,
+    ):
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get("/api/v1/version")
+
+    assert response.status_code == 200
+    assert response.json()["release"]["git_sha"] == "a" * 40
+
+
+@pytest.mark.asyncio
 async def test_version_publishes_validated_release_sha():
     with patch.dict("os.environ", {"CAREGIST_RELEASE_SHA": "B" * 40}):
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
