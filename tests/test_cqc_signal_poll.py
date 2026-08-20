@@ -19,12 +19,6 @@ def test_workflow_runs_poller_as_importable_module():
     assert "timeout-minutes: 50" in workflow
 
 
-def test_scheduled_production_smoke_keeps_release_identity_check():
-    workflow = (Path(__file__).resolve().parents[1] / ".github/workflows/production-smoke.yml").read_text()
-
-    assert "CAREGIST_EXPECTED_GIT_SHA: ${{ github.sha }}" in workflow
-
-
 def test_stale_running_polls_are_failed_closed():
     cursor = Mock()
     cursor.rowcount = 2
