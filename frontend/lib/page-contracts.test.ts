@@ -65,7 +65,10 @@ describe("page contracts", () => {
     const source = readAppFile("app/page.tsx");
 
     assert.match(source, /No published rating/);
-    assert.match(source, /no published overall CQC rating/);
+    assert.match(source, /rating=No%20published%20rating/);
+    assert.match(source, /valueKey: "noPublishedRating"/);
+    assert.match(source, /exact overall CQC rating/);
+    assert.doesNotMatch(source, /valueKey: "notYetInspected"/);
     assert.doesNotMatch(source, /label: "Not yet inspected"/);
   });
 

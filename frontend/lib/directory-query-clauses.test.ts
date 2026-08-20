@@ -5,6 +5,8 @@ import {
   buildDirectoryTextSearchClause,
   buildOpportunityClause,
   buildRatingClause,
+  isNoPublishedRating,
+  NO_PUBLISHED_RATING_CLAUSE,
 } from "./directory-query-clauses.ts";
 
 describe("directory query clauses", () => {
@@ -22,6 +24,18 @@ describe("directory query clauses", () => {
     assert.match(clause, /'not yet inspected'/);
     assert.match(clause, /'no published rating'/);
     assert.doesNotMatch(clause, /good|outstanding/i);
+  });
+
+  it("keeps the exact no-published-rating token separate from missing data", () => {
+    assert.equal(isNoPublishedRating("No published rating"), true);
+    assert.equal(isNoPublishedRating(" no PUBLISHED rating "), true);
+    assert.equal(isNoPublishedRating("Not Yet Inspected"), false);
+    assert.equal(isNoPublishedRating(""), false);
+    assert.equal(isNoPublishedRating(null), false);
+    assert.equal(
+      NO_PUBLISHED_RATING_CLAUSE,
+      "lower(btrim(overall_rating)) = 'no published rating'",
+    );
   });
 
   it("includes postcode in the HTML directory text-search predicate", () => {
