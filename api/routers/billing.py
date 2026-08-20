@@ -545,10 +545,13 @@ async def _require_radar_commerce_ready() -> None:
     async with get_connection() as conn:
         health = await get_pipeline_health(conn)
     readiness = health.get("commercialReadiness") or {}
-    if not readiness.get("checkoutReady", False):
+    if not readiness.get("checkoutReady", False) or not readiness.get("deliveryEnabled", False):
         raise HTTPException(
             status_code=503,
-            detail="Radar checkout is waiting for its seven-day source-freshness and delivery-latency gate.",
+            detail=(
+                "Radar checkout is waiting for its source-freshness, delivery activation, "
+                "and delivery-latency gates."
+            ),
         )
 
 
@@ -690,6 +693,11 @@ async def create_checkout(
             detail="Additional seats are not sold at launch. Choose Radar National or request an enterprise quote.",
         )
 
+    if not settings.radar_delivery_enabled:
+        raise HTTPException(
+            status_code=503,
+            detail="Radar checkout is awaiting its delivery-activation gate.",
+        )
     if settings.radar_checkout_require_operational_readiness:
         await _require_radar_commerce_ready()
 
