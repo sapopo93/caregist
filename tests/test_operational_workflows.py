@@ -63,6 +63,7 @@ def test_ci_uses_real_worker_dependencies_non_superuser_rls_and_image_scans():
         step for step in backend_steps if step.get("name") == "Install backend dependencies"
     )
     assert "requirements-worker.txt" in backend_install["run"]
+    assert "--no-deps --require-hashes -r requirements-worker-model.txt" in backend_install["run"]
 
     migration_steps = workflow["jobs"]["migrations"]["steps"]
     role_step = next(
@@ -101,6 +102,9 @@ def test_ci_uses_real_worker_dependencies_non_superuser_rls_and_image_scans():
         model_requirement
     )
     assert "requirements-worker-model.txt" in Path("Dockerfile.worker").read_text()
+    assert "--no-deps --require-hashes -r requirements-worker-model.txt" in (
+        Path("Dockerfile.worker").read_text()
+    )
 
 
 def test_retired_render_contract_cannot_restore_legacy_checkout_catalogue():
