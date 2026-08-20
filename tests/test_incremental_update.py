@@ -11,6 +11,7 @@ import pytest
 
 from api.services.provider_state_events import ProviderStateEvent
 from incremental_update import (
+    _fetch_all_cqc_location_stubs,
     _finalize_batch,
     _insert_trusted_provider_event,
     _prepare_batch,
@@ -34,6 +35,153 @@ from incremental_update import (
     shard_for_location,
     validate_shard_coordinates,
 )
+
+
+def test_location_list_scan_retries_mid_scan_403_and_preserves_page(monkeypatch):
+    import incremental_update as iu
+
+    responses = [
+        SimpleNamespace(
+            status_code=200,
+            headers={},
+            json=lambda: {"locations": [{"locationId": "1-10000"}], "total": 2},
+        ),
+        SimpleNamespace(status_code=403, headers={"Retry-After": "0"}),
+        SimpleNamespace(
+            status_code=200,
+            headers={},
+            json=lambda: {"locations": [{"locationId": "1-10001"}], "total": 2},
+        ),
+    ]
+    requested_pages: list[int] = []
+    sleeps: list[float] = []
+
+    def fake_get(*_args, **kwargs):
+        requested_pages.append(kwargs["params"]["page"])
+        return responses.pop(0)
+
+    monkeypatch.setattr(iu.requests, "get", fake_get)
+    monkeypatch.setattr(iu.time, "sleep", sleeps.append)
+
+    assert _fetch_all_cqc_location_stubs(
+        "https://api.service.cqc.org.uk/public/v1", "key", 0.05, min_expected=2
+    ) == [
+        {"locationId": "1-10000"},
+        {"locationId": "1-10001"},
+    ]
+    assert requested_pages == [1, 2, 2]
+    assert sleeps == [0.05, 0.0]
+
+
+def test_location_list_scan_exhausts_bounded_403_retry_budget(monkeypatch):
+    import incremental_update as iu
+
+    attempts = 0
+    sleeps: list[float] = []
+
+    def forbidden(*_args, **_kwargs):
+        nonlocal attempts
+        attempts += 1
+        return SimpleNamespace(status_code=403, headers={"Retry-After": "0"})
+
+    monkeypatch.setattr(iu.requests, "get", forbidden)
+    monkeypatch.setattr(iu.time, "sleep", sleeps.append)
+
+    with pytest.raises(ChangesFetchError, match=r"403 on page 1 after 5 attempts"):
+        _fetch_all_cqc_location_stubs("https://api.service.cqc.org.uk/public/v1", "key", 0.0)
+
+    assert attempts == 5
+    assert sleeps == [0.0, 0.0, 0.0, 0.0]
+
+
+def test_location_list_scan_does_not_retry_terminal_auth_failure(monkeypatch):
+    import incremental_update as iu
+
+    get = Mock(return_value=SimpleNamespace(status_code=401, headers={}))
+    sleep = Mock()
+    monkeypatch.setattr(iu.requests, "get", get)
+    monkeypatch.setattr(iu.time, "sleep", sleep)
+
+    with pytest.raises(ChangesFetchError, match=r"401 on page 1 after 1 attempts"):
+        _fetch_all_cqc_location_stubs("https://api.service.cqc.org.uk/public/v1", "key", 0.0)
+
+    get.assert_called_once()
+    sleep.assert_not_called()
+
+
+def test_location_list_retry_delay_supports_http_date_and_caps_delay():
+    import incremental_update as iu
+
+    now = datetime(2026, 8, 20, 12, 0, tzinfo=timezone.utc)
+
+    assert iu._location_list_retry_delay(
+        "Thu, 20 Aug 2026 12:05:00 GMT", 1, now=now
+    ) == 60.0
+    assert iu._location_list_retry_delay("0", 1, now=now) == 0.0
+    assert iu._location_list_retry_delay("invalid", 2, now=now) == 30.0
+
+
+def test_location_list_scan_rejects_premature_empty_page(monkeypatch):
+    import incremental_update as iu
+
+    responses = [
+        SimpleNamespace(
+            status_code=200,
+            headers={},
+            json=lambda: {"locations": [{"locationId": "1-10000"}], "total": 2},
+        ),
+        SimpleNamespace(status_code=200, headers={}, json=lambda: {"locations": [], "total": 2}),
+    ]
+    monkeypatch.setattr(iu.requests, "get", lambda *_args, **_kwargs: responses.pop(0))
+    monkeypatch.setattr(iu.time, "sleep", lambda _seconds: None)
+
+    with pytest.raises(ChangesFetchError, match=r"ended early on page 2 after 1/2"):
+        _fetch_all_cqc_location_stubs(
+            "https://api.service.cqc.org.uk/public/v1", "key", 0.0, min_expected=2
+        )
+
+
+def test_location_list_scan_rejects_changing_total(monkeypatch):
+    import incremental_update as iu
+
+    responses = [
+        SimpleNamespace(
+            status_code=200,
+            headers={},
+            json=lambda: {"locations": [{"locationId": "1-10000"}], "total": 2},
+        ),
+        SimpleNamespace(
+            status_code=200,
+            headers={},
+            json=lambda: {"locations": [{"locationId": "1-10001"}], "total": 3},
+        ),
+    ]
+    monkeypatch.setattr(iu.requests, "get", lambda *_args, **_kwargs: responses.pop(0))
+    monkeypatch.setattr(iu.time, "sleep", lambda _seconds: None)
+
+    with pytest.raises(ChangesFetchError, match=r"total changed from 2 to 3 on page 2"):
+        _fetch_all_cqc_location_stubs(
+            "https://api.service.cqc.org.uk/public/v1", "key", 0.0, min_expected=2
+        )
+
+
+def test_location_list_scan_rejects_duplicate_ids(monkeypatch):
+    import incremental_update as iu
+
+    response = SimpleNamespace(
+        status_code=200,
+        headers={},
+        json=lambda: {
+            "locations": [{"locationId": "1-10000"}, {"locationId": "1-10000"}],
+            "total": 2,
+        },
+    )
+    monkeypatch.setattr(iu.requests, "get", lambda *_args, **_kwargs: response)
+
+    with pytest.raises(ChangesFetchError, match=r"duplicate IDs on page 1"):
+        _fetch_all_cqc_location_stubs(
+            "https://api.service.cqc.org.uk/public/v1", "key", 0.0, min_expected=2
+        )
 
 
 def test_normalize_database_url_rewrites_neon_pooler_hosts():

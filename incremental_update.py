@@ -25,6 +25,7 @@ import zlib
 from collections import Counter
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
+from email.utils import parsedate_to_datetime
 from pathlib import Path
 from typing import Any
 from urllib.parse import urljoin, urlparse, urlsplit, urlunsplit
@@ -60,6 +61,9 @@ DEFAULT_MAX_RETRIES = 3
 DETAIL_MAX_RETRIES = 5
 DETAIL_MAX_BACKOFF_SECONDS = 30
 RETRYABLE_STATUS_CODES = {408, 429, 500, 502, 503, 504}
+LOCATION_LIST_RETRYABLE_STATUS_CODES = RETRYABLE_STATUS_CODES | {403}
+LOCATION_LIST_MAX_RETRIES = 5
+LOCATION_LIST_MAX_BACKOFF_SECONDS = 60.0
 MIN_EXPECTED_ACTIVE_LOCATIONS = 50_000
 MAX_ACTIVE_COUNT_DROP_RATIO = 0.05
 DEFAULT_CHECKPOINT_SIZE = 250
@@ -72,6 +76,31 @@ class ChangesFetchError(RuntimeError):
 
 class ShardAlreadyRunning(ChangesFetchError):
     """Raised without mutating batch state when another worker owns the shard."""
+
+
+def _location_list_retry_delay(
+    retry_after: str | None,
+    attempt: int,
+    *,
+    now: datetime | None = None,
+) -> float:
+    """Return a bounded delay for numeric or HTTP-date Retry-After values."""
+    delay: float
+    if retry_after is None:
+        delay = 15.0 * attempt
+    else:
+        try:
+            delay = float(retry_after)
+        except (TypeError, ValueError):
+            try:
+                retry_at = parsedate_to_datetime(retry_after)
+                if retry_at.tzinfo is None:
+                    retry_at = retry_at.replace(tzinfo=timezone.utc)
+                reference = now or datetime.now(timezone.utc)
+                delay = (retry_at - reference).total_seconds()
+            except (TypeError, ValueError, OverflowError):
+                delay = 15.0 * attempt
+    return min(LOCATION_LIST_MAX_BACKOFF_SECONDS, max(0.0, delay))
 
 
 @dataclass(frozen=True)
@@ -390,26 +419,101 @@ def fetch_changes(base_url: str, api_key: str | None, since: str, sleep: float) 
     return list(set(changed_ids))
 
 
-def _fetch_all_cqc_location_stubs(base_url: str, api_key: str | None, sleep: float) -> list[dict]:
-    """Fetch all location stubs from GET /locations (returns locationId, locationName, postalCode)."""
+def _fetch_all_cqc_location_stubs(
+    base_url: str,
+    api_key: str | None,
+    sleep: float,
+    *,
+    min_expected: int = MIN_EXPECTED_ACTIVE_LOCATIONS,
+) -> list[dict]:
+    """Fetch a complete, internally consistent snapshot from GET /locations."""
     url = f"{base_url}/locations"
     headers = api_headers(api_key)
     all_items: list[dict] = []
+    seen_ids: set[str] = set()
+    expected_total: int | None = None
     page = 1
     while True:
+        resp = None
+        last_network_error: requests.RequestException | None = None
+        for attempt in range(1, LOCATION_LIST_MAX_RETRIES + 1):
+            try:
+                resp = requests.get(
+                    url,
+                    headers=headers,
+                    params={"page": page, "perPage": 1000},
+                    timeout=30,
+                )
+            except requests.RequestException as exc:
+                last_network_error = exc
+                if attempt == LOCATION_LIST_MAX_RETRIES:
+                    raise ChangesFetchError(
+                        f"Location list scan network failure on page {page} after {attempt} attempts"
+                    ) from exc
+            else:
+                if resp.status_code == 200:
+                    break
+                if (
+                    resp.status_code not in LOCATION_LIST_RETRYABLE_STATUS_CODES
+                    or attempt == LOCATION_LIST_MAX_RETRIES
+                ):
+                    raise ChangesFetchError(
+                        f"Location list scan returned {resp.status_code} on page {page} "
+                        f"after {attempt} attempts"
+                    )
+
+            retry_after = None if resp is None else resp.headers.get("Retry-After")
+            time.sleep(_location_list_retry_delay(retry_after, attempt))
+        else:  # pragma: no cover - defensive; loop either breaks or raises
+            raise ChangesFetchError(
+                f"Location list scan failed on page {page}: {last_network_error or 'retry budget exhausted'}"
+            )
+
         try:
-            resp = requests.get(url, headers=headers, params={"page": page, "perPage": 1000}, timeout=30)
-            if resp.status_code != 200:
-                raise ChangesFetchError(f"Location list scan returned {resp.status_code} on page {page}")
+            assert resp is not None
             data = resp.json()
-            locations = data.get("locations", [])
-            if not locations:
-                break
-            all_items.extend(locations)
+            locations = data.get("locations")
+            if not isinstance(locations, list):
+                raise ChangesFetchError(f"Location list scan returned an invalid payload on page {page}")
             total = int(data.get("total", 0))
+            if total < min_expected:
+                raise ChangesFetchError(
+                    f"Location list scan reported only {total} records on page {page}; "
+                    f"expected at least {min_expected}"
+                )
+            if expected_total is None:
+                expected_total = total
+            elif total != expected_total:
+                raise ChangesFetchError(
+                    f"Location list scan total changed from {expected_total} to {total} on page {page}"
+                )
+            if not locations:
+                raise ChangesFetchError(
+                    f"Location list scan ended early on page {page} after "
+                    f"{len(all_items)}/{expected_total} records"
+                )
+
+            page_ids: list[str] = []
+            for item in locations:
+                if not isinstance(item, dict):
+                    raise ChangesFetchError(f"Location list scan returned a malformed record on page {page}")
+                location_id = str(item.get("locationId") or item.get("id") or "").strip()
+                if not location_id:
+                    raise ChangesFetchError(f"Location list scan returned a record without an ID on page {page}")
+                page_ids.append(location_id)
+            duplicates = seen_ids.intersection(page_ids)
+            if len(page_ids) != len(set(page_ids)) or duplicates:
+                raise ChangesFetchError(f"Location list scan returned duplicate IDs on page {page}")
+
+            all_items.extend(locations)
+            seen_ids.update(page_ids)
             if (page % 20) == 0:
                 print(f"  Fetched {len(all_items)}/{total} location IDs from CQC list...")
-            if len(all_items) >= total:
+            if len(all_items) > total:
+                raise ChangesFetchError(
+                    f"Location list scan exceeded its reported total on page {page}: {len(all_items)}/{total}"
+                )
+            if len(all_items) == total:
                 break
             page += 1
             time.sleep(sleep)
@@ -417,6 +521,8 @@ def _fetch_all_cqc_location_stubs(base_url: str, api_key: str | None, sleep: flo
             raise
         except Exception as exc:
             raise ChangesFetchError(f"Location list scan error on page {page}: {exc}") from exc
+    if expected_total is None or len(all_items) != expected_total or len(seen_ids) != expected_total:
+        raise ChangesFetchError("Location list scan did not produce a complete unique snapshot")
     return all_items
 
 
