@@ -23,6 +23,7 @@ def test_reconciliation_workflow_has_bounded_dynamic_resume_contract():
 
     source = Path(".github/workflows/cqc-reconciliation.yml").read_text(encoding="utf-8")
     assert "--phase resume" in source
+    assert '--resume-source-run-id "${{ inputs.resume_run_id }}"' in source
     assert "resume_batch_id and resume_run_id must be supplied together" in source
     assert "resume inputs cannot be combined with dry_run=true" in source
     assert "production reconciliation writes must run from refs/heads/main" in source

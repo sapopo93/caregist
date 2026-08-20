@@ -1262,6 +1262,19 @@ def _resume_batch(args: argparse.Namespace, conn, cur) -> int:
         raise ChangesFetchError(
             f"Reconciliation batch {batch_id} must be failed before resume; status is {status}."
         )
+    prepare_execution = checkpoint_state.get("prepareExecution")
+    if not isinstance(prepare_execution, dict):
+        raise ChangesFetchError(
+            "Reconciliation resume refused because original prepare execution evidence is missing."
+        )
+    prepared_sha = str(prepare_execution.get("gitSha") or "").lower()
+    prepared_run_id = str(prepare_execution.get("workflowRunId") or "")
+    resume_sha = str(getattr(args, "release_sha", "") or "").lower()
+    source_run_id = str(getattr(args, "resume_source_run_id", "") or "")
+    if resume_sha != prepared_sha or source_run_id != prepared_run_id:
+        raise ChangesFetchError(
+            "Reconciliation resume must use the original prepare code SHA and workflow run artifact."
+        )
     resume_waves = int(checkpoint_state.get("resumeWaves", 0))
     if resume_waves >= 1:
         raise ChangesFetchError(
@@ -1766,6 +1779,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--release-sha")
     parser.add_argument("--workflow-run-id")
     parser.add_argument("--workflow-run-attempt")
+    parser.add_argument("--resume-source-run-id")
     parser.add_argument("--checkpoint-size", type=int, default=DEFAULT_CHECKPOINT_SIZE)
     parser.add_argument(
         "--data-page-url",
@@ -1792,9 +1806,17 @@ def main() -> int:
             and args.workflow_run_attempt.isdigit()
             and int(args.workflow_run_attempt) > 0
         )
-        if not valid_execution_identity:
+        valid_resume_source = (
+            args.phase != "resume"
+            or (
+                bool(args.resume_source_run_id)
+                and args.resume_source_run_id.isdigit()
+                and int(args.resume_source_run_id) > 0
+            )
+        )
+        if not valid_execution_identity or not valid_resume_source:
             print(
-                "ERROR: prepare/resume writes require a 40-hex release SHA and positive workflow identity.",
+                "ERROR: prepare/resume writes require valid execution identity and resume source lineage.",
                 file=sys.stderr,
             )
             return 1

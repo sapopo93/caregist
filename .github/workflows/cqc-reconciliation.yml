@@ -220,6 +220,7 @@ jobs:
           python incremental_update.py --phase resume \
             --batch-id "${{ steps.batch.outputs.batch_id }}" \
             --snapshot-manifest "$SNAPSHOT_MANIFEST" \
+            --resume-source-run-id "${{ inputs.resume_run_id }}" \
             --release-sha "$RELEASE_SHA" --workflow-run-id "$WORKFLOW_RUN_ID" \
             --workflow-run-attempt "$WORKFLOW_RUN_ATTEMPT"
           echo "state_opened=true" >> "$GITHUB_OUTPUT"

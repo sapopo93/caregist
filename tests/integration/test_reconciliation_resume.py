@@ -45,7 +45,8 @@ async def test_resume_preserves_checkpoint_and_refuses_a_second_wave(fresh_db, t
               checkpoint_state, counts_reconciled
             ) VALUES (
               'reconciliation', 'failed', 4, '{}'::jsonb,
-              '{"resumeWaves":0,"restartable":true}'::jsonb, FALSE
+              '{"resumeWaves":0,"restartable":true,"prepareExecution":{"gitSha":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","workflowRunId":"123","workflowRunAttempt":"1"}}'::jsonb,
+              FALSE
             ) RETURNING id
             """
         )
@@ -83,9 +84,38 @@ async def test_resume_preserves_checkpoint_and_refuses_a_second_wave(fresh_db, t
         snapshot_manifest=str(manifest_path),
         dry_run=False,
         release_sha="a" * 40,
-        workflow_run_id="123",
+        workflow_run_id="456",
         workflow_run_attempt="1",
+        resume_source_run_id="123",
     )
+    mismatched_args = SimpleNamespace(**vars(args))
+    mismatched_args.release_sha = "b" * 40
+    mismatched_args.resume_source_run_id = "999"
+    sync_conn = psycopg2.connect(fresh_db)
+    try:
+        with pytest.raises(ChangesFetchError, match="original prepare code SHA"):
+            _resume_batch(mismatched_args, sync_conn, sync_conn.cursor())
+        sync_conn.rollback()
+    finally:
+        sync_conn.close()
+
+    async_conn = await asyncpg.connect(fresh_db)
+    try:
+        unchanged = await async_conn.fetchrow(
+            "SELECT b.status, p.status AS run_status, p.checkpoint_state "
+            "FROM reconciliation_batches b JOIN pipeline_runs p ON p.id = b.pipeline_run_id "
+            "WHERE b.id = $1",
+            batch_id,
+        )
+        assert unchanged["status"] == "failed"
+        assert unchanged["run_status"] == "failed"
+        state = unchanged["checkpoint_state"]
+        if isinstance(state, str):
+            state = json.loads(state)
+        assert state["resumeWaves"] == 0
+    finally:
+        await async_conn.close()
+
     lock_holder = psycopg2.connect(fresh_db)
     try:
         with lock_holder.cursor() as lock_cursor:

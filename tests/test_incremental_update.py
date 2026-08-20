@@ -314,13 +314,26 @@ def test_resume_requires_failed_batch_and_consumes_one_wave(tmp_path):
     cursor = Mock()
     cursor.fetchone.side_effect = [
         (8, 1, manifest["manifestChecksumSha256"], manifest["sourceChecksumSha256"]),
-        ("failed", 42, {"resumeWaves": 0}),
+        (
+            "failed",
+            42,
+            {
+                "resumeWaves": 0,
+                "prepareExecution": {"gitSha": "a" * 40, "workflowRunId": "123"},
+            },
+        ),
         *[(True,) for _ in range(8)],
         (0,),
     ]
     connection = Mock()
     args = SimpleNamespace(
-        batch_id=str(batch_id), snapshot_manifest=str(manifest_path), dry_run=False
+        batch_id=str(batch_id),
+        snapshot_manifest=str(manifest_path),
+        dry_run=False,
+        release_sha="a" * 40,
+        resume_source_run_id="123",
+        workflow_run_id="456",
+        workflow_run_attempt="1",
     )
 
     assert _resume_batch(args, connection, cursor) == 0
@@ -345,14 +358,69 @@ def test_resume_refuses_a_second_wave(tmp_path):
     cursor = Mock()
     cursor.fetchone.side_effect = [
         (8, 1, manifest["manifestChecksumSha256"], manifest["sourceChecksumSha256"]),
-        ("failed", 42, {"resumeWaves": 1}),
+        (
+            "failed",
+            42,
+            {
+                "resumeWaves": 1,
+                "prepareExecution": {"gitSha": "a" * 40, "workflowRunId": "123"},
+            },
+        ),
     ]
     args = SimpleNamespace(
-        batch_id=str(batch_id), snapshot_manifest=str(manifest_path), dry_run=False
+        batch_id=str(batch_id),
+        snapshot_manifest=str(manifest_path),
+        dry_run=False,
+        release_sha="a" * 40,
+        resume_source_run_id="123",
     )
 
     with pytest.raises(ChangesFetchError, match="already used its single resume wave"):
         _resume_batch(args, Mock(), cursor)
+
+
+@pytest.mark.parametrize(
+    ("release_sha", "source_run_id"),
+    [("b" * 40, "123"), ("a" * 40, "999")],
+)
+def test_resume_rejects_different_prepare_lineage(tmp_path, release_sha, source_run_id):
+    snapshot = CqcActiveSnapshot(
+        source_uri="https://www.cqc.org.uk/current.csv",
+        source_published_at="2026-08-01",
+        retrieved_at=datetime(2026, 8, 2, tzinfo=timezone.utc),
+        checksum_sha256="a" * 64,
+        location_ids=frozenset({"1-10000"}),
+    )
+    batch_id = uuid.UUID("12345678-1234-5678-9234-567812345678")
+    manifest = build_snapshot_manifest(snapshot, batch_id, 8)
+    manifest_path = tmp_path / "manifest.json"
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    cursor = Mock()
+    cursor.fetchone.side_effect = [
+        (8, 1, manifest["manifestChecksumSha256"], manifest["sourceChecksumSha256"]),
+        (
+            "failed",
+            42,
+            {
+                "resumeWaves": 0,
+                "prepareExecution": {"gitSha": "a" * 40, "workflowRunId": "123"},
+            },
+        ),
+    ]
+    args = SimpleNamespace(
+        batch_id=str(batch_id),
+        snapshot_manifest=str(manifest_path),
+        dry_run=False,
+        release_sha=release_sha,
+        resume_source_run_id=source_run_id,
+    )
+
+    with pytest.raises(ChangesFetchError, match="original prepare code SHA"):
+        _resume_batch(args, Mock(), cursor)
+    assert not any(
+        "UPDATE reconciliation_batches" in str(call.args[0])
+        for call in cursor.execute.call_args_list
+    )
 
 
 def test_prepare_dry_run_performs_database_reads_without_writes(tmp_path, monkeypatch):
