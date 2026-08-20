@@ -4,36 +4,20 @@ import PrintButton from "@/components/PrintButton";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { searchProviders } from "@/lib/api";
+import { getServicePage, getServicePageSlugs } from "@/lib/service-page-config";
 import type { Metadata } from "next";
-
-const SERVICE_MAP: Record<string, string> = {
-  "care-homes": "residential-care-homes",
-  "nursing-homes": "nursing-care-homes",
-  "home-care": "home-care",
-  "gp-surgeries": "primary-medical-care",
-  "dental": "dental-services",
-  "supported-living": "supported-living",
-};
-
-const DISPLAY_NAMES: Record<string, string> = {
-  "care-homes": "Care Homes",
-  "nursing-homes": "Nursing Homes",
-  "home-care": "Home Care Agencies",
-  "gp-surgeries": "GP Surgeries",
-  "dental": "Dental Practices",
-  "supported-living": "Supported Living",
-};
 
 export const dynamicParams = false;
 
 export function generateStaticParams() {
-  return Object.keys(SERVICE_MAP).map((slug) => ({ slug }));
+  return getServicePageSlugs().map((slug) => ({ slug }));
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
-  if (!(slug in SERVICE_MAP)) notFound();
-  const name = DISPLAY_NAMES[slug];
+  const servicePage = getServicePage(slug);
+  if (!servicePage) notFound();
+  const name = servicePage.displayName;
   return {
     title: `${name} in England | CareGist`,
     description: `Browse CQC-rated ${name.toLowerCase()} across England. Ratings, inspections, and contact details.`,
@@ -49,9 +33,9 @@ export default async function ServiceTypePage({
 }) {
   const { slug } = await params;
   const { page } = await searchParams;
-  if (!(slug in SERVICE_MAP)) notFound();
-  const serviceType = SERVICE_MAP[slug];
-  const displayName = DISPLAY_NAMES[slug];
+  const servicePage = getServicePage(slug);
+  if (!servicePage) notFound();
+  const { serviceType, displayName } = servicePage;
 
   let results = { data: [], meta: { total: 0, page: 1, per_page: 20, pages: 0 } };
   let error = false;

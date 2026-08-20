@@ -148,6 +148,9 @@ jobs:
           NEXT_PUBLIC_API_URL: http://localhost:8000
         run: npm run build
 
+      - name: Production HTTP route contracts
+        run: npm run test:production-http
+
       - name: Start built app in degraded mode
         env:
           APP_URL: http://127.0.0.1:3100
