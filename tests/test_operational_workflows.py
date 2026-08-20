@@ -55,6 +55,54 @@ def test_radar_release_uses_available_database_secret_and_real_constraint():
     assert "ENABLE-RADAR-CHECKOUT" not in source
 
 
+def test_ci_uses_real_worker_dependencies_non_superuser_rls_and_image_scans():
+    workflow, source = _workflow("ci.yml")
+
+    backend_steps = workflow["jobs"]["backend"]["steps"]
+    backend_install = next(
+        step for step in backend_steps if step.get("name") == "Install backend dependencies"
+    )
+    assert "requirements-worker.txt" in backend_install["run"]
+
+    migration_steps = workflow["jobs"]["migrations"]["steps"]
+    role_step = next(
+        step for step in migration_steps if step.get("name") == "Create non-superuser integration role"
+    )
+    assert "NOCREATEDB NOSUPERUSER NOBYPASSRLS" in role_step["run"]
+    replay_step = next(
+        step
+        for step in migration_steps
+        if step.get("name") == "Replay init.sql + every migration, assert invariants"
+    )
+    assert "caregist_test" in replay_step["env"]["CAREGIST_TEST_DATABASE_URL"]
+    assert "caregist:caregist" in replay_step["env"]["CAREGIST_TEST_ADMIN_DATABASE_URL"]
+    assert "ffmpeg" in source
+
+    scan_steps = workflow["jobs"]["container-scan"]["steps"]
+    scans = [step for step in scan_steps if step.get("name", "").startswith("Scan ")]
+    assert {step["with"]["image-ref"] for step in scans} == {
+        "caregist-api:ci",
+        "caregist-worker:ci",
+    }
+    assert all(step["with"]["exit-code"] == "1" for step in scans)
+    assert all(step["with"]["ignore-unfixed"] == "false" for step in scans)
+    assert all(step["with"]["severity"] == "HIGH,CRITICAL" for step in scans)
+    assert all(
+        step["uses"]
+        == "aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25"
+        for step in scans
+    )
+
+    dockerfiles = Path("Dockerfile").read_text(), Path("Dockerfile.worker").read_text()
+    assert all("python:3.12-slim@sha256:" in dockerfile for dockerfile in dockerfiles)
+
+    model_requirement = Path("requirements-worker-model.txt").read_text(encoding="utf-8")
+    assert "--hash=sha256:1932429db727d4bff3deed6b34cfc05df17794f4a52eeb26cf8928f7c1a0fb85" in (
+        model_requirement
+    )
+    assert "requirements-worker-model.txt" in Path("Dockerfile.worker").read_text()
+
+
 def test_retired_render_contract_cannot_restore_legacy_checkout_catalogue():
     source = Path("render.yaml").read_text(encoding="utf-8")
     manifest = yaml.load(source, Loader=yaml.BaseLoader)
