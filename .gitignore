@@ -122,3 +122,16 @@ docs/*.dmg
 .env
 .env.*
 !.env.example
+
+# Local war-room evidence can contain credentials, customer data, and large
+# generated captures. Keep only the repository operating contract in Git.
+.warroom/*
+!.warroom/README.md
+!.warroom/PIPELINE.md
+!.warroom/CURRENT_VERDICT.md
+!.warroom/TOP_BLOCKERS.md
+!.warroom/NEXT_ACTIONS.md
+!.warroom/UNFINISHED.md
+caregist-crm-workspace*.png
+cqc-snapshot-manifest.json
+frontend/test-results/
