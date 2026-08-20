@@ -1,5 +1,10 @@
 # CareGist — Codebase Audit Against VA Sales Claims and Market Readiness
 
+> **Superseded audit prompt — do not execute as current product authority.** It
+> references retired VA material and the pre-`2026-08` product ladder. Use
+> `.warroom/`, `docs/CAREGIST_MASTER_STRATEGY.md`, and
+> `deploy/stripe-price-manifest.json` for current audits. Retained for provenance.
+
 You are a principal engineer auditing the CareGist codebase. Your job is to
 verify that every claim made to customers and every feature described in the VA
 sales training is actually implemented, correctly gated, and production-safe.

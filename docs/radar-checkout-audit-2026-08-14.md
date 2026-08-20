@@ -1,5 +1,14 @@
 # CareGist Radar checkout audit — 2026-08-14
 
+> **Current-state correction — 2026-08-20:** Checkout was subsequently returned
+> to fail-closed operation because authoritative CQC reconciliation and the
+> seven-day readiness gates are not proven. The approved catalogue manifest now
+> records `checkout_enabled: false`; repository defaults remain false, and this
+> candidate does not authorize any production flag change. Effective checkout
+> remains fail-closed behind runtime, source, delivery, legal, release, and human
+> gates. Statements below that checkout was enabled describe the dated 14 August
+> release only and are not current release authority.
+
 > **Release addendum — 2026-08-14 06:00 UTC:** The original audit below records
 > the pre-release state. The owner subsequently directed that both paid products
 > be opened immediately. The following production changes supersede the original

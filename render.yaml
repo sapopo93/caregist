@@ -1,5 +1,7 @@
-# Legacy Render manifest retained only as historical reference.
-# Production deployment target is AWS EC2; see docs/new-registration-feed-wedge.md.
+# RETIRED / NON-OPERATIVE Render manifest retained only for historical reference.
+# Production uses Vercel multi-service plus Neon. Do not apply this blueprint.
+# Its environment contract is nevertheless fail-closed to prevent legacy product
+# activation if an old Render integration still reads the file.
 services:
   - type: cron
     name: weekly-movers-digest
@@ -47,24 +49,24 @@ services:
         sync: false
       - key: STRIPE_WEBHOOK_SECRET
         sync: false
-      - key: STRIPE_PRICE_ALERTS_PRO
+      - key: STRIPE_PRODUCT_RADAR_REGIONAL
         sync: false
-      - key: STRIPE_PRICE_STARTER
-        value: price_1TKfJR4mijLHzRRkdvSTxZ3X
-      - key: STRIPE_PRICE_PRO
-        value: price_1TKfUW4mijLHzRRk1rbw4bGr
-      - key: STRIPE_PRICE_PRO_SEAT
+      - key: STRIPE_PRICE_RADAR_REGIONAL
         sync: false
-      - key: STRIPE_PRICE_BUSINESS
-        value: price_1TKfbM4mijLHzRRkL4Cns1iG
-      - key: STRIPE_PRICE_PROFILE_ENHANCED
-        value: price_1TLLSp4mijLHzRRkz3VftZAY
-      - key: STRIPE_PRICE_PROFILE_PREMIUM
-        value: price_1TLLVR4mijLHzRRk31nuVhr5
-      - key: STRIPE_PRICE_PROFILE_SPONSORED
-        value: price_1TLLgq4mijLHzRRkmNufCgiD
-      - key: STRIPE_PRICE_ENTERPRISE
+      - key: STRIPE_PRODUCT_RADAR_NATIONAL
         sync: false
+      - key: STRIPE_PRICE_RADAR_NATIONAL
+        sync: false
+      - key: STRIPE_PRODUCT_INTELLIGENCE_FEED
+        sync: false
+      - key: STRIPE_PRICE_INTELLIGENCE_FEED
+        sync: false
+      - key: BILLING_CHECKOUT_ENABLED
+        value: "false"
+      - key: RADAR_CHECKOUT_ENABLED
+        value: "false"
+      - key: RADAR_DELIVERY_ENABLED
+        value: "false"
       - key: RESEND_API_KEY
         sync: false
       - key: ENQUIRY_FROM_EMAIL
