@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getServicePage } from "@/lib/service-page-config";
 
 /**
  * Protected routes that require authentication.
@@ -75,6 +76,24 @@ export async function proxy(request: NextRequest) {
     loginUrl.searchParams.set("redirect", pathname);
     return withCsp(NextResponse.redirect(loginUrl), nonce, false);
   };
+
+  // App Router notFound() can return HTTP 200 after a dynamic response starts
+  // streaming. Resolve the finite public service taxonomy before rendering so
+  // unknown service URLs have an honest HTTP status and retain the standard UI.
+  const serviceMatch = pathname.match(/^\/services\/([^/]+)\/?$/);
+  if (serviceMatch && !getServicePage(serviceMatch[1])) {
+    const notFoundUrl = request.nextUrl.clone();
+    notFoundUrl.pathname = "/_caregist-service-not-found";
+    notFoundUrl.search = "";
+    return withCsp(
+      NextResponse.rewrite(notFoundUrl, {
+        status: 404,
+        request: { headers: requestHeaders },
+      }),
+      nonce,
+      false,
+    );
+  }
 
   // Public routes still receive the CSP, but skip the auth check.
   if (!PROTECTED_ROUTES.some((route) => pathname.startsWith(route))) {
