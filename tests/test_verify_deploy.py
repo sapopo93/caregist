@@ -3,20 +3,26 @@ from __future__ import annotations
 import importlib.util
 import json
 import sys
+import uuid
 from pathlib import Path
+from unittest.mock import Mock
 
 import pytest
 
 
-@pytest.fixture
-def verifier():
+def _load_verifier():
     path = Path(__file__).resolve().parents[1] / "tools" / "verify-deploy.py"
-    spec = importlib.util.spec_from_file_location("caregist_verify_deploy", path)
+    spec = importlib.util.spec_from_file_location(f"caregist_verify_deploy_{uuid.uuid4().hex}", path)
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = module
     spec.loader.exec_module(module)
     return module
+
+
+@pytest.fixture
+def verifier():
+    return _load_verifier()
 
 
 def _healthy_payload(sha: str) -> dict:
@@ -35,19 +41,19 @@ def _healthy_payload(sha: str) -> dict:
 
 
 def test_health_rejects_deploy_drift(verifier, monkeypatch):
-    verifier.EXPECTED_GIT_SHA = "a" * 40
+    verifier.EXPECTED_FRONTEND_GIT_SHA = "a" * 40
     monkeypatch.setattr(
         verifier,
         "fetch",
         lambda _path: verifier.Response(200, {"content-type": "application/json"}, json.dumps(_healthy_payload("b" * 40))),
     )
 
-    with pytest.raises(verifier.SmokeFailure, match="did not match tested SHA"):
+    with pytest.raises(verifier.SmokeFailure, match="did not match expected SHA"):
         verifier.verify_health()
 
 
 def test_health_accepts_exact_deployed_sha(verifier, monkeypatch):
-    verifier.EXPECTED_GIT_SHA = "a" * 40
+    verifier.EXPECTED_FRONTEND_GIT_SHA = "a" * 40
     monkeypatch.setattr(
         verifier,
         "fetch",
@@ -58,7 +64,7 @@ def test_health_accepts_exact_deployed_sha(verifier, monkeypatch):
 
 
 def test_health_accepts_read_only_fallback_with_writes_fail_closed(verifier, monkeypatch):
-    verifier.EXPECTED_GIT_SHA = "a" * 40
+    verifier.EXPECTED_FRONTEND_GIT_SHA = "a" * 40
     payload = {
         "status": "degraded",
         "release": {"gitSha": "a" * 40},
@@ -139,6 +145,67 @@ def test_main_skips_backend_only_paths_when_frontend_is_in_fallback_mode(verifie
     assert calls == ["data-status", "search", "provider", "export"]
 
 
+def test_required_identity_verifies_backend_during_frontend_fallback(verifier, monkeypatch):
+    calls = []
+    verifier.REQUIRE_RELEASE_IDENTITY = True
+    verifier.EXPECTED_FRONTEND_GIT_SHA = "a" * 40
+    verifier.EXPECTED_BACKEND_GIT_SHA = "b" * 40
+    verifier.SKIP_BACKEND_PATHS = False
+    verifier.ATTEMPTS = 1
+    monkeypatch.setattr(verifier, "verify_health", lambda: "fallback")
+    monkeypatch.setattr(verifier, "verify_data_status", lambda: calls.append("data-status"))
+    monkeypatch.setattr(
+        verifier, "verify_backend_binding", lambda: calls.append("backend-binding") or 123
+    )
+    monkeypatch.setattr(
+        verifier,
+        "verify_provider_sitemap",
+        lambda _count: pytest.fail("fallback must not claim backend sitemap availability"),
+    )
+    monkeypatch.setattr(verifier, "verify_search", lambda count: calls.append(("search", count)))
+    monkeypatch.setattr(
+        verifier, "verify_provider_page", lambda count: calls.append(("provider", count))
+    )
+    monkeypatch.setattr(verifier, "verify_export_requires_token", lambda: False)
+
+    assert verifier.main() == 0
+    assert calls == [
+        "data-status",
+        "backend-binding",
+        ("search", None),
+        ("provider", None),
+    ]
+
+
+def test_required_identity_propagates_backend_drift_during_fallback(verifier, monkeypatch):
+    verifier.REQUIRE_RELEASE_IDENTITY = True
+    verifier.EXPECTED_FRONTEND_GIT_SHA = "a" * 40
+    verifier.EXPECTED_BACKEND_GIT_SHA = "b" * 40
+    verifier.SKIP_BACKEND_PATHS = False
+    verifier.ATTEMPTS = 1
+    monkeypatch.setattr(verifier, "verify_health", lambda: "fallback")
+    monkeypatch.setattr(verifier, "verify_data_status", lambda: None)
+    monkeypatch.setattr(
+        verifier,
+        "verify_backend_binding",
+        Mock(side_effect=verifier.SmokeFailure("backend Git SHA drift")),
+    )
+
+    assert verifier.main() == 1
+
+
+def test_required_identity_rejects_backend_skip_before_requests(verifier, monkeypatch):
+    verifier.REQUIRE_RELEASE_IDENTITY = True
+    verifier.EXPECTED_FRONTEND_GIT_SHA = "a" * 40
+    verifier.EXPECTED_BACKEND_GIT_SHA = "b" * 40
+    verifier.SKIP_BACKEND_PATHS = True
+    fetch = Mock()
+    monkeypatch.setattr(verifier, "fetch", fetch)
+
+    assert verifier.main() == 1
+    fetch.assert_not_called()
+
+
 def test_provider_sitemap_requires_xml_index(verifier, monkeypatch):
     monkeypatch.setattr(
         verifier,
@@ -193,7 +260,7 @@ def test_binding_failure_retains_request_diagnostics(verifier, monkeypatch):
 
 
 def test_backend_binding_accepts_stale_signal_for_observability(verifier, monkeypatch):
-    verifier.EXPECTED_GIT_SHA = "a" * 40
+    verifier.EXPECTED_BACKEND_GIT_SHA = "a" * 40
     monkeypatch.setattr(
         verifier,
         "fetch",
@@ -211,6 +278,88 @@ def test_backend_binding_accepts_stale_signal_for_observability(verifier, monkey
     )
 
     assert verifier.verify_backend_binding() == 0
+
+
+def test_split_frontend_and_backend_release_identities_are_verified(verifier, monkeypatch):
+    verifier.EXPECTED_FRONTEND_GIT_SHA = "a" * 40
+    verifier.EXPECTED_BACKEND_GIT_SHA = "b" * 40
+    responses = {
+        "/api/health/directory": verifier.Response(
+            200,
+            {"content-type": "application/json"},
+            json.dumps(_healthy_payload("a" * 40)),
+        ),
+        "/api/v1/health/freshness": verifier.Response(
+            503,
+            {"content-type": "application/json"},
+            json.dumps(
+                {
+                    "status": "partial",
+                    "release": {"git_sha": "b" * 40},
+                    "totalSourceLocations": None,
+                }
+            ),
+        ),
+    }
+    monkeypatch.setattr(verifier, "fetch", responses.__getitem__)
+
+    assert verifier.verify_health() == "database"
+    assert verifier.verify_backend_binding() is None
+
+
+def test_required_release_identity_fails_before_live_requests(verifier, monkeypatch):
+    verifier.REQUIRE_RELEASE_IDENTITY = True
+    verifier.EXPECTED_FRONTEND_GIT_SHA = ""
+    verifier.EXPECTED_BACKEND_GIT_SHA = ""
+    fetch = Mock()
+    monkeypatch.setattr(verifier, "fetch", fetch)
+
+    assert verifier.main() == 1
+    fetch.assert_not_called()
+
+
+def test_required_release_identity_rejects_malformed_pin_before_requests(verifier, monkeypatch):
+    verifier.REQUIRE_RELEASE_IDENTITY = True
+    verifier.EXPECTED_FRONTEND_GIT_SHA = "not-a-sha"
+    verifier.EXPECTED_BACKEND_GIT_SHA = "b" * 40
+    fetch = Mock()
+    monkeypatch.setattr(verifier, "fetch", fetch)
+
+    assert verifier.main() == 1
+    fetch.assert_not_called()
+
+
+def test_legacy_expected_sha_remains_compatible_for_preview_and_ci(monkeypatch):
+    monkeypatch.setenv("CAREGIST_EXPECTED_GIT_SHA", "c" * 40)
+    monkeypatch.delenv("CAREGIST_EXPECTED_FRONTEND_GIT_SHA", raising=False)
+    monkeypatch.delenv("CAREGIST_EXPECTED_BACKEND_GIT_SHA", raising=False)
+
+    loaded = _load_verifier()
+
+    assert loaded.EXPECTED_FRONTEND_GIT_SHA == "c" * 40
+    assert loaded.EXPECTED_BACKEND_GIT_SHA == "c" * 40
+
+
+def test_backend_release_drift_is_rejected_independently(verifier, monkeypatch):
+    verifier.EXPECTED_BACKEND_GIT_SHA = "a" * 40
+    monkeypatch.setattr(
+        verifier,
+        "fetch",
+        lambda _path: verifier.Response(
+            503,
+            {"content-type": "application/json"},
+            json.dumps(
+                {
+                    "status": "partial",
+                    "release": {"git_sha": "b" * 40},
+                    "totalSourceLocations": None,
+                }
+            ),
+        ),
+    )
+
+    with pytest.raises(verifier.SmokeFailure, match="backend Git SHA"):
+        verifier.verify_backend_binding()
 
 
 def test_search_accepts_explicit_zero_result_state_for_empty_preview(verifier, monkeypatch):

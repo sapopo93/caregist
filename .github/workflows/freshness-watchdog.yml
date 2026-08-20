@@ -88,4 +88,21 @@ jobs:
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           ENQUIRY_FROM_EMAIL: ${{ secrets.ENQUIRY_FROM_EMAIL }}
           PIPELINE_ALERT_EMAIL: ops@caregist.co.uk
-        run: python -m tools.check_new_registration_pipeline --notify
+          WATCHDOG_NOTIFICATIONS_ENABLED: ${{ vars.FRESHNESS_WATCHDOG_NOTIFICATIONS_ENABLED || 'false' }}
+        run: |
+          test -n "$DATABASE_URL"
+          case "$WATCHDOG_NOTIFICATIONS_ENABLED" in
+            false)
+              echo "Watchdog notifications are explicitly disabled; health remains fail-closed"
+              python -m tools.check_new_registration_pipeline
+              ;;
+            true)
+              test -n "$RESEND_API_KEY"
+              test -n "$ENQUIRY_FROM_EMAIL"
+              python -m tools.check_new_registration_pipeline --notify
+              ;;
+            *)
+              echo "Invalid FRESHNESS_WATCHDOG_NOTIFICATIONS_ENABLED value" >&2
+              exit 1
+              ;;
+          esac
