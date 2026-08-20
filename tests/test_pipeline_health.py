@@ -133,7 +133,8 @@ class HealthConnection:
 
 
 @pytest.mark.asyncio
-async def test_pipeline_health_publishes_independent_readiness_dimensions():
+async def test_pipeline_health_publishes_independent_readiness_dimensions(monkeypatch):
+    monkeypatch.setattr("api.services.pipeline_health.settings.radar_delivery_enabled", True)
     now = datetime.now(UTC)
     result = await get_pipeline_health(HealthConnection(now=now))
 
@@ -142,6 +143,7 @@ async def test_pipeline_health_publishes_independent_readiness_dimensions():
     assert result["source"]["sourcePublishedAt"] == now.date().isoformat()
     assert result["source"]["checksumSha256"] == "a" * 64
     assert result["delivery"] == {
+        "enabled": True,
         "healthy": True,
         "pending": 0,
         "stuck": 0,
@@ -156,6 +158,20 @@ async def test_pipeline_health_publishes_independent_readiness_dimensions():
         "sourceActiveLocationRows": 56_976,
         "countsReconciled": True,
     }
+
+
+@pytest.mark.asyncio
+async def test_pipeline_health_keeps_checkout_closed_when_delivery_is_disabled(monkeypatch):
+    monkeypatch.setattr("api.services.pipeline_health.settings.radar_delivery_enabled", False)
+
+    result = await get_pipeline_health(HealthConnection(now=datetime.now(UTC)))
+
+    assert result["readiness_ok"] is True
+    assert result["freshness_ok"] is True
+    assert result["delivery"]["healthy"] is True
+    assert result["delivery"]["enabled"] is False
+    assert result["commercialReadiness"]["deliveryEnabled"] is False
+    assert result["commercialReadiness"]["checkoutReady"] is False
 
 
 @pytest.mark.asyncio

@@ -15,6 +15,7 @@ from api.routers import billing as billing_module
 from api.routers.billing import (
     CheckoutRequest,
     ProfileCheckoutRequest,
+    _require_radar_commerce_ready,
     cancel_subscription,
     create_billing_portal,
     create_checkout,
@@ -105,10 +106,59 @@ def test_all_billing_routes_use_non_metering_identity_dependency():
         )
 
 
+@pytest.mark.asyncio
+async def test_radar_commerce_readiness_rejects_disabled_delivery():
+    conn = AsyncMock()
+
+    @asynccontextmanager
+    async def mock_get_connection():
+        yield conn
+
+    with patch("api.routers.billing.get_connection", mock_get_connection), patch(
+        "api.routers.billing.get_pipeline_health",
+        new=AsyncMock(
+            return_value={
+                "commercialReadiness": {
+                    "checkoutReady": True,
+                    "deliveryEnabled": False,
+                }
+            }
+        ),
+    ):
+        with pytest.raises(HTTPException) as exc_info:
+            await _require_radar_commerce_ready()
+
+    assert exc_info.value.status_code == 503
+    assert "delivery activation" in exc_info.value.detail
+
+
+@pytest.mark.asyncio
+async def test_radar_commerce_readiness_accepts_delivery_and_evidence():
+    conn = AsyncMock()
+
+    @asynccontextmanager
+    async def mock_get_connection():
+        yield conn
+
+    with patch("api.routers.billing.get_connection", mock_get_connection), patch(
+        "api.routers.billing.get_pipeline_health",
+        new=AsyncMock(
+            return_value={
+                "commercialReadiness": {
+                    "checkoutReady": True,
+                    "deliveryEnabled": True,
+                }
+            }
+        ),
+    ):
+        await _require_radar_commerce_ready()
+
+
 @pytest.fixture(autouse=True)
 def _enable_checkout_for_endpoint_unit_tests():
     with patch("api.routers.billing.settings.billing_checkout_enabled", True), \
          patch("api.routers.billing.settings.radar_checkout_enabled", True), \
+         patch("api.routers.billing.settings.radar_delivery_enabled", True), \
          patch("api.routers.billing.settings.b2b_terms_version", TERMS_VERSION), \
          patch("api.routers.billing.settings.b2b_terms_sha256", TERMS_SHA256), \
          patch("api.routers.billing._require_radar_commerce_ready", new=AsyncMock()):
@@ -242,6 +292,30 @@ async def test_checkout_can_use_explicit_operational_readiness_override(monkeypa
 
     assert result["session_id"] == "cs_test_override"
     readiness.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_operational_override_cannot_bypass_disabled_delivery(monkeypatch):
+    monkeypatch.setattr(settings, "stripe_secret_key", "sk_test_checkout")
+    monkeypatch.setattr(settings, "radar_checkout_require_operational_readiness", False)
+    monkeypatch.setattr(settings, "radar_delivery_enabled", False)
+    get_connection = Mock()
+    create_session = Mock()
+
+    with patch("api.routers.billing.get_connection", get_connection), patch(
+        "api.routers.billing.stripe.checkout.Session.create", create_session
+    ):
+        with pytest.raises(HTTPException) as exc_info:
+            await create_checkout(
+                _checkout(email="alice@example.com", tier="radar-regional"),
+                _request(),
+                _browser_auth(),
+            )
+
+    assert exc_info.value.status_code == 503
+    assert "delivery-activation" in exc_info.value.detail
+    get_connection.assert_not_called()
+    create_session.assert_not_called()
 
 
 @pytest.mark.asyncio
