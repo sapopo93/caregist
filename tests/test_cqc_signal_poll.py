@@ -119,6 +119,15 @@ def test_interruption_after_partial_progress_preserves_attempted_evidence():
     connection.rollback.assert_called_once()
 
 
+def test_production_smoke_uses_promoted_frontend_and_backend_release_pins():
+    workflow = (Path(__file__).resolve().parents[1] / ".github/workflows/production-smoke.yml").read_text()
+
+    assert "vars.CAREGIST_PRODUCTION_FRONTEND_SHA" in workflow
+    assert "vars.CAREGIST_PRODUCTION_BACKEND_SHA" in workflow
+    assert 'CAREGIST_REQUIRE_RELEASE_IDENTITY: "true"' in workflow
+    assert "CAREGIST_EXPECTED_GIT_SHA: ${{ github.sha }}" not in workflow
+
+
 class IndexCursor:
     def __init__(self, count: int, known: set[str] | None = None):
         self.count = count
