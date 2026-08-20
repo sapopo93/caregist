@@ -21,6 +21,8 @@ INIT_SQL = REPO_ROOT / "db" / "init.sql"
 MIGRATIONS_DIR = REPO_ROOT / "db" / "migrations"
 
 DATABASE_URL = os.getenv("CAREGIST_TEST_DATABASE_URL")
+ADMIN_DATABASE_URL = os.getenv("CAREGIST_TEST_ADMIN_DATABASE_URL") or DATABASE_URL
+_ROLE_NAME_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
 
 def validate_test_database_url(value: str) -> None:
@@ -73,22 +75,46 @@ async def fresh_db():
         pytest.skip("Set the explicit isolated CAREGIST_TEST_DATABASE_URL to run integration tests.")
     validate_test_database_url(DATABASE_URL)
 
-    admin = await asyncpg.connect(DATABASE_URL)
+    if not ADMIN_DATABASE_URL:
+        pytest.skip("Set the explicit isolated CAREGIST_TEST_DATABASE_URL to run integration tests.")
+    validate_test_database_url(ADMIN_DATABASE_URL)
+
+    parsed_test_url = urlparse(DATABASE_URL)
+    owner = parsed_test_url.username
+    if not owner or not _ROLE_NAME_RE.fullmatch(owner):
+        raise RuntimeError("CAREGIST_TEST_DATABASE_URL must contain a valid test role name.")
+
     dbname = f"caregist_ittest_{os.getpid()}"
-    await admin.execute(f'DROP DATABASE IF EXISTS "{dbname}"')
-    await admin.execute(f'CREATE DATABASE "{dbname}"')
-    await admin.close()
+    admin = await asyncpg.connect(ADMIN_DATABASE_URL)
+    try:
+        await admin.execute(f'DROP DATABASE IF EXISTS "{dbname}"')
+        await admin.execute(f'CREATE DATABASE "{dbname}" OWNER "{owner}"')
+    finally:
+        await admin.close()
 
     base = DATABASE_URL.rsplit("/", 1)[0]
     test_url = f"{base}/{dbname}"
     try:
+        if os.getenv("CAREGIST_TEST_ADMIN_DATABASE_URL"):
+            admin_base = ADMIN_DATABASE_URL.rsplit("/", 1)[0]
+            test_admin_url = f"{admin_base}/{dbname}"
+            admin = await asyncpg.connect(test_admin_url)
+            try:
+                if await postgis_available(admin):
+                    await admin.execute("CREATE EXTENSION IF NOT EXISTS postgis")
+            finally:
+                await admin.close()
         yield test_url
     finally:
-        admin = await asyncpg.connect(DATABASE_URL)
-        await admin.execute(
-            "SELECT pg_terminate_backend(pid) FROM pg_stat_activity "
-            "WHERE datname = $1 AND pid <> pg_backend_pid()",
-            dbname,
-        )
-        await admin.execute(f'DROP DATABASE IF EXISTS "{dbname}"')
-        await admin.close()
+        admin = await asyncpg.connect(ADMIN_DATABASE_URL)
+        try:
+            try:
+                await admin.execute(
+                    "SELECT pg_terminate_backend(pid) FROM pg_stat_activity "
+                    "WHERE datname = $1 AND pid <> pg_backend_pid()",
+                    dbname,
+                )
+            finally:
+                await admin.execute(f'DROP DATABASE IF EXISTS "{dbname}"')
+        finally:
+            await admin.close()

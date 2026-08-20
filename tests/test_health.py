@@ -9,6 +9,17 @@ from httpx import ASGITransport, AsyncClient
 from api.main import app
 
 
+def _isolated_release_env(sha: str) -> dict[str, str]:
+    """Prevent CI platform variables from overriding the release under test."""
+    return {
+        "VERCEL_GIT_COMMIT_SHA": "",
+        "GITHUB_SHA": "",
+        "RENDER_GIT_COMMIT": "",
+        "SOURCE_VERSION": "",
+        "CAREGIST_RELEASE_SHA": sha,
+    }
+
+
 class _Transaction:
     async def __aenter__(self):
         return self
@@ -51,7 +62,7 @@ async def test_health_endpoint_returns_degraded_snapshot():
         "checks": {"database": "ok"},
     }
 
-    with patch.dict("os.environ", {"CAREGIST_RELEASE_SHA": "a" * 40}), \
+    with patch.dict("os.environ", _isolated_release_env("a" * 40), clear=False), \
          patch("api.routers.health.get_connection", mock_get_connection), \
          patch("api.routers.health.get_pipeline_health", new=AsyncMock(return_value=snapshot)):
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
@@ -286,7 +297,7 @@ async def test_freshness_endpoint_returns_stable_public_evidence():
         "message": "CareGist data is current as of 10 August 2026 at 21:00 UTC.",
     }
 
-    with patch.dict("os.environ", {"CAREGIST_RELEASE_SHA": "a" * 40}), \
+    with patch.dict("os.environ", _isolated_release_env("a" * 40), clear=False), \
          patch("api.routers.health.get_connection", mock_get_connection), \
          patch("api.routers.health.get_cqc_freshness", new=AsyncMock(return_value=snapshot)):
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
@@ -346,7 +357,7 @@ async def test_version_publishes_platform_sha_ahead_of_stale_pin():
 
 @pytest.mark.asyncio
 async def test_version_publishes_validated_release_sha():
-    with patch.dict("os.environ", {"CAREGIST_RELEASE_SHA": "B" * 40}):
+    with patch.dict("os.environ", _isolated_release_env("B" * 40), clear=False):
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.get("/api/v1/version")
 
