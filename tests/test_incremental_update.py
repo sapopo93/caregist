@@ -16,6 +16,7 @@ from incremental_update import (
     _insert_trusted_provider_event,
     _prepare_batch,
     _project_rating_change,
+    _resume_batch,
     _sync_reconciliation_run_evidence,
     ALLOWED_COLUMNS,
     CqcActiveSnapshot,
@@ -246,7 +247,7 @@ def test_clean_location_uses_active_directory_membership_over_lagging_detail_sta
     ) == "postgresql://user:pass@db.example.com/app"
 
 
-@pytest.mark.parametrize("shard_count", [1, 2, 4, 17])
+@pytest.mark.parametrize("shard_count", [1, 2, 4, 8, 17])
 def test_shard_partition_is_deterministic_exhaustive_and_disjoint(shard_count):
     location_ids = [f"1-{number:05d}" for number in range(1000, 1137)]
     first = partition_location_ids(location_ids, shard_count)
@@ -280,6 +281,78 @@ def test_snapshot_manifest_is_sorted_and_deterministic():
     assert first == second
     assert first["locationIds"] == ["1-10000", "1-10001", "1-10002"]
     assert len(first["manifestChecksumSha256"]) == 64
+
+
+def test_snapshot_manifest_checksum_changes_with_shard_count():
+    snapshot = CqcActiveSnapshot(
+        source_uri="https://www.cqc.org.uk/current.csv",
+        source_published_at="2026-08-01",
+        retrieved_at=datetime(2026, 8, 2, tzinfo=timezone.utc),
+        checksum_sha256="a" * 64,
+        location_ids=frozenset({"1-10000", "1-10001"}),
+    )
+    batch_id = uuid.UUID("12345678-1234-5678-9234-567812345678")
+
+    assert (
+        build_snapshot_manifest(snapshot, batch_id, 4)["manifestChecksumSha256"]
+        != build_snapshot_manifest(snapshot, batch_id, 8)["manifestChecksumSha256"]
+    )
+
+
+def test_resume_requires_failed_batch_and_consumes_one_wave(tmp_path):
+    snapshot = CqcActiveSnapshot(
+        source_uri="https://www.cqc.org.uk/current.csv",
+        source_published_at="2026-08-01",
+        retrieved_at=datetime(2026, 8, 2, tzinfo=timezone.utc),
+        checksum_sha256="a" * 64,
+        location_ids=frozenset({"1-10000"}),
+    )
+    batch_id = uuid.UUID("12345678-1234-5678-9234-567812345678")
+    manifest = build_snapshot_manifest(snapshot, batch_id, 8)
+    manifest_path = tmp_path / "manifest.json"
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    cursor = Mock()
+    cursor.fetchone.side_effect = [
+        (8, 1, manifest["manifestChecksumSha256"], manifest["sourceChecksumSha256"]),
+        ("failed", 42, {"resumeWaves": 0}),
+        *[(True,) for _ in range(8)],
+        (0,),
+    ]
+    connection = Mock()
+    args = SimpleNamespace(
+        batch_id=str(batch_id), snapshot_manifest=str(manifest_path), dry_run=False
+    )
+
+    assert _resume_batch(args, connection, cursor) == 0
+    connection.commit.assert_called_once()
+    statements = [str(call.args[0]) for call in cursor.execute.call_args_list]
+    assert any("status = 'prepared'" in statement for statement in statements)
+    assert any("'{resumeWaves}'" in statement for statement in statements)
+
+
+def test_resume_refuses_a_second_wave(tmp_path):
+    snapshot = CqcActiveSnapshot(
+        source_uri="https://www.cqc.org.uk/current.csv",
+        source_published_at="2026-08-01",
+        retrieved_at=datetime(2026, 8, 2, tzinfo=timezone.utc),
+        checksum_sha256="a" * 64,
+        location_ids=frozenset({"1-10000"}),
+    )
+    batch_id = uuid.UUID("12345678-1234-5678-9234-567812345678")
+    manifest = build_snapshot_manifest(snapshot, batch_id, 8)
+    manifest_path = tmp_path / "manifest.json"
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    cursor = Mock()
+    cursor.fetchone.side_effect = [
+        (8, 1, manifest["manifestChecksumSha256"], manifest["sourceChecksumSha256"]),
+        ("failed", 42, {"resumeWaves": 1}),
+    ]
+    args = SimpleNamespace(
+        batch_id=str(batch_id), snapshot_manifest=str(manifest_path), dry_run=False
+    )
+
+    with pytest.raises(ChangesFetchError, match="already used its single resume wave"):
+        _resume_batch(args, Mock(), cursor)
 
 
 def test_prepare_dry_run_performs_database_reads_without_writes(tmp_path, monkeypatch):
@@ -594,9 +667,10 @@ def test_rating_projection_targets_the_existing_partial_unique_index():
 def test_cli_requires_explicit_batch_phase_and_has_no_global_run_lock():
     source = Path("incremental_update.py").read_text(encoding="utf-8")
 
-    assert 'choices=("prepare", "shard", "finalize", "abort"), required=True' in source
+    assert 'choices=("prepare", "resume", "shard", "finalize", "abort")' in source
     assert "INCREMENTAL_UPDATE_LOCK_ID" not in source
     assert "acquire_run_lock" not in source
+    assert 're.fullmatch(r"[0-9a-f]{40}", args.release_sha.lower())' in source
 
 
 def test_trusted_event_insert_uses_source_time_and_conflict_safe_return():
