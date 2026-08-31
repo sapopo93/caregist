@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { DM_Sans, Playfair_Display } from "next/font/google";
+import { unstable_cache } from "next/cache";
 import { connection } from "next/server";
 
 import "./globals.css";
@@ -14,7 +15,7 @@ import { getServerApiBase } from "@/lib/server-api-config";
 
 const SITE_URL = "https://www.caregist.co.uk";
 
-async function getDataCurrentAsOf(): Promise<string | null> {
+const getDataCurrentAsOf = unstable_cache(async (): Promise<string | null> => {
   try {
     const apiBase = getServerApiBase();
     const response = await fetch(`${apiBase}/api/v1/health/freshness`, {
@@ -36,7 +37,7 @@ async function getDataCurrentAsOf(): Promise<string | null> {
   } catch {
     return null;
   }
-}
+}, ["caregist-data-current-as-of"], { revalidate: 3600 });
 
 const dmSans = DM_Sans({
   subsets: ["latin"],

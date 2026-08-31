@@ -95,7 +95,7 @@
   "crons": [
     {
       "path": "/api/v1/cron/email-queue",
-      "schedule": "*/5 * * * *"
+      "schedule": "5 * * * *"
     },
     {
       "path": "/api/v1/cron/feed-cycle",
@@ -103,11 +103,11 @@
     },
     {
       "path": "/api/v1/cron/crm-maintenance",
-      "schedule": "*/5 * * * *"
+      "schedule": "25 * * * *"
     },
     {
       "path": "/api/v1/cron/crm-tps-automation",
-      "schedule": "* * * * *"
+      "schedule": "35 */2 * * *"
     }
   ]
 }

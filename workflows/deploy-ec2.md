@@ -165,17 +165,17 @@ python3 tools/flush_email_queue.py
 Configure these in `/etc/cron.d/caregist`:
 
 ```cron
-# Incremental CQC refresh — every 30 minutes
-*/30 * * * * www-data cd /home/caregist/CareGist && /home/caregist/CareGist/.venv/bin/python3 incremental_update.py >> /var/log/caregist/incremental-update.log 2>&1
+# Incremental CQC refresh — hourly
+0 * * * * www-data cd /home/caregist/CareGist && /home/caregist/CareGist/.venv/bin/python3 incremental_update.py >> /var/log/caregist/incremental-update.log 2>&1
 
 # Feed cycle — hourly
 5 * * * * www-data cd /home/caregist/CareGist && /home/caregist/CareGist/.venv/bin/python3 tools/run_new_registration_feed_cycle.py >> /var/log/caregist/feed-cycle.log 2>&1
 
-# Flush queued emails — every 10 minutes
-*/10 * * * * www-data cd /home/caregist/CareGist && /home/caregist/CareGist/.venv/bin/python3 tools/flush_email_queue.py >> /var/log/caregist/email-flush.log 2>&1
+# Flush queued emails — hourly
+25 * * * * www-data cd /home/caregist/CareGist && /home/caregist/CareGist/.venv/bin/python3 tools/flush_email_queue.py >> /var/log/caregist/email-flush.log 2>&1
 
-# Pipeline watchdog — every 15 minutes with deduplicated email alerts
-*/15 * * * * www-data cd /home/caregist/CareGist && /home/caregist/CareGist/.venv/bin/python3 tools/check_new_registration_pipeline.py --notify >> /var/log/caregist/pipeline-watchdog.log 2>&1
+# Pipeline watchdog — hourly with deduplicated email alerts
+40 * * * * www-data cd /home/caregist/CareGist && /home/caregist/CareGist/.venv/bin/python3 tools/check_new_registration_pipeline.py --notify >> /var/log/caregist/pipeline-watchdog.log 2>&1
 
 # Monitor alerts — daily at 08:00
 0 8 * * * www-data cd /home/caregist/CareGist && /home/caregist/CareGist/.venv/bin/python3 tools/send_monitor_alerts.py >> /var/log/caregist/monitor-alerts.log 2>&1

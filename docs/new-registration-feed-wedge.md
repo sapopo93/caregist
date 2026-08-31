@@ -70,7 +70,7 @@ Recommended scheduled jobs:
 
 1. Apply migrations during deploy:
    - `python db/apply_migrations.py`
-2. Refresh `care_providers` from the CQC changes API (every 30 minutes):
+2. Refresh `care_providers` from the CQC changes API (hourly):
    - `python incremental_update.py`
 3. Run the recurring feed cycle on a schedule (hourly, after the refresh job):
    - `python tools/run_new_registration_feed_cycle.py`

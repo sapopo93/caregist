@@ -51,9 +51,10 @@ def test_vercel_services_route_backend_paths_to_fastapi():
     assert rewrites["/(.*)"] == "frontend"
 
     crons = {item["path"]: item["schedule"] for item in config["crons"]}
-    assert crons["/api/v1/cron/email-queue"] == "*/5 * * * *"
+    assert crons["/api/v1/cron/email-queue"] == "5 * * * *"
     assert crons["/api/v1/cron/feed-cycle"] == "15 * * * *"
-    assert crons["/api/v1/cron/crm-maintenance"] == "*/5 * * * *"
+    assert crons["/api/v1/cron/crm-maintenance"] == "25 * * * *"
+    assert crons["/api/v1/cron/crm-tps-automation"] == "35 */2 * * *"
 
     ignore_rules = (Path(__file__).parents[1] / ".vercelignore").read_text(encoding="utf-8")
     for required_rule in (
@@ -64,3 +65,16 @@ def test_vercel_services_route_backend_paths_to_fastapi():
         "!db/**",
     ):
         assert required_rule in ignore_rules
+
+
+def test_recurring_workflows_run_no_more_frequently_than_hourly():
+    repo_root = Path(__file__).parents[1]
+    expected_schedules = {
+        ".github/workflows/freshness-watchdog.yml": 'cron: "10 * * * *"',
+        ".github/workflows/cqc-signal-poll.yml": 'cron: "37 * * * *"',
+        ".github/workflows/production-smoke.yml": 'cron: "50 * * * *"',
+    }
+
+    for relative_path, expected_schedule in expected_schedules.items():
+        workflow = (repo_root / relative_path).read_text(encoding="utf-8")
+        assert expected_schedule in workflow

@@ -67,7 +67,7 @@ Operational endpoints:
 - `/api/health/directory` — frontend directory mode and deployed Git SHA
 - `/data-status` — public source-watermark status
 
-The 15-minute freshness watchdog records deduplicated state in Postgres and notifies `ops@caregist.co.uk`. Preview and production smoke tests compare the deployed SHA with the tested commit and verify `/data-status` and provider sitemaps.
+The hourly freshness watchdog records deduplicated state in Postgres and notifies `ops@caregist.co.uk`. Preview and production smoke tests compare the deployed SHA with the tested commit and verify `/data-status` and provider sitemaps.
 
 ## Recovery and release
 
