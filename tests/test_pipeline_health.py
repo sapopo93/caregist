@@ -5,7 +5,12 @@ from contextlib import asynccontextmanager
 
 import pytest
 
-from api.services.pipeline_health import get_pipeline_health
+from api.services.pipeline_health import (
+    LEDGER_LATENCY_SLA_SECONDS,
+    SHADOW_WINDOW,
+    get_pipeline_health,
+    operational_ledger_latency_seconds,
+)
 
 
 class HealthConnection:
@@ -119,6 +124,14 @@ class HealthConnection:
                 "latest_effective_date": date.today() - self.latest_event_age,
             }
         if "percentile_cont(0.95)" in query:
+            # The latency gate must measure CareGist's own ingestion latency
+            # (observed_at - source_checked_at), never CQC's historical
+            # publication date. Guard the semantics here so a regression to
+            # source_published_at fails the unit suite.
+            assert "source_checked_at" in query
+            assert "observed_at - source_checked_at" in query
+            assert "source_published_at" not in query
+            assert "observed_at >= source_checked_at" in query
             return {
                 "measured_events": self.measured_events,
                 "p95_seconds": self.p95_seconds,
@@ -266,3 +279,112 @@ async def test_missing_source_snapshot_identity_is_reported_as_not_ready():
     )
     assert schema_check["ok"] is False
     assert schema_check["details"]["sourceSnapshotIdentityReady"] is False
+
+
+@pytest.mark.asyncio
+async def test_pipeline_health_latency_fails_closed_without_measured_events():
+    result = await get_pipeline_health(
+        HealthConnection(now=datetime.now(UTC), measured_events=0)
+    )
+
+    assert result["commercialReadiness"]["checkoutReady"] is False
+    latency_check = next(
+        check for check in result["checks"] if check["name"] == "approved_source_to_ledger_latency"
+    )
+    assert latency_check["ok"] is False
+    assert latency_check["details"]["measuredEvents"] == 0
+
+
+@pytest.mark.asyncio
+async def test_pipeline_health_latency_respects_45_minute_p95_boundary(monkeypatch):
+    monkeypatch.setattr("api.services.pipeline_health.settings.radar_delivery_enabled", True)
+    now = datetime.now(UTC)
+
+    over = await get_pipeline_health(HealthConnection(now=now, p95_seconds=2_701))
+    at_boundary = await get_pipeline_health(HealthConnection(now=now, p95_seconds=2_700))
+
+    assert over["commercialReadiness"]["checkoutReady"] is False
+    over_check = next(
+        check for check in over["checks"] if check["name"] == "approved_source_to_ledger_latency"
+    )
+    assert over_check["ok"] is False
+    boundary_check = next(
+        check
+        for check in at_boundary["checks"]
+        if check["name"] == "approved_source_to_ledger_latency"
+    )
+    assert boundary_check["ok"] is True
+    assert at_boundary["commercialReadiness"]["checkoutReady"] is True
+
+
+def test_operational_latency_ignores_historical_publication_when_ingestion_is_prompt():
+    now = datetime(2026, 9, 3, 12, 0, tzinfo=UTC)
+    checked = now - timedelta(minutes=8)
+    observed = now - timedelta(minutes=7)
+
+    assert operational_ledger_latency_seconds(
+        observed_at=observed,
+        source_checked_at=checked,
+        now=now,
+    ) == 60.0
+
+
+def test_operational_latency_includes_genuinely_late_processing():
+    now = datetime(2026, 9, 3, 12, 0, tzinfo=UTC)
+    seconds = operational_ledger_latency_seconds(
+        observed_at=now - timedelta(minutes=5),
+        source_checked_at=now - timedelta(minutes=90),
+        now=now,
+    )
+
+    assert seconds == 85 * 60
+    assert seconds > LEDGER_LATENCY_SLA_SECONDS
+
+
+def test_operational_latency_excludes_missing_and_invalid_timestamps():
+    now = datetime(2026, 9, 3, 12, 0, tzinfo=UTC)
+
+    assert (
+        operational_ledger_latency_seconds(
+            observed_at=None,
+            source_checked_at=now,
+            now=now,
+        )
+        is None
+    )
+    assert (
+        operational_ledger_latency_seconds(
+            observed_at=now,
+            source_checked_at=None,
+            now=now,
+        )
+        is None
+    )
+    assert (
+        operational_ledger_latency_seconds(
+            observed_at=now - timedelta(minutes=1),
+            source_checked_at=now,
+            now=now,
+        )
+        is None
+    )
+
+
+def test_operational_latency_respects_seven_day_window():
+    now = datetime(2026, 9, 3, 12, 0, tzinfo=UTC)
+    outside_observed = now - SHADOW_WINDOW - timedelta(seconds=1)
+    inside_observed = now - SHADOW_WINDOW + timedelta(seconds=1)
+
+    assert (
+        operational_ledger_latency_seconds(
+            observed_at=outside_observed,
+            source_checked_at=outside_observed - timedelta(minutes=2),
+            now=now,
+        )
+        is None
+    )
+    assert operational_ledger_latency_seconds(
+        observed_at=inside_observed,
+        source_checked_at=inside_observed - timedelta(minutes=2),
+        now=now,
+    ) == 120.0

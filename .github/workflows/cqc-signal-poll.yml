@@ -8,7 +8,11 @@ on:
         type: string
         default: "1200"
   schedule:
-    - cron: "37 * * * *"
+    # Twice hourly so 7 days * 48 scheduled polls can meet the 336-poll gate.
+    # Typical successful runs complete in 16-24 minutes; overlapping runs are
+    # not cancelled. The Python time budget is 45 minutes, below the 50-minute
+    # job timeout, so GitHub does not kill a still-running poll unmarked.
+    - cron: "7,37 * * * *"
 
 permissions:
   contents: read

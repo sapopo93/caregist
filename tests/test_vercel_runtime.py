@@ -67,11 +67,11 @@ def test_vercel_services_route_backend_paths_to_fastapi():
         assert required_rule in ignore_rules
 
 
-def test_recurring_workflows_run_no_more_frequently_than_hourly():
+def test_recurring_workflow_schedules_match_evidence_gates():
     repo_root = Path(__file__).parents[1]
     expected_schedules = {
         ".github/workflows/freshness-watchdog.yml": 'cron: "10 * * * *"',
-        ".github/workflows/cqc-signal-poll.yml": 'cron: "37 * * * *"',
+        ".github/workflows/cqc-signal-poll.yml": 'cron: "7,37 * * * *"',
         ".github/workflows/production-smoke.yml": 'cron: "50 * * * *"',
     }
 

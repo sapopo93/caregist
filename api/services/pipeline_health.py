@@ -24,6 +24,26 @@ SHADOW_SUCCESS_RATIO = 0.99
 LEDGER_LATENCY_SLA_SECONDS = 45 * 60
 DELIVERY_STUCK_AFTER = timedelta(minutes=15)
 
+# Operational source-to-ledger latency is measured from CareGist's own source
+# retrieval/check timestamp (source_checked_at) to the moment the deduplicated
+# material change was persisted (observed_at). CQC's source_published_at is
+# deliberately preserved and NOT used here: it is CQC's publication or
+# registration date (often historical for bootstrap/backfill events) and would
+# measure detection delay against source history rather than CareGist ingestion
+# latency. Legacy rows without a retrieval timestamp cannot be measured and are
+# excluded; a zero measured-event sample therefore fails the gate closed.
+_LEDGER_LATENCY_SQL = """
+SELECT COUNT(*)::int AS measured_events,
+       percentile_cont(0.95) WITHIN GROUP (
+         ORDER BY EXTRACT(EPOCH FROM (observed_at - source_checked_at))
+       ) AS p95_seconds
+FROM trusted_event_ledger
+WHERE event_type IN ('new_registration', 'rating_changed')
+  AND source_checked_at IS NOT NULL
+  AND observed_at >= source_checked_at
+  AND observed_at >= NOW() - INTERVAL '7 days'
+"""
+
 
 def _as_iso(value: datetime | None) -> str | None:
     if value is None:
@@ -39,6 +59,31 @@ def _as_utc(value: datetime | None) -> datetime | None:
     if value.tzinfo is None:
         return value.replace(tzinfo=UTC)
     return value.astimezone(UTC)
+
+
+def operational_ledger_latency_seconds(
+    *,
+    observed_at: datetime | None,
+    source_checked_at: datetime | None,
+    now: datetime,
+    window: timedelta = SHADOW_WINDOW,
+) -> float | None:
+    """Return operational latency in seconds, or None if the sample is unmeasurable.
+
+    Historical CQC ``source_published_at`` is intentionally unused. Missing
+    timestamps, negative intervals, and events outside the window are excluded
+    rather than invented. A zero-sample p95 still fails the gate closed.
+    """
+    observed = _as_utc(observed_at)
+    checked = _as_utc(source_checked_at)
+    current = _as_utc(now)
+    if observed is None or checked is None or current is None:
+        return None
+    if observed < checked:
+        return None
+    if observed < current - window:
+        return None
+    return (observed - checked).total_seconds()
 
 
 async def _table_exists(conn: asyncpg.Connection, table_name: str) -> bool:
@@ -230,19 +275,7 @@ async def get_pipeline_health(conn: asyncpg.Connection) -> dict[str, Any]:
             """
         )
         if canonical_ledger_schema_ready:
-            latency = await conn.fetchrow(
-                """
-                SELECT COUNT(*)::int AS measured_events,
-                       percentile_cont(0.95) WITHIN GROUP (
-                         ORDER BY EXTRACT(EPOCH FROM (observed_at - source_published_at))
-                       ) AS p95_seconds
-                FROM trusted_event_ledger
-                WHERE event_type IN ('new_registration', 'rating_changed')
-                  AND source_published_at IS NOT NULL
-                  AND observed_at >= source_published_at
-                  AND observed_at >= NOW() - INTERVAL '7 days'
-                """
-            )
+            latency = await conn.fetchrow(_LEDGER_LATENCY_SQL)
 
     delivery = None
     if delivery_outbox_exists:
