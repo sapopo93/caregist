@@ -43,6 +43,7 @@ def _browser_auth(**values) -> dict:
 def _enable_checkout_for_endpoint_unit_tests():
     with patch.object(settings, "billing_checkout_enabled", True), \
          patch.object(settings, "radar_checkout_enabled", True), \
+         patch.object(settings, "radar_delivery_enabled", True), \
          patch.object(settings, "b2b_terms_version", TERMS_VERSION), \
          patch.object(settings, "b2b_terms_sha256", TERMS_SHA256), \
          patch.object(billing, "_require_radar_commerce_ready", new=AsyncMock()):

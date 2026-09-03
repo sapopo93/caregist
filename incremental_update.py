@@ -2,9 +2,10 @@
 """Prepare, shard, resume, and finalize an authoritative CQC reconciliation batch.
 
 Usage:
-    python3 incremental_update.py --phase prepare --batch-id UUID --shard-count 4 --snapshot-manifest manifest.json
-    python3 incremental_update.py --phase shard --batch-id UUID --shard-count 4 --shard-index 0 --snapshot-manifest manifest.json
-    python3 incremental_update.py --phase finalize --batch-id UUID --shard-count 4 --snapshot-manifest manifest.json
+    python3 incremental_update.py --phase prepare --batch-id UUID --shard-count 8 --snapshot-manifest manifest.json
+    python3 incremental_update.py --phase resume --batch-id UUID --snapshot-manifest manifest.json
+    python3 incremental_update.py --phase shard --batch-id UUID --shard-count 8 --shard-index 0 --snapshot-manifest manifest.json
+    python3 incremental_update.py --phase finalize --batch-id UUID --shard-count 8 --snapshot-manifest manifest.json
     python3 incremental_update.py --phase abort --batch-id UUID
 """
 
@@ -25,6 +26,7 @@ import zlib
 from collections import Counter
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
+from email.utils import parsedate_to_datetime
 from pathlib import Path
 from typing import Any
 from urllib.parse import urljoin, urlparse, urlsplit, urlunsplit
@@ -60,6 +62,9 @@ DEFAULT_MAX_RETRIES = 3
 DETAIL_MAX_RETRIES = 5
 DETAIL_MAX_BACKOFF_SECONDS = 30
 RETRYABLE_STATUS_CODES = {408, 429, 500, 502, 503, 504}
+LOCATION_LIST_RETRYABLE_STATUS_CODES = RETRYABLE_STATUS_CODES | {403}
+LOCATION_LIST_MAX_RETRIES = 5
+LOCATION_LIST_MAX_BACKOFF_SECONDS = 60.0
 MIN_EXPECTED_ACTIVE_LOCATIONS = 50_000
 MAX_ACTIVE_COUNT_DROP_RATIO = 0.05
 DEFAULT_CHECKPOINT_SIZE = 250
@@ -72,6 +77,31 @@ class ChangesFetchError(RuntimeError):
 
 class ShardAlreadyRunning(ChangesFetchError):
     """Raised without mutating batch state when another worker owns the shard."""
+
+
+def _location_list_retry_delay(
+    retry_after: str | None,
+    attempt: int,
+    *,
+    now: datetime | None = None,
+) -> float:
+    """Return a bounded delay for numeric or HTTP-date Retry-After values."""
+    delay: float
+    if retry_after is None:
+        delay = 15.0 * attempt
+    else:
+        try:
+            delay = float(retry_after)
+        except (TypeError, ValueError):
+            try:
+                retry_at = parsedate_to_datetime(retry_after)
+                if retry_at.tzinfo is None:
+                    retry_at = retry_at.replace(tzinfo=timezone.utc)
+                reference = now or datetime.now(timezone.utc)
+                delay = (retry_at - reference).total_seconds()
+            except (TypeError, ValueError, OverflowError):
+                delay = 15.0 * attempt
+    return min(LOCATION_LIST_MAX_BACKOFF_SECONDS, max(0.0, delay))
 
 
 @dataclass(frozen=True)
@@ -390,26 +420,101 @@ def fetch_changes(base_url: str, api_key: str | None, since: str, sleep: float) 
     return list(set(changed_ids))
 
 
-def _fetch_all_cqc_location_stubs(base_url: str, api_key: str | None, sleep: float) -> list[dict]:
-    """Fetch all location stubs from GET /locations (returns locationId, locationName, postalCode)."""
+def _fetch_all_cqc_location_stubs(
+    base_url: str,
+    api_key: str | None,
+    sleep: float,
+    *,
+    min_expected: int = MIN_EXPECTED_ACTIVE_LOCATIONS,
+) -> list[dict]:
+    """Fetch a complete, internally consistent snapshot from GET /locations."""
     url = f"{base_url}/locations"
     headers = api_headers(api_key)
     all_items: list[dict] = []
+    seen_ids: set[str] = set()
+    expected_total: int | None = None
     page = 1
     while True:
+        resp = None
+        last_network_error: requests.RequestException | None = None
+        for attempt in range(1, LOCATION_LIST_MAX_RETRIES + 1):
+            try:
+                resp = requests.get(
+                    url,
+                    headers=headers,
+                    params={"page": page, "perPage": 1000},
+                    timeout=30,
+                )
+            except requests.RequestException as exc:
+                last_network_error = exc
+                if attempt == LOCATION_LIST_MAX_RETRIES:
+                    raise ChangesFetchError(
+                        f"Location list scan network failure on page {page} after {attempt} attempts"
+                    ) from exc
+            else:
+                if resp.status_code == 200:
+                    break
+                if (
+                    resp.status_code not in LOCATION_LIST_RETRYABLE_STATUS_CODES
+                    or attempt == LOCATION_LIST_MAX_RETRIES
+                ):
+                    raise ChangesFetchError(
+                        f"Location list scan returned {resp.status_code} on page {page} "
+                        f"after {attempt} attempts"
+                    )
+
+            retry_after = None if resp is None else resp.headers.get("Retry-After")
+            time.sleep(_location_list_retry_delay(retry_after, attempt))
+        else:  # pragma: no cover - defensive; loop either breaks or raises
+            raise ChangesFetchError(
+                f"Location list scan failed on page {page}: {last_network_error or 'retry budget exhausted'}"
+            )
+
         try:
-            resp = requests.get(url, headers=headers, params={"page": page, "perPage": 1000}, timeout=30)
-            if resp.status_code != 200:
-                raise ChangesFetchError(f"Location list scan returned {resp.status_code} on page {page}")
+            assert resp is not None
             data = resp.json()
-            locations = data.get("locations", [])
-            if not locations:
-                break
-            all_items.extend(locations)
+            locations = data.get("locations")
+            if not isinstance(locations, list):
+                raise ChangesFetchError(f"Location list scan returned an invalid payload on page {page}")
             total = int(data.get("total", 0))
+            if total < min_expected:
+                raise ChangesFetchError(
+                    f"Location list scan reported only {total} records on page {page}; "
+                    f"expected at least {min_expected}"
+                )
+            if expected_total is None:
+                expected_total = total
+            elif total != expected_total:
+                raise ChangesFetchError(
+                    f"Location list scan total changed from {expected_total} to {total} on page {page}"
+                )
+            if not locations:
+                raise ChangesFetchError(
+                    f"Location list scan ended early on page {page} after "
+                    f"{len(all_items)}/{expected_total} records"
+                )
+
+            page_ids: list[str] = []
+            for item in locations:
+                if not isinstance(item, dict):
+                    raise ChangesFetchError(f"Location list scan returned a malformed record on page {page}")
+                location_id = str(item.get("locationId") or item.get("id") or "").strip()
+                if not location_id:
+                    raise ChangesFetchError(f"Location list scan returned a record without an ID on page {page}")
+                page_ids.append(location_id)
+            duplicates = seen_ids.intersection(page_ids)
+            if len(page_ids) != len(set(page_ids)) or duplicates:
+                raise ChangesFetchError(f"Location list scan returned duplicate IDs on page {page}")
+
+            all_items.extend(locations)
+            seen_ids.update(page_ids)
             if (page % 20) == 0:
                 print(f"  Fetched {len(all_items)}/{total} location IDs from CQC list...")
-            if len(all_items) >= total:
+            if len(all_items) > total:
+                raise ChangesFetchError(
+                    f"Location list scan exceeded its reported total on page {page}: {len(all_items)}/{total}"
+                )
+            if len(all_items) == total:
                 break
             page += 1
             time.sleep(sleep)
@@ -417,6 +522,8 @@ def _fetch_all_cqc_location_stubs(base_url: str, api_key: str | None, sleep: flo
             raise
         except Exception as exc:
             raise ChangesFetchError(f"Location list scan error on page {page}: {exc}") from exc
+    if expected_total is None or len(all_items) != expected_total or len(seen_ids) != expected_total:
+        raise ChangesFetchError("Location list scan did not produce a complete unique snapshot")
     return all_items
 
 
@@ -1040,6 +1147,11 @@ def _prepare_batch(args: argparse.Namespace, conn, cur) -> int:
                 "retrievedAt": snapshot.retrieved_at.isoformat(),
                 "checksumSha256": snapshot.checksum_sha256,
                 "manifestChecksumSha256": manifest["manifestChecksumSha256"],
+                "execution": {
+                    "gitSha": getattr(args, "release_sha", None),
+                    "workflowRunId": getattr(args, "workflow_run_id", None),
+                    "workflowRunAttempt": getattr(args, "workflow_run_attempt", None),
+                },
             }, sort_keys=True),
             snapshot.source_uri, snapshot.source_published_at, snapshot.retrieved_at,
             snapshot.checksum_sha256, len(snapshot.location_ids),
@@ -1047,7 +1159,13 @@ def _prepare_batch(args: argparse.Namespace, conn, cur) -> int:
                 "batchId": str(batch_id),
                 "shardCount": args.shard_count,
                 "restartable": True,
+                "resumeWaves": 0,
                 "restarts": {},
+                "prepareExecution": {
+                    "gitSha": getattr(args, "release_sha", None),
+                    "workflowRunId": getattr(args, "workflow_run_id", None),
+                    "workflowRunAttempt": getattr(args, "workflow_run_attempt", None),
+                },
             }),
         ),
     )
@@ -1114,6 +1232,106 @@ def _validate_manifest_for_batch(cur, manifest: dict[str, Any], batch_id: uuid.U
     if manifest.get("sourceChecksumSha256") != source_checksum:
         raise ChangesFetchError("Snapshot source checksum disagrees with the batch.")
     return shard_count, location_count
+
+
+def _resume_batch(args: argparse.Namespace, conn, cur) -> int:
+    """Authorize exactly one manual resume wave for an incomplete immutable batch."""
+    if args.dry_run:
+        raise ValueError("The resume phase does not support --dry-run.")
+    batch_id = _parse_batch_id(args.batch_id)
+    manifest = load_snapshot_manifest(_require_manifest_path(args.snapshot_manifest))
+    shard_count, _ = _validate_manifest_for_batch(cur, manifest, batch_id)
+
+    cur.execute("SELECT pg_advisory_xact_lock(hashtextextended('cqc-reconciliation-finalizer', 0))")
+    cur.execute("SELECT pg_advisory_xact_lock(hashtextextended('cqc-reconciliation-prepare', 0))")
+    cur.execute(
+        """
+        SELECT b.status, b.pipeline_run_id, p.checkpoint_state
+        FROM reconciliation_batches AS b
+        JOIN pipeline_runs AS p ON p.id = b.pipeline_run_id
+        WHERE b.id = %s
+        FOR UPDATE OF b, p
+        """,
+        (str(batch_id),),
+    )
+    row = cur.fetchone()
+    if not row:
+        raise ChangesFetchError(f"Reconciliation batch {batch_id} does not exist.")
+    status, pipeline_run_id, checkpoint_state = str(row[0]), int(row[1]), row[2] or {}
+    if status != "failed":
+        raise ChangesFetchError(
+            f"Reconciliation batch {batch_id} must be failed before resume; status is {status}."
+        )
+    prepare_execution = checkpoint_state.get("prepareExecution")
+    if not isinstance(prepare_execution, dict):
+        raise ChangesFetchError(
+            "Reconciliation resume refused because original prepare execution evidence is missing."
+        )
+    prepared_sha = str(prepare_execution.get("gitSha") or "").lower()
+    prepared_run_id = str(prepare_execution.get("workflowRunId") or "")
+    resume_sha = str(getattr(args, "release_sha", "") or "").lower()
+    source_run_id = str(getattr(args, "resume_source_run_id", "") or "")
+    if resume_sha != prepared_sha or source_run_id != prepared_run_id:
+        raise ChangesFetchError(
+            "Reconciliation resume must use the original prepare code SHA and workflow run artifact."
+        )
+    resume_waves = int(checkpoint_state.get("resumeWaves", 0))
+    if resume_waves >= 1:
+        raise ChangesFetchError(
+            f"Reconciliation batch {batch_id} already used its single resume wave."
+        )
+
+    for shard_index in range(shard_count):
+        lock_key = f"cqc-reconciliation:{batch_id}:{shard_index}"
+        cur.execute("SELECT pg_try_advisory_xact_lock(hashtextextended(%s, 0))", (lock_key,))
+        if not cur.fetchone()[0]:
+            raise ShardAlreadyRunning(
+                f"Shard {shard_index} is still running; reconciliation resume refused."
+            )
+    cur.execute(
+        """SELECT COUNT(*) FROM reconciliation_shards
+           WHERE batch_id = %s AND status = 'running'""",
+        (str(batch_id),),
+    )
+    if int(cur.fetchone()[0]) > 0:
+        raise ShardAlreadyRunning("A shard is still marked running; reconciliation resume refused.")
+
+    resume_execution = json.dumps(
+        {
+            "gitSha": getattr(args, "release_sha", None),
+            "workflowRunId": getattr(args, "workflow_run_id", None),
+            "workflowRunAttempt": getattr(args, "workflow_run_attempt", None),
+        },
+        sort_keys=True,
+    )
+
+    cur.execute(
+        """
+        UPDATE reconciliation_batches
+        SET status = 'prepared', completed_at = NULL, error_message = NULL
+        WHERE id = %s
+        """,
+        (str(batch_id),),
+    )
+    cur.execute(
+        """
+        UPDATE pipeline_runs
+        SET status = 'running', completed_at = NULL, error_message = NULL,
+            counts_reconciled = FALSE, reconciled_at = NULL,
+            checkpoint_state = jsonb_set(
+              jsonb_set(
+                checkpoint_state || '{"restartable": true, "fullCoverage": false}'::jsonb,
+                '{resumeWaves}', to_jsonb(%s::int), TRUE
+              ),
+              '{resumeExecution}', %s::jsonb, TRUE
+            )
+        WHERE id = %s
+        """,
+        (resume_waves + 1, resume_execution, pipeline_run_id),
+    )
+    conn.commit()
+    print(f"Authorized the single resume wave for reconciliation batch {batch_id}")
+    return 0
 
 
 def _run_shard(args: argparse.Namespace, conn, cur, api_key: str | None) -> int:
@@ -1497,6 +1715,8 @@ def _run_reconciliation_phase(args: argparse.Namespace, api_key: str | None, dat
         try:
             if args.phase == "prepare":
                 return _prepare_batch(args, conn, cur)
+            if args.phase == "resume":
+                return _resume_batch(args, conn, cur)
             if args.phase == "shard":
                 if args.shard_index is None:
                     raise ValueError("--shard-index is required for the shard phase")
@@ -1526,7 +1746,10 @@ def _run_reconciliation_phase(args: argparse.Namespace, api_key: str | None, dat
                     SET status = 'failed', completed_at = NOW(), error_message = %s,
                         counts_reconciled = FALSE, reconciled_at = NULL,
                         checkpoint_state = checkpoint_state || '{"restartable": true, "fullCoverage": false}'::jsonb
-                    WHERE id = (SELECT pipeline_run_id FROM reconciliation_batches WHERE id = %s)
+                    WHERE id = (
+                      SELECT pipeline_run_id FROM reconciliation_batches
+                      WHERE id = %s AND status != 'completed'
+                    ) AND status != 'completed'
                     """,
                     (str(exc)[:4000], args.batch_id),
                 )
@@ -1544,11 +1767,19 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--sleep", type=float, default=DEFAULT_SLEEP, help="Sleep between API calls")
     parser.add_argument("--dry-run", action="store_true", help="Show changes without writing to DB")
     parser.add_argument("--database-url", help="PostgreSQL connection URL")
-    parser.add_argument("--phase", choices=("prepare", "shard", "finalize", "abort"), required=True)
+    parser.add_argument(
+        "--phase",
+        choices=("prepare", "resume", "shard", "finalize", "abort"),
+        required=True,
+    )
     parser.add_argument("--shard-count", type=int, default=1)
     parser.add_argument("--shard-index", type=int)
     parser.add_argument("--batch-id")
     parser.add_argument("--snapshot-manifest")
+    parser.add_argument("--release-sha")
+    parser.add_argument("--workflow-run-id")
+    parser.add_argument("--workflow-run-attempt")
+    parser.add_argument("--resume-source-run-id")
     parser.add_argument("--checkpoint-size", type=int, default=DEFAULT_CHECKPOINT_SIZE)
     parser.add_argument(
         "--data-page-url",
@@ -1560,6 +1791,35 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
+
+    if not args.dry_run and args.phase in {"prepare", "resume"}:
+        execution_identity = (
+            args.release_sha,
+            args.workflow_run_id,
+            args.workflow_run_attempt,
+        )
+        valid_execution_identity = (
+            all(execution_identity)
+            and re.fullmatch(r"[0-9a-f]{40}", args.release_sha.lower()) is not None
+            and args.workflow_run_id.isdigit()
+            and int(args.workflow_run_id) > 0
+            and args.workflow_run_attempt.isdigit()
+            and int(args.workflow_run_attempt) > 0
+        )
+        valid_resume_source = (
+            args.phase != "resume"
+            or (
+                bool(args.resume_source_run_id)
+                and args.resume_source_run_id.isdigit()
+                and int(args.resume_source_run_id) > 0
+            )
+        )
+        if not valid_execution_identity or not valid_resume_source:
+            print(
+                "ERROR: prepare/resume writes require valid execution identity and resume source lineage.",
+                file=sys.stderr,
+            )
+            return 1
 
     api_key = get_api_key()
     if not api_key and not args.dry_run and args.phase == "shard":

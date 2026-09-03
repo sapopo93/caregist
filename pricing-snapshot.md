@@ -1,3 +1,9 @@
+> **Superseded historical website snapshot — non-operative.** This captured UI
+> contains retired products, prices, links, and claims. It is retained only as
+> dated audit evidence and must not be used for current pricing, sales, product
+> configuration, or release approval. See `docs/CAREGIST_MASTER_STRATEGY.md` and
+> `deploy/stripe-price-manifest.json` for the authoritative `2026-08` catalogue.
+
 - generic [active] [ref=e1]:
   - banner [ref=e2]:
     - generic [ref=e3]:

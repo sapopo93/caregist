@@ -27,6 +27,7 @@ import type { DirectorySearchParams } from "./directory-filters.ts";
 import type { NormalizedLeadRequest } from "./directory-leads.ts";
 import {
   buildDirectoryTextSearchClause,
+  NO_PUBLISHED_RATING_CLAUSE,
   buildOpportunityClause,
   buildRatingClause,
 } from "./directory-query-clauses.ts";
@@ -92,6 +93,7 @@ export interface DirectoryOpportunityStats {
   inadequate: number;
   requiresImprovement: number;
   notYetInspected: number;
+  noPublishedRating: number;
   staleInspection: number;
 }
 
@@ -400,6 +402,7 @@ export async function getDirectoryOpportunityStats(): Promise<DirectoryOpportuni
       inadequate: number;
       requires_improvement: number;
       not_yet_inspected: number;
+      no_published_rating: number;
       stale_inspection: number;
     }>(
       `
@@ -415,6 +418,7 @@ export async function getDirectoryOpportunityStats(): Promise<DirectoryOpportuni
               '', 'not yet inspected', 'no published rating'
             )
           )::int AS not_yet_inspected,
+          COUNT(*) FILTER (WHERE ${NO_PUBLISHED_RATING_CLAUSE})::int AS no_published_rating,
           COUNT(*) FILTER (
             WHERE last_inspection_date IS NULL OR last_inspection_date < CURRENT_DATE - INTERVAL '3 years'
           )::int AS stale_inspection
@@ -430,6 +434,7 @@ export async function getDirectoryOpportunityStats(): Promise<DirectoryOpportuni
       inadequate: row?.inadequate ?? 0,
       requiresImprovement: row?.requires_improvement ?? 0,
       notYetInspected: row?.not_yet_inspected ?? 0,
+      noPublishedRating: row?.no_published_rating ?? 0,
       staleInspection: row?.stale_inspection ?? 0,
     };
   } catch (error) {
