@@ -14,6 +14,7 @@ from incremental_update import (
     _fetch_all_cqc_location_stubs,
     _finalize_batch,
     _insert_trusted_provider_event,
+    _ensure_no_active_reconciliation_batch,
     _prepare_batch,
     _project_rating_change,
     _resume_batch,
@@ -21,6 +22,7 @@ from incremental_update import (
     ALLOWED_COLUMNS,
     CqcActiveSnapshot,
     ChangesFetchError,
+    ShardAlreadyRunning,
     build_snapshot_manifest,
     build_snapshot_reconciliation,
     checkpoint_slices,
@@ -446,6 +448,68 @@ def test_prepare_dry_run_performs_database_reads_without_writes(tmp_path, monkey
     assert _prepare_batch(args, Mock(), cursor) == 0
     assert not manifest_path.exists()
     assert all(str(call.args[0]).lstrip().upper().startswith("SELECT") for call in cursor.execute.call_args_list)
+
+
+def test_ensure_no_active_batch_is_noop_when_idle():
+    cursor = Mock()
+    cursor.fetchone.return_value = None
+    args = SimpleNamespace(batch_id="new-batch", dry_run=False)
+
+    _ensure_no_active_reconciliation_batch(args, Mock(), cursor)
+
+    assert args.batch_id == "new-batch"
+    assert not any("UPDATE" in str(call.args[0]).upper() for call in cursor.execute.call_args_list if call.args)
+
+
+def test_ensure_no_active_batch_aborts_idle_stale_batch_then_rechecks(monkeypatch):
+    cursor = Mock()
+    cursor.fetchone.side_effect = [("stale-uuid",), None]
+    aborted: list[str] = []
+
+    def fake_abort(args, _conn, _cur):
+        aborted.append(args.batch_id)
+        return 0
+
+    monkeypatch.setattr("incremental_update._abort_batch", fake_abort)
+    args = SimpleNamespace(batch_id="new-batch", dry_run=False)
+
+    _ensure_no_active_reconciliation_batch(args, Mock(), cursor)
+
+    assert aborted == ["stale-uuid"]
+    assert args.batch_id == "new-batch"
+
+
+def test_ensure_no_active_batch_refuses_when_a_shard_worker_is_live(monkeypatch):
+    cursor = Mock()
+    cursor.fetchone.return_value = ("stale-uuid",)
+    monkeypatch.setattr(
+        "incremental_update._abort_batch",
+        Mock(side_effect=ShardAlreadyRunning("Shard 0 is still running; batch abort refused.")),
+    )
+    args = SimpleNamespace(batch_id="new-batch", dry_run=False)
+
+    with pytest.raises(ChangesFetchError, match="stale-uuid is still active"):
+        _ensure_no_active_reconciliation_batch(args, Mock(), cursor)
+    assert args.batch_id == "new-batch"
+
+
+def test_ensure_no_active_batch_refuses_if_another_batch_is_active_after_abort(monkeypatch):
+    cursor = Mock()
+    cursor.fetchone.side_effect = [("stale-1",), ("stale-2",)]
+    monkeypatch.setattr("incremental_update._abort_batch", lambda *_args, **_kwargs: 0)
+    args = SimpleNamespace(batch_id="new-batch", dry_run=False)
+
+    with pytest.raises(ChangesFetchError, match="stale-2 is still active"):
+        _ensure_no_active_reconciliation_batch(args, Mock(), cursor)
+    assert args.batch_id == "new-batch"
+
+
+def test_prepare_still_fail_closes_without_marking_partial_imports_complete():
+    source = Path("incremental_update.py").read_text(encoding="utf-8")
+    assert "_ensure_no_active_reconciliation_batch" in source
+    assert "counts_reconciled = TRUE, reconciled_at = NOW()" in source
+    assert "counts_reconciled = FALSE, reconciled_at = NULL" in source
+    assert "A completed reconciliation batch cannot be aborted." in source
 
 
 def test_reconciliation_evidence_is_derived_from_committed_shard_state():
