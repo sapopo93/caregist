@@ -5,11 +5,14 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from api.database import pool_limits
-from api.main import should_start_email_drain
+import pytest
 
 
 def test_vercel_runtime_disables_background_drain_and_limits_pool():
+    pytest.importorskip("multipart")
+    from api.database import pool_limits
+    from api.main import should_start_email_drain
+
     env = {"VERCEL": "1"}
 
     assert should_start_email_drain(env) is False
@@ -17,6 +20,10 @@ def test_vercel_runtime_disables_background_drain_and_limits_pool():
 
 
 def test_long_lived_runtime_keeps_background_drain_and_normal_pool():
+    pytest.importorskip("multipart")
+    from api.database import pool_limits
+    from api.main import should_start_email_drain
+
     assert should_start_email_drain({}) is True
     assert pool_limits({}) == (2, 20)
 
