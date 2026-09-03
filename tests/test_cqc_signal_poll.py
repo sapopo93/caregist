@@ -16,7 +16,10 @@ def test_workflow_runs_poller_as_importable_module():
 
     assert "python -m tools.poll_cqc_signals" in workflow
     assert "python tools/poll_cqc_signals.py" not in workflow
+    assert 'cron: "7,37 * * * *"' in workflow
     assert "timeout-minutes: 50" in workflow
+    assert "cancel-in-progress: false" in workflow
+    assert 'RADAR_DELIVERY_ENABLED: "false"' in workflow
 
 
 def test_stale_running_polls_are_failed_closed():
@@ -291,6 +294,7 @@ def test_main_kill_switch_skips_without_reading_credentials(monkeypatch):
         sweep_size=1_200,
         checkpoint_size=100,
         sleep=0.0,
+        time_budget_seconds=poll_cqc_signals.DEFAULT_POLL_TIME_BUDGET_SECONDS,
     ))
 
     with patch.object(poll_cqc_signals, "get_database_url") as database_url, \
@@ -299,3 +303,77 @@ def test_main_kill_switch_skips_without_reading_credentials(monkeypatch):
 
     database_url.assert_not_called()
     api_key.assert_not_called()
+
+
+def test_default_poll_time_budget_stays_below_github_job_timeout():
+    # The workflow job timeout (50 minutes) is the external bound that force-
+    # kills a poll into a stale status='running' row. The internal budget must
+    # stay below it so the poll can fail closed with durable evidence first.
+    assert poll_cqc_signals.DEFAULT_POLL_TIME_BUDGET_SECONDS == 45 * 60
+    assert poll_cqc_signals.DEFAULT_POLL_TIME_BUDGET_SECONDS < 50 * 60
+    assert poll_cqc_signals.DEFAULT_POLL_TIME_BUDGET_SECONDS > 40 * 60
+
+
+def test_main_rejects_time_budget_at_or_above_job_timeout(monkeypatch):
+    monkeypatch.setattr("sys.argv", ["poll_cqc_signals", "--time-budget-seconds", "3000"])
+
+    assert poll_cqc_signals.main() == 1
+
+
+def test_time_budget_exhaustion_fails_run_closed_with_attempted_evidence():
+    cursor = Mock()
+    cursor.fetchone.side_effect = [(True,), (77,), (0,)]
+    connection = Mock()
+    connection.cursor.return_value = cursor
+
+    with patch.object(poll_cqc_signals.psycopg2, "connect", return_value=connection), \
+         patch.object(poll_cqc_signals, "_close_stale_running_polls", return_value=0), \
+         patch.object(
+             poll_cqc_signals,
+             "fetch_report_candidates",
+             return_value=(
+                 {"1-10000", "1-10001", "1-10002"},
+                 b"report index",
+                 "https://example.test/reports",
+             ),
+         ), patch.object(poll_cqc_signals, "_upsert_source_snapshot", return_value=9), \
+         patch.object(poll_cqc_signals, "_rolling_sweep_ids", return_value=[]), \
+         patch.object(
+             poll_cqc_signals,
+             "fetch_location_detail",
+             side_effect=[{"locationId": "1-10000"}, {"locationId": "1-10001"}],
+         ), patch.object(poll_cqc_signals, "clean_location", return_value={"id": "1-10000"}), \
+         patch.object(poll_cqc_signals, "upsert_provider", return_value="updated"), \
+         patch.object(poll_cqc_signals.time, "sleep"), \
+         patch.object(
+             poll_cqc_signals.time,
+             "monotonic",
+             side_effect=[0, 1, 1, 2_700],
+         ), pytest.raises(
+             poll_cqc_signals.SignalPollInterrupted,
+             match="signal_poll_time_budget_exhausted",
+         ):
+        poll_cqc_signals.run_signal_poll(
+            "postgresql://example",
+            "key",
+            index_enabled=False,
+            report_enabled=True,
+            checkpoint_size=100,
+            time_budget_seconds=2_700,
+        )
+
+    executed_sql = [call.args[0] for call in cursor.execute.call_args_list]
+    # The run must be failed closed, never completed with partial coverage.
+    assert any("status = 'failed'" in sql for sql in executed_sql)
+    completed_updates = [
+        sql for sql in executed_sql if "UPDATE pipeline_runs" in sql and "status = %s" in sql
+    ]
+    assert completed_updates == []
+    failed_update = next(
+        call for call in cursor.execute.call_args_list if "status = 'failed'" in call.args[0]
+    )
+    failed_state = json.loads(failed_update.args[1][1])
+    assert failed_state["attemptedOffset"] == 2
+    assert "signal_poll_time_budget_exhausted" in failed_state["failure"]
+    assert failed_state["attemptedSuccessCount"] == 2
+    connection.rollback.assert_called_once()

@@ -56,6 +56,11 @@ SIGNAL_POLL_LOCK_ID = 802451204
 DEFAULT_SWEEP_SIZE = 1200
 DEFAULT_CHECKPOINT_SIZE = 100
 STALE_RUNNING_POLL_MINUTES = 40
+# Whole-run wall-clock budget, deliberately below the 50-minute GitHub job
+# timeout (`.github/workflows/cqc-signal-poll.yml`, timeout-minutes: 50) so the
+# poll fails closed with durable evidence instead of being force-killed into a
+# stale status='running' row that only a later poll would close.
+DEFAULT_POLL_TIME_BUDGET_SECONDS = 45 * 60
 LOCATION_ID_PATTERN = re.compile(r"/location/(?P<location_id>1-\d{5,12})(?:[/?#\"'])")
 
 
@@ -311,6 +316,7 @@ def run_signal_poll(
     sleep: float = 0.05,
     index_enabled: bool = True,
     report_enabled: bool = True,
+    time_budget_seconds: int = DEFAULT_POLL_TIME_BUDGET_SECONDS,
 ) -> dict[str, int | bool]:
     if not index_enabled and not report_enabled:
         return {"skipped": True, "new_ids": 0, "report_candidates": 0, "processed": 0, "events": 0}
@@ -363,6 +369,7 @@ def run_signal_poll(
         )
         run_id = int(cur.fetchone()[0])
         conn.commit()
+        started_wall = time.monotonic()
 
         location_ids: set[str] = set()
         index_checksum: str | None = None
@@ -452,6 +459,29 @@ def run_signal_poll(
             events_before = int(cur.fetchone()[0] or 0)
 
         for index, location_id in enumerate(ordered_ids, start=1):
+            if time.monotonic() - started_wall >= time_budget_seconds:
+                # Fail closed before the external job timeout can kill the
+                # process uncleanly (leaving a stale status='running' row that
+                # only a later poll would close as failed). Persist a durable
+                # checkpoint of attempted items, then let the shared failure
+                # path record an honest failed run. attempted_index/… still
+                # describe the last *attempted* item, so evidence is exact.
+                _update_run_evidence(
+                    cur, run_id, source_total=len(ordered_ids), checked=index - 1,
+                    successes=processed + len(skipped_not_found), failures=failures,
+                    checkpoint_state=_signal_checkpoint_state(
+                        next_offset=index - 1,
+                        last_location_id=location_id if index > 1 else None,
+                        failure_details=failure_details,
+                        skipped_not_found=skipped_not_found,
+                        full_coverage=False,
+                    ),
+                )
+                conn.commit()
+                raise SignalPollInterrupted(
+                    f"signal_poll_time_budget_exhausted: {time_budget_seconds}s budget "
+                    f"reached before item {index} of {len(ordered_ids)}"
+                )
             attempted_index = index
             last_attempted_location_id = location_id
             try:
@@ -652,6 +682,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--sweep-size", type=int, default=DEFAULT_SWEEP_SIZE)
     parser.add_argument("--checkpoint-size", type=int, default=DEFAULT_CHECKPOINT_SIZE)
     parser.add_argument("--sleep", type=float, default=0.05)
+    parser.add_argument(
+        "--time-budget-seconds",
+        type=int,
+        default=DEFAULT_POLL_TIME_BUDGET_SECONDS,
+        help="Whole-run wall-clock budget; must stay below the 50-minute job timeout.",
+    )
     return parser.parse_args()
 
 
@@ -659,6 +695,9 @@ def main() -> int:
     args = parse_args()
     if not 1 <= args.sweep_size <= 5000 or not 1 <= args.checkpoint_size <= 1000:
         print("ERROR: sweep/checkpoint sizes are outside safe bounds.", file=sys.stderr)
+        return 1
+    if not 60 <= args.time_budget_seconds <= 2900:
+        print("ERROR: --time-budget-seconds must be between 60 and 2900.", file=sys.stderr)
         return 1
     _install_stop_signals()
     index_enabled = os.getenv("CQC_LOCATION_INDEX_POLL_ENABLED", "false").strip().lower() == "true"
@@ -681,6 +720,7 @@ def main() -> int:
             sleep=max(0.0, args.sleep),
             index_enabled=index_enabled,
             report_enabled=report_enabled,
+            time_budget_seconds=args.time_budget_seconds,
         )
     except (ChangesFetchError, SignalPollInterrupted, psycopg2.Error, ValueError) as exc:
         print(f"Signal poll failed: {type(exc).__name__}: {exc}", file=sys.stderr)

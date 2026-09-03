@@ -937,7 +937,7 @@ def _insert_trusted_provider_event(
             source_observed_at,
             current.get("source_snapshot_id"),
             _parse_watermark_datetime(current.get("source_published_at")) or source_observed_at,
-            _parse_watermark_datetime(current.get("source_checked_at")) or datetime.now(timezone.utc),
+            _parse_watermark_datetime(current.get("source_checked_at")),
             current.get("source_url") or f"https://api.service.cqc.org.uk/public/v1/locations/{event.location_id}",
             current.get("source_snapshot_sha256"),
         ),
@@ -1112,17 +1112,7 @@ def _prepare_batch(args: argparse.Namespace, conn, cur) -> int:
         )
         return 0
 
-    cur.execute("SELECT pg_advisory_xact_lock(hashtextextended('cqc-reconciliation-prepare', 0))")
-    cur.execute(
-        """
-        SELECT id FROM reconciliation_batches
-        WHERE status IN ('prepared', 'running')
-        ORDER BY created_at DESC LIMIT 1
-        """
-    )
-    active_batch = cur.fetchone()
-    if active_batch:
-        raise ChangesFetchError(f"Reconciliation batch {active_batch[0]} is still active.")
+    _ensure_no_active_reconciliation_batch(args, conn, cur)
 
     cur.execute(
         """
@@ -1643,6 +1633,46 @@ def _finalize_batch(args: argparse.Namespace, conn, cur) -> int:
     conn.commit()
     print(f"Finalized batch {batch_id}: active={active_after}, deactivated={deactivated}")
     return 0
+
+
+def _ensure_no_active_reconciliation_batch(args: argparse.Namespace, conn, cur) -> None:
+    """Fail-close an idle prepared/running batch so a new prepare is not deadlocked.
+
+    Live shard workers still refuse the abort. Completed batches are never touched.
+    Abort commits on its own connection transaction, so the prepare advisory lock
+    is taken again afterwards and the active-batch check is repeated.
+    """
+    cur.execute("SELECT pg_advisory_xact_lock(hashtextextended('cqc-reconciliation-prepare', 0))")
+    cur.execute(
+        """
+        SELECT id FROM reconciliation_batches
+        WHERE status IN ('prepared', 'running')
+        ORDER BY created_at DESC LIMIT 1
+        """
+    )
+    active_batch = cur.fetchone()
+    if not active_batch:
+        return
+    stale_id = str(active_batch[0])
+    saved_batch_id = args.batch_id
+    args.batch_id = stale_id
+    try:
+        _abort_batch(args, conn, cur)
+    except ShardAlreadyRunning as exc:
+        raise ChangesFetchError(f"Reconciliation batch {stale_id} is still active.") from exc
+    finally:
+        args.batch_id = saved_batch_id
+    cur.execute("SELECT pg_advisory_xact_lock(hashtextextended('cqc-reconciliation-prepare', 0))")
+    cur.execute(
+        """
+        SELECT id FROM reconciliation_batches
+        WHERE status IN ('prepared', 'running')
+        ORDER BY created_at DESC LIMIT 1
+        """
+    )
+    remaining = cur.fetchone()
+    if remaining:
+        raise ChangesFetchError(f"Reconciliation batch {remaining[0]} is still active.")
 
 
 def _abort_batch(args: argparse.Namespace, conn, cur) -> int:

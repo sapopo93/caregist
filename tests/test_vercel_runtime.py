@@ -5,11 +5,14 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from api.database import pool_limits
-from api.main import should_start_email_drain
+import pytest
 
 
 def test_vercel_runtime_disables_background_drain_and_limits_pool():
+    pytest.importorskip("multipart")
+    from api.database import pool_limits
+    from api.main import should_start_email_drain
+
     env = {"VERCEL": "1"}
 
     assert should_start_email_drain(env) is False
@@ -17,6 +20,10 @@ def test_vercel_runtime_disables_background_drain_and_limits_pool():
 
 
 def test_long_lived_runtime_keeps_background_drain_and_normal_pool():
+    pytest.importorskip("multipart")
+    from api.database import pool_limits
+    from api.main import should_start_email_drain
+
     assert should_start_email_drain({}) is True
     assert pool_limits({}) == (2, 20)
 
@@ -67,11 +74,11 @@ def test_vercel_services_route_backend_paths_to_fastapi():
         assert required_rule in ignore_rules
 
 
-def test_recurring_workflows_run_no_more_frequently_than_hourly():
+def test_recurring_workflow_schedules_match_evidence_gates():
     repo_root = Path(__file__).parents[1]
     expected_schedules = {
         ".github/workflows/freshness-watchdog.yml": 'cron: "10 * * * *"',
-        ".github/workflows/cqc-signal-poll.yml": 'cron: "37 * * * *"',
+        ".github/workflows/cqc-signal-poll.yml": 'cron: "7,37 * * * *"',
         ".github/workflows/production-smoke.yml": 'cron: "50 * * * *"',
     }
 
