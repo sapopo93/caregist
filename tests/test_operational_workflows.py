@@ -94,8 +94,11 @@ def test_ci_uses_real_worker_dependencies_non_superuser_rls_and_image_scans():
         for step in scans
     )
 
-    dockerfiles = Path("Dockerfile").read_text(), Path("Dockerfile.worker").read_text()
-    assert all("python:3.12-slim@sha256:" in dockerfile for dockerfile in dockerfiles)
+    api_dockerfile = Path("Dockerfile").read_text()
+    worker_dockerfile = Path("Dockerfile.worker").read_text()
+    assert "python:3.12-alpine@sha256:" in api_dockerfile
+    assert "ubuntu:24.04@sha256:" in worker_dockerfile
+    assert "python3-venv" in worker_dockerfile
 
     model_requirement = Path("requirements-worker-model.txt").read_text(encoding="utf-8")
     assert "--hash=sha256:1932429db727d4bff3deed6b34cfc05df17794f4a52eeb26cf8928f7c1a0fb85" in (
