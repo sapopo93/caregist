@@ -80,7 +80,7 @@ async def test_integration_database_url_rejects_nonisolated_targets(unsafe_url):
 async def test_migration_054_dependency_chain_rolls_back_and_reapplies_cleanly(fresh_db):
     conn = await asyncpg.connect(fresh_db)
     try:
-        await apply_full_schema(conn)
+        await apply_full_schema(conn, through=MIGRATION_055.name)
         assert await conn.fetchval(
             "SELECT relforcerowsecurity FROM pg_class WHERE relname = 'crm_contacts'"
         )

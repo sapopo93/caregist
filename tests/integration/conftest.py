@@ -50,8 +50,8 @@ async def postgis_available(conn) -> bool:
     )
 
 
-async def apply_full_schema(conn) -> list[str]:
-    """Apply init.sql + every numbered migration in order; return migration names."""
+async def apply_full_schema(conn, *, through: str | None = None) -> list[str]:
+    """Apply init.sql and numbered migrations, optionally stopping at one filename."""
     init_sql = INIT_SQL.read_text(encoding="utf-8")
     if not await postgis_available(conn):
         init_sql = shim_init_without_postgis(init_sql)
@@ -59,12 +59,16 @@ async def apply_full_schema(conn) -> list[str]:
 
     applied: list[str] = []
     for path in sorted(MIGRATIONS_DIR.glob("[0-9][0-9][0-9]_*.sql")):
+        if through is not None and path.name > through:
+            break
         body = path.read_text(encoding="utf-8").strip()
         if not body:
             continue
         async with conn.transaction():
             await conn.execute(body)
         applied.append(path.name)
+        if path.name == through:
+            break
     return applied
 
 
