@@ -131,6 +131,8 @@ Verify the following sold-plan variables are all present, distinct, and start wi
 
 The offline verifier cannot confirm Price ownership, activity, currency, amount, recurrence, or tax behaviour. Confirm those fields against `deploy/stripe-price-manifest.json` in live-mode Stripe before release.
 
+> **Audit note:** The security audit listed `STRIPE_PRICE_ENTERPRISE` as a var to verify. That variable does **not exist** in `.env.example` and is not used. The table above reflects the actual set of price vars present in the codebase.
+
 ---
 
 ## Post-rotation (5 min)
@@ -187,3 +189,7 @@ Any webhooks delivered between the bad roll and the corrected update will have b
 | Annual audit | Each cycle: re-run `grep 'STRIPE_PRICE_' .env.example` to check for newly added price vars that should be added to this runbook's safety check table |
 
 This rotation is mandatory regardless of whether any incident has occurred in the preceding 6 months.
+
+---
+
+*Runbook authored 2026-05-14. Review and update after any structural change to the Stripe integration or deploy topology.*
