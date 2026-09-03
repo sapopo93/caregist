@@ -937,7 +937,7 @@ def _insert_trusted_provider_event(
             source_observed_at,
             current.get("source_snapshot_id"),
             _parse_watermark_datetime(current.get("source_published_at")) or source_observed_at,
-            _parse_watermark_datetime(current.get("source_checked_at")) or datetime.now(timezone.utc),
+            _parse_watermark_datetime(current.get("source_checked_at")),
             current.get("source_url") or f"https://api.service.cqc.org.uk/public/v1/locations/{event.location_id}",
             current.get("source_snapshot_sha256"),
         ),

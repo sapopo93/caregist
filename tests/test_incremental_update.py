@@ -834,7 +834,8 @@ def test_trusted_event_insert_uses_source_time_and_conflict_safe_return():
     assert "ON CONFLICT (dedupe_key) DO NOTHING" in sql
     assert params[6] == "cqc.registrationDate"
     assert params[11] == datetime(2026, 7, 29, 8, 0, tzinfo=timezone.utc)
-    assert "\n          observed_at," not in sql
+    assert params[14] is None
+    assert ("\n" + "          observed_at,") not in sql
     assert any("INSERT INTO delivery_outbox" in call.args[0] for call in cur.execute.call_args_list)
 
 
