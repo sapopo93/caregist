@@ -95,7 +95,14 @@ All routers are registered in `api/main.py`. Full list:
 | `admin` | `/api/v1/admin` | Admin moderation (claims, reviews, enquiries) |
 | `internal` | `/api/v1/internal` | Support-platform integration (token-gated) |
 
-### API Tier System
+### Legacy API tier system (compatibility only)
+
+> The tier and listing names in this subsection describe retained compatibility
+> code, not products that may be sold or restored to public copy. Current
+> commercial authority is `docs/CAREGIST_MASTER_STRATEGY.md` and
+> `deploy/stripe-price-manifest.json`: Free Directory, Radar Regional £299/month,
+> Radar National £799/month, Intelligence Feed Pilot from £6,000/year, and
+> quote-only Embedded Enterprise. Checkout remains fail-closed.
 
 **B2B API tiers** (demand side — data consumers). Defined in `api/config.py` as `TIERS` dict:
 
@@ -113,7 +120,8 @@ Tiers also control: `page_size`, `fields` visibility (`basic`/`standard`/`full`)
 
 Field filtering happens via `filter_fields()` in `api/config.py` — restricted fields return `None` (not omitted, to preserve API schema shape).
 
-**Provider listing tiers** (supply side — care providers paying to enhance their profile). Managed via `api/routers/provider_profile.py`:
+**Retired provider listing tiers** are retained in compatibility code only and
+must not be sold or advertised. They were managed via `api/routers/provider_profile.py`:
 
 | Tier | Price | Features |
 |------|-------|---------|
@@ -122,11 +130,14 @@ Field filtering happens via `filter_fields()` in `api/config.py` — restricted 
 | sponsored | £149/mo | Sponsored badge, top placement |
 | enterprise | contact | Multi-location custom package |
 
-Maps to `care_providers.profile_tier`. Separate Stripe price IDs: `STRIPE_PRICE_PROFILE_ENHANCED`, `STRIPE_PRICE_PROFILE_PREMIUM`, `STRIPE_PRICE_PROFILE_SPONSORED`.
+Maps to `care_providers.profile_tier`. Historical listing Price configuration
+may remain in compatibility code, but it is not current release configuration.
 
 ### New Registration Feed
 
-The core product wedge. Delivers a live stream of newly CQC-registered care providers to paid subscribers.
+Historical compatibility endpoints for the earlier feed model follow. They do
+not define the current Radar or private Intelligence Feed offer and must remain
+fail-closed unless the current catalogue gates explicitly authorize them.
 
 - **Event source:** `trusted_event_ledger` table (event_type: `new_registration`)
 - **Service layer:** `api/services/new_registration_feed.py` — handles sync from `care_providers`, dedup via `dedupe_key` (`new_registration:{location_id}:{registration_date}`)
@@ -139,8 +150,13 @@ The core product wedge. Delivers a live stream of newly CQC-registered care prov
 
 ### Seat/Team Billing
 
+The following describes legacy subscription storage and must not be interpreted
+as authority to sell seat add-ons; the `2026-08` launch catalogue has no separate
+seat product.
+
 - `subscriptions` table stores `included_users`, `extra_seats`, `max_users`, `seat_price_gbp`
-- `STRIPE_PRICE_PRO_SEAT` enables Pro seat add-ons (£15/seat/mo)
+- A historical seat-Price path remains in compatibility code; it is not saleable
+  under catalogue `2026-08`.
 - Auth middleware enforces `active_keys <= max_users` per account — excess keys are rejected
 - Seat capacity managed via `/api/v1/auth/team-keys` endpoints
 
@@ -217,14 +233,15 @@ Backend reads from `.env` via pydantic-settings:
 | `CORS_ORIGINS` | No | Comma-separated allowed origins (default: localhost:3000) |
 | `STRIPE_SECRET_KEY` | Yes | Stripe API key (`sk_test_` in dev, `sk_live_` in prod) |
 | `STRIPE_WEBHOOK_SECRET` | Yes | Stripe webhook signing secret |
-| `STRIPE_PRICE_ALERTS_PRO` | Yes | Stripe price ID for Alerts Pro tier |
-| `STRIPE_PRICE_STARTER` | Yes | Stripe price ID for Starter tier |
-| `STRIPE_PRICE_PRO` | Yes | Stripe price ID for Pro tier |
-| `STRIPE_PRICE_BUSINESS` | Yes | Stripe price ID for Business tier |
-| `STRIPE_PRICE_PRO_SEAT` | No | Stripe price ID for Pro seat add-on |
-| `STRIPE_PRICE_PROFILE_ENHANCED` | No | Provider Enhanced listing price |
-| `STRIPE_PRICE_PROFILE_PREMIUM` | No | Provider Premium listing price |
-| `STRIPE_PRICE_PROFILE_SPONSORED` | No | Provider Sponsored listing price |
+| `STRIPE_PRODUCT_RADAR_REGIONAL` | For approved release only | Regional Product ID |
+| `STRIPE_PRICE_RADAR_REGIONAL` | For approved release only | £299/month Regional Price ID |
+| `STRIPE_PRODUCT_RADAR_NATIONAL` | For approved release only | National Product ID |
+| `STRIPE_PRICE_RADAR_NATIONAL` | For approved release only | £799/month National Price ID |
+| `STRIPE_PRODUCT_INTELLIGENCE_FEED` | For approved private release only | Feed Product ID |
+| `STRIPE_PRICE_INTELLIGENCE_FEED` | For approved private release only | £6,000/year Feed Price ID |
+| `BILLING_CHECKOUT_ENABLED` | No | Global checkout kill switch; default false |
+| `RADAR_CHECKOUT_ENABLED` | No | Radar checkout kill switch; default false |
+| `RADAR_DELIVERY_ENABLED` | No | Radar delivery kill switch; default false |
 | `RESEND_API_KEY` | Yes | Resend email API key |
 | `ENQUIRY_FROM_EMAIL` | Yes | From address for outbound emails |
 | `SENTRY_DSN` | No | Sentry error tracking DSN |

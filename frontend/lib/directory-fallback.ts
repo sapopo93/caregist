@@ -7,6 +7,7 @@ import {
 } from "./directory-export.ts";
 import type { DirectorySearchParams } from "./directory-filters.ts";
 import { type DirectoryFileProvider, loadDirectoryFileProviders } from "./directory-file-store.ts";
+import { isNoPublishedRating } from "./directory-query-clauses.ts";
 
 type FallbackProvider = DirectoryFileProvider;
 
@@ -30,6 +31,7 @@ let opportunityStatsPromise: Promise<{
   inadequate: number;
   requiresImprovement: number;
   notYetInspected: number;
+  noPublishedRating: number;
   staleInspection: number;
 }> | null = null;
 
@@ -242,6 +244,7 @@ export async function getFallbackOpportunityStats() {
         inadequate: providers.filter((provider) => matchesOpportunity(provider, "inadequate")).length,
         requiresImprovement: providers.filter((provider) => matchesOpportunity(provider, "requires_improvement")).length,
         notYetInspected: providers.filter((provider) => matchesOpportunity(provider, "not_yet_inspected")).length,
+        noPublishedRating: providers.filter((provider) => isNoPublishedRating(provider.overall_rating)).length,
         staleInspection: providers.filter((provider) => matchesOpportunity(provider, "stale_inspection")).length,
       };
     })();

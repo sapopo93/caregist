@@ -77,14 +77,19 @@ async def test_integration_database_url_rejects_nonisolated_targets(unsafe_url):
         validate_test_database_url(unsafe_url)
 
 
-async def test_migration_054_rolls_back_and_reapplies_cleanly(fresh_db):
+async def test_migration_054_dependency_chain_rolls_back_and_reapplies_cleanly(fresh_db):
     conn = await asyncpg.connect(fresh_db)
     try:
-        await apply_full_schema(conn)
+        await apply_full_schema(conn, through=MIGRATION_055.name)
         assert await conn.fetchval(
             "SELECT relforcerowsecurity FROM pg_class WHERE relname = 'crm_contacts'"
         )
 
+        async with conn.transaction():
+            # Migration 055 has foreign keys backed by 054 composite unique
+            # constraints. Roll back dependants first, as production rollback
+            # tooling must, rather than weakening either tenant invariant.
+            await conn.execute(DOWN_055.read_text(encoding="utf-8"))
         async with conn.transaction():
             await conn.execute(DOWN_054.read_text(encoding="utf-8"))
         assert not await conn.fetchval(
@@ -94,15 +99,26 @@ async def test_migration_054_rolls_back_and_reapplies_cleanly(fresh_db):
         assert not await conn.fetchval(
             "SELECT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_crm_deals_contact_tenant')"
         )
+        assert not await conn.fetchval(
+            "SELECT to_regclass('public.crm_tps_screening_jobs') IS NOT NULL"
+        )
 
         async with conn.transaction():
             await conn.execute(MIGRATION_054.read_text(encoding="utf-8"))
+        async with conn.transaction():
+            await conn.execute(MIGRATION_055.read_text(encoding="utf-8"))
         assert await conn.fetchval(
             "SELECT relforcerowsecurity FROM pg_class WHERE relname = 'crm_contacts'"
         )
         assert await conn.fetchval("SELECT to_regclass('public.crm_companies') IS NOT NULL")
         assert await conn.fetchval(
             "SELECT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_crm_deals_contact_tenant')"
+        )
+        assert await conn.fetchval(
+            "SELECT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_crm_tps_job_contact_tenant')"
+        )
+        assert await conn.fetchval(
+            "SELECT relforcerowsecurity FROM pg_class WHERE relname = 'crm_tps_screening_jobs'"
         )
     finally:
         await conn.close()

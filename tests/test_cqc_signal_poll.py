@@ -6,6 +6,8 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
+import pytest
+
 from tools import poll_cqc_signals
 
 
@@ -14,6 +16,110 @@ def test_workflow_runs_poller_as_importable_module():
 
     assert "python -m tools.poll_cqc_signals" in workflow
     assert "python tools/poll_cqc_signals.py" not in workflow
+    assert "timeout-minutes: 50" in workflow
+
+
+def test_stale_running_polls_are_failed_closed():
+    cursor = Mock()
+    cursor.rowcount = 2
+
+    closed = poll_cqc_signals._close_stale_running_polls(cursor, older_than_minutes=40)
+
+    assert closed == 2
+    sql, params = cursor.execute.call_args.args
+    assert "stale_running_signal_poll" in sql
+    assert "status = 'running'" in sql
+    assert params[1] == 40
+
+
+def test_stop_signal_handler_raises_bounded_interruption():
+    installed = {}
+
+    with patch.object(
+        poll_cqc_signals.signal,
+        "signal",
+        side_effect=lambda signum, handler: installed.__setitem__(signum, handler),
+    ):
+        poll_cqc_signals._install_stop_signals()
+
+    with pytest.raises(poll_cqc_signals.SignalPollInterrupted, match="signal"):
+        installed[poll_cqc_signals.signal.SIGTERM](poll_cqc_signals.signal.SIGTERM, None)
+
+
+def test_interrupted_poll_fails_active_run_and_releases_lock():
+    cursor = Mock()
+    cursor.fetchone.side_effect = [(True,), (77,)]
+    connection = Mock()
+    connection.cursor.return_value = cursor
+
+    with patch.object(poll_cqc_signals.psycopg2, "connect", return_value=connection), \
+         patch.object(poll_cqc_signals, "_close_stale_running_polls", return_value=0), \
+         patch.object(
+             poll_cqc_signals,
+             "_fetch_all_cqc_location_stubs",
+             side_effect=poll_cqc_signals.SignalPollInterrupted("received signal 15"),
+         ), pytest.raises(poll_cqc_signals.SignalPollInterrupted):
+        poll_cqc_signals.run_signal_poll("postgresql://example", "key", report_enabled=False)
+
+    executed_sql = [call.args[0] for call in cursor.execute.call_args_list]
+    assert any("status = 'failed'" in sql for sql in executed_sql)
+    assert any("pg_advisory_unlock" in sql for sql in executed_sql)
+    connection.rollback.assert_called_once()
+    assert connection.commit.call_count >= 3
+    cursor.close.assert_called_once()
+    connection.close.assert_called_once()
+
+
+def test_interruption_after_partial_progress_preserves_attempted_evidence():
+    cursor = Mock()
+    cursor.fetchone.side_effect = [(True,), (77,), (0,)]
+    connection = Mock()
+    connection.cursor.return_value = cursor
+    details = [
+        {"locationId": "1-10000"},
+        poll_cqc_signals.SignalPollInterrupted("received signal 15"),
+    ]
+
+    with patch.object(poll_cqc_signals.psycopg2, "connect", return_value=connection), \
+         patch.object(poll_cqc_signals, "_close_stale_running_polls", return_value=0), \
+         patch.object(
+             poll_cqc_signals,
+             "fetch_report_candidates",
+             return_value=({"1-10000", "1-10001"}, b"report index", "https://example.test/reports"),
+         ), patch.object(poll_cqc_signals, "_upsert_source_snapshot", return_value=9), \
+         patch.object(poll_cqc_signals, "_rolling_sweep_ids", return_value=[]), \
+         patch.object(poll_cqc_signals, "fetch_location_detail", side_effect=details), \
+         patch.object(poll_cqc_signals, "clean_location", return_value={"id": "1-10000"}), \
+         patch.object(poll_cqc_signals, "upsert_provider", return_value="updated"), \
+         patch.object(poll_cqc_signals.time, "sleep"), \
+         pytest.raises(poll_cqc_signals.SignalPollInterrupted):
+        poll_cqc_signals.run_signal_poll(
+            "postgresql://example",
+            "key",
+            index_enabled=False,
+            report_enabled=True,
+            checkpoint_size=100,
+        )
+
+    failed_update = next(
+        call for call in cursor.execute.call_args_list if "status = 'failed'" in call.args[0]
+    )
+    failed_state = json.loads(failed_update.args[1][1])
+    assert failed_state["attemptedOffset"] == 2
+    assert failed_state["lastAttemptedLocationId"] == "1-10001"
+    assert failed_state["attemptedSuccessCount"] == 1
+    assert failed_state["attemptedFailureCount"] == 0
+    assert failed_state["attemptedSkippedNotFoundCount"] == 0
+    connection.rollback.assert_called_once()
+
+
+def test_production_smoke_uses_promoted_frontend_and_backend_release_pins():
+    workflow = (Path(__file__).resolve().parents[1] / ".github/workflows/production-smoke.yml").read_text()
+
+    assert "vars.CAREGIST_PRODUCTION_FRONTEND_SHA" in workflow
+    assert "vars.CAREGIST_PRODUCTION_BACKEND_SHA" in workflow
+    assert 'CAREGIST_REQUIRE_RELEASE_IDENTITY: "true"' in workflow
+    assert "CAREGIST_EXPECTED_GIT_SHA: ${{ github.sha }}" not in workflow
 
 
 class IndexCursor:
@@ -147,12 +253,33 @@ def test_signal_run_evidence_persists_bounded_checkpoint_counts():
     assert json.loads(params[4]) == {"nextOffset": 7, "restartable": True}
 
 
+def test_checkpoint_evidence_preserves_confirmed_not_found_records():
+    state = poll_cqc_signals._signal_checkpoint_state(
+        next_offset=5,
+        last_location_id="1-12345",
+        failure_details=[{"locationId": "1-99999", "reason": "timeout"}],
+        skipped_not_found=["1-11111", "1-22222"],
+        full_coverage=False,
+    )
+
+    assert state == {
+        "nextOffset": 5,
+        "lastLocationId": "1-12345",
+        "restartable": False,
+        "restartMode": "fresh_run",
+        "failures": [{"locationId": "1-99999", "reason": "timeout"}],
+        "skippedNotFound": ["1-11111", "1-22222"],
+        "skippedNotFoundCount": 2,
+        "fullCoverage": False,
+    }
+
+
 def test_signal_poll_records_bounded_per_location_failure_reasons():
     source = Path("tools/poll_cqc_signals.py").read_text(encoding="utf-8")
 
     assert '"reason": "detail_fetch_failed"' in source
     assert '"reason": "detail_clean_failed"' in source
-    assert '"failures": failure_details' in source
+    assert "failure_details=failure_details" in source
 
 
 def test_main_kill_switch_skips_without_reading_credentials(monkeypatch):

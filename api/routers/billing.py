@@ -492,6 +492,34 @@ async def _persist_subscription_state(
         "UPDATE api_keys SET tier = $1, rate_limit = $2 WHERE user_id = $3 AND is_active = true",
         tier, rate_limit, user_id,
     )
+    # Radar authorizes from the tenant subscription rather than the legacy
+    # user row. Keep an already-provisioned owner workspace in the same
+    # transaction as the Stripe subscription; if no workspace exists yet,
+    # first-access provisioning will derive this state from subscriptions.
+    await conn.execute(
+        """
+        INSERT INTO organization_subscriptions (
+          organization_id, stripe_subscription_id, plan_tier, status,
+          included_users, current_period_end
+        )
+        SELECT id, $2, $3, $4, $5, $6
+        FROM organizations
+        WHERE created_by_user_id = $1
+        ON CONFLICT (organization_id) DO UPDATE SET
+          stripe_subscription_id = EXCLUDED.stripe_subscription_id,
+          plan_tier = EXCLUDED.plan_tier,
+          status = EXCLUDED.status,
+          included_users = EXCLUDED.included_users,
+          current_period_end = EXCLUDED.current_period_end,
+          updated_at = NOW()
+        """,
+        user_id,
+        subscription_id,
+        tier,
+        status,
+        int(entitlements["max_users"]),
+        current_period_end,
+    )
     # F-17: if a downgrade dropped the seat allowance below the number of active
     # keys, deactivate the excess (newest first, keeping the original/primary
     # key) so old keys can't outlive the seats the customer is paying for.
@@ -517,10 +545,13 @@ async def _require_radar_commerce_ready() -> None:
     async with get_connection() as conn:
         health = await get_pipeline_health(conn)
     readiness = health.get("commercialReadiness") or {}
-    if not readiness.get("checkoutReady", False):
+    if not readiness.get("checkoutReady", False) or not readiness.get("deliveryEnabled", False):
         raise HTTPException(
             status_code=503,
-            detail="Radar checkout is waiting for its seven-day source-freshness and delivery-latency gate.",
+            detail=(
+                "Radar checkout is waiting for its source-freshness, delivery activation, "
+                "and delivery-latency gates."
+            ),
         )
 
 
@@ -662,6 +693,11 @@ async def create_checkout(
             detail="Additional seats are not sold at launch. Choose Radar National or request an enterprise quote.",
         )
 
+    if not settings.radar_delivery_enabled:
+        raise HTTPException(
+            status_code=503,
+            detail="Radar checkout is awaiting its delivery-activation gate.",
+        )
     if settings.radar_checkout_require_operational_readiness:
         await _require_radar_commerce_ready()
 

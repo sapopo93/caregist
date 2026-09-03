@@ -1,5 +1,12 @@
 import type { DirectoryOpportunity } from "./directory-constants.ts";
 
+export const NO_PUBLISHED_RATING_CLAUSE =
+  "lower(btrim(overall_rating)) = 'no published rating'";
+
+export function isNoPublishedRating(value: string | null | undefined) {
+  return (value ?? "").trim().toLowerCase() === "no published rating";
+}
+
 export function buildOpportunityClause(opportunity: DirectoryOpportunity | "") {
   switch (opportunity) {
     case "new_90":

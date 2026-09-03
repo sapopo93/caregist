@@ -1,12 +1,22 @@
 # CareGist Pricing & Unit Economics
 
-> **Implementation status:** Dossier credits, the Intelligence tier, and strategic report/data-room products in this document are roadmap economics, not live self-serve entitlements. The current live subscription ladder is Free, Alerts Pro, Data Starter, Data Pro, Data Business, and Enterprise/custom.
+> **Historical planning model — superseded and non-operative.** No price, tier,
+> entitlement, forecast, margin, discount, or sales instruction below this notice
+> is a current CareGist offer. The authoritative `2026-08` catalogue is Free
+> Directory; Radar Regional at £299/month; Radar National at £799/month;
+> Intelligence Feed Pilot from £6,000/year through a private sales-assisted
+> process; and Embedded Enterprise by annual quote. Paid checkout remains
+> fail-closed until its named source, delivery, legal, release, and human gates
+> pass. See `docs/CAREGIST_MASTER_STRATEGY.md` and
+> `deploy/stripe-price-manifest.json`.
 
-## 1. Pricing Architecture
+## 1. Retired pricing architecture
 
-### 1.1 Subscription Tiers (Recurring Revenue)
+### 1.1 Historical subscription tiers (not saleable)
 
-CareGist will operate a **good-better-best** staircase with a usage-based overlay for Tier 2 enrichment.
+This superseded model assumed a **good-better-best** staircase with a usage-based
+overlay. It must not be used for product configuration, public copy, quoting, or
+outreach.
 
 | Tier | Monthly Price | Annual Price (2 mo free) | Best For | Tier 1 | Tier 2 | Tier 3 |
 |------|--------------|--------------------------|----------|--------|--------|--------|

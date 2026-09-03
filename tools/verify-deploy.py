@@ -2,6 +2,7 @@
 
 import json
 import os
+import re
 import sys
 import time
 from dataclasses import dataclass
@@ -41,7 +42,20 @@ TIMEOUT_SECONDS = float(os.getenv("CAREGIST_SMOKE_TIMEOUT_SECONDS", "20"))
 ATTEMPTS = max(1, int(os.getenv("CAREGIST_SMOKE_ATTEMPTS", "1")))
 RETRY_DELAY_SECONDS = max(0.0, float(os.getenv("CAREGIST_SMOKE_RETRY_DELAY_SECONDS", "10")))
 REQUIRE_DATABASE = os.getenv("CAREGIST_REQUIRE_DATABASE", "").strip().lower() in {"1", "true", "yes"}
-EXPECTED_GIT_SHA = os.getenv("CAREGIST_EXPECTED_GIT_SHA", "").strip().lower()
+LEGACY_EXPECTED_GIT_SHA = os.getenv("CAREGIST_EXPECTED_GIT_SHA", "").strip().lower()
+EXPECTED_FRONTEND_GIT_SHA = (
+    os.getenv("CAREGIST_EXPECTED_FRONTEND_GIT_SHA", "").strip().lower()
+    or LEGACY_EXPECTED_GIT_SHA
+)
+EXPECTED_BACKEND_GIT_SHA = (
+    os.getenv("CAREGIST_EXPECTED_BACKEND_GIT_SHA", "").strip().lower()
+    or LEGACY_EXPECTED_GIT_SHA
+)
+REQUIRE_RELEASE_IDENTITY = os.getenv("CAREGIST_REQUIRE_RELEASE_IDENTITY", "").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+}
 SKIP_BACKEND_PATHS = os.getenv("CAREGIST_SKIP_BACKEND_PATHS", "").strip().lower() in {"1", "true", "yes"}
 VERCEL_AUTOMATION_BYPASS_SECRET = os.getenv("VERCEL_AUTOMATION_BYPASS_SECRET", "").strip()
 
@@ -91,6 +105,20 @@ def response_diagnostic(response: Response) -> str:
     return f"HTTP {response.status}; requestId={request_id}; body={body!r}"
 
 
+def validate_release_expectations() -> None:
+    expected = {
+        "frontend": EXPECTED_FRONTEND_GIT_SHA,
+        "backend": EXPECTED_BACKEND_GIT_SHA,
+    }
+    if REQUIRE_RELEASE_IDENTITY and any(not sha for sha in expected.values()):
+        raise SmokeFailure("required frontend/backend release SHA variables are missing")
+    if REQUIRE_RELEASE_IDENTITY and SKIP_BACKEND_PATHS:
+        raise SmokeFailure("required release identity cannot skip backend verification")
+    for surface, sha in expected.items():
+        if sha and re.fullmatch(r"[0-9a-f]{40}", sha) is None:
+            raise SmokeFailure(f"expected {surface} release SHA must be 40 lowercase hex characters")
+
+
 def verify_health() -> str:
     response = fetch("/api/health/directory")
     assert_true(response.status == 200, f"/api/health/directory failed: {response_diagnostic(response)}")
@@ -128,10 +156,11 @@ def verify_health() -> str:
             database_available is False,
             f"fallback databaseAvailable was {database_available!r}",
         )
-    if EXPECTED_GIT_SHA:
+    if EXPECTED_FRONTEND_GIT_SHA:
         assert_true(
-            release_git_sha == EXPECTED_GIT_SHA,
-            f"deployed Git SHA {release_git_sha!r} did not match tested SHA {EXPECTED_GIT_SHA!r}",
+            release_git_sha == EXPECTED_FRONTEND_GIT_SHA,
+            "deployed frontend Git SHA "
+            f"{release_git_sha!r} did not match expected SHA {EXPECTED_FRONTEND_GIT_SHA!r}",
         )
 
     if REQUIRE_DATABASE:
@@ -185,10 +214,10 @@ def verify_backend_binding() -> int | None:
         f"backend freshness returned invalid totalSourceLocations {active_location_count!r}",
     )
     backend_sha = str((payload.get("release") or {}).get("git_sha") or "").lower()
-    if EXPECTED_GIT_SHA:
+    if EXPECTED_BACKEND_GIT_SHA:
         assert_true(
-            backend_sha == EXPECTED_GIT_SHA,
-            f"backend Git SHA {backend_sha!r} did not match tested SHA {EXPECTED_GIT_SHA!r}",
+            backend_sha == EXPECTED_BACKEND_GIT_SHA,
+            f"backend Git SHA {backend_sha!r} did not match expected SHA {EXPECTED_BACKEND_GIT_SHA!r}",
         )
     print_ok(
         "BACKEND_BINDING",
@@ -348,17 +377,30 @@ def verify_lead_capture_and_export() -> None:
 
 
 def main() -> int:
+    try:
+        validate_release_expectations()
+    except SmokeFailure as error:
+        print(f"SMOKE FAILED: {error}", file=sys.stderr)
+        return 1
     for attempt in range(1, ATTEMPTS + 1):
         try:
             operating_mode = verify_health()
             verify_data_status()
-            if SKIP_BACKEND_PATHS or operating_mode == "fallback":
-                reason = (
-                    "frontend fallback mode does not claim backend availability"
-                    if operating_mode == "fallback"
-                    else "frontend-only degraded smoke has no backend service"
-                )
+            if SKIP_BACKEND_PATHS:
+                reason = "frontend-only degraded smoke has no backend service"
                 print(f"BACKEND_BINDING: SKIPPED - {reason}")
+                print(f"PROVIDER_SITEMAP: SKIPPED - {reason}")
+                active_location_count = None
+            elif operating_mode == "fallback":
+                reason = (
+                    "frontend fallback mode does not claim backend-backed sitemap availability"
+                )
+                if REQUIRE_RELEASE_IDENTITY:
+                    verify_backend_binding()
+                else:
+                    print(
+                        "BACKEND_BINDING: SKIPPED - frontend fallback mode in a non-production smoke"
+                    )
                 print(f"PROVIDER_SITEMAP: SKIPPED - {reason}")
                 active_location_count = None
             else:

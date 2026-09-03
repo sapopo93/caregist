@@ -51,21 +51,27 @@ describe("page contracts", () => {
     assert.doesNotMatch(readAppFile("app/dashboard/page.tsx"), /Find a provider to claim|\/claim\//);
   });
 
-  it("returns a real 404 for unknown service slugs", () => {
+  it("keeps service routes and the proxy on one finite taxonomy", () => {
     const source = readAppFile("app/services/[slug]/page.tsx");
+    const proxySource = readAppFile("proxy.ts");
 
     assert.match(source, /import\s+\{\s*notFound\s*\}\s+from\s+"next\/navigation"/);
-    assert.match(source, /if \(!\(slug in SERVICE_MAP\)\) notFound\(\)/);
+    assert.match(source, /getServicePage\(slug\)/);
     assert.match(source, /export const dynamicParams = false/);
     assert.match(source, /export function generateStaticParams/);
-    assert.doesNotMatch(source, /SERVICE_MAP\[slug\] \|\| slug/);
+    assert.match(proxySource, /getServicePage\(serviceMatch\[1\]\)/);
+    assert.match(proxySource, /NextResponse\.rewrite/);
+    assert.match(proxySource, /status: 404/);
   });
 
   it("labels unpublished ratings honestly on the homepage", () => {
     const source = readAppFile("app/page.tsx");
 
     assert.match(source, /No published rating/);
-    assert.match(source, /no published overall CQC rating/);
+    assert.match(source, /rating=No%20published%20rating/);
+    assert.match(source, /valueKey: "noPublishedRating"/);
+    assert.match(source, /exact overall CQC rating/);
+    assert.doesNotMatch(source, /valueKey: "notYetInspected"/);
     assert.doesNotMatch(source, /label: "Not yet inspected"/);
   });
 
