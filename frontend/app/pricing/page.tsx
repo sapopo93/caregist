@@ -65,7 +65,7 @@ export default async function PricingPage() {
           </div>
           <div className="rounded-xl border border-stone bg-parchment p-5 md:text-right">
             <p className="text-3xl font-bold text-clay">£795</p>
-            <p className="mt-1 text-xs text-dusk">No VAT is charged while CareGist is not VAT-registered.</p>
+            <p className="mt-1 text-xs text-dusk">Price excludes VAT.</p>
             <Link href="/territory-opportunity-brief" className="mt-5 inline-block rounded-lg bg-clay px-5 py-3 text-sm font-semibold text-white transition hover:bg-bark">
               View the full offer
             </Link>
@@ -168,7 +168,7 @@ export default async function PricingPage() {
       </section>
 
       <footer className="mt-8 space-y-2 text-center text-xs text-dusk">
-        <p>CareGist is not currently VAT registered, so VAT is not currently charged.</p>
+        <p>All displayed prices exclude VAT.</p>
         <p>
           CQC information is reused under the Open Government Licence v3.0. {CQC_INDEPENDENCE_LINE}
         </p>

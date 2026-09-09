@@ -15,10 +15,10 @@ export default function TermsPage() {
         <section>
           <p>
             These terms govern use of CareGist by a business, public body, charity, or
-            professional customer. CareGist is operated by <strong>H-Kay Limited</strong>,
+            professional customer. <strong>H-Kay Limited</strong> provides the CareGist product,
             registered in England and Wales under company number <strong>10417923</strong>,
             with registered office at C/O Bilberry Accountants Ltd, Castle Court, 41
-            London Road, Reigate, England, RH2 9RJ (&quot;CareGist&quot;, &quot;we&quot;,
+            London Road, Reigate, England, RH2 9RJ (&quot;H-Kay Limited&quot;, &quot;we&quot;,
             &quot;us&quot;). If you accept these terms for an organisation, you confirm that
             you are authorised to bind it.
           </p>
@@ -116,8 +116,8 @@ export default function TermsPage() {
           <h2 className="mb-3 mt-8 text-xl font-bold text-bark">6. Fees, subscription and cancellation</h2>
           <p>
             Current prices and included limits are shown on the pricing page or in the
-            signed order form. CareGist is not currently VAT registered, so VAT is not
-            currently charged. Stripe processes self-serve payments; CareGist does not
+            signed order form. Prices exclude VAT. Stripe processes self-serve payments;
+            H-Kay Limited does not
             store full card details.
           </p>
           <p>

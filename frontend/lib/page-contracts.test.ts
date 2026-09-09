@@ -210,7 +210,7 @@ describe("page contracts", () => {
     assert.match(globalStyles, /padding-bottom:\s*var\(--cookie-consent-offset,\s*0px\)/);
   });
 
-  it("does not claim to charge VAT while the operator is not VAT registered", () => {
+  it("states that public prices exclude VAT", () => {
     const pricingSource = readAppFile("app/pricing/page.tsx");
     const apiSource = readAppFile("app/api/page.tsx");
     const configSource = readAppFile("lib/caregist-config.ts");
@@ -218,11 +218,11 @@ describe("page contracts", () => {
     const termsSource = readAppFile("app/terms/page.tsx");
     const commercialSources = [pricingSource, apiSource, configSource, dashboardSource];
 
+    assert.match(pricingSource, /Price excludes VAT/);
+    assert.match(termsSource, /Prices exclude VAT/);
     for (const source of commercialSources) {
-      assert.doesNotMatch(source, /\+\s*VAT|exclude(?:s|d)?\s+VAT/i);
+      assert.doesNotMatch(source, /not currently VAT registered|VAT is not currently charged/i);
     }
-    assert.match(pricingSource, /VAT is not currently charged/);
-    assert.match(termsSource, /not currently VAT registered/);
   });
 
   it("does not issue opportunity lead-list tokens", () => {

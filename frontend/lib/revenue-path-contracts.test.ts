@@ -32,7 +32,7 @@ describe("revenue path contracts", () => {
     assert.match(styles, /padding-bottom: var\(--cookie-consent-offset, 0px\)/);
   });
 
-  it("does not advertise VAT charges while H-Kay is unregistered", () => {
+  it("states that public prices exclude VAT", () => {
     const publicPricingFiles = [
       "app/api/page.tsx",
       "app/dashboard/page.tsx",
@@ -42,9 +42,8 @@ describe("revenue path contracts", () => {
     ];
     const combined = publicPricingFiles.map(source).join("\n");
 
-    assert.doesNotMatch(combined, /\+\s*VAT|exclude(?:s|d)?\s+VAT|ex\s+VAT/i);
-    assert.match(combined, /not currently VAT registered/);
-    assert.match(combined, /VAT is not currently charged/);
+    assert.match(combined, /Price excludes VAT|Prices exclude VAT/);
+    assert.doesNotMatch(combined, /not currently VAT registered|VAT is not currently charged/i);
   });
 
   it("shows the one-off brief and keeps roadmap products out of public pricing", () => {

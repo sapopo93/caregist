@@ -50,9 +50,9 @@ export default function TerritoryOpportunityBriefPage() {
           <div className="rounded-2xl border border-amber/35 bg-white/5 p-7">
             <p className="text-sm text-stone">Territory Opportunity Brief</p>
             <p className="mt-2 font-[family-name:var(--font-playfair-display)] text-5xl font-bold text-amber">£795</p>
-            <p className="mt-2 text-sm text-stone">CareGist is not currently VAT-registered. No VAT is charged.</p>
+            <p className="mt-2 text-sm text-stone">Price excludes VAT.</p>
             <a
-              href="mailto:enterprise@caregist.co.uk?subject=CareGist%20Territory%20Opportunity%20Brief"
+              href="mailto:outreach@caregist.co.uk?subject=CareGist%20Territory%20Opportunity%20Brief"
               className="mt-7 inline-flex w-full items-center justify-center rounded-xl bg-amber px-5 py-3 text-sm font-semibold text-charcoal transition hover:bg-cream focus:outline-none focus:ring-2 focus:ring-cream focus:ring-offset-2 focus:ring-offset-bark"
             >
               Start a scope conversation
@@ -158,7 +158,7 @@ export default function TerritoryOpportunityBriefPage() {
           <div className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-3 text-sm">
             <Link href="/terms" className="font-semibold text-clay underline underline-offset-4 hover:text-bark">Business terms</Link>
             <Link href="/privacy" className="font-semibold text-clay underline underline-offset-4 hover:text-bark">Privacy policy</Link>
-            <a href="mailto:enterprise@caregist.co.uk?subject=CareGist%20Territory%20Opportunity%20Brief" className="font-semibold text-clay underline underline-offset-4 hover:text-bark">Ask about your territory</a>
+            <a href="mailto:outreach@caregist.co.uk?subject=CareGist%20Territory%20Opportunity%20Brief" className="font-semibold text-clay underline underline-offset-4 hover:text-bark">Ask about your territory</a>
           </div>
         </div>
       </section>
