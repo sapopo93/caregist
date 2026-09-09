@@ -130,12 +130,12 @@ export default function TerritoryOpportunityBriefPage() {
             </ol>
           </div>
           <aside className="rounded-2xl bg-bark p-8 text-cream">
-            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-amber">Dated example</p>
+            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-amber">Free dated format example</p>
             <p className="mt-5 text-xl leading-8">
               A Birmingham and Solihull example contains 353 locations, 329 provider organisations and a 25-organisation shortlist.
             </p>
             <p className="mt-5 text-sm leading-6 text-stone">
-              It shows the format and evidence structure. Its dated source material is not a claim about live conditions in another territory.
+              This example is not for sale. It shows the format and evidence structure only. Its dated source material is not a claim about live conditions in another territory.
             </p>
           </aside>
         </div>
