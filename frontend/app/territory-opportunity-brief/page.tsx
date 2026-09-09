@@ -137,6 +137,12 @@ export default function TerritoryOpportunityBriefPage() {
             <p className="mt-5 text-sm leading-6 text-stone">
               This example is not for sale. It shows the format and evidence structure only. Its dated source material is not a claim about live conditions in another territory.
             </p>
+            <a
+              href="/examples/birmingham-solihull/"
+              className="mt-5 inline-flex font-semibold text-cream underline underline-offset-4 hover:text-amber"
+            >
+              View the free Birmingham and Solihull example
+            </a>
           </aside>
         </div>
       </section>
