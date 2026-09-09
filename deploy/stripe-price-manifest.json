@@ -1,9 +1,36 @@
 {
   "schema_version": 2,
-  "catalog_version": "2026-08",
+  "prep_note": "Manifest records are preparation artefacts. Live Stripe objects and Payment Links require founder approval and must not be created by an automated agent.",
+  "catalog_version": "2026-09",
   "currency": "gbp",
   "checkout_enabled": true,
   "products": {
+    "territory-opportunity-brief": {
+      "environment_product": "STRIPE_PRODUCT_TERRITORY_BRIEF",
+      "environment_price": "STRIPE_PRICE_TERRITORY_BRIEF",
+      "unit_amount": 79500,
+      "interval": null,
+      "lookup_key": "territory_opportunity_brief_gbp_oneoff_v1",
+      "sale_channel": "payment-link-pending",
+      "status": "pending_creation",
+      "stripe": {
+        "test": { "product_id": null, "price_id": null },
+        "live": { "product_id": null, "price_id": null }
+      }
+    },
+    "market-movement-report": {
+      "environment_product": "STRIPE_PRODUCT_MARKET_REPORT",
+      "environment_price": "STRIPE_PRICE_MARKET_REPORT",
+      "unit_amount": 49500,
+      "interval": null,
+      "lookup_key": "market_movement_report_gbp_oneoff_v1",
+      "sale_channel": "payment-link-pending",
+      "status": "pending_creation",
+      "stripe": {
+        "test": { "product_id": null, "price_id": null },
+        "live": { "product_id": null, "price_id": null }
+      }
+    },
     "radar-regional": {
       "environment_product": "STRIPE_PRODUCT_RADAR_REGIONAL",
       "environment_price": "STRIPE_PRICE_RADAR_REGIONAL",

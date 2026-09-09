@@ -12,15 +12,19 @@ import { pricingPlanCardId } from "@/lib/pricing-plan-path";
 export const metadata: Metadata = {
   title: "CareGist Pricing | CQC Signal Intelligence",
   description:
-    "Evidence-linked CQC change intelligence for regional compliance firms, national teams, and scoped integrations.",
+    "One-off territory and market-movement intelligence for teams selling into the UK care sector.",
 };
 
 const PLAN_BADGES: Record<string, string> = {
+  "Territory Opportunity Brief": "Lead product",
+  "Market Movement Report": "Current edition",
   "Free Directory": "Discovery",
-  "Radar Regional": "Launch plan",
-  "Radar National": "National teams",
-  "Intelligence Feed Pilot": "Sales-assisted",
-  "Embedded Enterprise": "Quote only",
+  "Radar Regional": "Request access · not yet available",
+  "Radar National": "Request access · not yet available",
+  "Strategic Territory Intelligence Assignment": "Roadmap · not yet available",
+  "Founding Intelligence Membership": "Roadmap · not yet available",
+  "Intelligence Feed Pilot": "Roadmap · not yet available",
+  "Embedded Enterprise": "Roadmap · not yet available",
 };
 
 export default function PricingPage() {
@@ -36,12 +40,12 @@ export default function PricingPage() {
           CQC signal intelligence
         </p>
         <h1 className="mb-5 text-4xl font-bold text-bark">
-          Pay for decisions your team can act on—not another provider database
+          Decide which care organisations are worth approaching next, and why
         </h1>
         <p className="text-lg leading-8 text-dusk" style={{ fontFamily: "Lora" }}>
-          Radar records verified new registrations and rating changes, preserves the
-          source evidence, and delivers each signal into a repeatable compliance and
-          business-development workflow.
+          Start with a ranked shortlist, stated reasons, and observation-dated evidence
+          drawn from CQC&apos;s published record. The two launch products are one-off pieces
+          of work. Continuing products remain closed.
         </p>
       </header>
 
@@ -52,8 +56,6 @@ export default function PricingPage() {
       <section className="space-y-6" aria-label="CareGist products">
         {PRICING_LADDER.map((tier) => {
           const isFree = tier.tier === "Free Directory";
-          const isIntegration =
-            tier.tier === "Intelligence Feed Pilot" || tier.tier === "Embedded Enterprise";
 
           return (
             <article
@@ -116,7 +118,7 @@ export default function PricingPage() {
                 <PricingCTA
                   tier={tier.tier}
                   isFreeTier={isFree}
-                  checkoutEnabled={checkoutEnabled && !isIntegration}
+                  checkoutEnabled={checkoutEnabled}
                   termsVersion={termsVersion}
                 />
               </div>
@@ -128,10 +130,10 @@ export default function PricingPage() {
       <section className="mt-10 rounded-xl border border-stone bg-parchment p-6">
         <h2 className="mb-2 text-xl font-bold text-bark">What we do not sell</h2>
         <p className="text-sm leading-6 text-dusk">
-          CareGist does not sell static data packs, paid listing rank, speculative vacancy
-          claims, or predictive scores. Radar launches with two traceable signal types:
-          new registrations and rating changes. A verified raw event still ships when an
-          explanation is unavailable.
+          CareGist does not compete on record count or sell paid listing rank, speculative
+          vacancy claims, predictive scores, or unsupported movement claims. The launch
+          products explain which accounts or market changes deserve review and show the
+          observation-dated evidence behind them.
         </p>
       </section>
 

@@ -32,11 +32,13 @@ describe("pricing page — final catalogue regression", () => {
     );
   });
 
-  it("keeps Feed and Embedded sales-assisted", () => {
+  it("routes one-offs to scoping and keeps continuing products gated", () => {
+    assert.match(ctaSrc, /mailto:outreach@caregist\.co\.uk/);
+    assert.match(ctaSrc, /ONE_OFF_CONTACT/);
+    assert.match(ctaSrc, /GATED_TIERS/);
     assert.ok(
-      ctaSrc.includes("enterprise@caregist.co.uk"),
-      "Sales-assisted mailto was removed"
+      ctaSrc.indexOf("GATED_TIERS.has(tierKey)") < ctaSrc.indexOf("if (!targetTier)"),
+      "Named roadmap tiers must be disabled before the compatibility contact fallback"
     );
-    assert.match(ctaSrc, /if \(!targetTier\)/);
   });
 });

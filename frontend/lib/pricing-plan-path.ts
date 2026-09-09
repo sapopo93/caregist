@@ -1,7 +1,11 @@
 const PLAN_SLUGS = new Set([
+  "territory-opportunity-brief",
+  "market-movement-report",
   "free-directory",
   "radar-regional",
   "radar-national",
+  "strategic-territory-intelligence-assignment",
+  "founding-intelligence-membership",
   "intelligence-feed-pilot",
   "embedded-enterprise",
 ]);

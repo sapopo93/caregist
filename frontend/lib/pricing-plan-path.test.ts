@@ -5,9 +5,13 @@ import { normalizePricingPlanSlug, pricingPlanCardId } from "./pricing-plan-path
 
 describe("retained pricing-plan path", () => {
   it("gives every public plan a stable pricing-card anchor", () => {
+    assert.equal(pricingPlanCardId("Territory Opportunity Brief"), "plan-territory-opportunity-brief");
+    assert.equal(pricingPlanCardId("Market Movement Report"), "plan-market-movement-report");
     assert.equal(pricingPlanCardId("Free Directory"), "plan-free-directory");
     assert.equal(pricingPlanCardId("Radar Regional"), "plan-radar-regional");
     assert.equal(pricingPlanCardId("Radar National"), "plan-radar-national");
+    assert.equal(pricingPlanCardId("Strategic Territory Intelligence Assignment"), "plan-strategic-territory-intelligence-assignment");
+    assert.equal(pricingPlanCardId("Founding Intelligence Membership"), "plan-founding-intelligence-membership");
     assert.equal(pricingPlanCardId("Intelligence Feed Pilot"), "plan-intelligence-feed-pilot");
     assert.equal(pricingPlanCardId("Embedded Enterprise"), "plan-embedded-enterprise");
   });

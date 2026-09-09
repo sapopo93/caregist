@@ -18,6 +18,24 @@ const TIER_RANK: Record<string, number> = {
   business: 0,
 };
 
+const ONE_OFF_CONTACT: Record<string, { subject: string }> = {
+  "territory-opportunity-brief": {
+    subject: "Territory Opportunity Brief sample request",
+  },
+  "market-movement-report": {
+    subject: "Market Movement Report scoping call",
+  },
+};
+
+const GATED_TIERS = new Set([
+  "radar-regional",
+  "radar-national",
+  "strategic-territory-intelligence-assignment",
+  "founding-intelligence-membership",
+  "intelligence-feed-pilot",
+  "embedded-enterprise",
+]);
+
 const BILLING_TIER: Record<string, string | null> = {
   free: null,
   "free-directory": null,
@@ -61,6 +79,30 @@ export default function PricingCTA({
   const isCurrentTier = currentTier === tierKey;
   const currentRank = TIER_RANK[currentTier] ?? 0;
   const targetRank = targetTier ? (TIER_RANK[targetTier] ?? 0) : 99;
+
+  const oneOffContact = ONE_OFF_CONTACT[tierKey];
+  if (oneOffContact) {
+    return (
+      <Link
+        href={`mailto:outreach@caregist.co.uk?subject=${encodeURIComponent(oneOffContact.subject)}`}
+        className="inline-block text-center py-2.5 px-6 rounded-lg font-medium text-sm transition-colors border border-clay text-clay hover:bg-clay hover:text-white"
+        onClick={() => void trackEvent("one_off_scope_click", "pricing_card", { tier: tierKey })}
+      >
+        {ctaLabel}
+      </Link>
+    );
+  }
+
+  if (GATED_TIERS.has(tierKey)) {
+    return (
+      <div className="flex flex-col items-start gap-2">
+        <button disabled className="py-2.5 px-6 rounded-lg font-medium text-sm border border-stone text-dusk opacity-70">
+          {ctaLabel}
+        </button>
+        <p className="text-xs text-dusk">No purchase or paid checkout is available for this product.</p>
+      </div>
+    );
+  }
 
   async function handleUpgrade(target: string) {
     if (!user) return;

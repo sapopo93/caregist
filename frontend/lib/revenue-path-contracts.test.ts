@@ -47,14 +47,18 @@ describe("revenue path contracts", () => {
     assert.match(combined, /VAT is not currently charged/);
   });
 
-  it("keeps every checkout-backed public price aligned with the approved monthly ladder", () => {
+  it("keeps the one-off launch prices exact and every continuing product gated", () => {
     const dataPrices = Object.fromEntries(PRICING_LADDER.map(({ tier, price }) => [tier, price]));
     assert.deepEqual(dataPrices, {
+      "Territory Opportunity Brief": "£795",
+      "Market Movement Report": "£495",
       "Free Directory": "£0",
-      "Radar Regional": "£299/mo",
-      "Radar National": "£799/mo",
-      "Intelligence Feed Pilot": "From £6,000/yr",
-      "Embedded Enterprise": "Annual quote",
+      "Radar Regional": "Request access",
+      "Radar National": "Request access",
+      "Strategic Territory Intelligence Assignment": "Roadmap",
+      "Founding Intelligence Membership": "Roadmap",
+      "Intelligence Feed Pilot": "Roadmap",
+      "Embedded Enterprise": "Roadmap",
     });
 
     const providerPrices = Object.fromEntries(PROVIDER_TIERS.map(({ tier, price }) => [tier, price]));
@@ -63,6 +67,15 @@ describe("revenue path contracts", () => {
       enhanced: "Existing subscription",
       sponsored: "Existing subscription",
     });
+  });
+
+  it("keeps one-off requests out of signup and keeps roadmap products non-purchasable", () => {
+    const pricingCta = source("components/PricingCTA.tsx");
+
+    assert.match(pricingCta, /ONE_OFF_CONTACT/);
+    assert.match(pricingCta, /mailto:outreach@caregist\.co\.uk/);
+    assert.match(pricingCta, /GATED_TIERS\.has\(tierKey\)/);
+    assert.match(pricingCta, /No purchase or paid checkout is available/);
   });
 
   it("carries retained login plan intent to a stable, focused pricing card", () => {
