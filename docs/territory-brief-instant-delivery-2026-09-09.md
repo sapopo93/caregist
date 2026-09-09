@@ -32,16 +32,42 @@ commit (`test_crm_ai_safety` local NER model unavailable; 3×
 
 ---
 
-## 2. What is NOT done (needs wiring + a live environment)
+## 2. Wiring status (updated 2026-09-09)
 
-These were deliberately left as a spec rather than committed blind, because
-`feat/territory-self-serve-scope` is under active human development on the same
-surfaces and none of it can be end-to-end verified here (no isolated Postgres,
-no Stripe test webhook endpoint, no Blob token, no staging deploy).
+**2a (checkout route) and 2b (webhook branch + expired/refund handlers) are now
+implemented** on `feat/territory-self-serve-scope`, behind the fail-closed
+`territory_self_serve_checkout_enabled` flag:
 
-### 2a. Checkout route - `api/routers/billing.py`
+* `api/routers/billing.py` - `TerritoryBriefCheckoutRequest`,
+  `POST /api/v1/billing/territory-brief-checkout`, the
+  `_handle_checkout_completed` routing branch, plus `territory_brief_orders`
+  in the `checkout.session.expired` and `charge.refunded` handlers.
+* `api/services/territory_brief_delivery.py` (new) - `terms_evidence()`,
+  `fulfilment_settings()`, `fulfilment_deps()`, `generate_pack()`,
+  `upload_pack()`, `scope_catalogue()`, `_record_failure()`.
+* `tests/test_billing_territory_brief_checkout.py` (new) - 10 tests.
 
-Add, modelled on `create_dataset_checkout` (lines 558-650) but with clean naming:
+Full regression after wiring: **751 passed, 22 skipped**; the 3 pre-existing
+`test_stripe_release_verifier` failures are unrelated (verified against the base
+commit).
+
+**Still a spec (blind edit would collide with in-flight human work):** 2c
+(frontend `consumePaidDownload` generalisation - `frontend/lib/directory-db.ts`
+is under active development) and 2d (checkout UI + consent page).
+
+**Still open - hard pre-enable gate:** §5 (Postgres generation source).
+`territory_brief_delivery.generate_pack()` / `scope_catalogue()` read the
+~734 MB mirrored CQC NDJSON snapshot, which is not in the serverless bundle;
+`_snapshot_paths()` raises a clear error when it is absent. Those functions are
+the only seam that must change.
+
+None of the paid path can be end-to-end verified here (no isolated Postgres, no
+Stripe test webhook endpoint, no Blob token, no staging deploy).
+
+### 2a. Checkout route - `api/routers/billing.py`  *(IMPLEMENTED)*
+
+Implemented, modelled on `create_dataset_checkout` but with clean naming.
+Original spec sketch retained below for reference:
 
 ```python
 class TerritoryBriefCheckoutRequest(BaseModel):
@@ -225,8 +251,9 @@ the row source does. This is tracked as the main pre-enable engineering task.
 - [ ] Founder-created £795 Stripe Product + Price (test + live), no "full dataset" naming
 - [ ] `STRIPE_PRICE_TERRITORY_BRIEF`, `BLOB_READ_WRITE_TOKEN` configured
 - [ ] Migration 060 applied to staging + production (isolated Postgres integration run first)
-- [ ] Checkout route (2a), webhook branch (2b), download generalisation (2c), UI+consent (2d) implemented
-- [ ] Generation source switched to Postgres (§5)
+- [x] Checkout route (2a) + webhook branch / expired / refund (2b) implemented (flag OFF)
+- [ ] Download generalisation (2c) + checkout UI & consent page (2d) implemented
+- [ ] Generation source switched to Postgres (§5) — `territory_brief_delivery.generate_pack` / `scope_catalogue`
 - [ ] Stripe test webhook endpoint on a protected preview; full E2E matrix recorded
       (valid pay, duplicate webhook, generation failure + retry, missing/unknown scope,
       wrong product, unauthorised download, refund)
