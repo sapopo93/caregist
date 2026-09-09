@@ -18,6 +18,16 @@ const TIER_RANK: Record<string, number> = {
   business: 0,
 };
 
+// Roadmap tiers must remain unreachable from any public pricing card until a
+// separate commercial-readiness decision opens them. This guard runs before
+// every checkout branch below.
+const GATED_TIERS = new Set([
+  "radar-regional",
+  "radar-national",
+  "intelligence-feed-pilot",
+  "embedded-enterprise",
+]);
+
 const BILLING_TIER: Record<string, string | null> = {
   free: null,
   "free-directory": null,
@@ -61,6 +71,17 @@ export default function PricingCTA({
   const isCurrentTier = currentTier === tierKey;
   const currentRank = TIER_RANK[currentTier] ?? 0;
   const targetRank = targetTier ? (TIER_RANK[targetTier] ?? 0) : 99;
+
+  if (GATED_TIERS.has(tierKey)) {
+    return (
+      <div className="flex flex-col items-start gap-2">
+        <button disabled className="py-2.5 px-6 rounded-lg font-medium text-sm border border-stone text-dusk opacity-70">
+          Paid checkout unavailable
+        </button>
+        <p className="text-xs text-dusk">This product is not currently available for purchase.</p>
+      </div>
+    );
+  }
 
   async function handleUpgrade(target: string) {
     if (!user) return;

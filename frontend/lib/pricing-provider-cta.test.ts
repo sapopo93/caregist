@@ -40,6 +40,16 @@ describe("pricing page — final catalogue regression", () => {
     assert.match(ctaSrc, /Paid checkout unavailable/);
   });
 
+  it("keeps closed roadmap tiers out of the checkout flow", () => {
+    assert.match(ctaSrc, /const GATED_TIERS = new Set\(/);
+    assert.match(ctaSrc, /"radar-regional"/);
+    assert.match(ctaSrc, /"radar-national"/);
+    assert.ok(
+      ctaSrc.indexOf("if (GATED_TIERS.has(tierKey))") < ctaSrc.indexOf("async function handleUpgrade"),
+      "Roadmap gate must execute before checkout is reachable",
+    );
+  });
+
   it("keeps Feed and Embedded sales-assisted", () => {
     assert.ok(
       ctaSrc.includes("enterprise@caregist.co.uk"),

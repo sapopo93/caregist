@@ -29,7 +29,10 @@ export default function TerritoryOpportunityBriefPage() {
             <p className="mb-5 text-xs font-semibold uppercase tracking-[0.22em] text-amber">
               One-off research product
             </p>
-            <h1 className="max-w-3xl font-[family-name:var(--font-playfair-display)] text-5xl font-bold leading-[1.05] tracking-tight md:text-6xl">
+            <h1
+              className="max-w-3xl font-[family-name:var(--font-playfair-display)] text-5xl font-bold leading-[1.05] tracking-tight md:text-6xl"
+              style={{ color: "var(--color-cream)" }}
+            >
               Know which care organisations to research first.
             </h1>
             <p className="mt-7 max-w-2xl text-lg leading-8 text-stone">
