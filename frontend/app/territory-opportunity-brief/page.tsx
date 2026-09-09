@@ -20,6 +20,14 @@ const boundaries = [
   "CareGist is independent of CQC. Customers should check the linked official sources before making a regulated, clinical, employment, credit or other high-impact decision.",
 ];
 
+const workRemoved = [
+  ["Find the relevant organisations", "A buyer-specific 25 to 50 organisation shortlist for the agreed territory."],
+  ["Decide why each one belongs", "A stated factual reason for each organisation against the agreed criteria."],
+  ["Prepare a usable working file", "A CRM-ready CSV or Excel dataset."],
+  ["Trace information back to source", "Public CQC source links and observation dates carried into the pack."],
+  ["Brief the wider team", "A three to five page executive brief."],
+];
+
 export default function TerritoryOpportunityBriefPage() {
   return (
     <div className="bg-parchment text-charcoal">
@@ -36,7 +44,7 @@ export default function TerritoryOpportunityBriefPage() {
               Know which care organisations to research first.
             </h1>
             <p className="mt-7 max-w-2xl text-lg leading-8 text-stone">
-              CareGist turns an agreed territory and buyer brief into a focused, evidence-linked starting list for your sales, advisory or investment research.
+              Instead of handing your team a directory to filter, CareGist supplies a buyer-specific starting list, the factual reason for each organisation and the source trail behind it.
             </p>
           </div>
           <div className="rounded-2xl border border-amber/35 bg-white/5 p-7">
@@ -65,6 +73,32 @@ export default function TerritoryOpportunityBriefPage() {
           <p className="max-w-2xl text-lg leading-8 text-dusk">
             It is designed for compliance advisers, recruitment and staffing firms, software, insurance and other suppliers. It gives your team a defined list to research, rather than a broad directory to work through.
           </p>
+        </div>
+      </section>
+
+      <section className="border-y border-stone bg-cream px-6 py-16 md:py-20">
+        <div className="mx-auto max-w-6xl">
+          <div className="max-w-3xl">
+            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-clay">The work you avoid</p>
+            <h2 className="mt-3 font-[family-name:var(--font-playfair-display)] text-4xl font-bold leading-tight text-bark">
+              More useful than a list of organisations.
+            </h2>
+            <p className="mt-4 text-lg leading-8 text-dusk">
+              The public directory is available to everyone. The brief gives your team a defined research starting point and records how the selection was made.
+            </p>
+          </div>
+          <div className="mt-9 overflow-hidden rounded-2xl border border-stone bg-white">
+            <div className="grid grid-cols-1 border-b border-stone bg-parchment text-sm font-semibold text-bark md:grid-cols-2">
+              <p className="px-6 py-4">Your team would otherwise need to</p>
+              <p className="border-t border-stone px-6 py-4 md:border-l md:border-t-0">The brief provides</p>
+            </div>
+            {workRemoved.map(([manualWork, output]) => (
+              <div key={manualWork} className="grid grid-cols-1 border-b border-stone last:border-b-0 md:grid-cols-2">
+                <p className="px-6 py-4 font-medium text-charcoal">{manualWork}</p>
+                <p className="border-t border-stone px-6 py-4 leading-7 text-dusk md:border-l md:border-t-0">{output}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
