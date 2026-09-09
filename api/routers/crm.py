@@ -104,6 +104,7 @@ class DispositionRequest(BaseModel):
         "connected", "no_answer", "busy", "voicemail", "wrong_number",
         "callback_requested", "gatekeeper", "qualified", "not_interested",
         "do_not_call", "meeting_booked", "sale_completed",
+        "call_dropped", "call_me_later", "number_disconnected",
     ]
     callback_at: datetime | None = None
     notes: str | None = Field(None, max_length=4000)
@@ -115,10 +116,11 @@ class DispositionRequest(BaseModel):
         allowed = {
             "no_contact": {"no_answer", "busy", "voicemail", "gatekeeper"},
             "connected": {
-                "connected", "qualified", "not_interested", "meeting_booked", "sale_completed"
+                "connected", "qualified", "not_interested", "meeting_booked", "sale_completed",
+                "call_dropped", "call_me_later",
             },
             "callback": {"callback_requested"},
-            "do_not_call": {"do_not_call", "wrong_number"},
+            "do_not_call": {"do_not_call", "wrong_number", "number_disconnected"},
         }
         if self.disposition not in allowed[self.disposition_group]:
             raise ValueError("The detailed disposition does not match its primary outcome.")
@@ -1048,7 +1050,7 @@ async def record_disposition(
             call_session_id, body.disposition_group, body.disposition,
             body.callback_at.astimezone(UTC) if body.callback_at else None, body.notes,
         )
-        if body.disposition in {"do_not_call", "wrong_number"}:
+        if body.disposition in {"do_not_call", "wrong_number", "number_disconnected"}:
             suppression_reason = "contact_objection" if body.disposition == "do_not_call" else "invalid"
             await conn.execute(
                 """
