@@ -2,14 +2,14 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Business Terms of Service | CareGist",
-  description: "Terms governing the CareGist Directory, Radar, Intelligence Feed Pilot, and Embedded Enterprise services.",
+  description: "Terms governing the CareGist Directory, Territory Opportunity Brief, Radar, Intelligence Feed Pilot, and Embedded Enterprise services.",
 };
 
 export default function TermsPage() {
   return (
     <main className="mx-auto max-w-3xl px-6 py-12">
       <h1 className="mb-2 text-3xl font-bold">Business Terms of Service</h1>
-      <p className="mb-8 text-sm text-dusk">Version 2.0 · In force from 9 August 2026</p>
+      <p className="mb-8 text-sm text-dusk">Version 2.1 · In force from 9 September 2026</p>
 
       <div className="prose prose-sm space-y-7 text-charcoal" style={{ fontFamily: "Lora" }}>
         <section>
@@ -33,6 +33,7 @@ export default function TermsPage() {
           <h2 className="mb-3 mt-8 text-xl font-bold text-bark">1. Products and scope</h2>
           <ul className="list-disc space-y-1 pl-6">
             <li><strong>Free Directory:</strong> provider search, profiles, source dates, and free correction or claim requests when verification intake is available.</li>
+            <li><strong>Territory Opportunity Brief:</strong> a one-off, buyer-specific research pack for an agreed England territory. It includes a shortlist of 25 to 50 organisations, a CRM-ready CSV or Excel dataset, a three to five page executive brief, and source links and observation dates for the public CQC information used.</li>
             <li><strong>Radar Regional:</strong> one contracted England region, 2 users, 10 saved views, and 90 days of event export.</li>
             <li><strong>Radar National:</strong> all England, 5 users, 50 saved views or lists, 365 days of event export, and onboarding.</li>
             <li><strong>Intelligence Feed Pilot:</strong> a sales-assisted, contracted API and webhook pilot with a stated region, signal, and delivery scope.</li>
@@ -42,6 +43,12 @@ export default function TermsPage() {
             Radar does not include API or webhook access. Additional seats are not sold
             separately at launch. A written order form, pilot statement, or enterprise
             agreement prevails over these terms for its expressly stated scope.
+          </p>
+          <p className="mt-2">
+            For a Territory Opportunity Brief, the written scope confirmation identifies
+            the territory, buyer criteria and factual selection criteria. It is the order
+            form for that purchase and prevails where it differs from a general statement
+            on this site.
           </p>
         </section>
 
@@ -121,10 +128,15 @@ export default function TermsPage() {
             levels, and termination are set out in the signed agreement.
           </p>
           <p>
-            Historical one-off digital-content purchases remain governed by the terms
-            and express immediate-supply consent captured at their checkout. This does
-            not affect remedies that cannot lawfully be excluded. No new static dataset
-            product is offered under this catalogue.
+            The Territory Opportunity Brief costs <strong>£795</strong>. CareGist confirms
+            the scope and the relevant source path before it sends a payment link or
+            accepts payment. Payment is due in full before work begins. The buyer may
+            cancel by email before work begins and receive a full refund. Once work has
+            begun on the agreed bespoke brief, the fee is non-refundable except where
+            CareGist fails to deliver the agreed scope or a remedy cannot lawfully be
+            excluded. If a source issue after payment prevents delivery of the agreed
+            scope, CareGist will offer a revised delivery date or a full refund if the
+            parties do not agree an alternative scope.
           </p>
         </section>
 
@@ -135,6 +147,14 @@ export default function TermsPage() {
             Any contracted service level applies only when written into the relevant
             Feed or Embedded agreement. Upstream CQC unavailability, delay, correction,
             and schema change can affect collection and delivery.
+          </p>
+          <p>
+            The delivery target for a Territory Opportunity Brief is three working days
+            after both the written scope confirmation and source-path check are complete.
+            A working day is Monday to Friday, excluding public holidays in England. The
+            target is not a guaranteed service level. If a material source issue affects
+            the agreed scope, CareGist will notify the buyer and apply the remedy in
+            section 6.
           </p>
           <p>
             CareGist may pause a collector, signal type, explanation, outbound delivery,
@@ -180,7 +200,8 @@ export default function TermsPage() {
           <p>
             To the fullest extent permitted by law, neither party is liable for indirect
             or consequential loss. CareGist&apos;s aggregate liability under self-serve Radar
-            is limited to fees paid for that service in the preceding 12 months. A signed
+            is limited to fees paid for that service in the preceding 12 months. For a
+            Territory Opportunity Brief, it is limited to the fee paid for that brief. A signed
             enterprise agreement may set a different cap. Nothing excludes liability
             that cannot lawfully be limited, including fraud or death or personal injury
             caused by negligence.
