@@ -11,11 +11,12 @@
       "unit_amount": 79500,
       "interval": null,
       "lookup_key": "territory_opportunity_brief_gbp_oneoff_v1",
-      "sale_channel": "payment-link-pending",
-      "status": "pending_creation",
+      "sale_channel": "self-serve-gated",
+      "status": "created",
+      "status_note": "Stripe Product + one-off GBP 795 Price exist in test and live (created 2026-09-09). Self-serve checkout stays closed until the runtime flag TERRITORY_SELF_SERVE_CHECKOUT_ENABLED is set with approved terms/consent hashes.",
       "stripe": {
-        "test": { "product_id": null, "price_id": null },
-        "live": { "product_id": null, "price_id": null }
+        "test": { "product_id": "prod_VE89BnRzZPq0Qq", "price_id": "price_1UDft34mijLHzRRklUMJR6F2" },
+        "live": { "product_id": "prod_VE7HY2DdEmrb8C", "price_id": "price_1UDf2t4mijLHzRRkRqbNA1rd" }
       }
     },
     "market-movement-report": {
