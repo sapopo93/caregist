@@ -63,6 +63,8 @@ RETRYABLE_STATUS_CODES = {408, 429, 500, 502, 503, 504}
 MIN_EXPECTED_ACTIVE_LOCATIONS = 50_000
 MAX_ACTIVE_COUNT_DROP_RATIO = 0.05
 DEFAULT_CHECKPOINT_SIZE = 250
+# Must not exceed care_providers.phone (VARCHAR(50) as of migration 059).
+PHONE_MAX_LENGTH = 50
 _CQC_ID_RE = re.compile(r"^(?:1-\d{5,12}|[A-Z][A-Z0-9-]{1,19})$")
 
 
@@ -316,7 +318,14 @@ def get_database_url() -> str | None:
     if env_path.exists():
         for line in env_path.read_text().splitlines():
             if line.startswith("DATABASE_URL="):
-                return normalize_database_url(line.split("=", 1)[1].strip())
+                # This project's .env quotes its values. Without stripping the
+                # quotes the DSN reaches psycopg2 still wrapped in them, which
+                # fails to parse AND puts the raw connection string -- password
+                # included -- into the traceback.
+                value = line.split("=", 1)[1].strip()
+                if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
+                    value = value[1:-1]
+                return normalize_database_url(value)
     return None
 
 
@@ -659,7 +668,12 @@ def clean_location(data: dict[str, Any], *, directory_active: bool = False) -> d
         "local_authority": normalize_whitespace(data.get("localAuthority", "")),
         "latitude": lat,
         "longitude": lon,
-        "phone": normalize_whitespace(data.get("mainPhoneNumber", "")),
+        # CQC publishes mainPhoneNumber as free text and it is sometimes
+        # malformed (1-29250185054 carried the same number typed twice, 22
+        # chars). An oversized value used to abort the entire shard mid-batch,
+        # so clamp to the column width: one bad upstream record must never stop
+        # a reconciliation. See db/migrations/059_widen_provider_phone.sql.
+        "phone": normalize_whitespace(data.get("mainPhoneNumber", ""))[:PHONE_MAX_LENGTH],
         "website": normalize_whitespace(data.get("website", "")),
         "overall_rating": overall_rating,
         "rating_safe": kq_ratings.get("safe", ""),
