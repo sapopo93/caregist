@@ -47,15 +47,20 @@ describe("revenue path contracts", () => {
     assert.match(combined, /VAT is not currently charged/);
   });
 
-  it("keeps every checkout-backed public price aligned with the approved monthly ladder", () => {
+  it("shows the one-off brief and keeps roadmap products out of public pricing", () => {
     const dataPrices = Object.fromEntries(PRICING_LADDER.map(({ tier, price }) => [tier, price]));
     assert.deepEqual(dataPrices, {
       "Free Directory": "£0",
-      "Radar Regional": "£299/mo",
-      "Radar National": "£799/mo",
-      "Intelligence Feed Pilot": "From £6,000/yr",
-      "Embedded Enterprise": "Annual quote",
+      "Radar Regional": "Not currently available",
+      "Radar National": "Not currently available",
+      "Intelligence Feed Pilot": "Not currently available",
+      "Embedded Enterprise": "Not currently available",
     });
+
+    const pricing = source("app/pricing/page.tsx");
+    assert.match(pricing, /Territory Opportunity Brief/);
+    assert.match(pricing, /£795/);
+    assert.match(pricing, /\/territory-opportunity-brief/);
 
     const providerPrices = Object.fromEntries(PROVIDER_TIERS.map(({ tier, price }) => [tier, price]));
     assert.deepEqual(providerPrices, {
