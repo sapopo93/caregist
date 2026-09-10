@@ -36,7 +36,7 @@ def _base(kind: str, scope: str, source_file: Path) -> dict[str, Any]:
     return {
         "schema": SCHEMA_VERSION,
         "generated_at": datetime.now(timezone.utc).isoformat(),
-        "commit": os.environ.get("GITHUB_SHA"),
+        "commit": os.environ.get("AI_OS_EVIDENCE_SHA") or os.environ.get("GITHUB_SHA"),
         "repository": os.environ.get("GITHUB_REPOSITORY"),
         "workflow_run_id": os.environ.get("GITHUB_RUN_ID"),
         "kind": kind,
