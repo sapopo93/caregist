@@ -137,6 +137,7 @@ jobs:
 
       - name: Build production images
         run: |
+          mkdir -p artifacts/security
           docker build --tag caregist-api:ci .
           docker build --file Dockerfile.worker --tag caregist-worker:ci .
 
