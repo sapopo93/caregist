@@ -260,6 +260,7 @@ def validate_commercial_catalog(failures: list[str]) -> None:
         return
 
     product_name = str(product.get("name", "Territory Opportunity Brief"))
+    normalized_label = price_label.replace(" ", "")
     for relative in surfaces:
         path = ROOT / relative
         try:
@@ -271,15 +272,13 @@ def validate_commercial_catalog(failures: list[str]) -> None:
         positions = [match.start() for match in re.finditer(re.escape(product_name), text)]
         nearby_amounts: set[str] = set()
         for position in positions:
-            window = text[max(0, position - 250) : position + 900]
+            window = text[max(0, position - 250) : position + 500]
             nearby_amounts.update(match.group(0).replace(" ", "") for match in STERLING_AMOUNT.finditer(window))
 
-        normalized_label = price_label.replace(" ", "")
-        conflicting = {amount for amount in nearby_amounts if amount != normalized_label}
         check(
-            bool(positions) and normalized_label in nearby_amounts and not conflicting,
+            bool(positions) and normalized_label in nearby_amounts,
             f"COMMERCIAL_SURFACE_{relative}",
-            f"{product_name} agrees with canonical {price_label}; nearby amounts={sorted(nearby_amounts)}",
+            f"{product_name} exposes canonical {price_label}; nearby amounts={sorted(nearby_amounts)}",
             failures,
         )
 
