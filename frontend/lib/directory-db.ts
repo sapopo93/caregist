@@ -455,6 +455,57 @@ export async function getDirectoryOpportunityStats(): Promise<DirectoryOpportuni
   }
 }
 
+export interface TerritoryScopeCoverageRow {
+  providerCount: number;
+  mostRecentInspection: string | null;
+  mostRecentRegistration: string | null;
+}
+
+/**
+ * Count the active providers in a territory scope and report the freshest
+ * observation date in that set. Powers the self-serve coverage gate on the
+ * Territory Opportunity Brief. Throws when the directory database is
+ * unavailable — the caller decides how to fail.
+ */
+export async function getTerritoryScopeCoverage(scope: {
+  region: string;
+  serviceType: string;
+  opportunity: DirectoryOpportunity | "";
+}): Promise<TerritoryScopeCoverageRow> {
+  assertDatabaseConfigured();
+
+  const { clauses, params } = buildWhereClause({
+    query: "",
+    region: scope.region,
+    serviceType: scope.serviceType,
+    rating: "",
+    opportunity: scope.opportunity ?? "",
+  });
+
+  const result = await getSql().query<{
+    provider_count: number;
+    most_recent_inspection: string | null;
+    most_recent_registration: string | null;
+  }>(
+    `
+      SELECT
+        COUNT(*)::int AS provider_count,
+        MAX(last_inspection_date)::text AS most_recent_inspection,
+        MAX(registration_date)::text AS most_recent_registration
+      FROM care_providers
+      WHERE ${clauses.join(" AND ")}
+    `,
+    params,
+  );
+
+  const row = result.rows[0];
+  return {
+    providerCount: row?.provider_count ?? 0,
+    mostRecentInspection: row?.most_recent_inspection ?? null,
+    mostRecentRegistration: row?.most_recent_registration ?? null,
+  };
+}
+
 export async function searchDirectoryProviders(filters: DirectorySearchParams): Promise<DirectorySearchResult> {
   try {
     assertDatabaseConfigured();

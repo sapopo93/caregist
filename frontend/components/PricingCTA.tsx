@@ -80,6 +80,18 @@ export default function PricingCTA({
   const currentRank = TIER_RANK[currentTier] ?? 0;
   const targetRank = targetTier ? (TIER_RANK[targetTier] ?? 0) : 99;
 
+  if (tierKey === "territory-opportunity-brief") {
+    return (
+      <Link
+        href="/pricing/territory"
+        className="inline-block text-center py-2.5 px-6 rounded-lg font-medium text-sm transition-colors border border-clay text-clay hover:bg-clay hover:text-white"
+        onClick={() => void trackEvent("one_off_scope_click", "pricing_card", { tier: tierKey })}
+      >
+        Confirm your territory
+      </Link>
+    );
+  }
+
   const oneOffContact = ONE_OFF_CONTACT[tierKey];
   if (oneOffContact) {
     return (

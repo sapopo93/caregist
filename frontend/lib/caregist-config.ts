@@ -8,7 +8,7 @@ export const PRICING_LADDER: PricingTier[] = [
     forWho: "Should your sales team prioritise Birmingham and Solihull, or put its next quarter elsewhere?",
     color: "#C8862A",
     price: "£795",
-    priceNote: "One-off · delivered in 3 working days",
+    priceNote: "One-off · confirm your region and buyer type online",
     recommended: true,
     includes: [
       "CRM-import-ready territory dataset",
@@ -16,7 +16,7 @@ export const PRICING_LADDER: PricingTier[] = [
       "3–5 page brief on territory size, market structure, notable movements, and recommended approach",
       "Observation dates carried through the deliverable",
     ],
-    limit: "A 15-minute scoping conversation comes first. Checkout follows by Payment Link only after the delivery gates pass.",
+    limit: "Confirm online that the published CQC record supports your exact region and buyer type before any payment. No scoping call required.",
     pricingLogic: "Choose the accounts worth approaching next and see the evidence behind each priority.",
   },
   {
