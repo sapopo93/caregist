@@ -1,0 +1,40 @@
+name: AI OS Governance
+
+permissions:
+  contents: read
+  pull-requests: write
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch:
+
+concurrency:
+  group: ai-os-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  governance:
+    name: Constitution, evidence and commercial drift
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Verify AI OS governance
+        run: python3 tools/verify_ai_os.py
+
+      - name: Build independent review packet
+        run: python3 tools/build_ai_review_packet.py --output /tmp/ai-os-review.md
+
+      - name: Publish review packet to job summary
+        run: cat /tmp/ai-os-review.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Dispatch review packet to pull request
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          gh pr comment "$PR_NUMBER" \
+            --repo "$GITHUB_REPOSITORY" \
+            --body-file /tmp/ai-os-review.md
