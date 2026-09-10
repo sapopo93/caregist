@@ -85,7 +85,10 @@ def test_ci_uses_real_worker_dependencies_non_superuser_rls_and_image_scans():
         "caregist-api:ci",
         "caregist-worker:ci",
     }
-    assert all(step["with"]["exit-code"] == "1" for step in scans)
+    # Capture scanner output first so independent reviewers can inspect exact
+    # findings, then fail closed in a separate explicit gate below.
+    assert all(step["with"]["exit-code"] == "0" for step in scans)
+    assert all(step["with"]["format"] == "json" for step in scans)
     assert all(step["with"]["ignore-unfixed"] == "false" for step in scans)
     assert all(step["with"]["severity"] == "HIGH,CRITICAL" for step in scans)
     assert all(
@@ -93,6 +96,22 @@ def test_ci_uses_real_worker_dependencies_non_superuser_rls_and_image_scans():
         == "aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25"
         for step in scans
     )
+
+    normalize_step = next(
+        step for step in scan_steps if step.get("name") == "Normalize container security evidence"
+    )
+    upload_step = next(
+        step for step in scan_steps if step.get("name") == "Upload container security evidence"
+    )
+    gate_step = next(
+        step for step in scan_steps if step.get("name") == "Enforce container security gate"
+    )
+    assert "tools/security_evidence.py normalize" in normalize_step["run"]
+    assert "artifacts/security/trivy-api.json" in upload_step["with"]["path"]
+    assert "artifacts/security/trivy-worker.json" in upload_step["with"]["path"]
+    assert "tools/security_evidence.py gate" in gate_step["run"]
+    assert "trivy-api.json" in gate_step["run"]
+    assert "trivy-worker.json" in gate_step["run"]
 
     api_dockerfile = Path("Dockerfile").read_text()
     worker_dockerfile = Path("Dockerfile.worker").read_text()
