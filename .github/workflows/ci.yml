@@ -8,6 +8,9 @@ on:
     branches: [main]
   pull_request:
 
+env:
+  AI_OS_EVIDENCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
@@ -63,21 +66,16 @@ jobs:
         env:
           API_MASTER_KEY: ci_test_master_key
           SUPPORT_INTERNAL_TOKEN: ci_test_support_token
-        # Real-Postgres integration coverage runs in the dedicated migrations
-        # job below. Keeping it out of this unit/service job prevents the test
-        # bootstrap's local DATABASE_URL default from targeting a nonexistent
-        # localhost database on the runner.
         run: pytest -q --ignore=tests/integration
 
       - name: pip-audit (vulnerabilities)
-        # Fail the build on known CVEs in backend deps.
         run: |
           pip-audit --requirement requirements.txt --strict
           pip-audit --requirement requirements-api.txt --strict
           pip-audit --requirement requirements-worker.txt --strict
 
       - name: Smoke verifier syntax
-        run: python -m py_compile tools/verify-deploy.py
+        run: python -m py_compile tools/verify-deploy.py tools/security_evidence.py
 
   migrations:
     name: Migration replay (real Postgres + PostGIS)
@@ -139,28 +137,80 @@ jobs:
 
       - name: Build production images
         run: |
+          mkdir -p artifacts/security
           docker build --tag caregist-api:ci .
           docker build --file Dockerfile.worker --tag caregist-worker:ci .
 
-      - name: Scan API image
+      - name: Scan API image and capture JSON
+        id: scan_api
+        continue-on-error: true
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: caregist-api:ci
-          format: table
-          exit-code: "1"
+          format: json
+          output: artifacts/security/trivy-api.raw.json
+          exit-code: "0"
           ignore-unfixed: false
           scanners: vuln
           severity: HIGH,CRITICAL
 
-      - name: Scan worker image
+      - name: Scan worker image and capture JSON
+        id: scan_worker
+        continue-on-error: true
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: caregist-worker:ci
-          format: table
-          exit-code: "1"
+          format: json
+          output: artifacts/security/trivy-worker.raw.json
+          exit-code: "0"
           ignore-unfixed: false
           scanners: vuln
           severity: HIGH,CRITICAL
+
+      - name: Normalize container security evidence
+        if: always()
+        run: |
+          python3 tools/security_evidence.py normalize \
+            --kind trivy \
+            --input artifacts/security/trivy-api.raw.json \
+            --output artifacts/security/trivy-api.json \
+            --scope api-container
+          python3 tools/security_evidence.py normalize \
+            --kind trivy \
+            --input artifacts/security/trivy-worker.raw.json \
+            --output artifacts/security/trivy-worker.json \
+            --scope worker-container
+
+      - name: Publish container evidence summary
+        if: always()
+        run: |
+          echo '## AI OS container security evidence' >> "$GITHUB_STEP_SUMMARY"
+          echo '```json' >> "$GITHUB_STEP_SUMMARY"
+          cat artifacts/security/trivy-api.json >> "$GITHUB_STEP_SUMMARY"
+          cat artifacts/security/trivy-worker.json >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload container security evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: ai-os-container-security-${{ env.AI_OS_EVIDENCE_SHA }}
+          path: |
+            artifacts/security/trivy-api.raw.json
+            artifacts/security/trivy-api.json
+            artifacts/security/trivy-worker.raw.json
+            artifacts/security/trivy-worker.json
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Enforce container security gate
+        if: always()
+        run: |
+          test "${{ steps.scan_api.outcome }}" = "success"
+          test "${{ steps.scan_worker.outcome }}" = "success"
+          python3 tools/security_evidence.py gate \
+            artifacts/security/trivy-api.json \
+            artifacts/security/trivy-worker.json
 
   frontend:
     name: Frontend (tsc + tests + build + audit)
@@ -188,7 +238,6 @@ jobs:
 
       - name: Production build
         env:
-          # next.config.ts throws at build time when these are missing in production mode.
           API_URL: http://localhost:8000
           API_KEY: ci_test_api_key
           NEXT_PUBLIC_API_URL: http://localhost:8000
@@ -239,6 +288,41 @@ jobs:
             cat /tmp/caregist-smoke.log
           fi
 
-      - name: npm audit (high/critical only)
-        # Transitive dev-tool vulns are common; gate on high+ to catch real risk without noise.
-        run: npm audit --audit-level=high
+      - name: Capture npm audit JSON
+        id: npm_audit
+        continue-on-error: true
+        run: |
+          mkdir -p ../artifacts/security
+          npm audit --audit-level=high --json > ../artifacts/security/frontend-npm-audit.raw.json
+
+      - name: Normalize frontend security evidence
+        if: always()
+        run: |
+          python3 ../tools/security_evidence.py normalize \
+            --kind npm \
+            --input ../artifacts/security/frontend-npm-audit.raw.json \
+            --output ../artifacts/security/frontend-npm-audit.json \
+            --scope frontend-npm
+
+      - name: Publish frontend evidence summary
+        if: always()
+        run: |
+          echo '## AI OS frontend security evidence' >> "$GITHUB_STEP_SUMMARY"
+          echo '```json' >> "$GITHUB_STEP_SUMMARY"
+          cat ../artifacts/security/frontend-npm-audit.json >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload frontend security evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: ai-os-frontend-security-${{ env.AI_OS_EVIDENCE_SHA }}
+          path: |
+            artifacts/security/frontend-npm-audit.raw.json
+            artifacts/security/frontend-npm-audit.json
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Enforce frontend security gate
+        if: always()
+        run: python3 ../tools/security_evidence.py gate ../artifacts/security/frontend-npm-audit.json

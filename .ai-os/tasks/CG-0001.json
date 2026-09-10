@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "id": "CG-0001",
+  "title": "Introduce governed task, evidence and independent-review loop",
+  "status": "FAIL",
+  "goal": "Add the smallest reusable AI OS control plane to CareGist without changing production behaviour, live Stripe state or the current £795 Territory Opportunity Brief commercial decision.",
+  "definition_of_done": [
+    "A versioned constitution prevents an implementation agent from self-certifying COMPLETE.",
+    "A machine-readable task ledger carries explicit status, definition of done, tests, evidence, independent review, verification and risk fields.",
+    "The governance verifier fails closed when PASS, VERIFIED or COMPLETE is claimed without the required independent evidence.",
+    "The £795 Territory Opportunity Brief has a canonical commercial catalogue record and declared public surfaces are checked for drift.",
+    "Pull requests automatically publish a provider-neutral independent-review packet suitable for Grok or another non-implementing model.",
+    "Existing CareGist CI remains authoritative for code, security, migration, frontend and smoke evidence.",
+    "No production flags, live billing objects, webhook secrets, deployments or customer deliveries are changed by this task."
+  ],
+  "tests": [
+    "python3 tools/verify_ai_os.py",
+    "python3 tools/build_ai_review_packet.py --output /tmp/ai-os-review.md",
+    "Existing .github/workflows/ci.yml jobs remain green on the pull request"
+  ],
+  "evidence": [
+    {"type": "branch", "ref": "ai-os/governed-evidence-v0-1"},
+    {"type": "file", "ref": ".ai-os/constitution.json"},
+    {"type": "file", "ref": "deploy/commercial-catalog.json"},
+    {"type": "file", "ref": "tools/verify_ai_os.py"},
+    {"type": "file", "ref": ".github/workflows/ai-os-governance.yml"},
+    {"type": "review", "ref": "PR #40 issuecomment-5623899806"},
+    {"type": "review", "ref": "PR #40 issuecomment-5625780633"},
+    {"type": "repair_issue", "ref": "#41"},
+    {"type": "repair_issue", "ref": "#42"}
+  ],
+  "independent_review": {
+    "required": true,
+    "verdict": "FAIL",
+    "reviewer_model": "Grok Bot",
+    "evidence_checked": [
+      "PR #40 head 3d93d1bb4bada6191a64220ee63d8b40f0b36bf4",
+      "CI run 34510959092",
+      "Vercel preview and Preview Smoke",
+      "repository commercial surfaces",
+      "live Stripe read-only catalogue inspection"
+    ],
+    "artifact_ref": "PR #40 AI_OS_REVIEW"
+  },
+  "verification": {"status": "PENDING", "verifier": "", "evidence": []},
+  "completion": {"claim": "NOT_COMPLETE"},
+  "risk": {"production_change": false, "live_billing_change": false, "customer_delivery": false},
+  "approvals": []
+}

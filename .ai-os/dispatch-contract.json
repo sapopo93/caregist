@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "source": "github_issue",
+  "eligible_label": "ai-os-repair",
+  "ready_marker": "AI_OS_DISPATCH",
+  "default_route": {
+    "orchestrator": "hermes:ai-company-governed",
+    "worker_profile": "coder",
+    "provider": "openai-codex",
+    "status": "READY"
+  },
+  "required_issue_fields": [
+    "Origin",
+    "Failed acceptance criterion",
+    "Evidence",
+    "Required repair",
+    "Repair owner"
+  ],
+  "rules": [
+    "Hermes may claim a READY ai-os-repair issue without founder input when the issue does not require production, live billing, customer delivery, secret, permission or destructive changes.",
+    "Codex implements the repair and returns changed files, commit SHA, tests and evidence to the issue or linked pull request.",
+    "Codex cannot mark the parent task COMPLETE.",
+    "A new commit SHA must pass CI and receive fresh independent Grok review before VERIFIED or COMPLETE.",
+    "If the repair reaches a founder-gated action, set AWAITING_APPROVAL and preserve the original task context so work resumes after approval."
+  ]
+}

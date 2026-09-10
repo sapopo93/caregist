@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "id": "CG-0002",
+  "title": "Publish structured security evidence and autonomous repair dispatch",
+  "status": "REVIEW_REQUESTED",
+  "goal": "Make security failures inspectable without privileged Actions logs and make Grok-created repair issues machine-routable through zero-token polling into Hermes Kanban and the Codex coder worker without weakening any gate.",
+  "definition_of_done": [
+    "Frontend npm audit and container scans publish stable machine-readable evidence before enforcing failure.",
+    "Security evidence includes exact advisory or CVE, package/component, severity, installed or affected version and fixed version where the scanner exposes it.",
+    "Security gates remain fail-closed when HIGH/CRITICAL findings or scanner errors exist.",
+    "Evidence is retained as GitHub Actions artifacts and job summaries for independent review and is stamped with the exact pull-request head SHA.",
+    "An explicit dispatch contract routes eligible ai-os-repair issues to hermes:ai-company-governed, coder and openai-codex.",
+    "A deterministic GitHub issue ingester can create idempotent Hermes Kanban repair cards assigned to coder without an LLM routing turn.",
+    "A one-time installer can place the ingester into the ai-company-governed profile and schedule it every five minutes using Hermes no-agent cron.",
+    "Founder-gated or non-Codex repair issues fail closed to AWAITING_APPROVAL.",
+    "Autonomous Hermes-to-Codex execution is not claimed proven until the installer runs on the actual Hermes host and a READY GitHub issue produces a real Kanban task/worker run.",
+    "No production, live Stripe, customer delivery, secret or permission state is changed by this task."
+  ],
+  "tests": [
+    "python3 -m py_compile tools/security_evidence.py tools/hermes_ai_os_ingest.py",
+    "bash -n tools/install_hermes_ai_os.sh",
+    "python3 tools/verify_ai_os.py",
+    "python3 tools/verify_ai_dispatch.py",
+    "GitHub Actions CI emits normalized frontend and container security artifacts on the exact PR head SHA",
+    "AI OS Governance validates the bridge files and publishes a fresh independent-review packet",
+    "On the Hermes host: tools/install_hermes_ai_os.sh creates/retains the no-agent cron and ingests READY issue #41/#42 into a real coder Kanban task",
+    "Fresh independent Grok review evaluates the new exact commit SHA"
+  ],
+  "evidence": [
+    {"type": "file", "ref": "tools/security_evidence.py"},
+    {"type": "file", "ref": ".github/workflows/ci.yml"},
+    {"type": "file", "ref": ".ai-os/dispatch-contract.json"},
+    {"type": "file", "ref": ".github/workflows/ai-os-repair-dispatch.yml"},
+    {"type": "file", "ref": "tools/verify_ai_dispatch.py"},
+    {"type": "file", "ref": "tools/hermes_ai_os_ingest.py"},
+    {"type": "file", "ref": "tools/install_hermes_ai_os.sh"},
+    {"type": "issue", "ref": "#41"},
+    {"type": "issue", "ref": "#42"}
+  ],
+  "independent_review": {
+    "required": true,
+    "verdict": "PENDING",
+    "reviewer_model": "",
+    "evidence_checked": [],
+    "artifact_ref": "PR review packet"
+  },
+  "verification": {"status": "PENDING", "verifier": "", "evidence": []},
+  "completion": {"claim": "NOT_COMPLETE"},
+  "risk": {"production_change": false, "live_billing_change": false, "customer_delivery": false},
+  "approvals": []
+}
