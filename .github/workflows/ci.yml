@@ -8,6 +8,9 @@ on:
     branches: [main]
   pull_request:
 
+env:
+  AI_OS_EVIDENCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
@@ -190,7 +193,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: ai-os-container-security-${{ github.sha }}
+          name: ai-os-container-security-${{ env.AI_OS_EVIDENCE_SHA }}
           path: |
             artifacts/security/trivy-api.raw.json
             artifacts/security/trivy-api.json
@@ -312,7 +315,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: ai-os-frontend-security-${{ github.sha }}
+          name: ai-os-frontend-security-${{ env.AI_OS_EVIDENCE_SHA }}
           path: |
             artifacts/security/frontend-npm-audit.raw.json
             artifacts/security/frontend-npm-audit.json
@@ -321,6 +324,4 @@ jobs:
 
       - name: Enforce frontend security gate
         if: always()
-        run: |
-          test "${{ steps.npm_audit.outcome }}" = "success" || true
-          python3 ../tools/security_evidence.py gate ../artifacts/security/frontend-npm-audit.json
+        run: python3 ../tools/security_evidence.py gate ../artifacts/security/frontend-npm-audit.json
