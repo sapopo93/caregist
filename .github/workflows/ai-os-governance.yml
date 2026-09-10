@@ -23,6 +23,9 @@ jobs:
       - name: Verify AI OS governance
         run: python3 tools/verify_ai_os.py
 
+      - name: Verify repair dispatch contract
+        run: python3 tools/verify_ai_dispatch.py
+
       - name: Build independent review packet
         run: python3 tools/build_ai_review_packet.py --output /tmp/ai-os-review.md
 
