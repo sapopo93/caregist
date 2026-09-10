@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "catalog_version": "2026-09-10",
+  "currency": "GBP",
+  "products": {
+    "territory-opportunity-brief": {
+      "name": "Territory Opportunity Brief",
+      "unit_amount": 79500,
+      "price_label": "£795",
+      "vat_display": "Price excludes VAT.",
+      "availability": "available-now",
+      "checkout_mode": "scope-gated",
+      "delivery_target_working_days": 3,
+      "public_surfaces": [
+        "frontend/app/pricing/page.tsx",
+        "frontend/app/territory-opportunity-brief/page.tsx",
+        "frontend/app/terms/page.tsx",
+        "frontend/lib/revenue-path-contracts.test.ts"
+      ]
+    }
+  },
+  "release_rule": "A product price change is not releasable until every declared public surface agrees with this catalogue and the AI OS governance gate passes."
+}
