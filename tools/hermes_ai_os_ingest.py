@@ -86,13 +86,16 @@ def load_ready_issues(repo: str) -> list[RepairIssue]:
             "--limit",
             "100",
             "--json",
-            "number,title,body,url",
+            "number,title,body,url,comments",
         ]
     )
     issues: list[RepairIssue] = []
     for row in rows:
         body = row.get("body") or ""
-        if not is_ready(body):
+        if not is_ready(body) or any(
+            KANBAN_MARKER in (comment.get("body") or "")
+            for comment in row.get("comments", [])
+        ):
             continue
         issues.append(
             RepairIssue(
