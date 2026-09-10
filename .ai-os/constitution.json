@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "name": "H-Kay AI OS Completion Constitution",
+  "principles": [
+    "No agent may claim COMPLETE from implementation evidence alone.",
+    "The implementation agent must not be the independent reviewer.",
+    "CI and code tests are evidence, not independent review.",
+    "Customer-visible or production-affecting claims require end-to-end evidence where applicable.",
+    "A failed or missing required check keeps the task fail-closed.",
+    "Commercial configuration drift is a release blocker.",
+    "Production writes, live billing changes and capability enablement remain separately gated."
+  ],
+  "states": [
+    "OPEN",
+    "IMPLEMENTED",
+    "REVIEW_REQUESTED",
+    "PASS",
+    "FAIL",
+    "VERIFIED",
+    "COMPLETE",
+    "BLOCKED"
+  ],
+  "transitions": {
+    "OPEN": ["IMPLEMENTED", "BLOCKED"],
+    "IMPLEMENTED": ["REVIEW_REQUESTED", "BLOCKED"],
+    "REVIEW_REQUESTED": ["PASS", "FAIL", "BLOCKED"],
+    "FAIL": ["IMPLEMENTED", "REVIEW_REQUESTED", "BLOCKED"],
+    "PASS": ["VERIFIED", "BLOCKED"],
+    "VERIFIED": ["COMPLETE", "BLOCKED"],
+    "COMPLETE": [],
+    "BLOCKED": ["OPEN", "IMPLEMENTED", "REVIEW_REQUESTED"]
+  },
+  "completion_gates": {
+    "PASS": [
+      "independent_review.verdict == PASS",
+      "independent_review.reviewer_model is non-empty",
+      "independent_review.evidence_checked is non-empty"
+    ],
+    "VERIFIED": [
+      "status has already earned PASS",
+      "verification.status == VERIFIED",
+      "verification.evidence is non-empty"
+    ],
+    "COMPLETE": [
+      "independent_review.verdict == PASS",
+      "verification.status == VERIFIED",
+      "verification.evidence is non-empty",
+      "completion.claim == COMPLETE"
+    ]
+  },
+  "risk_rules": {
+    "production_change": "Requires explicit founder approval evidence and must not be inferred from CI success.",
+    "live_billing_change": "Requires explicit founder approval evidence plus Stripe/customer-journey verification.",
+    "customer_delivery": "Requires inspectable output evidence matching the task definition of done."
+  }
+}
