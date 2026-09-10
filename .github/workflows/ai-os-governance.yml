@@ -26,6 +26,11 @@ jobs:
       - name: Verify repair dispatch contract
         run: python3 tools/verify_ai_dispatch.py
 
+      - name: Verify Hermes bridge syntax
+        run: |
+          python3 -m py_compile tools/hermes_ai_os_ingest.py tools/security_evidence.py
+          bash -n tools/install_hermes_ai_os.sh
+
       - name: Build independent review packet
         run: python3 tools/build_ai_review_packet.py --output /tmp/ai-os-review.md
 
