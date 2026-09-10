@@ -2,6 +2,9 @@ FROM python:3.12-alpine@sha256:b64631e04e4920160c50fbe8d8df828f7f35f06f425cb44aa
 
 WORKDIR /app
 
+# Apply current Alpine security updates, including the libuuid fixes required by CI.
+RUN apk upgrade --no-cache
+
 # Install API dependencies from requirements file
 COPY requirements-api.txt .
 RUN pip install --no-cache-dir -r requirements-api.txt
