@@ -102,6 +102,16 @@ def test_monitor_does_not_import_application_config(
             {"API_MASTER_KEY": "k" * 40, "SUPPORT_INTERNAL_TOKEN": "t" * 40},
             "WEBHOOK_SECRET_KEY",
         ),
+        (
+            {
+                "API_MASTER_KEY": "k" * 40,
+                "SUPPORT_INTERNAL_TOKEN": "t" * 40,
+                "WEBHOOK_SECRET_KEY": "w" * 40,
+            },
+            # redis_required_in_production() exempts Vercel, so this env must
+            # not look like Vercel for the REDIS_URL gate to apply.
+            "REDIS_URL",
+        ),
     ],
 )
 def test_application_config_requires_each_privileged_secret_in_turn(
