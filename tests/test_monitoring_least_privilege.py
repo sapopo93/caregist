@@ -93,6 +93,42 @@ def test_monitor_does_not_import_application_config(
     )
 
 
+@pytest.mark.parametrize(
+    "supplied,expected_missing",
+    [
+        ({}, "API_MASTER_KEY"),
+        ({"API_MASTER_KEY": "k" * 40}, "SUPPORT_INTERNAL_TOKEN"),
+        (
+            {"API_MASTER_KEY": "k" * 40, "SUPPORT_INTERNAL_TOKEN": "t" * 40},
+            "WEBHOOK_SECRET_KEY",
+        ),
+    ],
+)
+def test_application_config_requires_each_privileged_secret_in_turn(
+    supplied: dict[str, str], expected_missing: str
+) -> None:
+    """Every privileged gate still fires, not just the first one.
+
+    Asserting only on API_MASTER_KEY would not catch a partial weakening of
+    validate_production, so each secret is withheld in turn.
+    """
+    env = {
+        "PATH": "/usr/bin:/bin:/usr/sbin:/sbin",
+        "ENVIRONMENT": "production",
+        "PYTHONPATH": ".",
+        "DATABASE_URL": "postgresql://app:app@db.example.invalid:5432/caregist",
+        "APP_URL": "https://caregist.co.uk",
+        **supplied,
+    }
+    result = _import_in_subprocess("api.config", env)
+
+    assert result.returncode != 0, (
+        f"api.config imported in production without {expected_missing}; "
+        f"production validation has been weakened. stdout: {result.stdout}"
+    )
+    assert f"{expected_missing} is required" in result.stderr
+
+
 def test_application_config_still_fails_closed_in_production() -> None:
     """The least-privilege monitor must not have weakened the app's validation."""
     env = {
