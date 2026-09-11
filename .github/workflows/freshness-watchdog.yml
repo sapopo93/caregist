@@ -82,7 +82,11 @@ jobs:
       - name: Install watchdog dependencies
         run: python -m pip install asyncpg==0.29.0
 
+      # The monitor must not be granted API_MASTER_KEY, SUPPORT_INTERNAL_TOKEN,
+      # WEBHOOK_SECRET_KEY or REDIS_URL. It reads only DATABASE_URL (and the
+      # Resend pair when notifications are explicitly enabled).
       - name: Check freshness and notify operations
+        id: freshness
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
@@ -90,19 +94,30 @@ jobs:
           PIPELINE_ALERT_EMAIL: ops@caregist.co.uk
           WATCHDOG_NOTIFICATIONS_ENABLED: ${{ vars.FRESHNESS_WATCHDOG_NOTIFICATIONS_ENABLED || 'false' }}
         run: |
+          set -o pipefail
           test -n "$DATABASE_URL"
           case "$WATCHDOG_NOTIFICATIONS_ENABLED" in
             false)
               echo "Watchdog notifications are explicitly disabled; health remains fail-closed"
-              python -m tools.check_new_registration_pipeline
+              python -m tools.check_new_registration_pipeline | tee /tmp/snapshot.json
               ;;
             true)
               test -n "$RESEND_API_KEY"
               test -n "$ENQUIRY_FROM_EMAIL"
-              python -m tools.check_new_registration_pipeline --notify
+              python -m tools.check_new_registration_pipeline --notify | tee /tmp/snapshot.json
               ;;
             *)
               echo "Invalid FRESHNESS_WATCHDOG_NOTIFICATIONS_ENABLED value" >&2
               exit 1
               ;;
           esac
+
+      # Monitor execution health and CQC source-data freshness are two distinct
+      # verdicts. A monitor that runs cleanly proves nothing about the data.
+      # This step always runs so a crashed monitor is reported as UNKNOWN
+      # freshness rather than silently absent.
+      - name: Report monitor health and source freshness separately
+        if: always()
+        env:
+          MONITOR_OUTCOME: ${{ steps.freshness.outcome }}
+        run: python tools/report_watchdog_verdicts.py --snapshot /tmp/snapshot.json

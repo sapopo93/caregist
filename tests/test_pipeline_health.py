@@ -147,7 +147,7 @@ class HealthConnection:
 
 @pytest.mark.asyncio
 async def test_pipeline_health_publishes_independent_readiness_dimensions(monkeypatch):
-    monkeypatch.setattr("api.services.pipeline_health.settings.radar_delivery_enabled", True)
+    monkeypatch.setattr("api.services.pipeline_health.monitoring_settings.radar_delivery_enabled", True)
     now = datetime.now(UTC)
     result = await get_pipeline_health(HealthConnection(now=now))
 
@@ -175,7 +175,7 @@ async def test_pipeline_health_publishes_independent_readiness_dimensions(monkey
 
 @pytest.mark.asyncio
 async def test_pipeline_health_keeps_checkout_closed_when_delivery_is_disabled(monkeypatch):
-    monkeypatch.setattr("api.services.pipeline_health.settings.radar_delivery_enabled", False)
+    monkeypatch.setattr("api.services.pipeline_health.monitoring_settings.radar_delivery_enabled", False)
 
     result = await get_pipeline_health(HealthConnection(now=datetime.now(UTC)))
 
@@ -297,7 +297,7 @@ async def test_pipeline_health_latency_fails_closed_without_measured_events():
 
 @pytest.mark.asyncio
 async def test_pipeline_health_latency_respects_45_minute_p95_boundary(monkeypatch):
-    monkeypatch.setattr("api.services.pipeline_health.settings.radar_delivery_enabled", True)
+    monkeypatch.setattr("api.services.pipeline_health.monitoring_settings.radar_delivery_enabled", True)
     now = datetime.now(UTC)
 
     over = await get_pipeline_health(HealthConnection(now=now, p95_seconds=2_701))

@@ -12,7 +12,7 @@ from typing import Any
 
 import asyncpg
 
-from api.config import settings
+from api.monitoring_config import monitoring_settings
 from api.services.cqc_freshness import get_cqc_freshness
 
 
@@ -472,7 +472,7 @@ async def get_pipeline_health(conn: asyncpg.Connection) -> dict[str, Any]:
         and poll_coverage_ok
         and latency_ok
         and delivery_healthy
-        and settings.radar_delivery_enabled
+        and monitoring_settings.radar_delivery_enabled
     )
     status = "healthy" if readiness_ok and freshness_ok else "degraded"
 
@@ -490,7 +490,7 @@ async def get_pipeline_health(conn: asyncpg.Connection) -> dict[str, Any]:
             "informational": True,
         },
         "delivery": {
-            "enabled": settings.radar_delivery_enabled,
+            "enabled": monitoring_settings.radar_delivery_enabled,
             "healthy": delivery_healthy,
             "pending": pending_deliveries,
             "stuck": stuck_deliveries,
@@ -500,7 +500,7 @@ async def get_pipeline_health(conn: asyncpg.Connection) -> dict[str, Any]:
             "checkoutReady": checkout_ready,
             "shadowCoveragePassed": poll_coverage_ok,
             "ledgerLatencyPassed": latency_ok,
-            "deliveryEnabled": settings.radar_delivery_enabled,
+            "deliveryEnabled": monitoring_settings.radar_delivery_enabled,
             "deliveryHealthy": delivery_healthy,
             "explanationsRequired": False,
         },
