@@ -8,9 +8,19 @@ def _workflow(name: str) -> tuple[dict, str]:
     return yaml.load(source, Loader=yaml.BaseLoader), source
 
 
-def test_freshness_watchdog_uses_available_database_secret_and_module_execution():
+def _freshness_monitor_step() -> tuple[dict, str]:
     workflow, source = _workflow("freshness-watchdog.yml")
-    step = workflow["jobs"]["freshness"]["steps"][-1]
+    steps = workflow["jobs"]["freshness"]["steps"]
+    # Selected by name, not position: the job has a trailing reporting step.
+    step = next(
+        step for step in steps
+        if step.get("name") == "Check freshness and notify operations"
+    )
+    return step, source
+
+
+def test_freshness_watchdog_uses_available_database_secret_and_module_execution():
+    step, source = _freshness_monitor_step()
 
     assert step["env"]["DATABASE_URL"] == "${{ secrets.DATABASE_URL }}"
     assert "python -m tools.check_new_registration_pipeline" in source
@@ -144,3 +154,39 @@ def test_retired_render_contract_cannot_restore_legacy_checkout_catalogue():
             "STRIPE_PRICE_PROFILE_SPONSORED",
         )
     )
+
+
+def test_freshness_watchdog_is_not_granted_privileged_production_secrets():
+    """The read-only monitor must stay least-privilege.
+
+    These credentials belong to the application runtime. Granting any of them
+    to a read-only freshness query would widen the blast radius of the
+    scheduled job for no operational benefit.
+    """
+    step, source = _freshness_monitor_step()
+    privileged = (
+        "API_MASTER_KEY",
+        "SUPPORT_INTERNAL_TOKEN",
+        "WEBHOOK_SECRET_KEY",
+        "REDIS_URL",
+    )
+
+    for name in privileged:
+        assert name not in step["env"], f"monitor step was granted {name}"
+        assert f"secrets.{name}" not in source, f"workflow references secrets.{name}"
+
+
+def test_freshness_watchdog_reports_monitor_health_and_freshness_separately():
+    """Monitor execution health is not evidence of CQC source freshness."""
+    workflow, source = _workflow("freshness-watchdog.yml")
+    steps = workflow["jobs"]["freshness"]["steps"]
+    report = next(
+        step for step in steps
+        if step.get("name") == "Report monitor health and source freshness separately"
+    )
+
+    # Must run even when the monitor step failed, otherwise a crash is reported
+    # as absent rather than as UNKNOWN freshness.
+    assert report["if"] == "always()"
+    assert "tools/report_watchdog_verdicts.py" in report["run"]
+    assert steps[-1] is report
