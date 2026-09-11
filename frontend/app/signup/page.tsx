@@ -12,25 +12,30 @@ const PLAN_COPY: Record<string, { title: string; body: string }> = {
     title: "Start with Free",
     body: "Built for evaluation: test the dashboard, browse provider data, and monitor one provider before moving into a paid workflow.",
   },
-  "radar-regional": {
-    title: "Start Radar Regional",
-    body: "For compliance firms turning verified CQC changes in one England region into a repeatable team workflow.",
+  "weekly-digest": {
+    title: "Start the Weekly Digest",
+    body: "Four weekly digests covering one England region, each item linked to the official CQC record.",
   },
-  "radar-national": {
-    title: "Start Radar National",
-    body: "For national compliance and business-development teams needing all-England evidence-linked CQC signals.",
+  "territory-opportunity-brief": {
+    title: "Start a Territory Opportunity Brief",
+    body: "A ranked shortlist of the accounts worth approaching in your territory, with the evidence behind each priority.",
   },
 };
 
 const PLAN_LABELS: Record<string, string> = {
-  "radar-regional": "Radar Regional",
-  "radar-national": "Radar National",
+  "weekly-digest": "Weekly Digest",
+  "territory-opportunity-brief": "Territory Opportunity Brief",
 };
 
 function SignupForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const plan = searchParams.get("plan") || "free";
+  const requestedPlan = searchParams.get("plan") || "free";
+  // CareGist sells two products. Any other or withdrawn ?plan= value falls back to
+  // the free evaluation account rather than promising a product that is not for sale.
+  const plan = Object.prototype.hasOwnProperty.call(PLAN_COPY, requestedPlan)
+    ? requestedPlan
+    : "free";
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");

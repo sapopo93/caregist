@@ -261,13 +261,13 @@ export default function DashboardPage() {
     "radar-regional": {
       limit: PLAN_LIMIT_SUMMARY["radar-regional"],
       features: "One England region, 2 users, two verified launch signals, 10 saved views, and 90-day event export.",
-      cta: "Compare Radar National",
+      cta: "See the two products",
       next: PLAN_NEXT_STEP["radar-regional"],
     },
     "radar-national": {
       limit: PLAN_LIMIT_SUMMARY["radar-national"],
       features: "All England, 5 users, two verified launch signals, 50 saved views and provider lists, and 365-day event export.",
-      cta: "Discuss an Intelligence Feed pilot",
+      cta: "See the two products",
       next: PLAN_NEXT_STEP["radar-national"],
     },
     starter: {
@@ -299,9 +299,7 @@ export default function DashboardPage() {
       : tier === "business"
         ? "10 included users"
         : "1 included user";
-  const upgradeHref = tier === "radar-national"
-    ? "/intelligence-feed"
-    : tier === "business"
+  const upgradeHref = tier === "business"
       ? "mailto:enterprise@caregist.co.uk?subject=CareGist+Enterprise"
       : "/pricing";
   const quickStartApiKey = revealedApiKey ? `${revealedApiKey.slice(0, 20)}...` : "cg_your_key";

@@ -37,7 +37,7 @@ export default function FindCarePage() {
           <p className="text-xs uppercase tracking-[0.18em] text-dusk mb-1">Free directory</p>
           <p className="text-sm text-bark">
             Search factual provider records freely. Compliance and quality-improvement
-            teams can compare evidence-linked Radar plans separately.
+            teams can see the two paid products separately.
           </p>
         </div>
         <div className="flex gap-3 text-sm">

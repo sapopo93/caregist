@@ -4,10 +4,14 @@ import { describe, it } from "node:test";
 import { normalizePricingPlanSlug, pricingPlanCardId } from "./pricing-plan-path.ts";
 
 describe("retained pricing-plan path", () => {
-  it("gives every public plan a stable pricing-card anchor", () => {
+  it("gives each of the two saleable products a stable pricing-card anchor", () => {
+    assert.equal(pricingPlanCardId("Weekly Digest"), "plan-weekly-digest");
     assert.equal(pricingPlanCardId("Territory Opportunity Brief"), "plan-territory-opportunity-brief");
-    assert.equal(pricingPlanCardId("Market Movement Report"), "plan-market-movement-report");
     assert.equal(pricingPlanCardId("Free Directory"), "plan-free-directory");
+  });
+
+  it("keeps an anchor for withdrawn plans so an old link degrades instead of breaking", () => {
+    assert.equal(pricingPlanCardId("Market Movement Report"), "plan-market-movement-report");
     assert.equal(pricingPlanCardId("Radar Regional"), "plan-radar-regional");
     assert.equal(pricingPlanCardId("Radar National"), "plan-radar-national");
     assert.equal(pricingPlanCardId("Strategic Territory Intelligence Assignment"), "plan-strategic-territory-intelligence-assignment");

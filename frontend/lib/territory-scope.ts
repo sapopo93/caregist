@@ -15,7 +15,7 @@ import {
  * coverage gate the request runs itself.
  */
 
-export const TERRITORY_BRIEF_PRICE_GBP = 795;
+export const TERRITORY_BRIEF_PRICE_GBP = 745;
 
 /** Regions a client can choose from. Matches the directory's region facet. */
 export const TERRITORY_REGION_OPTIONS = DEFAULT_REGION_OPTIONS;

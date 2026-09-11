@@ -116,16 +116,18 @@ export default async function SearchPage({
 
         <aside className="min-w-0 space-y-4">
           <div className="rounded-xl border border-stone bg-cream p-6 shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-clay">Radar</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-clay">Products</p>
             <h2 className="mt-2 text-2xl font-bold text-bark">Need to know what changes next?</h2>
             <p className="mt-3 text-sm leading-6 text-dusk">
-              Radar records new registrations and rating changes as evidence-linked events, with team views and bounded event history.
+              The Weekly Digest follows new registrations and rating changes for one England
+              region week by week. The Territory Opportunity Brief ranks the accounts worth
+              approaching there.
             </p>
             <Link
               href="/pricing"
               className="mt-5 inline-flex rounded-full bg-clay px-4 py-2 text-sm font-semibold text-white hover:bg-bark"
             >
-              Compare Radar plans
+              See the two products
             </Link>
           </div>
 

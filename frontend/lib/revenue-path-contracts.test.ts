@@ -47,19 +47,18 @@ describe("revenue path contracts", () => {
     assert.match(combined, /VAT is not currently charged/);
   });
 
-  it("keeps the one-off launch prices exact and every continuing product gated", () => {
+  it("sells exactly two products at exact prices, plus the free directory", () => {
     const dataPrices = Object.fromEntries(PRICING_LADDER.map(({ tier, price }) => [tier, price]));
     assert.deepEqual(dataPrices, {
-      "Territory Opportunity Brief": "£795",
-      "Market Movement Report": "£495",
+      "Weekly Digest": "£150",
+      "Territory Opportunity Brief": "£745",
       "Free Directory": "£0",
-      "Radar Regional": "Request access",
-      "Radar National": "Request access",
-      "Strategic Territory Intelligence Assignment": "Roadmap",
-      "Founding Intelligence Membership": "Roadmap",
-      "Intelligence Feed Pilot": "Roadmap",
-      "Embedded Enterprise": "Roadmap",
     });
+    assert.deepEqual(
+      PRICING_LADDER.filter(({ price }) => price !== "£0").map(({ tier }) => tier),
+      ["Weekly Digest", "Territory Opportunity Brief"],
+      "only the Weekly Digest and the Territory Opportunity Brief may carry a price",
+    );
 
     const providerPrices = Object.fromEntries(PROVIDER_TIERS.map(({ tier, price }) => [tier, price]));
     assert.deepEqual(providerPrices, {

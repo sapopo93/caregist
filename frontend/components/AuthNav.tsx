@@ -75,10 +75,7 @@ export default function AuthNav() {
             Directory
           </Link>
           <Link href="/pricing" className="hover:text-amber transition-colors" onClick={() => setMenuOpen(false)}>
-            Radar
-          </Link>
-          <Link href="/intelligence-feed" className="hover:text-amber transition-colors" onClick={() => setMenuOpen(false)}>
-            Intelligence Feed
+            Products
           </Link>
           <Link href="/why-caregist" className="hover:text-amber transition-colors" onClick={() => setMenuOpen(false)}>
             About
@@ -88,7 +85,7 @@ export default function AuthNav() {
             className="hover:text-amber transition-colors"
             onClick={() => setMenuOpen(false)}
           >
-            Compare plans
+            See the two products
           </a>
           <div className="my-1 h-px bg-cream/10" />
           {user ? (

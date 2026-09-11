@@ -22,8 +22,8 @@ const ONE_OFF_CONTACT: Record<string, { subject: string }> = {
   "territory-opportunity-brief": {
     subject: "Territory Opportunity Brief sample request",
   },
-  "market-movement-report": {
-    subject: "Market Movement Report scoping call",
+  "weekly-digest": {
+    subject: "Weekly Digest request",
   },
 };
 
@@ -87,7 +87,7 @@ export default function PricingCTA({
         className="inline-block text-center py-2.5 px-6 rounded-lg font-medium text-sm transition-colors border border-clay text-clay hover:bg-clay hover:text-white"
         onClick={() => void trackEvent("one_off_scope_click", "pricing_card", { tier: tierKey })}
       >
-        Confirm your territory
+        Check territory coverage
       </Link>
     );
   }

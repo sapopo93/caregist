@@ -12,19 +12,13 @@ import { pricingPlanCardId } from "@/lib/pricing-plan-path";
 export const metadata: Metadata = {
   title: "CareGist Pricing | CQC Signal Intelligence",
   description:
-    "One-off territory and market-movement intelligence for teams selling into the UK care sector.",
+    "Two products for teams selling into the UK care sector: the Weekly Digest for one England region, and the one-off Territory Opportunity Brief.",
 };
 
 const PLAN_BADGES: Record<string, string> = {
+  "Weekly Digest": "Entry product",
   "Territory Opportunity Brief": "Lead product",
-  "Market Movement Report": "Current edition",
-  "Free Directory": "Discovery",
-  "Radar Regional": "Request access · not yet available",
-  "Radar National": "Request access · not yet available",
-  "Strategic Territory Intelligence Assignment": "Roadmap · not yet available",
-  "Founding Intelligence Membership": "Roadmap · not yet available",
-  "Intelligence Feed Pilot": "Roadmap · not yet available",
-  "Embedded Enterprise": "Roadmap · not yet available",
+  "Free Directory": "Discovery · not a sale",
 };
 
 export default function PricingPage() {
@@ -43,11 +37,20 @@ export default function PricingPage() {
           Decide which care organisations are worth approaching next, and why
         </h1>
         <p className="text-lg leading-8 text-dusk" style={{ fontFamily: "Lora" }}>
-          Start with a ranked shortlist, stated reasons, and observation-dated evidence
-          drawn from CQC&apos;s published record. The two launch products are one-off pieces
-          of work. Continuing products remain closed.
+          CareGist sells two products. The Weekly Digest follows one England region week
+          by week; the Territory Opportunity Brief ranks the accounts worth approaching
+          there. Both are built on observation-dated evidence from CQC&apos;s published
+          record. Nothing else is for sale.
         </p>
       </header>
+
+      <aside className="mb-8 rounded-xl border border-stone bg-parchment p-6 text-sm leading-6 text-bark">
+        <h2 className="mb-2 text-lg font-bold">How to order</h2>
+        <p>For a Territory Opportunity Brief, choose your region, review matching
+        organisations, then email your scope for review. For the Weekly Digest, email the
+        England region you want covered and a start date. Online ordering is not
+        available. Neither route places an order or takes payment by itself.</p>
+      </aside>
 
       <Suspense fallback={null}>
         <RetainedPlanFocus />
@@ -105,7 +108,7 @@ export default function PricingPage() {
                 </div>
                 <div className="rounded-lg border border-stone bg-parchment p-4">
                   <p className="mb-1 font-mono text-[11px] uppercase tracking-[0.16em] text-dusk">
-                    Commercial boundary
+                    Scope and availability
                   </p>
                   <p className="mb-3 text-sm text-bark">{tier.limit}</p>
                   {tier.pricingLogic && (

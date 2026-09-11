@@ -6,7 +6,7 @@ import { CQC_INDEPENDENCE_LINE } from "@/lib/caregist-config";
 export const metadata: Metadata = {
   title: "CareGist Intelligence Feed | CQC Signal Integration",
   description:
-    "A sales-assisted pilot for integrating verified CQC new-registration or rating-change events through an API and signed webhooks.",
+    "A not-for-sale roadmap page for integrating verified CQC new-registration or rating-change events through an API and signed webhooks.",
 };
 
 const EVENT_EXAMPLE = `{
@@ -33,7 +33,7 @@ export default function IntelligenceFeedPage() {
     <main className="mx-auto max-w-5xl px-6 py-16">
       <header className="mb-12 max-w-3xl">
         <p className="mb-3 font-mono text-xs uppercase tracking-[0.22em] text-clay">
-          Sales-assisted · from £6,000/year
+          Not for sale · roadmap only
         </p>
         <h1 className="mb-5 text-4xl font-extrabold text-bark">
           Put verified CQC changes into the system your team already uses
@@ -87,10 +87,11 @@ export default function IntelligenceFeedPage() {
       </section>
 
       <section className="rounded-xl border border-stone bg-parchment p-6">
-        <h2 className="mb-2 text-2xl font-bold text-bark">Scope an Intelligence Feed pilot</h2>
+        <h2 className="mb-2 text-2xl font-bold text-bark">Register interest in an Intelligence Feed pilot</h2>
         <p className="mb-6 text-sm leading-6 text-dusk">
-          Tell us the region, signal, receiving system, and operational decision. We
-          qualify the use case before any quote, invoice, or production delivery.
+          This product is not for sale. CareGist currently sells the Weekly Digest and the
+          Territory Opportunity Brief only. Tell us the region, signal, receiving system, and
+          operational decision and we will record the interest for a future release.
         </p>
         <ApiApplicationForm />
       </section>

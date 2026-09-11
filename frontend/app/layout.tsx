@@ -99,17 +99,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 href="/pricing"
                 className="rounded-full bg-amber px-4 py-2 text-sm font-semibold text-charcoal transition hover:bg-cream md:hidden"
               >
-                Radar
+                Products
               </Link>
               <nav aria-label="Primary" className="hidden items-center gap-5 text-sm font-medium md:flex">
                 <Link href="/search" className="hover:text-amber">
                   Directory
                 </Link>
                 <Link href="/pricing" className="hover:text-amber">
-                  Radar
-                </Link>
-                <Link href="/intelligence-feed" className="hover:text-amber">
-                  Intelligence Feed
+                  Products
                 </Link>
                 <Link href="/why-caregist" className="hover:text-amber">
                   About
@@ -118,7 +115,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                   href="/pricing"
                   className="rounded-full bg-amber px-4 py-2 text-sm font-semibold text-charcoal transition hover:bg-cream"
                 >
-                  Compare plans
+                  See the two products
                 </Link>
               </nav>
               <AuthNav />
@@ -185,9 +182,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               </Link>
               <Link href="/pricing" className="underline hover:text-cream">
                 Pricing
-              </Link>
-              <Link href="/intelligence-feed" className="underline hover:text-cream">
-                Intelligence Feed
               </Link>
               <Link href="/why-caregist" className="underline hover:text-cream">
                 Why CareGist
