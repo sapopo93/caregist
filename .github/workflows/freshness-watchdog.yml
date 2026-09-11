@@ -85,6 +85,7 @@ jobs:
       - name: Check freshness and notify operations
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          APP_URL: ${{ vars.APP_URL }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           ENQUIRY_FROM_EMAIL: ${{ secrets.ENQUIRY_FROM_EMAIL }}
           PIPELINE_ALERT_EMAIL: ops@caregist.co.uk
