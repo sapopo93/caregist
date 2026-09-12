@@ -13,7 +13,7 @@
       "result": "REJECTED",
       "detail": [
         "buyer_type is outside the retained pack's supported scope",
-        "requested enrichment is not in the \u00a3795 Brief evidence pack: breach_history, director_links"
+        "requested enrichment is not in the \u00a3745 Brief evidence pack: breach_history, director_links"
       ]
     },
     "shortlist": {
@@ -51,7 +51,7 @@
     },
     "payment_acceptance": {
       "result": "BLOCKED",
-      "detail": "No live \u00a3795 product, price or Payment Link exists in the local Stripe manifest. This simulation never creates a charge."
+      "detail": "No live \u00a3745 product, price or Payment Link exists in the local Stripe manifest. This simulation never creates a charge."
     },
     "terms": {
       "result": "BLOCKED",

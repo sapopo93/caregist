@@ -8,15 +8,23 @@
     "territory-opportunity-brief": {
       "environment_product": "STRIPE_PRODUCT_TERRITORY_BRIEF",
       "environment_price": "STRIPE_PRICE_TERRITORY_BRIEF",
-      "unit_amount": 79500,
+      "unit_amount": 74500,
       "interval": null,
-      "lookup_key": "territory_opportunity_brief_gbp_oneoff_v1",
+      "lookup_key": "territory_opportunity_brief_gbp_oneoff_v2",
       "sale_channel": "self-serve-gated",
-      "status": "created",
-      "status_note": "Stripe Product + one-off GBP 795 Price exist in test and live (created 2026-09-09). Self-serve checkout stays closed until the runtime flag TERRITORY_SELF_SERVE_CHECKOUT_ENABLED is set with approved terms/consent hashes.",
+      "status": "pending_founder_recreation",
+      "status_note": "Canonical price is GBP 745 (founder decision 2026-09-11, issue #44: GBP 795 was an error). The existing Stripe Product + one-off GBP 795 Price (created 2026-09-09, recorded under superseded_prices) charge the erroneous amount and must be archived and replaced with a GBP 745 Price by the founder before any Brief checkout or Payment Link is offered. No GBP 745 Price exists yet, so no saleable Price ID is declared. Self-serve checkout stays closed until the runtime flag TERRITORY_SELF_SERVE_CHECKOUT_ENABLED is set with approved terms/consent hashes.",
+      "superseded_prices": [
+        {
+          "unit_amount": 79500,
+          "reason": "erroneous launch price, superseded by the GBP 745 founder decision on issue #44; live objects still active until the founder archives them",
+          "test": { "product_id": "prod_VE89BnRzZPq0Qq", "price_id": "price_1UDft34mijLHzRRklUMJR6F2" },
+          "live": { "product_id": "prod_VE7HY2DdEmrb8C", "price_id": "price_1UDf2t4mijLHzRRkRqbNA1rd" }
+        }
+      ],
       "stripe": {
-        "test": { "product_id": "prod_VE89BnRzZPq0Qq", "price_id": "price_1UDft34mijLHzRRklUMJR6F2" },
-        "live": { "product_id": "prod_VE7HY2DdEmrb8C", "price_id": "price_1UDf2t4mijLHzRRkRqbNA1rd" }
+        "test": { "product_id": "prod_VE89BnRzZPq0Qq", "price_id": null },
+        "live": { "product_id": "prod_VE7HY2DdEmrb8C", "price_id": null }
       }
     },
     "market-movement-report": {

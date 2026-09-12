@@ -19,7 +19,7 @@ done" in the sense of being externally provable.
 | Instant-delivery code on `main` | Not merged | Exists only on `feat/territory-self-serve-scope` (tip `9fcd697`). |
 | Self-serve checkout | Not purchasable | `checkoutReady: false`. |
 | Solicitor-approved immediate-supply terms | Not obtained | Draft only, dated 2026-09-09. |
-| Stripe live objects for the £795 brief | Unconfirmed | Vercel var exists; no reader on `main`; live status unknown. |
+| Stripe live objects for the £745 brief | Unconfirmed | Vercel var exists; no reader on `main`; live status unknown. |
 | Blob token / Resend key for delivery | Unverified | Checkout path 503s if either is absent. |
 
 ## Known-risky, not yet disproven

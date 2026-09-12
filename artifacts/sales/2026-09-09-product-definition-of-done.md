@@ -14,7 +14,7 @@ Purpose: apply the supplied quality standard across the product-polishing plan w
 | Missing narratives and scores become Unrated | Preserve source rating terminology. Use “Not stated in reviewed source” for absent narrative, “Not reviewed” where no review occurred, and “Not applicable” where appropriate. |
 | SHA-256 proves forensic verification | Hashes identify file integrity. They do not prove factual accuracy, authorship, regulatory compliance or a digital signature. Store full hashes, with short displays expandable. |
 | Zero Hallucination Flag / Verified Unmodified | Record the specific checks, source reference, result and reviewer. A boolean assurance flag is not evidence. Normalised values need a transformation record. |
-| Every £795 workbook includes distress, breach and decision-maker dossiers | Treat these as requested enrichment requiring primary research and scope reconciliation. They are not present capabilities of the current Brief. Do not fill tabs with inferred allegations or empty assurance labels. |
+| Every £745 workbook includes distress, breach and decision-maker dossiers | Treat these as requested enrichment requiring primary research and scope reconciliation. They are not present capabilities of the current Brief. Do not fill tabs with inferred allegations or empty assurance labels. |
 | Lead Healthcare Regulatory Analyst digital signature | Use a real reviewer, their actual role, review time and version accepted. Claim a cryptographic signature only when a real signing/verification system is used. Never invent a title or person. |
 | Zero unmapped IDs in every source batch | Reject unresolved identities in published events. Retain source exceptions and disclose material coverage gaps; do not hide or drop them to produce a zero. |
 
@@ -47,13 +47,13 @@ Each applicable check needs PASS, FAIL or NOT VERIFIED, an evidence path, check 
 |---|---|
 | Free Directory | Accurate search/profile identity, source status, official links, truthful missing values and tested correction paths. |
 | £495 Report | A completed 20–35 page edition supported by comparable source evidence; useful findings, limitations and matching supporting files. No immediate-delivery claim before release and delivery are tested. |
-| £795 Brief | Agreed buyer criteria; 25–50 distinct organisations with specific reasons; territory Excel/CSV and 3–5 page brief; actual delivery date agreed. |
+| £745 Brief | Agreed buyer criteria; 25–50 distinct organisations with specific reasons; territory Excel/CSV and 3–5 page brief; actual delivery date agreed. |
 | Existing £150 pilot | Original four-week scope preserved, dated digest evidence and credible weekly delivery route. No new pilot product implied. |
 | Radar Regional/National | Actual history, coverage, ingest/diff, access, export and delivery tests for the promised scope. Request-access remains until release conditions pass. |
 | Assignment/Membership | Explicit scope, qualified review where needed, capacity, delivery obligations and product admission. |
 | Feed/Enterprise | Schema, authentication, real signing where promised, replay, failure handling, security and contracted scope tested. |
 
-### £795 workbook adaptation
+### £745 workbook adaptation
 
 Retain the useful four-tab organisation, but align tab content with the contracted product and evidence:
 
@@ -62,7 +62,7 @@ Retain the useful four-tab organisation, but align tab content with the contract
 3. **Research findings:** source-backed additional inspection or entity research actually performed and included in scope. Mark review coverage. Do not title this a breach matrix or decision-maker dossier unless it contains verified work of that kind. Preserve a useful methodology/selection explanation if enrichment is outside scope.
 4. **Sources and checks:** record/event ID, CQC IDs as applicable, source URL and exact locator, source edition/publication date if known, actual capture time, hash reference, transformation/check performed, result, reviewer and review time.
 
-The supplied breach matrix, director links and named-manager research remain an enrichment backlog. Before promising them at £795, complete a sourced example, assess personal-data handling and production effort, and reconcile the exact scope. An absent breach finding must never imply the provider is compliant or non-compliant.
+The supplied breach matrix, director links and named-manager research remain an enrichment backlog. Before promising them at £745, complete a sourced example, assess personal-data handling and production effort, and reconcile the exact scope. An absent breach finding must never imply the provider is compliant or non-compliant.
 
 ### Design and functional checks
 
@@ -95,7 +95,7 @@ Checks: read the full attachment; reconciled it with the existing product plan a
 
 Unresolved: enriched regulatory/entity research scope, reviewer identity/signing mechanism, per-product evidence gates, and existing commercial release conditions. All product checkboxes remain unassessed until actual acceptance work.
 
-Exact next action (revised 9 September): the shared claim register already exists at `artifacts/product-polish/claim-register.json` (17 claims, 3 conflicts) alongside `catalogue-evidence.json` and `DESIGN.md`; extend those rather than creating a second register. Next is mapping each £795 preview field to the existing pack and building the local preview with sourced fields, leaving proposed enrichment outside the offer until verified. Continue the £495 comparable-source assessment as the separate report prerequisite. CONF-1 above needs a founder decision in parallel, and the Source Serif 4 / Inter requirement is a sitewide swap from the current DM Sans and Playfair Display.
+Exact next action (revised 9 September): the shared claim register already exists at `artifacts/product-polish/claim-register.json` (17 claims, 3 conflicts) alongside `catalogue-evidence.json` and `DESIGN.md`; extend those rather than creating a second register. Next is mapping each £745 preview field to the existing pack and building the local preview with sourced fields, leaving proposed enrichment outside the offer until verified. Continue the £495 comparable-source assessment as the separate report prerequisite. CONF-1 above needs a founder decision in parallel, and the Source Serif 4 / Inter requirement is a sitewide swap from the current DM Sans and Playfair Display.
 
 Sources: [user DoD](/Users/user/.codex/attachments/9b68de50-8c13-4925-9119-b26f91c92b58/pasted-text.txt), [all-product plan](/Users/user/CareGist/artifacts/sales/2026-09-08-all-products-polish-plan.md), [current pack](/Users/user/CareGist/artifacts/launch-samples/bsol-domiciliary-fresh-2026-09-08/pack-data.json), [operating pipeline](/Users/user/CareGist/.warroom/PIPELINE.md), [CQC source guidance](https://www.cqc.org.uk/about-us/transparency/using-cqc-data), [OGL v3.0](https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/).
 

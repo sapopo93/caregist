@@ -1,4 +1,4 @@
-"""Stripe-confirmed fulfilment of the GBP 795 Territory Opportunity Brief.
+"""Stripe-confirmed fulfilment of the GBP 745 Territory Opportunity Brief.
 
 Called from the Stripe webhook (``checkout.session.completed`` /
 ``checkout.session.async_payment_succeeded``) after signature verification and

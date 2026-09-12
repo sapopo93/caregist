@@ -39,7 +39,7 @@
   "purchase_context": {
     "generated_at": "2026-01-01T00:00:00+00:00",
     "order_reference": "SAMPLE-SOTON-365",
-    "price_gbp": 795,
+    "price_gbp": 745,
     "product": "territory-opportunity-brief",
     "terms_version": "dry-run"
   },

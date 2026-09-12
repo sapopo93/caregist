@@ -1,6 +1,6 @@
 """Territory Opportunity Brief generator.
 
-This is the production generation service behind the £795 one-off product. It
+This is the production generation service behind the £745 one-off product. It
 extends the deterministic scaffolding in
 ``tools/generate_radar_territory_sample.py`` (window derivation, supported-event
 rules, provenance) with the parts a paying buyer needs and a raw CSV does not:
@@ -101,7 +101,7 @@ class PurchaseContext:
     order_reference: str
     generated_at: datetime
     product: str = "territory-opportunity-brief"
-    price_gbp: int = 795
+    price_gbp: int = 745
     terms_version: str | None = None
 
     def to_json(self) -> dict[str, Any]:

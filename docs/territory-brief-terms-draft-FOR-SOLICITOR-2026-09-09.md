@@ -21,7 +21,7 @@ Brief as a **bespoke, human-mediated, cancellable, 3-working-day** service:
 > working days** after … the written scope confirmation".
 
 The product is moving to **instant self-serve**: the buyer selects the territory
-themselves on the website, pays £795 through Stripe Checkout, and the completed
+themselves on the website, pays £745 through Stripe Checkout, and the completed
 Brief (PDF + CSV) is generated automatically and made available to download
 within seconds — no prior scope confirmation, no work-in-progress window.
 
@@ -51,7 +51,7 @@ consumers?**
 - v2.1 already offers a **contractual** cancel-by-email refund regardless, and
   the current placeholder consent text is written in consumer-regime language.
 - If the answer is "business only", the consent checkbox can be simplified to a
-  plain acknowledgement that the Brief is supplied immediately and the £795 fee
+  plain acknowledgement that the Brief is supplied immediately and the £745 fee
   is non-refundable once the download is made available (no statutory-right
   waiver needed). If "consumers too", the waiver wording matters.
 
@@ -93,13 +93,13 @@ keeps the express reg. 37 waiver). The solicitor may cut it back.
 
 **Replace** the Territory Opportunity Brief paragraph with:
 
-> The Territory Opportunity Brief costs **£795** (excluding VAT). The buyer
+> The Territory Opportunity Brief costs **£745** (excluding VAT). The buyer
 > selects the territory at checkout and pays in full through Stripe before the
 > Brief is generated. Because the Brief is produced and supplied to the buyer
 > immediately, the buyer is asked at checkout to expressly request that
 > immediate supply and to acknowledge that, once the completed Brief has been
 > made available to download, any right the buyer would otherwise have to cancel
-> and receive a refund is lost. After that point the £795 fee is non-refundable,
+> and receive a refund is lost. After that point the £745 fee is non-refundable,
 > except where the Brief is not delivered, is faulty, or is materially not as
 > described, or where a refund cannot lawfully be excluded. If automated
 > generation fails after payment, CareGist will retry and, if it still cannot
@@ -147,7 +147,7 @@ acceptance and the hash matches.
 ### Option B — business-buyer / plain
 
 > I confirm I am buying for business purposes. I request immediate generation
-> and supply of my Territory Opportunity Brief and acknowledge that the £795 fee
+> and supply of my Territory Opportunity Brief and acknowledge that the £745 fee
 > is non-refundable once the completed Brief has been made available for me to
 > download, except where it is not delivered, is faulty, or is not as described.
 > I agree to the CareGist Business Terms of Service.

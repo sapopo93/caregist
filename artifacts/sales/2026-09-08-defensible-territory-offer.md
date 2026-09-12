@@ -1,6 +1,6 @@
 # CareGist Territory Opportunity Brief
 
-Internal offer draft, updated 8 September 2026. One-off launch product at the documented £795 price. External use remains on HOLD for the specific issues in the [current handoff](/Users/user/CareGist/artifacts/sales/2026-09-08-fresh-brief-sales-handoff.md). This replaces the Radar draft as this task's recommended new-sales offer.
+Internal offer draft, updated 8 September 2026. One-off launch product at the documented £745 price. External use remains on HOLD for the specific issues in the [current handoff](/Users/user/CareGist/artifacts/sales/2026-09-08-fresh-brief-sales-handoff.md). This replaces the Radar draft as this task's recommended new-sales offer.
 
 ## Choose which care accounts to review first
 
@@ -14,7 +14,7 @@ The proposed order includes:
 
 The purpose is to give your team a reasoned starting list for account review. The brief does not establish that a care organisation has vacancies, needs agency staff, has a purchasing budget or intends to buy. It includes no guaranteed meetings, sales, continuous monitoring or automatic renewal.
 
-**Documented price: £795 for one brief.** VAT treatment and the final amount payable must be confirmed before an order. No discount or alternative pilot price is offered here.
+**Documented price: £745 for one brief.** VAT treatment and the final amount payable must be confirmed before an order. No discount or alternative pilot price is offered here.
 
 **Documented turnaround: 3 working days.** Agree the start and delivery date after scope and source checks, before accepting an order. A complete sample has now been built locally from September source editions. This demonstrates the bounded data route and output formats, but does not establish a turnaround guarantee for other territories or unagreed requirements.
 

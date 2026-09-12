@@ -357,7 +357,7 @@ class Settings(BaseSettings):
     stripe_price_radar_regional: str = ""
     stripe_price_radar_national: str = ""
     stripe_price_intelligence_feed: str = ""
-    # One-off Territory Opportunity Brief (GBP 795). Optional until the
+    # One-off Territory Opportunity Brief (GBP 745). Optional until the
     # self-serve feature flag is turned on; loadable earlier for webhook replay.
     stripe_price_territory_brief: str = ""
     # Vercel Blob RW token, used by the fulfilment worker to upload the
@@ -416,7 +416,7 @@ class Settings(BaseSettings):
     outbound_delivery_enabled: bool = False
     directory_export_delivery_enabled: bool = False
     full_dataset_checkout_enabled: bool = False
-    # Slice 2: fully-instant self-serve delivery of the GBP 795 Territory
+    # Slice 2: fully-instant self-serve delivery of the GBP 745 Territory
     # Opportunity Brief. Fail-closed. Only turn on when every technical
     # Definition-of-Done item passes AND the Brief's immediate-supply consent
     # wording has explicit solicitor sign-off (its published Business Terms

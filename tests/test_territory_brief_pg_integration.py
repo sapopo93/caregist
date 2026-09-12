@@ -114,7 +114,7 @@ async def test_full_fulfilment_against_real_postgres():
             "consent": {"terms_of_service": "accepted"},
             "line_items": {"data": [{"price": {"id": "price_pg_itest"}, "quantity": 1}]},
             "payment_intent": "pi_pg_itest",
-            "amount_total": 79500,
+            "amount_total": 74500,
             "currency": "gbp",
         }
         deps = tbf.FulfilmentDeps(

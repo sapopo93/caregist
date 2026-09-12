@@ -14,7 +14,7 @@ The sample is labelled not verified because it was built from a repository snaps
 
 When we speak on [date and time], I would like your direct view on three questions:
 
-- Would you pay £795 for this?
+- Would you pay £745 for this?
 - What decision would it change for you?
 - What is missing?
 

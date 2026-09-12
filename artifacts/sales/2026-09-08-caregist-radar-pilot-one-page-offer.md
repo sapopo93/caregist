@@ -26,7 +26,7 @@ Each digest states the CQC register edition and its seven-day window. The availa
 
 **Renewal:** none is offered or implied after the fourth digest.
 
-The price has fairness evidence but is not authorised for communication or collection. The stated cadence is not currently deliverable because there is no current verified CQC delivery run. VAT treatment remains unconfirmed. The £795 Territory Opportunity Brief shown in the Birmingham/Solihull pre-test kit is a separate, unverified template, not this pilot's price or a currently sellable alternative.
+The price has fairness evidence but is not authorised for communication or collection. The stated cadence is not currently deliverable because there is no current verified CQC delivery run. VAT treatment remains unconfirmed. The £745 Territory Opportunity Brief shown in the Birmingham/Solihull pre-test kit is a separate, unverified template, not this pilot's price or a currently sellable alternative.
 
 ## Next step
 
@@ -48,5 +48,5 @@ Before any buyer is approached or asked to pay, CareGist must record approval of
 - Available fresh sample and rating-publication boundary: `artifacts/radar-live/2026-08-04-fresh-weekly-digest-gloucestershire.md` and `artifacts/radar-live/2026-08-25-ods-path-test-result.md` §3.
 - £150 price and price-condition record: `artifacts/radar-live/2026-09-01-fairness-evidence-150-pilot.md` §§1, 4–5.
 - Invoice, payment, VAT and delivery gates: `artifacts/radar-live/2026-09-01-draft-invoice-final.md` §§1–2 and truthfulness notes.
-- Separate £795 pre-test sample: `artifacts/launch-samples/bsol-domiciliary-sample/README.md` and `pre-test-kit/scoping-conversation-script.md`.
+- Separate £745 pre-test sample: `artifacts/launch-samples/bsol-domiciliary-sample/README.md` and `pre-test-kit/scoping-conversation-script.md`.
 - Current fail-closed commercial status: `.warroom/CURRENT_VERDICT.md` and `.warroom/TOP_BLOCKERS.md`.

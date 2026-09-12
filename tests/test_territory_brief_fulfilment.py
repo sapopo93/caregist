@@ -88,7 +88,7 @@ def _session(**over):
         "consent": {"terms_of_service": "accepted"},
         "line_items": {"data": [{"price": {"id": PRICE}, "quantity": 1}]},
         "payment_intent": "pi_test_123",
-        "amount_total": 79500,
+        "amount_total": 74500,
         "currency": "gbp",
     }
     base.update(over)

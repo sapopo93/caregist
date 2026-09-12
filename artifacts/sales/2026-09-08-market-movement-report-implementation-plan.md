@@ -4,7 +4,7 @@ Objective: deliver one accurate, polished edition using the supplied CareGist de
 
 ## Product decision
 
-Keep the documented £495 one-off Market Movement Report. It is a prepared edition for care-sector suppliers and compliance consultants. The £795 Territory Opportunity Brief remains the separate buyer-specific research service. Do not import its 25-organisation promise into this report.
+Keep the documented £495 one-off Market Movement Report. It is a prepared edition for care-sector suppliers and compliance consultants. The £745 Territory Opportunity Brief remains the separate buyer-specific research service. Do not import its 25-organisation promise into this report.
 
 The sales playbook specifies 20–35 pages on new registrations, closures, rating movements, regional movement and provider-group activity, with immediate delivery of the current edition. Retain that as the scope to validate. Do not silently replace it with a smaller product or fill pages with weak claims. If the evidence does not support the scope, present a precise scope amendment for approval before selling.
 

@@ -12,7 +12,7 @@ Ranked by what actually stops an external invoice settling.
 `latest_authoritative_attempt_incomplete`; last attempt `status: "failed"`,
 21,000 of 57,085 locations (**36.79 %**). `cqc-reconciliation` last run
 2026-09-03, failed, 4 h 05 m.
-**Why it blocks revenue:** the £795 brief is sold on the strength of official-source
+**Why it blocks revenue:** the £745 brief is sold on the strength of official-source
 verification. Without a completed reconciliation there is no defensible sourcing claim.
 **Fix class:** operational run + capacity, not new code.
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run a safe local buyer-journey simulation for the £795 Brief.
+"""Run a safe local buyer-journey simulation for the £745 Brief.
 
 It accepts only a scope that the retained evidence pack can support. An
 incompatible request is a successful guardrail test, never a customer result.
@@ -34,7 +34,7 @@ def check_scope(scope: dict) -> list[str]:
     forbidden = {"vacancy", "buying_intent", "budget", "breach_history", "director_links", "ownership", "financial_valuation", "live_monitoring"}
     requested = set(scope.get("requested_enrichment", []))
     if requested & forbidden:
-        errors.append("requested enrichment is not in the £795 Brief evidence pack: " + ", ".join(sorted(requested & forbidden)))
+        errors.append("requested enrichment is not in the £745 Brief evidence pack: " + ", ".join(sorted(requested & forbidden)))
     return errors
 
 def main() -> None:
@@ -58,7 +58,7 @@ def main() -> None:
         "shortlist": {"result": "PASS" if len(usable_rows) == 25 else "FAIL", "detail": f"{len(usable_rows)} of 25 records contain the four required fields."},
         "delivery_assets": {"result": "PASS" if all(a["present"] and a["hash_matches"] for a in assets) else "FAIL", "detail": assets},
         "executive_pdf": {"result": "PASS" if len(PdfReader(PREVIEW / "caregist-birmingham-solihull-executive-brief.pdf").pages) == 4 else "FAIL", "detail": "Four-page retained executive brief."},
-        "payment_acceptance": {"result": "BLOCKED", "detail": "No live £795 product, price or Payment Link exists in the local Stripe manifest. This simulation never creates a charge."},
+        "payment_acceptance": {"result": "BLOCKED", "detail": "No live £745 product, price or Payment Link exists in the local Stripe manifest. This simulation never creates a charge."},
         "terms": {"result": "BLOCKED", "detail": "Current Terms do not state the Territory Opportunity Brief scope or one-off cancellation/refund terms."},
     }
     fulfilment_ready = all(checks[name]["result"] == "PASS" for name in ("buyer_intake", "scope_gate", "shortlist", "delivery_assets", "executive_pdf"))

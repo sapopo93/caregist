@@ -35,7 +35,7 @@
 |---|---|---|
 | **Public site** | `RUNNING` | `/` `/pricing` `/search` `/territory-opportunity-brief` `/data-status` `/why-caregist` `/examples/birmingham-solihull/index.html` all HTTP 200. Vercel, DB-backed. |
 | **Data collection** | `PARTIAL` | Signal poll green every ~2–5 h (`cqc-signal-poll`, last success 2026-09-10T21:48Z; `latestObservedAt` 2026-09-10T21:54:08Z). **Authoritative reconciliation has never completed** — `reconciledAt: null`, `sourceRetrievedAt: null`, `countsReconciled: false`, reason `latest_authoritative_attempt_incomplete`. Last attempt **failed at 21,000 / 57,085 = 36.79 %**. |
-| **Customer ordering** | `NOT RUNNING` | The only paid offer (£795 Territory Opportunity Brief) has a `mailto:` CTA — no online order capture anywhere on production. |
+| **Customer ordering** | `NOT RUNNING` | The only paid offer (£745 Territory Opportunity Brief) has a `mailto:` CTA — no online order capture anywhere on production. |
 | **Payment** | `NOT RUNNING` | `/api/v1/health` → `commercialReadiness.checkoutReady: false`. No Stripe checkout route is deployed. |
 | **Fulfilment** | `MANUAL ONLY` | No generator is deployed on `main`; `api/services/territory_brief*.py` exist **only** on the unmerged branch. Delivery is human work, quoted at "three working days". |
 | **Operations** | `DEGRADED` | Freshness watchdog **crash-fails in 17 s** (`ModuleNotFoundError: No module named 'pydantic_settings'` — the workflow has no dependency-install step). Production smoke red (see §1). Watchdog alerting disabled (`WATCHDOG_NOTIFICATIONS_ENABLED=false`), so **failures are silent**. |
@@ -119,7 +119,7 @@ defect to reconcile, not a live exposure.
 | Offer | Ready? | Why |
 |---|---|---|
 | Free Directory / search | `READY` | Live, DB-backed, serving. |
-| £795 Territory Opportunity Brief | `NOT READY (self-serve)`. **Manual sale only.** | No checkout, no deployed generator, and the underpinning CQC evidence is over its freshness SLA. Deliverable by hand only if a buyer appears and a human accepts the sourcing risk. |
+| £745 Territory Opportunity Brief | `NOT READY (self-serve)`. **Manual sale only.** | No checkout, no deployed generator, and the underpinning CQC evidence is over its freshness SLA. Deliverable by hand only if a buyer appears and a human accepts the sourcing risk. |
 | Radar Regional / National, Intelligence Feed, Full Dataset | `NOT READY` | Roadmap. Correctly gated out of checkout. |
 
 **Honest headline: no offer is ready for autonomous purchase on 2026-09-11.** The only

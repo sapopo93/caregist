@@ -10,7 +10,7 @@
 The public product is currently sold on evidence that is 36.79 % reconciled and **24.2 h over
 its freshness SLA**. I cannot mutate the live DB without approval.
 *Default if yes:* run reconciliation to completion, then ingest the current CQC directory.
-*Default if no:* the £795 offer cannot be sold on a defensible sourcing claim; selling stops.
+*Default if no:* the £745 offer cannot be sold on a defensible sourcing claim; selling stops.
 
 **D2 — Approve the isolated-worktree extraction of the 7 additive commits onto current `main`,
 then a PR for review (not a deploy)?**
@@ -27,7 +27,7 @@ substitute with engineering or evidence.
 *Default if yes:* I prepare the exact redline pack for your solicitor and hold the flag off.
 *Default if no:* `territory_self_serve_checkout_enabled` stays `False` permanently.
 
-**D4 — Confirm the Stripe and credential readiness for the £795 self-serve brief.**
+**D4 — Confirm the Stripe and credential readiness for the £745 self-serve brief.**
 `STRIPE_PRICE_TERRITORY_BRIEF` sits in Production with no reader on `main`; Blob storage and
 Resend keys are unverified. I need you to confirm the live objects, or authorise me to prove
 them in Stripe **test** mode only.

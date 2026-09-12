@@ -167,7 +167,7 @@ Blob URL is ever emitted.
 ### 2d. Checkout UI + consent - `frontend`
 
 The `/territory-opportunity-brief` page needs: territory picker (validated
-against `/api/territory/coverage` or equivalent), visible scope + £795 + "what
+against `/api/territory/coverage` or equivalent), visible scope + £745 + "what
 you get", and an **explicit** pre-payment checkbox that must be ticked to enable
 the pay button, carrying the exact approved immediate-supply wording. Stripe's
 `consent_collection.terms_of_service: "required"` is a second, server-verified
@@ -219,7 +219,7 @@ launch blocker. **Do not invent the wording.**
 
 * Commit `53511dc` on `feat/territory-self-serve-scope`:
   "Live Stripe objects and Payment Links require founder approval and **must not
-  be created by an automated agent**." The £795 Stripe Product/Price
+  be created by an automated agent**." The £745 Stripe Product/Price
   (`STRIPE_PRICE_TERRITORY_BRIEF`) is `pending_creation` in
   `deploy/stripe-price-manifest.json`. A human must create it (test + live) with
   customer-facing naming that does **not** use "full dataset".
@@ -248,7 +248,7 @@ the row source does. This is tracked as the main pre-enable engineering task.
 
 - [ ] Solicitor-approved immediate-supply consent wording + Terms section for the Brief
 - [ ] `TERRITORY_BRIEF_TERMS_VERSION` / `_SHA256` / `_CONSENT_SHA256` set to approved values
-- [ ] Founder-created £795 Stripe Product + Price (test + live), no "full dataset" naming
+- [ ] Founder-created £745 Stripe Product + Price (test + live), no "full dataset" naming
 - [ ] `STRIPE_PRICE_TERRITORY_BRIEF`, `BLOB_READ_WRITE_TOKEN` configured
 - [~] Migration 060: verified on an isolated Neon branch off production 2026-09-09 (applies on top of 057-059; 3 tables + constraints + indexes + FKs correct; append-only trigger on territory_brief_consents fires; every column/ON CONFLICT target cross-checked against territory_brief_fulfilment.py + billing.py; down-migration reverses cleanly). NOT yet applied to production.
 - [x] Checkout route (2a) + webhook branch / expired / refund (2b) implemented (flag OFF)

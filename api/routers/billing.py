@@ -743,7 +743,7 @@ async def create_territory_brief_checkout(req: TerritoryBriefCheckoutRequest) ->
         "checkout_url": session.url,
         "session_id": session.id,
         "scope": {"kind": scope.kind, "name": scope.name, "window_days": scope.window_days},
-        "price_gbp": 795,
+        "price_gbp": 745,
         "stripe_mode": "test" if settings.stripe_secret_key.startswith("sk_test_") else "live",
     }
 

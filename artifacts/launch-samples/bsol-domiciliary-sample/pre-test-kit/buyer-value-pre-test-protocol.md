@@ -28,7 +28,7 @@ Before any email, Henry confirms the legal entity type and uses the approved com
 4. Book the feedback conversation when the sample is accepted.
 5. In the feedback conversation, ask these exact questions:
 
-   - "Would you pay £795 for this?"
+   - "Would you pay £745 for this?"
    - "What decision would it change for you?"
    - "What is missing?"
 
@@ -38,9 +38,9 @@ Before any email, Henry confirms the legal entity type and uses the approved com
 
 ## Scoring
 
-- `would-pay`: The buyer accepts a concrete £795 price for the stated Territory Opportunity Brief and identifies a decision or use. Record whether the commitment is immediate or conditional.
+- `would-pay`: The buyer accepts a concrete £745 price for the stated Territory Opportunity Brief and identifies a decision or use. Record whether the commitment is immediate or conditional.
 - `maybe`: The buyer will not accept the concrete price yet, gives a condition, or offers only polite future interest. Record the missing evidence, feature, trust condition, timing, or budget issue verbatim.
-- `no`: The buyer declines £795. Record the reason verbatim and the alternative they use today.
+- `no`: The buyer declines £745. Record the reason verbatim and the alternative they use today.
 
 Do not turn "I'd buy this again" or "looks useful" into `would-pay`. A payment only counts when received. This pre-test measures willingness and decision value, not revenue.
 

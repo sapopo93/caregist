@@ -12,7 +12,7 @@ Primary authority is the 7 September founder decision, reconciled with the curre
 |---|---|---|---|
 | Free Directory | £0 | Search, useful provider/location profiles, source dates, exact official links and factual issue reporting. | Search/filter results match records; provider/location identity and missing ratings are represented correctly; no inferred compliance or intent. |
 | Market Movement Report | £495 one-off, launch preparation | Dated 20–35 page edition, supported movement findings, useful regional comparisons, source evidence and proposed supporting workbook. | Compatible source editions, reproducible event ledger and a completed checked edition. “Immediate” only after actual availability and delivery testing. |
-| Territory Opportunity Brief | £795 one-off, lead launch preparation | Buyer scope, 25–50 distinct organisations with meaningful reasons, territory Excel/CSV and 3–5 page executive brief. | Criteria agreed with buyer; every selection sourced; files and schema checked; delivery start/date agreed. Existing 25-provider sample is a starting point, not proof of buyer fit. |
+| Territory Opportunity Brief | £745 one-off, lead launch preparation | Buyer scope, 25–50 distinct organisations with meaningful reasons, territory Excel/CSV and 3–5 page executive brief. | Criteria agreed with buyer; every selection sourced; files and schema checked; delivery start/date agreed. Existing 25-provider sample is a starting point, not proof of buyer fit. |
 | Existing Radar founding-buyer pilot | £150 for existing four-week offer | Clear scope and edition dates, four weekly digest deliveries as agreed, evidence links and accurate delivery record. | Verify the promised cadence/data route before accepting payment. Preserve terms for the three recorded contacts. No new pilot sends without a fresh decision. Do not rename it a one-provider or five-provider audit. |
 | Radar Regional | Request access, no paid checkout. £299/month exists in manifest, not approved for current sale. | Regional event feed, evidence details, view saving and delivery settings matching capabilities actually proven. | Verified ingest/diff history, truthful freshness status, deduplication, delivery checks, regional boundaries, tested limits and access control. |
 | Radar National | Request access, no paid checkout. £799/month exists in manifest, not approved for current sale. | Consistent national view with regional filters, evidence, exports and onboarding. | National coverage and history, scope consistency, permissions, promised limits and reliable delivery. Not established by a regional sample. |
@@ -47,7 +47,7 @@ Customer-facing language should describe the work: “Published fact”, “Why 
 
 **£495 Report:** edition overview → sample findings → report reader/downloads → evidence appendix. All chart totals and event cards derive from one ledger. Keep commentary separate from recorded change. Follow the detailed report plan linked below.
 
-**£795 Brief:** agreed buyer scope → executive findings → 25–50 account cards → editable dataset → evidence. Reuse the completed Birmingham/Solihull pack for the prototype. Show its actual 353 locations, 329 providers and 25 selected organisations only in that exact scope. Add buyer-specific reasons before paid delivery. Do not promise bespoke analysis in the prepared £495 edition.
+**£745 Brief:** agreed buyer scope → executive findings → 25–50 account cards → editable dataset → evidence. Reuse the completed Birmingham/Solihull pack for the prototype. Show its actual 353 locations, 329 providers and 25 selected organisations only in that exact scope. Add buyer-specific reasons before paid delivery. Do not promise bespoke analysis in the prepared £495 edition.
 
 **£150 in-flight pilot:** dated digest with coverage, what was verified, evidence and limitations. “No verified changes” is not the same as “data unavailable”. Keep communication/history distinct from a fulfilled delivery record. Do not upgrade, discount or change existing prospect terms as part of visual work.
 
@@ -71,7 +71,7 @@ Inventory product statements in pricing/config, homepage, directory, provider pa
 
 ### Wave 2: first-sale deliverables
 
-1. Build the £795 client delivery preview around the existing real pack; resolve buyer-fit limitations explicitly.
+1. Build the £745 client delivery preview around the existing real pack; resolve buyer-fit limitations explicitly.
 2. Build the £495 edition only after source comparability and content sufficiency pass. Use the separate implementation plan.
 3. Apply the shared visual style to both files and local product/sample pages. Demonstrate actual downloads.
 4. Align the homepage around the two one-off launch products, with the Brief remaining the lead. Give visitors a clear sample-first path. Keep the free directory useful and easy to find.
@@ -102,7 +102,7 @@ Later rollout requires exact authorization and passed commercial conditions. Kee
 
 ## Price defence across the range
 
-The free directory provides discovery. The £495 report adds checked comparisons and a prepared explanation. The £795 Brief adds selection against a buyer's agreed question. Future assignments, memberships, feeds and enterprise work need separately demonstrated value from their actual scope or integration. Higher prices do not justify stronger unsupported language. No current evidence establishes customer ROI or willingness to pay merely because a product is listed.
+The free directory provides discovery. The £495 report adds checked comparisons and a prepared explanation. The £745 Brief adds selection against a buyer's agreed question. Future assignments, memberships, feeds and enterprise work need separately demonstrated value from their actual scope or integration. Higher prices do not justify stronger unsupported language. No current evidence establishes customer ROI or willingness to pay merely because a product is listed.
 
 ## Handoff
 
@@ -114,7 +114,7 @@ Checks performed: read current local catalogue/config and the 7 September founde
 
 Unresolved issues: buyer fit for the Brief, source/history sufficiency for the Report, confirmed VAT and commercial release conditions, and product-specific capability gates for recurring/enterprise products. These affect selling; they do not prevent local design/content preparation.
 
-Exact next action (revised 9 September): the shared catalogue and claim register already exist at `artifacts/product-polish/`. Next is the £795 delivery preview, mapping each preview field to the verified Birmingham/Solihull pack and leaving proposed enrichment outside the offer, while the £495 comparable-source assessment continues. Only after those examples pass should the shared design be applied to the rest of the catalogue. Two items are prerequisites rather than polish: CONF-1 (live Stripe prices for products held closed) needs a founder decision, and the Source Serif 4 / Inter standard is a sitewide font swap away from the current DM Sans and Playfair Display, not a scoped component change. This sequence protects the first-sale focus while covering all products.
+Exact next action (revised 9 September): the shared catalogue and claim register already exist at `artifacts/product-polish/`. Next is the £745 delivery preview, mapping each preview field to the verified Birmingham/Solihull pack and leaving proposed enrichment outside the offer, while the £495 comparable-source assessment continues. Only after those examples pass should the shared design be applied to the rest of the catalogue. Two items are prerequisites rather than polish: CONF-1 (live Stripe prices for products held closed) needs a founder decision, and the Source Serif 4 / Inter standard is a sitewide font swap away from the current DM Sans and Playfair Display, not a scoped component change. This sequence protects the first-sale focus while covering all products.
 
 Sources:
 

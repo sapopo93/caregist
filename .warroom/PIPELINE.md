@@ -28,7 +28,7 @@
 | | |
 |---|---|
 | **State** | `NOT RUNNING` (for money) |
-| **Evidence** | Live `/pricing` presents the £795 Territory Opportunity Brief as the only paid offer, with a **`mailto:` CTA** ("Start a scope conversation"). No order form, no cart, no checkout route deployed. |
+| **Evidence** | Live `/pricing` presents the £745 Territory Opportunity Brief as the only paid offer, with a **`mailto:` CTA** ("Start a scope conversation"). No order form, no cart, no checkout route deployed. |
 | **Free tier** | Directory search is live and free — this is the only genuinely working "product" end-to-end. |
 | **Gap** | The distance between "an interested buyer" and "a recorded order" is entirely human, unmanaged and unmeasured. `ASKED_TO_PAY`: 0 recorded. |
 

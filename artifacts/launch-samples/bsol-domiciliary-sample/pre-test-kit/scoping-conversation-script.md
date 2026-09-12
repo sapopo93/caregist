@@ -38,13 +38,13 @@ If the buyer asks for another price, scope, turnaround, customer count, performa
 
 ## Minute 10 to 13: offer the sample
 
-"Let me send you a sample. It is a real piece of work covering domiciliary care in Birmingham and Solihull: the dataset, the shortlist with reasons, and the executive summary. The sample is built from a repository snapshot and is labelled not verified, so you can see both the work and its limits. If it is useful, the same Territory Opportunity Brief for your territory is £795 and takes three working days, once the delivery gates pass."
+"Let me send you a sample. It is a real piece of work covering domiciliary care in Birmingham and Solihull: the dataset, the shortlist with reasons, and the executive summary. The sample is built from a repository snapshot and is labelled not verified, so you can see both the work and its limits. If it is useful, the same Territory Opportunity Brief for your territory is £745 and takes three working days, once the delivery gates pass."
 
 If they already use a database:
 
 "A database tells you who exists. This brief identifies which accounts deserve review and states why. Take the sample and compare it with what you already have."
 
-If they say £795 is a lot for a spreadsheet:
+If they say £745 is a lot for a spreadsheet:
 
 "The dataset is one of three parts. The other two are the shortlist with a reason against each account and the brief explaining how the territory is structured. Look at the sample before deciding."
 

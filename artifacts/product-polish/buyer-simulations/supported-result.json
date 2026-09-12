@@ -48,7 +48,7 @@
     },
     "payment_acceptance": {
       "result": "BLOCKED",
-      "detail": "No live \u00a3795 product, price or Payment Link exists in the local Stripe manifest. This simulation never creates a charge."
+      "detail": "No live \u00a3745 product, price or Payment Link exists in the local Stripe manifest. This simulation never creates a charge."
     },
     "terms": {
       "result": "BLOCKED",

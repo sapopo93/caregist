@@ -144,7 +144,7 @@ async def test_checkout_reserves_order_and_returns_hosted_url(monkeypatch, brief
 
     assert result["checkout_url"] == "https://checkout.stripe.com/c/pay/cs_test_brief"
     assert result["scope"] == {"kind": "local_authority", "name": "Southampton", "window_days": 90}
-    assert result["price_gbp"] == 795
+    assert result["price_gbp"] == 745
 
     kwargs = create.call_args.kwargs
     assert kwargs["mode"] == "payment"
