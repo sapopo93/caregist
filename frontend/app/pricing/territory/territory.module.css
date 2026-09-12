@@ -1,0 +1,355 @@
+/*
+ * Visual system lifted verbatim from artifacts/product-polish/customer-offer/index.html
+ * (the Stitch-designed, content-corrected static preview). Scoped via CSS Modules so it
+ * cannot leak into or be affected by the site-wide Tailwind theme in app/globals.css.
+ * Do not change these tokens without checking the reference file first.
+ */
+.wrap {
+  --ink: #1a1c22;
+  --muted: #4b5161;
+  --paper: #fff;
+  --canvas: #faf8f5;
+  --soft: #f3efea;
+  --line: #e2ddd5;
+  --accent: #c27838;
+  --green: #056b52;
+
+  background: var(--canvas);
+  color: var(--ink);
+  font: 15px/1.5 var(--font-territory-inter), Inter, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 24px 28px 64px;
+}
+.wrap * {
+  box-sizing: border-box;
+}
+.wrap h1,
+.wrap h2,
+.wrap h3 {
+  font-family: var(--font-territory-serif), "Source Serif 4", Georgia, serif;
+  font-weight: 600;
+  margin: 0;
+  letter-spacing: -0.025em;
+}
+.wrap h1 {
+  font-size: 56px;
+  line-height: 1.03;
+  max-width: 12ch;
+}
+.wrap h2 {
+  font-size: 31px;
+  line-height: 1.1;
+}
+.wrap h3 {
+  font-size: 21px;
+  line-height: 1.2;
+}
+.top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 17px;
+}
+.back {
+  font-size: 13px;
+  color: var(--muted);
+  text-decoration: none;
+}
+.back:hover {
+  color: var(--ink);
+}
+.brand {
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.kicker {
+  font-size: 11px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--muted);
+}
+.hero {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 68px;
+  padding: 78px 0 62px;
+}
+.intro {
+  font-size: 18px;
+  line-height: 1.55;
+  color: var(--muted);
+  max-width: 51ch;
+  margin: 22px 0;
+}
+.priceBox {
+  align-self: start;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 27px;
+}
+.price {
+  font: 600 48px/1 var(--font-territory-serif), "Source Serif 4", Georgia, serif;
+  margin: 7px 0;
+}
+.vat {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 0 0 24px;
+}
+.note {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--muted);
+  margin: 12px 0 0;
+}
+.rule {
+  height: 2px;
+  background: var(--ink);
+  border: 0;
+  margin: 0;
+}
+.section {
+  padding: 54px 0;
+}
+.sectionLead {
+  color: var(--muted);
+  max-width: 65ch;
+  margin: 12px 0 26px;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+.card {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 21px;
+}
+.num {
+  font: 600 12px/1 var(--font-territory-inter), Inter, Arial, sans-serif;
+  color: var(--accent);
+  letter-spacing: 0.06em;
+}
+.card p {
+  color: var(--muted);
+  font-size: 13px;
+  margin: 8px 0 0;
+}
+.tag {
+  display: inline-block;
+  border: 1px solid #a7d9ca;
+  background: #ecfdf5;
+  color: var(--green);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 7px;
+  border-radius: 3px;
+  margin-bottom: 12px;
+}
+.limits {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  background: #fffdf8;
+  border: 1px solid #f1dfb1;
+  border-radius: 7px;
+  padding: 22px;
+}
+.limits p {
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 7px 0 0;
+  color: #6d5426;
+}
+.footer {
+  border-top: 1px solid var(--line);
+  padding-top: 18px;
+  color: var(--muted);
+  font-size: 12px;
+  max-width: 80ch;
+}
+.footer a {
+  color: var(--muted);
+}
+
+/* -- Scope-check panel: same card language as the mockup, extended to hold
+      the live interactive picker the static preview didn't need to render. -- */
+.checkCard {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 27px;
+}
+.checkLead {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 8px 0 22px;
+}
+.fieldGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.fieldFull {
+  grid-column: 1 / -1;
+}
+.label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.labelHint {
+  font-weight: 400;
+  color: var(--muted);
+}
+.select {
+  width: 100%;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  border-radius: 5px;
+  padding: 9px 11px;
+  font: 14px/1.4 var(--font-territory-inter), Inter, Arial, sans-serif;
+  color: var(--ink);
+}
+.buyerNote {
+  margin-top: 14px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.buyerNote strong {
+  color: var(--ink);
+}
+.button {
+  display: inline-block;
+  text-align: center;
+  text-decoration: none;
+  background: var(--ink);
+  color: #fff;
+  padding: 12px 22px;
+  border: 0;
+  border-radius: 3px;
+  font-weight: 600;
+  font-size: 13px;
+  font-family: var(--font-territory-inter), Inter, Arial, sans-serif;
+  cursor: pointer;
+}
+.button:hover {
+  background: #363944;
+}
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.buttonOutline {
+  display: inline-block;
+  text-decoration: none;
+  border: 1px solid var(--ink);
+  color: var(--ink);
+  background: transparent;
+  padding: 11px 21px;
+  border-radius: 3px;
+  font-weight: 600;
+  font-size: 13px;
+  font-family: var(--font-territory-inter), Inter, Arial, sans-serif;
+  margin-top: 18px;
+}
+.buttonOutline:hover {
+  background: var(--ink);
+  color: #fff;
+}
+.checkButton {
+  margin-top: 22px;
+}
+.error {
+  margin-top: 14px;
+  font-size: 13px;
+  color: #b3261e;
+}
+.result {
+  margin-top: 26px;
+  border-top: 1px solid var(--line);
+  padding-top: 22px;
+}
+.resultVerdict {
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 18px 21px;
+}
+.resultVerdictReady {
+  border-color: #a7d9ca;
+  background: #f3faf7;
+}
+.resultVerdictPartial {
+  border-color: #f1dfb1;
+  background: #fffdf8;
+}
+.resultVerdictInsufficient {
+  border-color: #e6c3bc;
+  background: #fdf6f4;
+}
+.scopeSummary {
+  font-size: 14px;
+  color: var(--ink);
+  font-weight: 600;
+  margin: 0;
+}
+.resultDetail {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 8px 0 0;
+  line-height: 1.5;
+}
+.dl {
+  margin: 14px 0 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.dl dt {
+  font-weight: 600;
+  color: var(--ink);
+}
+.dl dd {
+  margin: 0;
+}
+
+@media (max-width: 760px) {
+  .wrap {
+    padding: 18px 16px 44px;
+  }
+  .top {
+    font-size: 13px;
+  }
+  .hero {
+    grid-template-columns: 1fr;
+    gap: 28px;
+    padding: 50px 0;
+  }
+  .grid,
+  .limits,
+  .fieldGrid,
+  .dl {
+    grid-template-columns: 1fr;
+  }
+  .wrap h1 {
+    font-size: 42px;
+  }
+  .priceBox {
+    align-self: auto;
+  }
+}

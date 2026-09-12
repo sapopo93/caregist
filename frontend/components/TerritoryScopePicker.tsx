@@ -11,6 +11,8 @@ import {
   type TerritoryCoverageResult,
 } from "@/lib/territory-scope";
 
+import styles from "@/app/pricing/territory/territory.module.css";
+
 interface CoverageResponse {
   scope: { region: string; buyerType: string; serviceType: string };
   coverage: TerritoryCoverageResult;
@@ -18,9 +20,9 @@ interface CoverageResponse {
 }
 
 const VERDICT_STYLES: Record<string, string> = {
-  ready: "border-moss/40 bg-moss/10",
-  partial: "border-amber/40 bg-amber/10",
-  insufficient: "border-clay/40 bg-clay/10",
+  ready: styles.resultVerdictReady,
+  partial: styles.resultVerdictPartial,
+  insufficient: styles.resultVerdictInsufficient,
 };
 
 export default function TerritoryScopePicker() {
@@ -94,23 +96,23 @@ export default function TerritoryScopePicker() {
     : "";
 
   return (
-    <div className="rounded-xl border border-stone bg-cream p-6">
-      <h2 className="mb-1 text-xl font-bold text-bark">1. Choose your territory</h2>
-      <p className="mb-5 text-sm text-dusk">
-        Pick a region and the organisations you sell to. We check the published CQC
-        record for matching organisations. This check is free and does not place an order.
+    <div className={styles.checkCard}>
+      <h3>Choose your territory</h3>
+      <p className={styles.checkLead}>
+        Pick a region and the organisations you sell to. We check the published CQC record for
+        matching organisations. This check is free and does not place an order.
       </p>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <div>
-          <label htmlFor="territory-region" className="mb-1 block text-sm font-semibold text-bark">
+      <div className={styles.fieldGrid}>
+        <div className={styles.field}>
+          <label htmlFor="territory-region" className={styles.label}>
             Region
           </label>
           <select
             id="territory-region"
             value={region}
             onChange={(e) => changeSelection(setRegion, e.target.value)}
-            className="w-full rounded-lg border border-stone bg-cream px-3 py-2 text-sm text-charcoal"
+            className={styles.select}
           >
             <option value="">Choose a region…</option>
             {TERRITORY_REGION_OPTIONS.map((r) => (
@@ -121,15 +123,15 @@ export default function TerritoryScopePicker() {
           </select>
         </div>
 
-        <div>
-          <label htmlFor="territory-buyer" className="mb-1 block text-sm font-semibold text-bark">
+        <div className={styles.field}>
+          <label htmlFor="territory-buyer" className={styles.label}>
             Which organisations do you sell to?
           </label>
           <select
             id="territory-buyer"
             value={buyerType}
             onChange={(e) => changeSelection(setBuyerType, e.target.value)}
-            className="w-full rounded-lg border border-stone bg-cream px-3 py-2 text-sm text-charcoal"
+            className={styles.select}
           >
             <option value="">Choose a buyer type…</option>
             {TERRITORY_BUYER_TYPES.map((b) => (
@@ -140,15 +142,15 @@ export default function TerritoryScopePicker() {
           </select>
         </div>
 
-        <div className="md:col-span-2">
-          <label htmlFor="territory-service" className="mb-1 block text-sm font-semibold text-bark">
-            Narrow to one service type <span className="font-normal text-dusk">(optional)</span>
+        <div className={`${styles.field} ${styles.fieldFull}`}>
+          <label htmlFor="territory-service" className={styles.label}>
+            Narrow to one service type <span className={styles.labelHint}>(optional)</span>
           </label>
           <select
             id="territory-service"
             value={serviceType}
             onChange={(e) => changeSelection(setServiceType, e.target.value)}
-            className="w-full rounded-lg border border-stone bg-cream px-3 py-2 text-sm text-charcoal"
+            className={styles.select}
           >
             <option value="">All service types</option>
             {DEFAULT_SERVICE_TYPE_OPTIONS.map((s) => (
@@ -161,9 +163,9 @@ export default function TerritoryScopePicker() {
       </div>
 
       {selectedBuyer && (
-        <p className="mt-3 text-xs text-dusk">
-          <span className="font-semibold text-bark">{selectedBuyer.description}.</span>{" "}
-          Built for {selectedBuyer.persona.toLowerCase()}.
+        <p className={styles.buyerNote}>
+          <strong>{selectedBuyer.description}.</strong> Built for{" "}
+          {selectedBuyer.persona.toLowerCase()}.
         </p>
       )}
 
@@ -171,54 +173,66 @@ export default function TerritoryScopePicker() {
         type="button"
         onClick={() => void checkCoverage()}
         disabled={!canCheck}
-        className="mt-5 inline-block rounded-lg border border-clay px-6 py-2.5 text-sm font-medium text-clay transition-colors hover:bg-clay hover:text-white disabled:opacity-50"
+        className={`${styles.button} ${styles.checkButton}`}
       >
         {loading ? "Checking the record…" : "Check this territory"}
       </button>
 
-      {error && <p role="alert" className="mt-3 text-sm text-alert">{error}</p>}
+      {error && (
+        <p role="alert" className={styles.error}>
+          {error}
+        </p>
+      )}
 
       {result && (
-        <div role="status" aria-live="polite" className={`mt-6 rounded-lg border p-4 ${VERDICT_STYLES[result.coverage.verdict] ?? "border-stone"}`}>
-          <h3 className="text-sm font-bold text-bark">2. Review coverage</h3>
-          <p className="mt-2 text-sm text-bark">{scopeSummary}</p>
-          <p className="mt-1 text-sm text-charcoal">{result.coverage.providerCount < 12
-            ? "Too few matching organisations for the proposed brief. Try another region or remove the service filter."
-            : result.coverage.providerCount < 25
-              ? "This scope has fewer than 25 matching organisations. A review is needed to establish whether a smaller brief is suitable."
-              : "This count is a starting point for reviewing your scope. It does not verify a ranked shortlist or confirm delivery availability."}</p>
-          <dl className="mt-3 grid grid-cols-2 gap-2 text-xs text-dusk">
-            <div>
-              <dt className="font-semibold text-bark">Providers in scope</dt>
-              <dd>{result.coverage.providerCount}</dd>
-            </div>
-            <div>
-              <dt className="font-semibold text-bark">Most recent observation</dt>
-              <dd>{result.coverage.mostRecentObservation ?? "Not recorded"}</dd>
-            </div>
-          </dl>
+        <div className={styles.result}>
+          <div
+            role="status"
+            aria-live="polite"
+            className={`${styles.resultVerdict} ${VERDICT_STYLES[result.coverage.verdict] ?? ""}`}
+          >
+            <p className={styles.scopeSummary}>{scopeSummary}</p>
+            <p className={styles.resultDetail}>
+              {result.coverage.providerCount < 12
+                ? "Too few matching organisations for the proposed brief. Try another region or remove the service filter."
+                : result.coverage.providerCount < 25
+                  ? "This scope has fewer than 25 matching organisations. A review is needed to establish whether a smaller brief is suitable."
+                  : "This count is a starting point for reviewing your scope. It does not verify a ranked shortlist or confirm delivery availability."}
+            </p>
+            <dl className={styles.dl}>
+              <div>
+                <dt>Providers in scope</dt>
+                <dd>{result.coverage.providerCount}</dd>
+              </div>
+              <div>
+                <dt>Most recent observation</dt>
+                <dd>{result.coverage.mostRecentObservation ?? "Not recorded"}</dd>
+              </div>
+            </dl>
 
-          {result.coverage.canCheckout ? (
-            <div className="mt-4">
-                  <a
-                    href={mailtoHref}
-                    className="inline-block rounded-lg bg-clay px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-bark"
-                    onClick={() =>
-                      void trackEvent("territory_scope_request", "territory_picker", {
-                        region: result.scope.region,
-                        buyer_type: result.scope.buyerType,
-                        verdict: result.coverage.verdict,
-                      })
-                    }
-                  >
-                    Email this scope for review
-                  </a>
-                  <p className="mt-2 text-xs text-dusk">
-                    Opens your email app with your selections. Send the email to request a review.
-                    This does not reserve a brief or take payment. Online ordering is not available.
-                  </p>
-            </div>
-          ) : null}
+            {result.coverage.canCheckout ? (
+              <div style={{ marginTop: 18 }}>
+                <a
+                  href={mailtoHref}
+                  className={styles.button}
+                  onClick={() =>
+                    void trackEvent("territory_scope_request", "territory_picker", {
+                      region: result.scope.region,
+                      buyer_type: result.scope.buyerType,
+                      verdict: result.coverage.verdict,
+                    })
+                  }
+                >
+                  Email this scope for review
+                </a>
+                <p className={styles.note}>
+                  Opens your email app with your selections. Send the email to request a
+                  review. This does not reserve a brief or take payment. Online ordering is
+                  not available.
+                </p>
+              </div>
+            ) : null}
+          </div>
         </div>
       )}
     </div>
