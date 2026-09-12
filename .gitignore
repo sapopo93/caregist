@@ -115,13 +115,6 @@ docs/*.dmg
 
 .worktrees/
 
-.projects/cache
-.projects/vault
-.projects/state.test.json
-.projects/state.local.test.json
-.env
-.env.*
-!.env.example
 
 # Local war-room evidence can contain credentials, customer data, and large
 # generated captures. Keep only the repository operating contract in Git.
@@ -148,3 +141,11 @@ node_modules
 # mirror the *.csv / checkpoint exclusions above but under different names.
 *.csv.bak.*
 outreach/recon/
+
+.projects/cache
+.projects/vault
+.projects/state.test.json
+.projects/state.local.test.json
+.env
+.env.*
+!.env.example

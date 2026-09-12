@@ -254,7 +254,7 @@ doc = f'''<!doctype html><html lang="en"><head><meta charset="utf-8">
 <div class="price-box">
 <span class="kicker">Product of record</span>
 <div class="price">£745</div>
-<div class="vat">One-off delivery. Price excludes VAT — VAT treatment for CareGist sales is not yet confirmed, so quote the headline figure only.</div>
+<div class="vat">One-off delivery. £745 is the final price. H-Kay Limited is not VAT registered, so no VAT is added.</div>
 <a class="button" href="#files">See what the buyer receives</a>
 <p class="note">Quoted price is the founder decision of 11 September 2026. No £745 payment rail exists yet: the live Stripe objects still carry the superseded launch price, so <strong>no payment link may be sent from this pack</strong> until the founder re-pins them.</p>
 </div>

@@ -54,7 +54,7 @@ export default function TerritoryScopePage() {
         <aside className={styles.priceBox}>
           <div className={styles.kicker}>Territory Opportunity Brief</div>
           <div className={styles.price}>£{TERRITORY_BRIEF_PRICE_GBP}</div>
-          <p className={styles.vat}>Price excludes VAT.</p>
+          <p className={styles.vat}>£745 is the final price. H-Kay Limited is not VAT registered, so no VAT is added.</p>
           <a href="#check-coverage" className={styles.button}>
             Check your territory
           </a>
