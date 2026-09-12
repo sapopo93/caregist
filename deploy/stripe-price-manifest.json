@@ -12,19 +12,19 @@
       "interval": null,
       "lookup_key": "territory_opportunity_brief_gbp_oneoff_v2",
       "sale_channel": "self-serve-gated",
-      "status": "pending_founder_recreation",
-      "status_note": "Canonical price is GBP 745 (founder decision 2026-09-11, issue #44: GBP 795 was an error). The existing Stripe Product + one-off GBP 795 Price (created 2026-09-09, recorded under superseded_prices) charge the erroneous amount and must be archived and replaced with a GBP 745 Price by the founder before any Brief checkout or Payment Link is offered. No GBP 745 Price exists yet, so no saleable Price ID is declared. Self-serve checkout stays closed until the runtime flag TERRITORY_SELF_SERVE_CHECKOUT_ENABLED is set with approved terms/consent hashes.",
+      "status": "live_recreated_awaiting_payment_link",
+      "status_note": "Canonical price is GBP 745 (founder decision 2026-09-11, issue #44: GBP 795 was an error). The founder recreated the Product + Price in LIVE mode on 2026-09-12 ('Territory Opportunity Brief.', prod_VESD16ql3keycy / price_1UDzJP4mijLHzRRkfYJG3OZZ) and archived the erroneous GBP 795 live Product/Price the same day. No TEST-mode GBP 745 Product/Price has been created yet -- stripe.test below is intentionally null, not a placeholder for the archived test objects (those are recorded only under superseded_prices for audit trail). Before sending this Price to any buyer: confirm a Stripe Payment Link exists for it (none was recorded as of 2026-09-12), and if/when self-serve checkout is enabled, set the STRIPE_PRICE_TERRITORY_BRIEF environment variable to this live price ID. Self-serve checkout stays closed until the runtime flag TERRITORY_SELF_SERVE_CHECKOUT_ENABLED is set with approved terms/consent hashes. Note: the live product name has a trailing period ('Territory Opportunity Brief.') unlike the archived one -- may be worth a rename for consistency in exports and customer-facing references.",
       "superseded_prices": [
         {
           "unit_amount": 79500,
-          "reason": "erroneous launch price, superseded by the GBP 745 founder decision on issue #44; live objects still active until the founder archives them",
+          "reason": "erroneous launch price, superseded by the GBP 745 founder decision on issue #44; founder archived the live Product/Price on 2026-09-12",
           "test": { "product_id": "prod_VE89BnRzZPq0Qq", "price_id": "price_1UDft34mijLHzRRklUMJR6F2" },
           "live": { "product_id": "prod_VE7HY2DdEmrb8C", "price_id": "price_1UDf2t4mijLHzRRkRqbNA1rd" }
         }
       ],
       "stripe": {
-        "test": { "product_id": "prod_VE89BnRzZPq0Qq", "price_id": null },
-        "live": { "product_id": "prod_VE7HY2DdEmrb8C", "price_id": null }
+        "test": { "product_id": null, "price_id": null },
+        "live": { "product_id": "prod_VESD16ql3keycy", "price_id": "price_1UDzJP4mijLHzRRkfYJG3OZZ" }
       }
     },
     "market-movement-report": {
