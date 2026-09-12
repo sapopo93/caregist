@@ -1,0 +1,144 @@
+{
+  "schema_version": 1,
+  "generated": "2026-09-08",
+  "purpose": "Wave 1 controlled catalogue. One row per current product, reconciling the public catalogue, the preparation manifest and the 7 September founder decision. Local planning evidence only; not a release record and not proof of a working capability.",
+  "sources": {
+    "public_catalogue": "frontend/lib/caregist-config.ts",
+    "preparation_manifest": "deploy/stripe-price-manifest.json",
+    "founder_decision": "/Users/user/.hermes/profiles/ai-company-governed/company-os/chief-of-staff/decisions/2026-09-07-caregist-launch-one-off-products.md",
+    "catalogue_plan": "artifacts/sales/2026-09-08-all-products-polish-plan.md"
+  },
+  "status_vocabulary": ["free", "launch-preparation", "in-flight-pilot", "roadmap", "archived"],
+  "vat_treatment": "not-currently-vat-registered; review before registration takes effect",
+  "products": [
+    {
+      "slug": "free-directory",
+      "name": "Free Directory",
+      "status": "free",
+      "documented_price": "£0",
+      "manifest_entry": null,
+      "sale_channel": "none",
+      "cta_allowed": "Open the directory",
+      "checkout_allowed": false,
+      "capability_gate": "Search and profile rendering must match the underlying records; blank rating, Not Rated and not-inspected must render as three distinct states.",
+      "notes": "Claims and corrections are free and sit inside the Directory, subject to existing claim gates. A verified claimant is not a CQC quality endorsement."
+    },
+    {
+      "slug": "territory-opportunity-brief",
+      "name": "Territory Opportunity Brief",
+      "status": "launch-preparation",
+      "documented_price": "£795",
+      "manifest_entry": { "unit_amount": 79500, "interval": null, "status": "pending_creation", "stripe_ids": "none in test or live" },
+      "sale_channel": "payment-link-pending",
+      "cta_allowed": "Request the sample",
+      "checkout_allowed": false,
+      "capability_gate": "Buyer-agreed criteria; every selection sourced; dataset schema and file checks passed; delivery start agreed.",
+      "notes": "Lead launch product. The completed Birmingham/Solihull pack (353 locations, 329 providers, 25 selected organisations) is the prototype and those figures may only be shown in that exact scope. It is a starting point, not proof of buyer fit."
+    },
+    {
+      "slug": "market-movement-report",
+      "name": "Market Movement Report",
+      "status": "launch-preparation",
+      "documented_price": "£495",
+      "manifest_entry": { "unit_amount": 49500, "interval": null, "status": "pending_creation", "stripe_ids": "none in test or live" },
+      "sale_channel": "payment-link-pending",
+      "cta_allowed": "Book a 15-minute scoping call",
+      "checkout_allowed": false,
+      "capability_gate": "Compatible source editions, a reproducible event ledger and one completed checked edition. Availability wording stays conditional until delivery is actually tested.",
+      "notes": "Implementation detail lives in artifacts/sales/2026-09-08-market-movement-report-implementation-plan.md. No bespoke analysis may be promised in the prepared edition."
+    },
+    {
+      "slug": "radar-founding-buyer-pilot",
+      "name": "Radar founding-buyer pilot (in flight)",
+      "status": "in-flight-pilot",
+      "documented_price": "£150",
+      "manifest_entry": null,
+      "sale_channel": "existing-offer-honoured",
+      "cta_allowed": "none — no new pilot sends without a fresh decision",
+      "checkout_allowed": false,
+      "capability_gate": "Verify the promised cadence and data route before accepting payment.",
+      "notes": "Four-week offer held open for three recorded contacts on existing terms. Absent from the public catalogue, which is correct. Do not rename it a one-provider or five-provider audit; do not upgrade, discount or alter existing terms as part of visual work."
+    },
+    {
+      "slug": "radar-regional",
+      "name": "Radar Regional",
+      "status": "roadmap",
+      "documented_price": "Request access",
+      "manifest_entry": { "unit_amount": 29900, "interval": "month", "sale_channel": "self-serve-gated", "stripe_ids": "test and live product+price exist" },
+      "sale_channel": "request-access-only",
+      "cta_allowed": "Request access (disabled control)",
+      "checkout_allowed": false,
+      "capability_gate": "Verified ingest and diff history, truthful freshness status, deduplication, delivery checks, regional boundaries, tested limits, access control.",
+      "conflict": "Live Stripe product and price IDs exist for a product the founder decision holds closed, and the manifest carries checkout_enabled: true. See claim-register CONF-1.",
+      "notes": "£299/month exists in the manifest and is not approved for current sale. It must not appear as a price in customer-facing copy."
+    },
+    {
+      "slug": "radar-national",
+      "name": "Radar National",
+      "status": "roadmap",
+      "documented_price": "Request access",
+      "manifest_entry": { "unit_amount": 79900, "interval": "month", "sale_channel": "self-serve-gated", "stripe_ids": "test and live product+price exist" },
+      "sale_channel": "request-access-only",
+      "cta_allowed": "Request access (disabled control)",
+      "checkout_allowed": false,
+      "capability_gate": "National coverage and history, scope consistency, permissions, promised limits, reliable delivery. A regional sample does not establish any of these.",
+      "conflict": "Same as radar-regional. See claim-register CONF-1.",
+      "notes": "£799/month exists in the manifest and is not approved for current sale."
+    },
+    {
+      "slug": "strategic-territory-intelligence-assignment",
+      "name": "Strategic Territory Intelligence Assignment",
+      "status": "roadmap",
+      "documented_price": "Roadmap · future scope from £3,500",
+      "manifest_entry": null,
+      "sale_channel": "none",
+      "cta_allowed": "Not yet available (disabled control)",
+      "checkout_allowed": false,
+      "capability_gate": "Evidence and history gate, product admission, buyer-specific scope, capacity, method and review.",
+      "notes": "No quote, payment or delivery commitment. No invented investment advice or standard outputs."
+    },
+    {
+      "slug": "founding-intelligence-membership",
+      "name": "Founding Intelligence Membership",
+      "status": "roadmap",
+      "documented_price": "Roadmap · future scope £4,500/year, cap three",
+      "manifest_entry": null,
+      "sale_channel": "none",
+      "cta_allowed": "Not yet available (disabled control)",
+      "checkout_allowed": false,
+      "capability_gate": "Evidence and history gate, explicit service definition, repeatable delivery, sustainable capacity.",
+      "notes": "Frequency and response promises remain undefined and must not be stated."
+    },
+    {
+      "slug": "intelligence-feed-pilot",
+      "name": "Intelligence Feed Pilot",
+      "status": "roadmap",
+      "documented_price": "Roadmap",
+      "manifest_entry": { "unit_amount": 600000, "interval": "year", "sale_channel": "sales-assisted-private", "stripe_ids": "test and live product+price exist" },
+      "sale_channel": "none",
+      "cta_allowed": "Not yet available (disabled control)",
+      "checkout_allowed": false,
+      "capability_gate": "Tested API and auth, actual signing and verification, replay and idempotency, cursor stability, rate and usage terms, monitoring, agreed service scope.",
+      "conflict": "Live Stripe IDs exist. See claim-register CONF-1.",
+      "notes": "£6,000/year appears in the manifest and is not validated for sale. Schema examples must be marked illustrative."
+    },
+    {
+      "slug": "embedded-enterprise",
+      "name": "Embedded Enterprise",
+      "status": "roadmap",
+      "documented_price": "Roadmap · no quote or checkout",
+      "manifest_entry": { "unit_amount": null, "sale_channel": "quote-invoice-only", "stripe_ids": "products exist; prices archived" },
+      "sale_channel": "none",
+      "cta_allowed": "Not yet available (disabled control)",
+      "checkout_allowed": false,
+      "capability_gate": "Technical, security and procurement review; tenant boundaries; contractual terms; explicit deployment and support scope.",
+      "notes": "White-label, SLA and support scope appear in copy. That copy is not evidence they exist."
+    }
+  ],
+  "archived": {
+    "rule": "Compatibility and support records only. Do not resurrect, re-price, or alter existing entitlements during polishing.",
+    "provider_tiers": ["enhanced (legacy entitlement)", "sponsored (legacy entitlement)"],
+    "legacy_stripe_catalogue": ["CareGist Full Dataset", "CQC Premium Compliance Suite", "CareGist Extra Seat", "CareGist Sponsored Listing", "CareGist Provider Pro Listing", "CareGist Data Business", "CareGist Data Pro", "CareGist Data Starter", "CareGist Alerts Pro"],
+    "plan_key_records": ["starter", "pro", "business"]
+  }
+}

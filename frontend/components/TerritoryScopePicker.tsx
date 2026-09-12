@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
+import { useRef, useState } from "react";
 
 import { trackEvent } from "@/lib/analytics";
 import { DEFAULT_SERVICE_TYPE_OPTIONS } from "@/lib/directory-constants";
@@ -24,11 +23,7 @@ const VERDICT_STYLES: Record<string, string> = {
   insufficient: "border-clay/40 bg-clay/10",
 };
 
-export default function TerritoryScopePicker({
-  checkoutEnabled,
-}: {
-  checkoutEnabled: boolean;
-}) {
+export default function TerritoryScopePicker() {
   const [region, setRegion] = useState("");
   const [buyerType, setBuyerType] = useState("");
   const [serviceType, setServiceType] = useState("");
@@ -36,10 +31,21 @@ export default function TerritoryScopePicker({
   const [error, setError] = useState("");
   const [result, setResult] = useState<CoverageResponse | null>(null);
 
+  const requestVersion = useRef(0);
+
+  function changeSelection(setValue: (value: string) => void, value: string) {
+    requestVersion.current += 1;
+    setValue(value);
+    setResult(null);
+    setError("");
+    setLoading(false);
+  }
+
   const selectedBuyer = TERRITORY_BUYER_TYPES.find((b) => b.value === buyerType) ?? null;
   const canCheck = Boolean(region && buyerType) && !loading;
 
   async function checkCoverage() {
+    const version = ++requestVersion.current;
     setLoading(true);
     setError("");
     setResult(null);
@@ -51,15 +57,16 @@ export default function TerritoryScopePicker({
         body: JSON.stringify({ region, buyerType, serviceType }),
       });
       const data = await res.json();
+      if (version !== requestVersion.current) return;
       if (!res.ok) {
         setError(data.error || "Could not check that scope. Try again.");
         return;
       }
       setResult(data as CoverageResponse);
     } catch {
-      setError("Something went wrong. No payment has been taken. Try again.");
+      if (version === requestVersion.current) setError("The coverage check failed. Try again. No order has been placed.");
     } finally {
-      setLoading(false);
+      if (version === requestVersion.current) setLoading(false);
     }
   }
 
@@ -74,7 +81,7 @@ export default function TerritoryScopePicker({
         `Territory Opportunity Brief — ${scopeSummary}`,
       )}&body=${encodeURIComponent(
         [
-          "I have confirmed this scope on the pricing page and would like to buy the Territory Opportunity Brief.",
+          "Please review availability for this Territory Opportunity Brief scope. This is an enquiry, not an order.",
           "",
           `Region: ${result.scope.region}`,
           `Buyer type: ${selectedBuyer?.label ?? result.scope.buyerType}`,
@@ -88,10 +95,10 @@ export default function TerritoryScopePicker({
 
   return (
     <div className="rounded-xl border border-stone bg-cream p-6">
-      <h2 className="mb-1 text-xl font-bold text-bark">Confirm your territory</h2>
+      <h2 className="mb-1 text-xl font-bold text-bark">1. Choose your territory</h2>
       <p className="mb-5 text-sm text-dusk">
         Pick a region and the organisations you sell to. We check the published CQC
-        record for that exact scope before any payment — no scoping call needed.
+        record for matching organisations. This check is free and does not place an order.
       </p>
 
       <div className="grid gap-4 md:grid-cols-2">
@@ -102,7 +109,7 @@ export default function TerritoryScopePicker({
           <select
             id="territory-region"
             value={region}
-            onChange={(e) => setRegion(e.target.value)}
+            onChange={(e) => changeSelection(setRegion, e.target.value)}
             className="w-full rounded-lg border border-stone bg-cream px-3 py-2 text-sm text-charcoal"
           >
             <option value="">Choose a region…</option>
@@ -121,7 +128,7 @@ export default function TerritoryScopePicker({
           <select
             id="territory-buyer"
             value={buyerType}
-            onChange={(e) => setBuyerType(e.target.value)}
+            onChange={(e) => changeSelection(setBuyerType, e.target.value)}
             className="w-full rounded-lg border border-stone bg-cream px-3 py-2 text-sm text-charcoal"
           >
             <option value="">Choose a buyer type…</option>
@@ -140,7 +147,7 @@ export default function TerritoryScopePicker({
           <select
             id="territory-service"
             value={serviceType}
-            onChange={(e) => setServiceType(e.target.value)}
+            onChange={(e) => changeSelection(setServiceType, e.target.value)}
             className="w-full rounded-lg border border-stone bg-cream px-3 py-2 text-sm text-charcoal"
           >
             <option value="">All service types</option>
@@ -169,12 +176,17 @@ export default function TerritoryScopePicker({
         {loading ? "Checking the record…" : "Check this territory"}
       </button>
 
-      {error && <p className="mt-3 text-sm text-alert">{error}</p>}
+      {error && <p role="alert" className="mt-3 text-sm text-alert">{error}</p>}
 
       {result && (
-        <div className={`mt-6 rounded-lg border p-4 ${VERDICT_STYLES[result.coverage.verdict] ?? "border-stone"}`}>
-          <p className="text-sm font-bold text-bark">{result.coverage.headline}</p>
-          <p className="mt-1 text-sm text-charcoal">{result.coverage.detail}</p>
+        <div role="status" aria-live="polite" className={`mt-6 rounded-lg border p-4 ${VERDICT_STYLES[result.coverage.verdict] ?? "border-stone"}`}>
+          <h3 className="text-sm font-bold text-bark">2. Review coverage</h3>
+          <p className="mt-2 text-sm text-bark">{scopeSummary}</p>
+          <p className="mt-1 text-sm text-charcoal">{result.coverage.providerCount < 12
+            ? "Too few matching organisations for the proposed brief. Try another region or remove the service filter."
+            : result.coverage.providerCount < 25
+              ? "This scope has fewer than 25 matching organisations. A review is needed to establish whether a smaller brief is suitable."
+              : "This count is a starting point for reviewing your scope. It does not verify a ranked shortlist or confirm delivery availability."}</p>
           <dl className="mt-3 grid grid-cols-2 gap-2 text-xs text-dusk">
             <div>
               <dt className="font-semibold text-bark">Providers in scope</dt>
@@ -188,24 +200,6 @@ export default function TerritoryScopePicker({
 
           {result.coverage.canCheckout ? (
             <div className="mt-4">
-              {checkoutEnabled ? (
-                <Link
-                  href={`/signup?plan=territory-opportunity-brief&region=${encodeURIComponent(
-                    result.scope.region,
-                  )}&buyer=${encodeURIComponent(result.scope.buyerType)}`}
-                  className="inline-block rounded-lg bg-clay px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-bark"
-                  onClick={() =>
-                    void trackEvent("territory_checkout_start", "territory_picker", {
-                      region: result.scope.region,
-                      buyer_type: result.scope.buyerType,
-                      verdict: result.coverage.verdict,
-                    })
-                  }
-                >
-                  Continue to payment · £{TERRITORY_BRIEF_PRICE_GBP}
-                </Link>
-              ) : (
-                <>
                   <a
                     href={mailtoHref}
                     className="inline-block rounded-lg bg-clay px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-bark"
@@ -217,14 +211,12 @@ export default function TerritoryScopePicker({
                       })
                     }
                   >
-                    Request this scope · £{TERRITORY_BRIEF_PRICE_GBP}
+                    Email this scope for review
                   </a>
                   <p className="mt-2 text-xs text-dusk">
-                    Scope is confirmed. We send a Payment Link for this exact territory,
-                    then the pack follows.
+                    Opens your email app with your selections. Send the email to request a review.
+                    This does not reserve a brief or take payment. Online ordering is not available.
                   </p>
-                </>
-              )}
             </div>
           ) : null}
         </div>

@@ -1,0 +1,72 @@
+{
+  "cards": 25,
+  "card_fields_match": true,
+  "local_downloads": [
+    {
+      "file": "territory-dataset.csv",
+      "http": 200,
+      "bytes": 136691,
+      "matches_disk": true,
+      "sha256": "c8a30f3c4078ac1beb98471614ecf3b6d263b1fd65d90270e578d86d210b27a1"
+    },
+    {
+      "file": "shortlist-25.csv",
+      "http": 200,
+      "bytes": 19623,
+      "matches_disk": true,
+      "sha256": "deff92094dca5182ca48578e7e9f8723c85ec73e589b14cbb90643d9e25050b4"
+    },
+    {
+      "file": "caregist-birmingham-solihull-territory-brief.xlsx",
+      "http": 200,
+      "bytes": 71817,
+      "matches_disk": true,
+      "sha256": "07314fd81e931837cdcdf36976edb3d987e7478bfdefef7a81ebc699ee91da2a"
+    }
+  ],
+  "territory-dataset.csv": {
+    "rows": 353,
+    "cols": 21,
+    "all_fields_match": true
+  },
+  "shortlist-25.csv": {
+    "rows": 25,
+    "cols": 19,
+    "all_fields_match": true
+  },
+  "existing_pdf": {
+    "path": "/Users/user/CareGist/output/pdf/caregist-birmingham-solihull-executive-brief.pdf",
+    "pages": 4,
+    "bytes": 9863,
+    "sha256": "db5644d13332fddd62d725e1b5f6e3e7d648d4a908832865802375a8bfddd3a6",
+    "first_page_excerpt": "CareGist | September 2026 source editions | Review copy\n1\nBirmingham & Solihull\nTerritory account review\nCareGist | 8 September 2026 | Review copy\nFor a homecare recruitment or sta"
+  },
+  "preview_sha256": "9fc1d05b148c3b8e7f6917cb638ae16111f5595ef3ebef88d5937de4ecbe403b",
+  "inherited_ratings": 15,
+  "adversarial_builds": [
+    {
+      "case": "missing_downloads",
+      "exit_code": 0,
+      "html_generated": true,
+      "observed": "3 missing download targets still linked"
+    },
+    {
+      "case": "contradictory_total",
+      "exit_code": 0,
+      "html_generated": true,
+      "observed": "999 summary and 353 dataset rows emitted"
+    },
+    {
+      "case": "failed_check_stale_card",
+      "exit_code": 0,
+      "html_generated": true,
+      "observed": "card MATCH persists while evidence result is REVIEW"
+    },
+    {
+      "case": "duplicate_provider",
+      "exit_code": 0,
+      "html_generated": true,
+      "observed": "duplicate organisation emitted without rejection"
+    }
+  ]
+}

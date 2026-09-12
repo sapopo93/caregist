@@ -8,40 +8,38 @@ import { TERRITORY_BRIEF_PRICE_GBP } from "@/lib/territory-scope";
 export const metadata: Metadata = {
   title: "Confirm your territory | CareGist Territory Opportunity Brief",
   description:
-    "Choose a region and buyer type, confirm the published CQC record supports it, then buy the Territory Opportunity Brief.",
+    "Check coverage for your territory and review the next steps for a Territory Opportunity Brief.",
 };
 
 export default function TerritoryScopePage() {
-  const checkoutEnabled = process.env.TERRITORY_SELF_SERVE_CHECKOUT_ENABLED === "true";
 
   return (
     <main className="mx-auto max-w-3xl px-6 py-16">
+      <Link href="/pricing" className="mb-6 inline-block text-sm text-clay underline">← Back to pricing</Link>
       <p className="mb-3 font-mono text-xs uppercase tracking-[0.22em] text-clay">
         Territory Opportunity Brief · £{TERRITORY_BRIEF_PRICE_GBP}
       </p>
-      <h1 className="mb-4 text-3xl font-bold text-bark">Confirm your territory, then buy</h1>
+      <h1 className="mb-4 text-3xl font-bold text-bark">Check coverage for your territory</h1>
       <p className="mb-8 text-base leading-7 text-dusk" style={{ fontFamily: "Lora" }}>
-        The brief is a buyer-specific shortlist of 25–50 care organisations with a
-        stated reason for each, a CRM-ready dataset, and a 3–5 page brief on the
-        territory. Instead of a scoping call, confirm the scope here: the system
-        checks the published CQC record for your exact region and buyer type
-        before you pay.
+        £{TERRITORY_BRIEF_PRICE_GBP} for a one-off Territory Opportunity Brief.
+        The intended pack includes a shortlist of 25–50 care organisations,
+        a CRM-ready dataset and a 3–5 page territory brief. Start by checking
+        how many organisations match your selections.
       </p>
 
-      <TerritoryScopePicker checkoutEnabled={checkoutEnabled} />
+      <aside className="mb-8 rounded-lg border border-stone bg-parchment p-4 text-sm leading-6 text-bark">
+        <strong>Online ordering is not available.</strong> You can check coverage
+        and email your scope for review. Coverage counts do not confirm pack
+        availability or delivery. No payment is taken on this page.
+      </aside>
+      <TerritoryScopePicker />
 
       <section className="mt-10 rounded-xl border border-stone bg-parchment p-6">
-        <h2 className="mb-2 text-lg font-bold text-bark">How the scope check works</h2>
+        <h2 className="mb-2 text-lg font-bold text-bark">3. What happens next</h2>
         <ol className="list-decimal space-y-2 pl-5 text-sm leading-6 text-dusk">
-          <li>You choose the region and the organisations you sell to.</li>
-          <li>
-            The system counts the matching organisations in CQC&apos;s published
-            record and reports the most recent observation date.
-          </li>
-          <li>
-            If the record supports the scope, you continue to payment. The pack is
-            built from that same published record.
-          </li>
+          <li>Review the matching count and the date shown above. A smaller count means a shorter potential shortlist.</li>
+          <li>Email your selections if you want us to review availability. You must send the email from your email app.</li>
+          <li>Before any payment, the scope, final price and delivery arrangements must be confirmed. This page does not create an order.</li>
         </ol>
         <p className="mt-4 text-xs text-dusk">
           Prefer to talk it through first?{" "}

@@ -1,0 +1,1467 @@
+{
+  "benchmark": "caregist_provider_intelligence_v2",
+  "source": "/Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+  "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+  "metrics": {
+    "requested": 20,
+    "processed": 20,
+    "provider_identity_verified": 20,
+    "cqc_location_url_present": 20,
+    "website_present": 14,
+    "official_source_retrieved": 20,
+    "official_source_identity_match": 20,
+    "contradictions_tested": 0,
+    "unsupported_claims_emitted": 0,
+    "crm_updates_applied": 0,
+    "abstained_for_missing_public_source": 20
+  },
+  "limitations": [
+    "Local benchmark verifies identity and fail-closed behavior only.",
+    "Official CQC HTML retrieval is a native-HTTP baseline, not a Firecrawl, Crawl4AI, or Docling result.",
+    "No contradiction-detection accuracy claim is made without independently labelled public claims."
+  ],
+  "official_retrievals": [
+    {
+      "url": "https://www.cqc.org.uk/location/1-10000302982",
+      "final_url": "https://www.cqc.org.uk/location/1-10000302982",
+      "ok": true,
+      "status": 200,
+      "bytes": 172349,
+      "sha256": "6049bdc7199087429d73ba86178b7d0b78fcb842312cdae4c3027df7b3fd34c3",
+      "latency_ms": 112,
+      "location_id_present": true,
+      "provider_name_present": true
+    },
+    {
+      "url": "https://www.cqc.org.uk/location/1-10000697432",
+      "final_url": "https://www.cqc.org.uk/location/1-10000697432",
+      "ok": true,
+      "status": 200,
+      "bytes": 168584,
+      "sha256": "1054a5eca25cd1c4a19e43586daad4063ce0a27d689c8f8bfec5e8e55f255142",
+      "latency_ms": 68,
+      "location_id_present": true,
+      "provider_name_present": true
+    },
+    {
+      "url": "https://www.cqc.org.uk/location/1-10000792582",
+      "final_url": "https://www.cqc.org.uk/location/1-10000792582",
+      "ok": true,
+      "status": 200,
+      "bytes": 171520,
+      "sha256": "46a246c46e81e505b260d5fe0da5fb93eb396f41e0ff37b36600d1931d4e8672",
+      "latency_ms": 475,
+      "location_id_present": true,
+      "provider_name_present": true
+    },
+    {
+      "url": "https://www.cqc.org.uk/location/1-10000812939",
+      "final_url": "https://www.cqc.org.uk/location/1-10000812939",
+      "ok": true,
+      "status": 200,
+      "bytes": 174250,
+      "sha256": "ad16feb0d323f6209b0e3949fc84b806a977a3f9ca591be4b4390205c17afb5b",
+      "latency_ms": 73,
+      "location_id_present": true,
+      "provider_name_present": true
+    },
+    {
+      "url": "https://www.cqc.org.uk/location/1-10000813008",
+      "final_url": "https://www.cqc.org.uk/location/1-10000813008",
+      "ok": true,
+      "status": 200,
+      "bytes": 174949,
+      "sha256": "2ec6fdf05ca468d7c203df6e2a046e246e2bfc28f7450dfabadcd62d271b2f4a",
+      "latency_ms": 477,
+      "location_id_present": true,
+      "provider_name_present": true
+    },
+    {
+      "url": "https://www.cqc.org.uk/location/1-10001367005",
+      "final_url": "https://www.cqc.org.uk/location/1-10001367005",
+      "ok": true,
+      "status": 200,
+      "bytes": 176419,
+      "sha256": "b15b7e6807b62fb64830eeec76c21d9e00ed72aee03195434c1249103690aad5",
+      "latency_ms": 74,
+      "location_id_present": true,
+      "provider_name_present": true
+    },
+    {
+      "url": "https://www.cqc.org.uk/location/1-1000210669",
+      "final_url": "https://www.cqc.org.uk/location/1-1000210669",
+      "ok": true,
+      "status": 200,
+      "bytes": 174133,
+      "sha256": "6bdf11c53036e0a788a096af18e314deba48075ded4c9db9ffc4bddcc9ada0c1",
+      "latency_ms": 74,
+      "location_id_present": true,
+      "provider_name_present": true
+    },
+    {
+      "url": "https://www.cqc.org.uk/location/1-1000401911",
+      "final_url": "https://www.cqc.org.uk/location/1-1000401911",
+      "ok": true,
+      "status": 200,
+      "bytes": 175035,
+      "sha256": "7da87c9f40617ce3d694bd56668cdc623d9aa823c4c35cc0a972b049e3460cac",
+      "latency_ms": 381,
+      "location_id_present": true,
+      "provider_name_present": true
+    },
+    {
+      "url": "https://www.cqc.org.uk/location/1-10004712353",
+      "final_url": "https://www.cqc.org.uk/location/1-10004712353",
+      "ok": true,
+      "status": 200,
+      "bytes": 176149,
+      "sha256": "1b04e1d3b55c3ee526760e51ec2e0470a8a3b4cd4da5b47edb4b48fcd7a9e91a",
+      "latency_ms": 344,
+      "location_id_present": true,
+      "provider_name_present": true
+    },
+    {
+      "url": "https://www.cqc.org.uk/location/1-10005356244",
+      "final_url": "https://www.cqc.org.uk/location/1-10005356244",
+      "ok": true,
+      "status": 200,
+      "bytes": 174408,
+      "sha256": "b66c7e5ca7b5d2f331e4e1931339dc5f6bd3cf35735a3c8be8be830d4b8d7d89",
+      "latency_ms": 82,
+      "location_id_present": true,
+      "provider_name_present": true
+    },
+    {
+      "url": "https://www.cqc.org.uk/location/1-10005690253",
+      "final_url": "https://www.cqc.org.uk/location/1-10005690253",
+      "ok": true,
+      "status": 200,
+      "bytes": 174604,
+      "sha256": "2034d1c82f3d371425c007c85681d7bf6b55c5aee554da58bad14036b9c9bee9",
+      "latency_ms": 430,
+      "location_id_present": true,
+      "provider_name_present": true
+    },
+    {
+      "url": "https://www.cqc.org.uk/location/1-10005776421",
+      "final_url": "https://www.cqc.org.uk/location/1-10005776421",
+      "ok": true,
+      "status": 200,
+      "bytes": 176725,
+      "sha256": "37a80d985c18d3c8ae68428fe2c04e8755a60dd5057b2380d0c3f96a9467416e",
+      "latency_ms": 80,
+      "location_id_present": true,
+      "provider_name_present": true
+    },
+    {
+      "url": "https://www.cqc.org.uk/location/1-1000587219",
+      "final_url": "https://www.cqc.org.uk/location/1-1000587219",
+      "ok": true,
+      "status": 200,
+      "bytes": 174998,
+      "sha256": "617aa6045970dddd22e810234b539a8eff87951f9d16e57fd3d5bcd345080e2a",
+      "latency_ms": 355,
+      "location_id_present": true,
+      "provider_name_present": true
+    },
+    {
+      "url": "https://www.cqc.org.uk/location/1-10005907441",
+      "final_url": "https://www.cqc.org.uk/location/1-10005907441",
+      "ok": true,
+      "status": 200,
+      "bytes": 178481,
+      "sha256": "5aebb131885d7e74593db7efc6389b060d9a1c6bbdc996e592a606dd67c8bba4",
+      "latency_ms": 72,
+      "location_id_present": true,
+      "provider_name_present": true
+    },
+    {
+      "url": "https://www.cqc.org.uk/location/1-10005907509",
+      "final_url": "https://www.cqc.org.uk/location/1-10005907509",
+      "ok": true,
+      "status": 200,
+      "bytes": 178441,
+      "sha256": "05e296f1d9a352ee89155cb30130056e39596f1e2d15222cd7b2f216cb3dff22",
+      "latency_ms": 73,
+      "location_id_present": true,
+      "provider_name_present": true
+    },
+    {
+      "url": "https://www.cqc.org.uk/location/1-10006311414",
+      "final_url": "https://www.cqc.org.uk/location/1-10006311414",
+      "ok": true,
+      "status": 200,
+      "bytes": 173015,
+      "sha256": "2133ca05343ac9664128a5f90d2d7e3dd89f74e67d5bc1468e5f52885dded269",
+      "latency_ms": 356,
+      "location_id_present": true,
+      "provider_name_present": true
+    },
+    {
+      "url": "https://www.cqc.org.uk/location/1-10006353802",
+      "final_url": "https://www.cqc.org.uk/location/1-10006353802",
+      "ok": true,
+      "status": 200,
+      "bytes": 175250,
+      "sha256": "81623162c035b379c88d4720983a8ce76a4410b370d7f865a5ce779fa399ba43",
+      "latency_ms": 75,
+      "location_id_present": true,
+      "provider_name_present": true
+    },
+    {
+      "url": "https://www.cqc.org.uk/location/1-10006628770",
+      "final_url": "https://www.cqc.org.uk/location/1-10006628770",
+      "ok": true,
+      "status": 200,
+      "bytes": 174413,
+      "sha256": "d66af00ce98f96446c0c6caf76faebcb5cb05f502517282894cda6ae68c60b07",
+      "latency_ms": 409,
+      "location_id_present": true,
+      "provider_name_present": true
+    },
+    {
+      "url": "https://www.cqc.org.uk/location/1-10006700008",
+      "final_url": "https://www.cqc.org.uk/location/1-10006700008",
+      "ok": true,
+      "status": 200,
+      "bytes": 169918,
+      "sha256": "beabc47d2c2b86ea60bc17ceb86c04c872f55e201dfaab04f51fd0b9cbc39718",
+      "latency_ms": 345,
+      "location_id_present": true,
+      "provider_name_present": true
+    },
+    {
+      "url": "https://www.cqc.org.uk/location/1-10007378777",
+      "final_url": "https://www.cqc.org.uk/location/1-10007378777",
+      "ok": true,
+      "status": 200,
+      "bytes": 178484,
+      "sha256": "dcb99837ae131b0a90de1bbb9929a1e689530122d52f97fb79b2d331f98f9bca",
+      "latency_ms": 73,
+      "location_id_present": true,
+      "provider_name_present": true
+    }
+  ],
+  "records": [
+    {
+      "location_id": "1-10000302982",
+      "provider_id": "1-102642938",
+      "identity_state": "verified",
+      "evidence": [
+        {
+          "field": "name",
+          "value": "Henley House",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "overall_rating",
+          "value": "Good",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "number_of_beds",
+          "value": "66",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "website",
+          "value": "https://www.greensleeves.org.uk/care-homes/henley-house-ipswich-suffolk",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "inspection_report_url",
+          "value": "https://www.cqc.org.uk/location/1-10000302982",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        }
+      ],
+      "contradictions": [],
+      "proposed_updates": {},
+      "proposal_state": "requires_human_review",
+      "publish_allowed": false,
+      "review_reasons": [
+        "public_source_not_retrieved"
+      ]
+    },
+    {
+      "location_id": "1-10000697432",
+      "provider_id": "1-9622082530",
+      "identity_state": "verified",
+      "evidence": [
+        {
+          "field": "name",
+          "value": "Vara Dental Practice",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "overall_rating",
+          "value": "Not Yet Inspected",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "number_of_beds",
+          "value": "0",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "website",
+          "value": "https://www.varadentalpractice.co.uk",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "inspection_report_url",
+          "value": "https://www.cqc.org.uk/location/1-10000697432",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        }
+      ],
+      "contradictions": [],
+      "proposed_updates": {},
+      "proposal_state": "requires_human_review",
+      "publish_allowed": false,
+      "review_reasons": [
+        "public_source_not_retrieved"
+      ]
+    },
+    {
+      "location_id": "1-10000792582",
+      "provider_id": "1-9098203603",
+      "identity_state": "verified",
+      "evidence": [
+        {
+          "field": "name",
+          "value": "Orchids Care",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "overall_rating",
+          "value": "Good",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "number_of_beds",
+          "value": "0",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "website",
+          "value": "https://www.orchids-care.co.uk",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "inspection_report_url",
+          "value": "https://www.cqc.org.uk/location/1-10000792582",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        }
+      ],
+      "contradictions": [],
+      "proposed_updates": {},
+      "proposal_state": "requires_human_review",
+      "publish_allowed": false,
+      "review_reasons": [
+        "public_source_not_retrieved"
+      ]
+    },
+    {
+      "location_id": "1-10000812939",
+      "provider_id": "1-101658918",
+      "identity_state": "verified",
+      "evidence": [
+        {
+          "field": "name",
+          "value": "Charlotte House",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "overall_rating",
+          "value": "Good",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "number_of_beds",
+          "value": "103",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "website",
+          "value": "https://www.lovettcare.co.uk",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "inspection_report_url",
+          "value": "https://www.cqc.org.uk/location/1-10000812939",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        }
+      ],
+      "contradictions": [],
+      "proposed_updates": {},
+      "proposal_state": "requires_human_review",
+      "publish_allowed": false,
+      "review_reasons": [
+        "public_source_not_retrieved"
+      ]
+    },
+    {
+      "location_id": "1-10000813008",
+      "provider_id": "1-101658918",
+      "identity_state": "verified",
+      "evidence": [
+        {
+          "field": "name",
+          "value": "Regency Care Centre",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "overall_rating",
+          "value": "Good",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "number_of_beds",
+          "value": "60",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "website",
+          "value": "https://www.lovettcare.co.uk",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "inspection_report_url",
+          "value": "https://www.cqc.org.uk/location/1-10000813008",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        }
+      ],
+      "contradictions": [],
+      "proposed_updates": {},
+      "proposal_state": "requires_human_review",
+      "publish_allowed": false,
+      "review_reasons": [
+        "public_source_not_retrieved"
+      ]
+    },
+    {
+      "location_id": "1-10001367005",
+      "provider_id": "1-9544976036",
+      "identity_state": "verified",
+      "evidence": [
+        {
+          "field": "name",
+          "value": "218 Smile Clinic",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "overall_rating",
+          "value": "Inspected But Not Rated",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "number_of_beds",
+          "value": "0",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "inspection_report_url",
+          "value": "https://www.cqc.org.uk/location/1-10001367005",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        }
+      ],
+      "contradictions": [],
+      "proposed_updates": {},
+      "proposal_state": "requires_human_review",
+      "publish_allowed": false,
+      "review_reasons": [
+        "public_source_not_retrieved"
+      ]
+    },
+    {
+      "location_id": "1-1000210669",
+      "provider_id": "1-877912132",
+      "identity_state": "verified",
+      "evidence": [
+        {
+          "field": "name",
+          "value": "Kingswood House Nursing Home",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "overall_rating",
+          "value": "Requires Improvement",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "number_of_beds",
+          "value": "22",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "website",
+          "value": "https://www.innowood.co.uk",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "inspection_report_url",
+          "value": "https://www.cqc.org.uk/location/1-1000210669",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        }
+      ],
+      "contradictions": [],
+      "proposed_updates": {},
+      "proposal_state": "requires_human_review",
+      "publish_allowed": false,
+      "review_reasons": [
+        "public_source_not_retrieved"
+      ]
+    },
+    {
+      "location_id": "1-1000401911",
+      "provider_id": "1-101666779",
+      "identity_state": "verified",
+      "evidence": [
+        {
+          "field": "name",
+          "value": "Little Haven",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "overall_rating",
+          "value": "Good",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "number_of_beds",
+          "value": "16",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "inspection_report_url",
+          "value": "https://www.cqc.org.uk/location/1-1000401911",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        }
+      ],
+      "contradictions": [],
+      "proposed_updates": {},
+      "proposal_state": "requires_human_review",
+      "publish_allowed": false,
+      "review_reasons": [
+        "public_source_not_retrieved"
+      ]
+    },
+    {
+      "location_id": "1-10004712353",
+      "provider_id": "1-1916254261",
+      "identity_state": "verified",
+      "evidence": [
+        {
+          "field": "name",
+          "value": "Headquarters",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "overall_rating",
+          "value": "Good",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "number_of_beds",
+          "value": "0",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "website",
+          "value": "https://www.gphealthcarealliance.co.uk",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "inspection_report_url",
+          "value": "https://www.cqc.org.uk/location/1-10004712353",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        }
+      ],
+      "contradictions": [],
+      "proposed_updates": {},
+      "proposal_state": "requires_human_review",
+      "publish_allowed": false,
+      "review_reasons": [
+        "public_source_not_retrieved"
+      ]
+    },
+    {
+      "location_id": "1-10005356244",
+      "provider_id": "1-9544976036",
+      "identity_state": "verified",
+      "evidence": [
+        {
+          "field": "name",
+          "value": "Colindale Smile Clinic",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "overall_rating",
+          "value": "Inspected But Not Rated",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "number_of_beds",
+          "value": "0",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "inspection_report_url",
+          "value": "https://www.cqc.org.uk/location/1-10005356244",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        }
+      ],
+      "contradictions": [],
+      "proposed_updates": {},
+      "proposal_state": "requires_human_review",
+      "publish_allowed": false,
+      "review_reasons": [
+        "public_source_not_retrieved"
+      ]
+    },
+    {
+      "location_id": "1-10005690253",
+      "provider_id": "1-101644059",
+      "identity_state": "verified",
+      "evidence": [
+        {
+          "field": "name",
+          "value": "Rowan House",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "overall_rating",
+          "value": "Good",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "number_of_beds",
+          "value": "9",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "website",
+          "value": "https://www.milewoodhealthcare.com",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "inspection_report_url",
+          "value": "https://www.cqc.org.uk/location/1-10005690253",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        }
+      ],
+      "contradictions": [],
+      "proposed_updates": {},
+      "proposal_state": "requires_human_review",
+      "publish_allowed": false,
+      "review_reasons": [
+        "public_source_not_retrieved"
+      ]
+    },
+    {
+      "location_id": "1-10005776421",
+      "provider_id": "1-9894532134",
+      "identity_state": "verified",
+      "evidence": [
+        {
+          "field": "name",
+          "value": "Tresillian Residential Home",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "overall_rating",
+          "value": "Good",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "number_of_beds",
+          "value": "7",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "website",
+          "value": "https://www.kerensacare.co.uk",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "inspection_report_url",
+          "value": "https://www.cqc.org.uk/location/1-10005776421",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        }
+      ],
+      "contradictions": [],
+      "proposed_updates": {},
+      "proposal_state": "requires_human_review",
+      "publish_allowed": false,
+      "review_reasons": [
+        "public_source_not_retrieved"
+      ]
+    },
+    {
+      "location_id": "1-1000587219",
+      "provider_id": "1-101693962",
+      "identity_state": "verified",
+      "evidence": [
+        {
+          "field": "name",
+          "value": "Highlands Borders Care Home",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "overall_rating",
+          "value": "Good",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "number_of_beds",
+          "value": "28",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "website",
+          "value": "https://www.highlandscarehome.co.uk",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "inspection_report_url",
+          "value": "https://www.cqc.org.uk/location/1-1000587219",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        }
+      ],
+      "contradictions": [],
+      "proposed_updates": {},
+      "proposal_state": "requires_human_review",
+      "publish_allowed": false,
+      "review_reasons": [
+        "public_source_not_retrieved"
+      ]
+    },
+    {
+      "location_id": "1-10005907441",
+      "provider_id": "1-9676493377",
+      "identity_state": "verified",
+      "evidence": [
+        {
+          "field": "name",
+          "value": "Pinner Road Smile Clinic Ltd",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "overall_rating",
+          "value": "Inspected But Not Rated",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "number_of_beds",
+          "value": "0",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "inspection_report_url",
+          "value": "https://www.cqc.org.uk/location/1-10005907441",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        }
+      ],
+      "contradictions": [],
+      "proposed_updates": {},
+      "proposal_state": "requires_human_review",
+      "publish_allowed": false,
+      "review_reasons": [
+        "public_source_not_retrieved"
+      ]
+    },
+    {
+      "location_id": "1-10005907509",
+      "provider_id": "1-9671911115",
+      "identity_state": "verified",
+      "evidence": [
+        {
+          "field": "name",
+          "value": "Colindale Smile Clinic",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "overall_rating",
+          "value": "Inspected But Not Rated",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "number_of_beds",
+          "value": "0",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "inspection_report_url",
+          "value": "https://www.cqc.org.uk/location/1-10005907509",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        }
+      ],
+      "contradictions": [],
+      "proposed_updates": {},
+      "proposal_state": "requires_human_review",
+      "publish_allowed": false,
+      "review_reasons": [
+        "public_source_not_retrieved"
+      ]
+    },
+    {
+      "location_id": "1-10006311414",
+      "provider_id": "1-199787633",
+      "identity_state": "verified",
+      "evidence": [
+        {
+          "field": "name",
+          "value": "St Johns Medical Centre",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "overall_rating",
+          "value": "Good",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "number_of_beds",
+          "value": "0",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "website",
+          "value": "https://www.stjohnsmedicalcentre.co.uk",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "inspection_report_url",
+          "value": "https://www.cqc.org.uk/location/1-10006311414",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        }
+      ],
+      "contradictions": [],
+      "proposed_updates": {},
+      "proposal_state": "requires_human_review",
+      "publish_allowed": false,
+      "review_reasons": [
+        "public_source_not_retrieved"
+      ]
+    },
+    {
+      "location_id": "1-10006353802",
+      "provider_id": "1-9677788059",
+      "identity_state": "verified",
+      "evidence": [
+        {
+          "field": "name",
+          "value": "Balham Smile Clinic",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "overall_rating",
+          "value": "Not Yet Inspected",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "number_of_beds",
+          "value": "0",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "inspection_report_url",
+          "value": "https://www.cqc.org.uk/location/1-10006353802",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        }
+      ],
+      "contradictions": [],
+      "proposed_updates": {},
+      "proposal_state": "requires_human_review",
+      "publish_allowed": false,
+      "review_reasons": [
+        "public_source_not_retrieved"
+      ]
+    },
+    {
+      "location_id": "1-10006628770",
+      "provider_id": "1-9512066678",
+      "identity_state": "verified",
+      "evidence": [
+        {
+          "field": "name",
+          "value": "Stivic Care Services Ltd",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "overall_rating",
+          "value": "Good",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "number_of_beds",
+          "value": "0",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "website",
+          "value": "https://www.stiviccareservices.co.uk",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "inspection_report_url",
+          "value": "https://www.cqc.org.uk/location/1-10006628770",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        }
+      ],
+      "contradictions": [],
+      "proposed_updates": {},
+      "proposal_state": "requires_human_review",
+      "publish_allowed": false,
+      "review_reasons": [
+        "public_source_not_retrieved"
+      ]
+    },
+    {
+      "location_id": "1-10006700008",
+      "provider_id": "1-6510356478",
+      "identity_state": "verified",
+      "evidence": [
+        {
+          "field": "name",
+          "value": "Caremark (Arun)",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "overall_rating",
+          "value": "Good",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "number_of_beds",
+          "value": "0",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "website",
+          "value": "https://www.caremark.co.uk/arun",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "inspection_report_url",
+          "value": "https://www.cqc.org.uk/location/1-10006700008",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        }
+      ],
+      "contradictions": [],
+      "proposed_updates": {},
+      "proposal_state": "requires_human_review",
+      "publish_allowed": false,
+      "review_reasons": [
+        "public_source_not_retrieved"
+      ]
+    },
+    {
+      "location_id": "1-10007378777",
+      "provider_id": "1-9213457715",
+      "identity_state": "verified",
+      "evidence": [
+        {
+          "field": "name",
+          "value": "Lewis Grove Dental Practice",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "overall_rating",
+          "value": "Inspected But Not Rated",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "number_of_beds",
+          "value": "0",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "website",
+          "value": "https://www.lgdp.net",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        },
+        {
+          "field": "inspection_report_url",
+          "value": "https://www.cqc.org.uk/location/1-10007378777",
+          "state": "verified",
+          "source_uri": "file:///Users/user/CareGist/frontend/data/directory-fallback-full.csv",
+          "observed_at": "2026-03-28 01:04:17",
+          "source_sha256": "18bf6d6891e131be670103b3aa1aef8fc558b231208efa0841022bde62d1a838",
+          "source_kind": "cqc",
+          "note": null
+        }
+      ],
+      "contradictions": [],
+      "proposed_updates": {},
+      "proposal_state": "requires_human_review",
+      "publish_allowed": false,
+      "review_reasons": [
+        "public_source_not_retrieved"
+      ]
+    }
+  ]
+}

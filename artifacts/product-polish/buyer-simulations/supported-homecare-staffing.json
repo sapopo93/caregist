@@ -1,0 +1,11 @@
+{
+  "simulation": true,
+  "buyer_label": "Synthetic homecare staffing buyer, not a customer",
+  "scope": {
+    "buyer_type": "homecare_staffing_supplier",
+    "authorities": ["Birmingham", "Solihull"],
+    "service": "Domiciliary care",
+    "selection_routes": ["multi_location_provider", "recent_registration"],
+    "requested_enrichment": []
+  }
+}

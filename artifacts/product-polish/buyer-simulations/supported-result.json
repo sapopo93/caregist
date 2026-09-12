@@ -1,0 +1,59 @@
+{
+  "simulation": true,
+  "buyer_label": "Synthetic homecare staffing buyer, not a customer",
+  "source_pack": "/Users/user/CareGist/artifacts/launch-samples/bsol-domiciliary-fresh-2026-09-08",
+  "fulfilled_locally": true,
+  "order_ready": false,
+  "checks": {
+    "buyer_intake": {
+      "result": "PASS",
+      "detail": "Synthetic buyer fixture is labelled simulation."
+    },
+    "scope_gate": {
+      "result": "PASS",
+      "detail": "Scope matches the retained Birmingham/Solihull homecare staffing pack."
+    },
+    "shortlist": {
+      "result": "PASS",
+      "detail": "25 of 25 records contain the four required fields."
+    },
+    "delivery_assets": {
+      "result": "PASS",
+      "detail": [
+        {
+          "file": "territory-dataset.csv",
+          "present": true,
+          "hash_matches": true
+        },
+        {
+          "file": "shortlist-25.csv",
+          "present": true,
+          "hash_matches": true
+        },
+        {
+          "file": "caregist-birmingham-solihull-territory-brief.xlsx",
+          "present": true,
+          "hash_matches": true
+        },
+        {
+          "file": "caregist-birmingham-solihull-executive-brief.pdf",
+          "present": true,
+          "hash_matches": true
+        }
+      ]
+    },
+    "executive_pdf": {
+      "result": "PASS",
+      "detail": "Four-page retained executive brief."
+    },
+    "payment_acceptance": {
+      "result": "BLOCKED",
+      "detail": "No live \u00a3795 product, price or Payment Link exists in the local Stripe manifest. This simulation never creates a charge."
+    },
+    "terms": {
+      "result": "BLOCKED",
+      "detail": "Current Terms do not state the Territory Opportunity Brief scope or one-off cancellation/refund terms."
+    }
+  },
+  "rule": "A compatible scope may proceed to a human delivery-date confirmation. It must not become an accepted paid order until payment and Terms pass."
+}

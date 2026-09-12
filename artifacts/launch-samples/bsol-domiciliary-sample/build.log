@@ -1,0 +1,12 @@
+Build date: 2026-09-08
+Working directory: /Users/user/CareGist
+
+Commands:
+python3 artifacts/launch-samples/bsol-domiciliary-sample/build_sample.py
+python3 artifacts/launch-samples/bsol-domiciliary-sample/build_sample.py --verify
+
+Results:
+BUILT: 371 dataset rows and 40 shortlist rows
+VERIFIED: 371 dataset rows and 40 shortlist rows trace to directory_providers.csv
+
+No network request, live CQC request, outbound message, Stripe call, or deployment was made.

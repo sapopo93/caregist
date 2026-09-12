@@ -1,0 +1,978 @@
+{
+  "edition_date": "2026-08-04",
+  "la_count_total": 153,
+  "la_count_with_events": 76,
+  "la_count_zero_events": 77,
+  "local_authorities": {
+    "Barking and Dagenham": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "London",
+      "rows": 262
+    },
+    "Barnet": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "London",
+      "rows": 451
+    },
+    "Barnsley": {
+      "new_registration": 0,
+      "rating_published": 2,
+      "region": "Yorkshire and The Humber",
+      "rows": 220
+    },
+    "Bath and North East Somerset": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "South West",
+      "rows": 186
+    },
+    "Bedford": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "East of England",
+      "rows": 272
+    },
+    "Bexley": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "London",
+      "rows": 202
+    },
+    "Birmingham": {
+      "new_registration": 0,
+      "rating_published": 2,
+      "region": "West Midlands",
+      "rows": 1224
+    },
+    "Blackburn with Darwen": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "North West",
+      "rows": 151
+    },
+    "Blackpool": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "North West",
+      "rows": 147
+    },
+    "Bolton": {
+      "new_registration": 1,
+      "rating_published": 0,
+      "region": "North West",
+      "rows": 277
+    },
+    "Bournemouth, Christchurch and Poole": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "South West",
+      "rows": 466
+    },
+    "Bracknell Forest": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "South East",
+      "rows": 92
+    },
+    "Bradford": {
+      "new_registration": 1,
+      "rating_published": 0,
+      "region": "Yorkshire and The Humber",
+      "rows": 436
+    },
+    "Brent": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "London",
+      "rows": 334
+    },
+    "Brighton and Hove": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "South East",
+      "rows": 324
+    },
+    "Bristol, City of": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "South West",
+      "rows": 417
+    },
+    "Bromley": {
+      "new_registration": 1,
+      "rating_published": 0,
+      "region": "London",
+      "rows": 320
+    },
+    "Buckinghamshire": {
+      "new_registration": 1,
+      "rating_published": 0,
+      "region": "South East",
+      "rows": 556
+    },
+    "Bury": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "North West",
+      "rows": 205
+    },
+    "Calderdale": {
+      "new_registration": 1,
+      "rating_published": 0,
+      "region": "Yorkshire and The Humber",
+      "rows": 176
+    },
+    "Cambridgeshire": {
+      "new_registration": 0,
+      "rating_published": 4,
+      "region": "East of England",
+      "rows": 590
+    },
+    "Camden": {
+      "new_registration": 1,
+      "rating_published": 0,
+      "region": "London",
+      "rows": 310
+    },
+    "Central Bedfordshire": {
+      "new_registration": 0,
+      "rating_published": 2,
+      "region": "East of England",
+      "rows": 220
+    },
+    "Cheshire East": {
+      "new_registration": 0,
+      "rating_published": 2,
+      "region": "North West",
+      "rows": 412
+    },
+    "Cheshire West and Chester": {
+      "new_registration": 3,
+      "rating_published": 1,
+      "region": "North West",
+      "rows": 357
+    },
+    "City of London": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "London",
+      "rows": 111
+    },
+    "Cornwall": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "South West",
+      "rows": 554
+    },
+    "County Durham": {
+      "new_registration": 0,
+      "rating_published": 1,
+      "region": "North East",
+      "rows": 415
+    },
+    "Coventry": {
+      "new_registration": 0,
+      "rating_published": 1,
+      "region": "West Midlands",
+      "rows": 355
+    },
+    "Croydon": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "London",
+      "rows": 486
+    },
+    "Cumberland": {
+      "new_registration": 1,
+      "rating_published": 0,
+      "region": "North West",
+      "rows": 256
+    },
+    "Darlington": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "North East",
+      "rows": 102
+    },
+    "Derby": {
+      "new_registration": 0,
+      "rating_published": 1,
+      "region": "East Midlands",
+      "rows": 297
+    },
+    "Derbyshire": {
+      "new_registration": 0,
+      "rating_published": 1,
+      "region": "East Midlands",
+      "rows": 689
+    },
+    "Devon": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "South West",
+      "rows": 830
+    },
+    "Doncaster": {
+      "new_registration": 0,
+      "rating_published": 1,
+      "region": "Yorkshire and The Humber",
+      "rows": 289
+    },
+    "Dorset": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "South West",
+      "rows": 384
+    },
+    "Dudley": {
+      "new_registration": 0,
+      "rating_published": 1,
+      "region": "West Midlands",
+      "rows": 284
+    },
+    "Ealing": {
+      "new_registration": 0,
+      "rating_published": 2,
+      "region": "London",
+      "rows": 343
+    },
+    "East Riding of Yorkshire": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "Yorkshire and The Humber",
+      "rows": 343
+    },
+    "East Sussex": {
+      "new_registration": 0,
+      "rating_published": 4,
+      "region": "South East",
+      "rows": 702
+    },
+    "Enfield": {
+      "new_registration": 1,
+      "rating_published": 0,
+      "region": "London",
+      "rows": 355
+    },
+    "Essex": {
+      "new_registration": 0,
+      "rating_published": 2,
+      "region": "East of England",
+      "rows": 1565
+    },
+    "Gateshead": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "North East",
+      "rows": 190
+    },
+    "Gloucestershire": {
+      "new_registration": 0,
+      "rating_published": 1,
+      "region": "South West",
+      "rows": 678
+    },
+    "Greenwich": {
+      "new_registration": 1,
+      "rating_published": 0,
+      "region": "London",
+      "rows": 281
+    },
+    "Hackney": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "London",
+      "rows": 162
+    },
+    "Halton": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "North West",
+      "rows": 94
+    },
+    "Hammersmith and Fulham": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "London",
+      "rows": 200
+    },
+    "Hampshire": {
+      "new_registration": 0,
+      "rating_published": 1,
+      "region": "South East",
+      "rows": 1427
+    },
+    "Haringey": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "London",
+      "rows": 229
+    },
+    "Harrow": {
+      "new_registration": 1,
+      "rating_published": 0,
+      "region": "London",
+      "rows": 302
+    },
+    "Hartlepool": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "North East",
+      "rows": 72
+    },
+    "Havering": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "London",
+      "rows": 301
+    },
+    "Herefordshire, County of": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "West Midlands",
+      "rows": 221
+    },
+    "Hertfordshire": {
+      "new_registration": 0,
+      "rating_published": 2,
+      "region": "East of England",
+      "rows": 1168
+    },
+    "Hillingdon": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "London",
+      "rows": 286
+    },
+    "Hounslow": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "London",
+      "rows": 242
+    },
+    "Isle of Wight": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "South East",
+      "rows": 157
+    },
+    "Isles of Scilly": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "South West",
+      "rows": 5
+    },
+    "Islington": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "London",
+      "rows": 196
+    },
+    "Kensington and Chelsea": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "London",
+      "rows": 265
+    },
+    "Kent": {
+      "new_registration": 2,
+      "rating_published": 4,
+      "region": "South East",
+      "rows": 1666
+    },
+    "Kingston upon Hull, City of": {
+      "new_registration": 0,
+      "rating_published": 1,
+      "region": "Yorkshire and The Humber",
+      "rows": 228
+    },
+    "Kingston upon Thames": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "London",
+      "rows": 202
+    },
+    "Kirklees": {
+      "new_registration": 0,
+      "rating_published": 1,
+      "region": "Yorkshire and The Humber",
+      "rows": 394
+    },
+    "Knowsley": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "North West",
+      "rows": 123
+    },
+    "Lambeth": {
+      "new_registration": 0,
+      "rating_published": 1,
+      "region": "London",
+      "rows": 255
+    },
+    "Lancashire": {
+      "new_registration": 0,
+      "rating_published": 2,
+      "region": "North West",
+      "rows": 1249
+    },
+    "Leeds": {
+      "new_registration": 2,
+      "rating_published": 1,
+      "region": "Yorkshire and The Humber",
+      "rows": 781
+    },
+    "Leicester": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "East Midlands",
+      "rows": 478
+    },
+    "Leicestershire": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "East Midlands",
+      "rows": 632
+    },
+    "Lewisham": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "London",
+      "rows": 249
+    },
+    "Lincolnshire": {
+      "new_registration": 2,
+      "rating_published": 1,
+      "region": "East Midlands",
+      "rows": 709
+    },
+    "Liverpool": {
+      "new_registration": 0,
+      "rating_published": 2,
+      "region": "North West",
+      "rows": 492
+    },
+    "Luton": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "East of England",
+      "rows": 195
+    },
+    "Manchester": {
+      "new_registration": 2,
+      "rating_published": 1,
+      "region": "North West",
+      "rows": 584
+    },
+    "Medway": {
+      "new_registration": 0,
+      "rating_published": 1,
+      "region": "South East",
+      "rows": 297
+    },
+    "Merton": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "London",
+      "rows": 207
+    },
+    "Middlesbrough": {
+      "new_registration": 0,
+      "rating_published": 1,
+      "region": "North East",
+      "rows": 141
+    },
+    "Milton Keynes": {
+      "new_registration": 1,
+      "rating_published": 0,
+      "region": "South East",
+      "rows": 377
+    },
+    "Newcastle upon Tyne": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "North East",
+      "rows": 275
+    },
+    "Newham": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "London",
+      "rows": 234
+    },
+    "Norfolk": {
+      "new_registration": 1,
+      "rating_published": 3,
+      "region": "East of England",
+      "rows": 872
+    },
+    "North East Lincolnshire": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "Yorkshire and The Humber",
+      "rows": 148
+    },
+    "North Lincolnshire": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "Yorkshire and The Humber",
+      "rows": 132
+    },
+    "North Northamptonshire": {
+      "new_registration": 0,
+      "rating_published": 2,
+      "region": "East Midlands",
+      "rows": 392
+    },
+    "North Somerset": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "South West",
+      "rows": 218
+    },
+    "North Tyneside": {
+      "new_registration": 1,
+      "rating_published": 0,
+      "region": "North East",
+      "rows": 164
+    },
+    "North Yorkshire": {
+      "new_registration": 1,
+      "rating_published": 0,
+      "region": "Yorkshire and The Humber",
+      "rows": 637
+    },
+    "Northumberland": {
+      "new_registration": 0,
+      "rating_published": 3,
+      "region": "North East",
+      "rows": 271
+    },
+    "Nottingham": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "East Midlands",
+      "rows": 395
+    },
+    "Nottinghamshire": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "East Midlands",
+      "rows": 791
+    },
+    "Oldham": {
+      "new_registration": 1,
+      "rating_published": 0,
+      "region": "North West",
+      "rows": 224
+    },
+    "Oxfordshire": {
+      "new_registration": 1,
+      "rating_published": 1,
+      "region": "South East",
+      "rows": 670
+    },
+    "Peterborough": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "East of England",
+      "rows": 270
+    },
+    "Plymouth": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "South West",
+      "rows": 253
+    },
+    "Portsmouth": {
+      "new_registration": 3,
+      "rating_published": 1,
+      "region": "South East",
+      "rows": 185
+    },
+    "Reading": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "South East",
+      "rows": 187
+    },
+    "Redbridge": {
+      "new_registration": 0,
+      "rating_published": 1,
+      "region": "London",
+      "rows": 367
+    },
+    "Redcar and Cleveland": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "North East",
+      "rows": 120
+    },
+    "Richmond upon Thames": {
+      "new_registration": 1,
+      "rating_published": 0,
+      "region": "London",
+      "rows": 214
+    },
+    "Rochdale": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "North West",
+      "rows": 220
+    },
+    "Rotherham": {
+      "new_registration": 0,
+      "rating_published": 1,
+      "region": "Yorkshire and The Humber",
+      "rows": 240
+    },
+    "Rutland": {
+      "new_registration": 1,
+      "rating_published": 0,
+      "region": "East Midlands",
+      "rows": 46
+    },
+    "Salford": {
+      "new_registration": 1,
+      "rating_published": 0,
+      "region": "North West",
+      "rows": 249
+    },
+    "Sandwell": {
+      "new_registration": 0,
+      "rating_published": 2,
+      "region": "West Midlands",
+      "rows": 326
+    },
+    "Sefton": {
+      "new_registration": 0,
+      "rating_published": 1,
+      "region": "North West",
+      "rows": 287
+    },
+    "Sheffield": {
+      "new_registration": 0,
+      "rating_published": 1,
+      "region": "Yorkshire and The Humber",
+      "rows": 533
+    },
+    "Shropshire": {
+      "new_registration": 0,
+      "rating_published": 2,
+      "region": "West Midlands",
+      "rows": 356
+    },
+    "Slough": {
+      "new_registration": 1,
+      "rating_published": 1,
+      "region": "South East",
+      "rows": 153
+    },
+    "Solihull": {
+      "new_registration": 2,
+      "rating_published": 2,
+      "region": "West Midlands",
+      "rows": 241
+    },
+    "Somerset": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "South West",
+      "rows": 550
+    },
+    "South Gloucestershire": {
+      "new_registration": 0,
+      "rating_published": 2,
+      "region": "South West",
+      "rows": 281
+    },
+    "South Tyneside": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "North East",
+      "rows": 107
+    },
+    "Southampton": {
+      "new_registration": 1,
+      "rating_published": 0,
+      "region": "South East",
+      "rows": 281
+    },
+    "Southend-on-Sea": {
+      "new_registration": 0,
+      "rating_published": 1,
+      "region": "East of England",
+      "rows": 251
+    },
+    "Southwark": {
+      "new_registration": 0,
+      "rating_published": 2,
+      "region": "London",
+      "rows": 223
+    },
+    "St. Helens": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "North West",
+      "rows": 163
+    },
+    "Staffordshire": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "West Midlands",
+      "rows": 838
+    },
+    "Stockport": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "North West",
+      "rows": 307
+    },
+    "Stockton-on-Tees": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "North East",
+      "rows": 197
+    },
+    "Stoke-on-Trent": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "West Midlands",
+      "rows": 281
+    },
+    "Suffolk": {
+      "new_registration": 0,
+      "rating_published": 1,
+      "region": "East of England",
+      "rows": 691
+    },
+    "Sunderland": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "North East",
+      "rows": 233
+    },
+    "Surrey": {
+      "new_registration": 2,
+      "rating_published": 3,
+      "region": "South East",
+      "rows": 1385
+    },
+    "Sutton": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "London",
+      "rows": 232
+    },
+    "Swindon": {
+      "new_registration": 1,
+      "rating_published": 0,
+      "region": "South West",
+      "rows": 187
+    },
+    "Tameside": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "North West",
+      "rows": 160
+    },
+    "Telford and Wrekin": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "West Midlands",
+      "rows": 170
+    },
+    "Thurrock": {
+      "new_registration": 0,
+      "rating_published": 1,
+      "region": "East of England",
+      "rows": 182
+    },
+    "Torbay": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "South West",
+      "rows": 155
+    },
+    "Tower Hamlets": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "London",
+      "rows": 237
+    },
+    "Trafford": {
+      "new_registration": 1,
+      "rating_published": 1,
+      "region": "North West",
+      "rows": 259
+    },
+    "Wakefield": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "Yorkshire and The Humber",
+      "rows": 302
+    },
+    "Walsall": {
+      "new_registration": 0,
+      "rating_published": 1,
+      "region": "West Midlands",
+      "rows": 275
+    },
+    "Waltham Forest": {
+      "new_registration": 1,
+      "rating_published": 0,
+      "region": "London",
+      "rows": 207
+    },
+    "Wandsworth": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "London",
+      "rows": 244
+    },
+    "Warrington": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "North West",
+      "rows": 215
+    },
+    "Warwickshire": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "West Midlands",
+      "rows": 576
+    },
+    "West Berkshire": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "South East",
+      "rows": 150
+    },
+    "West Northamptonshire": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "East Midlands",
+      "rows": 443
+    },
+    "West Sussex": {
+      "new_registration": 2,
+      "rating_published": 4,
+      "region": "South East",
+      "rows": 981
+    },
+    "Westminster": {
+      "new_registration": 1,
+      "rating_published": 0,
+      "region": "London",
+      "rows": 923
+    },
+    "Westmorland and Furness": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "North West",
+      "rows": 227
+    },
+    "Wigan": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "North West",
+      "rows": 257
+    },
+    "Wiltshire": {
+      "new_registration": 0,
+      "rating_published": 2,
+      "region": "South West",
+      "rows": 514
+    },
+    "Windsor and Maidenhead": {
+      "new_registration": 0,
+      "rating_published": 1,
+      "region": "South East",
+      "rows": 189
+    },
+    "Wirral": {
+      "new_registration": 1,
+      "rating_published": 2,
+      "region": "North West",
+      "rows": 323
+    },
+    "Wokingham": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "South East",
+      "rows": 168
+    },
+    "Wolverhampton": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "West Midlands",
+      "rows": 310
+    },
+    "Worcestershire": {
+      "new_registration": 0,
+      "rating_published": 0,
+      "region": "West Midlands",
+      "rows": 576
+    },
+    "York": {
+      "new_registration": 0,
+      "rating_published": 1,
+      "region": "Yorkshire and The Humber",
+      "rows": 181
+    }
+  },
+  "non_english_la_rows_excluded": 195,
+  "regions": {
+    "East Midlands": {
+      "new_registration": 3,
+      "rating_published": 5,
+      "rows": 4872
+    },
+    "East of England": {
+      "new_registration": 1,
+      "rating_published": 16,
+      "rows": 6277
+    },
+    "London": {
+      "new_registration": 8,
+      "rating_published": 6,
+      "rows": 9431
+    },
+    "North East": {
+      "new_registration": 1,
+      "rating_published": 5,
+      "rows": 2287
+    },
+    "North West": {
+      "new_registration": 11,
+      "rating_published": 12,
+      "rows": 7238
+    },
+    "South East": {
+      "new_registration": 14,
+      "rating_published": 21,
+      "rows": 9947
+    },
+    "South West": {
+      "new_registration": 1,
+      "rating_published": 5,
+      "rows": 5678
+    },
+    "West Midlands": {
+      "new_registration": 2,
+      "rating_published": 11,
+      "rows": 6033
+    },
+    "Yorkshire and The Humber": {
+      "new_registration": 5,
+      "rating_published": 9,
+      "rows": 5040
+    }
+  },
+  "source_file": "2026-08-04_HSCA_Active_Locations.ods",
+  "total_rows": 57009,
+  "window_end": "2026-08-04",
+  "window_start": "2026-07-29"
+}

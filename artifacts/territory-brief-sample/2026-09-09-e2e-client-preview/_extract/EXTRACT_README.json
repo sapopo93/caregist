@@ -1,0 +1,9 @@
+{
+  "built_at": "2026-09-09T16:18:36.977905+00:00",
+  "source": "directory_providers.csv (local snapshot; not live CQC refresh)",
+  "filter": "ACTIVE + local_authority in {Birmingham,Solihull} + Homecare Agencies",
+  "locations": 371,
+  "providers": 348,
+  "note": "Full _locations_detail.ndjson absent on this Mac; extract built for CLI dry-run only.",
+  "synthetic_region": "Birmingham and Solihull"
+}
