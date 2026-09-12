@@ -1,5 +1,13 @@
 # CareGist VA Sales Product Brief
 
+> **Superseded — historical training material, not approved for outreach or
+> quoting.** The products, prices, scripts, URLs, and claims below predate the
+> authoritative `2026-08` catalogue and must not be used with prospects. Current
+> authority is `docs/CAREGIST_MASTER_STRATEGY.md`: Free Directory, Radar Regional
+> £299/month, Radar National £799/month, Intelligence Feed Pilot from £6,000/year
+> through a private sales-assisted process, and Embedded Enterprise by quote.
+> Paid checkout remains fail-closed.
+
 Internal training document for virtual assistants selling CareGist by phone.
 
 ## 1. What the VA must understand first

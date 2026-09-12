@@ -13,6 +13,7 @@ import hashlib
 import json
 import os
 import re
+import signal
 import sys
 import time
 from datetime import UTC, datetime
@@ -54,7 +55,50 @@ REPORT_INDEX_PARAMS = {
 SIGNAL_POLL_LOCK_ID = 802451204
 DEFAULT_SWEEP_SIZE = 1200
 DEFAULT_CHECKPOINT_SIZE = 100
+STALE_RUNNING_POLL_MINUTES = 40
+# Whole-run wall-clock budget, deliberately below the 50-minute GitHub job
+# timeout (`.github/workflows/cqc-signal-poll.yml`, timeout-minutes: 50) so the
+# poll fails closed with durable evidence instead of being force-killed into a
+# stale status='running' row that only a later poll would close.
+DEFAULT_POLL_TIME_BUDGET_SECONDS = 45 * 60
 LOCATION_ID_PATTERN = re.compile(r"/location/(?P<location_id>1-\d{5,12})(?:[/?#\"'])")
+
+
+class SignalPollInterrupted(RuntimeError):
+    """Raised when the poller receives SIGTERM/SIGINT so the run can fail closed."""
+
+
+def _install_stop_signals() -> None:
+    def _stop(signum, _frame):
+        raise SignalPollInterrupted(f"received signal {signum}")
+
+    signal.signal(signal.SIGTERM, _stop)
+    signal.signal(signal.SIGINT, _stop)
+
+
+def _close_stale_running_polls(cur, *, older_than_minutes: int = STALE_RUNNING_POLL_MINUTES) -> int:
+    cur.execute(
+        """
+        UPDATE pipeline_runs
+        SET completed_at = COALESCE(completed_at, NOW()),
+            status = 'failed',
+            error_message = LEFT(
+              COALESCE(error_message || ' | ', '') || 'stale_running_signal_poll',
+              4000
+            ),
+            counts_reconciled = FALSE,
+            reconciled_at = NULL,
+            checkpoint_state = COALESCE(checkpoint_state, '{}'::jsonb) || %s::jsonb
+        WHERE run_type = 'signal_poll'
+          AND status = 'running'
+          AND started_at < NOW() - (%s * INTERVAL '1 minute')
+        """,
+        (
+            json.dumps({"restartable": False, "restartMode": "fresh_run", "failure": "stale_running_signal_poll"}),
+            older_than_minutes,
+        ),
+    )
+    return int(cur.rowcount or 0)
 
 
 def fetch_report_candidates() -> tuple[set[str], bytes, str]:
@@ -133,6 +177,56 @@ def _update_run_evidence(
             run_id,
         ),
     )
+
+
+def _signal_checkpoint_state(
+    *,
+    next_offset: int,
+    last_location_id: str | None,
+    failure_details: list[dict[str, str]],
+    skipped_not_found: list[str],
+    full_coverage: bool | None = None,
+) -> dict:
+    """Build complete, immutable-at-write evidence for a poll checkpoint."""
+    state = {
+        "nextOffset": next_offset,
+        "restartable": False,
+        "restartMode": "fresh_run",
+        "failures": list(failure_details),
+        "skippedNotFound": list(skipped_not_found),
+        "skippedNotFoundCount": len(skipped_not_found),
+    }
+    if last_location_id is not None:
+        state["lastLocationId"] = last_location_id
+    if full_coverage is not None:
+        state["fullCoverage"] = full_coverage
+    return state
+
+
+def _failed_run_checkpoint_state(
+    exc: Exception,
+    *,
+    attempted_offset: int,
+    last_attempted_location_id: str | None,
+    attempted_successes: int,
+    failure_details: list[dict[str, str]],
+    skipped_not_found: list[str],
+) -> dict:
+    """Describe attempted, potentially rolled-back work without claiming it durable."""
+    state = {
+        "restartable": False,
+        "restartMode": "fresh_run",
+        "failure": str(exc)[:1000],
+        "attemptedOffset": attempted_offset,
+        "attemptedSuccessCount": attempted_successes,
+        "attemptedFailureCount": len(failure_details),
+        "attemptedFailures": list(failure_details),
+        "attemptedSkippedNotFound": list(skipped_not_found),
+        "attemptedSkippedNotFoundCount": len(skipped_not_found),
+    }
+    if last_attempted_location_id is not None:
+        state["lastAttemptedLocationId"] = last_attempted_location_id
+    return state
 
 
 def _record_location_index(
@@ -222,6 +316,7 @@ def run_signal_poll(
     sleep: float = 0.05,
     index_enabled: bool = True,
     report_enabled: bool = True,
+    time_budget_seconds: int = DEFAULT_POLL_TIME_BUDGET_SECONDS,
 ) -> dict[str, int | bool]:
     if not index_enabled and not report_enabled:
         return {"skipped": True, "new_ids": 0, "report_candidates": 0, "processed": 0, "events": 0}
@@ -231,11 +326,21 @@ def run_signal_poll(
     cur = conn.cursor()
     lock_acquired = False
     run_id = None
+    attempted_index = 0
+    last_attempted_location_id: str | None = None
+    processed = 0
+    inserted = 0
+    updated = 0
+    failures = 0
+    failure_details: list[dict[str, str]] = []
+    skipped_not_found: list[str] = []
     try:
         cur.execute("SELECT pg_try_advisory_lock(%s)", (SIGNAL_POLL_LOCK_ID,))
         lock_acquired = bool(cur.fetchone()[0])
         if not lock_acquired:
             return {"skipped": True, "new_ids": 0, "report_candidates": 0, "processed": 0, "events": 0}
+        _close_stale_running_polls(cur)
+        conn.commit()
 
         intended_provenance = {
             "locationIndex": {
@@ -264,6 +369,7 @@ def run_signal_poll(
         )
         run_id = int(cur.fetchone()[0])
         conn.commit()
+        started_wall = time.monotonic()
 
         location_ids: set[str] = set()
         index_checksum: str | None = None
@@ -352,13 +458,32 @@ def run_signal_poll(
             cur.execute("SELECT COUNT(*) FROM trusted_event_ledger")
             events_before = int(cur.fetchone()[0] or 0)
 
-        processed = 0
-        inserted = 0
-        updated = 0
-        failures = 0
-        failure_details: list[dict[str, str]] = []
-        skipped_not_found: list[str] = []
         for index, location_id in enumerate(ordered_ids, start=1):
+            if time.monotonic() - started_wall >= time_budget_seconds:
+                # Fail closed before the external job timeout can kill the
+                # process uncleanly (leaving a stale status='running' row that
+                # only a later poll would close as failed). Persist a durable
+                # checkpoint of attempted items, then let the shared failure
+                # path record an honest failed run. attempted_index/… still
+                # describe the last *attempted* item, so evidence is exact.
+                _update_run_evidence(
+                    cur, run_id, source_total=len(ordered_ids), checked=index - 1,
+                    successes=processed + len(skipped_not_found), failures=failures,
+                    checkpoint_state=_signal_checkpoint_state(
+                        next_offset=index - 1,
+                        last_location_id=location_id if index > 1 else None,
+                        failure_details=failure_details,
+                        skipped_not_found=skipped_not_found,
+                        full_coverage=False,
+                    ),
+                )
+                conn.commit()
+                raise SignalPollInterrupted(
+                    f"signal_poll_time_budget_exhausted: {time_budget_seconds}s budget "
+                    f"reached before item {index} of {len(ordered_ids)}"
+                )
+            attempted_index = index
+            last_attempted_location_id = location_id
             try:
                 detail = fetch_location_detail(base_url, api_key, location_id)
             except ChangesFetchError as exc:
@@ -373,18 +498,30 @@ def run_signal_poll(
                     if index % checkpoint_size == 0:
                         _update_run_evidence(
                             cur, run_id, source_total=len(ordered_ids), checked=index,
-                            successes=processed, failures=failures,
-                            checkpoint_state={
-                                "nextOffset": index, "lastLocationId": location_id,
-                                "restartable": False, "restartMode": "fresh_run",
-                                "failures": failure_details,
-                                "skippedNotFound": skipped_not_found,
-                            },
+                            successes=processed + len(skipped_not_found), failures=failures,
+                            checkpoint_state=_signal_checkpoint_state(
+                                next_offset=index,
+                                last_location_id=location_id,
+                                failure_details=failure_details,
+                                skipped_not_found=skipped_not_found,
+                            ),
                         )
                         conn.commit()
                     continue
                 failures += 1
                 failure_details.append({"locationId": location_id, "reason": str(exc)[:500]})
+                if index % checkpoint_size == 0:
+                    _update_run_evidence(
+                        cur, run_id, source_total=len(ordered_ids), checked=index,
+                        successes=processed + len(skipped_not_found), failures=failures,
+                        checkpoint_state=_signal_checkpoint_state(
+                            next_offset=index,
+                            last_location_id=location_id,
+                            failure_details=failure_details,
+                            skipped_not_found=skipped_not_found,
+                        ),
+                    )
+                    conn.commit()
                 continue
             if detail is None:
                 failures += 1
@@ -394,13 +531,13 @@ def run_signal_poll(
                 if index % checkpoint_size == 0:
                     _update_run_evidence(
                         cur, run_id, source_total=len(ordered_ids), checked=index,
-                        successes=processed, failures=failures,
-                        checkpoint_state={
-                            "nextOffset": index, "lastLocationId": location_id,
-                            "restartable": False, "restartMode": "fresh_run",
-                            "failures": failure_details,
-                            "skippedNotFound": skipped_not_found,
-                        },
+                        successes=processed + len(skipped_not_found), failures=failures,
+                        checkpoint_state=_signal_checkpoint_state(
+                            next_offset=index,
+                            last_location_id=location_id,
+                            failure_details=failure_details,
+                            skipped_not_found=skipped_not_found,
+                        ),
                     )
                     conn.commit()
                 continue
@@ -413,13 +550,13 @@ def run_signal_poll(
                 if index % checkpoint_size == 0:
                     _update_run_evidence(
                         cur, run_id, source_total=len(ordered_ids), checked=index,
-                        successes=processed, failures=failures,
-                        checkpoint_state={
-                            "nextOffset": index, "lastLocationId": location_id,
-                            "restartable": False, "restartMode": "fresh_run",
-                            "failures": failure_details,
-                            "skippedNotFound": skipped_not_found,
-                        },
+                        successes=processed + len(skipped_not_found), failures=failures,
+                        checkpoint_state=_signal_checkpoint_state(
+                            next_offset=index,
+                            last_location_id=location_id,
+                            failure_details=failure_details,
+                            skipped_not_found=skipped_not_found,
+                        ),
                     )
                     conn.commit()
                 continue
@@ -444,12 +581,13 @@ def run_signal_poll(
             if index % checkpoint_size == 0:
                 _update_run_evidence(
                     cur, run_id, source_total=len(ordered_ids), checked=index,
-                    successes=processed, failures=failures,
-                    checkpoint_state={
-                        "nextOffset": index, "lastLocationId": location_id,
-                        "restartable": False, "restartMode": "fresh_run",
-                        "failures": failure_details,
-                    },
+                    successes=processed + len(skipped_not_found), failures=failures,
+                    checkpoint_state=_signal_checkpoint_state(
+                        next_offset=index,
+                        last_location_id=location_id,
+                        failure_details=failure_details,
+                        skipped_not_found=skipped_not_found,
+                    ),
                 )
                 conn.commit()
             time.sleep(sleep)
@@ -458,12 +596,14 @@ def run_signal_poll(
         event_count = max(0, events_after - events_before)
         _update_run_evidence(
             cur, run_id, source_total=len(ordered_ids), checked=len(ordered_ids),
-            successes=processed, failures=failures,
-            checkpoint_state={
-                "nextOffset": len(ordered_ids), "restartable": False,
-                "fullCoverage": failures == 0,
-                "failures": failure_details,
-            },
+            successes=processed + len(skipped_not_found), failures=failures,
+            checkpoint_state=_signal_checkpoint_state(
+                next_offset=len(ordered_ids),
+                last_location_id=ordered_ids[-1] if ordered_ids else None,
+                failure_details=failure_details,
+                skipped_not_found=skipped_not_found,
+                full_coverage=failures == 0,
+            ),
         )
         cur.execute(
             """
@@ -509,11 +649,17 @@ def run_signal_poll(
                 """,
                 (
                     str(exc)[:4000],
-                    json.dumps({
-                        "restartable": False,
-                        "restartMode": "fresh_run",
-                        "failure": str(exc)[:1000],
-                    }),
+                    json.dumps(
+                        _failed_run_checkpoint_state(
+                            exc,
+                            attempted_offset=attempted_index,
+                            last_attempted_location_id=last_attempted_location_id,
+                            attempted_successes=processed + len(skipped_not_found),
+                            failure_details=failure_details,
+                            skipped_not_found=skipped_not_found,
+                        ),
+                        sort_keys=True,
+                    ),
                     run_id,
                 ),
             )
@@ -536,6 +682,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--sweep-size", type=int, default=DEFAULT_SWEEP_SIZE)
     parser.add_argument("--checkpoint-size", type=int, default=DEFAULT_CHECKPOINT_SIZE)
     parser.add_argument("--sleep", type=float, default=0.05)
+    parser.add_argument(
+        "--time-budget-seconds",
+        type=int,
+        default=DEFAULT_POLL_TIME_BUDGET_SECONDS,
+        help="Whole-run wall-clock budget; must stay below the 50-minute job timeout.",
+    )
     return parser.parse_args()
 
 
@@ -544,6 +696,10 @@ def main() -> int:
     if not 1 <= args.sweep_size <= 5000 or not 1 <= args.checkpoint_size <= 1000:
         print("ERROR: sweep/checkpoint sizes are outside safe bounds.", file=sys.stderr)
         return 1
+    if not 60 <= args.time_budget_seconds <= 2900:
+        print("ERROR: --time-budget-seconds must be between 60 and 2900.", file=sys.stderr)
+        return 1
+    _install_stop_signals()
     index_enabled = os.getenv("CQC_LOCATION_INDEX_POLL_ENABLED", "false").strip().lower() == "true"
     report_enabled = os.getenv("CQC_REPORT_POLL_ENABLED", "false").strip().lower() == "true"
     if not index_enabled and not report_enabled:
@@ -564,8 +720,9 @@ def main() -> int:
             sleep=max(0.0, args.sleep),
             index_enabled=index_enabled,
             report_enabled=report_enabled,
+            time_budget_seconds=args.time_budget_seconds,
         )
-    except (ChangesFetchError, psycopg2.Error, ValueError) as exc:
+    except (ChangesFetchError, SignalPollInterrupted, psycopg2.Error, ValueError) as exc:
         print(f"Signal poll failed: {type(exc).__name__}: {exc}", file=sys.stderr)
         return 1
     print(json.dumps(result, sort_keys=True))

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 import ApiApplicationForm from "@/components/ApiApplicationForm";
 import { CQC_INDEPENDENCE_LINE } from "@/lib/caregist-config";
@@ -23,7 +24,7 @@ const EVENT_EXAMPLE = `{
   "source": {
     "url": "https://www.cqc.org.uk/location/1-123456789",
     "licence": "OGL-3.0",
-    "snapshot_sha256": "..."
+    "snapshot_sha256": null
   },
   "explanation": { "status": "unavailable" }
 }`;
@@ -49,7 +50,8 @@ export default function IntelligenceFeedPage() {
         {[
           {
             title: "Traceable by default",
-            body: "Stable CQC IDs, source URL, observation times, and a snapshot checksum travel with every event.",
+            body: "Stable CQC IDs, source URL, and observation times travel with every event. A snapshot checksum is included only when the reconciled source snapshot provides one; current availability is shown on Data Status.",
+            href: "/data-status",
           },
           {
             title: "Safe delivery",
@@ -63,6 +65,11 @@ export default function IntelligenceFeedPage() {
           <article key={item.title} className="rounded-xl border border-stone bg-cream p-5">
             <h2 className="mb-2 font-bold text-bark">{item.title}</h2>
             <p className="text-sm leading-6 text-dusk">{item.body}</p>
+            {"href" in item && item.href ? (
+              <Link href={item.href} className="mt-4 inline-flex text-sm font-semibold text-clay underline">
+                Review Data Status
+              </Link>
+            ) : null}
           </article>
         ))}
       </section>

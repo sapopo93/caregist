@@ -1,3 +1,7 @@
+> **Superseded historical website snapshot — non-operative.** Retired products,
+> links, and claims below are retained only as audit evidence and must not guide
+> current product, pricing, sales, or release decisions.
+
 - generic [active] [ref=e1]:
   - banner [ref=e2]:
     - generic [ref=e3]:

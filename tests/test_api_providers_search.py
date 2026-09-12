@@ -5,7 +5,7 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 
 from api.main import app
-from api.queries.providers import build_search_query
+from api.queries.providers import build_search_query, classify_query, postcode_search_prefix
 
 
 @pytest.fixture
@@ -137,5 +137,29 @@ def test_legacy_quality_sort_uses_cqc_rating_not_completeness():
     query = build_search_query("quality")
 
     order_clause = query.split("ORDER BY", 1)[1]
-    assert "CASE overall_rating" in order_clause
+    assert "CASE LOWER(BTRIM(overall_rating))" in order_clause
+    assert "requires improvement" in order_clause
     assert "data_completeness_score" not in order_clause
+
+
+@pytest.mark.parametrize(
+    ("query", "expected_type", "expected_prefix"),
+    [
+        ("SO15", "postcode", "SO15"),
+        ("BN14", "postcode", "BN14"),
+        ("SO15 2BG", "postcode", "SO15"),
+        ("so15 2bg", "postcode", "SO15"),
+    ],
+)
+def test_postcode_queries_preserve_the_outward_district(query, expected_type, expected_prefix):
+    assert classify_query(query) == expected_type
+    assert postcode_search_prefix(query) == expected_prefix
+
+
+def test_provider_search_uses_case_insensitive_ratings_and_exact_local_authority():
+    query = build_search_query("relevance")
+
+    assert "LOWER(BTRIM(overall_rating))" in query
+    assert "LOWER(BTRIM(value))" in query
+    assert "local_authority = $7" in query
+    assert "LIMIT $8 OFFSET $9" in query

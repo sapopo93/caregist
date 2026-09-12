@@ -34,6 +34,16 @@ from api.services.tenant_context import OrganizationContext, resolve_organizatio
 
 router = APIRouter(prefix="/api/v1/crm", tags=["crm"])
 MAX_TWILIO_WEBHOOK_BYTES = 64 * 1024
+_OPEN_CALL_STATUSES = frozenset({"authorized", "initiated", "ringing", "in_progress"})
+
+
+def close_status_for_disposition(status: str) -> str | None:
+    """Return a terminal status to apply, or None when already terminal."""
+    if status in TERMINAL_CALL_STATUSES:
+        return None
+    if status in _OPEN_CALL_STATUSES:
+        return "failed"
+    raise HTTPException(status_code=409, detail="A call can be dispositioned only after it ends.")
 
 
 STAGES = (
@@ -61,6 +71,13 @@ class CompanyRequest(BaseModel):
     phone_e164: str | None = Field(None, max_length=20)
     address: str | None = Field(None, max_length=2000)
     notes: str | None = Field(None, max_length=4000)
+
+    model_config = {"extra": "forbid"}
+
+
+class TeamInviteRequest(BaseModel):
+    email: EmailStr
+    role: Literal["member", "admin"] = "member"
 
     model_config = {"extra": "forbid"}
 
@@ -342,6 +359,77 @@ async def summary(_auth: dict = Depends(validate_session_identity)) -> dict[str,
             "ai_enabled": settings.crm_ai_enabled,
         },
 }
+
+
+def _require_manager(context: OrganizationContext) -> None:
+    if context.role not in {"owner", "admin"}:
+        raise HTTPException(status_code=403, detail="A CRM owner or administrator must approve this action.")
+
+
+@router.get("/team/members")
+async def list_team_members(_auth: dict = Depends(validate_session_identity)) -> dict[str, Any]:
+    context = await _context(_auth)
+    _require_manager(context)
+    async with tenant_connection(context) as conn:
+        rows = await conn.fetch(
+            """
+            SELECT users.id, users.email, users.name, member.role, member.created_at
+            FROM organization_members member
+            JOIN users ON users.id = member.user_id
+            WHERE member.organization_id = $1
+            ORDER BY member.created_at ASC
+            """,
+            context.organization_id,
+        )
+    return {"data": [dict(row) for row in rows], "role": context.role}
+
+
+@router.post("/team/members", status_code=201)
+async def invite_team_member(
+    body: TeamInviteRequest, _auth: dict = Depends(validate_session_identity)
+) -> dict[str, Any]:
+    context = await _context(_auth)
+    _require_manager(context)
+    email = str(body.email).strip().lower()
+    if body.role == "admin" and context.role != "owner":
+        raise HTTPException(status_code=403, detail="Only the workspace owner can grant administrator access.")
+    async with tenant_connection(context) as conn:
+        user = await conn.fetchrow(
+            "SELECT id, email, name FROM users WHERE LOWER(email) = $1",
+            email,
+        )
+        if not user:
+            raise HTTPException(
+                status_code=404,
+                detail="No CareGist login exists for that email. They must sign up first, then you can add them.",
+            )
+        if user["id"] == context.user_id:
+            raise HTTPException(status_code=409, detail="You are already in this workspace.")
+        existing = await conn.fetchval(
+            "SELECT role FROM organization_members WHERE organization_id = $1 AND user_id = $2",
+            context.organization_id,
+            user["id"],
+        )
+        if existing:
+            return {"id": user["id"], "email": user["email"], "role": existing, "already_member": True}
+        await conn.execute(
+            """
+            INSERT INTO organization_members (organization_id, user_id, role)
+            VALUES ($1, $2, $3)
+            """,
+            context.organization_id,
+            user["id"],
+            body.role,
+        )
+        await _required_audit(
+            conn,
+            action="crm.team.invite",
+            context=context,
+            target_type="organization",
+            target_id=context.organization_id,
+            metadata={"invited_user_id": user["id"], "role": body.role},
+        )
+    return {"id": user["id"], "email": user["email"], "role": body.role, "already_member": False}
 
 
 @router.post("/companies", status_code=201)
@@ -1038,7 +1126,17 @@ async def record_disposition(
         if call["agent_user_id"] != context.user_id and context.role not in {"owner", "admin"}:
             raise HTTPException(status_code=403, detail="Only the calling agent or a manager can disposition this call.")
         if call["status"] not in TERMINAL_CALL_STATUSES:
-            raise HTTPException(status_code=409, detail="A call can be dispositioned only after it ends.")
+            closed = close_status_for_disposition(call["status"])
+            if closed:
+                await conn.execute(
+                    """
+                    UPDATE crm_call_sessions
+                    SET status = $2, ended_at = COALESCE(ended_at, NOW()), updated_at = NOW()
+                    WHERE id = $1 AND status NOT IN ('completed', 'busy', 'no_answer', 'failed', 'canceled')
+                    """,
+                    call_session_id,
+                    closed,
+                )
         if call["disposition"] is not None:
             raise HTTPException(status_code=409, detail="This call already has an operator disposition.")
         await conn.execute(

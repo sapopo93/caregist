@@ -1,5 +1,12 @@
 # CareGist Product Specification: New-Provider Intelligence Suite
 
+> **Superseded product specification — historical and non-operative.** The
+> products, tiers, prices, entitlements, forecasts, and “live” labels below
+> predate catalogue `2026-08` and must not be used for implementation, public
+> copy, quoting, outreach, or release approval. Current authority is
+> `docs/CAREGIST_MASTER_STRATEGY.md` and
+> `deploy/stripe-price-manifest.json`.
+
 ## Executive Summary
 
 CareGist will own the "new registration" signal in UK social care by packaging CQC registration data into three ascending product tiers. Each tier targets a distinct buyer persona, increases switching costs through proprietary enrichment, and builds on the existing `trusted_event_ledger` architecture.

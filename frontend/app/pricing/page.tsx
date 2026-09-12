@@ -7,7 +7,12 @@ import {
   CQC_INDEPENDENCE_LINE,
   PRICING_LADDER,
 } from "@/lib/caregist-config";
+import { loadCommercialCheckoutReadiness } from "@/lib/commercial-readiness";
+import { getServerApiBase } from "@/lib/server-api-config";
+
 import { pricingPlanCardId } from "@/lib/pricing-plan-path";
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "CareGist Pricing | CQC Signal Intelligence",
@@ -16,15 +21,16 @@ export const metadata: Metadata = {
 };
 
 const PLAN_BADGES: Record<string, string> = {
-  "Weekly Digest": "Entry product",
+  "Weekly Digest": "£150 one-off pilot",
   "Territory Opportunity Brief": "Lead product",
   "Free Directory": "Discovery · not a sale",
 };
 
-export default function PricingPage() {
+export default async function PricingPage() {
+  const checkoutReady = await loadCommercialCheckoutReadiness(getServerApiBase());
   const checkoutEnabled =
     process.env.BILLING_CHECKOUT_ENABLED === "true" &&
-    process.env.RADAR_CHECKOUT_ENABLED === "true";
+    process.env.RADAR_CHECKOUT_ENABLED === "true" && checkoutReady;
   const termsVersion = process.env.B2B_TERMS_VERSION?.trim() || "";
 
   return (
@@ -40,7 +46,9 @@ export default function PricingPage() {
           CareGist sells two products. The Weekly Digest follows one England region week
           by week; the Territory Opportunity Brief ranks the accounts worth approaching
           there. Both are built on observation-dated evidence from CQC&apos;s published
-          record. Nothing else is for sale.
+          record. The pilot costs £150 for four weekly digests. The Brief costs £745.
+          Both are one-off purchases, with no subscription or automatic renewal.
+          Everything else is stopped.
         </p>
       </header>
 

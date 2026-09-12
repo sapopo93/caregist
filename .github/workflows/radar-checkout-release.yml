@@ -1,10 +1,10 @@
-name: Radar checkout release
+name: Radar schema release
 
 on:
   workflow_dispatch:
     inputs:
       confirmation:
-        description: Type ENABLE-RADAR-CHECKOUT to apply production migrations
+        description: Type APPLY-RADAR-SCHEMA to apply migrations; this does not enable checkout
         required: true
         type: string
 
@@ -17,7 +17,7 @@ concurrency:
 
 jobs:
   migrate:
-    if: inputs.confirmation == 'ENABLE-RADAR-CHECKOUT'
+    if: inputs.confirmation == 'APPLY-RADAR-SCHEMA'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -34,14 +34,14 @@ jobs:
           python -m pytest tests/integration/test_migrations_apply_cleanly.py -q
       - name: Apply forward-only production migrations
         env:
-          PROD_DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+          PROD_DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: >-
           python db/apply_migrations.py
           --target production
           --confirm-production-backup
       - name: Verify Radar checkout schema
         env:
-          PROD_DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+          PROD_DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
           python - <<'PY'
           import asyncio
@@ -57,7 +57,8 @@ jobs:
                   )
                   constraint = await conn.fetchval(
                       "SELECT pg_get_constraintdef(oid) FROM pg_constraint "
-                      "WHERE conname = 'chk_users_signup_intent_type'",
+                      "WHERE conname = 'users_signup_purchase_intent_valid' "
+                      "AND conrelid = 'public.users'::regclass",
                   )
                   if not applied or not constraint or "radar-regional" not in constraint or "radar-national" not in constraint:
                       raise SystemExit("Radar signup intent migration verification failed")

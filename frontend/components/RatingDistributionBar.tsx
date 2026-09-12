@@ -2,6 +2,7 @@ const RATING_CONFIG: Record<string, { color: string; order: number }> = {
   Outstanding: { color: "bg-moss", order: 1 },
   Good: { color: "bg-amber", order: 2 },
   "Requires Improvement": { color: "bg-amber/50", order: 3 },
+  "Requires improvement": { color: "bg-amber/50", order: 3 },
   Inadequate: { color: "bg-alert", order: 4 },
 };
 

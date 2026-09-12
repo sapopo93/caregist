@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { getServerApiBase } from "@/lib/server-api-config";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 3600;
 
 export const metadata: Metadata = {
   title: "CQC Data Status | CareGist",
@@ -30,7 +30,7 @@ type SourceStatus = {
 async function loadStatus(): Promise<SourceStatus | null> {
   try {
     const response = await fetch(`${getServerApiBase()}/api/v1/health/freshness`, {
-      cache: "no-store",
+      next: { revalidate: 3600 },
     });
     if (response.status !== 200 && response.status !== 503) return null;
     return await response.json();

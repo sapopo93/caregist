@@ -52,7 +52,8 @@ async def _organization_row(
         JOIN organizations o ON o.id = om.organization_id
         LEFT JOIN organization_subscriptions os ON os.organization_id = o.id
         WHERE om.user_id = $1
-        ORDER BY om.created_at ASC, o.created_at ASC
+        ORDER BY CASE WHEN o.created_by_user_id IS DISTINCT FROM $1 THEN 0 ELSE 1 END,
+                 om.created_at ASC, o.created_at ASC
         LIMIT 1
         """,
         user_id,

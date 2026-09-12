@@ -42,3 +42,19 @@ describe("pricing page — final catalogue regression", () => {
     );
   });
 });
+
+
+describe("commercial readiness safeguards", () => {
+  it("requires live readiness as well as environment flags", () => {
+    assert.match(src, /loadCommercialCheckoutReadiness\(getServerApiBase\(\)\)/);
+    assert.match(src, /RADAR_CHECKOUT_ENABLED === "true" &&\s*checkoutReady/);
+    assert.match(src, /export const dynamic = "force-dynamic"/);
+    assert.match(ctaSrc, /if \(!checkoutEnabled \|\| !termsVersion/);
+  });
+  it("blocks stopped products before the checkout handler", () => {
+    for (const tier of ["radar-regional", "radar-national", "intelligence-feed-pilot", "embedded-enterprise"]) {
+      assert.ok(ctaSrc.includes(`"${tier}"`));
+    }
+    assert.ok(ctaSrc.indexOf("if (GATED_TIERS.has(tierKey))") < ctaSrc.indexOf("async function handleUpgrade"));
+  });
+});

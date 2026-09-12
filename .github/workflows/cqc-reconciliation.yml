@@ -13,9 +13,18 @@ on:
         description: Seconds between CQC detail requests
         type: string
         default: "0.08"
+      resume_batch_id:
+        description: Failed batch UUID to resume (requires resume_run_id)
+        type: string
+        default: ""
+      resume_run_id:
+        description: Actions run containing the immutable manifest (requires resume_batch_id)
+        type: string
+        default: ""
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: cqc-reconciliation-production
@@ -23,18 +32,44 @@ concurrency:
 
 env:
   PYTHON_VERSION: "3.12"
-  SHARD_COUNT: "4"
+  SHARD_COUNT: "8"
   CHECKPOINT_SIZE: "250"
   SNAPSHOT_MANIFEST: cqc-snapshot-manifest.json
   BUDGET_HOURS: "5.0"
-  ASSUMED_LATENCY_S: "0.28"
+  ASSUMED_LATENCY_S: "1.40"
   FIXED_OVERHEAD_S: "300"
   RETRY_FACTOR: "1.15"
   SNAPSHOT_MARGIN: "1.10"
 
 jobs:
+  validate-inputs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Reject ambiguous or unreviewed write intent
+        env:
+          DRY_RUN: ${{ inputs.dry_run }}
+          RESUME_BATCH_ID: ${{ inputs.resume_batch_id }}
+          RESUME_RUN_ID: ${{ inputs.resume_run_id }}
+          EXECUTING_REF: ${{ github.ref }}
+        run: |
+          python - <<'PY'
+          import os
+
+          dry_run = os.environ["DRY_RUN"].lower() == "true"
+          batch = os.environ["RESUME_BATCH_ID"].strip()
+          run = os.environ["RESUME_RUN_ID"].strip()
+          if bool(batch) != bool(run):
+              raise SystemExit("resume_batch_id and resume_run_id must be supplied together")
+          if dry_run and batch:
+              raise SystemExit("resume inputs cannot be combined with dry_run=true")
+          if not dry_run and os.environ["EXECUTING_REF"] != "refs/heads/main":
+              raise SystemExit("production reconciliation writes must run from refs/heads/main")
+          PY
+
   dry-run:
     if: inputs.dry_run
+    needs: validate-inputs
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -55,10 +90,14 @@ jobs:
 
   prepare:
     if: inputs.dry_run == false
+    needs: validate-inputs
     runs-on: ubuntu-latest
     timeout-minutes: 20
     outputs:
       batch_id: ${{ steps.batch.outputs.batch_id }}
+      shard_count: ${{ steps.matrix.outputs.shard_count }}
+      shard_indices: ${{ steps.matrix.outputs.shard_indices }}
+      state_opened: ${{ steps.prepare_new.outputs.state_opened || steps.resume.outputs.state_opened }}
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
@@ -74,7 +113,33 @@ jobs:
           test -n "$DATABASE_URL"
           test -n "$CQC_API_KEY"
           python incremental_update.py --help | grep -q -- "--checkpoint-size"
+      - id: batch
+        name: Select a new batch or one bounded resume
+        env:
+          RESUME_BATCH_ID: ${{ inputs.resume_batch_id }}
+          RESUME_RUN_ID: ${{ inputs.resume_run_id }}
+        run: |
+          python - <<'PY'
+          import os
+          import uuid
+
+          batch = os.environ["RESUME_BATCH_ID"].strip()
+          run = os.environ["RESUME_RUN_ID"].strip()
+          if bool(batch) != bool(run):
+              raise SystemExit("resume_batch_id and resume_run_id must be supplied together")
+          if batch:
+              parsed = uuid.UUID(batch)
+              if str(parsed) != batch.lower() or not run.isdigit() or int(run) < 1:
+                  raise SystemExit("resume inputs must be a canonical UUID and positive run ID")
+              resume = "true"
+          else:
+              batch = str(uuid.uuid4())
+              resume = "false"
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
+              output.write(f"batch_id={batch}\nresume={resume}\n")
+          PY
       - name: Project per-shard runtime using SELECT only
+        if: steps.batch.outputs.resume == 'false'
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           SLEEP: ${{ inputs.sleep }}
@@ -94,29 +159,80 @@ jobs:
           if hours > float(os.environ["BUDGET_HOURS"]):
               raise SystemExit("projected shard runtime exceeds the five-hour budget")
           PY
-      - id: batch
-        run: echo "batch_id=$(python -c 'import uuid; print(uuid.uuid4())')" >> "$GITHUB_OUTPUT"
-      - name: Prepare authoritative batch
+      - name: Download the original immutable manifest
+        if: steps.batch.outputs.resume == 'true'
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: cqc-manifest-${{ steps.batch.outputs.batch_id }}
+          repository: ${{ github.repository }}
+          run-id: ${{ inputs.resume_run_id }}
+          github-token: ${{ github.token }}
+      - id: prepare_new
+        name: Prepare authoritative batch
+        if: steps.batch.outputs.resume == 'false'
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          RELEASE_SHA: ${{ github.sha }}
+          WORKFLOW_RUN_ID: ${{ github.run_id }}
+          WORKFLOW_RUN_ATTEMPT: ${{ github.run_attempt }}
         run: |
           python incremental_update.py --phase prepare \
             --batch-id "${{ steps.batch.outputs.batch_id }}" --shard-count "$SHARD_COUNT" \
-            --snapshot-manifest "$SNAPSHOT_MANIFEST"
+            --snapshot-manifest "$SNAPSHOT_MANIFEST" \
+            --release-sha "$RELEASE_SHA" --workflow-run-id "$WORKFLOW_RUN_ID" \
+            --workflow-run-attempt "$WORKFLOW_RUN_ATTEMPT"
+          echo "state_opened=true" >> "$GITHUB_OUTPUT"
+      - id: matrix
+        name: Derive the immutable shard matrix
+        env:
+          BATCH_ID: ${{ steps.batch.outputs.batch_id }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+
+          with open(os.environ["SNAPSHOT_MANIFEST"], encoding="utf-8") as source:
+              manifest = json.load(source)
+          if manifest.get("batchId") != os.environ["BATCH_ID"]:
+              raise SystemExit("manifest batch ID mismatch")
+          count = int(manifest.get("shardCount", 0))
+          if count < 1:
+              raise SystemExit("manifest shard count must be positive")
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
+              output.write(f"shard_count={count}\n")
+              output.write(f"shard_indices={json.dumps(list(range(count)), separators=(',', ':'))}\n")
+          PY
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: cqc-manifest-${{ steps.batch.outputs.batch_id }}
           path: ${{ env.SNAPSHOT_MANIFEST }}
           if-no-files-found: error
           retention-days: 7
+      - id: resume
+        name: Authorize the single resume wave after artifact validation
+        if: steps.batch.outputs.resume == 'true'
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          RELEASE_SHA: ${{ github.sha }}
+          WORKFLOW_RUN_ID: ${{ github.run_id }}
+          WORKFLOW_RUN_ATTEMPT: ${{ github.run_attempt }}
+        run: |
+          python incremental_update.py --phase resume \
+            --batch-id "${{ steps.batch.outputs.batch_id }}" \
+            --snapshot-manifest "$SNAPSHOT_MANIFEST" \
+            --resume-source-run-id "${{ inputs.resume_run_id }}" \
+            --release-sha "$RELEASE_SHA" --workflow-run-id "$WORKFLOW_RUN_ID" \
+            --workflow-run-attempt "$WORKFLOW_RUN_ATTEMPT"
+          echo "state_opened=true" >> "$GITHUB_OUTPUT"
 
   shards:
     if: inputs.dry_run == false
     needs: prepare
     strategy:
       fail-fast: false
+      max-parallel: 4
       matrix:
-        shard_index: [0, 1, 2, 3]
+        shard_index: ${{ fromJSON(needs.prepare.outputs.shard_indices) }}
     runs-on: ubuntu-latest
     timeout-minutes: 330
     steps:
@@ -136,7 +252,8 @@ jobs:
         run: |
           python incremental_update.py --phase shard \
             --batch-id "${{ needs.prepare.outputs.batch_id }}" \
-            --snapshot-manifest "$SNAPSHOT_MANIFEST" --shard-count "$SHARD_COUNT" \
+            --snapshot-manifest "$SNAPSHOT_MANIFEST" \
+            --shard-count "${{ needs.prepare.outputs.shard_count }}" \
             --shard-index "${{ matrix.shard_index }}" --checkpoint-size "$CHECKPOINT_SIZE" \
             --sleep "${{ inputs.sleep }}"
 
@@ -161,15 +278,10 @@ jobs:
         run: |
           python incremental_update.py --phase finalize \
             --batch-id "${{ needs.prepare.outputs.batch_id }}" \
-            --snapshot-manifest "$SNAPSHOT_MANIFEST" --shard-count "$SHARD_COUNT"
-      - name: Process monitor alerts only after finalization
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
-        run: python tools/send_monitor_alerts.py
-
+            --snapshot-manifest "$SNAPSHOT_MANIFEST" \
+            --shard-count "${{ needs.prepare.outputs.shard_count }}"
   abort-incomplete:
-    if: ${{ always() && inputs.dry_run == false && needs.prepare.result == 'success' && (needs.shards.result != 'success' || needs.finalize.result != 'success') }}
+    if: ${{ always() && inputs.dry_run == false && needs.prepare.outputs.state_opened == 'true' && (needs.prepare.result != 'success' || needs.shards.result != 'success' || needs.finalize.result != 'success') }}
     needs: [prepare, shards, finalize]
     runs-on: ubuntu-latest
     timeout-minutes: 10

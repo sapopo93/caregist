@@ -1,5 +1,12 @@
 # Runbook: Stripe Key Rotation
 
+> **Host execution steps are historical and must not be run against current
+> production.** CareGist now uses Vercel multi-service plus Neon, not the EC2
+> paths and service commands retained below for incident archaeology. The
+> catalogue/Price inventory in the safety-check section is current, but any live
+> credential rotation requires an explicitly approved Vercel secret-update and
+> redeployment procedure with rollback evidence.
+
 **Estimated total time:** ~35 min (API secret 15 min + webhook 10 min + checks 10 min)
 **Applies to:** All live Stripe credentials in `/home/caregist/CareGist/.env`
 
@@ -21,7 +28,9 @@ Rotate Stripe credentials in any of these situations:
 Complete all checks before touching any key.
 
 1. **Stripe dashboard access** — confirm you can log in and have Developer or Owner role at [dashboard.stripe.com](https://dashboard.stripe.com). If you need elevated access, arrange it before starting.
-2. **EC2 SSH access** — confirm you can SSH to the production host and edit `/home/caregist/CareGist/.env`. See `workflows/deploy-ec2.md` for the canonical deploy path.
+2. **Current production access** — confirm access to the active Vercel/Neon
+   production environment and its managed secrets. The old EC2 procedure in
+   `workflows/deploy-ec2.md` is historical only and is not a canonical deploy path.
 3. **No in-flight operations** — confirm no deploy, database migration, or feed cycle is running. Check:
    ```bash
    # On EC2
@@ -115,19 +124,19 @@ On EC2, run the secret-safe offline verifier. It reports status only and never p
 python3 tools/verify_stripe_release.py --mode live --env-file /home/caregist/CareGist/.env
 ```
 
-Verify the following sold-plan variables are all present, distinct, and start with `price_`:
+Verify the following approved saleable-price variables are all present, distinct,
+and start with `price_`:
 
 | Variable | Expected format |
 |---|---|
-| `STRIPE_PRICE_ALERTS_PRO` | `price_...` |
-| `STRIPE_PRICE_STARTER` | `price_...` |
-| `STRIPE_PRICE_PRO` | `price_...` |
-| `STRIPE_PRICE_PRO_SEAT` | `price_...` |
-| `STRIPE_PRICE_BUSINESS` | `price_...` |
-| `STRIPE_PRICE_PROFILE_ENHANCED` | `price_...` |
-| `STRIPE_PRICE_PROFILE_SPONSORED` | `price_...` |
+| `STRIPE_PRICE_RADAR_REGIONAL` | `price_...` |
+| `STRIPE_PRICE_RADAR_NATIONAL` | `price_...` |
+| `STRIPE_PRICE_INTELLIGENCE_FEED` | `price_...` |
 
-`STRIPE_PRICE_PROFILE_PREMIUM` is currently not part of the public sold-plan manifest. If it is enabled again, add it to `deploy/stripe-price-manifest.json`, the verifier, and the public pricing contract in the same reviewed change.
+Embedded Enterprise is quote-and-invoice only and intentionally has no saleable
+Price ID. Retired Alerts, Data, seat, and provider-listing Price variables are
+not release requirements and must not be restored without a new catalogue
+version and the complete reviewed governance change.
 
 The offline verifier cannot confirm Price ownership, activity, currency, amount, recurrence, or tax behaviour. Confirm those fields against `deploy/stripe-price-manifest.json` in live-mode Stripe before release.
 

@@ -1,5 +1,11 @@
 # Buyer Persona Dossiers
 
+> **Superseded persona research — historical and non-operative.** The rankings,
+> packages, prices, targeting directives, forecasts, and outreach recommendations
+> below predate catalogue `2026-08` and are not current go-to-market authority.
+> Use `docs/CAREGIST_MASTER_STRATEGY.md` and
+> `deploy/stripe-price-manifest.json`.
+
 ## Ranking by Revenue Potential (2026)
 | Rank | Persona | Estimated Annual Spend | Ease of Reach | Speed to Close | Priority |
 |------|---------|------------------------|---------------|----------------|----------|

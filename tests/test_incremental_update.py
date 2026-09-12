@@ -11,14 +11,18 @@ import pytest
 
 from api.services.provider_state_events import ProviderStateEvent
 from incremental_update import (
+    _fetch_all_cqc_location_stubs,
     _finalize_batch,
     _insert_trusted_provider_event,
+    _ensure_no_active_reconciliation_batch,
     _prepare_batch,
     _project_rating_change,
+    _resume_batch,
     _sync_reconciliation_run_evidence,
     ALLOWED_COLUMNS,
     CqcActiveSnapshot,
     ChangesFetchError,
+    ShardAlreadyRunning,
     build_snapshot_manifest,
     build_snapshot_reconciliation,
     checkpoint_slices,
@@ -34,6 +38,153 @@ from incremental_update import (
     shard_for_location,
     validate_shard_coordinates,
 )
+
+
+def test_location_list_scan_retries_mid_scan_403_and_preserves_page(monkeypatch):
+    import incremental_update as iu
+
+    responses = [
+        SimpleNamespace(
+            status_code=200,
+            headers={},
+            json=lambda: {"locations": [{"locationId": "1-10000"}], "total": 2},
+        ),
+        SimpleNamespace(status_code=403, headers={"Retry-After": "0"}),
+        SimpleNamespace(
+            status_code=200,
+            headers={},
+            json=lambda: {"locations": [{"locationId": "1-10001"}], "total": 2},
+        ),
+    ]
+    requested_pages: list[int] = []
+    sleeps: list[float] = []
+
+    def fake_get(*_args, **kwargs):
+        requested_pages.append(kwargs["params"]["page"])
+        return responses.pop(0)
+
+    monkeypatch.setattr(iu.requests, "get", fake_get)
+    monkeypatch.setattr(iu.time, "sleep", sleeps.append)
+
+    assert _fetch_all_cqc_location_stubs(
+        "https://api.service.cqc.org.uk/public/v1", "key", 0.05, min_expected=2
+    ) == [
+        {"locationId": "1-10000"},
+        {"locationId": "1-10001"},
+    ]
+    assert requested_pages == [1, 2, 2]
+    assert sleeps == [0.05, 0.0]
+
+
+def test_location_list_scan_exhausts_bounded_403_retry_budget(monkeypatch):
+    import incremental_update as iu
+
+    attempts = 0
+    sleeps: list[float] = []
+
+    def forbidden(*_args, **_kwargs):
+        nonlocal attempts
+        attempts += 1
+        return SimpleNamespace(status_code=403, headers={"Retry-After": "0"})
+
+    monkeypatch.setattr(iu.requests, "get", forbidden)
+    monkeypatch.setattr(iu.time, "sleep", sleeps.append)
+
+    with pytest.raises(ChangesFetchError, match=r"403 on page 1 after 5 attempts"):
+        _fetch_all_cqc_location_stubs("https://api.service.cqc.org.uk/public/v1", "key", 0.0)
+
+    assert attempts == 5
+    assert sleeps == [0.0, 0.0, 0.0, 0.0]
+
+
+def test_location_list_scan_does_not_retry_terminal_auth_failure(monkeypatch):
+    import incremental_update as iu
+
+    get = Mock(return_value=SimpleNamespace(status_code=401, headers={}))
+    sleep = Mock()
+    monkeypatch.setattr(iu.requests, "get", get)
+    monkeypatch.setattr(iu.time, "sleep", sleep)
+
+    with pytest.raises(ChangesFetchError, match=r"401 on page 1 after 1 attempts"):
+        _fetch_all_cqc_location_stubs("https://api.service.cqc.org.uk/public/v1", "key", 0.0)
+
+    get.assert_called_once()
+    sleep.assert_not_called()
+
+
+def test_location_list_retry_delay_supports_http_date_and_caps_delay():
+    import incremental_update as iu
+
+    now = datetime(2026, 8, 20, 12, 0, tzinfo=timezone.utc)
+
+    assert iu._location_list_retry_delay(
+        "Thu, 20 Aug 2026 12:05:00 GMT", 1, now=now
+    ) == 60.0
+    assert iu._location_list_retry_delay("0", 1, now=now) == 0.0
+    assert iu._location_list_retry_delay("invalid", 2, now=now) == 30.0
+
+
+def test_location_list_scan_rejects_premature_empty_page(monkeypatch):
+    import incremental_update as iu
+
+    responses = [
+        SimpleNamespace(
+            status_code=200,
+            headers={},
+            json=lambda: {"locations": [{"locationId": "1-10000"}], "total": 2},
+        ),
+        SimpleNamespace(status_code=200, headers={}, json=lambda: {"locations": [], "total": 2}),
+    ]
+    monkeypatch.setattr(iu.requests, "get", lambda *_args, **_kwargs: responses.pop(0))
+    monkeypatch.setattr(iu.time, "sleep", lambda _seconds: None)
+
+    with pytest.raises(ChangesFetchError, match=r"ended early on page 2 after 1/2"):
+        _fetch_all_cqc_location_stubs(
+            "https://api.service.cqc.org.uk/public/v1", "key", 0.0, min_expected=2
+        )
+
+
+def test_location_list_scan_rejects_changing_total(monkeypatch):
+    import incremental_update as iu
+
+    responses = [
+        SimpleNamespace(
+            status_code=200,
+            headers={},
+            json=lambda: {"locations": [{"locationId": "1-10000"}], "total": 2},
+        ),
+        SimpleNamespace(
+            status_code=200,
+            headers={},
+            json=lambda: {"locations": [{"locationId": "1-10001"}], "total": 3},
+        ),
+    ]
+    monkeypatch.setattr(iu.requests, "get", lambda *_args, **_kwargs: responses.pop(0))
+    monkeypatch.setattr(iu.time, "sleep", lambda _seconds: None)
+
+    with pytest.raises(ChangesFetchError, match=r"total changed from 2 to 3 on page 2"):
+        _fetch_all_cqc_location_stubs(
+            "https://api.service.cqc.org.uk/public/v1", "key", 0.0, min_expected=2
+        )
+
+
+def test_location_list_scan_rejects_duplicate_ids(monkeypatch):
+    import incremental_update as iu
+
+    response = SimpleNamespace(
+        status_code=200,
+        headers={},
+        json=lambda: {
+            "locations": [{"locationId": "1-10000"}, {"locationId": "1-10000"}],
+            "total": 2,
+        },
+    )
+    monkeypatch.setattr(iu.requests, "get", lambda *_args, **_kwargs: response)
+
+    with pytest.raises(ChangesFetchError, match=r"duplicate IDs on page 1"):
+        _fetch_all_cqc_location_stubs(
+            "https://api.service.cqc.org.uk/public/v1", "key", 0.0, min_expected=2
+        )
 
 
 def test_normalize_database_url_rewrites_neon_pooler_hosts():
@@ -98,7 +249,7 @@ def test_clean_location_uses_active_directory_membership_over_lagging_detail_sta
     ) == "postgresql://user:pass@db.example.com/app"
 
 
-@pytest.mark.parametrize("shard_count", [1, 2, 4, 17])
+@pytest.mark.parametrize("shard_count", [1, 2, 4, 8, 17])
 def test_shard_partition_is_deterministic_exhaustive_and_disjoint(shard_count):
     location_ids = [f"1-{number:05d}" for number in range(1000, 1137)]
     first = partition_location_ids(location_ids, shard_count)
@@ -134,6 +285,146 @@ def test_snapshot_manifest_is_sorted_and_deterministic():
     assert len(first["manifestChecksumSha256"]) == 64
 
 
+def test_snapshot_manifest_checksum_changes_with_shard_count():
+    snapshot = CqcActiveSnapshot(
+        source_uri="https://www.cqc.org.uk/current.csv",
+        source_published_at="2026-08-01",
+        retrieved_at=datetime(2026, 8, 2, tzinfo=timezone.utc),
+        checksum_sha256="a" * 64,
+        location_ids=frozenset({"1-10000", "1-10001"}),
+    )
+    batch_id = uuid.UUID("12345678-1234-5678-9234-567812345678")
+
+    assert (
+        build_snapshot_manifest(snapshot, batch_id, 4)["manifestChecksumSha256"]
+        != build_snapshot_manifest(snapshot, batch_id, 8)["manifestChecksumSha256"]
+    )
+
+
+def test_resume_requires_failed_batch_and_consumes_one_wave(tmp_path):
+    snapshot = CqcActiveSnapshot(
+        source_uri="https://www.cqc.org.uk/current.csv",
+        source_published_at="2026-08-01",
+        retrieved_at=datetime(2026, 8, 2, tzinfo=timezone.utc),
+        checksum_sha256="a" * 64,
+        location_ids=frozenset({"1-10000"}),
+    )
+    batch_id = uuid.UUID("12345678-1234-5678-9234-567812345678")
+    manifest = build_snapshot_manifest(snapshot, batch_id, 8)
+    manifest_path = tmp_path / "manifest.json"
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    cursor = Mock()
+    cursor.fetchone.side_effect = [
+        (8, 1, manifest["manifestChecksumSha256"], manifest["sourceChecksumSha256"]),
+        (
+            "failed",
+            42,
+            {
+                "resumeWaves": 0,
+                "prepareExecution": {"gitSha": "a" * 40, "workflowRunId": "123"},
+            },
+        ),
+        *[(True,) for _ in range(8)],
+        (0,),
+    ]
+    connection = Mock()
+    args = SimpleNamespace(
+        batch_id=str(batch_id),
+        snapshot_manifest=str(manifest_path),
+        dry_run=False,
+        release_sha="a" * 40,
+        resume_source_run_id="123",
+        workflow_run_id="456",
+        workflow_run_attempt="1",
+    )
+
+    assert _resume_batch(args, connection, cursor) == 0
+    connection.commit.assert_called_once()
+    statements = [str(call.args[0]) for call in cursor.execute.call_args_list]
+    assert any("status = 'prepared'" in statement for statement in statements)
+    assert any("'{resumeWaves}'" in statement for statement in statements)
+
+
+def test_resume_refuses_a_second_wave(tmp_path):
+    snapshot = CqcActiveSnapshot(
+        source_uri="https://www.cqc.org.uk/current.csv",
+        source_published_at="2026-08-01",
+        retrieved_at=datetime(2026, 8, 2, tzinfo=timezone.utc),
+        checksum_sha256="a" * 64,
+        location_ids=frozenset({"1-10000"}),
+    )
+    batch_id = uuid.UUID("12345678-1234-5678-9234-567812345678")
+    manifest = build_snapshot_manifest(snapshot, batch_id, 8)
+    manifest_path = tmp_path / "manifest.json"
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    cursor = Mock()
+    cursor.fetchone.side_effect = [
+        (8, 1, manifest["manifestChecksumSha256"], manifest["sourceChecksumSha256"]),
+        (
+            "failed",
+            42,
+            {
+                "resumeWaves": 1,
+                "prepareExecution": {"gitSha": "a" * 40, "workflowRunId": "123"},
+            },
+        ),
+    ]
+    args = SimpleNamespace(
+        batch_id=str(batch_id),
+        snapshot_manifest=str(manifest_path),
+        dry_run=False,
+        release_sha="a" * 40,
+        resume_source_run_id="123",
+    )
+
+    with pytest.raises(ChangesFetchError, match="already used its single resume wave"):
+        _resume_batch(args, Mock(), cursor)
+
+
+@pytest.mark.parametrize(
+    ("release_sha", "source_run_id"),
+    [("b" * 40, "123"), ("a" * 40, "999")],
+)
+def test_resume_rejects_different_prepare_lineage(tmp_path, release_sha, source_run_id):
+    snapshot = CqcActiveSnapshot(
+        source_uri="https://www.cqc.org.uk/current.csv",
+        source_published_at="2026-08-01",
+        retrieved_at=datetime(2026, 8, 2, tzinfo=timezone.utc),
+        checksum_sha256="a" * 64,
+        location_ids=frozenset({"1-10000"}),
+    )
+    batch_id = uuid.UUID("12345678-1234-5678-9234-567812345678")
+    manifest = build_snapshot_manifest(snapshot, batch_id, 8)
+    manifest_path = tmp_path / "manifest.json"
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    cursor = Mock()
+    cursor.fetchone.side_effect = [
+        (8, 1, manifest["manifestChecksumSha256"], manifest["sourceChecksumSha256"]),
+        (
+            "failed",
+            42,
+            {
+                "resumeWaves": 0,
+                "prepareExecution": {"gitSha": "a" * 40, "workflowRunId": "123"},
+            },
+        ),
+    ]
+    args = SimpleNamespace(
+        batch_id=str(batch_id),
+        snapshot_manifest=str(manifest_path),
+        dry_run=False,
+        release_sha=release_sha,
+        resume_source_run_id=source_run_id,
+    )
+
+    with pytest.raises(ChangesFetchError, match="original prepare code SHA"):
+        _resume_batch(args, Mock(), cursor)
+    assert not any(
+        "UPDATE reconciliation_batches" in str(call.args[0])
+        for call in cursor.execute.call_args_list
+    )
+
+
 def test_prepare_dry_run_performs_database_reads_without_writes(tmp_path, monkeypatch):
     snapshot = CqcActiveSnapshot(
         source_uri="https://www.cqc.org.uk/current.csv",
@@ -157,6 +448,68 @@ def test_prepare_dry_run_performs_database_reads_without_writes(tmp_path, monkey
     assert _prepare_batch(args, Mock(), cursor) == 0
     assert not manifest_path.exists()
     assert all(str(call.args[0]).lstrip().upper().startswith("SELECT") for call in cursor.execute.call_args_list)
+
+
+def test_ensure_no_active_batch_is_noop_when_idle():
+    cursor = Mock()
+    cursor.fetchone.return_value = None
+    args = SimpleNamespace(batch_id="new-batch", dry_run=False)
+
+    _ensure_no_active_reconciliation_batch(args, Mock(), cursor)
+
+    assert args.batch_id == "new-batch"
+    assert not any("UPDATE" in str(call.args[0]).upper() for call in cursor.execute.call_args_list if call.args)
+
+
+def test_ensure_no_active_batch_aborts_idle_stale_batch_then_rechecks(monkeypatch):
+    cursor = Mock()
+    cursor.fetchone.side_effect = [("stale-uuid",), None]
+    aborted: list[str] = []
+
+    def fake_abort(args, _conn, _cur):
+        aborted.append(args.batch_id)
+        return 0
+
+    monkeypatch.setattr("incremental_update._abort_batch", fake_abort)
+    args = SimpleNamespace(batch_id="new-batch", dry_run=False)
+
+    _ensure_no_active_reconciliation_batch(args, Mock(), cursor)
+
+    assert aborted == ["stale-uuid"]
+    assert args.batch_id == "new-batch"
+
+
+def test_ensure_no_active_batch_refuses_when_a_shard_worker_is_live(monkeypatch):
+    cursor = Mock()
+    cursor.fetchone.return_value = ("stale-uuid",)
+    monkeypatch.setattr(
+        "incremental_update._abort_batch",
+        Mock(side_effect=ShardAlreadyRunning("Shard 0 is still running; batch abort refused.")),
+    )
+    args = SimpleNamespace(batch_id="new-batch", dry_run=False)
+
+    with pytest.raises(ChangesFetchError, match="stale-uuid is still active"):
+        _ensure_no_active_reconciliation_batch(args, Mock(), cursor)
+    assert args.batch_id == "new-batch"
+
+
+def test_ensure_no_active_batch_refuses_if_another_batch_is_active_after_abort(monkeypatch):
+    cursor = Mock()
+    cursor.fetchone.side_effect = [("stale-1",), ("stale-2",)]
+    monkeypatch.setattr("incremental_update._abort_batch", lambda *_args, **_kwargs: 0)
+    args = SimpleNamespace(batch_id="new-batch", dry_run=False)
+
+    with pytest.raises(ChangesFetchError, match="stale-2 is still active"):
+        _ensure_no_active_reconciliation_batch(args, Mock(), cursor)
+    assert args.batch_id == "new-batch"
+
+
+def test_prepare_still_fail_closes_without_marking_partial_imports_complete():
+    source = Path("incremental_update.py").read_text(encoding="utf-8")
+    assert "_ensure_no_active_reconciliation_batch" in source
+    assert "counts_reconciled = TRUE, reconciled_at = NOW()" in source
+    assert "counts_reconciled = FALSE, reconciled_at = NULL" in source
+    assert "A completed reconciliation batch cannot be aborted." in source
 
 
 def test_reconciliation_evidence_is_derived_from_committed_shard_state():
@@ -446,9 +799,10 @@ def test_rating_projection_targets_the_existing_partial_unique_index():
 def test_cli_requires_explicit_batch_phase_and_has_no_global_run_lock():
     source = Path("incremental_update.py").read_text(encoding="utf-8")
 
-    assert 'choices=("prepare", "shard", "finalize", "abort"), required=True' in source
+    assert 'choices=("prepare", "resume", "shard", "finalize", "abort")' in source
     assert "INCREMENTAL_UPDATE_LOCK_ID" not in source
     assert "acquire_run_lock" not in source
+    assert 're.fullmatch(r"[0-9a-f]{40}", args.release_sha.lower())' in source
 
 
 def test_trusted_event_insert_uses_source_time_and_conflict_safe_return():
@@ -480,7 +834,8 @@ def test_trusted_event_insert_uses_source_time_and_conflict_safe_return():
     assert "ON CONFLICT (dedupe_key) DO NOTHING" in sql
     assert params[6] == "cqc.registrationDate"
     assert params[11] == datetime(2026, 7, 29, 8, 0, tzinfo=timezone.utc)
-    assert "\n          observed_at," not in sql
+    assert params[14] is None
+    assert ("\n" + "          observed_at,") not in sql
     assert any("INSERT INTO delivery_outbox" in call.args[0] for call in cur.execute.call_args_list)
 
 

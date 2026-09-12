@@ -3,7 +3,7 @@
   "prep_note": "Manifest records are preparation artefacts. Live Stripe objects and Payment Links require founder approval and must not be created by an automated agent.",
   "catalog_version": "2026-09",
   "currency": "gbp",
-  "checkout_enabled": true,
+  "checkout_enabled": false,
   "products": {
     "territory-opportunity-brief": {
       "environment_product": "STRIPE_PRODUCT_TERRITORY_BRIEF",

@@ -1,4 +1,10 @@
 # CareGist SWOT Analysis
+
+> **Historical research only — superseded and non-operative.** This April 2026
+> analysis predates the authoritative `2026-08` catalogue. Its products, prices,
+> forecasts, claims, and recommendations must not be used for outreach, quoting,
+> configuration, or release approval.
+
 ## Position: New Entrant Focused on Newly Registered UK Care Providers
 **Date:** 2026-04-28  
 **Analyst:** Market Intelligence & Competitive Analysis Swarm

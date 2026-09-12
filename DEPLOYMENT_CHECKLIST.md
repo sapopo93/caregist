@@ -220,7 +220,7 @@ CAREGIST_LEAD_EMAIL=ops@example.com \
 python3 tools/verify-deploy.py
 ```
 
-The scheduled workflow `.github/workflows/production-smoke.yml` runs the public smoke every 30 minutes and on pushes to `main`.
+The scheduled workflow `.github/workflows/production-smoke.yml` runs the public smoke hourly and on pushes to `main`.
 
 ## 8. Monitoring And Alerts
 

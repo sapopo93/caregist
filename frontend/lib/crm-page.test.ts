@@ -7,6 +7,8 @@ import { describe, it } from "node:test";
 const frontendRoot = resolve(import.meta.dirname, "..");
 const source = readFileSync(resolve(frontendRoot, "app/crm/page.tsx"), "utf8");
 const proxySource = readFileSync(resolve(frontendRoot, "proxy.ts"), "utf8");
+const nextConfigSource = readFileSync(resolve(frontendRoot, "next.config.ts"), "utf8");
+const diallerSource = readFileSync(resolve(frontendRoot, "app/crm/dialler.tsx"), "utf8");
 
 
 describe("CareGist CRM safety contracts", () => {
@@ -14,15 +16,22 @@ describe("CareGist CRM safety contracts", () => {
     assert.match(proxySource, /"\/crm"/);
   });
 
+  it("lets /crm request the microphone so the browser permission popup can appear", () => {
+    assert.match(proxySource, /microphone=\(self\)/);
+    assert.doesNotMatch(nextConfigSource, /Permissions-Policy.*microphone/);
+    assert.match(diallerSource, /getUserMedia\(\{ audio: true \}\)/);
+  });
+
   it("does not expose or collect Twilio credentials in the browser", () => {
-    assert.doesNotMatch(source, /TWILIO_ACCOUNT_SID|TWILIO_AUTH_TOKEN|TWILIO_API_KEY_SECRET/);
-    assert.match(source, /\/api\/v1\/crm\/twilio\/token/);
+    const surface = `${source}\n${diallerSource}`;
+    assert.doesNotMatch(surface, /TWILIO_ACCOUNT_SID|TWILIO_AUTH_TOKEN|TWILIO_API_KEY_SECRET/);
+    assert.match(diallerSource, /\/api\/v1\/crm\/twilio\/token/);
   });
 
   it("uses one-time server authorization instead of sending a destination number to Twilio", () => {
-    assert.match(source, /calls\/authorize/);
-    assert.match(source, /params:\s*\{\s*authorization:/);
-    assert.doesNotMatch(source, /params:\s*\{\s*(To|phone|phone_e164):/);
+    assert.match(diallerSource, /calls\/authorize/);
+    assert.match(diallerSource, /params:\s*\{\s*authorization:/);
+    assert.doesNotMatch(diallerSource, /params:\s*\{\s*(To|phone|phone_e164):/);
   });
 
   it("makes phone compliance fool-proof for operators", () => {
@@ -57,15 +66,24 @@ describe("CareGist CRM safety contracts", () => {
     assert.match(source, /aria-live="polite"/);
     assert.match(source, /aria-pressed=\{dispositionGroup === value\}/);
     assert.match(source, /aria-label="Add contact"/);
+    assert.match(source, /aria-label="Add teammate to this CRM workspace"/);
+    assert.match(source, /\/api\/v1\/crm\/team\/members/);
     assert.match(source, /id="loss-reason"/);
     assert.doesNotMatch(source, /window\.prompt/);
+  });
+
+  it("keeps the dialler movable and advances after an outcome", () => {
+    assert.match(diallerSource, /onPointerDown=\{startDrag\}/);
+    assert.match(diallerSource, /device\.register\(\)/);
+    assert.match(diallerSource, /bottom: 16/);
+    assert.match(source, /Next: \$\{contactName\(nextContact\)\}/);
   });
 
   it("supports general tasks and serializes call actions", () => {
     assert.match(source, /option value="follow_up"/);
     assert.match(source, /option value="meeting"/);
     assert.match(source, /callActionRef\.current/);
-    assert.match(source, /const tokenData = await jsonRequest/);
+    assert.match(diallerSource, /const tokenData = await jsonRequest/);
   });
 
   it("offers the full operator disposition catalogue", () => {

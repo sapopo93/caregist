@@ -9,6 +9,17 @@ from httpx import ASGITransport, AsyncClient
 from api.main import app
 
 
+def _isolated_release_env(sha: str) -> dict[str, str]:
+    """Prevent CI platform variables from overriding the release under test."""
+    return {
+        "VERCEL_GIT_COMMIT_SHA": "",
+        "GITHUB_SHA": "",
+        "RENDER_GIT_COMMIT": "",
+        "SOURCE_VERSION": "",
+        "CAREGIST_RELEASE_SHA": sha,
+    }
+
+
 class _Transaction:
     async def __aenter__(self):
         return self
@@ -51,7 +62,7 @@ async def test_health_endpoint_returns_degraded_snapshot():
         "checks": {"database": "ok"},
     }
 
-    with patch.dict("os.environ", {"CAREGIST_RELEASE_SHA": "a" * 40}), \
+    with patch.dict("os.environ", _isolated_release_env("a" * 40), clear=False), \
          patch("api.routers.health.get_connection", mock_get_connection), \
          patch("api.routers.health.get_pipeline_health", new=AsyncMock(return_value=snapshot)):
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
@@ -141,6 +152,35 @@ async def test_crm_health_fails_closed_when_tps_cron_is_stale():
         tps_pending_jobs=25,
         tps_review_jobs=2,
     )
+
+
+@pytest.mark.asyncio
+async def test_crm_health_reports_calling_without_claiming_ops_are_on():
+    from api.routers import health
+
+    conn = AsyncMock()
+    with (
+        patch.object(health.settings, "crm_enabled", True),
+        patch.object(health.settings, "crm_calling_enabled", True),
+        patch.object(health.settings, "outbound_communications_enabled", True),
+        patch.object(health.settings, "crm_recording_enabled", False),
+        patch.object(health.settings, "crm_ai_enabled", False),
+        patch.object(health.settings, "crm_tps_automation_enabled", False),
+    ):
+        result = await health._crm_operations(conn)
+
+    assert result == {
+        "enabled": False,
+        "ok": True,
+        "calling": {
+            "enabled": True,
+            "crm_enabled": True,
+            "recording_enabled": False,
+            "ai_enabled": False,
+            "tps_automation_enabled": False,
+        },
+    }
+    conn.fetchrow.assert_not_awaited()
 
 
 @pytest.mark.asyncio
@@ -257,7 +297,7 @@ async def test_freshness_endpoint_returns_stable_public_evidence():
         "message": "CareGist data is current as of 10 August 2026 at 21:00 UTC.",
     }
 
-    with patch.dict("os.environ", {"CAREGIST_RELEASE_SHA": "a" * 40}), \
+    with patch.dict("os.environ", _isolated_release_env("a" * 40), clear=False), \
          patch("api.routers.health.get_connection", mock_get_connection), \
          patch("api.routers.health.get_cqc_freshness", new=AsyncMock(return_value=snapshot)):
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
@@ -302,8 +342,22 @@ async def test_liveness_always_ok():
 
 
 @pytest.mark.asyncio
+async def test_version_publishes_platform_sha_ahead_of_stale_pin():
+    with patch.dict(
+        "os.environ",
+        {"CAREGIST_RELEASE_SHA": "f" * 40, "VERCEL_GIT_COMMIT_SHA": "a" * 40},
+        clear=False,
+    ):
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get("/api/v1/version")
+
+    assert response.status_code == 200
+    assert response.json()["release"]["git_sha"] == "a" * 40
+
+
+@pytest.mark.asyncio
 async def test_version_publishes_validated_release_sha():
-    with patch.dict("os.environ", {"CAREGIST_RELEASE_SHA": "B" * 40}):
+    with patch.dict("os.environ", _isolated_release_env("B" * 40), clear=False):
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.get("/api/v1/version")
 

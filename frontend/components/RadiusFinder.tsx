@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import RatingBadge from "@/components/RatingBadge";
-import EmailCaptureStrip from "@/components/EmailCaptureStrip";
 import { getProviderHref, getProviderPathKey } from "@/lib/provider-path";
 
 interface Result {
@@ -29,7 +28,12 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 const RADII = [1, 5, 10, 20];
-const RATINGS = ["All", "Outstanding", "Good", "Requires Improvement"];
+const RATINGS = [
+  { label: "All", value: "All" },
+  { label: "Outstanding", value: "Outstanding" },
+  { label: "Good", value: "Good" },
+  { label: "Requires Improvement", value: "Requires improvement" },
+];
 const SERVICE_TYPES = [
   { label: "All", value: "" },
   { label: "Care Homes", value: "Residential Homes" },
@@ -55,7 +59,6 @@ export default function RadiusFinder() {
   const [searching, setSearching] = useState(false);
   const [searched, setSearched] = useState(false);
   const [error, setError] = useState("");
-  const [emailGated, setEmailGated] = useState(true);
   const [sortBy, setSortBy] = useState<"distance" | "rating" | "name">("distance");
   const autoSearched = useRef(false);
 
@@ -68,7 +71,7 @@ export default function RadiusFinder() {
     const urlServiceType = searchParams.get("service_type") || "";
     if (urlPostcode) setPostcode(urlPostcode);
     if (!isNaN(urlRadius) && RADII.includes(urlRadius)) setRadius(urlRadius);
-    if (urlRating && RATINGS.includes(urlRating)) setRating(urlRating);
+    if (urlRating && RATINGS.some(({ value }) => value === urlRating)) setRating(urlRating);
     if (urlServiceType) setServiceType(urlServiceType);
     if (urlPostcode) {
       autoSearched.current = true;
@@ -78,7 +81,7 @@ export default function RadiusFinder() {
       setSearching(true);
       fetch(`/api/v1/tools/radius-search?${params}`)
         .then((res) => res.ok ? res.json() : res.json().then((d) => Promise.reject(new Error(d.detail || "Search failed"))))
-        .then((data) => { setResults(data.data || []); setTotal(data.meta?.total || 0); setSearched(true); setEmailGated(true); })
+        .then((data) => { setResults(data.data || []); setTotal(data.meta?.total || 0); setSearched(true); })
         .catch((err) => setError(typeof err?.message === "string" ? err.message : "Search failed. Please try again."))
         .finally(() => setSearching(false));
     }
@@ -111,7 +114,6 @@ export default function RadiusFinder() {
       setResults(data.data || []);
       setTotal(data.meta?.total || 0);
       setSearched(true);
-      setEmailGated(true);
     } catch (err: any) {
       const msg = typeof err?.message === "string" ? err.message : "Search failed. Please try again.";
       setError(msg);
@@ -120,14 +122,19 @@ export default function RadiusFinder() {
     }
   }
 
-  const RATING_ORDER: Record<string, number> = { Outstanding: 1, Good: 2, "Requires Improvement": 3, Inadequate: 4 };
+  const RATING_ORDER: Record<string, number> = {
+    Outstanding: 1,
+    Good: 2,
+    "Requires Improvement": 3,
+    "Requires improvement": 3,
+    Inadequate: 4,
+  };
   const sortedResults = [...results].sort((a, b) => {
     if (sortBy === "rating") return (RATING_ORDER[a.overall_rating] || 5) - (RATING_ORDER[b.overall_rating] || 5);
     if (sortBy === "name") return a.name.localeCompare(b.name);
     return (a.distance_miles || 0) - (b.distance_miles || 0);
   });
-  const visibleResults = emailGated ? sortedResults.slice(0, 3) : sortedResults;
-  const hiddenCount = emailGated ? Math.max(0, sortedResults.length - 3) : 0;
+  const visibleResults = sortedResults;
   const radiusLabel = `${radius} mile${radius === 1 ? "" : "s"}`;
 
   return (
@@ -177,8 +184,8 @@ export default function RadiusFinder() {
               onChange={(e) => setRating(e.target.value)}
               className="w-full px-4 py-2.5 rounded-lg border border-stone bg-white text-sm"
             >
-              {RATINGS.map((r) => (
-                <option key={r} value={r}>{r}</option>
+              {RATINGS.map(({ label, value }) => (
+                <option key={value} value={value}>{label}</option>
               ))}
             </select>
           </div>
@@ -286,32 +293,6 @@ export default function RadiusFinder() {
               </a>
             ))}
           </div>
-
-          {/* Email gate */}
-          {emailGated && hiddenCount > 0 && (
-            <div className="bg-bark rounded-lg p-6 text-center mb-6">
-              <p className="text-cream font-semibold mb-2">
-                {hiddenCount} more providers found
-              </p>
-              <p className="text-stone text-sm mb-4">
-                Enter your email to see all {total} providers within {radiusLabel}.
-              </p>
-              <div className="max-w-md mx-auto">
-                <EmailCaptureStrip
-                  source="radius_finder"
-                  heading=""
-                  subheading=""
-                  onSuccess={() => setEmailGated(false)}
-                />
-              </div>
-              <button
-                onClick={() => setEmailGated(false)}
-                className="mt-3 text-xs text-stone underline hover:text-cream"
-              >
-                Skip and show results
-              </button>
-            </div>
-          )}
         </>
       )}
     </div>

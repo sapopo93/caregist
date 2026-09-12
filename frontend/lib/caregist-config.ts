@@ -8,7 +8,7 @@ export const PRICING_LADDER: PricingTier[] = [
     forWho: "Watch one England region week by week: new CQC registrations, rating changes, and closures, each with the published record behind it.",
     color: "#10b981",
     price: "£150",
-    priceNote: "One-off · four weekly digests · one England region",
+    priceNote: "One-off pilot · four weekly digests · no automatic renewal",
     includes: [
       "Four consecutive weekly digests covering one England region you choose",
       "New registrations, rating changes, and closures where the published CQC record supports them",
@@ -23,7 +23,7 @@ export const PRICING_LADDER: PricingTier[] = [
     forWho: "Should your sales team prioritise Birmingham and Solihull, or put its next quarter elsewhere?",
     color: "#C8862A",
     price: "£745",
-    priceNote: "One-off · confirm your region and buyer type online",
+    priceNote: "One-off · no subscription · check territory coverage",
     recommended: true,
     includes: [
       "CRM-import-ready territory dataset",
@@ -104,30 +104,30 @@ export const PROVIDER_TIERS = [
 export type ProviderTierKey = (typeof PROVIDER_TIERS)[number]["tier"];
 
 export const PLAN_PRIMARY_CTA: Record<string, string> = {
-  "weekly-digest": "Request the digest",
+  "weekly-digest": "Enquire about the £150 pilot",
   "territory-opportunity-brief": "Check territory coverage",
   free: "See the two products",
   "free-directory": "Open the directory",
-  "radar-regional": "Request access",
-  "radar-national": "Request access",
-  "strategic-territory-intelligence-assignment": "Not yet available",
-  "founding-intelligence-membership": "Not yet available",
-  "intelligence-feed-pilot": "Not yet available",
-  "embedded-enterprise": "Not yet available",
+  "radar-regional": "Not available",
+  "radar-national": "Not available",
+  "strategic-territory-intelligence-assignment": "Not available",
+  "founding-intelligence-membership": "Not available",
+  "intelligence-feed-pilot": "Not available",
+  "embedded-enterprise": "Not available",
 };
 
 export const CQC_INDEPENDENCE_LINE =
   "CareGist is independent and is not affiliated with or endorsed by the Care Quality Commission.";
 
 export const PLAN_NEXT_STEP: Record<string, string> = {
-  free: "The Weekly Digest follows one England region week by week; the Territory Opportunity Brief ranks the accounts worth approaching there.",
-  "radar-regional": "Radar National adds all-England coverage, deeper history, more views, and onboarding.",
-  "radar-national": "The Intelligence Feed Pilot adds a scoped API, signed webhooks, replay, and delivery health.",
-  "intelligence-feed": "Embedded Enterprise adds white-label delivery and contracted operating terms.",
-  "embedded-enterprise": "Contact us for contracted scope, security review, and support.",
-  starter: "This historical plan is no longer sold. Contact support to discuss a Radar migration.",
-  pro: "This historical plan is no longer sold. Contact support to discuss a Radar migration.",
-  business: "This historical plan is no longer sold. Contact support to discuss a Feed migration.",
+  free: "Choose the £150 one-off Weekly Digest pilot or the £745 one-off Territory Opportunity Brief. No automatic renewal.",
+  "radar-regional": "This product is stopped and unavailable for purchase.",
+  "radar-national": "This product is stopped and unavailable for purchase.",
+  "intelligence-feed": "This product is stopped and unavailable for purchase.",
+  "embedded-enterprise": "This product is stopped and unavailable for purchase.",
+  starter: "This historical plan is no longer sold.",
+  pro: "This historical plan is no longer sold.",
+  business: "This historical plan is no longer sold.",
 };
 
 export const PLAN_LIMIT_SUMMARY: Record<string, string> = {

@@ -50,6 +50,7 @@ export async function searchProviders(params: {
   page?: string;
   sort?: string;
   postcode?: string;
+  local_authority?: string;
   [key: string]: string | undefined;
 }) {
   return publicFetch("/api/v1/providers/search", params);

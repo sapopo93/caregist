@@ -4,5 +4,5 @@ export const dynamic = "force-dynamic";
 
 export default async function RequiresImprovementCareHomesPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  permanentRedirect(`/search?q=${encodeURIComponent(slug.replace(/-/g, " "))}&service_type=residential-care-homes&rating=Requires+Improvement`);
+  permanentRedirect(`/search?q=${encodeURIComponent(slug.replace(/-/g, " "))}&service_type=residential-care-homes&rating=Requires+improvement`);
 }

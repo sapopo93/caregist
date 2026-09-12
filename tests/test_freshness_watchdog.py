@@ -48,6 +48,24 @@ async def test_resolved_alert_sends_once_before_reopening(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_failed_delivery_does_not_suppress_the_next_notification(monkeypatch):
+    conn = AsyncMock()
+    conn.fetchrow.return_value = None
+    monkeypatch.setattr(
+        watchdog,
+        "_send_email",
+        Mock(side_effect=RuntimeError("delivery unavailable")),
+    )
+
+    with pytest.raises(RuntimeError, match="delivery unavailable"):
+        await watchdog._notify_and_record(
+            conn, "feed_stale", "subject", "body", {"status": "stale"}
+        )
+
+    conn.execute.assert_not_awaited()
+
+
+@pytest.mark.asyncio
 async def test_recovery_resolves_only_watchdog_alerts():
     conn = AsyncMock()
 

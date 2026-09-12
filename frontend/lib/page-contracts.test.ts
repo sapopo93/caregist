@@ -39,11 +39,77 @@ describe("page contracts", () => {
     assert.doesNotMatch(structuredData, /AggregateRating|reviewCount/);
   });
 
-  it("removes unrelated and unavailable public routes", () => {
-    assert.equal(existsSync(resolve(appRoot, "app/story-video/page.tsx")), false);
-    assert.equal(existsSync(resolve(appRoot, "app/claim/[slug]/page.tsx")), false);
+  it("handles retired stranger-facing routes without generic 404 pages", () => {
+    const storySource = readAppFile("app/story-video/page.tsx");
+    const claimSource = readAppFile("app/claim/[slug]/page.tsx");
+
+    assert.match(storySource, /permanentRedirect\("\/why-caregist"\)/);
+    assert.match(claimSource, /Provider claims are unavailable/);
+    assert.match(claimSource, /\/search\?q=/);
+    assert.match(claimSource, /cqc\.org\.uk\/care-services\/find-care-service/);
     assert.equal(existsSync(resolve(appRoot, "components/CityRatingPage.tsx")), false);
     assert.doesNotMatch(readAppFile("app/dashboard/page.tsx"), /Find a provider to claim|\/claim\//);
+  });
+
+  it("keeps service routes and the proxy on one finite taxonomy", () => {
+    const source = readAppFile("app/services/[slug]/page.tsx");
+    const proxySource = readAppFile("proxy.ts");
+
+    assert.match(source, /import\s+\{\s*notFound\s*\}\s+from\s+"next\/navigation"/);
+    assert.match(source, /getServicePage\(slug\)/);
+    assert.match(source, /export const dynamicParams = false/);
+    assert.match(source, /export function generateStaticParams/);
+    assert.match(proxySource, /getServicePage\(serviceMatch\[1\]\)/);
+    assert.match(proxySource, /NextResponse\.rewrite/);
+    assert.match(proxySource, /status: 404/);
+  });
+
+  it("labels unpublished ratings honestly on the homepage", () => {
+    const source = readAppFile("app/page.tsx");
+
+    assert.match(source, /No published rating/);
+    assert.match(source, /rating=No%20published%20rating/);
+    assert.match(source, /valueKey: "noPublishedRating"/);
+    assert.match(source, /exact overall CQC rating/);
+    assert.doesNotMatch(source, /valueKey: "notYetInspected"/);
+    assert.doesNotMatch(source, /label: "Not yet inspected"/);
+  });
+
+  it("explains local-authority counts are not town-search counts", () => {
+    const source = readAppFile("app/region/[slug]/page.tsx");
+
+    assert.match(source, /This page counts the named/);
+    assert.match(source, /town or name search can return more/);
+  });
+
+  it("exposes a real Compare Now link after two selections", () => {
+    const source = readAppFile("components/CompareBar.tsx");
+
+    assert.match(source, /href=\{\`\/compare\?providers=/);
+    assert.match(source, /Compare Now/);
+    assert.match(source, /z-\[80\]/);
+  });
+
+  it("uses exact geography fields for region and local-authority pages", () => {
+    const source = readAppFile("app/region/[slug]/page.tsx");
+
+    assert.match(source, /searchProviders\(\{ region: REGION_MAP\[slug\]/);
+    assert.match(source, /searchProviders\(\{ local_authority: localAuthority/);
+    assert.doesNotMatch(source, /searchProviders\(\{ q:/);
+  });
+
+  it("keeps the free radius directory ungated", () => {
+    const source = readAppFile("components/RadiusFinder.tsx");
+
+    assert.doesNotMatch(source, /EmailCaptureStrip|emailGated|slice\(0, 3\)/);
+    assert.match(source, /const visibleResults = sortedResults/);
+  });
+
+  it("redirects Requires Improvement city pages with the stored rating casing", () => {
+    const source = readAppFile("app/requires-improvement-care-homes/[slug]/page.tsx");
+
+    assert.match(source, /rating=Requires\+improvement/);
+    assert.doesNotMatch(source, /rating=Requires\+Improvement/);
   });
 
   it("permanently retires the commodity lead-list page", () => {
@@ -108,6 +174,23 @@ describe("page contracts", () => {
     assert.doesNotMatch(layoutSource, /STRIPE_PAYMENT_LINK_URL/);
   });
 
+  it("does not claim that a snapshot checksum is always available", () => {
+    const homeSource = readAppFile("app/page.tsx");
+    const whySource = readAppFile("app/why-caregist/page.tsx");
+    const feedSource = readAppFile("app/intelligence-feed/page.tsx");
+    const publicClaims = [homeSource, whySource, feedSource].join("\n");
+
+    assert.doesNotMatch(publicClaims, /snapshot checksums? make/i);
+    assert.doesNotMatch(publicClaims, /snapshot checksum travel/i);
+    assert.match(homeSource, /checksum when available/);
+    assert.match(homeSource, /href=\{item\.href\}/);
+    assert.match(whySource, /checksum currently available/);
+    assert.match(whySource, /href="\/data-status"/);
+    assert.match(feedSource, /"snapshot_sha256": null/);
+    assert.match(feedSource, /current availability is shown on Data Status/);
+    assert.match(feedSource, /href=\{item\.href\}/);
+  });
+
   it("keeps provider-result navigation on reliable document requests", () => {
     const feedSource = readAppFile("components/NewRegistrationFeedPanel.tsx");
     const cardSource = readAppFile("components/ProviderCard.tsx");
@@ -127,7 +210,7 @@ describe("page contracts", () => {
     assert.match(globalStyles, /padding-bottom:\s*var\(--cookie-consent-offset,\s*0px\)/);
   });
 
-  it("does not claim to charge VAT while the operator is not VAT registered", () => {
+  it("states that public prices exclude VAT", () => {
     const pricingSource = readAppFile("app/pricing/page.tsx");
     const apiSource = readAppFile("app/api/page.tsx");
     const configSource = readAppFile("lib/caregist-config.ts");
@@ -135,11 +218,11 @@ describe("page contracts", () => {
     const termsSource = readAppFile("app/terms/page.tsx");
     const commercialSources = [pricingSource, apiSource, configSource, dashboardSource];
 
+    assert.match(pricingSource, /Price excludes VAT/);
+    assert.match(termsSource, /Prices exclude VAT/);
     for (const source of commercialSources) {
-      assert.doesNotMatch(source, /\+\s*VAT|exclude(?:s|d)?\s+VAT/i);
+      assert.doesNotMatch(source, /not currently VAT registered|VAT is not currently charged/i);
     }
-    assert.match(pricingSource, /VAT is not currently charged/);
-    assert.match(termsSource, /not currently VAT registered/);
   });
 
   it("does not issue opportunity lead-list tokens", () => {

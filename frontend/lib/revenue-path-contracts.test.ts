@@ -60,6 +60,12 @@ describe("revenue path contracts", () => {
       "only the Weekly Digest and the Territory Opportunity Brief may carry a price",
     );
 
+    for (const product of PRICING_LADDER.filter(({ price }) => price !== "£0")) {
+      assert.match(product.priceNote, /One-off/);
+      assert.doesNotMatch(product.price, /month|year|week|\//i);
+    }
+    assert.match(source("app/pricing/page.tsx"), /no subscription or automatic renewal/);
+
     const providerPrices = Object.fromEntries(PROVIDER_TIERS.map(({ tier, price }) => [tier, price]));
     assert.deepEqual(providerPrices, {
       claimed: "£0",
