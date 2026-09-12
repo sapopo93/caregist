@@ -166,8 +166,10 @@ async def test_generation_failure_records_failure_and_reraises_without_fulfillin
     conn = FakeConn(_order())
     failures = []
     deps = _deps(generate="raise", failures=failures)
-    with pytest.raises(TerritoryBriefFulfilmentError, match="generation failed"):
+    with pytest.raises(fulfil.TerritoryBriefGenerationError, match="generation failed") as error:
         await fulfil_territory_brief_order(conn, {"id": "cs_test_123"}, cfg=CFG, deps=deps)
+    assert failures == []  # must wait for the webhook transaction to roll back
+    await error.value.record_failure()
     sql = conn.sql_log()
     assert "SET status = 'generating'" in sql
     assert "SET status = 'fulfilled'" not in sql
@@ -180,8 +182,10 @@ async def test_blob_upload_failure_is_treated_as_retryable_failure():
     conn = FakeConn(_order())
     failures = []
     deps = _deps(fail_uploads=True, failures=failures)
-    with pytest.raises(TerritoryBriefFulfilmentError):
+    with pytest.raises(fulfil.TerritoryBriefGenerationError) as error:
         await fulfil_territory_brief_order(conn, {"id": "cs_test_123"}, cfg=CFG, deps=deps)
+    assert failures == []
+    await error.value.record_failure()
     assert "SET status = 'fulfilled'" not in conn.sql_log()
     assert failures
 
@@ -198,6 +202,13 @@ async def test_exhausted_attempts_stop_retrying():
 @pytest.mark.parametrize(
     "session_over, match",
     [
+        ({"payment_status": "no_payment_required"}, "before payment became valid"),
+        ({"amount_total": 79500}, "GBP 745"),
+        ({"amount_total": 0}, "GBP 745"),
+        ({"currency": "usd"}, "GBP 745"),
+        ({"metadata": {"scope_window_days": "365"}}, "scope does not match"),
+        ({"metadata": {"scope_shortlist_target": "50"}}, "scope does not match"),
+        ({"metadata": {"price_id": "price_other"}}, "scope does not match"),
         ({"payment_status": "unpaid"}, "before payment became valid"),
         ({"consent": {}}, "no Stripe terms acceptance"),
         ({"metadata": {"type": "full_dataset"}}, "immutable order metadata"),

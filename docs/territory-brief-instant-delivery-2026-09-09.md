@@ -1,5 +1,7 @@
 # Territory Opportunity Brief - Slice 2 (fully instant delivery)
 
+Current audit: [12 September release decision](territory-brief-readiness-2026-09-12.md). The implementation and external-state notes below are historical; use the current audit for verified status.
+
 Status: **NOT READY to enable.** Pack generation is built and tested. The paid
 delivery path is implemented at the unit level but is not end-to-end verified,
 and there is a hard consent/Terms blocker plus a founder gate on Stripe object

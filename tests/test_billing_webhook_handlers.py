@@ -503,3 +503,45 @@ async def test_profile_checkout_completed_normalizes_legacy_premium_tier(monkeyp
     assert execute_args[2] == "sub_profile"
     assert execute_args[3] == "provider-slug"
     audit.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_brief_failure_is_persisted_only_after_webhook_lock_is_released(monkeypatch):
+    from api.services.territory_brief_fulfilment import TerritoryBriefGenerationError
+
+    lifecycle = []
+
+    class Transaction:
+        async def __aenter__(self):
+            lifecycle.append("lock")
+        async def __aexit__(self, kind, error, tb):
+            assert kind is TerritoryBriefGenerationError
+            lifecycle.append("rollback")
+
+    class Conn(_WebhookConn):
+        def transaction(self):
+            return Transaction()
+
+    @asynccontextmanager
+    async def connection():
+        try:
+            yield Conn()
+        finally:
+            lifecycle.append("release")
+
+    async def record(order_id, message):
+        assert lifecycle == ["lock", "rollback", "release"]
+        lifecycle.append("record")
+
+    failure = TerritoryBriefGenerationError("order", "generation unavailable", record)
+    monkeypatch.setattr(billing.settings, "stripe_secret_key", "sk_test_checkout")
+    monkeypatch.setattr(billing.settings, "stripe_webhook_secret", "whsec_test")
+    monkeypatch.setattr(billing, "get_connection", connection)
+    monkeypatch.setattr(billing.stripe.Webhook, "construct_event", lambda *args: {
+        "id": "evt_brief_failure", "type": "checkout.session.completed",
+        "data": {"object": {"id": "cs_test_failure"}},
+    })
+    monkeypatch.setattr(billing, "_handle_checkout_completed", AsyncMock(side_effect=failure))
+    with pytest.raises(TerritoryBriefGenerationError):
+        await billing.stripe_webhook(_webhook_request())
+    assert lifecycle == ["lock", "rollback", "release", "record"]

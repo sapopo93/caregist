@@ -201,7 +201,7 @@ async def _record_failure(order_id: str, message: str) -> None:
                 last_error = $2,
                 generation_attempts = generation_attempts + 1,
                 updated_at = NOW()
-            WHERE id = $1 AND status <> 'fulfilled'
+            WHERE id = $1 AND status NOT IN ('fulfilled', 'refunded')
             """,
             order_id,
             message,
@@ -222,3 +222,25 @@ def fulfilment_deps() -> FulfilmentDeps:
         record_failure=_record_failure,
         write_audit_log=write_audit_log,
     )
+
+
+def validate_checkout_price() -> None:
+    """Check the configured Stripe object before reserving an order or taking money."""
+    try:
+        price = stripe.Price.retrieve(settings.stripe_price_territory_brief, expand=["product"])
+    except stripe.StripeError as exc:
+        raise HTTPException(status_code=503, detail="Territory Brief price verification is unavailable.") from exc
+    product = price.get("product") or {}
+    if not (
+        price.get("id") == settings.stripe_price_territory_brief
+        and price.get("active") is True
+        and price.get("livemode") is settings.stripe_secret_key.startswith("sk_live_")
+        and price.get("currency") == "gbp"
+        and price.get("unit_amount") == 74500
+        and price.get("type") == "one_time"
+        and price.get("recurring") is None
+        and price.get("lookup_key") == "territory_opportunity_brief_gbp_oneoff_v2"
+        and hasattr(product, "get")
+        and product.get("active") is True
+    ):
+        raise HTTPException(status_code=503, detail="Territory Brief price does not match the GBP 745 catalogue.")

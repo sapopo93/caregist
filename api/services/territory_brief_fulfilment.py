@@ -10,7 +10,7 @@ retired full-dataset handler (`_handle_dataset_checkout_completed`):
   ``stripe_processed_events`` guard) and a re-run against an already-``fulfilled``
   order is an explicit no-op here too;
 * if generation or upload fails after payment, the handler records the failure
-  on a *separate* connection (so the note survives the rollback) and re-raises,
+  on a *separate* connection after rollback (so it cannot wait on its own lock) and re-raises,
   so Stripe re-delivers and the order is retried - it is never marked delivered.
 
 Generation and Blob upload are injected so this is fully testable without the
@@ -56,6 +56,19 @@ class TerritoryBriefFulfilmentError(RuntimeError):
     """Raised for any state that must trigger a Stripe re-delivery."""
 
 
+class TerritoryBriefGenerationError(TerritoryBriefFulfilmentError):
+    """Carry a trusted failure recorder to the webhook's post-rollback boundary."""
+
+    def __init__(self, order_id: str, message: str, recorder):
+        super().__init__(f"territory-brief generation failed for order {order_id}: {message}")
+        self.order_id = order_id
+        self.failure_message = message
+        self.recorder = recorder
+
+    async def record_failure(self) -> None:
+        await self.recorder(self.order_id, self.failure_message)
+
+
 @dataclass(frozen=True)
 class GeneratedPack:
     pdf_bytes: bytes
@@ -97,11 +110,11 @@ class FulfilmentDeps:
     # stripe.checkout.Session.retrieve equivalent: (session_id) -> dict
     retrieve_session: Callable[[str], dict[str, Any]]
     # best-effort failure recorder on a *fresh* connection (so the note survives
-    # the webhook rollback). MUST run, on that fresh connection:
+    # the webhook rollback). Run only AFTER rollback and connection release:
     #   UPDATE territory_brief_orders
     #   SET status = 'failed', last_error = $2,
     #       generation_attempts = generation_attempts + 1, updated_at = NOW()
-    #   WHERE id = $1 AND status <> 'fulfilled'
+    #   WHERE id = $1 AND status NOT IN ('fulfilled', 'refunded')
     # The incremented counter is what the next retry reads for the attempt cap;
     # the in-transaction writes here are rolled back when this handler re-raises.
     record_failure: Callable[[str, str], Awaitable[None]]
@@ -151,8 +164,10 @@ async def fulfil_territory_brief_order(
     order_id = metadata.get("order_id")
     if metadata.get("type") != METADATA_TYPE or not order_id:
         raise TerritoryBriefFulfilmentError("territory-brief checkout missing immutable order metadata")
-    if authoritative.get("payment_status") not in {"paid", "no_payment_required"}:
+    if authoritative.get("payment_status") != "paid":
         raise TerritoryBriefFulfilmentError("territory-brief checkout completed before payment became valid")
+    if authoritative.get("currency") != "gbp" or authoritative.get("amount_total") != 74500:
+        raise TerritoryBriefFulfilmentError("territory-brief checkout must be paid at GBP 745.00")
     if (authoritative.get("consent", {}) or {}).get("terms_of_service") != "accepted":
         raise TerritoryBriefFulfilmentError("territory-brief checkout has no Stripe terms acceptance")
 
@@ -185,7 +200,13 @@ async def fulfil_territory_brief_order(
     )
     if not order or order["stripe_price_id"] != cfg.stripe_price_territory_brief:
         raise TerritoryBriefFulfilmentError("territory-brief checkout does not match its reserved local order")
-    if metadata.get("scope_kind") != order["scope_kind"] or metadata.get("scope_name") != order["scope_name"]:
+    if (
+        metadata.get("scope_kind") != order["scope_kind"]
+        or metadata.get("scope_name") != order["scope_name"]
+        or metadata.get("scope_window_days") != str(order["scope_window_days"])
+        or metadata.get("scope_shortlist_target") != str(order["scope_shortlist_target"])
+        or metadata.get("price_id") != order["stripe_price_id"]
+    ):
         raise TerritoryBriefFulfilmentError("territory-brief checkout scope does not match the reserved order")
     if order["status"] == "refunded":
         raise TerritoryBriefFulfilmentError("refunded territory-brief order cannot be fulfilled")
@@ -246,10 +267,9 @@ async def fulfil_territory_brief_order(
     except Exception as exc:  # noqa: BLE001 - failure must be recorded + retried
         message = f"{type(exc).__name__}: {exc}"[:1000]
         logger.exception("Territory-brief generation failed for order %s", order_id)
-        await deps.record_failure(str(order_id), message)
-        raise TerritoryBriefFulfilmentError(
-            f"territory-brief generation failed for order {order_id}: {message}"
-        ) from exc
+        # The webhook must release its FOR UPDATE lock before using another
+        # connection to persist this failure. Awaiting that write here deadlocks.
+        raise TerritoryBriefGenerationError(str(order_id), message, deps.record_failure) from exc
 
     await conn.execute(
         """

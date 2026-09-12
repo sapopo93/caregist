@@ -59,6 +59,13 @@ class _Conn:
 
 @pytest.fixture
 def brief_settings(monkeypatch):
+    monkeypatch.setattr(billing.settings, "billing_checkout_enabled", True)
+    monkeypatch.setattr(billing.stripe.Price, "retrieve", lambda *args, **kwargs: {
+        "id": "price_territory_brief", "active": True, "livemode": False,
+        "currency": "gbp", "unit_amount": 74500, "type": "one_time", "recurring": None,
+        "lookup_key": "territory_opportunity_brief_gbp_oneoff_v2",
+        "product": {"id": "prod_test", "active": True},
+    })
     monkeypatch.setattr(billing.settings, "territory_self_serve_checkout_enabled", True)
     monkeypatch.setattr(billing.settings, "stripe_secret_key", "sk_test_brief")
     monkeypatch.setattr(billing.settings, "stripe_price_territory_brief", "price_territory_brief")
@@ -245,3 +252,38 @@ def test_generate_pack_maps_brief_to_generated_pack(monkeypatch):
     assert pack.shortlisted > 0
     assert pack.considered >= pack.shortlisted
     assert "rank,organisation" in pack.csv_text.splitlines()[0]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("override", [
+    {"unit_amount": 79500}, {"currency": "usd"}, {"active": False},
+    {"livemode": True}, {"lookup_key": None}, {"product": {"active": False}},
+    {"recurring": {"interval": "month"}},
+])
+async def test_wrong_stripe_price_blocks_before_order_or_checkout(monkeypatch, brief_settings, override):
+    price = billing.stripe.Price.retrieve("price_territory_brief")
+    price.update(override)
+    monkeypatch.setattr(billing.stripe.Price, "retrieve", lambda *a, **kw: price)
+    connection = Mock()
+    create = Mock()
+    monkeypatch.setattr(billing, "get_connection", connection)
+    monkeypatch.setattr(billing.stripe.checkout.Session, "create", create)
+    with pytest.raises(HTTPException) as error:
+        await billing.create_territory_brief_checkout(_request())
+    assert error.value.status_code == 503
+    connection.assert_not_called()
+    create.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_missing_source_returns_503_before_stripe_or_database(monkeypatch, brief_settings):
+    monkeypatch.setattr(territory_brief_delivery, "scope_catalogue", Mock(side_effect=FileNotFoundError("missing source")))
+    create = Mock()
+    connection = Mock()
+    monkeypatch.setattr(billing.stripe.checkout.Session, "create", create)
+    monkeypatch.setattr(billing, "get_connection", connection)
+    with pytest.raises(HTTPException) as error:
+        await billing.create_territory_brief_checkout(_request())
+    assert error.value.status_code == 503
+    create.assert_not_called()
+    connection.assert_not_called()

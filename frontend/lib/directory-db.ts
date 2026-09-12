@@ -1,3 +1,4 @@
+import { consumeTerritoryBriefDownload } from "./territory-brief-download.ts";
 import { createHash, randomBytes } from "node:crypto";
 import { canonicalizeServiceCounts, canonicalServices, resolveServiceAliases } from "@/lib/service-taxonomy";
 
@@ -705,4 +706,10 @@ export async function listProvidersForExport(scope: DirectoryExportScope): Promi
     rethrowUnexpectedDatabaseError(error);
     return listFallbackProvidersForExport(scope);
   }
+}
+
+/** Territory Brief uses separate entitlements from the retired dataset. */
+export async function consumePaidTerritoryBriefDownload(token: string) {
+  assertDatabaseConfigured();
+  return consumeTerritoryBriefDownload(token, (sql, values) => getSql().query(sql, values));
 }

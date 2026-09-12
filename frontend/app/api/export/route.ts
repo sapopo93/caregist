@@ -5,6 +5,7 @@ import { readDirectoryAccessToken } from "@/lib/directory-access-token";
 import { isDirectoryOpportunity } from "@/lib/directory-constants";
 import {
   consumePaidDatasetDownload,
+  consumePaidTerritoryBriefDownload,
   getExportScopeForToken,
   listProvidersForExport,
 } from "@/lib/directory-db";
@@ -30,7 +31,8 @@ function buildFilename(scope: { region: string; serviceType: string; rating: str
 export async function GET(request: NextRequest) {
   const segmentedDeliveryEnabled = process.env.DIRECTORY_EXPORT_DELIVERY_ENABLED === "true";
   const fullDatasetDeliveryEnabled = process.env.FULL_DATASET_CHECKOUT_ENABLED === "true";
-  if (!segmentedDeliveryEnabled && !fullDatasetDeliveryEnabled) {
+  const territoryDeliveryEnabled = process.env.TERRITORY_SELF_SERVE_CHECKOUT_ENABLED === "true";
+  if (!segmentedDeliveryEnabled && !fullDatasetDeliveryEnabled && !territoryDeliveryEnabled) {
     return NextResponse.json(
       { error: "Export delivery is awaiting Human Gate approval." },
       { status: 503, headers: { "Cache-Control": "private, no-store" } },
@@ -46,11 +48,11 @@ export async function GET(request: NextRequest) {
   const opportunity = request.nextUrl.searchParams.get("opportunity")?.trim() ?? "";
   let storedScope = readDirectoryAccessToken(token);
   if (!storedScope) {
-    if (!fullDatasetDeliveryEnabled) {
+    if (!fullDatasetDeliveryEnabled && !territoryDeliveryEnabled) {
       return NextResponse.json({ error: "Export token is invalid or expired." }, { status: 401 });
     }
     try {
-      storedScope = await getExportScopeForToken(token);
+      storedScope = fullDatasetDeliveryEnabled ? await getExportScopeForToken(token) : null;
     } catch {
       return NextResponse.json({ error: "Export service is temporarily unavailable." }, { status: 503 });
     }
@@ -64,7 +66,9 @@ export async function GET(request: NextRequest) {
   }
   if (!storedScope) {
     try {
-      const paidDownload = await consumePaidDatasetDownload(token);
+      const paidDownload =
+        (territoryDeliveryEnabled ? await consumePaidTerritoryBriefDownload(token) : null) ??
+        (fullDatasetDeliveryEnabled ? await consumePaidDatasetDownload(token) : null);
       if (!paidDownload) {
         return NextResponse.json({ error: "Export token is invalid, expired, refunded, or exhausted." }, { status: 401 });
       }

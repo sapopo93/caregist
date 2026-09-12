@@ -12,24 +12,74 @@
       "interval": null,
       "lookup_key": "territory_opportunity_brief_gbp_oneoff_v2",
       "sale_channel": "self-serve-gated",
-      "status": "live_and_saleable",
-      "status_note": "Canonical price is GBP 745 (founder decision 2026-09-11, issue #44: GBP 795 was an error). The founder recreated the Product + Price in LIVE mode on 2026-09-12 ('Territory Opportunity Brief', prod_VESD16ql3keycy / price_1UDzJP4mijLHzRRkfYJG3OZZ), archived the erroneous GBP 795 live Product/Price the same day, and renamed the new product to drop an initial trailing period so its display name now matches the archived one exactly. A Stripe Payment Link for this Price was confirmed live on 2026-09-12 (verified: page renders 'Territory Opportunity Brief £745.00') -- see payment_link below. No TEST-mode GBP 745 Product/Price has been created yet -- stripe.test below is intentionally null, not a placeholder for the archived test objects (those are recorded only under superseded_prices for audit trail). If/when self-serve checkout is enabled, set the STRIPE_PRICE_TERRITORY_BRIEF environment variable to this live price ID -- the current sales channel is the Payment Link sent manually by email/invoice, not the (disabled) in-app Checkout Session route. Self-serve checkout stays closed until the runtime flag TERRITORY_SELF_SERVE_CHECKOUT_ENABLED is set with approved terms/consent hashes. Open discrepancy: the Stripe dashboard also shows a third, separately-named 'CareGist Territory Opportunity Brief' product at GBP 795, archived, created 2026-09-09 -- its product/price IDs are not yet recorded here; fold it into superseded_prices once known so the audit trail is complete.",
+      "status": "live_price_verified_fulfilment_blocked",
+      "status_note": "Read-only Stripe API verification on 2026-09-12 confirms an active GBP 745 one-time live Price and Product. The expected lookup_key above is NOT set on the live Price (observed null). No GBP 745 test Product/Price exists in the complete test catalogue listing. The active Payment Link has no scope fields, order metadata or terms acceptance and is not wired to automated Brief fulfilment. It enables automatic tax and disables invoice creation, so the final buyer total and invoice promise require verification. Keep self-serve checkout closed until approved terms, source readiness, delivery and end-to-end release gates pass. Superseded Product and Price active states are recorded separately below; archiving a Product did not archive its Prices.",
       "payment_link": {
         "url": "https://buy.stripe.com/bJe8wI7Xhd8YdYi2vl3AY04",
         "confirmed": "2026-09-12",
-        "verified_display": "Territory Opportunity Brief £745.00"
+        "verified_display": "Territory Opportunity Brief \u00a3745.00",
+        "id": "plink_1UEkzy4mijLHzRRkWjk3pFVW",
+        "api_checked_at": "2026-09-12T09:01:51.186586+00:00",
+        "active": true,
+        "livemode": true,
+        "price_id": "price_1UDzJP4mijLHzRRkfYJG3OZZ",
+        "quantity": 1,
+        "terms_of_service": "none",
+        "invoice_creation_enabled": false,
+        "automatic_tax_enabled": true,
+        "order_metadata_present": false,
+        "scope_fields_present": false
       },
       "superseded_prices": [
         {
           "unit_amount": 79500,
-          "reason": "erroneous launch price, superseded by the GBP 745 founder decision on issue #44; founder archived the live Product/Price on 2026-09-12",
-          "test": { "product_id": "prod_VE89BnRzZPq0Qq", "price_id": "price_1UDft34mijLHzRRklUMJR6F2" },
-          "live": { "product_id": "prod_VE7HY2DdEmrb8C", "price_id": "price_1UDf2t4mijLHzRRkRqbNA1rd" }
+          "reason": "Erroneous GBP 795 launch price. API verification 2026-09-12: live Product archived but live Price active; test Product and Price both active. Not proven fully deactivated.",
+          "test": {
+            "product_id": "prod_VE89BnRzZPq0Qq",
+            "price_id": "price_1UDft34mijLHzRRklUMJR6F2",
+            "product_active": true,
+            "price_active": true,
+            "payment_link": {
+              "id": "plink_1UDjtS4mijLHzRRkX9usxmyr",
+              "active": true
+            }
+          },
+          "live": {
+            "product_id": "prod_VE7HY2DdEmrb8C",
+            "price_id": "price_1UDf2t4mijLHzRRkRqbNA1rd",
+            "product_active": false,
+            "price_active": true,
+            "payment_link": {
+              "id": "plink_1UDjiX4mijLHzRRk9XSMklME",
+              "active": false
+            }
+          }
+        },
+        {
+          "unit_amount": 79500,
+          "reason": "Third duplicate recovered from complete live Product listing on 2026-09-12. Product archived; Price still active.",
+          "live": {
+            "product_id": "prod_VE1CdaKNxE0yVP",
+            "price_id": "price_1UDZAQ4mijLHzRRkvwXjtaQK",
+            "product_active": false,
+            "price_active": true,
+            "payment_link": {
+              "id": "plink_1UDZBR4mijLHzRRkdm966UHK",
+              "active": false
+            }
+          }
         }
       ],
       "stripe": {
-        "test": { "product_id": null, "price_id": null },
-        "live": { "product_id": "prod_VESD16ql3keycy", "price_id": "price_1UDzJP4mijLHzRRkfYJG3OZZ" }
+        "test": {
+          "product_id": null,
+          "price_id": null
+        },
+        "live": {
+          "product_id": "prod_VESD16ql3keycy",
+          "price_id": "price_1UDzJP4mijLHzRRkfYJG3OZZ",
+          "observed_lookup_key": null
+        }
       }
     },
     "market-movement-report": {
@@ -41,8 +91,14 @@
       "sale_channel": "payment-link-pending",
       "status": "pending_creation",
       "stripe": {
-        "test": { "product_id": null, "price_id": null },
-        "live": { "product_id": null, "price_id": null }
+        "test": {
+          "product_id": null,
+          "price_id": null
+        },
+        "live": {
+          "product_id": null,
+          "price_id": null
+        }
       }
     },
     "radar-regional": {
