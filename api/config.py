@@ -39,6 +39,8 @@ SECRET_ENV_NAMES = {
     "stripe_price_radar_regional": "STRIPE_PRICE_RADAR_REGIONAL",
     "stripe_price_radar_national": "STRIPE_PRICE_RADAR_NATIONAL",
     "stripe_price_intelligence_feed": "STRIPE_PRICE_INTELLIGENCE_FEED",
+    "stripe_price_territory_brief": "STRIPE_PRICE_TERRITORY_BRIEF",
+    "blob_read_write_token": "BLOB_READ_WRITE_TOKEN",
     "resend_api_key": "RESEND_API_KEY",
     "resend_webhook_secret": "RESEND_WEBHOOK_SECRET",
     "caregist_to_support_token": "CAREGIST_TO_SUPPORT_TOKEN",
@@ -355,6 +357,12 @@ class Settings(BaseSettings):
     stripe_price_radar_regional: str = ""
     stripe_price_radar_national: str = ""
     stripe_price_intelligence_feed: str = ""
+    # One-off Territory Opportunity Brief (GBP 745). Optional until the
+    # self-serve feature flag is turned on; loadable earlier for webhook replay.
+    stripe_price_territory_brief: str = ""
+    # Vercel Blob RW token, used by the fulfilment worker to upload the
+    # generated brief/CSV to private Blob storage.
+    blob_read_write_token: str = ""
     # Exact solicitor-approved B2B terms version accepted at paid checkout.
     # Empty means no self-service checkout can proceed even if its feature flag is enabled.
     b2b_terms_version: str = ""
@@ -363,6 +371,15 @@ class Settings(BaseSettings):
     # Exact approved digital-content terms accepted in Stripe Checkout.
     digital_content_terms_version: str = ""
     digital_content_terms_sha256: str = ""
+    # Exact solicitor-approved wording for the Territory Opportunity Brief's
+    # immediate-supply / loss-of-cancellation-right consent, and the Business
+    # Terms version that wording belongs to. Deliberately NOT shared with the
+    # retired full-dataset product: the Brief is a bespoke research pack sold
+    # under different published terms, so its consent must be approved on its
+    # own. Empty => self-serve checkout stays fail-closed (see validate_production).
+    territory_brief_terms_version: str = ""
+    territory_brief_terms_sha256: str = ""
+    territory_brief_consent_sha256: str = ""
     default_page_size: int = 20
     app_url: str = "http://localhost:3000"
     resend_api_key: str = ""
@@ -399,6 +416,12 @@ class Settings(BaseSettings):
     outbound_delivery_enabled: bool = False
     directory_export_delivery_enabled: bool = False
     full_dataset_checkout_enabled: bool = False
+    # Slice 2: fully-instant self-serve delivery of the GBP 745 Territory
+    # Opportunity Brief. Fail-closed. Only turn on when every technical
+    # Definition-of-Done item passes AND the Brief's immediate-supply consent
+    # wording has explicit solicitor sign-off (its published Business Terms
+    # currently describe a manual, cancellable, three-working-day service).
+    territory_self_serve_checkout_enabled: bool = False
     review_publication_enabled: bool = False
     # Independent signal-intelligence kill switches. Defaults are deliberately
     # fail-closed; workflows opt collectors into shadow mode explicitly.
@@ -641,6 +664,32 @@ class Settings(BaseSettings):
                 raise RuntimeError(
                     f"FATAL: Radar checkout is enabled without {', '.join(missing)}."
                 )
+
+        if self.territory_self_serve_checkout_enabled:
+            if not self.billing_checkout_enabled:
+                raise RuntimeError(
+                    "FATAL: TERRITORY_SELF_SERVE_CHECKOUT_ENABLED requires BILLING_CHECKOUT_ENABLED."
+                )
+            required_territory_values = {
+                "STRIPE_PRICE_TERRITORY_BRIEF": self.stripe_price_territory_brief,
+                "TERRITORY_BRIEF_TERMS_VERSION": self.territory_brief_terms_version,
+                "TERRITORY_BRIEF_TERMS_SHA256": self.territory_brief_terms_sha256,
+                "TERRITORY_BRIEF_CONSENT_SHA256": self.territory_brief_consent_sha256,
+                "BLOB_READ_WRITE_TOKEN": self.blob_read_write_token,
+                "RESEND_API_KEY": self.resend_api_key,
+            }
+            missing = [name for name, value in required_territory_values.items() if not value]
+            if missing:
+                raise RuntimeError(
+                    f"FATAL: Territory self-serve checkout is enabled without {', '.join(missing)}."
+                )
+            for label, digest in (
+                ("TERRITORY_BRIEF_TERMS_SHA256", self.territory_brief_terms_sha256),
+                ("TERRITORY_BRIEF_CONSENT_SHA256", self.territory_brief_consent_sha256),
+            ):
+                cleaned = digest.strip().lower()
+                if len(cleaned) != 64 or any(c not in "0123456789abcdef" for c in cleaned):
+                    raise RuntimeError(f"FATAL: {label} must be a 64-character SHA-256 hex digest.")
 
 
 settings = Settings(**load_application_secrets())

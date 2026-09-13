@@ -1,0 +1,11 @@
+{
+  "simulation": true,
+  "buyer_label": "Synthetic compliance buyer, not a customer",
+  "scope": {
+    "buyer_type": "compliance_consultancy",
+    "authorities": ["Birmingham", "Solihull"],
+    "service": "Domiciliary care",
+    "selection_routes": ["multi_location_provider", "recent_registration"],
+    "requested_enrichment": ["breach_history", "director_links"]
+  }
+}

@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 const DIFFERENCES = [
   {
     title: "Changes, not another provider database",
-    body: "Radar starts with two decision-relevant events: a new CQC registration and a published rating change. The free directory remains available for discovery and checking.",
+    body: "CareGist starts with two decision-relevant events: a new CQC registration and a published rating change. The free directory remains available for discovery and checking.",
   },
   {
     title: "Evidence stays attached",
@@ -24,7 +24,7 @@ const DIFFERENCES = [
   },
   {
     title: "A workflow your team can repeat",
-    body: "Regional and National Radar combine saved views, explicit provider lists, team actions, outcome feedback, and bounded event history without bundling an API into human-workflow plans.",
+    body: "Both products are built from saved views, explicit provider lists, and observation-dated evidence, without bundling an API into a human-workflow product.",
   },
 ];
 
@@ -68,7 +68,7 @@ export default function WhyCareGistPage() {
         <h2 className="mt-3 text-2xl font-bold text-bark">Why the first customer is a compliance firm</h2>
         <p className="mt-3 max-w-3xl text-sm leading-6 text-dusk">
           A rating change or registration can create immediate review, remediation, or
-          business-development work. One qualified engagement can repay a Radar subscription,
+          business-development work. One qualified engagement can repay a Weekly Digest pack,
           while the linked evidence lets a consultant explain exactly why the signal deserved
           attention. This is a narrower and more defensible promise than generic lead generation.
         </p>
@@ -107,7 +107,7 @@ export default function WhyCareGistPage() {
         </p>
         <div className="mt-6 flex flex-wrap gap-3">
           <Link href="/pricing" className="rounded-lg bg-clay px-5 py-3 text-sm font-semibold text-white hover:bg-bark">
-            Compare Radar plans
+            See the two products
           </Link>
           <Link href="/search" className="rounded-lg border border-clay px-5 py-3 text-sm font-semibold text-clay hover:bg-cream">
             Search the free directory

@@ -190,8 +190,8 @@ const PRIMARY_DISPOSITIONS = [
 
 const SECONDARY_DISPOSITIONS: Record<string, Array<[string, string]>> = {
   no_contact: [["no_answer", "No answer"], ["busy", "Busy"], ["voicemail", "Voicemail"], ["gatekeeper", "Gatekeeper"]],
-  connected: [["connected", "Conversation completed"], ["qualified", "Qualified"], ["meeting_booked", "Meeting booked"], ["sale_completed", "Sale"], ["not_interested", "Not interested"]],
-  do_not_call: [["do_not_call", "Contact said do not call"], ["wrong_number", "Wrong number"]],
+  connected: [["connected", "Conversation completed"], ["qualified", "Qualified"], ["meeting_booked", "Meeting booked"], ["sale_completed", "Sale"], ["call_dropped", "Call dropped"], ["call_me_later", "Call me some other time"], ["not_interested", "Not interested"]],
+  do_not_call: [["do_not_call", "Don't call me again"], ["wrong_number", "Wrong number"], ["number_disconnected", "Number disconnected"]],
 };
 
 const TERMINAL_CALL_STATUSES = new Set(["completed", "busy", "no_answer", "failed", "canceled"]);

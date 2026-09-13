@@ -26,6 +26,7 @@ from api.config import (
     settings,
 )
 from api.database import get_connection
+from api.services import territory_brief_delivery, territory_brief_fulfilment
 from api.services.pipeline_health import get_pipeline_health
 from api.utils.audit import actor_from_auth, write_audit_log
 
@@ -311,6 +312,24 @@ class CheckoutRequest(BaseModel):
 
 class DatasetCheckoutRequest(BaseModel):
     email: EmailStr
+
+    model_config = {"extra": "forbid"}
+
+
+class TerritoryBriefCheckoutRequest(BaseModel):
+    """Buyer-supplied scope for a per-order Territory Opportunity Brief.
+
+    Price, amount and status are server-only; ``extra="forbid"`` rejects any
+    client attempt to supply them. ``scope_name`` is customer text but is
+    validated against the live LA/region allow-list before any Stripe call and
+    re-validated at fulfilment, so it cannot select an arbitrary territory.
+    """
+
+    email: EmailStr
+    scope_kind: Literal["local_authority", "region"]
+    scope_name: str = Field(min_length=2, max_length=80)
+    window_days: int = Field(90, ge=7, le=365)
+    shortlist_target: int = Field(30, ge=10, le=50)
 
     model_config = {"extra": "forbid"}
 
@@ -642,6 +661,124 @@ async def create_dataset_checkout(req: DatasetCheckoutRequest) -> dict:
         "session_id": session.id,
         "record_count": int(artifact["record_count"]),
         "source_watermark": artifact["source_watermark"].isoformat(),
+        "stripe_mode": "test" if settings.stripe_secret_key.startswith("sk_test_") else "live",
+    }
+
+
+@router.post("/territory-brief-checkout", dependencies=[Depends(check_ip_rate_limit)])
+async def create_territory_brief_checkout(req: TerritoryBriefCheckoutRequest) -> dict:
+    """Create a one-time Checkout Session for a per-order Territory Opportunity Brief.
+
+    Fail-closed: returns 503 unless ``territory_self_serve_checkout_enabled`` is
+    set and the Stripe price, Blob token, Resend key and solicitor-approved
+    Business Terms + immediate-supply consent wording are all in place. The
+    generated brief is delivered by the Stripe webhook
+    (``territory_brief_fulfilment.fulfil_territory_brief_order``); this endpoint
+    only reserves the order and hands back a hosted-checkout URL.
+    """
+    if not settings.territory_self_serve_checkout_enabled or not settings.billing_checkout_enabled:
+        raise HTTPException(status_code=503, detail="Territory Opportunity Brief checkout is not available yet.")
+    if not (
+        settings.stripe_secret_key
+        and settings.stripe_price_territory_brief
+        and settings.blob_read_write_token
+        and settings.resend_api_key
+    ):
+        raise HTTPException(status_code=503, detail="Territory Opportunity Brief checkout is not configured.")
+
+    cfg = territory_brief_delivery.fulfilment_settings()  # 503 until terms + consent approved
+
+    from api.services.territory_brief import ScopeError, validate_scope
+
+    try:
+        scope = validate_scope(
+            {
+                "kind": req.scope_kind,
+                "name": req.scope_name,
+                "window_days": req.window_days,
+                "shortlist_target": req.shortlist_target,
+            },
+            territory_brief_delivery.scope_catalogue(),
+        )
+    except ScopeError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+    except (FileNotFoundError, OSError) as exc:
+        raise HTTPException(status_code=503, detail="Territory Brief source data is unavailable. No payment has been taken.") from exc
+
+    territory_brief_delivery.validate_checkout_price()
+
+    email = str(req.email).strip().lower()
+    async with get_connection() as conn:
+        order = await conn.fetchrow(
+            """
+            INSERT INTO territory_brief_orders
+                (customer_email, stripe_price_id, scope_kind, scope_name,
+                 scope_window_days, scope_shortlist_target)
+            VALUES ($1, $2, $3, $4, $5, $6)
+            RETURNING id
+            """,
+            email,
+            settings.stripe_price_territory_brief,
+            scope.kind,
+            scope.name,
+            scope.window_days,
+            scope.shortlist_target,
+        )
+
+    order_id = str(order["id"])
+    scope_meta = {
+        "kind": scope.kind,
+        "name": scope.name,
+        "window_days": scope.window_days,
+        "shortlist_target": scope.shortlist_target,
+    }
+    expires_at = datetime.now(timezone.utc) + timedelta(minutes=30)
+    try:
+        session = stripe.checkout.Session.create(
+            mode="payment",
+            customer_email=email,
+            line_items=[{"price": settings.stripe_price_territory_brief, "quantity": 1}],
+            success_url=f"{settings.app_url}/territory-opportunity-brief/success?session_id={{CHECKOUT_SESSION_ID}}",
+            cancel_url=f"{settings.app_url}/territory-opportunity-brief?cancelled=1",
+            expires_at=int(expires_at.timestamp()),
+            consent_collection={"terms_of_service": "required"},
+            custom_text={
+                "terms_of_service_acceptance": {
+                    "message": territory_brief_fulfilment.TERRITORY_BRIEF_CONSENT_TEXT
+                },
+                "after_submit": {
+                    "message": "Your private download links will be emailed once payment is confirmed."
+                },
+            },
+            invoice_creation={"enabled": True},
+            metadata=territory_brief_fulfilment.build_checkout_metadata(order_id, scope_meta, cfg),
+            idempotency_key=f"caregist-territory-brief-{order_id}",
+        )
+    except Exception:
+        async with get_connection() as conn:
+            await conn.execute(
+                "UPDATE territory_brief_orders SET status = 'expired', updated_at = NOW() "
+                "WHERE id = $1 AND status = 'pending'",
+                order_id,
+            )
+        raise
+
+    async with get_connection() as conn:
+        await conn.execute(
+            """
+            UPDATE territory_brief_orders
+            SET stripe_checkout_session_id = $1, updated_at = NOW()
+            WHERE id = $2 AND status = 'pending'
+            """,
+            session.id,
+            order_id,
+        )
+
+    return {
+        "checkout_url": session.url,
+        "session_id": session.id,
+        "scope": {"kind": scope.kind, "name": scope.name, "window_days": scope.window_days},
+        "price_gbp": 745,
         "stripe_mode": "test" if settings.stripe_secret_key.startswith("sk_test_") else "live",
     }
 
@@ -1387,63 +1524,77 @@ async def stripe_webhook(request: Request) -> dict:
     event_type = event["type"]
     data = event["data"]["object"]
 
-    async with get_connection() as conn:
-        async with conn.transaction():
-            # Dedup check inside the transaction — concurrent deliveries of the
-            # same event_id will block here; only one INSERT wins; the loser
-            # sees inserted=None and returns immediately without doing any work.
-            inserted = await conn.fetchval(
-                """INSERT INTO stripe_processed_events (event_id)
-                   VALUES ($1) ON CONFLICT DO NOTHING RETURNING event_id""",
-                event_id,
-            )
-            if not inserted:
-                logger.info("Duplicate Stripe event %s — skipping", event_id)
-                return {"status": "ok"}
-
-            # All handler DB mutations share this transaction. On any exception
-            # the transaction rolls back and the event_id insert is undone so
-            # Stripe's next retry will process the event fresh.
-            if event_type == "checkout.session.completed":
-                await _handle_checkout_completed(conn, data)
-            elif event_type == "checkout.session.async_payment_succeeded":
-                await _handle_checkout_completed(conn, data)
-            elif event_type == "checkout.session.expired":
-                await conn.execute(
-                    """
-                    UPDATE billing_operations
-                    SET status = 'expired', updated_at = NOW()
-                    WHERE stripe_object_id = $1 AND status = 'pending'
-                      AND operation_type IN ('checkout', 'profile_checkout')
-                    """,
-                    data.get("id"),
+    try:
+        async with get_connection() as conn:
+            async with conn.transaction():
+                # Dedup check inside the transaction — concurrent deliveries of the
+                # same event_id will block here; only one INSERT wins; the loser
+                # sees inserted=None and returns immediately without doing any work.
+                inserted = await conn.fetchval(
+                    """INSERT INTO stripe_processed_events (event_id)
+                       VALUES ($1) ON CONFLICT DO NOTHING RETURNING event_id""",
+                    event_id,
                 )
-                await conn.execute(
-                    """
-                    UPDATE full_dataset_orders
-                    SET status = 'expired', updated_at = NOW()
-                    WHERE stripe_checkout_session_id = $1 AND status = 'pending'
-                    """,
-                    data.get("id"),
-                )
-            elif event_type == "customer.subscription.updated":
-                subscription_id = data.get("id")
-                if not subscription_id:
-                    raise RuntimeError("customer.subscription.updated missing subscription id")
-                authoritative = stripe.Subscription.retrieve(subscription_id)
-                await _handle_subscription_updated(conn, authoritative)
-            elif event_type == "customer.subscription.deleted":
-                await _handle_subscription_deleted(conn, data)
-            elif event_type in ("charge.refunded", "charge.refund.updated"):
-                await _handle_refund(conn, data)
-            else:
-                logger.info("Unhandled Stripe event: %s", event_type)
+                if not inserted:
+                    logger.info("Duplicate Stripe event %s — skipping", event_id)
+                    return {"status": "ok"}
 
-            # Retain beyond Stripe's automatic retry horizon so a delayed
-            # replay cannot reapply commercial state.
-            await conn.execute(
-                "DELETE FROM stripe_processed_events WHERE processed_at < NOW() - INTERVAL '7 days'"
-            )
+                # All handler DB mutations share this transaction. On any exception
+                # the transaction rolls back and the event_id insert is undone so
+                # Stripe's next retry will process the event fresh.
+                if event_type == "checkout.session.completed":
+                    await _handle_checkout_completed(conn, data)
+                elif event_type == "checkout.session.async_payment_succeeded":
+                    await _handle_checkout_completed(conn, data)
+                elif event_type == "checkout.session.expired":
+                    await conn.execute(
+                        """
+                        UPDATE billing_operations
+                        SET status = 'expired', updated_at = NOW()
+                        WHERE stripe_object_id = $1 AND status = 'pending'
+                          AND operation_type IN ('checkout', 'profile_checkout')
+                        """,
+                        data.get("id"),
+                    )
+                    await conn.execute(
+                        """
+                        UPDATE full_dataset_orders
+                        SET status = 'expired', updated_at = NOW()
+                        WHERE stripe_checkout_session_id = $1 AND status = 'pending'
+                        """,
+                        data.get("id"),
+                    )
+                    await conn.execute(
+                        """
+                        UPDATE territory_brief_orders
+                        SET status = 'expired', updated_at = NOW()
+                        WHERE stripe_checkout_session_id = $1 AND status = 'pending'
+                        """,
+                        data.get("id"),
+                    )
+                elif event_type == "customer.subscription.updated":
+                    subscription_id = data.get("id")
+                    if not subscription_id:
+                        raise RuntimeError("customer.subscription.updated missing subscription id")
+                    authoritative = stripe.Subscription.retrieve(subscription_id)
+                    await _handle_subscription_updated(conn, authoritative)
+                elif event_type == "customer.subscription.deleted":
+                    await _handle_subscription_deleted(conn, data)
+                elif event_type in ("charge.refunded", "charge.refund.updated"):
+                    await _handle_refund(conn, data)
+                else:
+                    logger.info("Unhandled Stripe event: %s", event_type)
+
+                # Retain beyond Stripe's automatic retry horizon so a delayed
+                # replay cannot reapply commercial state.
+                await conn.execute(
+                    "DELETE FROM stripe_processed_events WHERE processed_at < NOW() - INTERVAL '7 days'"
+                )
+    except territory_brief_fulfilment.TerritoryBriefGenerationError as exc:
+        # Both transaction and connection contexts have exited, releasing the
+        # order lock before the independent failure-counter write.
+        await exc.record_failure()
+        raise
 
     return {"status": "ok"}
 
@@ -1585,6 +1736,14 @@ async def _handle_checkout_completed(conn, session: dict) -> None:
     metadata = session.get("metadata", {})
     if metadata.get("type") == "full_dataset":
         await _handle_dataset_checkout_completed(conn, session)
+        return
+    if metadata.get("type") == territory_brief_fulfilment.METADATA_TYPE:
+        await territory_brief_fulfilment.fulfil_territory_brief_order(
+            conn,
+            session,
+            cfg=territory_brief_delivery.fulfilment_settings(),
+            deps=territory_brief_delivery.fulfilment_deps(),
+        )
         return
     user_id = metadata.get("user_id")
     terms_version = metadata.get("terms_version")
@@ -1956,6 +2115,23 @@ async def _handle_refund(conn, charge: dict) -> None:
             await conn.execute(
                 "UPDATE dataset_download_tokens SET expires_at = NOW() WHERE order_id = $1 AND expires_at > NOW()",
                 refunded_order["id"],
+            )
+
+        refunded_brief = await conn.fetchrow(
+            """
+            UPDATE territory_brief_orders
+            SET status = 'refunded', updated_at = NOW()
+            WHERE stripe_payment_intent_id = $1
+              AND status IN ('paid', 'generating', 'fulfilled', 'failed')
+            RETURNING id
+            """,
+            payment_intent,
+        )
+        if refunded_brief:
+            await conn.execute(
+                "UPDATE territory_brief_download_tokens SET expires_at = NOW() "
+                "WHERE order_id = $1 AND expires_at > NOW()",
+                refunded_brief["id"],
             )
 
     await write_audit_log(

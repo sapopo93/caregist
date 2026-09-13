@@ -5,6 +5,7 @@ from unittest.mock import AsyncMock, Mock
 
 import pytest
 from fastapi import HTTPException
+from pydantic import ValidationError
 
 from api.config import Settings
 from api.routers import crm
@@ -244,3 +245,32 @@ def test_crm_migration_keeps_audio_out_of_postgres():
     assert "audio" not in lowered.replace("audio is never stored in postgresql", "")
     assert "crm_suppressions" in lowered
     assert "crm_call_events" in lowered
+
+
+def test_disposition_request_accepts_new_operator_outcomes():
+    crm.DispositionRequest(disposition_group="connected", disposition="call_dropped")
+    crm.DispositionRequest(
+        disposition_group="connected",
+        disposition="call_me_later",
+        notes="Asked to be called some other time.",
+    )
+    crm.DispositionRequest(
+        disposition_group="do_not_call",
+        disposition="number_disconnected",
+        notes="Number out of service.",
+    )
+
+
+@pytest.mark.parametrize(
+    ("group", "disposition"),
+    [
+        ("do_not_call", "call_dropped"),
+        ("connected", "number_disconnected"),
+        ("no_contact", "call_me_later"),
+        ("callback", "call_dropped"),
+    ],
+)
+def test_disposition_request_rejects_new_outcomes_under_wrong_group(group, disposition):
+    with pytest.raises(ValidationError) as caught:
+        crm.DispositionRequest(disposition_group=group, disposition=disposition)
+    assert "does not match its primary outcome" in str(caught.value)

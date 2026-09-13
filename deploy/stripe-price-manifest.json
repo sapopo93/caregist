@@ -1,9 +1,128 @@
 {
   "schema_version": 2,
-  "catalog_version": "2026-08",
+  "prep_note": "Manifest records are preparation artefacts. Live Stripe objects and Payment Links require founder approval and must not be created by an automated agent.",
+  "catalog_version": "2026-09-two-product",
+  "catalog_note": "Founder decision 2026-09-13: CareGist currently sells exactly two one-off products, no automatic renewal, everything else stopped. Territory Opportunity Brief (£745) is the only one wired for automated Stripe checkout (self-serve, currently gated closed pending the source-of-generation repoint documented in docs/territory-brief-instant-delivery-2026-09-09.md §5). The Weekly Digest pilot (£150) is sold entirely by hand — sales-assisted email offer, a founder-issued Stripe Payment Link, manual weekly delivery — and has no code path or environment variable in this repository, so it is not a manifest \"product\" in the automated-deployment sense this file governs. Its live Stripe object exists only in the Stripe dashboard (\"CareGist Radar pilot pack\", £150.00), confirmed active there 2026-09-13. Products no longer for sale are recorded under retired_products for history, not under products, so this file's exact-match governance check only ever has to agree with what is actually being sold.",
   "currency": "gbp",
   "checkout_enabled": false,
   "products": {
+    "territory-opportunity-brief": {
+      "environment_product": "STRIPE_PRODUCT_TERRITORY_BRIEF",
+      "environment_price": "STRIPE_PRICE_TERRITORY_BRIEF",
+      "unit_amount": 74500,
+      "interval": null,
+      "lookup_key": "territory_opportunity_brief_gbp_oneoff_v2",
+      "sale_channel": "self-serve-gated",
+      "status": "live_price_verified_fulfilment_blocked",
+      "status_note": "Read-only Stripe API verification on 2026-09-12 confirms an active GBP 745 one-time live Price and Product. The expected lookup_key above is NOT set on the live Price (observed null). No GBP 745 test Product/Price exists in the complete test catalogue listing. The active Payment Link has no scope fields, order metadata or terms acceptance and is not wired to automated Brief fulfilment. It enables automatic tax and disables invoice creation, so the final buyer total and invoice promise require verification. Keep self-serve checkout closed until approved terms, source readiness, delivery and end-to-end release gates pass. Superseded Product and Price active states are recorded separately below; archiving a Product did not archive its Prices.",
+      "payment_link": {
+        "url": "https://buy.stripe.com/bJe8wI7Xhd8YdYi2vl3AY04",
+        "confirmed": "2026-09-12",
+        "verified_display": "Territory Opportunity Brief £745.00",
+        "id": "plink_1UEkzy4mijLHzRRkWjk3pFVW",
+        "api_checked_at": "2026-09-12T09:01:51.186586+00:00",
+        "active": true,
+        "livemode": true,
+        "price_id": "price_1UDzJP4mijLHzRRkfYJG3OZZ",
+        "quantity": 1,
+        "terms_of_service": "none",
+        "invoice_creation_enabled": false,
+        "automatic_tax_enabled": true,
+        "order_metadata_present": false,
+        "scope_fields_present": false
+      },
+      "superseded_prices": [
+        {
+          "unit_amount": 79500,
+          "reason": "Erroneous GBP 795 launch price. API verification 2026-09-12: live Product archived but live Price active; test Product and Price both active. Not proven fully deactivated.",
+          "test": {
+            "product_id": "prod_VE89BnRzZPq0Qq",
+            "price_id": "price_1UDft34mijLHzRRklUMJR6F2",
+            "product_active": true,
+            "price_active": true,
+            "payment_link": {
+              "id": "plink_1UDjtS4mijLHzRRkX9usxmyr",
+              "active": true
+            }
+          },
+          "live": {
+            "product_id": "prod_VE7HY2DdEmrb8C",
+            "price_id": "price_1UDf2t4mijLHzRRkRqbNA1rd",
+            "product_active": false,
+            "price_active": true,
+            "payment_link": {
+              "id": "plink_1UDjiX4mijLHzRRk9XSMklME",
+              "active": false
+            }
+          }
+        },
+        {
+          "unit_amount": 79500,
+          "reason": "Third duplicate recovered from complete live Product listing on 2026-09-12. Product archived; Price still active.",
+          "live": {
+            "product_id": "prod_VE1CdaKNxE0yVP",
+            "price_id": "price_1UDZAQ4mijLHzRRkvwXjtaQK",
+            "product_active": false,
+            "price_active": true,
+            "payment_link": {
+              "id": "plink_1UDZBR4mijLHzRRkdm966UHK",
+              "active": false
+            }
+          }
+        }
+      ],
+      "stripe": {
+        "test": {
+          "product_id": null,
+          "price_id": null
+        },
+        "live": {
+          "product_id": "prod_VESD16ql3keycy",
+          "price_id": "price_1UDzJP4mijLHzRRkfYJG3OZZ",
+          "observed_lookup_key": null
+        }
+      }
+    }
+  },
+  "retired_products": {
+    "note": "Not currently for sale (founder decision 2026-09-13: everything except the two current products is stopped). Kept here, outside the products map this file's governance check validates, purely as a historical record of Stripe objects that exist or were requested.",
+    "weekly-digest-pilot": {
+      "display_name": "CareGist Radar pilot pack",
+      "unit_amount": 15000,
+      "interval": null,
+      "sale_channel": "sales-assisted-manual",
+      "status": "live_active_manual_sale_only",
+      "status_note": "Confirmed active in the Stripe dashboard 2026-09-13 (£150.00, Downloadable Software - business use). Sold entirely by hand per artifacts/radar-live/2026-09-01-ask-to-pay-script-stripe.md: sales-assisted email offer, a founder-issued Payment Link per buyer, manual weekly digest delivery. No environment variable, checkout route, or fulfilment code in this repository references this product — there is nothing for STRIPE_PRICE_/STRIPE_PRODUCT_ variables or this file's automated checks to govern. Its Stripe Product ID and Price ID are not recorded here; if automated wiring is ever built for it, record them here first.",
+      "stripe": {
+        "test": {
+          "product_id": null,
+          "price_id": null
+        },
+        "live": {
+          "product_id": null,
+          "price_id": null
+        }
+      }
+    },
+    "market-movement-report": {
+      "environment_product": "STRIPE_PRODUCT_MARKET_REPORT",
+      "environment_price": "STRIPE_PRICE_MARKET_REPORT",
+      "unit_amount": 49500,
+      "interval": null,
+      "lookup_key": "market_movement_report_gbp_oneoff_v1",
+      "sale_channel": "payment-link-pending",
+      "status": "pending_creation",
+      "stripe": {
+        "test": {
+          "product_id": null,
+          "price_id": null
+        },
+        "live": {
+          "product_id": null,
+          "price_id": null
+        }
+      }
+    },
     "radar-regional": {
       "environment_product": "STRIPE_PRODUCT_RADAR_REGIONAL",
       "environment_price": "STRIPE_PRICE_RADAR_REGIONAL",

@@ -27,12 +27,18 @@ EXPECTED_WEBHOOK_EVENTS = {
     "customer.subscription.updated",
     "customer.subscription.deleted",
 }
-EXPECTED_MANIFEST_SHA256 = "bec531624f71c0a688bb19396544b63734836aeeacefd61285644419de1c8930"
+# Founder decision 2026-09-13: CareGist currently sells exactly two one-off
+# products (Territory Opportunity Brief, and the manually-sold Weekly Digest
+# pilot). Only the Brief is wired for automated Stripe checkout, so it is the
+# only entry this manifest's "products" map -- and this pin -- has to cover;
+# the pilot has no code path and is intentionally not governed here (see
+# deploy/stripe-price-manifest.json's retired_products.weekly-digest-pilot
+# note). Recompute EXPECTED_MANIFEST_SHA256 with
+# tools.verify_stripe_release.canonical_manifest_sha256 whenever the approved
+# catalogue changes again -- that is the re-approval step, not a bug fix.
+EXPECTED_MANIFEST_SHA256 = "23fe0d48bd63ec42fb60f0a1797b993ccc11189f3c603d840477024faa42a002"
 EXPECTED_PRODUCT_KEYS = {
-    "radar-regional",
-    "radar-national",
-    "intelligence-feed",
-    "embedded-enterprise",
+    "territory-opportunity-brief",
 }
 
 
@@ -211,7 +217,7 @@ def run_checks(
     approved_manifest = (
         isinstance(manifest, Mapping)
         and manifest.get("schema_version") == 2
-        and manifest.get("catalog_version") == "2026-08"
+        and manifest.get("catalog_version") == "2026-09-two-product"
         and manifest.get("currency") == "gbp"
         and manifest.get("checkout_enabled") is False
         and isinstance(manifest.get("products"), Mapping)
@@ -222,7 +228,7 @@ def run_checks(
         (
             "APPROVED_CATALOGUE_MANIFEST",
             approved_manifest,
-            "exact approved catalogue 2026-08 with checkout fail-closed",
+            "exact approved catalogue 2026-09-two-product with checkout fail-closed",
         )
     )
 
@@ -244,18 +250,25 @@ def run_checks(
         else:
             price_values.append(value)
 
-    expected_identifier_count = 7  # four Products; three saleable Prices.
+    # No test-mode Stripe Product/Price has ever been created for Territory
+    # Opportunity Brief (see deploy/stripe-price-manifest.json's status_note),
+    # so "test" mode genuinely has zero deployment identifiers, Products, and
+    # Prices to find; "live" mode expects the one Product and one saleable
+    # Price that exist there.
+    expected_product_count = 1 if mode == "live" else 0
+    expected_price_count = 1 if mode == "live" else 0
+    expected_identifier_count = expected_product_count + expected_price_count
     checks.append(
         (
             "STRIPE_DEPLOYMENT_IDS_COMPLETE",
             len(identifiers) == expected_identifier_count,
-            "four Product IDs and three Price IDs are declared",
+            "one Product ID and one Price ID are declared for this mode",
         )
     )
     checks.append(
         (
             "STRIPE_PRODUCT_IDS_UNIQUE",
-            len(product_values) == 4
+            len(product_values) == expected_product_count
             and len(product_values) == len(set(product_values))
             and all(product_values),
             "all required Product IDs are distinct",
@@ -264,7 +277,7 @@ def run_checks(
     checks.append(
         (
             "STRIPE_PRICE_IDS_UNIQUE",
-            len(price_values) == 3
+            len(price_values) == expected_price_count
             and len(price_values) == len(set(price_values))
             and all(price_values),
             "all saleable Price IDs are distinct",

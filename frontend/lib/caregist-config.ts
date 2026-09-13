@@ -4,6 +4,37 @@ import type { PricingTier } from "@/lib/types";
 // backend entitlement compatibility code, not in the saleable product model.
 export const PRICING_LADDER: PricingTier[] = [
   {
+    tier: "Weekly Digest",
+    forWho: "Watch one England region week by week: new CQC registrations, rating changes, and closures, each with the published record behind it.",
+    color: "#10b981",
+    price: "£150",
+    priceNote: "One-off pilot · four weekly digests · no automatic renewal",
+    includes: [
+      "Four consecutive weekly digests covering one England region you choose",
+      "New registrations, rating changes, and closures where the published CQC record supports them",
+      "A direct official-source link on every item",
+      "Report and observation dates carried through each digest",
+    ],
+    limit: "One England region per four-week pack. Email to confirm your region, your buyer type, and a start date. Online ordering is not available.",
+    pricingLogic: "Keep the week's movement in view without buying another provider directory.",
+  },
+  {
+    tier: "Territory Opportunity Brief",
+    forWho: "Should your sales team prioritise Birmingham and Solihull, or put its next quarter elsewhere?",
+    color: "#C8862A",
+    price: "£745",
+    priceNote: "One-off · no subscription · check territory coverage",
+    recommended: true,
+    includes: [
+      "CRM-import-ready territory dataset",
+      "Ranked shortlist of 25–50 priority organisations, each with a stated reason",
+      "3–5 page brief on territory size, market structure, notable movements, and recommended approach",
+      "Observation dates carried through the deliverable",
+    ],
+    limit: "Confirm online that the published CQC record supports your exact region and buyer type before any payment. No scoping call required.",
+    pricingLogic: "Choose the accounts worth approaching next and see the evidence behind each priority.",
+  },
+  {
     tier: "Free Directory",
     forWho: "Provider discovery and official-source checking",
     color: "#10b981",
@@ -16,68 +47,6 @@ export const PRICING_LADDER: PricingTier[] = [
     ],
     limit: "No Radar workspace, event history, API, or webhooks.",
     pricingLogic: "",
-  },
-  {
-    tier: "Radar Regional",
-    forWho: "Compliance and quality-improvement firms covering one England region",
-    color: "#C8862A",
-    price: "Not currently available",
-    priceNote: "Roadmap product · no paid checkout",
-    includes: [
-      "New CQC registrations and rating changes",
-      "One England region with direct CQC evidence links",
-      "Email and in-app delivery",
-      "10 saved views",
-      "90-day canonical event export",
-      "2 organization users",
-    ],
-    limit: "Roadmap only. No subscription purchase or checkout is available.",
-    pricingLogic: "Access remains closed while source-readiness work is incomplete.",
-  },
-  {
-    tier: "Radar National",
-    forWho: "National compliance and business-development teams",
-    color: "#8b5cf6",
-    price: "Not currently available",
-    priceNote: "Roadmap product · no paid checkout",
-    includes: [
-      "Everything in Radar Regional across all England",
-      "50 saved views and provider lists",
-      "365-day canonical event export",
-      "5 organization users",
-      "Structured onboarding",
-    ],
-    limit: "Roadmap only. No subscription purchase or checkout is available.",
-    pricingLogic: "Access remains closed while source-readiness work is incomplete.",
-  },
-  {
-    tier: "Intelligence Feed Pilot",
-    forWho: "Customers integrating one CQC signal into an operational system",
-    color: "#ef4444",
-    price: "Not currently available",
-    priceNote: "Roadmap product · no paid checkout",
-    includes: [
-      "Scoped canonical event API",
-      "Timestamped, signed webhooks",
-      "Stable cursors, idempotent replay, and delivery health",
-      "Explicit pilot scope and onboarding",
-    ],
-    limit: "Roadmap only. No public or private checkout is available.",
-    pricingLogic: "Access remains closed while source-readiness work is incomplete.",
-  },
-  {
-    tier: "Embedded Enterprise",
-    forWho: "White-label, customer-owned provider lists, and regulated enterprise use",
-    color: "#64748b",
-    price: "Not currently available",
-    priceNote: "Roadmap product · no quote or checkout",
-    includes: [
-      "White-label delivery and customer-owned provider lists",
-      "Procurement, security, and data-processing review",
-      "Contracted SLA, support, and deployment scope",
-    ],
-    limit: "Roadmap only. No quote, payment or delivery commitment is available.",
-    pricingLogic: "Future access requires separate technical, security and contractual approval.",
   },
 ];
 
@@ -135,26 +104,30 @@ export const PROVIDER_TIERS = [
 export type ProviderTierKey = (typeof PROVIDER_TIERS)[number]["tier"];
 
 export const PLAN_PRIMARY_CTA: Record<string, string> = {
-  free: "Compare Radar plans",
+  "weekly-digest": "Enquire about the £150 pilot",
+  "territory-opportunity-brief": "Check territory coverage",
+  free: "See the two products",
   "free-directory": "Open the directory",
-  "radar-regional": "Not currently available",
-  "radar-national": "Not currently available",
-  "intelligence-feed-pilot": "Not currently available",
-  "embedded-enterprise": "Not currently available",
+  "radar-regional": "Not available",
+  "radar-national": "Not available",
+  "strategic-territory-intelligence-assignment": "Not available",
+  "founding-intelligence-membership": "Not available",
+  "intelligence-feed-pilot": "Not available",
+  "embedded-enterprise": "Not available",
 };
 
 export const CQC_INDEPENDENCE_LINE =
   "CareGist is independent and is not affiliated with or endorsed by the Care Quality Commission.";
 
 export const PLAN_NEXT_STEP: Record<string, string> = {
-  free: "Radar Regional turns verified CQC changes into an evidence-linked team workflow.",
-  "radar-regional": "Radar National adds all-England coverage, deeper history, more views, and onboarding.",
-  "radar-national": "The Intelligence Feed Pilot adds a scoped API, signed webhooks, replay, and delivery health.",
-  "intelligence-feed": "Embedded Enterprise adds white-label delivery and contracted operating terms.",
-  "embedded-enterprise": "Contact us for contracted scope, security review, and support.",
-  starter: "This historical plan is no longer sold. Contact support to discuss a Radar migration.",
-  pro: "This historical plan is no longer sold. Contact support to discuss a Radar migration.",
-  business: "This historical plan is no longer sold. Contact support to discuss a Feed migration.",
+  free: "Choose the £150 one-off Weekly Digest pilot or the £745 one-off Territory Opportunity Brief. No automatic renewal.",
+  "radar-regional": "This product is stopped and unavailable for purchase.",
+  "radar-national": "This product is stopped and unavailable for purchase.",
+  "intelligence-feed": "This product is stopped and unavailable for purchase.",
+  "embedded-enterprise": "This product is stopped and unavailable for purchase.",
+  starter: "This historical plan is no longer sold.",
+  pro: "This historical plan is no longer sold.",
+  business: "This historical plan is no longer sold.",
 };
 
 export const PLAN_LIMIT_SUMMARY: Record<string, string> = {

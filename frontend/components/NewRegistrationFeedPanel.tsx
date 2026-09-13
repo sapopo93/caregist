@@ -335,7 +335,7 @@ export default function NewRegistrationFeedPanel({
           <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-dusk mb-1">Plan fit</p>
           <p className="text-sm text-bark">
             {tier === "free"
-              ? "The Free Directory does not include a change feed. Compare the current Radar plans."
+              ? "The Free Directory does not include a change feed. The Weekly Digest covers new registrations and rating changes for one England region."
               : tier === "alerts-pro"
                 ? "This historical alert entitlement remains supported but is no longer sold."
               : tier === "starter"
@@ -592,7 +592,7 @@ export default function NewRegistrationFeedPanel({
             ) : (
               <p className="text-sm text-dusk">
                 This compatibility entitlement does not include saved views.{" "}
-                <Link href={upgradeHref} className="text-clay underline">Compare current Radar plans</Link>
+                <Link href={upgradeHref} className="text-clay underline">See the two products</Link>
               </p>
             )}
           </div>
@@ -620,7 +620,7 @@ export default function NewRegistrationFeedPanel({
             ) : (
               <p className="text-sm text-dusk">
                 This compatibility entitlement does not include a weekly digest.{" "}
-                <Link href={upgradeHref} className="text-clay underline">Compare current Radar plans</Link>
+                <Link href={upgradeHref} className="text-clay underline">See the two products</Link>
               </p>
             )}
           </div>

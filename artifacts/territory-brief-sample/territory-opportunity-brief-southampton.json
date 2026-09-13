@@ -1,0 +1,1150 @@
+{
+  "as_of_date": "2026-02-18",
+  "considered_locations": 38,
+  "data_caveats": [
+    "This brief reflects the published CQC register edition dated 2026-02-18 (the newest date present in the source), not a live API lookup.",
+    "The register carries the latest rating and its report date. Where no rating history is present a change cannot be derived, so a first/refreshed rating is reported as a new inspection report rather than a rating change.",
+    "Organisations with incomplete provider identifiers or names in the source are excluded from the shortlist rather than shown with gaps.",
+    "Opportunity signals indicate where to investigate first; they are not statements about a provider's quality, finances, or intent.",
+    "Contains public sector information licensed under the Open Government Licence v3.0."
+  ],
+  "executive_summary": {
+    "date_generated": "2026-02-18",
+    "headline": "38 organisation(s) in Southampton show a supported opportunity signal in the 365-day window ending 18 Feb 2026; 30 are shortlisted and ranked.",
+    "limitations": "Reflects the published CQC register edition, not a live lookup; opportunity signals show where to look first, not provider quality or intent.",
+    "movement_summary": "38 new registration(s)",
+    "opportunity_set_size": 38,
+    "shortlisted": 30,
+    "strongest_opportunities": [
+      "Care UK Care Services Limited (The Wickets Care Home) - new cqc registration",
+      "Caringsmart LTD (CaringSmart Ltd - Southampton) - new cqc registration",
+      "Ms Eleanor Sylvia May-Johnson (Eleanor May-Johnson) - new cqc registration"
+    ],
+    "territory": "Southampton",
+    "territory_kind": "local authority",
+    "territory_locations_in_source": 609,
+    "window": "2025-02-19 to 2026-02-18"
+  },
+  "methodology_notes": [
+    "Scope: local authority = Southampton. Window: 2025-02-19 to 2026-02-18 inclusive (365 days), anchored to the newest source date.",
+    "Supported events: new CQC registration in-window (excluding dormant locations); overall rating change in-window (derived from ordered historic/current ratings); new inspection report in-window where no change can be derived.",
+    "Score = base weight per event x recency multiplier (1.5 within 30 days, 1.2 within 90, 1.05 within 180) + rating-direction adjustment (downgrade +16, upgrade +9) + a bed-count size factor + a provider-cluster bonus where the same provider has multiple locations moving. Scores are capped at 100.",
+    "Ties break by most recent event date, then organisation name, then CQC location id, so the same source data always yields the same ranking."
+  ],
+  "next_actions": [
+    "Contact the 38 newly registered location(s) first: they have no incumbent supplier and are setting up policies, training and systems now. The shortlist marks each one and links its CQC record.",
+    "Treat Care Quality Services Limited as an account, not a lead: multiple of their locations are moving in this window, so target the provider's central quality lead.",
+    "Verify each organisation's current status on the linked CQC page before outreach - this brief reflects the published register edition, not a live lookup."
+  ],
+  "purchase_context": {
+    "generated_at": "2026-01-01T00:00:00+00:00",
+    "order_reference": "SAMPLE-SOTON-365",
+    "price_gbp": 745,
+    "product": "territory-opportunity-brief",
+    "terms_version": "dry-run"
+  },
+  "scope": {
+    "kind": "local_authority",
+    "name": "Southampton",
+    "shortlist_target": 30,
+    "window_days": 365
+  },
+  "shortlist": [
+    {
+      "current_rating": null,
+      "evidence": [
+        {
+          "detail": "CQC registration recorded 2026-01-28",
+          "effective_date": "2026-01-28",
+          "event_type": "new_registration",
+          "new_value": "Registered",
+          "old_value": null,
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data",
+          "source_field": "location.registrationDate",
+          "source_url": "https://api.service.cqc.org.uk/public/v1/locations/1-26645669620"
+        }
+      ],
+      "local_authority": "Southampton",
+      "location_id": "1-26645669620",
+      "location_name": "The Wickets Care Home",
+      "most_recent_event_date": "2026-01-28",
+      "number_of_beds": 80,
+      "organisation_name": "Care UK Care Services Limited",
+      "postcode": "SO15 2EN",
+      "primary_signal": "New CQC registration",
+      "provider_id": "1-118164369",
+      "rank": 1,
+      "reason": "Newly registered with CQC on 28 Jan 2026 (care home service with nursing, 80 beds) in the last three weeks, so it is still standing up policies, training and systems. A first-time operator in Southampton with no incumbent supplier relationships and no inspection history yet. At 80 beds it is one of the larger entrants in this window.",
+      "region": "South East",
+      "score": 73.0,
+      "score_breakdown": {
+        "new_registration@2026-01-28": 63.0,
+        "size_factor": 10.0
+      },
+      "service_types": [
+        "Care home service with nursing"
+      ]
+    },
+    {
+      "current_rating": null,
+      "evidence": [
+        {
+          "detail": "CQC registration recorded 2026-02-17",
+          "effective_date": "2026-02-17",
+          "event_type": "new_registration",
+          "new_value": "Registered",
+          "old_value": null,
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data",
+          "source_field": "location.registrationDate",
+          "source_url": "https://api.service.cqc.org.uk/public/v1/locations/1-26594228815"
+        }
+      ],
+      "local_authority": "Southampton",
+      "location_id": "1-26594228815",
+      "location_name": "CaringSmart Ltd - Southampton",
+      "most_recent_event_date": "2026-02-17",
+      "number_of_beds": null,
+      "organisation_name": "Caringsmart LTD",
+      "postcode": "SO14 3LP",
+      "primary_signal": "New CQC registration",
+      "provider_id": "1-15134511675",
+      "rank": 2,
+      "reason": "Newly registered with CQC on 17 Feb 2026 (domiciliary care service, non-bed-based) in the last three weeks, so it is still standing up policies, training and systems. A first-time operator in Southampton with no incumbent supplier relationships and no inspection history yet.",
+      "region": "South East",
+      "score": 63.0,
+      "score_breakdown": {
+        "new_registration@2026-02-17": 63.0
+      },
+      "service_types": [
+        "Domiciliary care service"
+      ]
+    },
+    {
+      "current_rating": null,
+      "evidence": [
+        {
+          "detail": "CQC registration recorded 2026-02-09",
+          "effective_date": "2026-02-09",
+          "event_type": "new_registration",
+          "new_value": "Registered",
+          "old_value": null,
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data",
+          "source_field": "location.registrationDate",
+          "source_url": "https://api.service.cqc.org.uk/public/v1/locations/1-26539765339"
+        }
+      ],
+      "local_authority": "Southampton",
+      "location_id": "1-26539765339",
+      "location_name": "Eleanor May-Johnson",
+      "most_recent_event_date": "2026-02-09",
+      "number_of_beds": null,
+      "organisation_name": "Ms Eleanor Sylvia May-Johnson",
+      "postcode": "SO16 5SP",
+      "primary_signal": "New CQC registration",
+      "provider_id": "1-24951957402",
+      "rank": 3,
+      "reason": "Newly registered with CQC on 09 Feb 2026 (community healthcare service, non-bed-based) in the last three weeks, so it is still standing up policies, training and systems. A first-time operator in Southampton with no incumbent supplier relationships and no inspection history yet.",
+      "region": "South East",
+      "score": 63.0,
+      "score_breakdown": {
+        "new_registration@2026-02-09": 63.0
+      },
+      "service_types": [
+        "Community healthcare service"
+      ]
+    },
+    {
+      "current_rating": null,
+      "evidence": [
+        {
+          "detail": "CQC registration recorded 2026-02-06",
+          "effective_date": "2026-02-06",
+          "event_type": "new_registration",
+          "new_value": "Registered",
+          "old_value": null,
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data",
+          "source_field": "location.registrationDate",
+          "source_url": "https://api.service.cqc.org.uk/public/v1/locations/1-26390790275"
+        }
+      ],
+      "local_authority": "Southampton",
+      "location_id": "1-26390790275",
+      "location_name": "Rymacare Community Learning Disability Services",
+      "most_recent_event_date": "2026-02-06",
+      "number_of_beds": null,
+      "organisation_name": "Rymacare Community Limited",
+      "postcode": "SO18 6AZ",
+      "primary_signal": "New CQC registration",
+      "provider_id": "1-25871175616",
+      "rank": 4,
+      "reason": "Newly registered with CQC on 06 Feb 2026 (domiciliary care service, non-bed-based) in the last three weeks, so it is still standing up policies, training and systems. A first-time operator in Southampton with no incumbent supplier relationships and no inspection history yet.",
+      "region": "South East",
+      "score": 63.0,
+      "score_breakdown": {
+        "new_registration@2026-02-06": 63.0
+      },
+      "service_types": [
+        "Domiciliary care service",
+        "Supported living service"
+      ]
+    },
+    {
+      "current_rating": "Good",
+      "evidence": [
+        {
+          "detail": "CQC registration recorded 2026-01-12",
+          "effective_date": "2026-01-12",
+          "event_type": "new_registration",
+          "new_value": "Registered",
+          "old_value": null,
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data",
+          "source_field": "location.registrationDate",
+          "source_url": "https://api.service.cqc.org.uk/public/v1/locations/1-26077596887"
+        }
+      ],
+      "local_authority": "Southampton",
+      "location_id": "1-26077596887",
+      "location_name": "Dimensions Weston Court",
+      "most_recent_event_date": "2026-01-12",
+      "number_of_beds": 3,
+      "organisation_name": "Dimensions (UK) Limited",
+      "postcode": "SO19 9LB",
+      "primary_signal": "New CQC registration",
+      "provider_id": "1-349152381",
+      "rank": 5,
+      "reason": "Re-registered with CQC on 12 Jan 2026 (care home service without nursing, 3 beds) in the last two months, so onboarding decisions are still open. A new legal entity or owner has taken on an existing service in Southampton - a natural point to review incumbent suppliers. It carries an inherited overall rating of Good.",
+      "region": "South East",
+      "score": 56.9,
+      "score_breakdown": {
+        "new_registration@2026-01-12": 50.4,
+        "re_registration": 6.0,
+        "size_factor": 0.5
+      },
+      "service_types": [
+        "Care home service without nursing"
+      ]
+    },
+    {
+      "current_rating": null,
+      "evidence": [
+        {
+          "detail": "CQC registration recorded 2026-01-15",
+          "effective_date": "2026-01-15",
+          "event_type": "new_registration",
+          "new_value": "Registered",
+          "old_value": null,
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data",
+          "source_field": "location.registrationDate",
+          "source_url": "https://api.service.cqc.org.uk/public/v1/locations/1-26406760545"
+        }
+      ],
+      "local_authority": "Southampton",
+      "location_id": "1-26406760545",
+      "location_name": "Dr Elmar Jung Dental Clinic",
+      "most_recent_event_date": "2026-01-15",
+      "number_of_beds": null,
+      "organisation_name": "Holident Limited",
+      "postcode": "SO15 1HY",
+      "primary_signal": "New CQC registration",
+      "provider_id": "1-24873810302",
+      "rank": 6,
+      "reason": "Newly registered with CQC on 15 Jan 2026 (dental service, non-bed-based) in the last two months, so onboarding decisions are still open. A first-time operator in Southampton with no incumbent supplier relationships and no inspection history yet.",
+      "region": "South East",
+      "score": 50.4,
+      "score_breakdown": {
+        "new_registration@2026-01-15": 50.4
+      },
+      "service_types": [
+        "Dental service"
+      ]
+    },
+    {
+      "current_rating": null,
+      "evidence": [
+        {
+          "detail": "CQC registration recorded 2026-01-05",
+          "effective_date": "2026-01-05",
+          "event_type": "new_registration",
+          "new_value": "Registered",
+          "old_value": null,
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data",
+          "source_field": "location.registrationDate",
+          "source_url": "https://api.service.cqc.org.uk/public/v1/locations/1-26165716553"
+        }
+      ],
+      "local_authority": "Southampton",
+      "location_id": "1-26165716553",
+      "location_name": "Insight Care & Support Ltd",
+      "most_recent_event_date": "2026-01-05",
+      "number_of_beds": null,
+      "organisation_name": "Insight Care & Support Ltd",
+      "postcode": "SO14 5QH",
+      "primary_signal": "New CQC registration",
+      "provider_id": "1-14157696692",
+      "rank": 7,
+      "reason": "Newly registered with CQC on 05 Jan 2026 (domiciliary care service, non-bed-based) in the last two months, so onboarding decisions are still open. A first-time operator in Southampton with no incumbent supplier relationships and no inspection history yet.",
+      "region": "South East",
+      "score": 50.4,
+      "score_breakdown": {
+        "new_registration@2026-01-05": 50.4
+      },
+      "service_types": [
+        "Domiciliary care service"
+      ]
+    },
+    {
+      "current_rating": null,
+      "evidence": [
+        {
+          "detail": "CQC registration recorded 2025-12-03",
+          "effective_date": "2025-12-03",
+          "event_type": "new_registration",
+          "new_value": "Registered",
+          "old_value": null,
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data",
+          "source_field": "location.registrationDate",
+          "source_url": "https://api.service.cqc.org.uk/public/v1/locations/1-25825914153"
+        }
+      ],
+      "local_authority": "Southampton",
+      "location_id": "1-25825914153",
+      "location_name": "Exceptional Care At Home (Southampton)",
+      "most_recent_event_date": "2025-12-03",
+      "number_of_beds": null,
+      "organisation_name": "Exceptional Care At Home Limited",
+      "postcode": "SO15 2BG",
+      "primary_signal": "New CQC registration",
+      "provider_id": "1-7523028553",
+      "rank": 8,
+      "reason": "Newly registered with CQC on 03 Dec 2025 (domiciliary care service, non-bed-based) within the last four months. A first-time operator in Southampton with no incumbent supplier relationships and no inspection history yet.",
+      "region": "South East",
+      "score": 50.4,
+      "score_breakdown": {
+        "new_registration@2025-12-03": 50.4
+      },
+      "service_types": [
+        "Domiciliary care service"
+      ]
+    },
+    {
+      "current_rating": "Good",
+      "evidence": [
+        {
+          "detail": "CQC registration recorded 2025-08-13",
+          "effective_date": "2025-08-13",
+          "event_type": "new_registration",
+          "new_value": "Registered",
+          "old_value": null,
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data",
+          "source_field": "location.registrationDate",
+          "source_url": "https://api.service.cqc.org.uk/public/v1/locations/1-23102333625"
+        }
+      ],
+      "local_authority": "Southampton",
+      "location_id": "1-23102333625",
+      "location_name": "St Mary\u2019s Surgery",
+      "most_recent_event_date": "2025-08-13",
+      "number_of_beds": null,
+      "organisation_name": "Southampton Sea City Partnership",
+      "postcode": "SO14 1LT",
+      "primary_signal": "New CQC registration",
+      "provider_id": "1-199749465",
+      "rank": 9,
+      "reason": "Re-registered with CQC on 13 Aug 2025 (doctors treatment service, non-bed-based) about 6 months ago. A new legal entity or owner has taken on an existing service in Southampton - a natural point to review incumbent suppliers. It carries an inherited overall rating of Good.",
+      "region": "South East",
+      "score": 48.0,
+      "score_breakdown": {
+        "new_registration@2025-08-13": 42.0,
+        "re_registration": 6.0
+      },
+      "service_types": [
+        "Doctors treatment service"
+      ]
+    },
+    {
+      "current_rating": null,
+      "evidence": [
+        {
+          "detail": "CQC registration recorded 2025-07-14",
+          "effective_date": "2025-07-14",
+          "event_type": "new_registration",
+          "new_value": "Registered",
+          "old_value": null,
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data",
+          "source_field": "location.registrationDate",
+          "source_url": "https://api.service.cqc.org.uk/public/v1/locations/1-23934108529"
+        }
+      ],
+      "local_authority": "Southampton",
+      "location_id": "1-23934108529",
+      "location_name": "The Graylings",
+      "most_recent_event_date": "2025-07-14",
+      "number_of_beds": null,
+      "organisation_name": "Care Quality Services Limited",
+      "postcode": "SO15 8SL",
+      "primary_signal": "New CQC registration",
+      "provider_id": "1-6129891850",
+      "rank": 10,
+      "reason": "Newly registered with CQC on 14 Jul 2025 (extra care housing services, non-bed-based) about 7 months ago. A first-time operator in Southampton with no incumbent supplier relationships and no inspection history yet. The provider behind this location has 2 locations moving in Southampton in this window, so it is an account-level opportunity, not a one-off.",
+      "region": "South East",
+      "score": 48.0,
+      "score_breakdown": {
+        "new_registration@2025-07-14": 42.0,
+        "provider_cluster": 6.0
+      },
+      "service_types": [
+        "Extra Care housing services"
+      ]
+    },
+    {
+      "current_rating": null,
+      "evidence": [
+        {
+          "detail": "CQC registration recorded 2025-07-14",
+          "effective_date": "2025-07-14",
+          "event_type": "new_registration",
+          "new_value": "Registered",
+          "old_value": null,
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data",
+          "source_field": "location.registrationDate",
+          "source_url": "https://api.service.cqc.org.uk/public/v1/locations/1-23934108572"
+        }
+      ],
+      "local_authority": "Southampton",
+      "location_id": "1-23934108572",
+      "location_name": "Rosebrook Court",
+      "most_recent_event_date": "2025-07-14",
+      "number_of_beds": null,
+      "organisation_name": "Care Quality Services Limited",
+      "postcode": "SO18 4HS",
+      "primary_signal": "New CQC registration",
+      "provider_id": "1-6129891850",
+      "rank": 11,
+      "reason": "Newly registered with CQC on 14 Jul 2025 (extra care housing services, non-bed-based) about 7 months ago. A first-time operator in Southampton with no incumbent supplier relationships and no inspection history yet. The provider behind this location has 2 locations moving in Southampton in this window, so it is an account-level opportunity, not a one-off.",
+      "region": "South East",
+      "score": 48.0,
+      "score_breakdown": {
+        "new_registration@2025-07-14": 42.0,
+        "provider_cluster": 6.0
+      },
+      "service_types": [
+        "Extra Care housing services"
+      ]
+    },
+    {
+      "current_rating": "No published rating",
+      "evidence": [
+        {
+          "detail": "CQC registration recorded 2025-04-09",
+          "effective_date": "2025-04-09",
+          "event_type": "new_registration",
+          "new_value": "Registered",
+          "old_value": null,
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data",
+          "source_field": "location.registrationDate",
+          "source_url": "https://api.service.cqc.org.uk/public/v1/locations/1-19060248008"
+        }
+      ],
+      "local_authority": "Southampton",
+      "location_id": "1-19060248008",
+      "location_name": "Shirley Health Centre",
+      "most_recent_event_date": "2025-04-09",
+      "number_of_beds": null,
+      "organisation_name": "Mr Ioannis Paraschos",
+      "postcode": "SO15 3UA",
+      "primary_signal": "New CQC registration",
+      "provider_id": "1-18849302253",
+      "rank": 12,
+      "reason": "Re-registered with CQC on 09 Apr 2025 (dental service, non-bed-based) about 10 months ago. A new legal entity or owner has taken on an existing service in Southampton - a natural point to review incumbent suppliers. It carries an inherited overall rating of No published rating.",
+      "region": "South East",
+      "score": 48.0,
+      "score_breakdown": {
+        "new_registration@2025-04-09": 42.0,
+        "re_registration": 6.0
+      },
+      "service_types": [
+        "Dental service"
+      ]
+    },
+    {
+      "current_rating": "Inspected but not rated",
+      "evidence": [
+        {
+          "detail": "CQC registration recorded 2025-02-25",
+          "effective_date": "2025-02-25",
+          "event_type": "new_registration",
+          "new_value": "Registered",
+          "old_value": null,
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data",
+          "source_field": "location.registrationDate",
+          "source_url": "https://api.service.cqc.org.uk/public/v1/locations/1-21523423765"
+        }
+      ],
+      "local_authority": "Southampton",
+      "location_id": "1-21523423765",
+      "location_name": "The Shirley Road Dental Practice",
+      "most_recent_event_date": "2025-02-25",
+      "number_of_beds": null,
+      "organisation_name": "TM Sainani Ltd",
+      "postcode": "SO15 3FD",
+      "primary_signal": "New CQC registration",
+      "provider_id": "1-20629001595",
+      "rank": 13,
+      "reason": "Re-registered with CQC on 25 Feb 2025 (dental service, non-bed-based) about 11 months ago. A new legal entity or owner has taken on an existing service in Southampton - a natural point to review incumbent suppliers. It carries an inherited overall rating of Inspected but not rated.",
+      "region": "South East",
+      "score": 48.0,
+      "score_breakdown": {
+        "new_registration@2025-02-25": 42.0,
+        "re_registration": 6.0
+      },
+      "service_types": [
+        "Dental service"
+      ]
+    },
+    {
+      "current_rating": null,
+      "evidence": [
+        {
+          "detail": "CQC registration recorded 2025-04-14",
+          "effective_date": "2025-04-14",
+          "event_type": "new_registration",
+          "new_value": "Registered",
+          "old_value": null,
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data",
+          "source_field": "location.registrationDate",
+          "source_url": "https://api.service.cqc.org.uk/public/v1/locations/1-22652290631"
+        }
+      ],
+      "local_authority": "Southampton",
+      "location_id": "1-22652290631",
+      "location_name": "Holmhurst Care Home",
+      "most_recent_event_date": "2025-04-14",
+      "number_of_beds": 15,
+      "organisation_name": "Holmhurst Care Homes Limited",
+      "postcode": "SO17 1DP",
+      "primary_signal": "New CQC registration",
+      "provider_id": "1-133259171",
+      "rank": 14,
+      "reason": "Newly registered with CQC on 14 Apr 2025 (care home service without nursing, 15 beds) about 10 months ago. A first-time operator in Southampton with no incumbent supplier relationships and no inspection history yet.",
+      "region": "South East",
+      "score": 44.5,
+      "score_breakdown": {
+        "new_registration@2025-04-14": 42.0,
+        "size_factor": 2.5
+      },
+      "service_types": [
+        "Care home service without nursing"
+      ]
+    },
+    {
+      "current_rating": null,
+      "evidence": [
+        {
+          "detail": "CQC registration recorded 2025-11-02",
+          "effective_date": "2025-11-02",
+          "event_type": "new_registration",
+          "new_value": "Registered",
+          "old_value": null,
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data",
+          "source_field": "location.registrationDate",
+          "source_url": "https://api.service.cqc.org.uk/public/v1/locations/1-25376951805"
+        }
+      ],
+      "local_authority": "Southampton",
+      "location_id": "1-25376951805",
+      "location_name": "Hampshire Dentists",
+      "most_recent_event_date": "2025-11-02",
+      "number_of_beds": null,
+      "organisation_name": "Hampshire Dentists Ltd",
+      "postcode": "SO15 2EZ",
+      "primary_signal": "New CQC registration",
+      "provider_id": "1-191583540",
+      "rank": 15,
+      "reason": "Newly registered with CQC on 02 Nov 2025 (dental service, non-bed-based) within the last four months. A first-time operator in Southampton with no incumbent supplier relationships and no inspection history yet.",
+      "region": "South East",
+      "score": 44.1,
+      "score_breakdown": {
+        "new_registration@2025-11-02": 44.1
+      },
+      "service_types": [
+        "Dental service"
+      ]
+    },
+    {
+      "current_rating": null,
+      "evidence": [
+        {
+          "detail": "CQC registration recorded 2025-10-28",
+          "effective_date": "2025-10-28",
+          "event_type": "new_registration",
+          "new_value": "Registered",
+          "old_value": null,
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data",
+          "source_field": "location.registrationDate",
+          "source_url": "https://api.service.cqc.org.uk/public/v1/locations/1-25390800875"
+        }
+      ],
+      "local_authority": "Southampton",
+      "location_id": "1-25390800875",
+      "location_name": "Triple Care Healthcare Services",
+      "most_recent_event_date": "2025-10-28",
+      "number_of_beds": null,
+      "organisation_name": "Triple Care Healthcare Services Limited",
+      "postcode": "SO16 7DP",
+      "primary_signal": "New CQC registration",
+      "provider_id": "1-2551803100",
+      "rank": 16,
+      "reason": "Newly registered with CQC on 28 Oct 2025 (domiciliary care service, non-bed-based) within the last four months. A first-time operator in Southampton with no incumbent supplier relationships and no inspection history yet.",
+      "region": "South East",
+      "score": 44.1,
+      "score_breakdown": {
+        "new_registration@2025-10-28": 44.1
+      },
+      "service_types": [
+        "Domiciliary care service"
+      ]
+    },
+    {
+      "current_rating": null,
+      "evidence": [
+        {
+          "detail": "CQC registration recorded 2025-10-23",
+          "effective_date": "2025-10-23",
+          "event_type": "new_registration",
+          "new_value": "Registered",
+          "old_value": null,
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data",
+          "source_field": "location.registrationDate",
+          "source_url": "https://api.service.cqc.org.uk/public/v1/locations/1-25340540349"
+        }
+      ],
+      "local_authority": "Southampton",
+      "location_id": "1-25340540349",
+      "location_name": "Blossoms Trading Ltd (Trading as Clarity Homecare)",
+      "most_recent_event_date": "2025-10-23",
+      "number_of_beds": null,
+      "organisation_name": "Blossoms Trading Limited",
+      "postcode": "SO15 2BG",
+      "primary_signal": "New CQC registration",
+      "provider_id": "1-5315054412",
+      "rank": 17,
+      "reason": "Newly registered with CQC on 23 Oct 2025 (domiciliary care service, non-bed-based) within the last four months. A first-time operator in Southampton with no incumbent supplier relationships and no inspection history yet.",
+      "region": "South East",
+      "score": 44.1,
+      "score_breakdown": {
+        "new_registration@2025-10-23": 44.1
+      },
+      "service_types": [
+        "Domiciliary care service",
+        "Supported living service"
+      ]
+    },
+    {
+      "current_rating": null,
+      "evidence": [
+        {
+          "detail": "CQC registration recorded 2025-10-20",
+          "effective_date": "2025-10-20",
+          "event_type": "new_registration",
+          "new_value": "Registered",
+          "old_value": null,
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data",
+          "source_field": "location.registrationDate",
+          "source_url": "https://api.service.cqc.org.uk/public/v1/locations/1-25288876413"
+        }
+      ],
+      "local_authority": "Southampton",
+      "location_id": "1-25288876413",
+      "location_name": "Wellspring Recruitment and Care services Limited",
+      "most_recent_event_date": "2025-10-20",
+      "number_of_beds": null,
+      "organisation_name": "Wellspring Recruitment and Care Services Limited",
+      "postcode": "SO15 2BG",
+      "primary_signal": "New CQC registration",
+      "provider_id": "1-507928184",
+      "rank": 18,
+      "reason": "Newly registered with CQC on 20 Oct 2025 (domiciliary care service, non-bed-based) about 4 months ago. A first-time operator in Southampton with no incumbent supplier relationships and no inspection history yet.",
+      "region": "South East",
+      "score": 44.1,
+      "score_breakdown": {
+        "new_registration@2025-10-20": 44.1
+      },
+      "service_types": [
+        "Domiciliary care service",
+        "Supported living service"
+      ]
+    },
+    {
+      "current_rating": null,
+      "evidence": [
+        {
+          "detail": "CQC registration recorded 2025-10-01",
+          "effective_date": "2025-10-01",
+          "event_type": "new_registration",
+          "new_value": "Registered",
+          "old_value": null,
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data",
+          "source_field": "location.registrationDate",
+          "source_url": "https://api.service.cqc.org.uk/public/v1/locations/1-25072877936"
+        }
+      ],
+      "local_authority": "Southampton",
+      "location_id": "1-25072877936",
+      "location_name": "Helping Hands West Quay",
+      "most_recent_event_date": "2025-10-01",
+      "number_of_beds": null,
+      "organisation_name": "Midshires Care Limited",
+      "postcode": "SO14 3JZ",
+      "primary_signal": "New CQC registration",
+      "provider_id": "1-101671690",
+      "rank": 19,
+      "reason": "Newly registered with CQC on 01 Oct 2025 (domiciliary care service, non-bed-based) about 4 months ago. A first-time operator in Southampton with no incumbent supplier relationships and no inspection history yet.",
+      "region": "South East",
+      "score": 44.1,
+      "score_breakdown": {
+        "new_registration@2025-10-01": 44.1
+      },
+      "service_types": [
+        "Domiciliary care service"
+      ]
+    },
+    {
+      "current_rating": null,
+      "evidence": [
+        {
+          "detail": "CQC registration recorded 2025-09-25",
+          "effective_date": "2025-09-25",
+          "event_type": "new_registration",
+          "new_value": "Registered",
+          "old_value": null,
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data",
+          "source_field": "location.registrationDate",
+          "source_url": "https://api.service.cqc.org.uk/public/v1/locations/1-24766596957"
+        }
+      ],
+      "local_authority": "Southampton",
+      "location_id": "1-24766596957",
+      "location_name": "Fabs Domiciliary Homecare Ltd",
+      "most_recent_event_date": "2025-09-25",
+      "number_of_beds": null,
+      "organisation_name": "Fabs Domiciliary Homecare Ltd",
+      "postcode": "SO15 2BG",
+      "primary_signal": "New CQC registration",
+      "provider_id": "1-4936512862",
+      "rank": 20,
+      "reason": "Newly registered with CQC on 25 Sep 2025 (domiciliary care service, non-bed-based) about 4 months ago. A first-time operator in Southampton with no incumbent supplier relationships and no inspection history yet.",
+      "region": "South East",
+      "score": 44.1,
+      "score_breakdown": {
+        "new_registration@2025-09-25": 44.1
+      },
+      "service_types": [
+        "Domiciliary care service",
+        "Supported living service"
+      ]
+    },
+    {
+      "current_rating": null,
+      "evidence": [
+        {
+          "detail": "CQC registration recorded 2025-09-05",
+          "effective_date": "2025-09-05",
+          "event_type": "new_registration",
+          "new_value": "Registered",
+          "old_value": null,
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data",
+          "source_field": "location.registrationDate",
+          "source_url": "https://api.service.cqc.org.uk/public/v1/locations/1-24231918879"
+        }
+      ],
+      "local_authority": "Southampton",
+      "location_id": "1-24231918879",
+      "location_name": "FocusPath Clinic",
+      "most_recent_event_date": "2025-09-05",
+      "number_of_beds": null,
+      "organisation_name": "FocusPath Ltd",
+      "postcode": "SO15 2BG",
+      "primary_signal": "New CQC registration",
+      "provider_id": "1-22875592777",
+      "rank": 21,
+      "reason": "Newly registered with CQC on 05 Sep 2025 (doctors consultation service, non-bed-based) about 5 months ago. A first-time operator in Southampton with no incumbent supplier relationships and no inspection history yet.",
+      "region": "South East",
+      "score": 44.1,
+      "score_breakdown": {
+        "new_registration@2025-09-05": 44.1
+      },
+      "service_types": [
+        "Doctors consultation service"
+      ]
+    },
+    {
+      "current_rating": null,
+      "evidence": [
+        {
+          "detail": "CQC registration recorded 2025-09-04",
+          "effective_date": "2025-09-04",
+          "event_type": "new_registration",
+          "new_value": "Registered",
+          "old_value": null,
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data",
+          "source_field": "location.registrationDate",
+          "source_url": "https://api.service.cqc.org.uk/public/v1/locations/1-24407305737"
+        }
+      ],
+      "local_authority": "Southampton",
+      "location_id": "1-24407305737",
+      "location_name": "Shirley Health Partnership",
+      "most_recent_event_date": "2025-09-04",
+      "number_of_beds": null,
+      "organisation_name": "Southampton Primary Care Limited",
+      "postcode": "SO15 3JD",
+      "primary_signal": "New CQC registration",
+      "provider_id": "1-2456477856",
+      "rank": 22,
+      "reason": "Newly registered with CQC on 04 Sep 2025 (doctors treatment service, non-bed-based) about 5 months ago. A first-time operator in Southampton with no incumbent supplier relationships and no inspection history yet.",
+      "region": "South East",
+      "score": 44.1,
+      "score_breakdown": {
+        "new_registration@2025-09-04": 44.1
+      },
+      "service_types": [
+        "Doctors treatment service"
+      ]
+    },
+    {
+      "current_rating": null,
+      "evidence": [
+        {
+          "detail": "CQC registration recorded 2025-09-01",
+          "effective_date": "2025-09-01",
+          "event_type": "new_registration",
+          "new_value": "Registered",
+          "old_value": null,
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data",
+          "source_field": "location.registrationDate",
+          "source_url": "https://api.service.cqc.org.uk/public/v1/locations/1-23378937084"
+        }
+      ],
+      "local_authority": "Southampton",
+      "location_id": "1-23378937084",
+      "location_name": "University Dental Practice",
+      "most_recent_event_date": "2025-09-01",
+      "number_of_beds": null,
+      "organisation_name": "Dr Mohammed Ahmed Abdel Latif Al-Gholmy",
+      "postcode": "SO16 3AY",
+      "primary_signal": "New CQC registration",
+      "provider_id": "1-22910009947",
+      "rank": 23,
+      "reason": "Newly registered with CQC on 01 Sep 2025 (dental service, non-bed-based) about 5 months ago. A first-time operator in Southampton with no incumbent supplier relationships and no inspection history yet.",
+      "region": "South East",
+      "score": 44.1,
+      "score_breakdown": {
+        "new_registration@2025-09-01": 44.1
+      },
+      "service_types": [
+        "Dental service"
+      ]
+    },
+    {
+      "current_rating": null,
+      "evidence": [
+        {
+          "detail": "CQC registration recorded 2025-07-24",
+          "effective_date": "2025-07-24",
+          "event_type": "new_registration",
+          "new_value": "Registered",
+          "old_value": null,
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data",
+          "source_field": "location.registrationDate",
+          "source_url": "https://api.service.cqc.org.uk/public/v1/locations/1-23871232254"
+        }
+      ],
+      "local_authority": "Southampton",
+      "location_id": "1-23871232254",
+      "location_name": "Langdown House",
+      "most_recent_event_date": "2025-07-24",
+      "number_of_beds": 7,
+      "organisation_name": "Chessel Support Services Ltd",
+      "postcode": "SO19 8NJ",
+      "primary_signal": "New CQC registration",
+      "provider_id": "1-101663792",
+      "rank": 24,
+      "reason": "Newly registered with CQC on 24 Jul 2025 (care home service without nursing, 7 beds) about 6 months ago. A first-time operator in Southampton with no incumbent supplier relationships and no inspection history yet.",
+      "region": "South East",
+      "score": 43.17,
+      "score_breakdown": {
+        "new_registration@2025-07-24": 42.0,
+        "size_factor": 1.17
+      },
+      "service_types": [
+        "Care home service without nursing"
+      ]
+    },
+    {
+      "current_rating": null,
+      "evidence": [
+        {
+          "detail": "CQC registration recorded 2025-08-11",
+          "effective_date": "2025-08-11",
+          "event_type": "new_registration",
+          "new_value": "Registered",
+          "old_value": null,
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data",
+          "source_field": "location.registrationDate",
+          "source_url": "https://api.service.cqc.org.uk/public/v1/locations/1-23849860137"
+        }
+      ],
+      "local_authority": "Southampton",
+      "location_id": "1-23849860137",
+      "location_name": "Brighter Smile Dental Surgery Ltd",
+      "most_recent_event_date": "2025-08-11",
+      "number_of_beds": null,
+      "organisation_name": "Brighter Smile Dental Surgery Ltd",
+      "postcode": "SO16 7AP",
+      "primary_signal": "New CQC registration",
+      "provider_id": "1-23502188690",
+      "rank": 25,
+      "reason": "Newly registered with CQC on 11 Aug 2025 (dental service, non-bed-based) about 6 months ago. A first-time operator in Southampton with no incumbent supplier relationships and no inspection history yet.",
+      "region": "South East",
+      "score": 42.0,
+      "score_breakdown": {
+        "new_registration@2025-08-11": 42.0
+      },
+      "service_types": [
+        "Dental service"
+      ]
+    },
+    {
+      "current_rating": null,
+      "evidence": [
+        {
+          "detail": "CQC registration recorded 2025-07-31",
+          "effective_date": "2025-07-31",
+          "event_type": "new_registration",
+          "new_value": "Registered",
+          "old_value": null,
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data",
+          "source_field": "location.registrationDate",
+          "source_url": "https://api.service.cqc.org.uk/public/v1/locations/1-24234145467"
+        }
+      ],
+      "local_authority": "Southampton",
+      "location_id": "1-24234145467",
+      "location_name": "Shirley Health Partnership",
+      "most_recent_event_date": "2025-07-31",
+      "number_of_beds": null,
+      "organisation_name": "Southampton West PCN Limited",
+      "postcode": "SO15 3JD",
+      "primary_signal": "New CQC registration",
+      "provider_id": "1-20634198045",
+      "rank": 26,
+      "reason": "Newly registered with CQC on 31 Jul 2025 (community healthcare service, non-bed-based) about 6 months ago. A first-time operator in Southampton with no incumbent supplier relationships and no inspection history yet.",
+      "region": "South East",
+      "score": 42.0,
+      "score_breakdown": {
+        "new_registration@2025-07-31": 42.0
+      },
+      "service_types": [
+        "Community healthcare service"
+      ]
+    },
+    {
+      "current_rating": null,
+      "evidence": [
+        {
+          "detail": "CQC registration recorded 2025-07-03",
+          "effective_date": "2025-07-03",
+          "event_type": "new_registration",
+          "new_value": "Registered",
+          "old_value": null,
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data",
+          "source_field": "location.registrationDate",
+          "source_url": "https://api.service.cqc.org.uk/public/v1/locations/1-23870876925"
+        }
+      ],
+      "local_authority": "Southampton",
+      "location_id": "1-23870876925",
+      "location_name": "CARERS\u2019 HANDS HCA LTD",
+      "most_recent_event_date": "2025-07-03",
+      "number_of_beds": null,
+      "organisation_name": "Carers' Hands H C A Ltd",
+      "postcode": "SO15 2EX",
+      "primary_signal": "New CQC registration",
+      "provider_id": "1-9597438119",
+      "rank": 27,
+      "reason": "Newly registered with CQC on 03 Jul 2025 (domiciliary care service, non-bed-based) about 7 months ago. A first-time operator in Southampton with no incumbent supplier relationships and no inspection history yet.",
+      "region": "South East",
+      "score": 42.0,
+      "score_breakdown": {
+        "new_registration@2025-07-03": 42.0
+      },
+      "service_types": [
+        "Domiciliary care service"
+      ]
+    },
+    {
+      "current_rating": null,
+      "evidence": [
+        {
+          "detail": "CQC registration recorded 2025-07-02",
+          "effective_date": "2025-07-02",
+          "event_type": "new_registration",
+          "new_value": "Registered",
+          "old_value": null,
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data",
+          "source_field": "location.registrationDate",
+          "source_url": "https://api.service.cqc.org.uk/public/v1/locations/1-23859437807"
+        }
+      ],
+      "local_authority": "Southampton",
+      "location_id": "1-23859437807",
+      "location_name": "Cumberland House",
+      "most_recent_event_date": "2025-07-02",
+      "number_of_beds": null,
+      "organisation_name": "Health Now Limited",
+      "postcode": "SO15 2BG",
+      "primary_signal": "New CQC registration",
+      "provider_id": "1-18679174333",
+      "rank": 28,
+      "reason": "Newly registered with CQC on 02 Jul 2025 (community healthcare service, non-bed-based) about 7 months ago. A first-time operator in Southampton with no incumbent supplier relationships and no inspection history yet.",
+      "region": "South East",
+      "score": 42.0,
+      "score_breakdown": {
+        "new_registration@2025-07-02": 42.0
+      },
+      "service_types": [
+        "Community healthcare service"
+      ]
+    },
+    {
+      "current_rating": null,
+      "evidence": [
+        {
+          "detail": "CQC registration recorded 2025-06-20",
+          "effective_date": "2025-06-20",
+          "event_type": "new_registration",
+          "new_value": "Registered",
+          "old_value": null,
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data",
+          "source_field": "location.registrationDate",
+          "source_url": "https://api.service.cqc.org.uk/public/v1/locations/1-23660148035"
+        }
+      ],
+      "local_authority": "Southampton",
+      "location_id": "1-23660148035",
+      "location_name": "Emey Care Southampton",
+      "most_recent_event_date": "2025-06-20",
+      "number_of_beds": null,
+      "organisation_name": "Holistic Recruiters Limited",
+      "postcode": "SO15 2BG",
+      "primary_signal": "New CQC registration",
+      "provider_id": "1-8416884721",
+      "rank": 29,
+      "reason": "Newly registered with CQC on 20 Jun 2025 (domiciliary care service, non-bed-based) about 8 months ago. A first-time operator in Southampton with no incumbent supplier relationships and no inspection history yet.",
+      "region": "South East",
+      "score": 42.0,
+      "score_breakdown": {
+        "new_registration@2025-06-20": 42.0
+      },
+      "service_types": [
+        "Domiciliary care service"
+      ]
+    },
+    {
+      "current_rating": null,
+      "evidence": [
+        {
+          "detail": "CQC registration recorded 2025-06-06",
+          "effective_date": "2025-06-06",
+          "event_type": "new_registration",
+          "new_value": "Registered",
+          "old_value": null,
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data",
+          "source_field": "location.registrationDate",
+          "source_url": "https://api.service.cqc.org.uk/public/v1/locations/1-23499468652"
+        }
+      ],
+      "local_authority": "Southampton",
+      "location_id": "1-23499468652",
+      "location_name": "TRF",
+      "most_recent_event_date": "2025-06-06",
+      "number_of_beds": null,
+      "organisation_name": "TRF Healthcare Ltd",
+      "postcode": "SO14 6TE",
+      "primary_signal": "New CQC registration",
+      "provider_id": "1-18997038968",
+      "rank": 30,
+      "reason": "Newly registered with CQC on 06 Jun 2025 (domiciliary care service, non-bed-based) about 8 months ago. A first-time operator in Southampton with no incumbent supplier relationships and no inspection history yet.",
+      "region": "South East",
+      "score": 42.0,
+      "score_breakdown": {
+        "new_registration@2025-06-06": 42.0
+      },
+      "service_types": [
+        "Domiciliary care service"
+      ]
+    }
+  ],
+  "source_provenance": {
+    "generated_at": "2026-01-01T00:00:00+00:00",
+    "generator": "api.services.territory_brief.generate_territory_opportunity_brief",
+    "licence": "Contains public sector information licensed under the Open Government Licence v3.0",
+    "licence_url": "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
+    "locations_snapshot": "locations_detail.jsonl",
+    "providers_snapshot": "providers_detail.jsonl",
+    "snapshot_edition_date": "2026-02-18",
+    "source_page": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data"
+  },
+  "territory_insights": {
+    "activity_by_sub_area": [
+      {
+        "area": "South East",
+        "events": 38
+      }
+    ],
+    "events_by_type": {
+      "new_registration": 38
+    },
+    "most_active_providers": [
+      {
+        "locations_moving": 2,
+        "provider": "Care Quality Services Limited"
+      }
+    ],
+    "new_beds_entering_market": 105,
+    "rating_moves": {
+      "declines": 0,
+      "improvements": 0
+    },
+    "service_type_mix": [
+      {
+        "organisations": 17,
+        "service_type": "Domiciliary care service"
+      },
+      {
+        "organisations": 8,
+        "service_type": "Supported living service"
+      },
+      {
+        "organisations": 6,
+        "service_type": "Dental service"
+      },
+      {
+        "organisations": 3,
+        "service_type": "Doctors treatment service"
+      },
+      {
+        "organisations": 3,
+        "service_type": "Care home service without nursing"
+      },
+      {
+        "organisations": 3,
+        "service_type": "Community healthcare service"
+      }
+    ],
+    "shortlist_size": 30
+  },
+  "territory_locations": 609,
+  "window_end": "2026-02-18",
+  "window_start": "2025-02-19"
+}

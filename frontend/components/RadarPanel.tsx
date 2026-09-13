@@ -161,7 +161,7 @@ export default function RadarPanel({ tier }: { tier: string }) {
           supported but are not sold to new customers.
         </p>
         <Link href="/pricing" className="text-sm font-semibold text-clay underline">
-          Compare Radar plans
+          See the two products
         </Link>
       </section>
     );

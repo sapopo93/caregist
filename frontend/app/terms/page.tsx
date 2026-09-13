@@ -116,7 +116,7 @@ export default function TermsPage() {
           <h2 className="mb-3 mt-8 text-xl font-bold text-bark">6. Fees, subscription and cancellation</h2>
           <p>
             Current prices and included limits are shown on the pricing page or in the
-            signed order form. Prices exclude VAT. Stripe processes self-serve payments;
+            signed order form. H-Kay Limited is not VAT registered, so no VAT is added. Stripe processes self-serve payments;
             H-Kay Limited does not
             store full card details.
           </p>

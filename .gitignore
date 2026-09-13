@@ -115,6 +115,33 @@ docs/*.dmg
 
 .worktrees/
 
+
+# Local war-room evidence can contain credentials, customer data, and large
+# generated captures. Keep only the repository operating contract in Git.
+.warroom/*
+!.warroom/README.md
+!.warroom/PIPELINE.md
+!.warroom/CURRENT_VERDICT.md
+!.warroom/TOP_BLOCKERS.md
+!.warroom/NEXT_ACTIONS.md
+!.warroom/UNFINISHED.md
+caregist-crm-workspace*.png
+cqc-snapshot-manifest.json
+frontend/test-results/
+
+# Local auditor/tool state (SQLite db + WAL/SHM lock files, machine-local)
+.completion-auditor/
+
+# Machine-local dependency symlinks that occasionally get created inside
+# evidence/build artifact folders (e.g. artifacts/**/node_modules -> a local
+# cache path). Not portable across machines and not part of the deliverable.
+node_modules
+
+# Stale tracker backups and crashed/interrupted batch-job run state. These
+# mirror the *.csv / checkpoint exclusions above but under different names.
+*.csv.bak.*
+outreach/recon/
+
 .projects/cache
 .projects/vault
 .projects/state.test.json

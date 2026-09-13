@@ -1,0 +1,15 @@
+title = "CareGist gitleaks config"
+
+[extend]
+useDefault = true
+
+# artifacts/radar-verification/**: full-page HTML snapshots of third-party
+# competitor sites, captured as read-only verification evidence for the
+# Radar product. The "secrets" gitleaks finds there (reCAPTCHA site keys,
+# Google Maps render keys, CSRF tokens) belong to those external sites, are
+# public-by-design or session-scoped, and are not CareGist credentials.
+[allowlist]
+description = "Captured third-party site snapshots, not CareGist secrets"
+paths = [
+  '''artifacts/radar-verification/.*''',
+]

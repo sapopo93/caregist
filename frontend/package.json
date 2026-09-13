@@ -21,7 +21,7 @@
     "@vercel/blob": "^2.7.0",
     "@vercel/postgres": "^0.10.0",
     "leaflet": "^1.9.4",
-    "next": "^16.2.12",
+    "next": "^16.3.5",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   },
@@ -39,7 +39,7 @@
   "overrides": {
     "next": {
       "postcss": "8.5.25",
-      "sharp": "0.35.3"
+      "sharp": "0.35.4"
     }
   }
 }

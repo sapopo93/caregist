@@ -85,4 +85,16 @@ describe("CareGist CRM safety contracts", () => {
     assert.match(source, /callActionRef\.current/);
     assert.match(diallerSource, /const tokenData = await jsonRequest/);
   });
+
+  it("offers the full operator disposition catalogue", () => {
+    assert.match(source, /"Call dropped"/);
+    assert.match(source, /"Call me some other time"/);
+    assert.match(source, /"Don't call me again"/);
+    assert.match(source, /"Number disconnected"/);
+    assert.match(source, /"Conversation completed"/);
+    assert.match(source, /"No answer"/);
+    assert.match(source, /"Wrong number"/);
+    assert.match(source, /"Meeting booked"/);
+    assert.match(source, /"Sale"/);
+  });
 });

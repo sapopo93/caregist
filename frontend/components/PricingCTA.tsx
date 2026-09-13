@@ -18,12 +18,20 @@ const TIER_RANK: Record<string, number> = {
   business: 0,
 };
 
-// Roadmap tiers must remain unreachable from any public pricing card until a
-// separate commercial-readiness decision opens them. This guard runs before
-// every checkout branch below.
+const ONE_OFF_CONTACT: Record<string, { subject: string }> = {
+  "territory-opportunity-brief": {
+    subject: "Territory Opportunity Brief sample request",
+  },
+  "weekly-digest": {
+    subject: "Weekly Digest request",
+  },
+};
+
 const GATED_TIERS = new Set([
   "radar-regional",
   "radar-national",
+  "strategic-territory-intelligence-assignment",
+  "founding-intelligence-membership",
   "intelligence-feed-pilot",
   "embedded-enterprise",
 ]);
@@ -72,13 +80,38 @@ export default function PricingCTA({
   const currentRank = TIER_RANK[currentTier] ?? 0;
   const targetRank = targetTier ? (TIER_RANK[targetTier] ?? 0) : 99;
 
+  if (tierKey === "territory-opportunity-brief") {
+    return (
+      <Link
+        href="/pricing/territory"
+        className="inline-block text-center py-2.5 px-6 rounded-lg font-medium text-sm transition-colors border border-clay text-clay hover:bg-clay hover:text-white"
+        onClick={() => void trackEvent("one_off_scope_click", "pricing_card", { tier: tierKey })}
+      >
+        Check territory coverage
+      </Link>
+    );
+  }
+
+  const oneOffContact = ONE_OFF_CONTACT[tierKey];
+  if (oneOffContact) {
+    return (
+      <Link
+        href={`mailto:outreach@caregist.co.uk?subject=${encodeURIComponent(oneOffContact.subject)}`}
+        className="inline-block text-center py-2.5 px-6 rounded-lg font-medium text-sm transition-colors border border-clay text-clay hover:bg-clay hover:text-white"
+        onClick={() => void trackEvent("one_off_scope_click", "pricing_card", { tier: tierKey })}
+      >
+        {ctaLabel}
+      </Link>
+    );
+  }
+
   if (GATED_TIERS.has(tierKey)) {
     return (
       <div className="flex flex-col items-start gap-2">
         <button disabled className="py-2.5 px-6 rounded-lg font-medium text-sm border border-stone text-dusk opacity-70">
-          Paid checkout unavailable
+          {ctaLabel}
         </button>
-        <p className="text-xs text-dusk">This product is not currently available for purchase.</p>
+        <p className="text-xs text-dusk">No purchase or paid checkout is available for this product.</p>
       </div>
     );
   }

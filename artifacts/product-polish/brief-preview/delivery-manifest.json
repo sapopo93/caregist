@@ -1,0 +1,26 @@
+{
+  "generated": "2026-09-12T06:13:29.695904+00:00",
+  "status": "draft-evidence-checked-not-released",
+  "assets": [
+    {
+      "file": "territory-dataset.csv",
+      "bytes": 136691,
+      "sha256": "c8a30f3c4078ac1beb98471614ecf3b6d263b1fd65d90270e578d86d210b27a1"
+    },
+    {
+      "file": "shortlist-25.csv",
+      "bytes": 19623,
+      "sha256": "deff92094dca5182ca48578e7e9f8723c85ec73e589b14cbb90643d9e25050b4"
+    },
+    {
+      "file": "caregist-birmingham-solihull-territory-brief.xlsx",
+      "bytes": 71817,
+      "sha256": "07314fd81e931837cdcdf36976edb3d987e7478bfdefef7a81ebc699ee91da2a"
+    },
+    {
+      "file": "caregist-birmingham-solihull-executive-brief.pdf",
+      "bytes": 9863,
+      "sha256": "db5644d13332fddd62d725e1b5f6e3e7d648d4a908832865802375a8bfddd3a6"
+    }
+  ]
+}

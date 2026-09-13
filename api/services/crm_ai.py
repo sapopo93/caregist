@@ -35,6 +35,9 @@ Disposition = Literal[
     "do_not_call",
     "meeting_booked",
     "sale_completed",
+    "call_dropped",
+    "call_me_later",
+    "number_disconnected",
 ]
 
 
@@ -378,7 +381,8 @@ async def evaluate_transcript(
         "summary, suggested_disposition, overall_qa_score, customer_sentiment, outcome, "
         "strengths, coaching_actions, compliance_flags. suggested_disposition must be one of "
         "connected, no_answer, busy, voicemail, wrong_number, callback_requested, gatekeeper, "
-        "qualified, not_interested, do_not_call, meeting_booked, sale_completed. "
+        "qualified, not_interested, do_not_call, meeting_booked, sale_completed, call_dropped, "
+        "call_me_later, number_disconnected. "
         "Use only spoken words for sentiment. Do not infer protected traits, health, emotion, "
         "lawfulness or employee intent. Flag uncertainty. Output is advisory and cannot alter CRM state."
     )

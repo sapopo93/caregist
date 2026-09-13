@@ -1,0 +1,110 @@
+{
+  "events": [
+    {
+      "effective_date": "2026-07-29",
+      "event_type": "rating_published",
+      "local_authority": "Kent",
+      "location_id": "1-565604154",
+      "location_name": "Horsmans Place Partnership",
+      "new_value": {
+        "publicationDate": "2026-07-29",
+        "rating": "Good"
+      },
+      "postcode": "DA1 2JP",
+      "provider_id": "1-199738630",
+      "provider_name": "Horsmans Place Partnership",
+      "region": "South East",
+      "territory": "Kent"
+    },
+    {
+      "effective_date": "2026-07-30",
+      "event_type": "rating_published",
+      "local_authority": "Kent",
+      "location_id": "1-2136980291",
+      "location_name": "Austen Allen Homecare - Gravesham",
+      "new_value": {
+        "publicationDate": "2026-07-30",
+        "rating": "Good"
+      },
+      "postcode": "DA11 0LZ",
+      "provider_id": "1-177568286",
+      "provider_name": "Austen Allen Healthcare Limited",
+      "region": "South East",
+      "territory": "Kent"
+    },
+    {
+      "effective_date": "2026-07-30",
+      "event_type": "new_registration",
+      "local_authority": "Kent",
+      "location_id": "1-29078258185",
+      "location_name": "Harley Mind Care Psychiatrists \u2013 Gravesham Community Hospital",
+      "new_value": {
+        "registrationDate": "2026-07-30"
+      },
+      "postcode": "DA11 0DG",
+      "provider_id": "1-17078846978",
+      "provider_name": "Harley Mind Care Psychiatrists Ltd",
+      "region": "South East",
+      "territory": "Kent"
+    },
+    {
+      "effective_date": "2026-07-30",
+      "event_type": "new_registration",
+      "local_authority": "Kent",
+      "location_id": "1-29065975393",
+      "location_name": "Melvyn & Jan John",
+      "new_value": {
+        "registrationDate": "2026-07-30"
+      },
+      "postcode": "CT14 8JL",
+      "provider_id": "1-145646501",
+      "provider_name": "Melvyn & Jan John",
+      "region": "South East",
+      "territory": "Kent"
+    },
+    {
+      "effective_date": "2026-07-30",
+      "event_type": "rating_published",
+      "local_authority": "Kent",
+      "location_id": "1-156141436",
+      "location_name": "The Chase",
+      "new_value": {
+        "publicationDate": "2026-07-30",
+        "rating": "Inadequate"
+      },
+      "postcode": "CT1 3NH",
+      "provider_id": "1-137625047",
+      "provider_name": "Purelake (Chase) Limited",
+      "region": "South East",
+      "territory": "Kent"
+    },
+    {
+      "effective_date": "2026-07-31",
+      "event_type": "rating_published",
+      "local_authority": "Kent",
+      "location_id": "1-13090428123",
+      "location_name": "Dover House",
+      "new_value": {
+        "publicationDate": "2026-07-31",
+        "rating": "Requires improvement"
+      },
+      "postcode": "CT17 0EX",
+      "provider_id": "1-12876679262",
+      "provider_name": "Dover House (GC) Limited",
+      "region": "South East",
+      "territory": "Kent"
+    }
+  ],
+  "provenance": {
+    "conversion": "LibreOffice headless ODS->CSV",
+    "edition_date": "2026-08-04",
+    "parsed_rows": 57009,
+    "skipped_rows": 55334,
+    "source_file": "2026-08-04_HSCA_Active_Locations.ods",
+    "source_page": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data",
+    "territory": "Kent",
+    "territory_rows": 1675,
+    "window_end": "2026-08-04",
+    "window_start": "2026-07-29"
+  }
+}

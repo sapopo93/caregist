@@ -1,0 +1,1000 @@
+{
+  "as_of_date": "2026-02-20",
+  "considered_locations": 32,
+  "data_caveats": [
+    "This brief reflects the published CQC register edition dated 2026-02-20 (the newest date present in the source), not a live API lookup.",
+    "The register carries the latest rating and its report date. Where no rating history is present a change cannot be derived, so a first/refreshed rating is reported as a new inspection report rather than a rating change.",
+    "Organisations with incomplete provider identifiers or names in the source are excluded from the shortlist rather than shown with gaps.",
+    "Opportunity signals indicate where to investigate first; they are not statements about a provider's quality, finances, or intent.",
+    "Contains public sector information licensed under the Open Government Licence v3.0."
+  ],
+  "executive_summary": {
+    "date_generated": "2026-02-20",
+    "headline": "32 organisation(s) in Birmingham and Solihull show a supported opportunity signal in the 365-day window ending 20 Feb 2026; 25 are shortlisted and ranked.",
+    "limitations": "Reflects the published CQC register edition, not a live lookup; opportunity signals show where to look first, not provider quality or intent.",
+    "movement_summary": "32 new registration(s)",
+    "opportunity_set_size": 32,
+    "shortlisted": 25,
+    "strongest_opportunities": [
+      "Baldwins Care Ltd (Baldwins Care Ltd) - new cqc registration",
+      "Express Nursing Limited (Express Care at Home) - new cqc registration",
+      "Square Routes Care Ltd (Square Routes Care Ltd) - new cqc registration"
+    ],
+    "territory": "Birmingham and Solihull",
+    "territory_kind": "region",
+    "territory_locations_in_source": 371,
+    "window": "2025-02-21 to 2026-02-20"
+  },
+  "methodology_notes": [
+    "Scope: region = Birmingham and Solihull. Window: 2025-02-21 to 2026-02-20 inclusive (365 days), anchored to the newest source date.",
+    "Supported events: new CQC registration in-window (excluding dormant locations); overall rating change in-window (derived from ordered historic/current ratings); new inspection report in-window where no change can be derived.",
+    "Score = base weight per event x recency multiplier (1.5 within 30 days, 1.2 within 90, 1.05 within 180) + rating-direction adjustment (downgrade +16, upgrade +9) + a bed-count size factor + a provider-cluster bonus where the same provider has multiple locations moving. Scores are capped at 100.",
+    "Ties break by most recent event date, then organisation name, then CQC location id, so the same source data always yields the same ranking."
+  ],
+  "next_actions": [
+    "Contact the 32 newly registered location(s) first: they have no incumbent supplier and are setting up policies, training and systems now. The shortlist marks each one and links its CQC record.",
+    "Concentrate field time on Birmingham: it has the highest count of qualifying events in Birmingham and Solihull this window.",
+    "Verify each organisation's current status on the linked CQC page before outreach - this brief reflects the published register edition, not a live lookup."
+  ],
+  "purchase_context": {
+    "generated_at": "2026-09-09T16:00:00+00:00",
+    "order_reference": "dry-run-e2e-2026-09-09",
+    "price_gbp": 745,
+    "product": "territory-opportunity-brief",
+    "terms_version": "dry-run"
+  },
+  "scope": {
+    "kind": "region",
+    "name": "Birmingham and Solihull",
+    "shortlist_target": 25,
+    "window_days": 365
+  },
+  "shortlist": [
+    {
+      "current_rating": "Not Yet Inspected",
+      "evidence": [
+        {
+          "detail": "CQC registration recorded 2026-02-20",
+          "effective_date": "2026-02-20",
+          "event_type": "new_registration",
+          "new_value": "Registered",
+          "old_value": null,
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data",
+          "source_field": "location.registrationDate",
+          "source_url": "https://api.service.cqc.org.uk/public/v1/locations/1-26963512859"
+        }
+      ],
+      "local_authority": "Birmingham",
+      "location_id": "1-26963512859",
+      "location_name": "Baldwins Care Ltd",
+      "most_recent_event_date": "2026-02-20",
+      "number_of_beds": null,
+      "organisation_name": "Baldwins Care Ltd",
+      "postcode": "B28 0XB",
+      "primary_signal": "New CQC registration",
+      "provider_id": "1-25474360399",
+      "rank": 1,
+      "reason": "Re-registered with CQC on 20 Feb 2026 (domiciliary care service, non-bed-based) in the last three weeks, so it is still standing up policies, training and systems. A new legal entity or owner has taken on an existing service in Birmingham and Solihull - a natural point to review incumbent suppliers. It carries an inherited overall rating of Not Yet Inspected.",
+      "region": "Birmingham and Solihull",
+      "score": 69.0,
+      "score_breakdown": {
+        "new_registration@2026-02-20": 63.0,
+        "re_registration": 6.0
+      },
+      "service_types": [
+        "Domiciliary care service"
+      ]
+    },
+    {
+      "current_rating": "Not Yet Inspected",
+      "evidence": [
+        {
+          "detail": "CQC registration recorded 2026-01-30",
+          "effective_date": "2026-01-30",
+          "event_type": "new_registration",
+          "new_value": "Registered",
+          "old_value": null,
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data",
+          "source_field": "location.registrationDate",
+          "source_url": "https://api.service.cqc.org.uk/public/v1/locations/1-26682155005"
+        }
+      ],
+      "local_authority": "Birmingham",
+      "location_id": "1-26682155005",
+      "location_name": "Express Care at Home",
+      "most_recent_event_date": "2026-01-30",
+      "number_of_beds": null,
+      "organisation_name": "Express Nursing Limited",
+      "postcode": "B3 1QS",
+      "primary_signal": "New CQC registration",
+      "provider_id": "1-23303668656",
+      "rank": 2,
+      "reason": "Re-registered with CQC on 30 Jan 2026 (domiciliary care service, non-bed-based) in the last three weeks, so it is still standing up policies, training and systems. A new legal entity or owner has taken on an existing service in Birmingham and Solihull - a natural point to review incumbent suppliers. It carries an inherited overall rating of Not Yet Inspected.",
+      "region": "Birmingham and Solihull",
+      "score": 69.0,
+      "score_breakdown": {
+        "new_registration@2026-01-30": 63.0,
+        "re_registration": 6.0
+      },
+      "service_types": [
+        "Domiciliary care service"
+      ]
+    },
+    {
+      "current_rating": "Not Yet Inspected",
+      "evidence": [
+        {
+          "detail": "CQC registration recorded 2026-01-26",
+          "effective_date": "2026-01-26",
+          "event_type": "new_registration",
+          "new_value": "Registered",
+          "old_value": null,
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data",
+          "source_field": "location.registrationDate",
+          "source_url": "https://api.service.cqc.org.uk/public/v1/locations/1-26602914843"
+        }
+      ],
+      "local_authority": "Birmingham",
+      "location_id": "1-26602914843",
+      "location_name": "Square Routes Care Ltd",
+      "most_recent_event_date": "2026-01-26",
+      "number_of_beds": null,
+      "organisation_name": "Square Routes Care Ltd",
+      "postcode": "B13 8RE",
+      "primary_signal": "New CQC registration",
+      "provider_id": "1-18878434807",
+      "rank": 3,
+      "reason": "Re-registered with CQC on 26 Jan 2026 (domiciliary care service, non-bed-based) in the last two months, so onboarding decisions are still open. A new legal entity or owner has taken on an existing service in Birmingham and Solihull - a natural point to review incumbent suppliers. It carries an inherited overall rating of Not Yet Inspected.",
+      "region": "Birmingham and Solihull",
+      "score": 69.0,
+      "score_breakdown": {
+        "new_registration@2026-01-26": 63.0,
+        "re_registration": 6.0
+      },
+      "service_types": [
+        "Domiciliary care service"
+      ]
+    },
+    {
+      "current_rating": "Good",
+      "evidence": [
+        {
+          "detail": "CQC registration recorded 2025-07-29",
+          "effective_date": "2025-07-29",
+          "event_type": "new_registration",
+          "new_value": "Registered",
+          "old_value": null,
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data",
+          "source_field": "location.registrationDate",
+          "source_url": "https://api.service.cqc.org.uk/public/v1/locations/1-23236585428"
+        }
+      ],
+      "local_authority": "Birmingham",
+      "location_id": "1-23236585428",
+      "location_name": "Olivet",
+      "most_recent_event_date": "2025-07-29",
+      "number_of_beds": 70,
+      "organisation_name": "Christadelphian Care Homes",
+      "postcode": "B27 6AD",
+      "primary_signal": "New CQC registration",
+      "provider_id": "1-22810884649",
+      "rank": 4,
+      "reason": "Re-registered with CQC on 29 Jul 2025 (domiciliary care service, 70 beds) about 6 months ago. A new legal entity or owner has taken on an existing service in Birmingham and Solihull - a natural point to review incumbent suppliers. It carries an inherited overall rating of Good. At 70 beds it is one of the larger entrants in this window.",
+      "region": "Birmingham and Solihull",
+      "score": 58.0,
+      "score_breakdown": {
+        "new_registration@2025-07-29": 42.0,
+        "re_registration": 6.0,
+        "size_factor": 10.0
+      },
+      "service_types": [
+        "Domiciliary care service",
+        "Care home service with nursing"
+      ]
+    },
+    {
+      "current_rating": "Not Yet Inspected",
+      "evidence": [
+        {
+          "detail": "CQC registration recorded 2026-01-07",
+          "effective_date": "2026-01-07",
+          "event_type": "new_registration",
+          "new_value": "Registered",
+          "old_value": null,
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data",
+          "source_field": "location.registrationDate",
+          "source_url": "https://api.service.cqc.org.uk/public/v1/locations/1-25872774764"
+        }
+      ],
+      "local_authority": "Birmingham",
+      "location_id": "1-25872774764",
+      "location_name": "Pharos Supported Services Central",
+      "most_recent_event_date": "2026-01-07",
+      "number_of_beds": null,
+      "organisation_name": "Pharos Care Limited",
+      "postcode": "B27 6RT",
+      "primary_signal": "New CQC registration",
+      "provider_id": "1-101649312",
+      "rank": 5,
+      "reason": "Re-registered with CQC on 07 Jan 2026 (domiciliary care service, non-bed-based) in the last two months, so onboarding decisions are still open. A new legal entity or owner has taken on an existing service in Birmingham and Solihull - a natural point to review incumbent suppliers. It carries an inherited overall rating of Not Yet Inspected.",
+      "region": "Birmingham and Solihull",
+      "score": 56.4,
+      "score_breakdown": {
+        "new_registration@2026-01-07": 50.4,
+        "re_registration": 6.0
+      },
+      "service_types": [
+        "Domiciliary care service",
+        "Supported living service"
+      ]
+    },
+    {
+      "current_rating": "Good",
+      "evidence": [
+        {
+          "detail": "CQC registration recorded 2025-12-18",
+          "effective_date": "2025-12-18",
+          "event_type": "new_registration",
+          "new_value": "Registered",
+          "old_value": null,
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data",
+          "source_field": "location.registrationDate",
+          "source_url": "https://api.service.cqc.org.uk/public/v1/locations/1-26103753760"
+        }
+      ],
+      "local_authority": "Birmingham",
+      "location_id": "1-26103753760",
+      "location_name": "Starlight Support Services Ltd",
+      "most_recent_event_date": "2025-12-18",
+      "number_of_beds": null,
+      "organisation_name": "Starlight Support Services Ltd",
+      "postcode": "B1 2JB",
+      "primary_signal": "New CQC registration",
+      "provider_id": "1-4011445850",
+      "rank": 6,
+      "reason": "Re-registered with CQC on 18 Dec 2025 (domiciliary care service, non-bed-based) within the last four months. A new legal entity or owner has taken on an existing service in Birmingham and Solihull - a natural point to review incumbent suppliers. It carries an inherited overall rating of Good.",
+      "region": "Birmingham and Solihull",
+      "score": 56.4,
+      "score_breakdown": {
+        "new_registration@2025-12-18": 50.4,
+        "re_registration": 6.0
+      },
+      "service_types": [
+        "Domiciliary care service",
+        "Supported living service"
+      ]
+    },
+    {
+      "current_rating": "Not Yet Inspected",
+      "evidence": [
+        {
+          "detail": "CQC registration recorded 2025-11-25",
+          "effective_date": "2025-11-25",
+          "event_type": "new_registration",
+          "new_value": "Registered",
+          "old_value": null,
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data",
+          "source_field": "location.registrationDate",
+          "source_url": "https://api.service.cqc.org.uk/public/v1/locations/1-25756813335"
+        }
+      ],
+      "local_authority": "Birmingham",
+      "location_id": "1-25756813335",
+      "location_name": "Hearty B Care Services Ltd",
+      "most_recent_event_date": "2025-11-25",
+      "number_of_beds": null,
+      "organisation_name": "Hearty B Care Services Ltd",
+      "postcode": "B21 0BN",
+      "primary_signal": "New CQC registration",
+      "provider_id": "1-22158167855",
+      "rank": 7,
+      "reason": "Re-registered with CQC on 25 Nov 2025 (domiciliary care service, non-bed-based) within the last four months. A new legal entity or owner has taken on an existing service in Birmingham and Solihull - a natural point to review incumbent suppliers. It carries an inherited overall rating of Not Yet Inspected.",
+      "region": "Birmingham and Solihull",
+      "score": 56.4,
+      "score_breakdown": {
+        "new_registration@2025-11-25": 50.4,
+        "re_registration": 6.0
+      },
+      "service_types": [
+        "Domiciliary care service"
+      ]
+    },
+    {
+      "current_rating": "Not Yet Inspected",
+      "evidence": [
+        {
+          "detail": "CQC registration recorded 2025-11-14",
+          "effective_date": "2025-11-14",
+          "event_type": "new_registration",
+          "new_value": "Registered",
+          "old_value": null,
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data",
+          "source_field": "location.registrationDate",
+          "source_url": "https://api.service.cqc.org.uk/public/v1/locations/1-25605647286"
+        }
+      ],
+      "local_authority": "Solihull",
+      "location_id": "1-25605647286",
+      "location_name": "Omnia Support Limited (Solihull)",
+      "most_recent_event_date": "2025-11-14",
+      "number_of_beds": null,
+      "organisation_name": "Omnia Support Limited",
+      "postcode": "B90 4AA",
+      "primary_signal": "New CQC registration",
+      "provider_id": "1-130858161",
+      "rank": 8,
+      "reason": "Re-registered with CQC on 14 Nov 2025 (domiciliary care service, non-bed-based) within the last four months. A new legal entity or owner has taken on an existing service in Birmingham and Solihull - a natural point to review incumbent suppliers. It carries an inherited overall rating of Not Yet Inspected.",
+      "region": "Birmingham and Solihull",
+      "score": 50.1,
+      "score_breakdown": {
+        "new_registration@2025-11-14": 44.1,
+        "re_registration": 6.0
+      },
+      "service_types": [
+        "Domiciliary care service"
+      ]
+    },
+    {
+      "current_rating": "Not Yet Inspected",
+      "evidence": [
+        {
+          "detail": "CQC registration recorded 2025-11-13",
+          "effective_date": "2025-11-13",
+          "event_type": "new_registration",
+          "new_value": "Registered",
+          "old_value": null,
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data",
+          "source_field": "location.registrationDate",
+          "source_url": "https://api.service.cqc.org.uk/public/v1/locations/1-25556161312"
+        }
+      ],
+      "local_authority": "Birmingham",
+      "location_id": "1-25556161312",
+      "location_name": "Walfinch Birmingham South",
+      "most_recent_event_date": "2025-11-13",
+      "number_of_beds": null,
+      "organisation_name": "MSR Homecare Birmingham Limited",
+      "postcode": "B45 9AH",
+      "primary_signal": "New CQC registration",
+      "provider_id": "1-24113089271",
+      "rank": 9,
+      "reason": "Re-registered with CQC on 13 Nov 2025 (domiciliary care service, non-bed-based) within the last four months. A new legal entity or owner has taken on an existing service in Birmingham and Solihull - a natural point to review incumbent suppliers. It carries an inherited overall rating of Not Yet Inspected.",
+      "region": "Birmingham and Solihull",
+      "score": 50.1,
+      "score_breakdown": {
+        "new_registration@2025-11-13": 44.1,
+        "re_registration": 6.0
+      },
+      "service_types": [
+        "Domiciliary care service"
+      ]
+    },
+    {
+      "current_rating": "Not Yet Inspected",
+      "evidence": [
+        {
+          "detail": "CQC registration recorded 2025-09-15",
+          "effective_date": "2025-09-15",
+          "event_type": "new_registration",
+          "new_value": "Registered",
+          "old_value": null,
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data",
+          "source_field": "location.registrationDate",
+          "source_url": "https://api.service.cqc.org.uk/public/v1/locations/1-24674820178"
+        }
+      ],
+      "local_authority": "Birmingham",
+      "location_id": "1-24674820178",
+      "location_name": "Caregenics Healthcare Limited",
+      "most_recent_event_date": "2025-09-15",
+      "number_of_beds": null,
+      "organisation_name": "Caregenics Healthcare Limited",
+      "postcode": "B15 3BE",
+      "primary_signal": "New CQC registration",
+      "provider_id": "1-12676299746",
+      "rank": 10,
+      "reason": "Re-registered with CQC on 15 Sep 2025 (domiciliary care service, non-bed-based) about 5 months ago. A new legal entity or owner has taken on an existing service in Birmingham and Solihull - a natural point to review incumbent suppliers. It carries an inherited overall rating of Not Yet Inspected.",
+      "region": "Birmingham and Solihull",
+      "score": 50.1,
+      "score_breakdown": {
+        "new_registration@2025-09-15": 44.1,
+        "re_registration": 6.0
+      },
+      "service_types": [
+        "Domiciliary care service"
+      ]
+    },
+    {
+      "current_rating": "Good",
+      "evidence": [
+        {
+          "detail": "CQC registration recorded 2025-02-28",
+          "effective_date": "2025-02-28",
+          "event_type": "new_registration",
+          "new_value": "Registered",
+          "old_value": null,
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data",
+          "source_field": "location.registrationDate",
+          "source_url": "https://api.service.cqc.org.uk/public/v1/locations/1-21765878572"
+        }
+      ],
+      "local_authority": "Birmingham",
+      "location_id": "1-21765878572",
+      "location_name": "Brain Injury Rehabilitation Trust - Bristol Road",
+      "most_recent_event_date": "2025-02-28",
+      "number_of_beds": 8,
+      "organisation_name": "The Disabilities Trust",
+      "postcode": "B29 6LX",
+      "primary_signal": "New CQC registration",
+      "provider_id": "1-102642556",
+      "rank": 11,
+      "reason": "Re-registered with CQC on 28 Feb 2025 (domiciliary care service, 8 beds) about 11 months ago. A new legal entity or owner has taken on an existing service in Birmingham and Solihull - a natural point to review incumbent suppliers. It carries an inherited overall rating of Good.",
+      "region": "Birmingham and Solihull",
+      "score": 49.33,
+      "score_breakdown": {
+        "new_registration@2025-02-28": 42.0,
+        "re_registration": 6.0,
+        "size_factor": 1.33
+      },
+      "service_types": [
+        "Domiciliary care service",
+        "Care home service without nursing",
+        "Supported Housing",
+        "Supported living service"
+      ]
+    },
+    {
+      "current_rating": "Not Yet Inspected",
+      "evidence": [
+        {
+          "detail": "CQC registration recorded 2025-08-21",
+          "effective_date": "2025-08-21",
+          "event_type": "new_registration",
+          "new_value": "Registered",
+          "old_value": null,
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data",
+          "source_field": "location.registrationDate",
+          "source_url": "https://api.service.cqc.org.uk/public/v1/locations/1-24526747686"
+        }
+      ],
+      "local_authority": "Birmingham",
+      "location_id": "1-24526747686",
+      "location_name": "Yellowsunuk Ltd",
+      "most_recent_event_date": "2025-08-21",
+      "number_of_beds": null,
+      "organisation_name": "Yellowsunuk Ltd",
+      "postcode": "B18 7LZ",
+      "primary_signal": "New CQC registration",
+      "provider_id": "1-22154904277",
+      "rank": 12,
+      "reason": "Re-registered with CQC on 21 Aug 2025 (domiciliary care service, non-bed-based) about 6 months ago. A new legal entity or owner has taken on an existing service in Birmingham and Solihull - a natural point to review incumbent suppliers. It carries an inherited overall rating of Not Yet Inspected.",
+      "region": "Birmingham and Solihull",
+      "score": 48.0,
+      "score_breakdown": {
+        "new_registration@2025-08-21": 42.0,
+        "re_registration": 6.0
+      },
+      "service_types": [
+        "Domiciliary care service"
+      ]
+    },
+    {
+      "current_rating": "Not Yet Inspected",
+      "evidence": [
+        {
+          "detail": "CQC registration recorded 2025-07-30",
+          "effective_date": "2025-07-30",
+          "event_type": "new_registration",
+          "new_value": "Registered",
+          "old_value": null,
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data",
+          "source_field": "location.registrationDate",
+          "source_url": "https://api.service.cqc.org.uk/public/v1/locations/1-24221293924"
+        }
+      ],
+      "local_authority": "Birmingham",
+      "location_id": "1-24221293924",
+      "location_name": "Jothno Care Services Ltd",
+      "most_recent_event_date": "2025-07-30",
+      "number_of_beds": null,
+      "organisation_name": "Jothno Care Services Ltd",
+      "postcode": "B19 2HN",
+      "primary_signal": "New CQC registration",
+      "provider_id": "1-22008172901",
+      "rank": 13,
+      "reason": "Re-registered with CQC on 30 Jul 2025 (domiciliary care service, non-bed-based) about 6 months ago. A new legal entity or owner has taken on an existing service in Birmingham and Solihull - a natural point to review incumbent suppliers. It carries an inherited overall rating of Not Yet Inspected.",
+      "region": "Birmingham and Solihull",
+      "score": 48.0,
+      "score_breakdown": {
+        "new_registration@2025-07-30": 42.0,
+        "re_registration": 6.0
+      },
+      "service_types": [
+        "Domiciliary care service"
+      ]
+    },
+    {
+      "current_rating": "Good",
+      "evidence": [
+        {
+          "detail": "CQC registration recorded 2025-07-24",
+          "effective_date": "2025-07-24",
+          "event_type": "new_registration",
+          "new_value": "Registered",
+          "old_value": null,
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data",
+          "source_field": "location.registrationDate",
+          "source_url": "https://api.service.cqc.org.uk/public/v1/locations/1-24139654155"
+        }
+      ],
+      "local_authority": "Birmingham",
+      "location_id": "1-24139654155",
+      "location_name": "Four Oaks Healthcare limited",
+      "most_recent_event_date": "2025-07-24",
+      "number_of_beds": null,
+      "organisation_name": "Four Oaks Healthcare Ltd",
+      "postcode": "B24 9FD",
+      "primary_signal": "New CQC registration",
+      "provider_id": "1-1979170299",
+      "rank": 14,
+      "reason": "Re-registered with CQC on 24 Jul 2025 (community services - nursing, non-bed-based) about 7 months ago. A new legal entity or owner has taken on an existing service in Birmingham and Solihull - a natural point to review incumbent suppliers. It carries an inherited overall rating of Good.",
+      "region": "Birmingham and Solihull",
+      "score": 48.0,
+      "score_breakdown": {
+        "new_registration@2025-07-24": 42.0,
+        "re_registration": 6.0
+      },
+      "service_types": [
+        "Community Services - Nursing",
+        "Domiciliary care service"
+      ]
+    },
+    {
+      "current_rating": "Not Yet Inspected",
+      "evidence": [
+        {
+          "detail": "CQC registration recorded 2025-07-17",
+          "effective_date": "2025-07-17",
+          "event_type": "new_registration",
+          "new_value": "Registered",
+          "old_value": null,
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data",
+          "source_field": "location.registrationDate",
+          "source_url": "https://api.service.cqc.org.uk/public/v1/locations/1-23418838330"
+        }
+      ],
+      "local_authority": "Solihull",
+      "location_id": "1-23418838330",
+      "location_name": "Autism West Midlands Solihull",
+      "most_recent_event_date": "2025-07-17",
+      "number_of_beds": null,
+      "organisation_name": "Autism.West Midlands",
+      "postcode": "B37 7HP",
+      "primary_signal": "New CQC registration",
+      "provider_id": "1-101653587",
+      "rank": 15,
+      "reason": "Re-registered with CQC on 17 Jul 2025 (domiciliary care service, non-bed-based) about 7 months ago. A new legal entity or owner has taken on an existing service in Birmingham and Solihull - a natural point to review incumbent suppliers. It carries an inherited overall rating of Not Yet Inspected.",
+      "region": "Birmingham and Solihull",
+      "score": 48.0,
+      "score_breakdown": {
+        "new_registration@2025-07-17": 42.0,
+        "re_registration": 6.0
+      },
+      "service_types": [
+        "Domiciliary care service",
+        "Supported living service"
+      ]
+    },
+    {
+      "current_rating": "Not Yet Inspected",
+      "evidence": [
+        {
+          "detail": "CQC registration recorded 2025-07-02",
+          "effective_date": "2025-07-02",
+          "event_type": "new_registration",
+          "new_value": "Registered",
+          "old_value": null,
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data",
+          "source_field": "location.registrationDate",
+          "source_url": "https://api.service.cqc.org.uk/public/v1/locations/1-23726918202"
+        }
+      ],
+      "local_authority": "Birmingham",
+      "location_id": "1-23726918202",
+      "location_name": "Productive Health Care Ltd",
+      "most_recent_event_date": "2025-07-02",
+      "number_of_beds": null,
+      "organisation_name": "Productive Health Care Ltd",
+      "postcode": "B44 0QR",
+      "primary_signal": "New CQC registration",
+      "provider_id": "1-23398014177",
+      "rank": 16,
+      "reason": "Re-registered with CQC on 02 Jul 2025 (domiciliary care service, non-bed-based) about 7 months ago. A new legal entity or owner has taken on an existing service in Birmingham and Solihull - a natural point to review incumbent suppliers. It carries an inherited overall rating of Not Yet Inspected.",
+      "region": "Birmingham and Solihull",
+      "score": 48.0,
+      "score_breakdown": {
+        "new_registration@2025-07-02": 42.0,
+        "re_registration": 6.0
+      },
+      "service_types": [
+        "Domiciliary care service"
+      ]
+    },
+    {
+      "current_rating": "Not Yet Inspected",
+      "evidence": [
+        {
+          "detail": "CQC registration recorded 2025-06-26",
+          "effective_date": "2025-06-26",
+          "event_type": "new_registration",
+          "new_value": "Registered",
+          "old_value": null,
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data",
+          "source_field": "location.registrationDate",
+          "source_url": "https://api.service.cqc.org.uk/public/v1/locations/1-23701101211"
+        }
+      ],
+      "local_authority": "Birmingham",
+      "location_id": "1-23701101211",
+      "location_name": "Sunny Days Care Group Limited",
+      "most_recent_event_date": "2025-06-26",
+      "number_of_beds": null,
+      "organisation_name": "Sunny Days Care Group Limited",
+      "postcode": "B31 1UJ",
+      "primary_signal": "New CQC registration",
+      "provider_id": "1-21745027396",
+      "rank": 17,
+      "reason": "Re-registered with CQC on 26 Jun 2025 (domiciliary care service, non-bed-based) about 7 months ago. A new legal entity or owner has taken on an existing service in Birmingham and Solihull - a natural point to review incumbent suppliers. It carries an inherited overall rating of Not Yet Inspected.",
+      "region": "Birmingham and Solihull",
+      "score": 48.0,
+      "score_breakdown": {
+        "new_registration@2025-06-26": 42.0,
+        "re_registration": 6.0
+      },
+      "service_types": [
+        "Domiciliary care service"
+      ]
+    },
+    {
+      "current_rating": "Not Yet Inspected",
+      "evidence": [
+        {
+          "detail": "CQC registration recorded 2025-06-17",
+          "effective_date": "2025-06-17",
+          "event_type": "new_registration",
+          "new_value": "Registered",
+          "old_value": null,
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data",
+          "source_field": "location.registrationDate",
+          "source_url": "https://api.service.cqc.org.uk/public/v1/locations/1-23193605424"
+        }
+      ],
+      "local_authority": "Birmingham",
+      "location_id": "1-23193605424",
+      "location_name": "Reliance Ultimate Care Ltd",
+      "most_recent_event_date": "2025-06-17",
+      "number_of_beds": null,
+      "organisation_name": "Reliance Ultimate Care Ltd",
+      "postcode": "B19 3UA",
+      "primary_signal": "New CQC registration",
+      "provider_id": "1-12918514236",
+      "rank": 18,
+      "reason": "Re-registered with CQC on 17 Jun 2025 (domiciliary care service, non-bed-based) about 8 months ago. A new legal entity or owner has taken on an existing service in Birmingham and Solihull - a natural point to review incumbent suppliers. It carries an inherited overall rating of Not Yet Inspected.",
+      "region": "Birmingham and Solihull",
+      "score": 48.0,
+      "score_breakdown": {
+        "new_registration@2025-06-17": 42.0,
+        "re_registration": 6.0
+      },
+      "service_types": [
+        "Domiciliary care service"
+      ]
+    },
+    {
+      "current_rating": "Not Yet Inspected",
+      "evidence": [
+        {
+          "detail": "CQC registration recorded 2025-06-16",
+          "effective_date": "2025-06-16",
+          "event_type": "new_registration",
+          "new_value": "Registered",
+          "old_value": null,
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data",
+          "source_field": "location.registrationDate",
+          "source_url": "https://api.service.cqc.org.uk/public/v1/locations/1-22953020078"
+        }
+      ],
+      "local_authority": "Birmingham",
+      "location_id": "1-22953020078",
+      "location_name": "Care Network",
+      "most_recent_event_date": "2025-06-16",
+      "number_of_beds": null,
+      "organisation_name": "Care Network Ltd",
+      "postcode": "B14 7SR",
+      "primary_signal": "New CQC registration",
+      "provider_id": "1-15912757962",
+      "rank": 19,
+      "reason": "Re-registered with CQC on 16 Jun 2025 (domiciliary care service, non-bed-based) about 8 months ago. A new legal entity or owner has taken on an existing service in Birmingham and Solihull - a natural point to review incumbent suppliers. It carries an inherited overall rating of Not Yet Inspected.",
+      "region": "Birmingham and Solihull",
+      "score": 48.0,
+      "score_breakdown": {
+        "new_registration@2025-06-16": 42.0,
+        "re_registration": 6.0
+      },
+      "service_types": [
+        "Domiciliary care service"
+      ]
+    },
+    {
+      "current_rating": "Not Yet Inspected",
+      "evidence": [
+        {
+          "detail": "CQC registration recorded 2025-05-29",
+          "effective_date": "2025-05-29",
+          "event_type": "new_registration",
+          "new_value": "Registered",
+          "old_value": null,
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data",
+          "source_field": "location.registrationDate",
+          "source_url": "https://api.service.cqc.org.uk/public/v1/locations/1-23331370689"
+        }
+      ],
+      "local_authority": "Solihull",
+      "location_id": "1-23331370689",
+      "location_name": "Glorious Light Care Limited",
+      "most_recent_event_date": "2025-05-29",
+      "number_of_beds": null,
+      "organisation_name": "Glorious Light Care Limited",
+      "postcode": "B37 7YN",
+      "primary_signal": "New CQC registration",
+      "provider_id": "1-20394791944",
+      "rank": 20,
+      "reason": "Re-registered with CQC on 29 May 2025 (domiciliary care service, non-bed-based) about 8 months ago. A new legal entity or owner has taken on an existing service in Birmingham and Solihull - a natural point to review incumbent suppliers. It carries an inherited overall rating of Not Yet Inspected.",
+      "region": "Birmingham and Solihull",
+      "score": 48.0,
+      "score_breakdown": {
+        "new_registration@2025-05-29": 42.0,
+        "re_registration": 6.0
+      },
+      "service_types": [
+        "Domiciliary care service"
+      ]
+    },
+    {
+      "current_rating": "Not Yet Inspected",
+      "evidence": [
+        {
+          "detail": "CQC registration recorded 2025-05-27",
+          "effective_date": "2025-05-27",
+          "event_type": "new_registration",
+          "new_value": "Registered",
+          "old_value": null,
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data",
+          "source_field": "location.registrationDate",
+          "source_url": "https://api.service.cqc.org.uk/public/v1/locations/1-22163593039"
+        }
+      ],
+      "local_authority": "Birmingham",
+      "location_id": "1-22163593039",
+      "location_name": "Spectacare Healthcare Ltd",
+      "most_recent_event_date": "2025-05-27",
+      "number_of_beds": null,
+      "organisation_name": "Spectacare Healthcare Ltd",
+      "postcode": "B23 7YH",
+      "primary_signal": "New CQC registration",
+      "provider_id": "1-21096558931",
+      "rank": 21,
+      "reason": "Re-registered with CQC on 27 May 2025 (domiciliary care service, non-bed-based) about 8 months ago. A new legal entity or owner has taken on an existing service in Birmingham and Solihull - a natural point to review incumbent suppliers. It carries an inherited overall rating of Not Yet Inspected.",
+      "region": "Birmingham and Solihull",
+      "score": 48.0,
+      "score_breakdown": {
+        "new_registration@2025-05-27": 42.0,
+        "re_registration": 6.0
+      },
+      "service_types": [
+        "Domiciliary care service"
+      ]
+    },
+    {
+      "current_rating": "Not Yet Inspected",
+      "evidence": [
+        {
+          "detail": "CQC registration recorded 2025-05-08",
+          "effective_date": "2025-05-08",
+          "event_type": "new_registration",
+          "new_value": "Registered",
+          "old_value": null,
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data",
+          "source_field": "location.registrationDate",
+          "source_url": "https://api.service.cqc.org.uk/public/v1/locations/1-22163490705"
+        }
+      ],
+      "local_authority": "Birmingham",
+      "location_id": "1-22163490705",
+      "location_name": "Companion Healthcare Ltd",
+      "most_recent_event_date": "2025-05-08",
+      "number_of_beds": null,
+      "organisation_name": "Companion Healthcare Ltd",
+      "postcode": "B45 9AH",
+      "primary_signal": "New CQC registration",
+      "provider_id": "1-14183646085",
+      "rank": 22,
+      "reason": "Re-registered with CQC on 08 May 2025 (domiciliary care service, non-bed-based) about 9 months ago. A new legal entity or owner has taken on an existing service in Birmingham and Solihull - a natural point to review incumbent suppliers. It carries an inherited overall rating of Not Yet Inspected.",
+      "region": "Birmingham and Solihull",
+      "score": 48.0,
+      "score_breakdown": {
+        "new_registration@2025-05-08": 42.0,
+        "re_registration": 6.0
+      },
+      "service_types": [
+        "Domiciliary care service"
+      ]
+    },
+    {
+      "current_rating": "Not Yet Inspected",
+      "evidence": [
+        {
+          "detail": "CQC registration recorded 2025-05-06",
+          "effective_date": "2025-05-06",
+          "event_type": "new_registration",
+          "new_value": "Registered",
+          "old_value": null,
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data",
+          "source_field": "location.registrationDate",
+          "source_url": "https://api.service.cqc.org.uk/public/v1/locations/1-23037174785"
+        }
+      ],
+      "local_authority": "Birmingham",
+      "location_id": "1-23037174785",
+      "location_name": "Compass Care Services Ltd",
+      "most_recent_event_date": "2025-05-06",
+      "number_of_beds": null,
+      "organisation_name": "Compass Care Services Ltd",
+      "postcode": "B11 2AA",
+      "primary_signal": "New CQC registration",
+      "provider_id": "1-21275256085",
+      "rank": 23,
+      "reason": "Re-registered with CQC on 06 May 2025 (domiciliary care service, non-bed-based) about 9 months ago. A new legal entity or owner has taken on an existing service in Birmingham and Solihull - a natural point to review incumbent suppliers. It carries an inherited overall rating of Not Yet Inspected.",
+      "region": "Birmingham and Solihull",
+      "score": 48.0,
+      "score_breakdown": {
+        "new_registration@2025-05-06": 42.0,
+        "re_registration": 6.0
+      },
+      "service_types": [
+        "Domiciliary care service"
+      ]
+    },
+    {
+      "current_rating": "Not Yet Inspected",
+      "evidence": [
+        {
+          "detail": "CQC registration recorded 2025-04-30",
+          "effective_date": "2025-04-30",
+          "event_type": "new_registration",
+          "new_value": "Registered",
+          "old_value": null,
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data",
+          "source_field": "location.registrationDate",
+          "source_url": "https://api.service.cqc.org.uk/public/v1/locations/1-23017617450"
+        }
+      ],
+      "local_authority": "Birmingham",
+      "location_id": "1-23017617450",
+      "location_name": "Hlr 24/7 Ltd Birmingham",
+      "most_recent_event_date": "2025-04-30",
+      "number_of_beds": null,
+      "organisation_name": "HLR 24 7 Ltd",
+      "postcode": "B28 8AY",
+      "primary_signal": "New CQC registration",
+      "provider_id": "1-21296141635",
+      "rank": 24,
+      "reason": "Re-registered with CQC on 30 Apr 2025 (domiciliary care service, non-bed-based) about 9 months ago. A new legal entity or owner has taken on an existing service in Birmingham and Solihull - a natural point to review incumbent suppliers. It carries an inherited overall rating of Not Yet Inspected.",
+      "region": "Birmingham and Solihull",
+      "score": 48.0,
+      "score_breakdown": {
+        "new_registration@2025-04-30": 42.0,
+        "re_registration": 6.0
+      },
+      "service_types": [
+        "Domiciliary care service"
+      ]
+    },
+    {
+      "current_rating": "Not Yet Inspected",
+      "evidence": [
+        {
+          "detail": "CQC registration recorded 2025-04-29",
+          "effective_date": "2025-04-29",
+          "event_type": "new_registration",
+          "new_value": "Registered",
+          "old_value": null,
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data",
+          "source_field": "location.registrationDate",
+          "source_url": "https://api.service.cqc.org.uk/public/v1/locations/1-22950841428"
+        }
+      ],
+      "local_authority": "Birmingham",
+      "location_id": "1-22950841428",
+      "location_name": "Morgann Social Care Ltd",
+      "most_recent_event_date": "2025-04-29",
+      "number_of_beds": null,
+      "organisation_name": "Morgann Social Care Ltd",
+      "postcode": "B45 9AH",
+      "primary_signal": "New CQC registration",
+      "provider_id": "1-18197606081",
+      "rank": 25,
+      "reason": "Re-registered with CQC on 29 Apr 2025 (domiciliary care service, non-bed-based) about 9 months ago. A new legal entity or owner has taken on an existing service in Birmingham and Solihull - a natural point to review incumbent suppliers. It carries an inherited overall rating of Not Yet Inspected.",
+      "region": "Birmingham and Solihull",
+      "score": 48.0,
+      "score_breakdown": {
+        "new_registration@2025-04-29": 42.0,
+        "re_registration": 6.0
+      },
+      "service_types": [
+        "Domiciliary care service"
+      ]
+    }
+  ],
+  "source_provenance": {
+    "generated_at": "2026-09-09T16:00:00+00:00",
+    "generator": "api.services.territory_brief.generate_territory_opportunity_brief",
+    "licence": "Contains public sector information licensed under the Open Government Licence v3.0",
+    "licence_url": "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
+    "locations_snapshot": "locations_detail.jsonl",
+    "providers_snapshot": "providers_detail.jsonl",
+    "snapshot_edition_date": "2026-02-20",
+    "source_page": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data"
+  },
+  "territory_insights": {
+    "activity_by_sub_area": [
+      {
+        "area": "Birmingham",
+        "events": 28
+      },
+      {
+        "area": "Solihull",
+        "events": 4
+      }
+    ],
+    "events_by_type": {
+      "new_registration": 32
+    },
+    "most_active_providers": [],
+    "new_beds_entering_market": 78,
+    "rating_moves": {
+      "declines": 0,
+      "improvements": 0
+    },
+    "service_type_mix": [
+      {
+        "organisations": 32,
+        "service_type": "Domiciliary care service"
+      },
+      {
+        "organisations": 6,
+        "service_type": "Supported living service"
+      },
+      {
+        "organisations": 1,
+        "service_type": "Care home service without nursing"
+      },
+      {
+        "organisations": 1,
+        "service_type": "Supported Housing"
+      },
+      {
+        "organisations": 1,
+        "service_type": "Care home service with nursing"
+      },
+      {
+        "organisations": 1,
+        "service_type": "Community Services - Nursing"
+      }
+    ],
+    "shortlist_size": 25
+  },
+  "territory_locations": 371,
+  "window_end": "2026-02-20",
+  "window_start": "2025-02-21"
+}

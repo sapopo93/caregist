@@ -1,0 +1,14 @@
+{
+  "result": "PASS",
+  "scope": "Local sample integrity, not independent commercial approval",
+  "locations": 353,
+  "distinct_providers": 329,
+  "shortlist": 25,
+  "source_hashes": 2,
+  "representative_page_hashes": 25,
+  "csv_fields": "all match pack-data.json",
+  "xlsx_sheets": 3,
+  "xlsx_error_cells": 0,
+  "xlsx_source_link_formulas": 378,
+  "pdf_pages": 4
+}

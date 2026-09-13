@@ -1,5 +1,8 @@
 FROM python:3.12-alpine@sha256:b64631e04e4920160c50fbe8d8df828f7f35f06f425cb44aa09bca53e708a35a
 
+# Patch util-linux/libuuid past the pinned base image's CVE-2026-53612/53613/53614/76642/78408
+RUN apk add --no-cache --upgrade libuuid
+
 WORKDIR /app
 
 # Install API dependencies from requirements file

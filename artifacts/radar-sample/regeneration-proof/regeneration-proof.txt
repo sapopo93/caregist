@@ -1,0 +1,9 @@
+timestamp_utc: 2026-09-01T04:45:02+00:00
+python: 3.12.13
+cwd: /Users/user/CareGist
+command: ['/opt/homebrew/opt/python@3.12/bin/python3.12', '/Users/user/CareGist/tools/generate_radar_territory_sample.py', '--output-dir', '/Users/user/CareGist/artifacts/radar-sample/regeneration-proof']
+existing_md_sha256: 062c3b55ff815ac70cc81d06fc511669104629eb39afb4685a1eadeadc4f04ad
+existing_json_sha256: b87e105c5fe29a129326e558d389f85acda81d7cc963ce55f713377200724cba
+new_md_sha256: 062c3b55ff815ac70cc81d06fc511669104629eb39afb4685a1eadeadc4f04ad
+new_json_sha256: b87e105c5fe29a129326e558d389f85acda81d7cc963ce55f713377200724cba
+byte_identical: True

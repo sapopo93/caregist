@@ -10,7 +10,7 @@ import { getDirectoryFilterOptions, getDirectoryOpportunityStats } from "@/lib/d
 export const metadata: Metadata = {
   title: "CareGist | Evidence-linked CQC Signal Intelligence",
   description:
-    "Discover CQC-registered services for free, or use CareGist Radar to turn verified new registrations and rating changes into traceable team workflows.",
+    "Discover CQC-registered services for free, buy the Weekly Digest for one England region, or commission a Territory Opportunity Brief on the accounts worth approaching next.",
 };
 
 type StatKey = keyof Awaited<ReturnType<typeof getDirectoryOpportunityStats>>;
@@ -50,7 +50,7 @@ const FACT_LINKS: Array<{
 const DIFFERENCE = [
   {
     title: "Change, not catalogue churn",
-    body: "Radar is built around canonical events with stable CQC location IDs, rather than repeated exports of mutable provider rows.",
+    body: "CareGist is built around canonical events with stable CQC location IDs, rather than repeated exports of mutable provider rows.",
   },
   {
     title: "Evidence travels with the signal",
@@ -89,16 +89,16 @@ export default async function HomePage() {
               Know what changed. See the evidence. Decide what to do next.
             </h1>
             <p className="mt-5 max-w-2xl text-base leading-7 text-stone">
-              CareGist turns verified CQC new registrations and rating changes into a
-              traceable workflow for compliance and quality-improvement teams. The
-              directory remains free for discovery and source checking.
+              CareGist follows verified CQC new registrations, rating changes, and
+              closures for one England region at a time, with the published record behind
+              every item. The directory remains free for discovery and source checking.
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
               <Link
                 href="/pricing"
                 className="rounded-xl bg-amber px-5 py-3 text-sm font-semibold text-charcoal transition hover:bg-cream"
               >
-                Compare Radar plans
+                See the two products
               </Link>
               <Link
                 href="/search"
@@ -159,32 +159,36 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="px-6 py-12">
-        <div className="mx-auto grid max-w-6xl gap-4 md:grid-cols-3">
-          <article className="rounded-xl border border-stone bg-cream p-6">
-            <p className="font-mono text-xs uppercase tracking-wider text-clay">Radar</p>
-            <h2 className="mt-3 text-2xl font-bold text-bark">Regional or National</h2>
+      <section id="products" className="border-b border-stone px-6 py-12">
+        <div className="mx-auto max-w-6xl">
+          <div className="mb-7 max-w-3xl">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-clay">Products</p>
+            <h2 className="mt-3 text-3xl font-bold text-bark">Two products, both built on the published record</h2>
             <p className="mt-3 text-sm leading-6 text-dusk">
-              Evidence-linked new registrations and rating changes for human teams. No API is bundled.
+              CareGist sells two products: a weekly digest of movement in one England region,
+              and a one-off brief on the accounts worth approaching in a territory.
             </p>
-            <Link href="/pricing" className="mt-5 inline-flex text-sm font-semibold text-clay">View Radar pricing</Link>
-          </article>
-          <article className="rounded-xl border border-stone bg-cream p-6">
-            <p className="font-mono text-xs uppercase tracking-wider text-clay">Integration</p>
-            <h2 className="mt-3 text-2xl font-bold text-bark">Intelligence Feed Pilot</h2>
-            <p className="mt-3 text-sm leading-6 text-dusk">
-              A narrowly scoped API and signed-webhook pilot with replay, cursors, and delivery health.
-            </p>
-            <Link href="/intelligence-feed" className="mt-5 inline-flex text-sm font-semibold text-clay">Explore the Feed pilot</Link>
-          </article>
-          <article className="rounded-xl border border-stone bg-cream p-6">
-            <p className="font-mono text-xs uppercase tracking-wider text-clay">Enterprise</p>
-            <h2 className="mt-3 text-2xl font-bold text-bark">Embedded Enterprise</h2>
-            <p className="mt-3 text-sm leading-6 text-dusk">
-              White-label and regulated use under a qualified scope, security review, and contracted SLA.
-            </p>
-            <a href="mailto:enterprise@caregist.co.uk?subject=Embedded+Enterprise" className="mt-5 inline-flex text-sm font-semibold text-clay">Discuss a qualified scope</a>
-          </article>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <article className="rounded-xl border border-stone bg-cream p-6">
+              <p className="font-mono text-xs uppercase tracking-wider text-clay">Weekly</p>
+              <h3 className="mt-3 text-2xl font-bold text-bark">Weekly Digest &middot; &pound;150</h3>
+              <p className="mt-3 text-sm leading-6 text-dusk">
+                Four weekly digests covering one England region: new registrations, rating
+                changes, and closures, each linking to the official CQC record.
+              </p>
+              <Link href="/pricing" className="mt-5 inline-flex text-sm font-semibold text-clay">See the Weekly Digest</Link>
+            </article>
+            <article className="rounded-xl border border-stone bg-cream p-6">
+              <p className="font-mono text-xs uppercase tracking-wider text-clay">Territory</p>
+              <h3 className="mt-3 text-2xl font-bold text-bark">Territory Opportunity Brief &middot; &pound;745</h3>
+              <p className="mt-3 text-sm leading-6 text-dusk">
+                A ranked shortlist of 25&ndash;50 priority organisations, plus a brief on territory
+                size, structure, and notable movements, with the evidence behind each priority.
+              </p>
+              <Link href="/pricing/territory" className="mt-5 inline-flex text-sm font-semibold text-clay">Check your territory</Link>
+            </article>
+          </div>
         </div>
       </section>
 

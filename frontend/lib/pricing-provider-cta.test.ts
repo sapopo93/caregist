@@ -32,29 +32,29 @@ describe("pricing page — final catalogue regression", () => {
     );
   });
 
-  it("server-renders paid CTAs from live commercial readiness", () => {
+  it("routes one-offs to scoping and keeps continuing products gated", () => {
+    assert.match(ctaSrc, /mailto:outreach@caregist\.co\.uk/);
+    assert.match(ctaSrc, /ONE_OFF_CONTACT/);
+    assert.match(ctaSrc, /GATED_TIERS/);
+    assert.ok(
+      ctaSrc.indexOf("GATED_TIERS.has(tierKey)") < ctaSrc.indexOf("if (!targetTier)"),
+      "Named roadmap tiers must be disabled before the compatibility contact fallback"
+    );
+  });
+});
+
+
+describe("commercial readiness safeguards", () => {
+  it("requires live readiness as well as environment flags", () => {
     assert.match(src, /loadCommercialCheckoutReadiness\(getServerApiBase\(\)\)/);
     assert.match(src, /RADAR_CHECKOUT_ENABLED === "true" &&\s*checkoutReady/);
     assert.match(src, /export const dynamic = "force-dynamic"/);
-    assert.match(ctaSrc, /if \(!checkoutEnabled \|\| !termsVersion\)/);
-    assert.match(ctaSrc, /Paid checkout unavailable/);
+    assert.match(ctaSrc, /if \(!checkoutEnabled \|\| !termsVersion/);
   });
-
-  it("keeps closed roadmap tiers out of the checkout flow", () => {
-    assert.match(ctaSrc, /const GATED_TIERS = new Set\(/);
-    assert.match(ctaSrc, /"radar-regional"/);
-    assert.match(ctaSrc, /"radar-national"/);
-    assert.ok(
-      ctaSrc.indexOf("if (GATED_TIERS.has(tierKey))") < ctaSrc.indexOf("async function handleUpgrade"),
-      "Roadmap gate must execute before checkout is reachable",
-    );
-  });
-
-  it("keeps Feed and Embedded sales-assisted", () => {
-    assert.ok(
-      ctaSrc.includes("enterprise@caregist.co.uk"),
-      "Sales-assisted mailto was removed"
-    );
-    assert.match(ctaSrc, /if \(!targetTier\)/);
+  it("blocks stopped products before the checkout handler", () => {
+    for (const tier of ["radar-regional", "radar-national", "intelligence-feed-pilot", "embedded-enterprise"]) {
+      assert.ok(ctaSrc.includes(`"${tier}"`));
+    }
+    assert.ok(ctaSrc.indexOf("if (GATED_TIERS.has(tierKey))") < ctaSrc.indexOf("async function handleUpgrade"));
   });
 });

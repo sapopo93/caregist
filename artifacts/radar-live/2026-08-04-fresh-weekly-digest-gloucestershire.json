@@ -1,0 +1,32 @@
+{
+  "events": [
+    {
+      "effective_date": "2026-07-29",
+      "event_type": "rating_published",
+      "local_authority": "Gloucestershire",
+      "location_id": "1-115574419",
+      "location_name": "Nuffield Health Cheltenham Hospital",
+      "new_value": {
+        "publicationDate": "2026-07-29",
+        "rating": "Good"
+      },
+      "postcode": "GL51 6SY",
+      "provider_id": "1-102643516",
+      "provider_name": "Nuffield Health",
+      "region": "South West",
+      "territory": "Gloucestershire"
+    }
+  ],
+  "provenance": {
+    "conversion": "LibreOffice headless ODS->CSV",
+    "edition_date": "2026-08-04",
+    "parsed_rows": 57009,
+    "skipped_rows": 56325,
+    "source_file": "2026-08-04_HSCA_Active_Locations.ods",
+    "source_page": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data",
+    "territory": "Gloucestershire",
+    "territory_rows": 684,
+    "window_end": "2026-08-04",
+    "window_start": "2026-07-29"
+  }
+}

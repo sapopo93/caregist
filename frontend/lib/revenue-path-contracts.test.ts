@@ -32,7 +32,7 @@ describe("revenue path contracts", () => {
     assert.match(styles, /padding-bottom: var\(--cookie-consent-offset, 0px\)/);
   });
 
-  it("states that public prices exclude VAT", () => {
+  it("does not advertise VAT charges while H-Kay is unregistered", () => {
     const publicPricingFiles = [
       "app/api/page.tsx",
       "app/dashboard/page.tsx",
@@ -42,24 +42,29 @@ describe("revenue path contracts", () => {
     ];
     const combined = publicPricingFiles.map(source).join("\n");
 
-    assert.match(combined, /Price excludes VAT|Prices exclude VAT/);
-    assert.doesNotMatch(combined, /not currently VAT registered|VAT is not currently charged/i);
+    assert.doesNotMatch(combined, /\+\s*VAT|exclude(?:s|d)?\s+VAT|ex\s+VAT/i);
+    assert.match(combined, /not currently VAT registered/);
+    assert.match(combined, /VAT is not currently charged/);
   });
 
-  it("shows the one-off brief and keeps roadmap products out of public pricing", () => {
+  it("sells exactly two products at exact prices, plus the free directory", () => {
     const dataPrices = Object.fromEntries(PRICING_LADDER.map(({ tier, price }) => [tier, price]));
     assert.deepEqual(dataPrices, {
+      "Weekly Digest": "£150",
+      "Territory Opportunity Brief": "£745",
       "Free Directory": "£0",
-      "Radar Regional": "Not currently available",
-      "Radar National": "Not currently available",
-      "Intelligence Feed Pilot": "Not currently available",
-      "Embedded Enterprise": "Not currently available",
     });
+    assert.deepEqual(
+      PRICING_LADDER.filter(({ price }) => price !== "£0").map(({ tier }) => tier),
+      ["Weekly Digest", "Territory Opportunity Brief"],
+      "only the Weekly Digest and the Territory Opportunity Brief may carry a price",
+    );
 
-    const pricing = source("app/pricing/page.tsx");
-    assert.match(pricing, /Territory Opportunity Brief/);
-    assert.match(pricing, /£795/);
-    assert.match(pricing, /\/territory-opportunity-brief/);
+    for (const product of PRICING_LADDER.filter(({ price }) => price !== "£0")) {
+      assert.match(product.priceNote, /One-off/);
+      assert.doesNotMatch(product.price, /month|year|week|\//i);
+    }
+    assert.match(source("app/pricing/page.tsx"), /no subscription or automatic renewal/);
 
     const providerPrices = Object.fromEntries(PROVIDER_TIERS.map(({ tier, price }) => [tier, price]));
     assert.deepEqual(providerPrices, {
@@ -67,6 +72,15 @@ describe("revenue path contracts", () => {
       enhanced: "Existing subscription",
       sponsored: "Existing subscription",
     });
+  });
+
+  it("keeps one-off requests out of signup and keeps roadmap products non-purchasable", () => {
+    const pricingCta = source("components/PricingCTA.tsx");
+
+    assert.match(pricingCta, /ONE_OFF_CONTACT/);
+    assert.match(pricingCta, /mailto:outreach@caregist\.co\.uk/);
+    assert.match(pricingCta, /GATED_TIERS\.has\(tierKey\)/);
+    assert.match(pricingCta, /No purchase or paid checkout is available/);
   });
 
   it("carries retained login plan intent to a stable, focused pricing card", () => {

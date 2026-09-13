@@ -1,6 +1,7 @@
 {
   "version": 1,
   "project": {
+    "catalog": "prod",
     "initializedAt": "2026-06-30T11:49:16.322Z",
     "merchantDisplayName": "H-Kay Limited",
     "merchantId": "acct_1T1PuL4mijLHzRRk",

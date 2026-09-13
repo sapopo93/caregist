@@ -1,0 +1,225 @@
+{
+  "schema_version": 1,
+  "generated": "2026-09-08",
+  "purpose": "Wave 1 claim register. Each row records a statement that appears or is proposed in customer-facing surfaces, where it comes from, how it was verified, the wording permitted today, what must not be said, and whether it may be released. Verification values are literal: 'read-in-code' means the file was read this session; 'unverified' means no check has been performed.",
+  "verification_vocabulary": [
+    "read-in-code",
+    "read-in-manifest",
+    "read-in-plan",
+    "unverified"
+  ],
+  "release_vocabulary": [
+    "releasable",
+    "releasable-with-wording",
+    "blocked-pending-gate",
+    "must-not-ship"
+  ],
+  "claims": [
+    {
+      "id": "CLM-1",
+      "product": "territory-opportunity-brief",
+      "statement": "Delivered in 3 working days.",
+      "source": "frontend/lib/caregist-config.ts priceNote",
+      "verification": "unverified",
+      "allowed_wording": "State a delivery period only once one has been agreed with the buyer at scoping. Until then: 'Delivery period agreed at scoping.'",
+      "exclusion": "Do not present 3 working days as an established service level; no delivery has been performed against it.",
+      "release_status": "releasable-with-wording"
+    },
+    {
+      "id": "CLM-2",
+      "product": "territory-opportunity-brief",
+      "statement": "353 locations, 329 providers, 25 selected organisations.",
+      "source": "Completed Birmingham/Solihull pack, via artifacts/sales/2026-09-08-fresh-brief-sales-handoff.md",
+      "verification": "read-in-plan",
+      "allowed_wording": "Quote these figures only labelled as the Birmingham and Solihull sample, with its observation dates.",
+      "exclusion": "Do not present them as typical territory volumes or as evidence of fit for a different buyer or region.",
+      "release_status": "releasable-with-wording"
+    },
+    {
+      "id": "CLM-3",
+      "product": "territory-opportunity-brief",
+      "statement": "Ranked shortlist of 25\u201350 priority organisations, each with a stated reason.",
+      "source": "frontend/lib/caregist-config.ts includes",
+      "verification": "read-in-plan",
+      "allowed_wording": "Releasable once each selection carries a buyer-specific reason and a source. The sample currently carries generic reasons.",
+      "exclusion": "Do not imply the reasons are tailored to the reader's question before scoping has happened.",
+      "release_status": "blocked-pending-gate"
+    },
+    {
+      "id": "CLM-4",
+      "product": "market-movement-report",
+      "statement": "Current edition available immediately after the delivery gates pass.",
+      "source": "frontend/lib/caregist-config.ts priceNote",
+      "verification": "read-in-code",
+      "allowed_wording": "Already correctly conditional. Keep the gate clause attached; it may not be shortened to 'available immediately'.",
+      "exclusion": "No unconditional availability claim until an edition has actually been produced and delivered in a test.",
+      "release_status": "releasable"
+    },
+    {
+      "id": "CLM-5",
+      "product": "market-movement-report",
+      "statement": "20\u201335 page current-edition report covering registrations, closures and rating movements.",
+      "source": "frontend/lib/caregist-config.ts includes",
+      "verification": "unverified",
+      "allowed_wording": "Describe as the planned edition scope until one checked edition exists.",
+      "exclusion": "Do not state a page count or coverage as delivered fact before an edition is produced. Source comparability across editions has not been established.",
+      "release_status": "blocked-pending-gate"
+    },
+    {
+      "id": "CLM-6",
+      "product": "radar-founding-buyer-pilot",
+      "statement": "Four weekly digest deliveries for \u00a3150.",
+      "source": "Founder decision 2026-09-07; three recorded contacts",
+      "verification": "read-in-plan",
+      "allowed_wording": "Honour exactly as offered to the three recorded contacts.",
+      "exclusion": "No new pilot sends without a fresh decision. Do not rename it a one-provider or five-provider audit. 'No verified changes' may never be rendered as 'data unavailable', and vice versa.",
+      "release_status": "releasable"
+    },
+    {
+      "id": "CLM-7",
+      "product": "radar-regional",
+      "statement": "10 saved views, 90-day canonical event export, 2 organization users, email and in-app delivery.",
+      "source": "frontend/lib/caregist-config.ts includes",
+      "verification": "unverified",
+      "allowed_wording": "Present as the intended scope of a product not yet available.",
+      "exclusion": "These limits have not been tested. Do not present them as working features, and do not show a counter, freshness badge or match count on any Radar surface that is not derived from an actual completed run.",
+      "release_status": "blocked-pending-gate"
+    },
+    {
+      "id": "CLM-8",
+      "product": "radar-national",
+      "statement": "Everything in Radar Regional across all England, 365-day export, 5 users, structured onboarding.",
+      "source": "frontend/lib/caregist-config.ts includes",
+      "verification": "unverified",
+      "allowed_wording": "Present as intended scope only.",
+      "exclusion": "National coverage is not established by a regional sample. Onboarding does not exist.",
+      "release_status": "blocked-pending-gate"
+    },
+    {
+      "id": "CLM-9",
+      "product": "intelligence-feed-pilot",
+      "statement": "Timestamped, signed webhooks; stable cursors; idempotent replay; delivery health.",
+      "source": "frontend/lib/caregist-config.ts includes",
+      "verification": "unverified",
+      "allowed_wording": "Documentation may describe the intended contract, with every schema example labelled illustrative.",
+      "exclusion": "Signing, replay and delivery health are unimplemented as far as this register can show. Do not describe them in the present tense.",
+      "release_status": "blocked-pending-gate"
+    },
+    {
+      "id": "CLM-10",
+      "product": "embedded-enterprise",
+      "statement": "Contracted SLA, support and deployment scope; procurement, security and data-processing review.",
+      "source": "frontend/lib/caregist-config.ts includes",
+      "verification": "unverified",
+      "allowed_wording": "Describe as what a future engagement would require, not what is offered.",
+      "exclusion": "Appearing in copy is not evidence that a security review process, SLA or white-label delivery exists.",
+      "release_status": "blocked-pending-gate"
+    },
+    {
+      "id": "CLM-11",
+      "product": "free-directory",
+      "statement": "Browse profiles, ratings, source dates and official links.",
+      "source": "frontend/lib/caregist-config.ts includes",
+      "verification": "unverified",
+      "allowed_wording": "Releasable once identity, category, geography and rating rendering are checked against records.",
+      "exclusion": "A colour badge must not imply current compliance. Blank rating, Not Rated and not-inspected are three distinct states.",
+      "release_status": "blocked-pending-gate"
+    },
+    {
+      "id": "CLM-12",
+      "product": "all",
+      "statement": "CareGist is independent and is not affiliated with or endorsed by the Care Quality Commission.",
+      "source": "frontend/lib/caregist-config.ts CQC_INDEPENDENCE_LINE",
+      "verification": "read-in-code",
+      "allowed_wording": "Carry on every product surface that displays CQC-derived data.",
+      "exclusion": "None. This line must not be dropped during visual polishing.",
+      "release_status": "releasable"
+    },
+    {
+      "id": "CLM-13",
+      "product": "all",
+      "statement": "Roadmap products present a disabled control and the line 'No purchase or paid checkout is available for this product.'",
+      "source": "frontend/components/PricingCTA.tsx",
+      "verification": "read-in-code",
+      "allowed_wording": "Accurate for the pricing card. The GATED_TIERS branch returns a disabled button before any checkout branch is reachable, so a roadmap tier cannot transition to payment from this component.",
+      "exclusion": "This was verified for the pricing card only. Other entry points, including /signup?plan=, have not been audited and no site-wide 'no checkout path exists' claim may be made yet.",
+      "release_status": "releasable-with-wording"
+    },
+    {
+      "id": "CLM-14",
+      "product": "all",
+      "statement": "Statutory, forensic, audited and clinical framing carried by the supplied design reference.",
+      "source": "/Users/user/Downloads/DESIGN-caregist.md",
+      "verification": "read-in-code",
+      "allowed_wording": "Adopt the visual system; describe the work as checked comparisons of a public register.",
+      "exclusion": "Remove this vocabulary from customer-facing copy. No invented team, byline, signature, testimonial, fulfilment status or demand metric.",
+      "release_status": "must-not-ship"
+    },
+    {
+      "id": "CLM-15",
+      "product": "all",
+      "statement": "VAT treatment and public totals.",
+      "source": "artifacts/sales/2026-09-08-all-products-polish-plan.md",
+      "verification": "unverified",
+      "allowed_wording": "Keep VAT recorded as unknown in internal preparation.",
+      "exclusion": "Do not compute or display a public total from an assumed VAT position.",
+      "release_status": "blocked-pending-gate"
+    },
+    {
+      "id": "CLM-16",
+      "product": "free-directory / dashboard",
+      "statement": "Free tier 'Built for evaluation: browse providers, test the data, and monitor one provider.' shown alongside limit summary 'Directory access'.",
+      "source": "frontend/app/dashboard/page.tsx:255-257; frontend/lib/caregist-config.ts PLAN_LIMIT_SUMMARY.free",
+      "verification": "read-in-code",
+      "allowed_wording": "Describe only what the directory does. The two strings must agree.",
+      "exclusion": "'Monitor one provider' is a monitoring claim that the free limit summary ('Directory access') contradicts. It must not ship until a monitoring capability on the free tier is verified to exist.",
+      "release_status": "must-not-ship"
+    },
+    {
+      "id": "CLM-17",
+      "product": "radar-regional / radar-national",
+      "statement": "Dashboard describes 'two verified launch signals', saved views and event export in the present tense as tier features.",
+      "source": "frontend/app/dashboard/page.tsx:262-273",
+      "verification": "read-in-code",
+      "allowed_wording": "None in the present tense while these products are held closed.",
+      "exclusion": "Same gate as CLM-7 and CLM-8. Copy in an entitlement panel is not evidence the ingest, dedup, saved views or export exist.",
+      "release_status": "blocked-pending-gate"
+    }
+  ],
+  "conflicts": [
+    {
+      "id": "CONF-1",
+      "summary": "Live Stripe product and price IDs exist for radar-regional (\u00a3299/mo), radar-national (\u00a3799/mo) and intelligence-feed (\u00a36,000/yr), and deploy/stripe-price-manifest.json sets checkout_enabled: true, while the founder decision holds all three closed and the public catalogue shows 'Request access \u00b7 no paid checkout'.",
+      "verification": "read-in-manifest; read-in-code",
+      "current_mitigation": "The pricing card's GATED_TIERS branch returns a disabled control before the checkout call, so these prices are not reachable from that surface (CLM-13).",
+      "residual_risk": "The mitigation is presentational. Live prices remain purchasable by anyone who reaches the billing endpoint another way; that has not been audited.",
+      "action": "Founder decision required: archive the live prices, or confirm they stay and audit every route into /api/v1/billing/checkout. Out of scope for visual polishing.",
+      "release_status": "blocked-pending-gate"
+    },
+    {
+      "id": "CONF-2",
+      "summary": "The supplied design reference contains two disagreeing palettes.",
+      "verification": "read-in-code",
+      "current_mitigation": "Resolved in artifacts/product-polish/DESIGN.md; the prose palette wins because every component spec depends on it.",
+      "residual_risk": "None once implementation reads DESIGN.md rather than the reference file.",
+      "action": "Closed.",
+      "release_status": "releasable"
+    },
+    {
+      "id": "CONF-3",
+      "summary": "app/dashboard/page.tsx builds its free-tier panel from the legacy 'free' keys: cta 'Compare Radar plans' and next-step 'Radar Regional turns verified CQC changes into an evidence-linked team workflow.' Both steer users toward a product the founder decision holds closed. The free branch is also the fallback (tierInfo[tier] || tierInfo.free), so any unrecognised tier renders it too.",
+      "verification": "read-in-code",
+      "current_mitigation": "None. This is a live reader at app/dashboard/page.tsx:254-259, not dead configuration.",
+      "residual_risk": "Logged-in free users, and any user on an unrecognised tier, are pointed at Radar as though it were purchasable.",
+      "action": "Wave 3: repoint the free-tier CTA at the two launch products (Brief lead, Report second) and rewrite PLAN_NEXT_STEP.free. Do not simply delete the key while the fallback depends on it.",
+      "release_status": "blocked-pending-gate"
+    }
+  ],
+  "wave1_check": {
+    "every_current_product_represented": true,
+    "archived_excluded_from_new_sales": true,
+    "no_unsupported_claim_upgraded_to_verified": true,
+    "price_status_wording_aligned_to_founder_decision": true,
+    "note": "Verification values reflect reading files this session only. No live-state, delivery or capability testing was performed and none is claimed."
+  }
+}

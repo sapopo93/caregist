@@ -26,8 +26,16 @@ LEGACY_DUPLICATE_MIGRATIONS = {
 # Migration 047 was approved, applied, and frozen before this repository-wide
 # checker began running in CI. Keep the exception exact and filename-scoped so
 # new destructive migrations still require an explicit approval environment.
+#
+# Migration 059 (care_providers.phone VARCHAR(20) -> VARCHAR(50)) was approved
+# by the founder on 2026-09-13: a same-type widen of a column mirroring
+# upstream CQC free text, backed by the 2026-09-03 reconciliation-batch
+# failure documented in the migration itself, with a down-migration present.
 FROZEN_APPROVED_DESTRUCTIVE_MIGRATIONS = frozenset(
-    {"047_expand_analytics_provider_reference.sql"}
+    {
+        "047_expand_analytics_provider_reference.sql",
+        "059_widen_provider_phone.sql",
+    }
 )
 
 DESTRUCTIVE_SQL_RE = re.compile(
