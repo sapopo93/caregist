@@ -1,6 +1,5 @@
 """Determinism re-run proof: hash existing artifacts, regenerate to a fresh dir, compare."""
 import hashlib
-import shutil
 import subprocess
 import sys
 from datetime import datetime, timezone

@@ -112,7 +112,7 @@ def main() -> int:
         if prepare is not None:
             report(prepare)
         if prepare is not None and prepare.returncode != 0:
-            print(f"\nPrepare failed; no batch was opened. Nothing to clean up.", file=sys.stderr)
+            print("\nPrepare failed; no batch was opened. Nothing to clean up.", file=sys.stderr)
             return prepare.returncode
 
         # Each shard takes its own per-shard advisory lock

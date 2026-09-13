@@ -33,7 +33,7 @@ for region in candidate_regions:
 # Also: which candidate-region LAs are empty
 print()
 print("Empty LAs in candidate regions (rows but zero events)")
-for region in candidate_regions:
+for _region in candidate_regions:
     empty = sorted(
         la for la, b in d["local_authorities"].items() if b["new_registration"] + b["rating_published"] == 0
     )

@@ -18,7 +18,7 @@ import json
 import sys
 import tempfile
 from collections import defaultdict
-from datetime import date, timedelta
+from datetime import timedelta
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent

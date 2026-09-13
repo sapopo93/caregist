@@ -26,7 +26,6 @@ from __future__ import annotations
 
 import csv
 import json
-import re
 import subprocess
 import sys
 import tempfile
@@ -236,7 +235,7 @@ def render_markdown(
     lines.append("")
     lines.append("## Where the data comes from")
     lines.append("")
-    lines.append(f"- **Source**: CQC public register, \"Care directory with filters\" monthly file.")
+    lines.append("- **Source**: CQC public register, \"Care directory with filters\" monthly file.")
     lines.append(f"- **Edition date**: {edition_date.isoformat()} (file: {ods_path.name}).")
     lines.append(f"- **Official page**: {CQC_DATA_PAGE}")
     lines.append(f"- **Window**: {window_start.isoformat()} to {window_end.isoformat()} inclusive (latest seven days of the edition).")
