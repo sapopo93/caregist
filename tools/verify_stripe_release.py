@@ -250,13 +250,10 @@ def run_checks(
         else:
             price_values.append(value)
 
-    # No test-mode Stripe Product/Price has ever been created for Territory
-    # Opportunity Brief (see deploy/stripe-price-manifest.json's status_note),
-    # so "test" mode genuinely has zero deployment identifiers, Products, and
-    # Prices to find; "live" mode expects the one Product and one saleable
-    # Price that exist there.
-    expected_product_count = 1 if mode == "live" else 0
-    expected_price_count = 1 if mode == "live" else 0
+    # A saleable Brief requires a real Product and Price in both environments.
+    # Missing test objects must fail closed, never pass as an empty catalogue.
+    expected_product_count = 1
+    expected_price_count = 1
     expected_identifier_count = expected_product_count + expected_price_count
     checks.append(
         (
