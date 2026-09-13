@@ -5,6 +5,7 @@ import { canonicalizeServiceCounts, canonicalServices, resolveServiceAliases } f
 import { createPool } from "@vercel/postgres";
 
 import {
+  type DirectoryOpportunity,
   DEFAULT_RATING_OPTIONS,
   DEFAULT_REGION_OPTIONS,
   DEFAULT_SERVICE_TYPE_OPTIONS,
