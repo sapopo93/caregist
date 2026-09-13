@@ -109,3 +109,15 @@ async def stripe_webhook():
     assert route_ok is True
     assert events == {"checkout.session.expired"}
     assert "checkout.session.completed" not in events
+
+
+def test_missing_test_objects_fail_identifier_gates_even_with_empty_environment(tmp_path):
+    manifest = json.loads(verifier.DEFAULT_MANIFEST.read_text(encoding='utf-8'))
+    manifest['products']['territory-opportunity-brief']['stripe']['test'] = {
+        'product_id': None, 'price_id': None,
+    }
+    path = tmp_path / 'missing-test-objects.json'
+    path.write_text(json.dumps(manifest))
+    checks = verifier.run_checks({}, mode='test', manifest_path=path)
+    failed = {name for name, passed, _ in checks if not passed}
+    assert {'STRIPE_DEPLOYMENT_IDS_COMPLETE', 'STRIPE_PRODUCT_IDS_UNIQUE', 'STRIPE_PRICE_IDS_UNIQUE'} <= failed
