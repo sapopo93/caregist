@@ -24,20 +24,20 @@ def test_exact_repository_contract_passes_offline_verification():
     assert all(passed for _, passed, _ in checks)
 
 
-def test_wrong_mode_duplicate_price_and_local_url_fail_closed():
-    values = valid_test_environment()
-    values["STRIPE_SECRET_KEY"] = "sk_live_wrong_mode"
+def test_wrong_mode_local_url_and_wrong_price_fail_closed():
+    values = valid_test_environment(mode="live")
+    values["STRIPE_SECRET_KEY"] = "sk_test_wrong_mode"
     values["APP_URL"] = "https://localhost:3000"
-    values["STRIPE_PRICE_RADAR_NATIONAL"] = values["STRIPE_PRICE_RADAR_REGIONAL"]
+    values["STRIPE_PRICE_TERRITORY_BRIEF"] = "price_not_the_approved_one"
 
-    failed = {name for name, passed, _ in verifier.run_checks(values, mode="test") if not passed}
+    failed = {name for name, passed, _ in verifier.run_checks(values, mode="live") if not passed}
 
-    assert {"STRIPE_SECRET_KEY", "APP_URL", "STRIPE_PRICE_IDS_UNIQUE"} <= failed
+    assert {"STRIPE_SECRET_KEY", "APP_URL", "STRIPE_PRICE_TERRITORY_BRIEF"} <= failed
 
 
 def test_modified_manifest_fails_exact_approved_catalogue_check(tmp_path):
     manifest = json.loads(verifier.DEFAULT_MANIFEST.read_text(encoding="utf-8"))
-    manifest["products"]["radar-national"]["unit_amount"] = 1
+    manifest["products"]["territory-opportunity-brief"]["unit_amount"] = 1
     manifest_path = tmp_path / "manifest.json"
     manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
 
@@ -46,7 +46,7 @@ def test_modified_manifest_fails_exact_approved_catalogue_check(tmp_path):
     assert (
         "APPROVED_CATALOGUE_MANIFEST",
         False,
-        "exact approved catalogue 2026-08 with checkout fail-closed",
+        "exact approved catalogue 2026-09-two-product with checkout fail-closed",
     ) in checks
 
 
@@ -58,7 +58,7 @@ def test_live_mode_requires_live_catalogue_ids():
 
 def test_embedded_enterprise_has_no_saleable_price():
     manifest = json.loads(verifier.DEFAULT_MANIFEST.read_text(encoding="utf-8"))
-    embedded = manifest["products"]["embedded-enterprise"]
+    embedded = manifest["retired_products"]["embedded-enterprise"]
 
     assert embedded["environment_price"] is None
     assert embedded["stripe"]["test"]["price_id"] is None
