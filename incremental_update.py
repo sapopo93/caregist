@@ -1685,7 +1685,11 @@ def _finalize_batch(args: argparse.Namespace, conn, cur) -> int:
         (f"reconciliation_shard_failed:{batch_id}:%",),
     )
     conn.commit()
-    print(f"Finalized batch {batch_id}: active={active_after}, deactivated={deactivated}")
+    print(
+        f"Finalized batch {batch_id}: active={active_after}, deactivated={deactivated}, "
+        f"inactive_in_manifest={inactive_manifest_covered} "
+        f"({inactive_manifest_covered / location_count:.2%} of {location_count} manifest locations)"
+    )
     return 0
 
 
