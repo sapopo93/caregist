@@ -1505,6 +1505,38 @@ def _repair_missing_slugs(cur) -> None:
         cur.execute("UPDATE care_providers SET slug = %s WHERE id = %s", (slug, location_id))
 
 
+
+def _attributed_source_deactivations(cur, location_ids: set[str]) -> set[str]:
+    """Return manifest locations whose latest attributed CQC change was a deregistration.
+
+    ``care_providers.status`` has two legitimate writers. The reconciliation
+    shards always assert ``ACTIVE`` for manifest members (directory membership is
+    the authoritative source), while the poll refresh derives status from the
+    detailed ``registrationStatus`` field, which can deregister a location that
+    the snapshot still lists. A manifest location whose most recent ``cqc_api``
+    status change was to ``INACTIVE`` is therefore attributed evidence, not a
+    reconciliation failure. A manifest location that is not active without such
+    evidence still fails closed.
+    """
+    if not location_ids:
+        return set()
+    cur.execute(
+        """
+        SELECT location_id FROM (
+            SELECT DISTINCT ON (location_id) location_id, new_value
+            FROM trusted_event_ledger
+            WHERE event_type = 'status_changed'
+              AND source = 'cqc_api'
+              AND location_id = ANY(%s)
+            ORDER BY location_id, created_at DESC, id DESC
+        ) AS latest_status_change
+        WHERE UPPER(COALESCE(new_value #>> '{}', '')) = 'INACTIVE'
+        """,
+        (sorted(location_ids),),
+    )
+    return {str(row[0]) for row in cur.fetchall()}
+
+
 def _finalize_batch(args: argparse.Namespace, conn, cur) -> int:
     batch_id = _parse_batch_id(args.batch_id)
     manifest = load_snapshot_manifest(_require_manifest_path(args.snapshot_manifest))
@@ -1558,12 +1590,23 @@ def _finalize_batch(args: argparse.Namespace, conn, cur) -> int:
     active_before, pipeline_run_id = int(batch[0]), int(batch[1])
     if active_before and max(active_before - location_count, 0) / active_before > MAX_ACTIVE_COUNT_DROP_RATIO:
         raise ChangesFetchError("Batch finalization refused: active-count drop exceeds the safety threshold.")
-    cur.execute("SELECT COUNT(*) FROM care_providers WHERE id = ANY(%s) AND UPPER(status) = 'ACTIVE'", (ids,))
-    active_covered = int(cur.fetchone()[0])
-    if active_covered != location_count:
+    cur.execute(
+        "SELECT id FROM care_providers WHERE id = ANY(%s) AND UPPER(status) <> 'ACTIVE'",
+        (ids,),
+    )
+    inactive_manifest_ids = {str(row[0]) for row in cur.fetchall()}
+    attributed_inactive = _attributed_source_deactivations(cur, inactive_manifest_ids)
+    unexplained = inactive_manifest_ids - attributed_inactive
+    if unexplained:
         raise ChangesFetchError(
-            f"Batch finalization refused: {location_count - active_covered} manifest locations are not active."
+            f"Batch finalization refused: {len(unexplained)} manifest locations are not active "
+            "and have no attributed CQC source change."
         )
+    if attributed_inactive and len(attributed_inactive) / location_count > MAX_ACTIVE_COUNT_DROP_RATIO:
+        raise ChangesFetchError(
+            "Batch finalization refused: attributed source deactivations exceed the safety threshold."
+        )
+    expected_active = location_count - len(inactive_manifest_ids)
 
     if args.dry_run:
         print(f"DRY RUN — batch {batch_id} is finalizable; no deactivations or watermarks were written.")
@@ -1599,8 +1642,11 @@ def _finalize_batch(args: argparse.Namespace, conn, cur) -> int:
     _repair_missing_slugs(cur)
     cur.execute("SELECT COUNT(*) FROM care_providers WHERE UPPER(status) = 'ACTIVE'")
     active_after = int(cur.fetchone()[0])
-    if active_after != location_count:
-        raise ChangesFetchError("Final active-location count does not match the authoritative manifest.")
+    if active_after != expected_active:
+        raise ChangesFetchError(
+            "Final active-location count does not match the authoritative manifest "
+            "after accounting for attributed source deactivations."
+        )
     inserted = sum(int(row[4]) for row in shards)
     updated = sum(int(row[5]) for row in shards)
     cur.execute(

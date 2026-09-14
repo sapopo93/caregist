@@ -14,6 +14,7 @@ from incremental_update import (
     _fetch_all_cqc_location_stubs,
     _finalize_batch,
     _insert_trusted_provider_event,
+    _attributed_source_deactivations,
     _ensure_no_active_reconciliation_batch,
     _prepare_batch,
     _project_rating_change,
@@ -580,6 +581,118 @@ def test_finalizer_fails_closed_when_shard_coverage_is_incomplete(tmp_path):
         _finalize_batch(args, Mock(), cursor)
 
     assert all(str(call.args[0]).lstrip().upper().startswith("SELECT") for call in cursor.execute.call_args_list)
+
+
+def _finalize_fixture(tmp_path, location_count=100, shard_count=2):
+    location_ids = frozenset(f"1-{10000 + index}" for index in range(location_count))
+    snapshot = CqcActiveSnapshot(
+        source_uri="https://www.cqc.org.uk/current.csv",
+        source_published_at="2026-08-01",
+        retrieved_at=datetime(2026, 8, 2, tzinfo=timezone.utc),
+        checksum_sha256="a" * 64,
+        location_ids=location_ids,
+    )
+    batch_id = uuid.UUID("12345678-1234-5678-9234-567812345678")
+    manifest = build_snapshot_manifest(snapshot, batch_id, shard_count)
+    partitions = partition_location_ids(sorted(location_ids), shard_count)
+    shards = [
+        (
+            index,
+            "completed",
+            len(partition),
+            len(partition),
+            0,
+            len(partition),
+            0,
+            0,
+            manifest["manifestChecksumSha256"],
+        )
+        for index, partition in enumerate(partitions)
+    ]
+    return manifest, batch_id, shards
+
+
+def _finalize_cursor(manifest, shards, fetchall_sequence):
+    cursor = Mock()
+    cursor.fetchone.return_value = (
+        len(shards),
+        int(manifest["locationCount"]),
+        manifest["manifestChecksumSha256"],
+        manifest["sourceChecksumSha256"],
+    )
+    cursor.fetchall.side_effect = [shards, *fetchall_sequence]
+    return cursor
+
+
+def _finalize_args(tmp_path, manifest, batch_id, *, dry_run=True):
+    manifest_path = tmp_path / "manifest.json"
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    return SimpleNamespace(
+        batch_id=str(batch_id),
+        snapshot_manifest=str(manifest_path),
+        dry_run=dry_run,
+    )
+
+
+def test_attributed_source_deactivations_selects_latest_change_per_location():
+    cursor = Mock()
+    cursor.fetchall.return_value = [("1-10000",)]
+
+    result = _attributed_source_deactivations(cursor, {"1-10000", "1-10001"})
+
+    assert result == {"1-10000"}
+    statement, params = cursor.execute.call_args_list[0].args
+    sql = str(statement)
+    assert sql.lstrip().upper().startswith("SELECT")
+    assert "DISTINCT ON (location_id)" in sql
+    assert "ORDER BY location_id, created_at DESC" in sql
+    assert "source = 'cqc_api'" in sql
+    assert params == (["1-10000", "1-10001"],)
+
+
+def test_attributed_source_deactivations_does_not_query_without_candidates():
+    cursor = Mock()
+
+    assert _attributed_source_deactivations(cursor, set()) == set()
+    assert cursor.execute.call_count == 0
+
+
+def test_finalizer_skips_attribution_when_every_manifest_location_is_active(tmp_path, capsys):
+    manifest, batch_id, shards = _finalize_fixture(tmp_path)
+    cursor = _finalize_cursor(manifest, shards, [[]])
+
+    assert _finalize_batch(_finalize_args(tmp_path, manifest, batch_id), Mock(), cursor) == 0
+    assert "DRY RUN" in capsys.readouterr().out
+
+
+def test_finalizer_refuses_inactive_manifest_location_without_attribution(tmp_path):
+    manifest, batch_id, shards = _finalize_fixture(tmp_path)
+    cursor = _finalize_cursor(manifest, shards, [[("1-10000",)], []])
+
+    with pytest.raises(ChangesFetchError, match="no attributed CQC source change"):
+        _finalize_batch(_finalize_args(tmp_path, manifest, batch_id), Mock(), cursor)
+
+    assert all(
+        str(call.args[0]).lstrip().upper().startswith("SELECT")
+        for call in cursor.execute.call_args_list
+    )
+
+
+def test_finalizer_accepts_attributed_source_deactivation(tmp_path, capsys):
+    manifest, batch_id, shards = _finalize_fixture(tmp_path)
+    cursor = _finalize_cursor(manifest, shards, [[("1-10000",)], [("1-10000",)]])
+
+    assert _finalize_batch(_finalize_args(tmp_path, manifest, batch_id), Mock(), cursor) == 0
+    assert "DRY RUN" in capsys.readouterr().out
+
+
+def test_finalizer_refuses_mass_attributed_deactivations(tmp_path):
+    manifest, batch_id, shards = _finalize_fixture(tmp_path)
+    inactive = [(f"1-{10000 + index}",) for index in range(20)]
+    cursor = _finalize_cursor(manifest, shards, [inactive, inactive])
+
+    with pytest.raises(ChangesFetchError, match="exceed the safety threshold"):
+        _finalize_batch(_finalize_args(tmp_path, manifest, batch_id), Mock(), cursor)
 
 
 def test_fetch_changes_raises_on_non_200_response():
