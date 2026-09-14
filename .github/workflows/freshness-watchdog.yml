@@ -90,6 +90,12 @@ jobs:
       - name: Check freshness and notify operations
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          # api.config runs settings.validate_production() at import time, and
+          # DATABASE_URL here points at production, so app_url is validated too.
+          # Without this the watchdog died on the import with
+          # "FATAL: APP_URL must be a public HTTPS origin ..." and never checked
+          # anything. Same origin the other production workflows use.
+          APP_URL: https://caregist.co.uk
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           ENQUIRY_FROM_EMAIL: ${{ secrets.ENQUIRY_FROM_EMAIL }}
           PIPELINE_ALERT_EMAIL: ops@caregist.co.uk
