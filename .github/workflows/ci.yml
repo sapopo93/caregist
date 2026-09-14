@@ -123,6 +123,18 @@ jobs:
           --set ON_ERROR_STOP=1
           --command "CREATE ROLE caregist_test LOGIN PASSWORD 'caregist_test' NOCREATEDB NOSUPERUSER NOBYPASSRLS"
 
+      - name: Finalize guard discrimination (real Postgres)
+        # The unit suite stubs the cursor and substring-matches the guard SQL, so
+        # swapping the ACTIVE/INACTIVE FILTER branches still passes it (verified:
+        # 7 passed before and after the inversion). This runs the real
+        # _finalize_batch against the real schema and fails on that inversion.
+        env:
+          CAREGIST_TEST_ADMIN_DATABASE_URL: postgresql://caregist:caregist@localhost:5432/postgres
+          CAREGIST_TEST_DATABASE_URL: postgresql://caregist_test:caregist_test@localhost:5432/postgres
+          API_MASTER_KEY: ci_test_master_key
+          SUPPORT_INTERNAL_TOKEN: ci_test_support_token
+        run: pytest tests/integration/test_finalize_guard_pg.py -v
+
       - name: Replay init.sql + every migration, assert invariants
         env:
           CAREGIST_TEST_ADMIN_DATABASE_URL: postgresql://caregist:caregist@localhost:5432/postgres
