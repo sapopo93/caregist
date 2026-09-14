@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """Verify CareGist reconciliation gates against the production database.
 
-Read-only — four SELECT queries, zero mutations.
-Exits 0 when all applicable gates pass.
+Read-only — five SELECT queries, zero mutations.
+Exits 0 when all applicable gates pass. The fifth block (divergence) is
+report-only observability: it is reported for a human and never fails the run.
 
 Usage:
     python tools/verify_reconciliation_gates.py
     DATABASE_URL=postgres://... python tools/verify_reconciliation_gates.py
+    python tools/verify_reconciliation_gates.py --divergence-window-days 7
 """
 
 from __future__ import annotations
@@ -19,6 +21,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import asyncpg
+
+# Lookback for the report-only divergence observation. Bounded so that a single
+# historical batch cannot colour every later run forever; this is a reporting
+# window, not a safety threshold.
+DIVERGENCE_WINDOW_DAYS = 30
 
 
 def _resolve_database_url(cli_arg: str | None = None) -> str:
@@ -36,7 +43,117 @@ def _resolve_database_url(cli_arg: str | None = None) -> str:
     raise RuntimeError("No DATABASE_URL found. Pass --database-url or set the env var.")
 
 
-async def _run_gates(database_url: str) -> dict:
+def _divergence_report(rows, window_days: int) -> dict:
+    """Summarise reconciliation-batch deactivation volume as information only.
+
+    REPORT-ONLY: the returned gate always has ``passed: True`` and never carries
+    issues. It asserts NO pass/fail threshold, deliberately:
+
+    * The finalize guard in ``incremental_update._finalize_batch`` already
+      refuses any batch whose manifest-scoped inactivity
+      (``inactive_manifest_covered / location_count``) exceeds
+      ``MAX_ACTIVE_COUNT_DROP_RATIO``. A pass/fail alarm measured on the same
+      population of completed batches can therefore never fire on one.
+    * The ratio reported here is ESTATE-WIDE (``active_records_before`` ->
+      ``active_records_after`` over the whole care_providers table, which also
+      counts rows deactivated outside the manifest) while the guard's bound is
+      MANIFEST-SCOPED over ``location_count``. Comparing the two raises false
+      positives on batches the guard correctly accepted: 50 of 1000 manifest
+      locations inactive is exactly 5.00% (the guard accepts it), then 52 rogue
+      rows are deactivated as well, and the estate-wide figures read
+      1002 -> 950 — a 5.19% drop that looks like a breach and is not one.
+    * The estate's real per-batch deactivation volumes have never been measured,
+      so any tighter numeric threshold would be a guess.
+
+    THE OPERATIONAL THRESHOLD MUST BE DERIVED FROM MEASURED PRODUCTION DATA,
+    NOT GUESSED. Once a run of real batches has been observed, promote this
+    block to a gate with a threshold justified by that measurement.
+
+    Two half-written states are surfaced rather than filtered away, so a crash,
+    a bug or a direct edit cannot hide in the gap between the guard writing a
+    row and this report reading it:
+
+    * a completed batch whose ``active_records_after`` is NULL is reported as
+      unmeasured (the pre-change query dropped these rows entirely);
+    * a completed batch whose ``completed_at`` is NULL is reported but excluded
+      from the window maximum, instead of being silently dropped by the window
+      comparison's NULL semantics.
+    """
+    batches = []
+    window_ratios: list[float] = []
+    unmeasured: dict[str, str] = {}
+    undated: list[str] = []
+    for batch in rows:
+        before = batch["active_records_before"]
+        after = batch["active_records_after"]
+        batch_id = str(batch["id"])
+        in_window = batch["completed_at"] is not None
+        drop = None
+        ratio = None
+        if after is None:
+            unmeasured[batch_id] = "active_records_after is NULL"
+        elif before is None or int(before) <= 0:
+            unmeasured[batch_id] = f"active_records_before is {before!r}, so there is no denominator"
+        else:
+            drop = max(int(before) - int(after), 0)
+            ratio = round(drop / int(before), 6)
+            if in_window:
+                window_ratios.append(ratio)
+        if not in_window:
+            undated.append(batch_id)
+        batches.append(
+            {
+                "batch_id": batch_id,
+                "completed_at": str(batch["completed_at"]) if in_window else None,
+                "location_count": batch["location_count"],
+                "active_records_before": before,
+                "active_records_after": after,
+                "records_deactivated": batch["records_deactivated"],
+                "active_drop": drop,
+                "active_drop_ratio": ratio,
+                "measured": drop is not None,
+                "in_window": in_window,
+            }
+        )
+
+    observations = [
+        f"completed reconciliation batch {batch_id} could not be measured ({reason})"
+        for batch_id, reason in unmeasured.items()
+    ]
+    observations += [
+        f"completed reconciliation batch {batch_id} has no completed_at: reported but not "
+        "counted towards the window maximum"
+        for batch_id in undated
+    ]
+    observations.append(
+        "estate-wide drop ratio, not comparable to the guard's manifest-scoped bound; "
+        "no pass/fail threshold is asserted here — derive one from measured production data"
+    )
+
+    return {
+        # Report-only: this block never fails the run. See the docstring above.
+        "passed": True,
+        "report_only": True,
+        "values": {
+            "window_days": window_days,
+            "reconciliation_batches_checked": len(batches),
+            "batches_with_a_measured_drop": sum(1 for batch in batches if batch["measured"]),
+            "batches_unmeasured": unmeasured,
+            "batches_without_completed_at": undated,
+            "max_active_drop_ratio_in_window": max(window_ratios) if window_ratios else None,
+            "batches": batches,
+            "note": (
+                "no completed reconciliation batches in the window"
+                if not batches
+                else "per-batch deactivation volume and estate-wide drop ratio (report-only, no threshold)"
+            ),
+        },
+        "issues": [],
+        "observations": observations,
+    }
+
+
+async def _run_gates(database_url: str, divergence_window_days: int = DIVERGENCE_WINDOW_DAYS) -> dict:
     conn = await asyncpg.connect(database_url)
     try:
         results = {}
@@ -150,6 +267,39 @@ async def _run_gates(database_url: str) -> dict:
             "issues": watermark_issues,
         }
 
+        # ── DIVERGENCE observability (REPORT-ONLY) ──────────────
+        # reconciliation_batches.active_records_before/after record what the
+        # finalize phase saw and wrote. Nothing else surfaces those figures, so
+        # report them per batch — and the worst of them — for a human reading
+        # the evidence file. See _divergence_report for why this asserts no
+        # threshold and why the window is bounded.
+        #
+        # Batches with a NULL completed_at are included explicitly rather than
+        # being dropped by the window comparison's NULL semantics, so a
+        # half-written completed batch cannot disappear from the report.
+        divergence = await conn.fetch(
+            """
+            SELECT b.id,
+                   b.location_count,
+                   b.active_records_before,
+                   b.active_records_after,
+                   b.records_deactivated,
+                   b.completed_at
+            FROM reconciliation_batches AS b
+            JOIN pipeline_runs AS p ON p.id = b.pipeline_run_id
+            WHERE b.status = 'completed'
+              AND p.run_type = 'reconciliation'
+              AND p.status = 'completed'
+              AND (
+                    b.completed_at >= NOW() - ($1 * INTERVAL '1 day')
+                    OR b.completed_at IS NULL
+                  )
+            ORDER BY b.completed_at DESC NULLS LAST
+            """,
+            divergence_window_days,
+        )
+        results["divergence"] = _divergence_report(divergence, divergence_window_days)
+
         return results
     finally:
         await conn.close()
@@ -163,12 +313,23 @@ def main(argv: list[str] | None = None) -> int:
         default=".caregist-data/evidence/LEAD-009-reconciliation-evidence.json",
         help="Output path for reconciliation evidence",
     )
+    parser.add_argument(
+        "--divergence-window-days",
+        type=int,
+        default=DIVERGENCE_WINDOW_DAYS,
+        help=(
+            "Lookback for the report-only divergence observation "
+            f"(default: {DIVERGENCE_WINDOW_DAYS} days)"
+        ),
+    )
     args = parser.parse_args(argv)
 
     db_url = _resolve_database_url(args.database_url)
 
     try:
-        results = asyncio.run(_run_gates(db_url))
+        results = asyncio.run(
+            _run_gates(db_url, divergence_window_days=args.divergence_window_days)
+        )
     except (asyncpg.exceptions.PostgresError, OSError) as exc:
         print(json.dumps({"error": str(exc), "gate": "connection"}, indent=2))
         return 1
