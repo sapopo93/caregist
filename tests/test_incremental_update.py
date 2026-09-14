@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import argparse
 import json
 import uuid
 from datetime import date, datetime, timezone
@@ -14,7 +15,6 @@ from incremental_update import (
     _fetch_all_cqc_location_stubs,
     _finalize_batch,
     _insert_trusted_provider_event,
-    _attributed_source_deactivations,
     _ensure_no_active_reconciliation_batch,
     _prepare_batch,
     _project_rating_change,
@@ -594,105 +594,134 @@ def _finalize_fixture(tmp_path, location_count=100, shard_count=2):
     )
     batch_id = uuid.UUID("12345678-1234-5678-9234-567812345678")
     manifest = build_snapshot_manifest(snapshot, batch_id, shard_count)
-    partitions = partition_location_ids(sorted(location_ids), shard_count)
+    per_shard = location_count // shard_count
     shards = [
         (
             index,
             "completed",
-            len(partition),
-            len(partition),
+            per_shard,
+            per_shard,
             0,
-            len(partition),
+            per_shard,
             0,
             0,
             manifest["manifestChecksumSha256"],
         )
-        for index, partition in enumerate(partitions)
+        for index in range(shard_count)
     ]
     return manifest, batch_id, shards
 
 
-def _finalize_cursor(manifest, shards, fetchall_sequence):
+def _finalize_cursor(
+    manifest,
+    shards,
+    active_manifest_count,
+    active_after=None,
+    inactive_manifest_count=None,
+):
+    """Cursor stub that answers by statement text, so call order and advisory locks cannot shift the canned rows."""
     cursor = Mock()
-    cursor.fetchone.return_value = (
+    location_count = int(manifest["locationCount"])
+    if inactive_manifest_count is None:
+        inactive_manifest_count = location_count - active_manifest_count
+    validation_row = (
         len(shards),
-        int(manifest["locationCount"]),
+        location_count,
         manifest["manifestChecksumSha256"],
         manifest["sourceChecksumSha256"],
     )
-    cursor.fetchall.side_effect = [shards, *fetchall_sequence]
+
+    def _next_row():
+        calls = cursor.execute.call_args_list
+        statement = " ".join(str(calls[-1].args[0]).split()).upper() if calls else ""
+        if "PG_ADVISORY" in statement:
+            return (None,)
+        if "COUNT(*)" in statement and "ID = ANY(%S)" in statement:
+            return (active_manifest_count, inactive_manifest_count)
+        if "COUNT(*)" in statement:
+            return (active_after if active_after is not None else active_manifest_count,)
+        if "ACTIVE_RECORDS_BEFORE" in statement:
+            return (len(shards), 1)
+        if "FROM PIPELINE_RUNS" in statement:
+            return None
+        return validation_row
+
+    cursor.fetchone.side_effect = _next_row
+    cursor.fetchall.side_effect = [shards] + [[] for _ in range(20)]
     return cursor
 
 
 def _finalize_args(tmp_path, manifest, batch_id, *, dry_run=True):
     manifest_path = tmp_path / "manifest.json"
     manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
-    return SimpleNamespace(
+    return argparse.Namespace(
         batch_id=str(batch_id),
         snapshot_manifest=str(manifest_path),
         dry_run=dry_run,
     )
 
 
-def test_attributed_source_deactivations_selects_latest_change_per_location():
-    cursor = Mock()
-    cursor.fetchall.return_value = [("1-10000",)]
-
-    result = _attributed_source_deactivations(cursor, {"1-10000", "1-10001"})
-
-    assert result == {"1-10000"}
-    statement, params = cursor.execute.call_args_list[0].args
-    sql = str(statement)
-    assert sql.lstrip().upper().startswith("SELECT")
-    assert "DISTINCT ON (location_id)" in sql
-    assert "ORDER BY location_id, created_at DESC" in sql
-    assert "source = 'cqc_api'" in sql
-    assert params == (["1-10000", "1-10001"],)
-
-
-def test_attributed_source_deactivations_does_not_query_without_candidates():
-    cursor = Mock()
-
-    assert _attributed_source_deactivations(cursor, set()) == set()
-    assert cursor.execute.call_count == 0
-
-
-def test_finalizer_skips_attribution_when_every_manifest_location_is_active(tmp_path, capsys):
+def test_finalizer_probe_counts_only_active_rows(tmp_path):
+    """A NULL status or a missing row must never be probed as though it were active."""
     manifest, batch_id, shards = _finalize_fixture(tmp_path)
-    cursor = _finalize_cursor(manifest, shards, [[]])
+    cursor = _finalize_cursor(manifest, shards, active_manifest_count=100)
+
+    assert _finalize_batch(_finalize_args(tmp_path, manifest, batch_id), Mock(), cursor) == 0
+
+    probe_sql = " ".join(str(call.args[0]) for call in cursor.execute.call_args_list)
+    assert "UPPER(status) = 'ACTIVE'" in probe_sql
+    assert "<> 'ACTIVE'" not in probe_sql
+
+
+def test_finalizer_finalizes_when_the_poll_deactivated_a_manifest_location(tmp_path, capsys):
+    """One poll flip inside the batch window must no longer wedge the whole batch."""
+    manifest, batch_id, shards = _finalize_fixture(tmp_path)
+    cursor = _finalize_cursor(manifest, shards, active_manifest_count=99)
 
     assert _finalize_batch(_finalize_args(tmp_path, manifest, batch_id), Mock(), cursor) == 0
     assert "DRY RUN" in capsys.readouterr().out
 
 
-def test_finalizer_refuses_inactive_manifest_location_without_attribution(tmp_path):
+def test_finalizer_accepts_divergence_at_the_drop_ratio_boundary(tmp_path):
     manifest, batch_id, shards = _finalize_fixture(tmp_path)
-    cursor = _finalize_cursor(manifest, shards, [[("1-10000",)], []])
+    cursor = _finalize_cursor(manifest, shards, active_manifest_count=95)
 
-    with pytest.raises(ChangesFetchError, match="no attributed CQC source change"):
+    assert _finalize_batch(_finalize_args(tmp_path, manifest, batch_id), Mock(), cursor) == 0
+
+
+def test_finalizer_refuses_divergence_above_the_drop_ratio(tmp_path):
+    manifest, batch_id, shards = _finalize_fixture(tmp_path)
+    cursor = _finalize_cursor(manifest, shards, active_manifest_count=94)
+
+    with pytest.raises(ChangesFetchError, match="manifest locations are not active"):
         _finalize_batch(_finalize_args(tmp_path, manifest, batch_id), Mock(), cursor)
 
-    assert all(
-        str(call.args[0]).lstrip().upper().startswith("SELECT")
-        for call in cursor.execute.call_args_list
+
+def test_finalizer_refuses_a_manifest_location_the_source_cannot_account_for(tmp_path):
+    """A missing row or NULL status is not something the poll can produce, so it fails closed."""
+    manifest, batch_id, shards = _finalize_fixture(tmp_path)
+    cursor = _finalize_cursor(
+        manifest,
+        shards,
+        active_manifest_count=99,
+        inactive_manifest_count=0,
     )
 
-
-def test_finalizer_accepts_attributed_source_deactivation(tmp_path, capsys):
-    manifest, batch_id, shards = _finalize_fixture(tmp_path)
-    cursor = _finalize_cursor(manifest, shards, [[("1-10000",)], [("1-10000",)]])
-
-    assert _finalize_batch(_finalize_args(tmp_path, manifest, batch_id), Mock(), cursor) == 0
-    assert "DRY RUN" in capsys.readouterr().out
-
-
-def test_finalizer_refuses_mass_attributed_deactivations(tmp_path):
-    manifest, batch_id, shards = _finalize_fixture(tmp_path)
-    inactive = [(f"1-{10000 + index}",) for index in range(20)]
-    cursor = _finalize_cursor(manifest, shards, [inactive, inactive])
-
-    with pytest.raises(ChangesFetchError, match="exceed the safety threshold"):
+    with pytest.raises(ChangesFetchError, match="missing or carry a status"):
         _finalize_batch(_finalize_args(tmp_path, manifest, batch_id), Mock(), cursor)
+
+
+def test_finalizer_still_requires_an_accounted_end_state(tmp_path):
+    """The retargeted end-state equality must still refuse an unexplained active set."""
+    manifest, batch_id, shards = _finalize_fixture(tmp_path)
+    cursor = _finalize_cursor(manifest, shards, active_manifest_count=99, active_after=98)
+
+    with pytest.raises(ChangesFetchError, match="Final active-location count"):
+        _finalize_batch(
+            _finalize_args(tmp_path, manifest, batch_id, dry_run=False),
+            Mock(),
+            cursor,
+        )
 
 
 def test_fetch_changes_raises_on_non_200_response():
