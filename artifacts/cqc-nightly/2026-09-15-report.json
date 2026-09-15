@@ -1,0 +1,151 @@
+{
+  "generated_at": "2026-09-15T02:53:28.884339+00:00",
+  "data": {
+    "window_hours": 24,
+    "since": "2026-09-14T02:53:28.400066+00:00",
+    "provider_status": {
+      "ACTIVE": 57148,
+      "INACTIVE": 1808
+    },
+    "providers_total": 58956,
+    "providers_active": 57148,
+    "watermark": {
+      "reconciled_at": "2026-09-14T19:37:16.883588+00:00",
+      "source_total_count": 57151,
+      "checked_count": 57151,
+      "status": "completed",
+      "age_hours": 7.3,
+      "counts_match": true
+    },
+    "match": {
+      "ours": 57148,
+      "source_total": 57151,
+      "delta": -3
+    },
+    "snapshots": [
+      {
+        "source_type": "cqc_report_index",
+        "checksum_sha256": "d57acbabba34e015b1081f03f2c1b6affd23648185628de9fdb931aae0db96dc",
+        "record_count": 0,
+        "source_checked_at": "2026-09-15T01:19:21.919456+00:00",
+        "age_hours": 1.6
+      },
+      {
+        "source_type": "cqc_report_index",
+        "checksum_sha256": "789183b8eb050c82178f67149ac6121f6c7a1beb2aafac4237a0a79bedec63fc",
+        "record_count": 0,
+        "source_checked_at": "2026-09-14T22:41:22.955708+00:00",
+        "age_hours": 4.2
+      },
+      {
+        "source_type": "cqc_report_index",
+        "checksum_sha256": "4faae9fb140c7de7aa3a8843e5e33a5669197a6c2fe862519ab0763055028986",
+        "record_count": 0,
+        "source_checked_at": "2026-09-14T19:11:14.241667+00:00",
+        "age_hours": 7.7
+      },
+      {
+        "source_type": "cqc_report_index",
+        "checksum_sha256": "ca9e8690bfb70c064fa62798155cf3002098b6f4e6bef2b757ce600c2b7618b8",
+        "record_count": 0,
+        "source_checked_at": "2026-09-14T13:49:28.646975+00:00",
+        "age_hours": 13.1
+      },
+      {
+        "source_type": "cqc_report_index",
+        "checksum_sha256": "ccdfdf12d422a1f129e5a1133f366f382bb8356fbe220060c69023c358c1d478",
+        "record_count": 1,
+        "source_checked_at": "2026-09-14T06:53:46.992324+00:00",
+        "age_hours": 20.0
+      }
+    ],
+    "changes_by_type": {
+      "status_changed": 83,
+      "rating_changed": 42
+    },
+    "changes_total": 125,
+    "rating_moves": {
+      "no destination rating": 42
+    },
+    "status_transitions": {
+      "ACTIVE->INACTIVE": 62,
+      "INACTIVE->ACTIVE": 21
+    },
+    "rating_destination": {
+      "window_no_destination": 42,
+      "window_total": 42,
+      "all_time_no_destination": 24437,
+      "all_time_total": 34246,
+      "window_share": 1.0
+    },
+    "ledger_newest": "2026-09-15T01:26:57.988536+00:00",
+    "ledger_newest_age_hours": 1.4,
+    "polls_7d": {
+      "total": 47,
+      "completed": 44,
+      "required": 336
+    },
+    "polls_24h": 5,
+    "runs_by_type": {
+      "feed_cycle/completed": 168,
+      "signal_poll/completed": 44,
+      "signal_poll/partial": 2,
+      "reconciliation/completed": 1,
+      "reconciliation/failed": 1,
+      "signal_poll/failed": 1
+    },
+    "recent_failures": [
+      {
+        "run_type": "reconciliation",
+        "started_at": "2026-09-13T11:11:28.745698",
+        "error": "Workflow ended before every shard completed"
+      },
+      {
+        "run_type": "signal_poll",
+        "started_at": "2026-09-12T00:02:26.335467",
+        "error": "1 source records failed collection"
+      },
+      {
+        "run_type": "signal_poll",
+        "started_at": "2026-09-09T23:59:36.208872",
+        "error": "1 source records failed collection"
+      },
+      {
+        "run_type": "signal_poll",
+        "started_at": "2026-09-08T13:27:59.658756",
+        "error": "Location list scan total changed from 122566 to 122567 on page 109"
+      }
+    ],
+    "failures_in_window": [],
+    "quality_gaps": {
+      "no_postcode": {
+        "count": 0,
+        "pct": 0.0
+      },
+      "no_region": {
+        "count": 10,
+        "pct": 0.0
+      },
+      "no_local_authority": {
+        "count": 35,
+        "pct": 0.1
+      },
+      "no_overall_rating": {
+        "count": 26589,
+        "pct": 45.1
+      },
+      "no_geocode": {
+        "count": 28,
+        "pct": 0.0
+      }
+    },
+    "active_unrated": {
+      "count": 25657,
+      "pct": 44.9
+    },
+    "churn_updated_at_24h": 57203,
+    "snapshot_changed": false
+  },
+  "live_index": null,
+  "anomalies": []
+}
