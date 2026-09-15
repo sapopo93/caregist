@@ -4,7 +4,7 @@
 
 The worker converts filtered new-registration feed rows into CRM contacts without CSV exports or operator action.
 
-1. The cron (four times a day, 09:00-17:00) snapshots the enabled organisation's CareGist feed filters.
+1. The cron (four times a day, within the 09:00-17:00 calling window) snapshots the enabled organisation's CareGist feed filters. Vercel evaluates cron in UTC, so the slots are 09:35, 11:35, 13:35 and 15:35 UTC - 10:35-16:35 UK under BST, 09:35-15:35 under GMT.
 2. New CQC provider locations enter a durable, tenant-isolated queue.
 3. UK national phone numbers are normalised to E.164.
 4. CareGist checks TPSCheck credits, then starts at most 50 single-number v2 checks per run.
@@ -72,7 +72,7 @@ GET /api/v1/crm/tps-automation
 
 ## Capacity
 
-The worker starts at most 50 checks per run. With four runs a day (09:35-15:35, inside the 09:00-17:00 calling window) the ceiling is 200 checks a day, so the cron cadence, not the provider's 60-per-minute allowance, is the binding constraint. The live `/credits` response remains authoritative for plan name, allowance and remaining credits.
+The worker starts at most 50 checks per run. With four runs a day (09:35-15:35 UTC, inside the 09:00-17:00 UK calling window in both BST and GMT) the ceiling is 200 checks a day, so the cron cadence, not the provider's 60-per-minute allowance, is the binding constraint. The live `/credits` response remains authoritative for plan name, allowance and remaining credits.
 
 ## Monitoring
 
