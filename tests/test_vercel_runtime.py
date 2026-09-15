@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import json
 import re
+from datetime import datetime, timezone
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 import pytest
 
@@ -61,7 +63,7 @@ def test_vercel_services_route_backend_paths_to_fastapi():
     crons = {item["path"]: item["schedule"] for item in config["crons"]}
     assert crons["/api/v1/cron/email-queue"] == "5 * * * *"
     assert crons["/api/v1/cron/feed-cycle"] == "15 * * * *"
-    assert crons["/api/v1/cron/crm-maintenance"] == "25 9,12,15,17 * * *"
+    assert crons["/api/v1/cron/crm-maintenance"] == "25 9,11,13,15 * * *"
     assert crons["/api/v1/cron/crm-tps-automation"] == "35 9,11,13,15 * * *"
 
     ignore_rules = (Path(__file__).parents[1] / ".vercelignore").read_text(encoding="utf-8")
@@ -112,3 +114,29 @@ def test_tps_staleness_window_exceeds_cron_cadence():
         f"tps staleness window {window}h is tighter than the {max(gaps)}h gap in "
         f"'{schedule}', so every enabled tenant would read as stale between runs"
     )
+
+
+def test_explicit_vercel_cron_slots_land_inside_the_local_calling_window():
+    """Vercel cron is always UTC, but calling only happens 09:00-17:00 UK.
+
+    Slots written as local hours drift an hour through BST, which is how the
+    maintenance sweep came to fire at 18:25. Assert the converted slot in both
+    seasons rather than the expression itself.
+    """
+    repo_root = Path(__file__).parents[1]
+    config = json.loads((repo_root / "vercel.json").read_text(encoding="utf-8"))
+    london = ZoneInfo("Europe/London")
+
+    for item in config["crons"]:
+        minute, hour = item["schedule"].split()[:2]
+        if hour == "*":
+            continue
+        for slot in (int(part) for part in hour.split(",")):
+            for month in (1, 7):
+                local = datetime(
+                    2026, month, 15, slot, int(minute), tzinfo=timezone.utc
+                ).astimezone(london)
+                assert 9 <= local.hour < 17, (
+                    f"{item['path']} fires at {local:%H:%M} local in month {month}: a slot "
+                    "chosen in local time leaves the 09:00-17:00 calling window in one season"
+                )
