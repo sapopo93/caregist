@@ -6,7 +6,7 @@ on:
       sweep_size:
         description: Active locations to refresh in this shadow run
         type: string
-        default: "1200"
+        default: "500"
   schedule:
     - cron: "7,37 * * * *"
 
@@ -38,6 +38,6 @@ jobs:
           RADAR_DELIVERY_ENABLED: "false"
         run: >-
           python -m tools.poll_cqc_signals
-          --sweep-size "${{ inputs.sweep_size || '1200' }}"
+          --sweep-size "${{ inputs.sweep_size || '500' }}"
           --checkpoint-size 100
           --sleep 0.05

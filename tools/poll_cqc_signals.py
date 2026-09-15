@@ -52,7 +52,12 @@ REPORT_INDEX_PARAMS = {
     "sort": "date",
 }
 SIGNAL_POLL_LOCK_ID = 802451204
-DEFAULT_SWEEP_SIZE = 1200
+# Sized to finish well inside the 30-min cron cadence (cqc-signal-poll.yml fires
+# at :07/:37). At ~1200, observed runs took 15-32 min against a `concurrency`
+# group with `cancel-in-progress: false`, so most scheduled triggers queued
+# behind an in-flight run and were dropped -- only ~47 of the required 336
+# weekly polls actually ran. 500 keeps runs comfortably under the interval.
+DEFAULT_SWEEP_SIZE = 500
 DEFAULT_CHECKPOINT_SIZE = 100
 LOCATION_ID_PATTERN = re.compile(r"/location/(?P<location_id>1-\d{5,12})(?:[/?#\"'])")
 
