@@ -4,7 +4,7 @@
 
 The worker converts filtered new-registration feed rows into CRM contacts without CSV exports or operator action.
 
-1. The minute cron snapshots the enabled organisation's CareGist feed filters.
+1. The cron (four times a day, 09:00-17:00) snapshots the enabled organisation's CareGist feed filters.
 2. New CQC provider locations enter a durable, tenant-isolated queue.
 3. UK national phone numbers are normalised to E.164.
 4. CareGist checks TPSCheck credits, then starts at most 50 single-number v2 checks per run.
@@ -72,7 +72,7 @@ GET /api/v1/crm/tps-automation
 
 ## Capacity
 
-The worker deliberately stays at 50 starts per minute, below the requested 60-per-minute allowance. A full 10,000-credit allowance takes about 200 minutes (3 hours 20 minutes), plus retries. The live `/credits` response remains authoritative for plan name, allowance and remaining credits.
+The worker starts at most 50 checks per run. With four runs a day (09:35-15:35, inside the 09:00-17:00 calling window) the ceiling is 200 checks a day, so the cron cadence, not the provider's 60-per-minute allowance, is the binding constraint. The live `/credits` response remains authoritative for plan name, allowance and remaining credits.
 
 ## Monitoring
 
@@ -81,7 +81,7 @@ The worker deliberately stays at 50 starts per minute, below the requested 60-pe
 - `caregist_crm_tps_pending_jobs`
 - `caregist_crm_tps_review_jobs`
 
-Readiness fails if an enabled tenant has not run within three minutes or its latest run has an error. Review jobs are a warning backlog and do not expose details to operators.
+Readiness fails if an enabled tenant's last run is more than 20 hours old or its latest run has an error. The window exceeds the 18-hour overnight gap in the 09:00-17:00 calling schedule, so a healthy tenant never reads as stale overnight while a fully missed working day still alarms. Review jobs are a warning backlog and do not expose details to operators.
 
 ## Rollback
 

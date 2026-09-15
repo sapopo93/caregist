@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -60,8 +61,8 @@ def test_vercel_services_route_backend_paths_to_fastapi():
     crons = {item["path"]: item["schedule"] for item in config["crons"]}
     assert crons["/api/v1/cron/email-queue"] == "5 * * * *"
     assert crons["/api/v1/cron/feed-cycle"] == "15 * * * *"
-    assert crons["/api/v1/cron/crm-maintenance"] == "25 * * * *"
-    assert crons["/api/v1/cron/crm-tps-automation"] == "35 */2 * * *"
+    assert crons["/api/v1/cron/crm-maintenance"] == "25 9,12,15,17 * * *"
+    assert crons["/api/v1/cron/crm-tps-automation"] == "35 9,11,13,15 * * *"
 
     ignore_rules = (Path(__file__).parents[1] / ".vercelignore").read_text(encoding="utf-8")
     for required_rule in (
@@ -77,11 +78,37 @@ def test_vercel_services_route_backend_paths_to_fastapi():
 def test_recurring_workflow_schedules_match_evidence_gates():
     repo_root = Path(__file__).parents[1]
     expected_schedules = {
-        ".github/workflows/freshness-watchdog.yml": 'cron: "10 * * * *"',
+        ".github/workflows/freshness-watchdog.yml": 'cron: "10 */6 * * *"',
         ".github/workflows/cqc-signal-poll.yml": 'cron: "7,37 * * * *"',
-        ".github/workflows/production-smoke.yml": 'cron: "50 * * * *"',
+        ".github/workflows/production-smoke.yml": 'cron: "50 */6 * * *"',
     }
 
     for relative_path, expected_schedule in expected_schedules.items():
         workflow = (repo_root / relative_path).read_text(encoding="utf-8")
         assert expected_schedule in workflow
+
+
+def test_tps_staleness_window_exceeds_cron_cadence():
+    """The CRM staleness gate must outlast the longest gap between TPS cron runs."""
+    repo_root = Path(__file__).parents[1]
+    config = json.loads((repo_root / "vercel.json").read_text(encoding="utf-8"))
+    schedule = next(
+        item["schedule"]
+        for item in config["crons"]
+        if item["path"] == "/api/v1/cron/crm-tps-automation"
+    )
+    hours = sorted(int(part.split("/")[0]) for part in schedule.split()[1].split(","))
+    gaps = [
+        following - current
+        for current, following in zip(hours, hours[1:] + [hours[0] + 24], strict=True)
+    ]
+
+    source = (repo_root / "api/routers/health.py").read_text(encoding="utf-8")
+    before_alias = source[: source.index("AS tps_stale_organizations")]
+    value, unit = re.findall(r"INTERVAL '(\d+) (minutes|hours)'", before_alias)[-1]
+    window = int(value) / 60 if unit == "minutes" else float(value)
+
+    assert window > max(gaps), (
+        f"tps staleness window {window}h is tighter than the {max(gaps)}h gap in "
+        f"'{schedule}', so every enabled tenant would read as stale between runs"
+    )

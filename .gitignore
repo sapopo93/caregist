@@ -149,3 +149,7 @@ outreach/recon/
 .env
 .env.*
 !.env.example
+
+# Local Hermes agent state (environment recipes, session plumbing). Machine-local,
+# never a deliverable - and this repository is public.
+.hermes/

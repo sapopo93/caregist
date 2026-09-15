@@ -11,11 +11,15 @@ from __future__ import annotations
 
 import subprocess
 import sys
+import tempfile
 import textwrap
+from pathlib import Path
 
 import pytest
 
 from api.monitoring_config import MonitoringSettings, monitoring_settings
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
 MONITOR_MODULES = (
@@ -44,12 +48,17 @@ def _import_in_subprocess(module: str, env: dict[str, str]) -> subprocess.Comple
         print("API_CONFIG_LOADED" if loaded else "API_CONFIG_ABSENT")
         """
     )
-    return subprocess.run(
-        [sys.executable, "-c", script],
-        capture_output=True,
-        text=True,
-        env=env,
-    )
+    # Run outside the repository: api.config reads ".env" from the working
+    # directory, so a developer's local .env would satisfy the very gates these
+    # tests withhold, while CI (no .env) would not.
+    with tempfile.TemporaryDirectory() as bare_cwd:
+        return subprocess.run(
+            [sys.executable, "-c", script],
+            capture_output=True,
+            text=True,
+            cwd=bare_cwd,
+            env={**env, "PYTHONPATH": str(REPO_ROOT)},
+        )
 
 
 @pytest.fixture
@@ -57,7 +66,6 @@ def production_env_without_privileged_secrets() -> dict[str, str]:
     return {
         "PATH": "/usr/bin:/bin:/usr/sbin:/sbin",
         "ENVIRONMENT": "production",
-        "PYTHONPATH": ".",
         # A non-localhost URL is what triggers the strictest production branch.
         "DATABASE_URL": "postgresql://monitor:monitor@db.example.invalid:5432/caregist",
     }
@@ -125,7 +133,6 @@ def test_application_config_requires_each_privileged_secret_in_turn(
     env = {
         "PATH": "/usr/bin:/bin:/usr/sbin:/sbin",
         "ENVIRONMENT": "production",
-        "PYTHONPATH": ".",
         "DATABASE_URL": "postgresql://app:app@db.example.invalid:5432/caregist",
         "APP_URL": "https://caregist.co.uk",
         **supplied,
@@ -144,7 +151,6 @@ def test_application_config_still_fails_closed_in_production() -> None:
     env = {
         "PATH": "/usr/bin:/bin:/usr/sbin:/sbin",
         "ENVIRONMENT": "production",
-        "PYTHONPATH": ".",
         "DATABASE_URL": "postgresql://app:app@db.example.invalid:5432/caregist",
         # Satisfy the earlier origin check so this test exercises the
         # privileged-secret gate it is actually asserting on.
