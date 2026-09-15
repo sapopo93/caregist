@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { TERRITORY_BRIEF_PRICE_GBP } from "@/lib/territory-scope";
+
 export const metadata: Metadata = {
   title: "Territory Opportunity Brief | CareGist",
-  description:
-    "A buyer-specific shortlist of 25 to 50 care organisations, a CRM-ready dataset and a concise executive brief for £795.",
+  description: `A buyer-specific shortlist of 25 to 50 care organisations, a CRM-ready dataset and a concise executive brief for £${TERRITORY_BRIEF_PRICE_GBP}.`,
 };
 
 const deliverables = [
@@ -49,7 +50,7 @@ export default function TerritoryOpportunityBriefPage() {
           </div>
           <div className="rounded-2xl border border-amber/35 bg-white/5 p-7">
             <p className="text-sm text-stone">Territory Opportunity Brief</p>
-            <p className="mt-2 font-[family-name:var(--font-playfair-display)] text-5xl font-bold text-amber">£795</p>
+            <p className="mt-2 font-[family-name:var(--font-playfair-display)] text-5xl font-bold text-amber">£{TERRITORY_BRIEF_PRICE_GBP}</p>
             <p className="mt-2 text-sm text-stone">Price excludes VAT.</p>
             <a
               href="mailto:outreach@caregist.co.uk?subject=CareGist%20Territory%20Opportunity%20Brief"
