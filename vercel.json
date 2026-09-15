@@ -103,11 +103,11 @@
     },
     {
       "path": "/api/v1/cron/crm-maintenance",
-      "schedule": "25 * * * *"
+      "schedule": "25 9,12,15,17 * * *"
     },
     {
       "path": "/api/v1/cron/crm-tps-automation",
-      "schedule": "35 */2 * * *"
+      "schedule": "35 9,11,13,15 * * *"
     }
   ]
 }
