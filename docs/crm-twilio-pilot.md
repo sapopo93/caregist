@@ -120,7 +120,7 @@ CareGist escapes operator content, adds the configured postal address and a per-
 11. Configure AI API keys and validate a test transcript/evaluation without using customer data.
 12. Only after all acceptance checks pass, set `CRM_PILOT_MODE=false` and activate production calling. Production still blocks any number without current screening evidence.
 
-The scheduled maintenance endpoint is `/api/v1/cron/crm-maintenance`; it runs four times a day inside the 09:00-17:00 calling window. The existing hourly email queue cron remains separate. Both require `CRON_SECRET`.
+The scheduled maintenance endpoint is `/api/v1/cron/crm-maintenance`; it runs four times a night inside the 18:00-06:00 UK window. The email queue cron runs once, at 04:05 UTC, so queued mail leaves overnight rather than during the working day. Both require `CRON_SECRET`.
 
 ## Configuration contract
 

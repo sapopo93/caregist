@@ -3,7 +3,9 @@ name: Freshness Watchdog
 on:
   workflow_dispatch:
   schedule:
-    - cron: "10 */6 * * *"
+    # One checkpoint at the end of the night, after the 03:00 poll has finished.
+    # A daytime run would only report the staleness the night window intends.
+    - cron: "10 4 * * *"
 
 permissions:
   contents: read
