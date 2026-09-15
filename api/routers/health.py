@@ -55,8 +55,9 @@ async def _crm_operations(conn) -> dict:
                 WHERE enabled = TRUE) AS tps_enabled_organizations
               ,(SELECT COUNT(*) FROM crm_tps_automation_settings
                 WHERE enabled = TRUE
-                  -- Calling runs 09:00-17:00, so the cron's overnight gap is 18h;
-                  -- the window must exceed it or an enabled tenant alarms every night.
+                  -- Work runs four times a night (18:00-03:00 UTC) and not during
+                  -- the working day, so the designed gap is 15h; the window must
+                  -- exceed it or an enabled tenant alarms by early evening.
                   AND (last_run_at IS NULL OR last_run_at < NOW() - INTERVAL '20 hours'))
                 AS tps_stale_organizations
               ,(SELECT COUNT(*) FROM crm_tps_automation_settings

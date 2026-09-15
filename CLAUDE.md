@@ -146,7 +146,7 @@ fail-closed unless the current catalogue gates explicitly authorize them.
 - **Saved filters:** `POST /api/v1/feed/new-registrations/saved-filters` — Starter (3), Pro (20), Business (100)
 - **Digest subscriptions:** `PUT /api/v1/feed/new-registrations/digest` — weekly email, requires Starter+
 - **Outbound webhooks:** Business+ users can register webhook URLs to receive `feed.new_registration` events, signed with HMAC-SHA256
-- **Operational sync:** `tools/run_new_registration_feed_cycle.py` — run hourly in production
+- **Operational sync:** `tools/run_new_registration_feed_cycle.py` — runs four times a night in production
 
 ### Seat/Team Billing
 
