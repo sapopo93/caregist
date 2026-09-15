@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 
+import { TERRITORY_BRIEF_PRICE_GBP } from "@/lib/territory-scope";
+
 export const metadata: Metadata = {
   title: "Business Terms of Service | CareGist",
   description: "Terms governing the CareGist Directory, Territory Opportunity Brief, Radar, Intelligence Feed Pilot, and Embedded Enterprise services.",
@@ -128,7 +130,7 @@ export default function TermsPage() {
             levels, and termination are set out in the signed agreement.
           </p>
           <p>
-            The Territory Opportunity Brief costs <strong>£795</strong>. CareGist confirms
+            The Territory Opportunity Brief costs <strong>£{TERRITORY_BRIEF_PRICE_GBP}</strong>. CareGist confirms
             the scope and the relevant source path before it sends a payment link or
             accepts payment. Payment is due in full before work begins. The buyer may
             cancel by email before work begins and receive a full refund. Once work has
