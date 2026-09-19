@@ -14,6 +14,7 @@ from pathlib import Path
 import pytest
 
 from api.services.territory_brief import (
+    EvidenceError,
     PurchaseContext,
     ScopeError,
     brief_to_csv,
@@ -21,6 +22,7 @@ from api.services.territory_brief import (
     known_territories,
     validate_scope,
 )
+from api.services.territory_brief import _validate_evidence
 from api.services.territory_brief_render import render_brief_pdf
 
 CONTEXT = PurchaseContext(
@@ -255,6 +257,40 @@ def test_reregistration_is_labelled_distinctly(tmp_path):
     )
     brief = _generate(tmp_path, [loc], [{"providerId": "1-PRE", "name": "Handover Ltd"}])
     assert "re-registered" in brief.shortlist[0].reason.lower()
+
+
+def test_reasons_do_not_infer_supplier_intent_from_registration_or_rating(tmp_path):
+    locs = [
+        _loc(locationId="1-NEW", providerId="1-PNEW", name="New Home", registrationDate="2026-02-10"),
+        _loc(
+            locationId="1-DOWN",
+            providerId="1-PDOWN",
+            name="Declining Home",
+            registrationDate="2019-01-01",
+            historicRatings=[_historic("Good", "2025-01-01")],
+            currentRatings=_rating_block("Requires improvement", "2026-02-01"),
+        ),
+    ]
+    providers = [
+        {"providerId": "1-PNEW", "name": "New Ltd"},
+        {"providerId": "1-PDOWN", "name": "Down Ltd"},
+    ]
+    brief = _generate(tmp_path, locs, providers, window_days=90)
+    reasons = " ".join(o.reason.lower() for o in brief.shortlist)
+    assert "purchasing intent" in reasons
+    assert "budget-releasing" not in reasons
+    assert "no incumbent supplier" not in reasons
+
+
+def test_evidence_provenance_is_fail_closed():
+    with pytest.raises(EvidenceError, match="source_url"):
+        _validate_evidence(({
+            "event_type": "new_registration",
+            "effective_date": "2026-02-10",
+            "detail": "new registration",
+            "source_field": "registrationDate",
+            "source_edition": "CQC register",
+        },))
 
 
 # --------------------------------------------------------------------------- #

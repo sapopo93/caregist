@@ -65,6 +65,10 @@ class ScopeError(ValueError):
     """Raised when a buyer-supplied scope is missing, malformed, or unknown."""
 
 
+class EvidenceError(ValueError):
+    """Raised when a shortlist event cannot be traced to its source evidence."""
+
+
 # --------------------------------------------------------------------------- #
 # Inputs
 # --------------------------------------------------------------------------- #
@@ -520,27 +524,31 @@ def _reason(
             parts.append(
                 f"Re-registered with CQC on {ev.effective_date.strftime('%d %b %Y')} "
                 f"({descriptor}) {when}. A new legal entity or owner has taken on an existing "
-                f"service in {territory} - a natural point to review incumbent suppliers.{rating_note}{emphasis}"
+                f"service in {territory}; this is a documented registration signal, not evidence "
+                f"of a supplier search or purchasing intent.{rating_note}{emphasis}"
             )
         else:
             parts.append(
                 f"Newly registered with CQC on {ev.effective_date.strftime('%d %b %Y')} "
-                f"({descriptor}) {when}. A first-time operator in {territory} with no incumbent "
-                f"supplier relationships and no inspection history yet.{emphasis}"
+                f"({descriptor}) {when}. This is a first-time registration signal in {territory}; "
+                f"it does not establish supplier need or purchasing intent, and no inspection "
+                f"history is available yet.{emphasis}"
             )
     for ev in changes:
         direction = _rating_direction(ev.old_value, ev.new_value)
         if direction == "decline":
             parts.append(
                 f"Overall CQC rating moved down from {ev.old_value} to {ev.new_value} on "
-                f"{ev.effective_date.strftime('%d %b %Y')} - a downgrade that typically "
-                f"triggers commissioner scrutiny, an improvement plan and remedial spend."
+                f"{ev.effective_date.strftime('%d %b %Y')} - a documented change in the "
+                f"published overall rating. Review the underlying CQC record before drawing "
+                f"commercial conclusions."
             )
         elif direction == "improvement":
             parts.append(
                 f"Overall CQC rating improved from {ev.old_value} to {ev.new_value} on "
-                f"{ev.effective_date.strftime('%d %b %Y')} - usually evidence of a "
-                f"management or ownership change worth timing outreach around."
+                f"{ev.effective_date.strftime('%d %b %Y')} - a documented change in the "
+                f"published overall rating. Review the underlying CQC record before drawing "
+                f"commercial conclusions."
             )
         else:
             parts.append(
@@ -577,6 +585,19 @@ def _reason(
             )
 
     return " ".join(parts)
+
+
+def _validate_evidence(evidence: tuple[dict[str, Any], ...]) -> None:
+    """Fail closed when a shortlisted event loses its provenance fields."""
+    required = {"event_type", "effective_date", "detail", "source_field", "source_url", "source_edition"}
+    for index, item in enumerate(evidence):
+        missing = sorted(field for field in required if not item.get(field))
+        if missing:
+            raise EvidenceError(
+                f"shortlist evidence item {index} is missing required provenance: {', '.join(missing)}"
+            )
+        if not str(item["source_url"]).startswith(("https://", "http://")):
+            raise EvidenceError(f"shortlist evidence item {index} has an invalid source_url")
 
 
 # --------------------------------------------------------------------------- #
@@ -656,15 +677,15 @@ def _next_actions(insights: dict[str, Any], ranked: list[RankedOrganisation], sc
 
     if new_regs:
         actions.append(
-            f"Contact the {new_regs} newly registered location(s) first: they have no incumbent "
-            f"supplier and are setting up policies, training and systems now. The shortlist marks "
-            f"each one and links its CQC record."
+            f"Review the {new_regs} newly registered location(s) first. The registration date is "
+            f"a research signal only; verify the current record and any explicit supplier need "
+            f"before considering contact. The shortlist links each CQC record."
         )
     if declines:
         actions.append(
-            f"Approach the {declines} location(s) with a rating downgrade with a specific "
-            f"improvement-support offer; a downgrade is a budget-releasing event and the provider "
-            f"is on a clock with the regulator."
+            f"Review the {declines} location(s) with a documented rating decline and inspect the "
+            f"underlying CQC evidence before proposing any improvement-support offer. A rating "
+            f"decline does not establish budget, urgency or willingness to buy."
         )
     if improvements:
         actions.append(
@@ -796,6 +817,7 @@ def generate_territory_opportunity_brief(
             }
             for e in sorted(events, key=lambda e: e.effective_date)
         )
+        _validate_evidence(evidence)
         candidates.append(
             RankedOrganisation(
                 rank=0,
