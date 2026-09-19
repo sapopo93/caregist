@@ -51,7 +51,7 @@ export default function TerritoryOpportunityBriefPage() {
           <div className="rounded-2xl border border-amber/35 bg-white/5 p-7">
             <p className="text-sm text-stone">Territory Opportunity Brief</p>
             <p className="mt-2 font-[family-name:var(--font-playfair-display)] text-5xl font-bold text-amber">£{TERRITORY_BRIEF_PRICE_GBP}</p>
-            <p className="mt-2 text-sm text-stone">Price excludes VAT.</p>
+            <p className="mt-2 text-sm text-stone">£{TERRITORY_BRIEF_PRICE_GBP} is the final price. H-Kay Limited is not VAT registered, so no VAT is added.</p>
             <a
               href="mailto:outreach@caregist.co.uk?subject=CareGist%20Territory%20Opportunity%20Brief"
               className="mt-7 inline-flex w-full items-center justify-center rounded-xl bg-amber px-5 py-3 text-sm font-semibold text-charcoal transition hover:bg-cream focus:outline-none focus:ring-2 focus:ring-cream focus:ring-offset-2 focus:ring-offset-bark"
