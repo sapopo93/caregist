@@ -535,7 +535,15 @@ def test_reconciliation_authority_requires_atomic_full_coverage_fields():
     assert "source_total_count = %s, checked_count = %s" in source
     assert "success_count = %s, failure_count = 0" in source
     assert "counts_reconciled = TRUE, reconciled_at = NOW()" in source
-    assert 'json.dumps({"fullCoverage": True, "restartable": False})' in source
+    assert 'json.dumps(' in source
+    # The two full-coverage fields must still be written atomically, by one
+    # json.dumps call: extra per-batch evidence (the deactivation confirmation
+    # counts) travels alongside them, not in place of them.
+    coverage_marker = source.index('"fullCoverage": True')
+    assert source.rindex("json.dumps(", 0, coverage_marker) < coverage_marker
+    assert coverage_marker < source.index('"restartable": False') < source.index(
+        ")", coverage_marker
+    )
     assert "counts_reconciled = FALSE, reconciled_at = NULL" in source
     assert "AND counts_reconciled = TRUE AND reconciled_at IS NOT NULL" in source
     assert "pg_try_advisory_xact_lock" in source

@@ -2,6 +2,17 @@
 
 The trusted event ledger is the audit source of truth.  This module is kept
 pure so ingestion can calculate and test transitions before any SQL is run.
+
+Rating transitions are split in two, because CQC publishes sentinel strings
+("Not Yet Inspected", "No Published Rating", "Inspected but not rated") and
+omitted fields through the same path as real ratings (see
+``api.services.rating_states``):
+
+* ``rating_changed`` -- a published rating moved to a *different* published
+  rating. Only this event type may feed rating-movement claims.
+* ``rating_status_changed`` -- the availability of a published rating changed
+  (rated -> not yet inspected, sentinel -> published, ...). It is recorded for
+  the audit trail and is explicitly excluded from rating-movement claims.
 """
 
 from __future__ import annotations
@@ -11,6 +22,28 @@ import json
 from dataclasses import dataclass
 from datetime import date, datetime
 from typing import Any
+
+from api.services.rating_states import (
+    RATING_STATES,
+    UNKNOWN,
+    classify_rating,
+    is_published_value,
+    normalize_rating_text,
+)
+
+#: Event type for "the availability of a published rating changed".
+#: Deliberately *not* ``rating_changed``: every customer-facing consumer
+#: (webhooks, feed queries, rating-movement counters, delivery outbox
+#: subscriptions, nightly monitors) keys on the literal ``rating_changed``, so
+#: this type is excluded from rating-movement claims by construction.
+RATING_STATUS_EVENT = "rating_status_changed"
+
+#: Event types that must never be counted as rating movement.
+EXCLUDED_FROM_RATING_MOVEMENT = frozenset({RATING_STATUS_EVENT})
+
+#: Canonical CQC location endpoint, used as the event's source reference when
+#: the observation itself did not carry one.
+CQC_LOCATION_ENDPOINT = "https://api.service.cqc.org.uk/public/v1/locations/{location_id}"
 
 
 @dataclass(frozen=True)
@@ -89,9 +122,16 @@ def _event(
     effective_date_source: str | None = None,
     old_value: Any,
     new_value: Any,
+    extra_metadata: dict[str, Any] | None = None,
 ) -> ProviderStateEvent:
     location_id = str(current["id"])
     provider_id = _normalise(current.get("provider_id"))
+    metadata = {
+        "source_last_updated": current.get("last_updated"),
+        "source_inspection_date": current.get("last_inspection_date"),
+    }
+    if extra_metadata:
+        metadata.update(extra_metadata)
     return ProviderStateEvent(
         event_type=event_type,
         location_id=location_id,
@@ -110,10 +150,172 @@ def _event(
             old_value,
             new_value,
         ),
-        metadata={
-            "source_last_updated": current.get("last_updated"),
-            "source_inspection_date": current.get("last_inspection_date"),
-        },
+        metadata=metadata,
+    )
+
+
+def _stored_rating_state(record: dict[str, Any]) -> str | None:
+    """Return the recorded ``rating_state`` column value, if it is a known state."""
+    state = record.get("rating_state")
+    if isinstance(state, str) and state in RATING_STATES:
+        return state
+    return None
+
+
+def _rating_observation(record: dict[str, Any] | None) -> tuple[str, str | None]:
+    """Return ``(state, published_value_or_None)`` for one side of a transition.
+
+    The stored rating column is authoritative when it holds a real rating or a
+    sentinel; when it is blank (the representation the old pipeline wrote for
+    "no rating in this payload"), the recorded ``rating_state`` is the
+    secondary evidence so an existing row does not look like it just changed
+    state. A published value is returned only for the ``rated`` state.
+    """
+    if not record:
+        return (UNKNOWN, None)
+
+    state, value = classify_rating(
+        record.get("overall_rating"),
+        current_ratings_present=True,
+        historic_rating_present=False,
+    )
+    if is_published_value(state) and value is not None:
+        return (state, value)
+    if state != UNKNOWN:
+        # A sentinel left in the column by the old behaviour still names its
+        # own non-rated state.
+        return (state, None)
+
+    recorded = _stored_rating_state(record)
+    if recorded is not None and not is_published_value(recorded):
+        return (recorded, None)
+    # Blank column, no usable recorded state (or a contradictory 'rated' with
+    # no value): the honest answer is that we cannot classify it.
+    return (UNKNOWN, None)
+
+
+def _rating_metadata(
+    current: dict[str, Any],
+    previous_state: str,
+    previous_value: str | None,
+    current_state: str,
+    current_value: str | None,
+    *,
+    movement: bool,
+) -> dict[str, Any]:
+    """Evidence bundle stored with a rating-scoped event.
+
+    Everything needed to re-check the claim travels with the event: the
+    previous and destination values, the destination *state*, where each came
+    from, the source reference, the observation time and the best available
+    publication date. Nothing is inferred from today's rating.
+    """
+    historic_raw = current.get("historic_rating")
+    has_historic = historic_raw is not None and str(historic_raw).strip() != ""
+    historic_state, historic_value = classify_rating(
+        historic_raw,
+        current_ratings_present=False,
+        historic_rating_present=True,
+    )
+
+    previous_rating = previous_value
+    previous_source = "care_providers.overall_rating" if previous_value else None
+    if (
+        previous_rating is None
+        and not is_published_value(previous_state)
+        and is_published_value(historic_state)
+    ):
+        # The row cannot evidence the rating being left behind (the old
+        # pipeline stored "" for it) but the source can. Recorded as historic
+        # evidence, labelled as such, never as the current rating.
+        previous_rating = historic_value
+        previous_source = "cqc.historicRatings[0].overall.rating"
+
+    destination_evidenced = current_state != UNKNOWN
+    publication_date = (
+        current.get("rating_report_date")
+        or current.get("historic_rating_date")
+        or current.get("source_published_at")
+    )
+    return {
+        "previous_rating": previous_rating,
+        "previous_rating_state": previous_state,
+        "previous_rating_source": previous_source,
+        "destination_rating": current_value,
+        "destination_rating_state": current_state,
+        "destination_evidenced": destination_evidenced,
+        "destination_report_date": current.get("rating_report_date"),
+        "historic_rating": historic_raw if has_historic else None,
+        "historic_rating_state": historic_state if has_historic else None,
+        "historic_rating_date": current.get("historic_rating_date"),
+        "publication_date": publication_date,
+        "observed_at": current.get("last_updated"),
+        "source_reference": current.get("source_url")
+        or CQC_LOCATION_ENDPOINT.format(location_id=current["id"]),
+        # An unevidenced destination is marked incomplete rather than emitted
+        # with a null destination or silently stored as a blank string.
+        "incomplete": not destination_evidenced,
+        "incomplete_reason": (
+            None if destination_evidenced else "destination_rating_not_evidenced"
+        ),
+        "rating_movement_eligible": movement,
+    }
+
+
+def _rating_transition_event(
+    previous: dict[str, Any],
+    current: dict[str, Any],
+) -> ProviderStateEvent | None:
+    """Build the rating-scoped event for one transition, or None.
+
+    See the module docstring: only a movement between two *published* ratings
+    is a ``rating_changed`` event. Anything involving a non-rated state is
+    recorded as ``RATING_STATUS_EVENT``, which no rating-movement claim or
+    customer-facing feed consumes.
+    """
+    previous_state, previous_value = _rating_observation(previous)
+    current_state, current_value = _rating_observation(current)
+
+    if is_published_value(previous_state) and is_published_value(current_state):
+        if normalize_rating_text(previous_value) == normalize_rating_text(current_value):
+            # "Requires Improvement" -> "Requires improvement" is the same
+            # published rating: casing/whitespace is representation, not
+            # movement.
+            return None
+        return _event(
+            "rating_changed",
+            current,
+            effective_date=None,
+            old_value=previous_value,
+            new_value=current_value,
+            extra_metadata=_rating_metadata(
+                current,
+                previous_state,
+                previous_value,
+                current_state,
+                current_value,
+                movement=True,
+            ),
+        )
+
+    if previous_state == current_state:
+        return None
+
+    return _event(
+        RATING_STATUS_EVENT,
+        current,
+        effective_date=None,
+        # The destination is the evidenced state itself, never a null value.
+        old_value=previous_state,
+        new_value=current_state,
+        extra_metadata=_rating_metadata(
+            current,
+            previous_state,
+            previous_value,
+            current_state,
+            current_value,
+            movement=False,
+        ),
     )
 
 
@@ -156,15 +358,18 @@ def build_provider_state_events(
             )
         ]
 
+    events: list[ProviderStateEvent] = []
+    rating_event = _rating_transition_event(previous, current)
+    if rating_event is not None:
+        events.append(rating_event)
+
     transitions = (
-        ("rating_changed", "overall_rating"),
         ("status_changed", "status"),
         ("ownership_changed", "ownership_type"),
         # CQC provider ID is the authoritative organisation/group membership
         # for a location. A change records movement between provider groups.
         ("group_movement", "provider_id"),
     )
-    events: list[ProviderStateEvent] = []
     for event_type, field in transitions:
         old_value = _normalise(previous.get(field))
         new_value = _normalise(current.get(field))
