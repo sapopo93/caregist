@@ -5,7 +5,12 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 
 from api.main import app
-from api.queries.providers import build_search_query, classify_query, postcode_search_prefix
+from api.queries.providers import (
+    SERVED_RATING_NORMALISED,
+    build_search_query,
+    classify_query,
+    postcode_search_prefix,
+)
 
 
 @pytest.fixture
@@ -137,7 +142,9 @@ def test_legacy_quality_sort_uses_cqc_rating_not_completeness():
     query = build_search_query("quality")
 
     order_clause = query.split("ORDER BY", 1)[1]
-    assert "CASE LOWER(BTRIM(overall_rating))" in order_clause
+    # the sort key is the CQC rating as a row is allowed to publish it
+    # (SERVED_RATING_NORMALISED), not the raw column and not completeness
+    assert f"CASE {SERVED_RATING_NORMALISED} WHEN" in order_clause
     assert "requires improvement" in order_clause
     assert "data_completeness_score" not in order_clause
 
@@ -159,7 +166,9 @@ def test_postcode_queries_preserve_the_outward_district(query, expected_type, ex
 def test_provider_search_uses_case_insensitive_ratings_and_exact_local_authority():
     query = build_search_query("relevance")
 
-    assert "LOWER(BTRIM(overall_rating))" in query
+    # ratings are matched case-insensitively on both sides, and the column side
+    # is the rating the row is allowed to publish (SERVED_RATING_NORMALISED)
+    assert SERVED_RATING_NORMALISED in query
     assert "LOWER(BTRIM(value))" in query
     assert "local_authority = $7" in query
     assert "LIMIT $8 OFFSET $9" in query

@@ -37,7 +37,6 @@ import requests
 
 from api.services.provider_state_events import ProviderStateEvent, build_provider_state_events
 from api.services.rating_states import (
-    NON_RATED_STATES,
     assess_location_rating,
     is_published_value,
     normalize_rating_text,
@@ -1011,9 +1010,10 @@ def clean_location(data: dict[str, Any], *, directory_active: bool = False) -> d
     }
     # Only a rating the current payload itself publishes is written here. Every
     # other case is decided by apply_rating_write_policy inside upsert_provider,
-    # which clears a stale rating column when the payload positively reports
-    # that no rating is published now, and writes nothing at all when the source
-    # could not be read.
+    # which clears the rating column when the payload reports that no rating is
+    # published now *and* when it publishes rating text this build cannot read
+    # ('unknown'), so no public read can serve a rating the current payload did
+    # not publish. The recorded rating_state is what distinguishes the two.
     if is_published_value(rating.state) and rating.value is not None:
         record["overall_rating"] = rating.value
     # Evidence, not columns: why the state is what it is, and the last rating
@@ -1115,11 +1115,15 @@ def apply_rating_write_policy(
       which is evidence about the past and is never read as the current rating.
       A historic rating's date is only stored next to that same historic
       rating, never next to another rating;
-    * the payload could not be read ('unknown') -> no rating column is written:
-      an evidence gap is not a statement about the rating, and the recorded
-      state ('unknown') already stops the event classifier treating the row as
-      rated. A successfully read payload only reaches this state for rating text
-      this build does not recognise (see rating_states.classify_rating).
+    * the payload published rating text this build does not recognise
+      ('unknown') -> the served rating column is cleared, exactly as for the
+      other non-rated states, and whatever it last published is kept as
+      labelled evidence. The recorded state stays 'unknown': the row and the
+      ledger still distinguish "the source published wording this build cannot
+      read" from "the source publishes no rating". What must not survive is a
+      rating the current payload did not publish, because the public read path
+      serves that column. A payload this build cannot *fetch* never reaches
+      this function: an evidence gap leaves every rating column untouched.
 
     A rating value is never invented here, a date is never reused for a
     different rating, and a negative claim is only ever made from the payload's
@@ -1158,15 +1162,21 @@ def apply_rating_write_policy(
             amended["last_published_rating_date"] = None
         return amended
 
-    if state not in NON_RATED_STATES:
-        # 'unknown': the rating could not be read from this payload (unrecognised
-        # text), which is not a statement that the location has no rating. No
-        # rating column is written, so any previous value stays as it is and no
-        # date is moved.
-        return amended
+    # 'unknown' (rating text this build does not recognise) falls through to the
+    # same clearing write as the states below. It is deliberately *not* returned
+    # early any more: returning early left whatever was in overall_rating as the
+    # row's current rating, and every public read serves that column without
+    # consulting rating_state, so a rating the source no longer publishes (or
+    # never published in a form this build can read) stayed publicly served.
+    # Clearing here cannot claim the location *has* no rating: the recorded
+    # classification stays 'unknown' (set by clean_location), which is what the
+    # ledger and the state columns report. The direction of the write is
+    # fail-closed only -- it stops asserting a rating, and keeps the previous
+    # value as labelled last-published evidence below.
 
-    # The source positively says no rating is published right now: stop
-    # asserting one, and keep what it last published as labelled evidence.
+    # The source positively says no rating is published right now (or publishes
+    # nothing this build can classify as one): stop asserting one, and keep what
+    # it last published as labelled evidence.
     amended["overall_rating"] = None
     evidence = last_published_rating_evidence(existing) or last_published_rating_evidence(
         {

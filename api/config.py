@@ -15,6 +15,8 @@ from urllib.parse import urlparse
 
 from pydantic_settings import BaseSettings
 
+from api.services.rating_states import RATED, classify_stored_rating
+
 
 AWS_SECRET_ID_ENV = "AWS_SECRETS_MANAGER_SECRET_ID"
 AWS_REGION_ENV = "AWS_REGION"
@@ -1097,7 +1099,54 @@ def get_allowed_fields(tier: str) -> set[str]:
     return FIELD_SETS.get(config["fields"], FIELD_SETS["basic"])
 
 
+# Fields whose *value* a public response must re-check rather than merely project.
+RATING_VALUE_FIELDS = ("overall_rating",)
+
+_STATE_ABSENT = object()
+
+
+def _servable_rating(record: Mapping[str, Any]) -> Any:
+    """Return the rating this record may render as current, or None.
+
+    ``overall_rating`` stores whatever the last payload published; it is a
+    statement about *now* only when the source's recorded state says it published
+    a rating (``rating_state = 'rated'``). Public reads are guarded in SQL as well
+    (``api.queries.providers.SERVED_RATING``), but two paths arrive here without
+    that guard, and both must fail closed:
+
+    * lookups that select ``*`` on a database whose ``rating_state`` column does
+      not exist yet (the pre-migration schema), so the record carries no state to
+      consult; and
+    * a writer that changes ``overall_rating`` without touching ``rating_state``,
+      which leaves a state that still claims the row is rated.
+
+    So the value is classified with the same authority ingestion uses, and the
+    recorded state is honoured when the record carries one. An unrecognised value
+    ('Excellent', 'Suspended', 'Under review') or a state that is not 'rated'
+    renders no rating at all.
+    """
+    value = record.get("overall_rating")
+    if value is None:
+        return None
+    state = record.get("rating_state", _STATE_ABSENT)
+    if state is not _STATE_ABSENT and state != RATED:
+        return None
+    stored_state, _ = classify_stored_rating(value)
+    if stored_state != RATED:
+        return None
+    return value
+
+
 def filter_fields(record: dict, tier: str) -> dict:
-    """Strip fields not allowed by the tier. Hidden fields become None."""
+    """Strip fields not allowed by the tier. Hidden fields become None.
+
+    Masking is one-way: a field the tier hides stays hidden, and a field the
+    tier allows still carries no rating unless the record may publish one (see
+    :func:`_servable_rating`).
+    """
     allowed = get_allowed_fields(tier)
-    return {k: (v if k in allowed else None) for k, v in record.items()}
+    filtered = {k: (v if k in allowed else None) for k, v in record.items()}
+    for field in RATING_VALUE_FIELDS:
+        if filtered.get(field) is not None:
+            filtered[field] = _servable_rating(record)
+    return filtered
