@@ -311,7 +311,18 @@ jobs:
     # 75s; the same 127-candidate set classifies in ~17s against an unthrottled
     # API. This is headroom for a legitimate slow path, not a threshold lowered to
     # obtain a pass.
-    timeout-minutes: 60
+    #
+    # Raised 60 -> 350 on founder instruction, 2026-09-20: 60 minutes is still an
+    # early kill for a finalize that is progressing slowly rather than hung, and
+    # killing it discards the batch *and* the full crawl that produced it - which
+    # is exactly what the 30-minute cap did to run 35510678221. 350 is the
+    # practical single-job ceiling (GitHub's default job maximum is 360), so
+    # within a single job the finalize is no longer cut off. This adds no cost:
+    # the repository is public, so runner minutes are not metered. What still
+    # bounds a run: the five-hour projection budget refuses to dispatch an
+    # over-long run, the shards job carries the same 330-minute class of bound,
+    # and the fail-closed acknowledgement and identity guards are unchanged.
+    timeout-minutes: 350
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
