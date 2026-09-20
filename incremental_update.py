@@ -777,11 +777,13 @@ def _progress(message: str) -> None:
     """Best-effort progress output for CI logs.
 
     A reconciliation phase must never abort because its log stream failed, so a
-    broken stdout is swallowed rather than raised.
+    broken stdout is swallowed rather than raised. `ValueError` is caught as
+    well as `OSError` because writing to an already-closed stream raises
+    `ValueError("I/O operation on closed file")`.
     """
     try:
         print(message, flush=True)
-    except OSError:
+    except (OSError, ValueError):
         pass
 
 

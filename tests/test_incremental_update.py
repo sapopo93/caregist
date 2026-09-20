@@ -893,30 +893,44 @@ def test_confirmation_decisions_keep_every_candidate_except_the_deregistered_one
     ]
 
 
-def test_confirmation_progress_never_aborts_the_phase_on_a_broken_stdout(monkeypatch):
-    """A failed log stream must not cost the batch: progress output is best-effort."""
-    outcomes = {
-        "1-00001": {"registrationStatus": "Registered"},
-        "1-00002": {"registrationStatus": "Deregistered"},
-    }
+@pytest.mark.parametrize(
+    "stream_error",
+    [OSError("stdout is gone"), ValueError("I/O operation on closed file")],
+    ids=["stream-error", "closed-stream"],
+)
+def test_confirmation_progress_survives_a_failed_log_stream(monkeypatch, stream_error):
+    """Progress output is diagnostic only: a dead log stream must not cost the batch.
+
+    The candidate list is long enough to reach the every-25-candidates report as
+    well as the opening line, and both attempts are asserted, so this test fails
+    if progress output is dropped or a call site bypasses ``_progress``.
+    """
+    candidate_ids = [f"1-{index:05d}" for index in range(1, 27)]
 
     def fake_fetch_detail(base_url, api_key, location_id):
-        return outcomes[location_id]
+        return {"registrationStatus": "Registered"}
+
+    attempts = []
 
     def broken_print(*args, **kwargs):
-        raise OSError("stdout is gone")
+        attempts.append(args[0] if args else "")
+        raise stream_error
 
     monkeypatch.setattr("builtins.print", broken_print)
 
     decisions = confirm_deactivation_candidates(
-        list(outcomes),
+        candidate_ids,
         base_url="https://api.example.invalid/public/v1/locations/",
         api_key="unit-test-key",
         fetch_detail=fake_fetch_detail,
     )
 
-    assert [decision.location_id for decision in decisions] == list(outcomes)
-    assert [decision.deactivates for decision in decisions] == [False, True]
+    assert [decision.location_id for decision in decisions] == candidate_ids
+    assert not any(decision.deactivates for decision in decisions)
+    assert [attempt.strip() for attempt in attempts] == [
+        "Confirming 26 deactivation candidate(s) against the live CQC API...",
+        "...confirmed 24/26 candidate(s)",
+    ]
 
 
 def test_checkpoint_resume_starts_at_persisted_offset_without_overlap():
