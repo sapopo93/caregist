@@ -2173,10 +2173,26 @@ def _finalize_batch(args: argparse.Namespace, conn, cur) -> int:
     # so a substitution committed *after* that commit is not covered by this
     # attestation. That is a genuinely later change rather than evidence this
     # batch certified falsely, and it is caught by the next batch's coverage
-    # check. If the lock cannot be acquired (a writer in flight, or an
-    # operator's own lock on this table) the finalize waits, and on the caller's
-    # statement_timeout it aborts: a batch that is not finalized, not a batch
-    # finalized without its evidence.
+    # check.
+    #
+    # The wait is bounded here rather than left to the caller. SHARE ROW
+    # EXCLUSIVE conflicts with the ROW EXCLUSIVE every writer of this table
+    # takes, and Postgres queues lock requests, so a finalize that waits does
+    # not wait alone: every live write to care_providers behind it in the queue
+    # waits too (billing webhooks, provider profile edits, claims, reviews and
+    # enquiries all write this table). An earlier draft of this comment claimed
+    # the finalize aborts "on the caller's statement_timeout" -- no
+    # statement_timeout, lock_timeout or PGOPTIONS is set by this module, by the
+    # reconciliation workflow, or in the connection string, so in production
+    # that wait was bounded only by the workflow's 30-minute job timeout, with
+    # provider writes stalled behind it for the duration.
+    #
+    # SET LOCAL scopes the timeout to this transaction and reverts on commit, so
+    # no other statement's behaviour changes. On contention this raises
+    # LockNotAvailable and the batch is simply not finalized -- the outcome this
+    # guard already treats as safe, and the one abort-incomplete handles -- in
+    # preference to holding the live estate's writes hostage to a nightly batch.
+    cur.execute("SET LOCAL lock_timeout = '5s'")
     cur.execute("LOCK TABLE care_providers IN SHARE ROW EXCLUSIVE MODE")
     cur.execute(
         "SELECT id::text FROM care_providers WHERE UPPER(status) = 'ACTIVE' ORDER BY id"

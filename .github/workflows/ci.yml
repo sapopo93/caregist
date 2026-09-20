@@ -67,7 +67,11 @@ jobs:
         # job below. Keeping it out of this unit/service job prevents the test
         # bootstrap's local DATABASE_URL default from targeting a nonexistent
         # localhost database on the runner.
-        run: pytest -q --ignore=tests/integration
+        #
+        # CAREGIST_ALLOW_UNIT_ONLY=1 states that narrower scope on the record:
+        # scripts/run_tests.sh otherwise refuses to run without a database, so
+        # no job can report a green that skipped every DB-backed test silently.
+        run: CAREGIST_ALLOW_UNIT_ONLY=1 scripts/run_tests.sh -q --ignore=tests/integration
 
       - name: pip-audit (vulnerabilities)
         # Fail the build on known CVEs in backend deps.
@@ -141,7 +145,7 @@ jobs:
           CAREGIST_TEST_DATABASE_URL: postgresql://caregist_test:caregist_test@localhost:5432/postgres
           API_MASTER_KEY: ci_test_master_key
           SUPPORT_INTERNAL_TOKEN: ci_test_support_token
-        run: pytest tests/integration/ -v
+        run: scripts/run_tests.sh tests/integration/ -v
 
   container-scan:
     name: Container images (build + vulnerability scan)
