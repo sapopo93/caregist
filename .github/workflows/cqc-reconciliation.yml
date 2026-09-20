@@ -291,13 +291,17 @@ jobs:
     #
     # Where the time went is NOT established by that run's log: it contains no
     # output between the invocation and the cancellation, so the 29m37s covers
-    # the whole finalize phase. A read-only pg_stat_activity probe taken while it
-    # was stalled found no active query and no lock wait, so the phase was not
-    # blocked in Postgres; the only network-bound step ahead of the table lock is
-    # the candidate confirmation loop, which fetches one candidate at a time from
-    # the same API the shards had just been hammering and honours Retry-After with
-    # backoff capped at 30s. That points at the confirmation loop, but it is an
-    # inference from the absence of database activity, not a measurement - which
+    # the whole finalize phase. At the instant sampled by a read-only
+    # pg_stat_activity probe taken while it was stalled, no active query and no
+    # lock wait were visible; a single sample cannot exclude intermittent
+    # PostgreSQL waiting across the interval, and the unbounded
+    # pg_advisory_xact_lock earlier in the phase is not excluded by it. The only
+    # network-bound step ahead of the table lock is the candidate confirmation
+    # loop, which fetches one candidate at a time from the same API the shards
+    # had just been hammering and honours Retry-After with backoff capped at 30s.
+    # That points at the confirmation loop, but it is an inference from the
+    # absence of observed database activity at one instant, not a measurement -
+    # which
     # is why this change also prints phase boundaries, so the next run measures
     # where the time goes instead of inferring it.
     #
