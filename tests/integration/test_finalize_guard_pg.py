@@ -34,6 +34,7 @@ from incremental_update import (
     _repair_missing_slugs,
     build_snapshot_manifest,
     partition_location_ids,
+    summarise_deactivation_decisions,
 )
 from tests.integration.conftest import apply_full_schema
 
@@ -490,3 +491,185 @@ async def test_finalizer_acknowledgement_still_fails_on_an_unexplained_mismatch(
             api_key="integration-test-key",
             acknowledge_unconfirmed_deactivations=True,
         )
+
+
+# --------------------------------------------------------------------------
+# FIX 2 / HIGH (incremental_update.py:2061): the end-state guard compares the
+# ACTIVE *identity set*, not the ACTIVE count. Counts cannot tell one estate
+# from another when a location leaves and a different one arrives.
+# --------------------------------------------------------------------------
+
+
+async def test_finalizer_refuses_balanced_active_drift_and_names_both_ids(
+    tmp_path, fresh_db, monkeypatch
+):
+    """One manifest location goes INACTIVE and one unexplained location arrives.
+
+    The ACTIVE count is 100 before the drift and 100 after it, so the reviewed
+    guard -- which compared only ``COUNT(*) WHERE UPPER(status) = 'ACTIVE'``
+    against ``expected_active`` -- finalized the batch and marked it completed
+    while the estate had silently changed. A count is not an estate: one
+    location left the ACTIVE set and a different one joined it, and the batch is
+    responsible for both.
+
+    The drift is injected after candidate classification (inside the deactivation
+    summary, which runs once every candidate has been classified) so it lands in
+    the window between the candidate probe and the end-state verification, and
+    commits before that verification reads the table.
+    """
+    missing_id = MANIFEST_IDS[7]
+    extra_id = "1-97001"
+    payloads = {rogue: {"registrationStatus": "Deregistered"} for rogue in ROGUE_IDS}
+    batch_id = await _seed_rogue_candidates(tmp_path, fresh_db, payloads)
+    monkeypatch.setattr(
+        "incremental_update.fetch_location_detail", _detail_fetcher(payloads)
+    )
+
+    real_summary = summarise_deactivation_decisions
+    #: The ACTIVE set as plain SQL saw it (before the substitution, after it), in
+    #: the drift transaction, at the instant the finalizer was about to verify
+    #: its own end state. Read with plain SQL so the count-neutral property of the
+    #: drift does not rest on the finalizer's own bookkeeping.
+    observed_active_sets: list[tuple[set[str], set[str]]] = []
+
+    def _summary_with_drift(decisions):
+        with psycopg2.connect(fresh_db) as drift_conn, drift_conn.cursor() as drift_cur:
+            drift_cur.execute(
+                "SELECT id FROM care_providers WHERE UPPER(status) = 'ACTIVE'"
+            )
+            before = {str(row[0]) for row in drift_cur.fetchall()}
+            drift_cur.execute(
+                "UPDATE care_providers SET status = 'INACTIVE' WHERE id = %s",
+                (missing_id,),
+            )
+            drift_cur.execute(
+                """
+                INSERT INTO care_providers (id, name, slug, status)
+                VALUES (%s, %s, %s, 'ACTIVE')
+                ON CONFLICT (id) DO NOTHING
+                """,
+                (extra_id, "Unexplained Provider", "provider-unexplained"),
+            )
+            drift_cur.execute(
+                "SELECT id FROM care_providers WHERE UPPER(status) = 'ACTIVE'"
+            )
+            after = {str(row[0]) for row in drift_cur.fetchall()}
+            observed_active_sets.append((before, after))
+        return real_summary(decisions)
+
+    monkeypatch.setattr(
+        "incremental_update.summarise_deactivation_decisions", _summary_with_drift
+    )
+
+    with pytest.raises(ChangesFetchError) as refusal:
+        _run_finalize(
+            fresh_db,
+            batch_id,
+            tmp_path,
+            dry_run=False,
+            api_key="integration-test-key",
+            acknowledge_unconfirmed_deactivations=True,
+        )
+
+    message = str(refusal.value)
+    assert "does not match the authoritative manifest" in message
+    assert "1 missing, 1 extra" in message
+    assert missing_id in message
+    assert extra_id in message
+
+    # Independent of the finalizer: the substitution was count-neutral. Plain SQL
+    # saw the same number of ACTIVE locations before and after it, with exactly
+    # one manifest location leaving and exactly one unexplained location
+    # arriving, so *nothing* a total can compare separates the two estates.
+    assert len(observed_active_sets) == 1
+    before, after = observed_active_sets[0]
+    assert len(before) == len(MANIFEST_IDS) + len(ROGUE_IDS)
+    assert len(after) == len(before)
+    assert before - after == {missing_id}
+    assert after - before == {extra_id}
+
+    async_conn = await asyncpg.connect(fresh_db)
+    try:
+        row = await _batch_row(async_conn, batch_id)
+        assert row["status"] == "running"
+        assert row["run_status"] == "running"
+        assert row["counts_reconciled"] is False
+        assert row["active_records_after"] is None
+        recorded = json.loads(
+            await async_conn.fetchval(
+                "SELECT deactivation_confirmation FROM reconciliation_batches WHERE id = $1",
+                batch_id,
+            )
+        )
+        drift = recorded["active_identity_drift"]
+        assert drift["missing_active_ids"] == [missing_id]
+        assert drift["extra_active_ids"] == [extra_id]
+        # The guard's own numbers: as many ACTIVE ids after the writes as it
+        # expected, and still one missing and one extra.
+        assert drift["expected_active_ids_count"] == 100
+        assert drift["active_after_ids_count"] == 100
+        error_message = await async_conn.fetchval(
+            "SELECT error_message FROM reconciliation_batches WHERE id = $1", batch_id
+        )
+        assert missing_id in error_message
+        assert extra_id in error_message
+        # Refusal is transactional (the guard rolls its own writes back before
+        # raising), so the batch left no partial deactivation behind: the two
+        # rogues are still ACTIVE and the drift is neither absorbed nor repaired
+        # -- it stays for the next batch to re-derive from the manifest.
+        active_rows = await async_conn.fetch(
+            "SELECT id FROM care_providers WHERE UPPER(status) = 'ACTIVE'"
+        )
+        assert {str(record["id"]) for record in active_rows} == (
+            {location_id for location_id in MANIFEST_IDS if location_id != missing_id}
+            | set(ROGUE_IDS)
+            | {extra_id}
+        )
+    finally:
+        await async_conn.close()
+
+
+async def test_finalizer_records_identity_verification_on_the_success_path(
+    tmp_path, fresh_db, monkeypatch
+):
+    """The identity comparison is recorded, not merely silent when it passes."""
+
+    payloads = {
+        ROGUE_IDS[0]: {"registrationStatus": "Deregistered"},
+        ROGUE_IDS[1]: {"registrationStatus": "Registered"},
+    }
+    batch_id = await _seed_rogue_candidates(tmp_path, fresh_db, payloads)
+    monkeypatch.setattr(
+        "incremental_update.fetch_location_detail", _detail_fetcher(payloads)
+    )
+
+    assert _run_finalize(
+        fresh_db,
+        batch_id,
+        tmp_path,
+        dry_run=False,
+        api_key="integration-test-key",
+    ) == 0
+
+    async_conn = await asyncpg.connect(fresh_db)
+    try:
+        row = await _batch_row(async_conn, batch_id)
+        assert row["status"] == "completed"
+        assert row["active_records_after"] == 101
+        confirmation = json.loads(
+            await async_conn.fetchval(
+                "SELECT deactivation_confirmation FROM reconciliation_batches WHERE id = $1",
+                batch_id,
+            )
+        )
+        assert confirmation["active_identity_verified"] is True
+        assert confirmation["missing_active_ids"] == []
+        assert confirmation["extra_active_ids"] == []
+        assert confirmation["expected_active_ids_count"] == 101
+        assert confirmation["active_after_ids_count"] == 101
+        assert confirmation["expected_active_after"] == 101
+        assert confirmation["active_after"] == 101
+        assert "active_identity_drift" not in confirmation
+        assert await _active_count(async_conn) == 101
+    finally:
+        await async_conn.close()

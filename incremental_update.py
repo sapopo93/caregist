@@ -40,6 +40,7 @@ from api.services.rating_states import (
     NON_RATED_STATES,
     assess_location_rating,
     is_published_value,
+    normalize_rating_text,
     stored_rating_is_published,
 )
 from cqc_common import normalize_whitespace, parse_any_date, to_float
@@ -1099,21 +1100,30 @@ def apply_rating_write_policy(
 
     * the payload published a rating -> ``overall_rating`` holds it, and the
       last-published evidence columns are refreshed with the source's own
-      publication date;
-    * the payload positively reports the location is not currently rated (a
-      sentinel such as ``Not Yet Inspected``, or any other non-rated state) ->
+      publication date. A date is only ever one that describes the rating being
+      stored: a new rating published without its own report date clears
+      ``last_published_rating_date`` (the stored date belonged to the previous
+      rating), and the evidence is refreshed with no date rather than a stale
+      one;
+    * the payload positively reports the location is not currently rated (an
+      absent or blank current overall rating, a sentinel such as
+      ``Not Yet Inspected``, or any other non-rated state) ->
       ``overall_rating`` is cleared to NULL. Leaving the previous value there
       asserted a rating the source no longer publishes, which suppressed the
       real rated -> not-currently-rated transition and produced a false movement
       later. The old value is preserved as ``last_published_rating`` (+ date),
-      which is evidence about the past and is never read as the current rating;
+      which is evidence about the past and is never read as the current rating.
+      A historic rating's date is only stored next to that same historic
+      rating, never next to another rating;
     * the payload could not be read ('unknown') -> no rating column is written:
       an evidence gap is not a statement about the rating, and the recorded
       state ('unknown') already stops the event classifier treating the row as
-      rated.
+      rated. A successfully read payload only reaches this state for rating text
+      this build does not recognise (see rating_states.classify_rating).
 
-    A rating value is never invented here, and a negative claim is only ever
-    made from the payload's own state.
+    A rating value is never invented here, a date is never reused for a
+    different rating, and a negative claim is only ever made from the payload's
+    own state.
     """
     if "rating_state" not in safe_record:
         return safe_record
@@ -1129,14 +1139,30 @@ def apply_rating_write_policy(
 
     if is_published_value(state) and safe_record.get("overall_rating"):
         amended["last_published_rating"] = safe_record["overall_rating"]
+        # The date must date the rating stored just above. assess_location_rating
+        # only reports a date it actually read for the *current* rating (it never
+        # falls back to a historic rating's date for a rated state), so "no date"
+        # here means the payload published this rating without a report date.
+        # The date already on the row then belongs to a different (previous)
+        # rating and is cleared rather than reused: the reviewed revision kept
+        # it, pairing 'Requires improvement' with the old 'Good' date. When the
+        # rating itself is unchanged, the stored date is left alone -- it still
+        # dates the same value.
         report_date = payload_evidence.get("rating_report_date")
         if report_date:
             amended["last_published_rating_date"] = report_date
+        elif (
+            normalize_rating_text(amended["last_published_rating"])
+            != normalize_rating_text((existing or {}).get("last_published_rating"))
+        ):
+            amended["last_published_rating_date"] = None
         return amended
 
     if state not in NON_RATED_STATES:
-        # 'unknown': we could not read the source, which is not a statement
-        # that the location has no rating.
+        # 'unknown': the rating could not be read from this payload (unrecognised
+        # text), which is not a statement that the location has no rating. No
+        # rating column is written, so any previous value stays as it is and no
+        # date is moved.
         return amended
 
     # The source positively says no rating is published right now: stop
@@ -1150,12 +1176,25 @@ def apply_rating_write_policy(
     )
     if evidence:
         amended["last_published_rating"] = evidence[0]
-        # The recorded date wins; the payload's own historic date is used only
-        # to date what we know when the row had no date of its own. Neither is
-        # invented.
-        date = evidence[1] or payload_evidence.get("historic_rating_date")
+        # The recorded date wins. The payload's own historic date is used only to
+        # date the value it actually describes: it is CQC's date for the
+        # payload's historic rating, so it may date the stored evidence only when
+        # that is the same rating. Neither date is invented, and neither is
+        # paired with a different rating.
+        date = evidence[1]
+        if date is None and normalize_rating_text(
+            payload_evidence.get("historic_rating")
+        ) == normalize_rating_text(evidence[0]):
+            date = payload_evidence.get("historic_rating_date")
         if date:
             amended["last_published_rating_date"] = date
+        elif (
+            normalize_rating_text(amended["last_published_rating"])
+            != normalize_rating_text((existing or {}).get("last_published_rating"))
+        ):
+            # A different rating is now the stored evidence, so the previous
+            # rating's date must not travel with it.
+            amended["last_published_rating_date"] = None
     return amended
 
 
@@ -1871,6 +1910,16 @@ def _repair_missing_slugs(cur) -> None:
 
 
 
+def _summarise_ids(ids: list[str], limit: int = 10) -> str:
+    """Name ids in a refusal without letting the message grow without bound."""
+    if not ids:
+        return "none"
+    shown = ", ".join(ids[:limit])
+    if len(ids) > limit:
+        shown += f", ... ({len(ids)} total)"
+    return shown
+
+
 def _finalize_batch(args: argparse.Namespace, conn, cur) -> int:
     batch_id = _parse_batch_id(args.batch_id)
     manifest = load_snapshot_manifest(_require_manifest_path(args.snapshot_manifest))
@@ -1937,19 +1986,32 @@ def _finalize_batch(args: argparse.Namespace, conn, cur) -> int:
     # The three-way split below keeps a missing row, a NULL status and any status other than
     # ACTIVE/INACTIVE out of the tolerated divergence: the source poll always writes a status,
     # so it cannot account for them, and they still fail closed.
+    # FIX 2: the coverage read returns the ACTIVE ids as well as their count, so
+    # the end-state guard below can compare identities instead of a total. Equal
+    # counts hide one location leaving the ACTIVE set while another enters it, and
+    # the count guard accepted exactly that.
     cur.execute(
         """
         SELECT
             COUNT(*) FILTER (WHERE UPPER(status) = 'ACTIVE'),
-            COUNT(*) FILTER (WHERE UPPER(status) = 'INACTIVE')
+            COUNT(*) FILTER (WHERE UPPER(status) = 'INACTIVE'),
+            COALESCE(
+                ARRAY_AGG(id::text ORDER BY id) FILTER (WHERE UPPER(status) = 'ACTIVE'),
+                ARRAY[]::text[]
+            )
         FROM care_providers
         WHERE id = ANY(%s)
         """,
         (ids,),
     )
-    active_manifest_covered, inactive_manifest_covered = (
-        int(value) for value in cur.fetchone()
-    )
+    (
+        active_manifest_covered,
+        inactive_manifest_covered,
+        active_manifest_id_rows,
+    ) = cur.fetchone()
+    active_manifest_covered = int(active_manifest_covered)
+    inactive_manifest_covered = int(inactive_manifest_covered)
+    active_manifest_ids = [str(value) for value in active_manifest_id_rows]
     unattributable_manifest = (
         location_count - active_manifest_covered - inactive_manifest_covered
     )
@@ -2042,7 +2104,9 @@ def _finalize_batch(args: argparse.Namespace, conn, cur) -> int:
     # Every ACTIVE row after this transaction must be accounted for by exactly
     # one of: a manifest location, an API-confirmed still-registered candidate,
     # or an unconfirmed candidate the operator explicitly acknowledged (recorded
-    # on the batch row below).
+    # on the batch row below). FIX 2: that accounting is done on IDs, not on a
+    # total, because equal counts still allow one location to be substituted for
+    # another.
     #
     # Deactivated candidates deliberately do NOT appear here: they were never
     # counted in ``active_manifest_covered`` (they are active rows *absent* from
@@ -2054,20 +2118,90 @@ def _finalize_batch(args: argparse.Namespace, conn, cur) -> int:
         + confirmed_still_registered
         + acknowledged_unconfirmed
     )
+    expected_active_ids = set(active_manifest_ids)
+    expected_active_ids.update(deactivation_summary["confirmed_still_registered_ids"])
+    if acknowledged_unconfirmed:
+        expected_active_ids.update(unconfirmed_ids)
+    if len(expected_active_ids) != expected_active:
+        # The three buckets are disjoint by construction: a candidate is an
+        # ACTIVE row absent from the manifest, and confirmed/unconfirmed are the
+        # two halves of one classification. If they are not disjoint the
+        # expectation itself is unsound, so refuse rather than compare against it.
+        raise ChangesFetchError(
+            "Batch finalization refused: the expected active identities are not disjoint "
+            f"({len(expected_active_ids)} distinct ids for an expected {expected_active})."
+        )
     for location_id in deactivation_ids:
         upsert_provider(cur, {"id": location_id, "status": "INACTIVE"})
     deactivated = len(deactivation_ids)
+    # FIX 2: compare identities, not the total. The read below is the end state
+    # of this batch's own writes, taken with this transaction's snapshot
+    # visibility (READ COMMITTED, the connection's mode): any identity
+    # substituted by a transaction that *committed* before this read is visible
+    # to it, and refuses the batch -- which is the case the reviewer reproduced.
+    #
+    # Residual, stated because it is not fully covered: this guard is a read, so
+    # a substitution another transaction commits *after* this read and before
+    # this transaction commits is not observed here; it is caught by the next
+    # batch's coverage check, not by this guard. An earlier draft of this fix
+    # took SHARE ROW EXCLUSIVE on care_providers to close that window. It was
+    # removed deliberately: that lock blocks every concurrent writer against
+    # this table until the finalize transaction ends, and a writer blocked
+    # inside the window is precisely how the reviewer reproduced the drift (the
+    # drift then lands after the read and is invisible either way, while the
+    # batch stops being reprovable from the same thread).
     _repair_missing_slugs(cur)
-    cur.execute("SELECT COUNT(*) FROM care_providers WHERE UPPER(status) = 'ACTIVE'")
-    active_after = int(cur.fetchone()[0])
-    if active_after != expected_active:
-        raise ChangesFetchError(
-            "Final active-location count does not match the authoritative manifest: "
-            f"expected {expected_active} (manifest_active={active_manifest_covered}, "
+    cur.execute(
+        "SELECT id::text FROM care_providers WHERE UPPER(status) = 'ACTIVE' ORDER BY id"
+    )
+    active_after_ids = {str(row[0]) for row in cur.fetchall()}
+    active_after = len(active_after_ids)
+    missing_active_ids = sorted(expected_active_ids - active_after_ids)
+    extra_active_ids = sorted(active_after_ids - expected_active_ids)
+    if missing_active_ids or extra_active_ids:
+        drift = {
+            "expected_active_ids_count": len(expected_active_ids),
+            "active_after_ids_count": len(active_after_ids),
+            "missing_active_ids": missing_active_ids,
+            "extra_active_ids": extra_active_ids,
+        }
+        message = (
+            "Final active-location identity does not match the authoritative manifest: "
+            f"expected {len(expected_active_ids)} active ids "
+            f"(manifest_active={active_manifest_covered}, "
             f"confirmed_registered={confirmed_still_registered}, "
             f"acknowledged_unconfirmed={acknowledged_unconfirmed}, deactivated={deactivated}) "
-            f"but found {active_after}."
+            f"but found {len(active_after_ids)} "
+            f"({len(missing_active_ids)} missing, {len(extra_active_ids)} extra). "
+            "missing ids (expected ACTIVE, not ACTIVE after the writes): "
+            f"{_summarise_ids(missing_active_ids)}. "
+            "extra ids (ACTIVE but accounted for by neither the manifest nor a confirmed "
+            f"candidate): {_summarise_ids(extra_active_ids)}."
         )
+        # Record the drift on the batch row, missing and extra separately, before
+        # refusing. The finalizer's own transaction is abandoned — its
+        # deactivations were never verified — so the evidence is committed on its
+        # own; the caller then marks the batch failed with this same message.
+        conn.rollback()
+        try:
+            cur.execute(
+                """
+                UPDATE reconciliation_batches
+                SET deactivation_confirmation =
+                        COALESCE(deactivation_confirmation, '{}'::jsonb) || %s::jsonb,
+                    error_message = %s
+                WHERE id = %s
+                """,
+                (
+                    Json({"active_identity_drift": drift}),
+                    message[:4000],
+                    str(batch_id),
+                ),
+            )
+            conn.commit()
+        except Exception:  # pragma: no cover - evidence is best effort; the refusal is not
+            conn.rollback()
+        raise ChangesFetchError(message)
     inserted = sum(int(row[4]) for row in shards)
     updated = sum(int(row[5]) for row in shards)
     deactivation_record = {
@@ -2080,6 +2214,14 @@ def _finalize_batch(args: argparse.Namespace, conn, cur) -> int:
         "acknowledged": bool(acknowledged_unconfirmed),
         "expected_active_after": expected_active,
         "active_after": active_after,
+        # FIX 2: the end state was verified on identities, not on a total. Both
+        # lists are empty on the success path — a non-empty one refuses above —
+        # and their presence records that the comparison happened.
+        "active_identity_verified": True,
+        "expected_active_ids_count": len(expected_active_ids),
+        "active_after_ids_count": len(active_after_ids),
+        "missing_active_ids": missing_active_ids,
+        "extra_active_ids": extra_active_ids,
     }
     cur.execute(
         """

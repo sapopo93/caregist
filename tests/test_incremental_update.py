@@ -2,14 +2,15 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 import uuid
 from datetime import date, datetime, timezone
-from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 import pytest
 
+import incremental_update
 from api.services.provider_state_events import ProviderStateEvent
 from incremental_update import (
     _abort_batch,
@@ -43,6 +44,8 @@ from incremental_update import (
     fetch_recent_via_list_scan,
     normalize_database_url,
     partition_location_ids,
+    parse_args,
+    main,
     resolve_since,
     should_process_list_scan_record,
     shard_for_location,
@@ -676,15 +679,18 @@ def _finalize_cursor_with_candidates(
     *,
     candidate_ids,
     active_after=None,
+    drop_active_ids=(),
+    extra_active_ids=(),
 ):
-    cursor = _finalize_cursor(
-        manifest, shards, active_manifest_count, active_after=active_after
-    )
-    cursor.fetchall.side_effect = [
+    return _finalize_cursor(
+        manifest,
         shards,
-        [(location_id,) for location_id in candidate_ids],
-    ] + [[] for _ in range(20)]
-    return cursor
+        active_manifest_count,
+        active_after=active_after,
+        candidate_ids=candidate_ids,
+        drop_active_ids=drop_active_ids,
+        extra_active_ids=extra_active_ids,
+    )
 
 
 def _unconfirmed_decision(location_id, detail="candidate detail could not be read"):
@@ -963,12 +969,26 @@ def _finalize_cursor(
     active_manifest_count,
     active_after=None,
     inactive_manifest_count=None,
+    *,
+    candidate_ids=(),
+    drop_active_ids=(),
+    extra_active_ids=(),
 ):
-    """Cursor stub that answers by statement text, so call order and advisory locks cannot shift the canned rows."""
+    """Cursor stub that answers by statement text, so call order and advisory locks cannot shift the canned rows.
+
+    FIX 2: the end-state guard compares the ACTIVE *id set*, so the stub has to
+    answer with ids in two places (the coverage read and the verification read)
+    rather than with counts. ``active_after`` is the size of the verified ACTIVE
+    set; ``drop_active_ids`` removes expected ids and ``extra_active_ids`` adds
+    unexplained ones, which is how a balanced drift (one out, one in, same count)
+    is reproduced without touching the count the reviewed revision compared.
+    """
     cursor = Mock()
     location_count = int(manifest["locationCount"])
     if inactive_manifest_count is None:
         inactive_manifest_count = location_count - active_manifest_count
+    manifest_ids = [str(location_id) for location_id in manifest["locationIds"]]
+    active_manifest_ids = manifest_ids[:active_manifest_count]
     validation_row = (
         len(shards),
         location_count,
@@ -981,6 +1001,12 @@ def _finalize_cursor(
         statement = " ".join(str(calls[-1].args[0]).split()).upper() if calls else ""
         if "PG_ADVISORY" in statement:
             return (None,)
+        if "ARRAY_AGG" in statement and "ID = ANY(%S)" in statement:
+            return (
+                len(active_manifest_ids),
+                inactive_manifest_count,
+                list(active_manifest_ids),
+            )
         if "COUNT(*)" in statement and "ID = ANY(%S)" in statement:
             return (active_manifest_count, inactive_manifest_count)
         if "COUNT(*)" in statement:
@@ -991,8 +1017,39 @@ def _finalize_cursor(
             return None
         return validation_row
 
+    def _verified_active_ids():
+        """The ACTIVE ids the verification read sees: manifest ids minus the ones
+        that drifted out, plus candidates that stayed active, plus unexplained
+        ones, sized to ``active_after`` when a test asks for a specific count."""
+        ids = [
+            location_id
+            for location_id in active_manifest_ids
+            if location_id not in set(drop_active_ids)
+        ]
+        ids.extend(str(location_id) for location_id in candidate_ids)
+        if active_after is not None:
+            if active_after < len(ids):
+                ids = ids[:active_after]
+            elif active_after > len(ids):
+                ids.extend(
+                    f"1-{90000 + index}" for index in range(active_after - len(ids))
+                )
+        ids.extend(str(location_id) for location_id in extra_active_ids)
+        return ids
+
+    def _next_rows():
+        calls = cursor.execute.call_args_list
+        statement = " ".join(str(calls[-1].args[0]).split()).upper() if calls else ""
+        if "RECONCILIATION_SHARDS" in statement:
+            return shards
+        if "NOT (ID = ANY(%S))" in statement:
+            return [(str(location_id),) for location_id in candidate_ids]
+        if "SELECT ID::TEXT FROM CARE_PROVIDERS" in statement:
+            return [(location_id,) for location_id in _verified_active_ids()]
+        return []
+
     cursor.fetchone.side_effect = _next_row
-    cursor.fetchall.side_effect = [shards] + [[] for _ in range(20)]
+    cursor.fetchall.side_effect = _next_rows
     return cursor
 
 
@@ -1058,16 +1115,53 @@ def test_finalizer_refuses_a_manifest_location_the_source_cannot_account_for(tmp
 
 
 def test_finalizer_still_requires_an_accounted_end_state(tmp_path):
-    """The retargeted end-state equality must still refuse an unexplained active set."""
+    """The identity comparison must still refuse an unexplained active set."""
     manifest, batch_id, shards = _finalize_fixture(tmp_path)
     cursor = _finalize_cursor(manifest, shards, active_manifest_count=99, active_after=98)
 
-    with pytest.raises(ChangesFetchError, match="Final active-location count"):
+    with pytest.raises(ChangesFetchError, match="Final active-location identity"):
         _finalize_batch(
             _finalize_args(tmp_path, manifest, batch_id, dry_run=False),
             Mock(),
             cursor,
         )
+
+
+def test_finalizer_refuses_balanced_identity_drift(tmp_path):
+    """FIX 2 regression: one expected id out and one unexplained id in leaves the count equal.
+
+    The reviewed revision compared only the ACTIVE total, so this drift passed:
+    99 manifest ids minus one, plus an intruder, is still 99. The guard must now
+    compare identities and must name both ids in the refusal.
+    """
+    manifest, batch_id, shards = _finalize_fixture(tmp_path)
+    missing_id = "1-10007"
+    intruder_id = "1-99001"
+    cursor = _finalize_cursor(
+        manifest,
+        shards,
+        active_manifest_count=100,
+        active_after=100,
+        drop_active_ids=[missing_id],
+        extra_active_ids=[intruder_id],
+    )
+
+    with pytest.raises(ChangesFetchError) as raised:
+        _finalize_batch(
+            _finalize_args(tmp_path, manifest, batch_id, dry_run=False),
+            Mock(),
+            cursor,
+        )
+
+    message = str(raised.value)
+    assert "does not match the authoritative manifest" in message
+    assert missing_id in message, "the missing id must be named"
+    assert intruder_id in message, "the extra id must be named"
+    assert "missing ids" in message and "extra ids" in message
+    # Refused, not completed: no batch row was marked completed.
+    assert not any(
+        "SET status = 'completed'" in item for item in _issued_statements(cursor)
+    )
 
 
 def test_fetch_changes_raises_on_non_200_response():
@@ -1284,13 +1378,60 @@ def test_rating_projection_targets_the_existing_partial_unique_index():
     assert "WHERE event_dedupe_key IS NOT NULL" in sql
 
 
-def test_cli_requires_explicit_batch_phase_and_has_no_global_run_lock():
-    source = Path("incremental_update.py").read_text(encoding="utf-8")
+def test_cli_requires_explicit_batch_phase_and_has_no_global_run_lock(monkeypatch, capsys):
+    """Behavioural replacement for the reviewed source-text assertions.
 
-    assert 'choices=("prepare", "resume", "shard", "finalize", "abort")' in source
-    assert "INCREMENTAL_UPDATE_LOCK_ID" not in source
-    assert "acquire_run_lock" not in source
-    assert 're.fullmatch(r"[0-9a-f]{40}", args.release_sha.lower())' in source
+    The reviewed revision grepped ``incremental_update.py`` for substrings, which
+    proves the file was formatted as expected and nothing else. These assertions
+    drive the real parser and the real entrypoint.
+    """
+    parser_argv = ["incremental_update.py"]
+
+    monkeypatch.setattr(sys, "argv", parser_argv)
+    with pytest.raises(SystemExit):
+        parse_args()
+
+    for phase in ("prepare", "resume", "shard", "finalize", "abort"):
+        monkeypatch.setattr(sys, "argv", [*parser_argv, "--phase", phase])
+        assert parse_args().phase == phase
+
+    for bogus in ("Prepare", "all", "run", ""):
+        monkeypatch.setattr(sys, "argv", [*parser_argv, "--phase", bogus])
+        with pytest.raises(SystemExit):
+            parse_args()
+
+    # No process-wide single-run lock exists to acquire: serialisation is per
+    # batch (advisory locks on the batch row) and is asserted behaviourally in
+    # tests/integration/test_finalize_guard_pg.py.
+    assert [
+        name
+        for name in dir(incremental_update)
+        if "run_lock" in name.lower() or name.upper().endswith("LOCK_ID")
+    ] == []
+
+    # A prepare that cannot name the exact commit it runs as is refused before
+    # any database work, so a working tree cannot write as a release.
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            *parser_argv,
+            "--phase",
+            "prepare",
+            "--snapshot-manifest",
+            "unused-manifest.json",
+            "--release-sha",
+            "not-a-forty-hex-commit",
+            "--workflow-run-id",
+            "1",
+            "--workflow-run-attempt",
+            "1",
+            "--database-url",
+            "postgresql://unused/unused",
+        ],
+    )
+    assert main() == 1
+    assert "execution identity" in capsys.readouterr().err
 
 
 def test_trusted_event_insert_uses_source_time_and_conflict_safe_return():

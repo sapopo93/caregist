@@ -23,11 +23,13 @@ from api.services.rating_states import (
     UNRATED,
     assess_location_rating,
     classify_rating,
+    classify_stored_rating,
     is_published_value,
     is_sentinel_rating_text,
     normalize_rating_text,
     stored_rating_is_published,
 )
+from tests.rating_corpus import NON_EMPTY_CORPUS
 
 # --- published ratings ------------------------------------------------------
 
@@ -111,10 +113,25 @@ def test_ratings_are_not_sentinels():
 
 
 @pytest.mark.parametrize("raw_value", [None, "", "   ", "\t\n"])
-def test_present_ratings_block_without_a_value_is_unknown(raw_value):
+def test_present_ratings_block_without_a_value_is_not_published(raw_value):
+    """HIGH (`incremental_update.py:1137`), the classifier half.
+
+    ``currentRatings`` was present and read successfully, and the overall-rating
+    field is absent or blank inside it:
+
+    * absent value (``None``) -> ``not_published`` (the source publishes no
+      current rating; the payload supports that state);
+    * blank value (``""``, ``"   "``) -> ``not_published`` for the same reason.
+
+    Neither is ``'unknown'``, which is reserved for a payload this build could
+    not read (see the unfamiliar-text test below). The database consequence --
+    ``overall_rating`` is actually cleared -- is proven against real PostgreSQL
+    in ``tests/integration/test_rating_carry_forward_pg.py``.
+    """
+
     state, value = classify_rating(raw_value, current_ratings_present=True, historic_rating_present=False)
 
-    assert state == UNKNOWN
+    assert state == NOT_PUBLISHED
     assert value is None
 
 
@@ -263,21 +280,74 @@ def test_payload_whose_historic_rating_is_a_sentinel_is_not_a_rating():
     assert rating.value is None
 
 
-def test_payload_with_no_current_rating_and_no_historic_evidence_is_unknown():
+def test_payload_with_no_current_rating_and_no_historic_evidence_is_not_published():
     rating = assess_location_rating({"currentRatings": {"reportDate": "2026-09-10"}})
 
-    assert rating.state == UNKNOWN
+    # The payload was read and it publishes no current rating. That is a state
+    # the source supports, so it clears the column rather than leaving the
+    # previous rating asserted (HIGH, incremental_update.py:1137).
+    assert rating.state == NOT_PUBLISHED
     assert rating.value is None
-    assert rating.evidenced is False
+    assert rating.evidenced is True
     assert "no historic evidence" in rating.evidence
 
 
 def test_blank_rating_string_is_not_a_rating_value():
     rating = assess_location_rating({"currentRatings": {"overall": {"rating": "   "}}})
 
+    # Blank text is "the source publishes no rating here", not "unreadable".
+    assert rating.state == NOT_PUBLISHED
+    assert rating.value is None
+    assert rating.evidenced is True
+    assert rating.evidence.endswith("blank")
+
+
+@pytest.mark.parametrize(
+    "raw_value", ["Excellent", "Suspended", "Under review", "??", "Good-ish", "RI"]
+)
+def test_unfamiliar_rating_text_is_unknown_and_never_rated(raw_value):
+    """MEDIUM (`api/services/rating_states.py:140`).
+
+    The reviewed payload classifier called every non-empty, non-sentinel string
+    ``'rated'``. 'Excellent'/'Suspended'/'Under review' are not published CQC
+    ratings, and treating them as one asserts a rating CQC never published. The
+    payload classifier is now on the published-rating allow-list, and unfamiliar
+    text is ``'unknown'`` -- the same answer ``classify_stored_rating`` gives.
+    """
+
+    rating = assess_location_rating({"currentRatings": {"overall": {"rating": raw_value}}})
+
     assert rating.state == UNKNOWN
     assert rating.value is None
     assert rating.evidenced is False
+    assert classify_stored_rating(raw_value)[0] == UNKNOWN
+
+
+def test_payload_and_stored_classifiers_agree_over_the_shared_corpus():
+    """One authority: the same corpus through both production entry points.
+
+    The corpus itself lives in ``tests/rating_corpus.py``, and the SQL half of
+    the authority is driven over it by
+    ``tests/integration/test_migration_061_rating_state.py``.
+    """
+
+    disagreements = []
+    for value in NON_EMPTY_CORPUS:
+        payload_state = assess_location_rating(
+            {"currentRatings": {"overall": {"rating": value}}}
+        ).state
+        stored_state = classify_stored_rating(value)[0]
+        if payload_state != stored_state:
+            disagreements.append((value, payload_state, stored_state))
+
+    assert disagreements == []
+
+    # ...and the empty shapes, where the two classifiers differ by design.
+    assert {
+        assess_location_rating({"currentRatings": {"overall": {"rating": value}}}).state
+        for value in ("", "   ", None)
+    } == {NOT_PUBLISHED}
+    assert {classify_stored_rating(value)[0] for value in ("", "   ", None)} == {UNKNOWN}
 
 
 def test_historic_ratings_as_a_single_dict_is_supported():

@@ -1,105 +1,83 @@
-import re
-from pathlib import Path
-
 from api.services.rating_states import (
-    NOT_APPLICABLE,
-    NOT_PUBLISHED,
-    NOT_YET_INSPECTED,
     PUBLISHED_RATING_VALUES,
+    RATING_STATES,
     SENTINEL_STATE_BY_TEXT,
-    UNRATED,
+    assess_location_rating,
+    classify_stored_rating,
+    is_published_value,
+    normalize_rating_text,
 )
+from tests.rating_corpus import CORPUS, NON_EMPTY_CORPUS
 from tools.check_migration_governance import check_governance
 
-MIGRATION_061 = (
-    Path(__file__).resolve().parents[1]
-    / "db"
-    / "migrations"
-    / "061_provider_rating_state.sql"
-)
 
-# WHEN src.normalized IN (<values>) THEN '<state>'
-_BRANCH = re.compile(
-    r"WHEN\s+src\.normalized\s+IN\s*\(([^)]*)\)\s*THEN\s+'([a-z_]+)'", re.IGNORECASE
-)
+def test_the_rating_classification_authority_is_behavioural_over_the_shared_corpus():
+    """One authority, checked by behaviour rather than by parsing source text.
 
+    The reviewed revision asserted on the *text* of migration 061 (parsing its
+    ``WHEN src.normalized IN (...) THEN '<state>'`` branches) and on the text of
+    ``incremental_update.py``. Source text is not behaviour: it does not prove
+    what any value classifies as, and it moves when a file is reformatted.
 
-def _sql_without_comments() -> str:
-    """Migration 061 with its ``--`` commentary stripped.
-
-    The prose deliberately *quotes* the removed ``ELSE 'rated'`` catch-all, so
-    assertions about the executable classification must ignore comments.
+    The SQL half of the authority is checked where the SQL actually runs --
+    ``tests/integration/test_migration_061_rating_state.py`` executes migration
+    061 against real PostgreSQL and drives both Python classifiers over this same
+    corpus, failing on any value-for-value disagreement. What remains here is the
+    database-free half: the corpus itself, classified through production code.
     """
 
-    return "\n".join(
-        line.split("--", 1)[0] for line in MIGRATION_061.read_text(encoding="utf-8").splitlines()
+    assert CORPUS, "the shared corpus must not be empty"
+    assert PUBLISHED_RATING_VALUES, "no published rating values to compare against"
+
+    disagreements: list[tuple[str | None, str, str]] = []
+    for value in NON_EMPTY_CORPUS:
+        payload_state = assess_location_rating(
+            {"currentRatings": {"overall": {"rating": value}}}
+        ).state
+        stored_state = classify_stored_rating(value)[0]
+        if payload_state != stored_state:
+            disagreements.append((value, payload_state, stored_state))
+
+    assert disagreements == [], (
+        "payload classifier and stored classifier disagree (value, payload, stored): "
+        f"{disagreements}"
     )
 
 
-def _sql_vocabulary() -> dict[str, set[str]]:
-    """Parse the per-state IN-lists out of migration 061.
+def test_only_published_ratings_are_ever_classified_as_rated():
+    """'rated' is the published allow-list, and nothing else (FIX 4).
 
-    This is the SQL half of the rating-classification authority.  The Python
-    half is ``api/services/rating_states.py``; the two must classify every
-    stored value identically or a value can be ``rated`` in one and not the
-    other (the FIX 4 finding).
+    Every sentinel must map to its sentinel state, and any other unrecognised
+    text must come back ``'unknown'`` -- never ``'rated'``, which would assert a
+    rating CQC never published.
     """
-    sql = _sql_without_comments()
-    groups: dict[str, set[str]] = {}
-    for raw_values, state in _BRANCH.findall(sql):
-        groups[state] = {
-            value.strip().strip("'") for value in raw_values.split(",") if value.strip()
-        }
-    return groups
+
+    for value in CORPUS:
+        state, _ = classify_stored_rating(value)
+        assert state in RATING_STATES, value
+
+        if state == "rated":
+            assert normalize_rating_text(value) in PUBLISHED_RATING_VALUES, value
+
+    for text, expected_state in SENTINEL_STATE_BY_TEXT.items():
+        assert expected_state != "rated"
+        assert text not in PUBLISHED_RATING_VALUES
+        assert classify_stored_rating(text) == (expected_state, None)
 
 
-def _python_vocabulary() -> dict[str, set[str]]:
-    """The Python half of the same authority, grouped the way SQL groups it."""
+def test_the_sentinel_vocabulary_is_shared_by_the_migration_and_python():
+    """Every sentinel is classified by behaviour, and none is a rating.
 
-    groups: dict[str, set[str]] = {"rated": set(PUBLISHED_RATING_VALUES)}
-    for text, state in SENTINEL_STATE_BY_TEXT.items():
-        groups.setdefault(state, set()).add(text)
-    return groups
+    ``test_backfill_is_a_no_op_on_the_second_run`` and
+    ``test_payload_classifier_and_the_executed_migration_agree_value_for_value``
+    (both in ``tests/integration/test_migration_061_rating_state.py``) prove the
+    same property against the executed SQL; this is the database-free guard that
+    the vocabulary the two sides share has not grown a rating.
+    """
 
-
-def test_migration_061_rating_vocabulary_is_the_python_authority():
-    """The SQL branches must equal the Python vocabulary, state by state."""
-
-    sql_groups = _sql_vocabulary()
-
-    assert sql_groups, "migration 061 no longer classifies with IN-lists"
-    assert set(sql_groups) == {
-        "rated",
-        NOT_YET_INSPECTED,
-        NOT_PUBLISHED,
-        UNRATED,
-        NOT_APPLICABLE,
-    }
-    assert sql_groups["rated"] == set(PUBLISHED_RATING_VALUES)
-    for state in (NOT_YET_INSPECTED, NOT_PUBLISHED, UNRATED, NOT_APPLICABLE):
-        assert sql_groups[state] == {
-            text for text, mapped in SENTINEL_STATE_BY_TEXT.items() if mapped == state
-        }, state
-    assert _python_vocabulary() == sql_groups
-
-
-def test_migration_061_never_classifies_a_sentinel_as_rated():
-    """No sentinel text may appear in the 'rated' branch."""
-
-    published = _sql_vocabulary()["rated"]
-
-    assert published == set(PUBLISHED_RATING_VALUES)
-    for sentinel_text in SENTINEL_STATE_BY_TEXT:
-        assert sentinel_text not in published
-
-
-def test_migration_061_unrecognised_values_fall_back_to_unknown_not_rated():
-    """There must be no `ELSE 'rated'` catch-all asserting an unobserved rating."""
-
-    sql = _sql_without_comments()
-
-    assert re.search(r"ELSE\s+'unknown'", sql, re.IGNORECASE)
-    assert not re.search(r"ELSE\s+'rated'", sql, re.IGNORECASE)
+    assert set(SENTINEL_STATE_BY_TEXT.values()) <= RATING_STATES
+    assert not (set(SENTINEL_STATE_BY_TEXT) & set(PUBLISHED_RATING_VALUES))
+    assert all(not is_published_value(state) for state in SENTINEL_STATE_BY_TEXT.values())
 
 
 def test_governance_rejects_prisma_db_push(tmp_path):

@@ -18,8 +18,10 @@
 -- this file classifies a value *stored in overall_rating* with exactly the
 -- rules the application uses, which are declared once in
 -- api/services/rating_states.py (PUBLISHED_RATING_VALUES and _SENTINEL_STATES)
--- and implemented in SQL below. tests/test_migration_governance.py parses the
--- IN-lists in this file and fails if they drift from the Python vocabulary.
+-- and implemented in SQL below. tests/integration/test_migration_061_rating_state.py
+-- runs this migration against real Postgres over the shared corpus
+-- (tests/rating_corpus.py) and fails if any stored value classifies differently
+-- here than it does through the payload classifier or classify_stored_rating.
 -- There is deliberately NO `ELSE 'rated'` catch-all: an unrecognised value
 -- resolves to 'unknown'. Classifying an unrecognised value as 'rated' would
 -- assert a rating that was never published (reviewer finding, FIX 4), and

@@ -7,8 +7,10 @@ that ingestion had correctly left ``'unknown'``.
 
 These tests execute the migration SQL as-is (twice where it matters) against a
 real Postgres and compare the stored states with
-:func:`api.services.rating_states.classify_stored_rating`, so the SQL and the
-Python cannot disagree. Skipped unless CAREGIST_TEST_DATABASE_URL is set; see
+:func:`api.services.rating_states.classify_stored_rating` *and* with the payload
+classifier :func:`api.services.rating_states.assess_location_rating`, over the
+same corpus (``tests/rating_corpus.py``), so the SQL and both Python entry points
+cannot disagree. Skipped unless CAREGIST_TEST_DATABASE_URL is set; see
 tests/integration/conftest.py.
 """
 
@@ -17,10 +19,12 @@ from __future__ import annotations
 import pytest
 
 from api.services.rating_states import (
+    assess_location_rating,
     classify_stored_rating,
     is_published_value,
 )
 from tests.integration.conftest import MIGRATIONS_DIR, apply_full_schema
+from tests.rating_corpus import CORPUS, NON_EMPTY_CORPUS
 
 asyncpg = pytest.importorskip("asyncpg")
 
@@ -29,40 +33,9 @@ pytestmark = pytest.mark.asyncio
 RATING_STATE_SQL = MIGRATIONS_DIR / "061_provider_rating_state.sql"
 LAST_PUBLISHED_SQL = MIGRATIONS_DIR / "062_provider_last_published_rating.sql"
 
-#: Values a stored ``overall_rating`` can legitimately hold, plus the shapes that
-#: made the reviewed ``ELSE 'rated'`` catch-all wrong.
-CORPUS: tuple[str | None, ...] = (
-    "Outstanding",
-    "Good",
-    "requires improvement",
-    "INADEQUATE",
-    "  Good  ",
-    "Requires  improvement",
-    "Not Yet Inspected",
-    "not inspected",
-    "Awaiting inspection",
-    "No Published Rating",
-    "Not published",
-    "No rating",
-    "Rating not published",
-    "Inspected but not rated",
-    "Not rated",
-    "Unrated",
-    "UNRATED",
-    "Not applicable",
-    "N/A",
-    "n/a",
-    "",
-    "   ",
-    None,
-    # Unrecognised: neither a rating nor a known sentinel. Must not be 'rated'.
-    "Suspended",
-    "Pending",
-    "Not registered",
-    "Deregistered",
-    "Under review",
-    "??",
-)
+# ``CORPUS`` / ``NON_EMPTY_CORPUS`` come from tests.rating_corpus: one corpus,
+# shared with the Python-side corpus test, so the SQL classification and the
+# payload classification cannot be checked against different value sets.
 
 
 async def _seed(conn, values: tuple[str | None, ...], *, prefix: str = "MIG") -> list[str]:
@@ -216,6 +189,51 @@ async def test_rerun_never_rewrites_a_row_ingestion_classified(fresh_db):
                 "SELECT rating_state FROM care_providers WHERE id = 'ING00001'"
             )
             == "unknown"
+        )
+    finally:
+        await conn.close()
+
+
+async def test_payload_classifier_and_the_executed_migration_agree_value_for_value(fresh_db):
+    """MEDIUM (`api/services/rating_states.py:140`): one authority, one corpus.
+
+    The reviewer's observation was that the payload classifier called
+    ``'Excellent'``, ``'Suspended'`` and ``'Under review'`` ``'rated'`` while
+    ``classify_stored_rating`` and migration 061 called the same stored values
+    ``'unknown'`` -- SQL and Python as two authorities.
+
+    Here the payload classifier is driven the way ingestion drives it
+    (:func:`assess_location_rating` on a real ``currentRatings.overall.rating``
+    shape) and the migration classification is driven by executing migration 061
+    against real PostgreSQL, over the same corpus. Every value that disagrees,
+    in either direction, fails and is named.
+    """
+
+    conn = await asyncpg.connect(fresh_db)
+    try:
+        await apply_full_schema(conn)
+        ids = await _seed(conn, NON_EMPTY_CORPUS, prefix="AGR")
+        await _run_sql(conn, RATING_STATE_SQL)
+
+        stored = await conn.fetch(
+            "SELECT id, overall_rating, rating_state FROM care_providers WHERE id = ANY($1)",
+            ids,
+        )
+        assert len(stored) == len(NON_EMPTY_CORPUS)
+
+        disagreements: list[tuple[str, str, str]] = []
+        for row in stored:
+            raw = row["overall_rating"]
+            payload_state = assess_location_rating(
+                {"currentRatings": {"overall": {"rating": raw}}}
+            ).state
+            if payload_state != row["rating_state"]:
+                disagreements.append((raw, payload_state, row["rating_state"]))
+
+        assert disagreements == [], (
+            "payload classifier and the executed migration disagree "
+            "(value, payload_state, sql_state): "
+            f"{disagreements}"
         )
     finally:
         await conn.close()

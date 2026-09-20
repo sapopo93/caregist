@@ -27,6 +27,7 @@ from api.services.rating_states import (
     RATING_STATES,
     UNKNOWN,
     classify_rating,
+    classify_stored_rating,
     is_published_value,
     normalize_rating_text,
 )
@@ -177,11 +178,7 @@ def _last_published_evidence(
     raw = record.get("last_published_rating")
     if not isinstance(raw, str) or not raw.strip():
         return (None, None)
-    state, value = classify_rating(
-        raw,
-        current_ratings_present=False,
-        historic_rating_present=True,
-    )
+    state, value = classify_stored_rating(raw)
     if not (is_published_value(state) and value is not None):
         return (None, None)
     stored_date = record.get("last_published_rating_date")
@@ -222,11 +219,13 @@ def _rating_observation(record: dict[str, Any] | None) -> tuple[str, str | None]
 
     # No usable recorded state at all (legacy row): fall back to the column,
     # which may name a real rating or a sentinel the old behaviour left there.
-    state, value = classify_rating(
-        record.get("overall_rating"),
-        current_ratings_present=True,
-        historic_rating_present=False,
-    )
+    # The column is classified with the *stored* authority
+    # (:func:`classify_stored_rating`): a legacy ``""``/NULL column means
+    # storage says nothing -> UNKNOWN. It must not be read as a payload field,
+    # because an absent or blank value there means the opposite thing -- a
+    # payload the pipeline could read that publishes no current rating
+    # (``not_published``) -- and this row was never a read payload.
+    state, value = classify_stored_rating(record.get("overall_rating"))
     if is_published_value(state) and value is not None:
         return (state, value)
     if state != UNKNOWN:

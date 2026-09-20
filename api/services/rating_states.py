@@ -9,7 +9,13 @@ CQC publishes three different shapes through the same field
   "No Published Rating", "Inspected but not rated", ...),
 * nothing at all -- the block, the field, or the string is absent/blank.
 
-Only the first shape is a rating. Treating the other two as rating values is
+Only the first shape is a rating. "Nothing at all" is a statement the source
+makes about a payload that *was* read: the location publishes no current overall
+rating. It is not an evidence gap and it is not licence to keep asserting the
+previous rating, so it resolves to ``not_published`` and clears the column. An
+unfamiliar non-empty string is the only payload shape that resolves to
+``unknown`` (see :func:`classify_rating`): this build cannot read it, so it
+asserts nothing either way. Treating the other shapes as rating values is
 what wrote blanks and sentinels into ``care_providers.overall_rating`` and
 produced ~24k ``rating_changed`` ledger events whose destination was empty:
 representation churn (sentinel vs omitted field) was being read as rating
@@ -51,9 +57,12 @@ NON_RATED_STATES = frozenset(
 )
 
 #: Normalised texts of CQC's real published ratings. This is the *only* set of
-#: values that may be read as "a rating". It is the shared authority referenced
-#: by db/migrations/061_provider_rating_state.sql (asserted by
-#: tests/test_migration_governance.py), so SQL and Python cannot drift.
+#: values that may be read as "a rating", on both sides of the boundary: the
+#: payload classifier and db/migrations/061_provider_rating_state.sql both take
+#: their published-rating vocabulary from here. The migration half is checked
+#: behaviourally -- tests/integration/test_migration_061_rating_state.py executes
+#: migration 061 over the shared corpus and fails if any stored value classifies
+#: differently there than it does through this module.
 PUBLISHED_RATING_VALUES = frozenset(
     {"outstanding", "good", "requires improvement", "inadequate"}
 )
@@ -81,7 +90,7 @@ _SENTINEL_STATES: dict[str, str] = {
 #: about the difference must inspect the raw payload.
 SENTINEL_STATES = frozenset({NOT_YET_INSPECTED, UNRATED, NOT_APPLICABLE})
 
-#: Public read-only view of the sentinel vocabulary. The migration governance
+#: Public read-only view of the sentinel vocabulary. The real-Postgres corpus
 #: test reads it (with :data:`PUBLISHED_RATING_VALUES`) to prove that SQL
 #: migration 061 classifies stored values exactly the way this module does.
 SENTINEL_STATE_BY_TEXT: dict[str, str] = _SENTINEL_STATES
@@ -111,25 +120,51 @@ def classify_rating(
     ``raw_value`` is the raw ``currentRatings.overall.rating`` value (or
     ``None`` when the field/block is absent).
     ``current_ratings_present`` is True when the payload carried a
-    ``currentRatings`` block at all (a present-but-valueless block is an
-    evidence gap, not a statement that no rating exists).
+    ``currentRatings`` block at all.
     ``historic_rating_present`` is True when the payload carried historic
     ratings only.
 
     The second element is a published rating value *only* for the ``rated``
     state; every sentinel, blank, missing or historic-only value returns
     ``None``. Historic ratings are never reported as the current value.
+
+    Which payload shape maps to which state, and why (this is the contract the
+    rating columns and the ledger depend on):
+
+    * the ``rating`` field is ABSENT (no ``currentRatings`` block, no
+      ``overall`` block, or no ``rating`` key) -> ``not_published``. A payload
+      that was read successfully and carries no current overall rating is the
+      source saying there is none; keeping the previous rating in the column
+      asserted a rating the source no longer publishes.
+    * the ``rating`` field is BLANK (``""``, ``"   "``) -> ``not_published``,
+      for the same reason: :func:`normalize_rating_text` makes blank and absent
+      the same shape, because whitespace is an empty field rather than a value.
+    * a sentinel string -> its sentinel state (``not_yet_inspected``,
+      ``not_published``, ``unrated``, ``not_applicable``); never ``rated``.
+    * a value in :data:`PUBLISHED_RATING_VALUES` (casefolded, whitespace
+      collapsed) -> ``rated``, with the source's own spelling as the value.
+    * any other non-empty string -> ``unknown``. This is the only way a
+      successfully read payload reaches ``unknown`` here, and it is deliberate:
+      unfamiliar text in CQC's own rating field is a value this build cannot
+      read, so it is neither asserted as a rating (the reviewed revision's
+      ``ELSE 'rated'`` behaviour for ``"Suspended"``/``"Under review"``) nor
+      used to clear the column. ``UNKNOWN`` stays the honest answer for input
+      this code cannot interpret; it is not the answer for a field the source
+      left empty.
+
+    ``current_ratings_present`` and ``historic_rating_present`` remain part of
+    the signature (callers pass the payload shape, and the shapes above are
+    named after them) but no longer change the state; depending on them is
+    exactly what left the previous rating in place for an absent or blank
+    field. ``assess_location_rating`` still uses the payload shape for the
+    evidence label.
     """
+    del current_ratings_present, historic_rating_present
+
     normalized = normalize_rating_text(raw_value)
     if normalized is None:
-        if current_ratings_present:
-            # The block exists but carries no usable value: we cannot claim a
-            # rating and cannot claim there is none either.
-            return (UNKNOWN, None)
-        # No published rating. ``historic_rating_present`` is accepted as
-        # evidence that a rating existed in the past, which is exactly why it
-        # must never be reported as the current value: the state is
-        # 'not_published' either way and the value stays None.
+        # Absent or blank: a payload that was read successfully and publishes no
+        # current overall rating. Not an evidence gap.
         return (NOT_PUBLISHED, None)
 
     sentinel_state = _SENTINEL_STATES.get(normalized)
@@ -137,7 +172,12 @@ def classify_rating(
         # A sentinel is not a rating and carries no rating value.
         return (sentinel_state, None)
 
-    return (RATED, str(raw_value).strip())
+    if normalized in PUBLISHED_RATING_VALUES:
+        return (RATED, str(raw_value).strip())
+
+    # Unfamiliar text: neither a published rating nor a known sentinel. Refusing
+    # to guess is the whole point -- one authority, no catch-all.
+    return (UNKNOWN, None)
 
 
 def is_published_value(state: str) -> bool:
@@ -154,19 +194,22 @@ def is_sentinel_rating_text(raw_value: Any) -> bool:
 def classify_stored_rating(raw_value: Any) -> tuple[str, str | None]:
     """Classify a value that is *stored* in ``care_providers.overall_rating``.
 
-    Stricter than :func:`classify_rating`, deliberately:
+    Same authority as :func:`classify_rating`, one difference of subject:
 
     * :func:`classify_rating` reads a CQC *payload field*
-      (``currentRatings.overall.rating``), where an unfamiliar string is still
-      CQC's own text in CQC's own rating field;
+      (``currentRatings.overall.rating``). There, an absent or blank field is
+      the source publishing no current rating -> ``not_published``, and an
+      unfamiliar non-empty string is text in CQC's own rating field that this
+      build cannot read -> ``unknown``.
     * a stored column has no such provenance -- older code wrote blanks and
-      sentinels there -- so an unrecognised value resolves to ``unknown`` (the
-      honest answer) instead of being asserted as a rating.
+      sentinels there -- so a blank or absent value resolves to ``unknown`` (the
+      honest answer: storage says nothing about what the source published)
+      instead of ``not_published``.
 
-    Only a value in :data:`PUBLISHED_RATING_VALUES` yields ``rated``. That is
-    what makes an ``ELSE 'rated'`` catch-all unnecessary in SQL migration 061
-    and keeps the two classifiers in step. A blank or absent value is
-    ``unknown`` here because the caller is reading storage, not a payload.
+    Both classifiers accept the *same* rating vocabulary: only a value in
+    :data:`PUBLISHED_RATING_VALUES` yields ``rated``, and unrecognised text is
+    ``unknown`` in both. That equality is what the corpus test over the real
+    migration asserts; a catch-all in either language would break it.
     """
     normalized = normalize_rating_text(raw_value)
     if normalized is None:
@@ -230,7 +273,9 @@ class LocationRatingAssessment:
     rating only for the ``rated`` state. ``evidenced`` is False when the
     payload does not support the state it produced (an evidence gap), which
     callers must surface as an incomplete destination rather than a blank or
-    null one.
+    null one. An absent or blank current overall rating IS supported by a
+    successfully read payload (``not_published``, ``evidenced=True``); only
+    unfamiliar text (``unknown``) is not.
     """
 
     state: str
@@ -274,35 +319,56 @@ def assess_location_rating(payload: dict[str, Any]) -> LocationRatingAssessment:
     evidence = "cqc.currentRatings.overall.rating"
     evidenced = True
     if state == UNKNOWN:
-        if historic_raw is not None:
-            # The ratings block carries no current overall value while the
-            # source still publishes a historic rating: the location has no
-            # *current* published rating. That is a source-supported state, not
-            # an evidence gap.
-            state = NOT_PUBLISHED
-            evidence = "cqc.currentRatings (no overall) + cqc.historicRatings"
-        else:
-            evidence = "cqc.currentRatings (no overall, no historic evidence)"
-            evidenced = False
+        # Only unfamiliar non-empty text reaches 'unknown' now: absent and blank
+        # are 'not_published' by contract (see classify_rating), and a payload
+        # that could not be fetched or parsed never reaches this function -- the
+        # caller fails closed before any write. Unrecognised text is a value this
+        # build cannot read, so it is an evidence gap: nothing is asserted about
+        # the rating, in either direction.
+        evidence = "cqc.currentRatings.overall.rating (unrecognised text)"
+        evidenced = False
     elif is_published_value(state):
         evidence = "cqc.currentRatings.overall.rating"
     elif is_sentinel_rating_text(raw_value):
         evidence = "cqc.currentRatings.overall.rating (sentinel)"
-    elif not current_present:
-        evidence = "cqc.currentRatings absent"
+    elif normalize_rating_text(raw_value) is None:
+        # Absent or blank current overall rating in a payload that WAS read: the
+        # source publishes no current rating, and the payload supports that, so
+        # the state is evidenced rather than a gap. The four shapes are named
+        # separately because they are different evidence, not different states.
+        if not current_present:
+            evidence = "cqc.currentRatings absent"
+        elif not overall_present:
+            evidence = (
+                "cqc.currentRatings (no overall) + cqc.historicRatings"
+                if historic_raw is not None
+                else "cqc.currentRatings (no overall, no historic evidence)"
+            )
+        elif raw_value is None:
+            # overall present, no 'rating' key at all.
+            evidence = "cqc.currentRatings.overall.rating absent"
+        else:
+            # overall present, 'rating' is whitespace-only text.
+            evidence = "cqc.currentRatings.overall.rating blank"
 
     report_date = None
     if current_present:
         report_date = current_ratings.get("reportDate")
     if report_date is None and overall_present:
         report_date = overall.get("reportDate") or overall.get("date")
-    if report_date is None:
+    if report_date is None and not is_published_value(state):
+        # A historic rating's date dates that historic rating. It may inform a
+        # non-rated state (there is no current published rating for it to
+        # mis-date), but it must never be attached to a current published rating
+        # it does not describe: that is what paired 'Outstanding' with a
+        # historic 'Good' date. Callers gate on the state for the same reason
+        # (see apply_rating_write_policy).
         report_date = historic_date
 
     return LocationRatingAssessment(
         state=state,
         value=value if is_published_value(state) else None,
-        evidenced=evidenced or is_published_value(state),
+        evidenced=evidenced,
         evidence=evidence,
         historic_rating=historic_raw,
         historic_rating_state=historic_state,
