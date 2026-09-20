@@ -285,16 +285,28 @@ jobs:
     if: github.event_name == 'schedule' || inputs.dry_run == false
     needs: [prepare, shards]
     runs-on: ubuntu-latest
-    # 60, not 30. This job confirms every deactivation candidate against the
-    # live CQC API one request at a time, immediately after the shards have been
-    # hammering the same API for hours. On 2026-09-20 a 127-candidate batch spent
-    # 29m37s in that confirmation work and was cancelled by the old 30-minute cap
-    # (run 35510678221) having written nothing, losing the batch and leaving the
-    # freshness surface degraded. The cap is an operational bound, not a
-    # correctness gate: the fail-closed refusal for unconfirmed candidates and
-    # the identity-equality guard are both untouched by this value. Prior
-    # finalizes with few candidates took 42s and 75s, so this is headroom for a
-    # legitimate slow path rather than a threshold lowered to obtain a pass.
+    # 60, not 30. On 2026-09-20 this job ran 29m37s with no per-phase output and
+    # was cancelled by the old 30-minute cap having written nothing, losing the
+    # batch (run 35510678221) and leaving the freshness surface degraded.
+    #
+    # Where the time went is NOT established by that run's log: it contains no
+    # output between the invocation and the cancellation, so the 29m37s covers
+    # the whole finalize phase. A read-only pg_stat_activity probe taken while it
+    # was stalled found no active query and no lock wait, so the phase was not
+    # blocked in Postgres; the only network-bound step ahead of the table lock is
+    # the candidate confirmation loop, which fetches one candidate at a time from
+    # the same API the shards had just been hammering and honours Retry-After with
+    # backoff capped at 30s. That points at the confirmation loop, but it is an
+    # inference from the absence of database activity, not a measurement - which
+    # is why this change also prints phase boundaries, so the next run measures
+    # where the time goes instead of inferring it.
+    #
+    # The cap is an operational bound, not a correctness gate: the fail-closed
+    # refusal for unconfirmed candidates and the identity-equality guard are both
+    # untouched by this value. Prior finalizes with few candidates took 42s and
+    # 75s; the same 127-candidate set classifies in ~17s against an unthrottled
+    # API. This is headroom for a legitimate slow path, not a threshold lowered to
+    # obtain a pass.
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1

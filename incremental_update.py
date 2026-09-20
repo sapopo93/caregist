@@ -1960,6 +1960,7 @@ def _finalize_batch(args: argparse.Namespace, conn, cur) -> int:
     shard_count, location_count = _validate_manifest_for_batch(cur, manifest, batch_id)
     validate_shard_coordinates(shard_count)
     ids = manifest["locationIds"]
+    _progress(f"finalize: manifest loaded ({location_count} location(s), {shard_count} shard(s))")
 
     if not args.dry_run:
         # Freeze shard ownership before evaluating completion. Shard workers use
@@ -1998,6 +1999,7 @@ def _finalize_batch(args: argparse.Namespace, conn, cur) -> int:
     )
     if not complete:
         raise ChangesFetchError("Batch finalization refused: shard coverage is incomplete or inconsistent.")
+    _progress("finalize: shard coverage proven")
 
     batch_select = "SELECT active_records_before, pipeline_run_id FROM reconciliation_batches WHERE id = %s"
     if not args.dry_run:
@@ -2226,6 +2228,7 @@ def _finalize_batch(args: argparse.Namespace, conn, cur) -> int:
     # LockNotAvailable and the batch is simply not finalized -- the outcome this
     # guard already treats as safe, and the one abort-incomplete handles -- in
     # preference to holding the live estate's writes hostage to a nightly batch.
+    _progress("finalize: taking table lock")
     cur.execute("SET LOCAL lock_timeout = '5s'")
     cur.execute("LOCK TABLE care_providers IN SHARE ROW EXCLUSIVE MODE")
     cur.execute(
