@@ -267,7 +267,13 @@ DIFF = {"overlap": 57066, "only_in_db_active": [], "only_in_source": []}
 
 def test_alignment_matched_when_nothing_is_unexplained():
     verdict = nightly.data_alignment_verdict(
-        snapshot=FULL_SNAPSHOT, diff=DIFF, summary=_summary(legitimate=67, unexplained=0, defect=0), ingested=UP_TO_DATE
+        snapshot=FULL_SNAPSHOT,
+        diff=DIFF,
+        summary=_summary(legitimate=67, unexplained=0, defect=0),
+        ingested=UP_TO_DATE,
+        # A complete run reports its reconciliation-input problems; the verdict
+        # path now also derives them, so an unreported list is not "no problems".
+        incompleteness=[],
     )
     assert verdict["verdict"] == nightly.VERDICT_MATCHED
     assert "no unexplained differences" in verdict["reasons"][0]
@@ -275,13 +281,13 @@ def test_alignment_matched_when_nothing_is_unexplained():
 
 def test_alignment_mismatched_when_a_defect_or_an_unexplained_difference_exists():
     defects = nightly.data_alignment_verdict(
-        snapshot=FULL_SNAPSHOT, diff=DIFF, summary=_summary(defect=3), ingested=UP_TO_DATE
+        snapshot=FULL_SNAPSHOT, diff=DIFF, summary=_summary(defect=3), ingested=UP_TO_DATE, incompleteness=[]
     )
     assert defects["verdict"] == nightly.VERDICT_MISMATCHED
     assert "confirmed defect" in defects["reasons"][0]
 
     unexplained = nightly.data_alignment_verdict(
-        snapshot=FULL_SNAPSHOT, diff=DIFF, summary=_summary(unexplained=5), ingested=UP_TO_DATE
+        snapshot=FULL_SNAPSHOT, diff=DIFF, summary=_summary(unexplained=5), ingested=UP_TO_DATE, incompleteness=[]
     )
     assert unexplained["verdict"] == nightly.VERDICT_MISMATCHED
     assert any("unexplained difference" in reason for reason in unexplained["reasons"])
@@ -350,15 +356,28 @@ def test_the_two_verdicts_are_independent():
 
 
 def test_pipeline_health_matched_only_when_every_documented_promise_holds():
-    schedules = _schedules()
-    due = _fire_times(schedules, WINDOW_START, WINDOW_END)
+    epochs = [epoch for epoch in nightly.schedule_history() if epoch.effective_from is not None]
+    if not epochs:
+        pytest.skip("shallow checkout: the workflow's schedule history is not available")
+    due: list[datetime] = []
+    for index, epoch in enumerate(epochs):
+        start = max(WINDOW_START, epoch.effective_from)
+        end = WINDOW_END
+        if index + 1 < len(epochs) and epochs[index + 1].effective_from is not None:
+            end = min(end, epochs[index + 1].effective_from)
+        for schedule in epoch.schedules():
+            due.extend(fire for fire in schedule.fires_between(start, end) if fire <= NOW - nightly.MISSED_GRACE)
+    due = sorted(set(due))
     coverage = nightly.poll_coverage(
         [_run(fire) for fire in due],
-        schedules=schedules,
+        epochs=epochs,
         window_start=WINDOW_START,
         window_end=WINDOW_END,
         now=NOW,
+        db_statuses={"completed": len(due), "partial": 0, "failed": 0, "total": len(due)},
     )
+    assert coverage["missed"]["runs"] == 0 and coverage["expected"]["schedule_history_available"] is True
+    assert coverage["successful"]["db_cross_checked"] is True
     fresh = {
         "signal": {"within_sla": True, "evaluated": True, "age_hours": 2.0, "sla_hours": 16.0},
         "ingested_source": {
@@ -678,13 +697,18 @@ def test_rendered_report_labels_both_verdicts_separately():
 # 9. corrective commit for the independent FAIL review of 5dc1759
 #    (reviewer gpt-5.6-sol: 2 high, 3 medium, 2 low - one test per finding)
 # --------------------------------------------------------------------------
-REVIEW_CHANGE_AT = datetime(2026, 9, 15, 10, 38, tzinfo=UTC)
+REVIEW_CHANGE_AT = datetime(2026, 9, 15, 10, 38, 36, tzinfo=UTC)
 REVIEW_START = datetime(2026, 9, 13, 4, 37, tzinfo=UTC)
 REVIEW_END = datetime(2026, 9, 20, 4, 37, tzinfo=UTC)
 REVIEW_NOW = datetime(2026, 9, 20, 4, 10, tzinfo=UTC)
 OLD_CRON = "7,37 * * * *"
 NEW_CRON = "7 18,21,0,3 * * *"
 CACHE_DIR = REPO_ROOT / "artifacts" / "cqc-nightly" / "cache"
+# The commits at which each of the two schedules in force during the reviewed
+# window became effective, read from the workflow file's own git history
+# (``1e7d594`` 2026-08-31 for the one-hour cron, ``39fa9a3`` 2026-09-03 for the
+# reverted two-per-hour cron, ``6bc9880`` 2026-09-15 for the four-a-day cron).
+OLD_EFFECTIVE_FROM = datetime(2026, 9, 3, 12, 24, 24, tzinfo=UTC)
 
 
 def _epoch(crons, effective_from):
@@ -694,8 +718,13 @@ def _epoch(crons, effective_from):
 
 
 def _straddling_epochs():
-    """The two schedules the 2026-09-13..2026-09-20 window actually straddles."""
-    return [_epoch([OLD_CRON], None), _epoch([NEW_CRON], REVIEW_CHANGE_AT)]
+    """The two schedules the 2026-09-13..2026-09-20 window actually straddles.
+
+    Both epochs carry the commit date at which their schedule became effective:
+    an undated epoch is counted across the whole window, so it is reported as an
+    unverified expectation rather than a measurement.
+    """
+    return [_epoch([OLD_CRON], OLD_EFFECTIVE_FROM), _epoch([NEW_CRON], REVIEW_CHANGE_AT)]
 
 
 def _review_coverage(runs=(), *, epochs=None, db_statuses=None):
@@ -811,20 +840,104 @@ def test_high1_an_unreadable_schedule_history_is_loud_and_unverified():
     assert any("schedule history" in reason for reason in verdict["unverified_reasons"])
 
 
-def test_high1_repository_history_reproduces_the_reviewers_expected_count():
-    """The fix is only real if it reads the repository's own schedule history."""
+# The committed report's window (artifacts/cqc-nightly/2026-09-20-report.json)
+# and the counts the reviewer verified independently: 107 fires from the
+# two-per-hour cron in force until the 2026-09-15 changeover, then 20 from the
+# four-a-day cron, 127 due in total.
+COMMITTED_WINDOW_START = datetime(2026, 9, 13, 5, 11, 26, tzinfo=UTC)
+COMMITTED_WINDOW_END = datetime(2026, 9, 20, 5, 11, 26, tzinfo=UTC)
+COMMITTED_EPOCH_FIRES = [107, 20]
+COMMITTED_EXPECTED_RUNS = 127
+
+
+def _independent_fires(cron: str, start: datetime, end: datetime) -> list[datetime]:
+    """Enumerate a cron's fire times by scanning the window minute by minute.
+
+    This oracle shares no code with the production parser: the two schedules in
+    force are plain minute/hour lists, so scanning the clock and keeping the
+    matching minutes (``start`` inclusive, ``end`` exclusive, matching
+    ``fires_between``) is independent verification rather than a restatement of
+    the code under test.
+    """
+
+    def members(field: str, high: int) -> set[int]:
+        if field == "*":
+            return set(range(high + 1))
+        assert all(value.isdigit() for value in field.split(",")), cron
+        return {int(value) for value in field.split(",")}
+
+    minute_field, hour_field = cron.split()[:2]
+    minutes, hours = members(minute_field, 59), members(hour_field, 23)
+    fires: list[datetime] = []
+    cursor = start.replace(second=0, microsecond=0)
+    while cursor < end:
+        if cursor.minute in minutes and cursor.hour in hours and start <= cursor < end:
+            fires.append(cursor)
+        cursor += timedelta(minutes=1)
+    return fires
+
+
+def test_medium_tests_the_committed_window_has_exact_independent_arithmetic():
+    """MEDIUM tests:814: the old test asserted a different 04:37 window, 129 fires,
+    loose bounds, and used the production cron parser as its own oracle."""
+    epoch_a = _independent_fires(OLD_CRON, COMMITTED_WINDOW_START, REVIEW_CHANGE_AT)
+    epoch_b = _independent_fires(NEW_CRON, REVIEW_CHANGE_AT, COMMITTED_WINDOW_END)
+    # Independently derived, hardcoded as the expected values.
+    assert [len(epoch_a), len(epoch_b)] == COMMITTED_EPOCH_FIRES
+    assert epoch_a[0] == datetime(2026, 9, 13, 5, 37, tzinfo=UTC)
+    assert epoch_a[-1] == datetime(2026, 9, 15, 10, 37, tzinfo=UTC)
+    assert epoch_b[0] == datetime(2026, 9, 15, 18, 7, tzinfo=UTC)
+    assert epoch_b[-1] == datetime(2026, 9, 20, 3, 7, tzinfo=UTC)
+    fires = epoch_a + epoch_b
+    # The parser-based derivation is the second assertion, never the oracle.
+    assert len(nightly.parse_cron(OLD_CRON).fires_between(COMMITTED_WINDOW_START, REVIEW_CHANGE_AT)) == 107
+    assert len(nightly.parse_cron(NEW_CRON).fires_between(REVIEW_CHANGE_AT, COMMITTED_WINDOW_END)) == 20
+
     epochs = nightly.schedule_history()
     if not any(epoch.effective_from for epoch in epochs):
         pytest.skip("shallow checkout: the workflow's schedule history is not available")
-    fires = [
-        fire
-        for fire in nightly.parse_cron(NEW_CRON).fires_between(REVIEW_START, REVIEW_END)
-        if fire <= REVIEW_NOW - nightly.MISSED_GRACE
-    ]
-    coverage = _review_coverage([_run(fire) for fire in fires], epochs=epochs)
-    assert coverage["expected"]["runs"] == 129
-    assert coverage["expected"]["due"] >= 120  # the review's 128 due, not the report's 28
-    assert coverage["missed"]["runs"] >= 90  # the review's 104 missed, not the report's 4
+    missed_everything = nightly.poll_coverage(
+        [],
+        epochs=epochs,
+        window_start=COMMITTED_WINDOW_START,
+        window_end=COMMITTED_WINDOW_END,
+        now=COMMITTED_WINDOW_END,
+    )
+    assert missed_everything["expected"]["schedule_history_available"] is True
+    assert missed_everything["expected"]["due"] == COMMITTED_EXPECTED_RUNS
+    assert sum(row["fires"] for row in missed_everything["expected"]["epochs"]) == COMMITTED_EXPECTED_RUNS
+    # An epoch that ended before the window contributes nothing and is not an epoch.
+    assert [row["fires"] for row in missed_everything["expected"]["epochs"] if row["fires"]] == COMMITTED_EPOCH_FIRES
+    # Exact, not a bound: every committed fire is past the grace window, nothing ran.
+    assert missed_everything["missed"]["runs"] == COMMITTED_EXPECTED_RUNS
+    assert missed_everything["successful"]["runs"] == 0
+    assert missed_everything["delivered_pct"] == 0.0
+
+    # The reviewed report's own ratio falls out of the same arithmetic: 25 of the
+    # 127 committed fires attempted and completed is 102 missed and 19.7% delivered.
+    attempted = fires[:25]
+    partially_run = nightly.poll_coverage(
+        [_run(fire) for fire in attempted],
+        epochs=epochs,
+        window_start=COMMITTED_WINDOW_START,
+        window_end=COMMITTED_WINDOW_END,
+        now=COMMITTED_WINDOW_END,
+        db_statuses={"completed": 25, "partial": 0, "failed": 0, "total": 25},
+    )
+    assert partially_run["attempted"]["runs"] == 25
+    assert partially_run["missed"]["runs"] == 102
+    assert partially_run["delivered_pct"] == 19.7
+    assert partially_run["expected"]["due"] == COMMITTED_EXPECTED_RUNS
+
+    # ...and the assembled verdict bundle consumes that arithmetic: the committed
+    # window is MISMATCHED through build_verdicts, with the exact missed count in
+    # the reasons, for both the 102-missed and the fully-missed variants.
+    bundle = _bundle(coverage=partially_run, sweep=_sweep_within_sla(), freshness=_fresh())
+    assert bundle["pipeline_health"]["verdict"] == nightly.VERDICT_MISMATCHED
+    assert any("102 missed tick(s)" in reason for reason in bundle["pipeline_health"]["reasons"])
+    missed_bundle = _bundle(coverage=missed_everything, sweep=_sweep_within_sla(), freshness=_fresh())
+    assert missed_bundle["pipeline_health"]["verdict"] == nightly.VERDICT_MISMATCHED
+    assert any("127 missed tick(s)" in reason for reason in missed_bundle["pipeline_health"]["reasons"])
 
 
 def test_high2_a_sampled_classification_cannot_produce_matched():
@@ -1075,3 +1188,274 @@ def test_low7_the_historical_336_polls_per_week_figure_is_marked_historical():
         assert expression in annotation
     for commit in ("1e7d594", "39fa9a3", "6bc9880"):
         assert commit in annotation
+
+
+# ---------------------------------------------------------------------------
+# round 2: the verdict entry point itself (build_verdicts), not its helpers
+# ---------------------------------------------------------------------------
+# The first corrective round tested data_alignment_verdict and
+# pipeline_health_verdict directly, with fixtures that omitted the completeness
+# evidence, so no test ever assembled a verdict bundle and the fail-open paths
+# (a missing summary read as "zero defects", missing / available:false coverage
+# read as a clean window) survived a green suite. Every test below calls
+# nightly.build_verdicts.
+
+_UNSET = object()
+
+
+def _bundle(
+    *,
+    summary=_UNSET,
+    coverage=_UNSET,
+    sweep=_UNSET,
+    freshness=_UNSET,
+    incompleteness=_UNSET,
+    ingested=_UNSET,
+    run_history_status="ok",
+    drift_notes=(),
+):
+    """build_verdicts over a window in which every input is present and complete."""
+    return nightly.build_verdicts(
+        snapshot=FULL_SNAPSHOT,
+        diff=DIFF,
+        summary=_summary(legitimate=67) if summary is _UNSET else summary,
+        ingested=UP_TO_DATE if ingested is _UNSET else ingested,
+        coverage=_clean_coverage() if coverage is _UNSET else coverage,
+        sweep=_sweep_within_sla() if sweep is _UNSET else sweep,
+        observed_sweep=None,
+        freshness=_fresh() if freshness is _UNSET else freshness,
+        run_history_status=run_history_status,
+        drift_notes=list(drift_notes),
+        **({} if incompleteness is _UNSET else {"incompleteness": incompleteness}),
+    )
+
+
+def _unavailable_coverage(reason="the GitHub run list could not be read"):
+    return nightly.coverage_unavailable(
+        reason,
+        epochs=_straddling_epochs(),
+        window_start=REVIEW_START,
+        window_end=REVIEW_END,
+        now=REVIEW_NOW,
+    )
+
+
+def test_round2_control_every_present_and_complete_input_is_still_matched():
+    """Positive control: MATCHED stays reachable, so the tests below prove the
+    missing piece of evidence is what flips the verdict."""
+    bundle = _bundle()
+    assert bundle["classification_evidence_complete"] is True
+    assert bundle["completeness_derived_in_verdict_path"] is True
+    assert bundle["data_alignment"]["verdict"] == nightly.VERDICT_MATCHED
+    assert bundle["pipeline_health"]["verdict"] == nightly.VERDICT_MATCHED
+
+
+def test_round2_1_an_absent_classification_summary_is_unverified_in_both_verdicts():
+    """HIGH tools:1726: summary=None was read as zero defects and returned MATCHED."""
+    bundle = _bundle(summary=None)
+    assert bundle["classification_evidence_complete"] is False
+    alignment = bundle["data_alignment"]
+    assert alignment["verdict"] == nightly.VERDICT_UNVERIFIED
+    assert any("no classification summary was produced" in reason for reason in alignment["reasons"])
+    pipeline = bundle["pipeline_health"]
+    assert pipeline["verdict"] == nightly.VERDICT_UNVERIFIED
+    assert any("classification summary" in reason for reason in pipeline["reasons"])
+
+
+def test_round2_2_a_sampled_classification_with_an_observed_defect_is_unverified():
+    """HIGH tools:1726: a defect over a sampled population returned MISMATCHED."""
+    sampled = {**_summary(defect=3), "coverage": "sampled", "selected": 130, "population": 188, "cap": 130}
+    bundle = _bundle(summary=sampled)
+    assert bundle["classification_evidence_complete"] is False
+    alignment = bundle["data_alignment"]
+    assert alignment["verdict"] == nightly.VERDICT_UNVERIFIED
+    assert alignment["verdict"] != nightly.VERDICT_MISMATCHED
+    assert any("coverage is sampled" in reason for reason in alignment["reasons"])
+    # Nothing is hidden: the observed defect is still reported, as part of the
+    # reason the split is not a complete account of the population.
+    assert any("confirmed defect" in reason for reason in alignment["reasons"])
+    assert bundle["pipeline_health"]["verdict"] == nightly.VERDICT_UNVERIFIED
+
+
+def test_round2_3_a_failed_or_capped_classification_is_unverified():
+    """HIGH tools:1726: a failed or capped classification is a missing measurement."""
+    failed = {**_summary(legitimate=1), "failures": 7}
+    bundle_failed = _bundle(summary=failed)
+    assert bundle_failed["data_alignment"]["verdict"] == nightly.VERDICT_UNVERIFIED
+    assert any(
+        "could not be classified (CQC API errors)" in reason
+        for reason in bundle_failed["data_alignment"]["reasons"]
+    )
+    assert bundle_failed["pipeline_health"]["verdict"] == nightly.VERDICT_UNVERIFIED
+
+    capped = {**_summary(legitimate=1), "coverage": "capped", "selected": 188, "population": 188}
+    bundle_capped = _bundle(summary=capped)
+    assert bundle_capped["data_alignment"]["verdict"] == nightly.VERDICT_UNVERIFIED
+    assert any("coverage is capped" in reason for reason in bundle_capped["data_alignment"]["reasons"])
+    assert bundle_capped["pipeline_health"]["verdict"] == nightly.VERDICT_UNVERIFIED
+
+
+def test_round2_4_absent_coverage_is_unverified_not_matched():
+    """HIGH tools:1777: coverage=None with an ok run history returned MATCHED."""
+    bundle = _bundle(coverage=None)
+    pipeline = bundle["pipeline_health"]
+    assert pipeline["verdict"] == nightly.VERDICT_UNVERIFIED
+    assert pipeline["verdict"] != nightly.VERDICT_MATCHED
+    assert any("no polling-coverage block" in reason for reason in pipeline["reasons"])
+    assert not any("expected cadence met" in reason for reason in pipeline["reasons"])
+
+
+def test_round2_5_coverage_marked_unavailable_is_unverified_not_matched():
+    """HIGH tools:1777: coverage with available:false returned MATCHED."""
+    coverage = _unavailable_coverage()
+    assert coverage["available"] is False
+    bundle = _bundle(coverage=coverage)
+    pipeline = bundle["pipeline_health"]
+    assert pipeline["verdict"] == nightly.VERDICT_UNVERIFIED
+    assert pipeline["verdict"] != nightly.VERDICT_MATCHED
+    assert any("poll coverage is unavailable" in reason for reason in pipeline["reasons"])
+    assert not any("expected cadence met" in reason for reason in pipeline["reasons"])
+
+
+def test_round2_6_an_unreadable_schedule_history_is_unverified_with_the_on_disk_fallback(monkeypatch):
+    """HIGH tools:1777 (kept passing): an undated, on-disk-derived expectation is
+    not evidence, even when every GitHub run in the window succeeded."""
+    real_which = nightly.shutil.which
+    monkeypatch.setattr(nightly.shutil, "which", lambda name: None if name == "git" else real_which(name))
+    epochs = nightly.schedule_history()
+    assert len(epochs) == 1 and epochs[0].effective_from is None
+    assert "on disk" in epochs[0].source or "disk" in epochs[0].source
+    coverage = _clean_coverage(epochs=epochs)
+    assert coverage["expected"]["schedule_history_available"] is False
+    assert coverage["missed"]["runs"] == 0
+    bundle = _bundle(coverage=coverage)
+    pipeline = bundle["pipeline_health"]
+    assert pipeline["verdict"] == nightly.VERDICT_UNVERIFIED
+    assert any("could not be established from the workflow's git history" in reason for reason in pipeline["reasons"])
+    assert not any("expected cadence met" in reason for reason in pipeline["reasons"])
+
+
+def test_round2_7_database_partial_polls_are_excluded_from_delivery_and_block_green():
+    """MEDIUM tools:831: four DB-partial rows read as 27 successful / 100% delivered."""
+    complete = _clean_coverage()
+    total = complete["expected"]["due"]
+    assert total > 4
+    coverage = _clean_coverage(
+        db_statuses={"completed": total - 4, "partial": 4, "failed": 0, "total": total}
+    )
+    successful = coverage["successful"]
+    assert successful["workflow_success_runs"] == total
+    assert successful["completed_polls"] == total - 4
+    assert successful["runs"] == total - 4, "a DB-partial poll is not a completed poll"
+    assert successful["partial_runs_excluded"] == 4
+    assert successful["incomplete_runs"] == 4
+    assert abs(coverage["delivered_pct"] - round((total - 4) / total * 100, 1)) < 0.05
+    assert coverage["delivered_pct"] < 100.0
+    assert "completed DB polls" in coverage["delivered_basis"]
+    # ...while the workflow-conclusion coverage stays what it is: the point is that
+    # the two numbers are separated, not that the workflow successes vanished.
+    assert coverage["coverage_pct"] == complete["coverage_pct"] == 100.0
+    bundle = _bundle(coverage=coverage)
+    pipeline = bundle["pipeline_health"]
+    assert pipeline["verdict"] == nightly.VERDICT_MISMATCHED
+    assert any("recorded 'partial' in the DB" in reason for reason in pipeline["reasons"])
+
+
+def test_round2_9_epoch_start_dates_use_the_earliest_commit_a_schedule_was_in_force_from():
+    """LOW tools:617: the one-hour cron began 2026-08-31, not 2026-09-03."""
+    one_hour_commit = "1e7d594c6516f9e1071eddb021b85285972624d0"
+    later_identical_commit = "5707021ae397696a683a573f54236c0c1928a466"
+    epochs = nightly.schedule_history()
+    assert epochs, "a full checkout must expose the workflow file's schedule history"
+    starts = [(list(epoch.crons)[0], epoch.effective_from, epoch.commit) for epoch in epochs]
+    assert all(effective_from is not None for _, effective_from, _ in starts)
+    assert [effective_from for _, effective_from, _ in starts] == sorted(
+        effective_from for _, effective_from, _ in starts
+    ), "epochs must be built oldest-first"
+    # The earliest commit at which each schedule became effective, read from the
+    # workflow file's own revision history (git log --format=%H%x09%cI).
+    assert starts == [
+        ("7,37 * * * *", datetime(2026, 8, 9, 14, 49, 7, tzinfo=UTC), "218f608e09cbb4f3715b8f15959b3460640ab72b"),
+        ("37 * * * *", datetime(2026, 8, 31, 13, 48, 47, tzinfo=UTC), one_hour_commit),
+        ("7,37 * * * *", datetime(2026, 9, 3, 12, 24, 24, tzinfo=UTC), "39fa9a39d56a042abaa20057d008392706ff21f0"),
+        ("7 18,21,0,3 * * *", datetime(2026, 9, 15, 10, 38, 36, tzinfo=UTC), "6bc98802611b5e98fad9410677c1fea1f5fc2209"),
+    ]
+    # Regression guard for the reported bug: the identical-run compression used to
+    # keep the newest commit in the run (2026-09-03T10:23:23Z).
+    one_hour = [row for row in starts if row[0] == "37 * * * *"]
+    assert len(one_hour) == 1
+    assert one_hour[0][2] == one_hour_commit != later_identical_commit
+    assert one_hour[0][1] != datetime(2026, 9, 3, 10, 23, 23, tzinfo=UTC)
+    # ...and the verdict path consumes those dated epochs as verified history: the
+    # same window a fallback-derived expectation leaves UNVERIFIED (round 2.6)
+    # greens only while the in-force schedules are established from git history.
+    coverage = _clean_coverage(epochs=epochs)
+    assert coverage["expected"]["schedule_history_available"] is True
+    assert coverage["expected"]["schedule_history_gaps"] == []
+    rows = coverage["expected"]["epochs"]
+    assert [row["crons"] for row in rows] == [["7,37 * * * *"], ["7 18,21,0,3 * * *"]]
+    assert [row["effective_from"] for row in rows] == [
+        "2026-09-03T12:24:24Z",
+        "2026-09-15T10:38:36Z",
+    ]
+    assert [row["commit"] for row in rows] == [
+        "39fa9a39d56a042abaa20057d008392706ff21f0",
+        "6bc98802611b5e98fad9410677c1fea1f5fc2209",
+    ]
+    assert sum(row["fires"] for row in rows) == coverage["expected"]["runs"] == 129
+    assert coverage["expected"]["due"] == 128 and coverage["expected"]["not_yet_due"] == 1
+    bundle = _bundle(coverage=coverage)
+    assert bundle["pipeline_health"]["verdict"] == nightly.VERDICT_MATCHED
+
+
+def test_round2_10_an_ingestion_lag_is_disclosed_and_still_blocks_a_green_verdict():
+    """The database lagging a publication is context, not a hole in the
+    measurement: the observed defects are still MISMATCHED (and now carry the
+    lag in their reasons, where the original path silently dropped it), while a
+    lag with nothing unexplained still cannot read as agreement."""
+    lagging = {**UP_TO_DATE, "newest_snapshot_covered": False, "latest_covered_published_at": "2026-09-09"}
+    bundle = _bundle(summary=_summary(defect=124, legitimate=64), ingested=lagging)
+    verdict = bundle["data_alignment"]
+    assert verdict["verdict"] == nightly.VERDICT_MISMATCHED
+    assert any("one publication behind" in reason for reason in verdict["reasons"])
+    assert any("confirmed defect" in reason for reason in verdict["reasons"])
+
+    clean = _bundle(summary=_summary(legitimate=188), ingested=lagging)
+    assert clean["data_alignment"]["verdict"] == nightly.VERDICT_UNVERIFIED
+    assert any("one publication behind" in reason for reason in clean["data_alignment"]["reasons"])
+
+
+def test_round2_11_a_full_coverage_label_cannot_outrun_its_own_class_counts():
+    """The merged summary records the offered population and the classified
+    subset as sizes: 'coverage: full' over 180 of 200 IDs is not a complete
+    account and must be UNVERIFIED, not MATCHED/MISMATCHED."""
+    partial = {**_summary(legitimate=180), "coverage": "full", "population": 200, "classified": 180}
+    bundle = _bundle(summary=partial)
+    assert bundle["classification_evidence_complete"] is False
+    verdict = bundle["data_alignment"]
+    assert verdict["verdict"] == nightly.VERDICT_UNVERIFIED
+    assert any("only 180 of 200 divergent IDs were classified" in reason for reason in verdict["reasons"])
+    assert bundle["pipeline_health"]["verdict"] == nightly.VERDICT_UNVERIFIED
+
+
+def test_round2_12_absent_pipeline_evidence_is_unverified_and_never_green():
+    """The evidence a green pipeline verdict rests on has to be *present*: an
+    unevaluated sweep, an unevaluated freshness promise, a coverage block whose
+    DB cross-check never ran, and a coverage block with no schedule history all
+    return UNVERIFIED rather than a bare MATCHED."""
+    assert _bundle(sweep=None)["pipeline_health"]["verdict"] == nightly.VERDICT_UNVERIFIED
+
+    no_sweep = {**_clean_coverage()}
+    no_sweep.pop("successful", None)
+    assert _bundle(coverage=no_sweep)["pipeline_health"]["verdict"] == nightly.VERDICT_UNVERIFIED
+
+    no_cross_check = json.loads(json.dumps(_clean_coverage()))
+    no_cross_check["successful"]["db_cross_checked"] = False
+    assert _bundle(coverage=no_cross_check)["pipeline_health"]["verdict"] == nightly.VERDICT_UNVERIFIED
+
+    no_history = json.loads(json.dumps(_clean_coverage()))
+    no_history["expected"]["schedule_history_available"] = False
+    assert _bundle(coverage=no_history)["pipeline_health"]["verdict"] == nightly.VERDICT_UNVERIFIED
+
+    assert _bundle(freshness=None)["pipeline_health"]["verdict"] == nightly.VERDICT_UNVERIFIED
+    assert _bundle(run_history_status="unavailable")["pipeline_health"]["verdict"] == nightly.VERDICT_UNVERIFIED

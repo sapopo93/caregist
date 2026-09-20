@@ -51,7 +51,7 @@ import subprocess
 import sys
 import time
 from collections import Counter
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any, Callable
@@ -228,6 +228,13 @@ def _pct(numerator: int, denominator: int, *, digits: int = 1) -> float:
     if not denominator:
         return 0.0
     return round(100.0 * numerator / denominator, digits)
+
+
+def _count_or_unknown(value: Any) -> str:
+    """Render a count, distinguishing a real zero from a count nobody recorded."""
+    if value is None:
+        return "unknown"
+    return f"{int(value):,}"
 
 
 def wilson_interval(successes: int, total: int, *, z: float = 1.96) -> tuple[float, float]:
@@ -521,6 +528,11 @@ class ScheduleEpoch:
     effective_from: datetime | None
     commit: str | None = None
     source: str = ""
+    # Revisions of the workflow file that could not be read while building this
+    # epoch. A history with holes is not authoritative: the cron set may have been
+    # in force for longer than the surviving revisions show, so the expectation it
+    # produces is reported as unverified rather than compressed silently.
+    history_gaps: tuple[str, ...] = ()
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -528,6 +540,7 @@ class ScheduleEpoch:
             "effective_from": _iso(self.effective_from),
             "commit": self.commit,
             "source": self.source,
+            "history_gaps": list(self.history_gaps),
         }
 
     def schedules(self) -> list[CronSchedule]:
@@ -607,19 +620,37 @@ def schedule_history(path: Path | str = SIGNAL_POLL_WORKFLOW, *, max_commits: in
                     revisions.append((sha.strip(), datetime.fromisoformat(committed_at.strip())))
                 except ValueError:
                     continue
-    epochs: list[ScheduleEpoch] = []  # newest change first while building
+    # Oldest revision first. ``git log`` lists newest first, and a run of
+    # identical cron definitions must start at the EARLIEST commit that carried
+    # them: keeping the newest one (the old behaviour) reported each schedule as
+    # starting on a later commit that merely restated it.
+    epochs: list[ScheduleEpoch] = []
+    unreadable: list[str] = []
+    if len(revisions) >= max_commits:
+        # The log cap was reached: revisions older than the cap were never
+        # examined, so the earliest epochs below are not the true start of those
+        # schedules. That is a hole in the history, not evidence of agreement.
+        unreadable.append(f"<git log truncated at -n{max_commits}: older revisions not examined>")
     if git is not None:
-        for sha, committed_at in revisions:
+        for sha, committed_at in reversed(revisions):
             text = _git_workflow_text(git, sha, workflow_path)
-            if text is None:
+            crons = () if text is None else tuple(_crons_in_workflow_text(text))
+            if not crons:
+                # A revision nobody can read is a hole in the history: the cron set
+                # it carried may have been in force for longer than the next
+                # readable revision suggests. The epochs are still built (for
+                # display) but they are marked as not authoritative rather than
+                # having the gap silently compressed away.
+                unreadable.append(sha)
                 continue
-            crons = tuple(_crons_in_workflow_text(text))
-            if not crons or (epochs and epochs[-1].crons == crons):
-                continue
+            if epochs and epochs[-1].crons == crons:
+                continue  # identical set: keep the earliest commit it was in force from
             epochs.append(
                 ScheduleEpoch(crons=crons, effective_from=committed_at, commit=sha, source=SCHEDULE_HISTORY_SOURCE)
             )
-    epochs.reverse()  # oldest epoch first
+    if unreadable and epochs:
+        gaps = tuple(unreadable)
+        epochs = [replace(epoch, history_gaps=gaps) for epoch in epochs]
     if epochs:
         return epochs
     try:
@@ -676,15 +707,32 @@ def expected_fires(
     fires = sorted(set(fires))
     due = [fire for fire in fires if fire <= now - grace]
     if from_history:
-        history_available = bool(epochs) and any(epoch.effective_from is not None for epoch in epochs)
-        derivation = (
-            "cron fire times of the schedules in force during the window, summed per schedule epoch"
-            if history_available
-            else "cron fire times of the on-disk cron applied to the whole window: the schedule history could "
-            "not be read, so this expectation is not backed by the schedules in force"
+        gaps = sorted({gap for epoch in epochs for gap in epoch.history_gaps})
+        history_available = (
+            bool(epochs)
+            # EVERY epoch must be dated: an undated epoch counts its fires across
+            # the whole window (segment_start falls back to window_start), so one
+            # undated epoch makes the total an assumption, not a measurement.
+            and all(epoch.effective_from is not None for epoch in epochs)
+            and not gaps
         )
+        if history_available:
+            derivation = "cron fire times of the schedules in force during the window, summed per schedule epoch"
+        elif gaps:
+            derivation = (
+                f"cron fire times of the schedules in force during the window, summed per schedule epoch, over a "
+                f"history with {len(gaps)} unreadable revision(s) ({', '.join(gaps[:3])}): the epoch boundaries are "
+                "not authoritative"
+            )
+        else:
+            derivation = (
+                "cron fire times of the on-disk cron applied to the whole window: the schedule history could "
+                f"not be read ({'at least one epoch has no commit date' if epochs else 'no revision was readable'}), "
+                "so this expectation is not backed by the schedules in force"
+            )
         source = SCHEDULE_HISTORY_SOURCE
     else:
+        gaps = []
         history_available = None
         derivation = "cron fire times inside the window (UTC)"
         source = "workflow cron, see cadence"
@@ -696,6 +744,7 @@ def expected_fires(
         "due_fires": due,
         "epochs": breakdown,
         "schedule_history_available": history_available,
+        "schedule_history_gaps": gaps,
         "derivation": derivation,
         "source": source,
     }
@@ -828,23 +877,50 @@ def poll_coverage(
     # Both keys are always present: an absent key reads as "not applicable" when the
     # truth is "no schedule history was consulted" (``None``).
     expected["schedule_history_available"] = derived["schedule_history_available"]
+    expected["schedule_history_gaps"] = derived["schedule_history_gaps"]
+    workflow_success = len(successful)
+    completed_polls = workflow_success
     successful_bucket: dict[str, Any] = {
-        "runs": len(successful),
+        "runs": workflow_success,
+        "workflow_success_runs": workflow_success,
         "source": f"{bucket_source}; conclusion == success (GitHub workflow conclusion only)",
         "conclusion_source": "GitHub Actions",
+        "db_cross_checked": db_statuses is not None,
     }
     if db_statuses is not None:
         recorded = {name: int(count or 0) for name, count in db_statuses.items()}
         partial = recorded.get("partial", 0)
         successful_bucket["db_recorded_status"] = recorded
+        # A GitHub success is a workflow conclusion; the DB knows whether the poll
+        # row actually finished. A success the DB recorded as 'partial' is not a
+        # completed poll: it is removed from the completed/successful count and from
+        # delivered_pct, while staying visible as an incomplete run.
+        matched_partial = min(partial, workflow_success)
+        completed_polls = workflow_success - matched_partial
+        successful_bucket["completed_polls"] = completed_polls
+        successful_bucket["runs"] = completed_polls
+        successful_bucket["partial_runs_excluded"] = matched_partial
+        successful_bucket["source"] = (
+            f"{bucket_source}; conclusion == success AND not recorded 'partial' in pipeline_runs "
+            "(completed polls only)"
+        )
         if partial:
             successful_bucket["incomplete_runs"] = partial
             successful_bucket["note"] = (
                 f"the DB records {partial} signal_poll run(s) in this window as 'partial': a GitHub success is "
                 "a workflow conclusion, not evidence that every source record was collected, so these runs are "
-                "not complete polls"
+                "neither complete polls nor delivered and are excluded from the completed/successful count and "
+                "from delivered_pct"
             )
+    else:
+        successful_bucket["note"] = (
+            "no DB cross-check was supplied, so GitHub success conclusions could not be checked against "
+            "pipeline_runs completeness: this is a workflow-conclusion count, not a completed-poll count"
+        )
     coverage: dict[str, Any] = {
+        # Explicit, so a caller (or a verdict path) can never read "no coverage
+        # block" as "available": only this function and coverage_unavailable set it.
+        "available": True,
         "window": {"start": _iso(window_start), "end": _iso(window_end), "hours": round(hours_between(window_start, window_end), 1)},
         "grace_minutes": int(grace.total_seconds() // 60),
         "expected": expected,
@@ -864,7 +940,15 @@ def poll_coverage(
             "fires": [_iso(fire) for fire in unmatched_fires] if missed_count else [],
         },
         "coverage_pct": _pct(attempted, len(due), digits=1),
-        "delivered_pct": _pct(len(successful), len(due), digits=1),
+        "delivered_pct": _pct(completed_polls, len(due), digits=1),
+        "delivered_basis": (
+            "completed DB polls (GitHub successes minus runs the DB records as 'partial', "
+            f"{workflow_success} - {workflow_success - completed_polls} = {completed_polls}) over expected due fires "
+            f"({len(due)})"
+            if db_statuses is not None
+            else "GitHub workflow successes over expected due fires (no DB cross-check was supplied, so "
+            "completeness is not asserted)"
+        ),
         "fires_without_a_matching_run": {
             "runs": len(unmatched_fires),
             "definition": f"due fires with no scheduled run created within {match_window.total_seconds() / 3600:g}h after the fire",
@@ -1505,19 +1589,22 @@ def classify_divergent(
     fetched = 0
     reused = 0
     failures = 0
+    reused_ages_hours: list[float] = []
     for location_id in selected:
         entry = entries.get(location_id) if isinstance(entries, dict) else None
         if entry and entry.get("class") != "api_error":
+            fetched_at: datetime | None = None
             try:
                 fetched_at = datetime.fromisoformat(str(entry.get("fetched_at")).replace("Z", "+00:00"))
                 fresh = now - fetched_at < ttl
             except (TypeError, ValueError):
                 fresh = False
-            if fresh:
+            if fresh and fetched_at is not None:
                 per_id[location_id] = _reclassify_cached_entry(
                     entry, side=side, snapshot_published_at=snapshot_published_at
                 )
                 reused += 1
+                reused_ages_hours.append((now - fetched_at).total_seconds() / 3600)
                 continue
         try:
             detail = fetch_detail(location_id)
@@ -1577,12 +1664,34 @@ def classify_divergent(
         "source": "live CQC API location detail (registrationStatus, registrationDate, deregistrationDate)",
         "cache_path": str(cache_path) if cache_path else None,
         "cache_ttl_hours": ttl.total_seconds() / 3600,
+        # Coverage is population coverage, not evidence of a live refresh: 'full'
+        # says every divergent ID was classified, and cached classifications count
+        # towards it. The fetch/reuse split and cache age have to be read with it,
+        # which is why they are carried here and rendered beside the coverage word.
+        "reused_cache_age_hours": (
+            {
+                "oldest": round(max(reused_ages_hours), 2),
+                "newest": round(min(reused_ages_hours), 2),
+                "ttl": ttl.total_seconds() / 3600,
+            }
+            if reused_ages_hours
+            else None
+        ),
+        "coverage_meaning": (
+            f"population coverage: '{coverage}' describes how much of the {len(ordered)}-ID divergent population was "
+            f"classified (cap {cap}) and is not evidence that the CQC API was polled in this run - see fetched, "
+            "reused_from_cache and reused_cache_age_hours"
+        ),
         "note": "resumable: cached classifications are reused until the TTL expires",
     }
 
 
-def summarize_classification(classification: dict[str, Any]) -> dict[str, Any]:
+def summarize_classification(
+    classification: dict[str, Any], *, population_size: int | None = None
+) -> dict[str, Any]:
     classes = classification.get("classes") or {}
+    per_id = classification.get("per_id") or {}
+    classified = len(per_id)
     defects = {name: count for name, count in classes.items() if name in DEFECT_CLASSES}
     legitimate = {name: count for name, count in classes.items() if name in LEGITIMATE_CLASSES}
     unexplained = {name: count for name, count in classes.items() if name in UNEXPLAINED_CLASSES}
@@ -1600,6 +1709,15 @@ def summarize_classification(classification: dict[str, Any]) -> dict[str, Any]:
         "unexplained_classes": {**unexplained, **other},
         "coverage": classification.get("coverage"),
         "source": classification.get("source"),
+        # The offered population and the classified subset are recorded as
+        # *sizes*: a summary that reports class counts it never derived from the
+        # whole population must not be able to read as complete. ``population``
+        # is the number of IDs offered to the classifier, so anything missing is
+        # visible as classified < population in the verdict path.
+        "classified": classified,
+        "population": int(
+            population_size if population_size is not None else (classification.get("population") or classified)
+        ),
     }
 
 
@@ -1620,6 +1738,9 @@ def split_counts(classification: dict[str, Any], population: list[str], *, side:
         "coverage": classification.get("coverage"),
         "classified": len(relevant),
         "population": len(population),
+        "selected": classification.get("selected"),
+        "cap": classification.get("cap"),
+        "failures": int(classification.get("failures") or 0),
         "confirmed_defect": defects,
         "legitimate_timing_or_scope": legitimate,
         "unexplained": unexplained,
@@ -1640,9 +1761,14 @@ def merge_summaries(per_side: dict[str, dict[str, Any]]) -> dict[str, Any]:
         "confirmed_defect": 0,
         "legitimate_timing_or_scope": 0,
         "unexplained": 0,
+        "failures": 0,
+        "classified": 0,
+        "population": 0,
         "defect_classes": {},
         "legitimate_classes": {},
         "unexplained_classes": {},
+        "caps": {},
+        "notes": {},
         "coverage": "full",
         "source": "live CQC API location detail, per divergent population (see per_side)",
         "per_side": per_side,
@@ -1650,11 +1776,22 @@ def merge_summaries(per_side: dict[str, dict[str, Any]]) -> dict[str, Any]:
     for side, summary in per_side.items():
         if not summary:
             continue
-        for key in ("confirmed_defect", "legitimate_timing_or_scope", "unexplained"):
+        for key in (
+            "confirmed_defect",
+            "legitimate_timing_or_scope",
+            "unexplained",
+            "failures",
+            "classified",
+            "population",
+        ):
             merged[key] += int(summary.get(key) or 0)
         for key in ("defect_classes", "legitimate_classes", "unexplained_classes"):
             for name, count in (summary.get(key) or {}).items():
                 merged[key][f"{side}:{name}"] = count
+        if summary.get("cap") is not None:
+            merged["caps"][side] = summary["cap"]
+        if summary.get("note"):
+            merged["notes"][side] = summary["note"]
     coverage_rank = {"full": 0, "sampled": 1, "unverified": 2, "unavailable": 3}
     worst = max(
         [0] + [coverage_rank.get(str(summary.get("coverage")), 3) for summary in per_side.values() if summary]
@@ -1675,6 +1812,15 @@ def reconciliation_inputs_are_complete(diff: dict[str, Any], classification: dic
         problems.append(f"{classification['failures']} divergent IDs could not be classified (CQC API errors)")
     if diff.get("only_in_source") and not classification:
         problems.append("source-only IDs were not classified")
+    population = classification.get("population")
+    classified = classification.get("classified")
+    if population is not None and classified is not None and int(classified) < int(population):
+        # A 'full' coverage label must not be able to outrun the counts it claims:
+        # the sizes are recorded next to the class counts for exactly this check.
+        problems.append(
+            f"only {int(classified)} of {int(population)} divergent IDs were classified, "
+            "so the class counts are not a complete account"
+        )
     unexplained = int((classification.get("classes") or {}).get("unexplained_source_id_absent_from_db") or 0)
     if unexplained:
         problems.append(
@@ -1700,6 +1846,12 @@ def data_alignment_verdict(
     coverage, API errors, unclassified records). A zero defect count over inputs
     that could not be fully reconcilled is not agreement, so those problems make
     the verdict UNVERIFIED rather than MATCHED.
+
+    Completeness is derived here, from the classification summary that produced
+    the split, and is checked *before* the defect counts are read: a missing,
+    sampled, failed or explicitly incomplete classification cannot produce
+    MATCHED (there is no measurement) or MISMATCHED (the defects found are over an
+    incomplete population, so the split is not a complete account).
     """
     reasons: list[str] = []
     if not diff or snapshot.get("coverage") == "unavailable":
@@ -1723,29 +1875,95 @@ def data_alignment_verdict(
         f"({snapshot.get('entity_count', 0):,} IDs, {snapshot.get('coverage')})"
     )
 
-    defects = int((summary or {}).get("confirmed_defect") or 0)
-    unexplained = int((summary or {}).get("unexplained") or 0)
+    # Completeness of the measurement, derived in the verdict path. ``summary=None``
+    # means the split was never classified: that is a missing measurement, and "0
+    # defects" must never be read out of it.
+    if summary is None:
+        return {
+            "verdict": VERDICT_UNVERIFIED,
+            "reasons": reasons
+            + [
+                "no classification summary was produced, so the identifier-level split was never measured: "
+                "a missing measurement is not 'zero defects'"
+            ],
+            "scope": scope,
+        }
+    incomplete_inputs: list[str] = []
+    coverage_of_split = summary.get("coverage")
+    if coverage_of_split != "full":
+        incomplete_inputs.append(
+            f"classification coverage is {coverage_of_split or 'unknown'}, not full, so the split covers only part "
+            f"of the divergent population (source: {summary.get('source') or 'unrecorded'})"
+        )
+    failures_of_split = int(summary.get("failures") or 0)
+    if failures_of_split:
+        incomplete_inputs.append(
+            f"{failures_of_split} divergent ID(s) could not be classified (CQC API errors), so the split is not a "
+            "complete measurement, whatever the defect count says"
+        )
+    population_of_split = summary.get("population")
+    classified_of_split = summary.get("classified")
+    if population_of_split is not None and classified_of_split is not None:
+        if int(classified_of_split) < int(population_of_split):
+            incomplete_inputs.append(
+                f"only {classified_of_split} of {population_of_split} divergent IDs were classified: the remainder "
+                "was never measured"
+            )
+    if incompleteness is None:
+        incomplete_inputs.append(
+            "reconciliation-input completeness was not reported to the verdict, so the split cannot be called complete"
+        )
+    else:
+        incomplete_inputs.extend(f"reconciliation inputs are incomplete: {problem}" for problem in incompleteness)
+    # The ingested-state lag is a *context* fact about the database side of the
+    # comparison, not an incompleteness of the classification measurement: the
+    # defect count over a lagging DB is exactly the alarm worth raising, so it is
+    # disclosed in the reasons of whatever verdict the measurement earns (and it
+    # still blocks a green MATCHED on its own below).
+    ingested_lag = None
+    if ingested is not None and not ingested.get("newest_snapshot_covered", True):
+        ingested_lag = (
+            "the ingested database state is one publication behind: no reconciliation batch has covered the "
+            f"{snapshot.get('published_at')} snapshot (latest covered {ingested.get('latest_covered_published_at')})"
+        )
+
+    defects = int(summary.get("confirmed_defect") or 0)
+    unexplained = int(summary.get("unexplained") or 0)
+
+    # A measurement that is missing, sampled, capped or failed is not a
+    # measurement: neither MATCHED nor MISMATCHED may be read out of it, however
+    # many defects happen to have been observed in the part that was measured.
+    gate = list(reasons) + incomplete_inputs
+    if gate:
+        if defects or unexplained:
+            gate.append(
+                f"{defects} confirmed defect(s) and {unexplained} unexplained difference(s) observed within the "
+                f"incomplete population: {summary.get('defect_classes')} / {summary.get('unexplained_classes')}"
+            )
+        if ingested_lag:
+            gate.append(ingested_lag)
+        return {"verdict": VERDICT_UNVERIFIED, "reasons": gate, "scope": scope}
+
     if defects or unexplained:
         if defects:
             reasons.append(f"{defects} confirmed defect(s): {summary.get('defect_classes')}")
         if unexplained:
             reasons.append(f"{unexplained} unexplained difference(s): {summary.get('unexplained_classes')}")
+        if ingested_lag:
+            # Disclosed, not hidden: the original verdict path dropped this note
+            # whenever a defect was counted.
+            reasons.append(ingested_lag)
         return {"verdict": VERDICT_MISMATCHED, "reasons": reasons, "scope": scope}
 
-    if incompleteness:
-        reasons.extend(f"reconciliation inputs are incomplete: {problem}" for problem in incompleteness)
-    if ingested is not None and not ingested.get("newest_snapshot_covered", True):
-        reasons.append(
-            "the ingested database state is one publication behind: no reconciliation batch has covered the "
-            f"{snapshot.get('published_at')} snapshot (latest covered {ingested.get('latest_covered_published_at')})"
-        )
-    if reasons:
-        return {"verdict": VERDICT_UNVERIFIED, "reasons": reasons, "scope": scope}
+    if ingested_lag:
+        return {"verdict": VERDICT_UNVERIFIED, "reasons": reasons + [ingested_lag], "scope": scope}
+
     return {
         "verdict": VERDICT_MATCHED,
         "reasons": [
             f"no unexplained differences in scope: {scope}; "
-            f"{snapshot.get('entity_count', 0) - diff['overlap']:,} source-only IDs, 0 unexplained only-in-DB IDs"
+            f"{snapshot.get('entity_count', 0) - diff['overlap']:,} source-only IDs, 0 unexplained only-in-DB IDs; "
+            f"classification coverage full over {summary.get('population') or 'the whole'} divergent population"
         ],
         "scope": scope,
     }
@@ -1760,6 +1978,7 @@ def pipeline_health_verdict(
     run_history_status: str,
     drift_notes: list[str],
     freshness_unavailable_reason: str | None = None,
+    classification_complete: bool = True,
 ) -> dict[str, Any]:
     reasons: list[str] = []
     unverified: list[str] = []
@@ -1767,6 +1986,15 @@ def pipeline_health_verdict(
         unverified.append(f"cadence constants disagree with the workflow: {drift_notes}")
     if run_history_status != "ok":
         unverified.append("GitHub Actions run history is unavailable, so expected-vs-attempted cannot be established")
+    if classification_complete is not True:
+        # A GitHub `success` conclusion says the workflow exited zero. The
+        # classification summary is what says the poll actually classified its
+        # population, so without a present and complete summary a "successful poll"
+        # is a conclusion, not a measurement - and no green verdict may rest on it.
+        unverified.append(
+            "the classification summary for this window is absent or incomplete, so the polls' success "
+            "conclusions are not backed by classified output"
+        )
     if not freshness:
         # A green pipeline verdict needs the freshness promises it claims to check:
         # no freshness block means the SLA promises were never evaluated.
@@ -1774,7 +2002,19 @@ def pipeline_health_verdict(
             freshness_unavailable_reason
             or "freshness was not evaluated, so the signal and source SLA promises are unverified"
         )
-    if coverage and coverage.get("available", True):
+    if coverage is None:
+        # No coverage block at all is missing evidence, not a clean window.
+        unverified.append(
+            "no polling-coverage block was produced, so expected-vs-attempted (missed, failed and incomplete "
+            "ticks) was never established"
+        )
+    elif coverage.get("available", False) is not True:
+        unverified.append(
+            "poll coverage is unavailable "
+            f"({coverage.get('reason') or coverage.get('source') or 'no reason recorded'}), so expected-vs-attempted was "
+            "not established"
+        )
+    else:
         if coverage["missed"]["runs"]:
             reasons.append(
                 f"{coverage['missed']['runs']} missed tick(s): {coverage['missed']['definition']}; "
@@ -1790,10 +2030,18 @@ def pipeline_health_verdict(
                 f"{incomplete} scheduled run(s) count as successful by GitHub conclusion but are recorded "
                 f"'partial' in the DB: {(coverage.get('successful') or {}).get('note')}"
             )
-        if (coverage.get("expected") or {}).get("schedule_history_available") is False:
+        expected_block = coverage.get("expected") or {}
+        if expected_block.get("schedule_history_available") is not True:
             unverified.append(
-                "the cron schedule history could not be read, so expected fires were derived from the on-disk cron "
-                "applied to the whole window instead of the schedules in force"
+                "the schedules in force could not be established from the workflow's git history "
+                f"({expected_block.get('schedule_history_gaps') or 'no readable schedule history'}), so expected "
+                "fires were derived from the on-disk cron applied to the whole window instead of the schedules in "
+                "force"
+            )
+        if (coverage.get("successful") or {}).get("db_cross_checked") is not True:
+            unverified.append(
+                "the DB cross-check of poll completeness was not run, so a GitHub success conclusion cannot be "
+                "excluded from having been a 'partial' poll"
             )
     if sweep and sweep.get("meets_sla") is False:
         reasons.append(
@@ -1854,7 +2102,7 @@ def pipeline_health_verdict(
         )
         return {"verdict": VERDICT_UNVERIFIED, "reasons": unverified, "unverified_reasons": unverified}
     matched_reasons: list[str] = []
-    if coverage and coverage.get("available", True):
+    if coverage is not None and coverage.get("available") is True:
         matched_reasons.append("expected cadence met: no missed, failed, or in-flight ticks in the window")
     matched_reasons.append("full-sweep interval within the documented promise")
     signal = (freshness or {}).get("signal") or {}
@@ -1892,14 +2140,23 @@ def build_verdicts(
     incompleteness: list[str] | None = None,
     freshness_unavailable_reason: str | None = None,
 ) -> dict[str, Any]:
+    # Completeness is derived here, from the classification that produced the
+    # split, and merged with whatever the caller reported: a verdict must not be
+    # able to turn green because a caller passed an empty (or stale) problem list.
+    derived: list[str] = reconciliation_inputs_are_complete(diff or {}, summary) if summary is not None else []
+    reported = list(incompleteness or [])
+    merged_incompleteness = reported + [problem for problem in derived if problem not in reported]
+    classification_complete = summary is not None and not merged_incompleteness
     return {
         "vocabulary": VERDICT_VOCABULARY,
+        "completeness_derived_in_verdict_path": True,
+        "classification_evidence_complete": classification_complete,
         "data_alignment": data_alignment_verdict(
             snapshot=snapshot,
             diff=diff,
             summary=summary,
             ingested=ingested,
-            incompleteness=incompleteness,
+            incompleteness=merged_incompleteness,
         ),
         "pipeline_health": pipeline_health_verdict(
             coverage=coverage,
@@ -1909,6 +2166,7 @@ def build_verdicts(
             run_history_status=run_history_status,
             drift_notes=drift_notes,
             freshness_unavailable_reason=freshness_unavailable_reason,
+            classification_complete=classification_complete,
         ),
     }
 
@@ -2647,7 +2905,9 @@ def gather(
             )
             classifications[key] = classification
             splits[key] = split_counts(classification, population, side=side)
-            per_side_summaries[key] = summarize_classification(classification)
+            per_side_summaries[key] = summarize_classification(
+                classification, population_size=len(population)
+            )
         summary = merge_summaries(per_side_summaries)
 
     alignment = None
@@ -2997,6 +3257,8 @@ def render(data: dict[str, Any]) -> str:
         f"({cadence.get('source')})",
     ]
     epoch_rows = coverage["expected"].get("epochs") or []
+    history_available = coverage["expected"].get("schedule_history_available")
+    history_gaps = coverage["expected"].get("schedule_history_gaps") or []
     if len(epoch_rows) > 1:
         lines.append("- Schedules in force during this window (per-epoch fires):")
         for epoch in epoch_rows:
@@ -3006,15 +3268,22 @@ def render(data: dict[str, Any]) -> str:
                 + f" = {epoch['fires']} fire(s)"
                 + (f", commit {epoch['commit'][:12]}" if epoch.get("commit") else "")
             )
-    elif coverage["expected"].get("schedule_history_available") is False:
+    if history_gaps:
+        shown = ", ".join(str(gap)[:12] for gap in history_gaps[:5])
+        lines.append(
+            f"- Schedule history incomplete: {len(history_gaps)} workflow revision(s) could not be read/listed "
+            f"({shown}{', ...' if len(history_gaps) > 5 else ''}), so the epoch boundaries above are not "
+            "authoritative and the expected fire count is not a measurement of the schedules in force."
+        )
+    elif history_available is not True:
         lines.append(
             "- Schedule history unavailable: expected fires above apply today's cron to the whole window, so they "
             "are not backed by the schedules in force at the time."
         )
-    if coverage.get("available", True):
+    if coverage.get("available") is True:
         lines += [
             f"- Attempted: **{coverage['attempted']['runs']}** scheduled runs - {coverage['attempted']['source']}",
-            f"- Successful: **{coverage['successful']['runs']}** - {coverage['successful']['source']}",
+            f"- Successful: **{coverage['successful']['runs']}** completed poll(s) - {coverage['successful']['source']}",
             f"- Failed: **{coverage['failed']['runs']}** - {coverage['failed']['source']}"
             + (f" {coverage['failed']['by_conclusion']}" if coverage["failed"]["by_conclusion"] else ""),
             f"- Missed: **{coverage['missed']['runs']}** - {coverage['missed']['definition']} "
@@ -3023,6 +3292,13 @@ def render(data: dict[str, Any]) -> str:
             f"in flight {coverage['in_flight']['runs']}; "
             f"manual or other-event runs {coverage['attempted']['manual_or_other_event_runs']}",
         ]
+        workflow_success_runs = coverage["successful"].get("workflow_success_runs")
+        if workflow_success_runs is not None and workflow_success_runs != coverage["successful"]["runs"]:
+            lines.append(
+                f"- GitHub workflow successes (conclusion only): {workflow_success_runs}; completed polls after the "
+                f"DB 'partial' cross-check: **{coverage['successful']['runs']}** "
+                f"({coverage['successful'].get('partial_runs_excluded', 0)} excluded as incomplete)"
+            )
     else:
         lines += [
             f"- Attempted / Successful / Failed / Missed: **not assertable** - "
@@ -3035,12 +3311,13 @@ def render(data: dict[str, Any]) -> str:
         f"{coverage['db_cross_check'].get('db_signal_poll_failed', 0)} failed / "
         f"{coverage['db_cross_check']['db_signal_poll_total_rows']} rows. {coverage['db_cross_check']['reconciliation']}",
     ]
-    if coverage.get("available", True) and coverage["successful"].get("incomplete_runs"):
+    if coverage.get("available") is True and coverage["successful"].get("incomplete_runs"):
         lines.append(f"- **Partial polls**: {coverage['successful']['note']}")
-    if coverage.get("available", True):
+    if coverage.get("available") is True:
         lines += [
             f"- Delivered: {_ratio(coverage['attempted']['runs'], coverage['expected']['due'])} of due fires attempted, "
-            f"{_ratio(coverage['successful']['runs'], coverage['expected']['due'])} succeeded",
+            f"{_ratio(coverage['successful']['runs'], coverage['expected']['due'])} completed - delivered_pct "
+            f"**{coverage['delivered_pct']}** computed on {coverage.get('delivered_basis', 'an unrecorded basis')}",
             f"- Diagnostic: {coverage['fires_without_a_matching_run']['runs']} due fire(s) had no run created within "
             f"{cadence['match_window_hours']:g}h - {coverage['fires_without_a_matching_run']['definition']}",
         ]
@@ -3156,11 +3433,33 @@ def render(data: dict[str, Any]) -> str:
             ("source_but_db_inactive", "source-present-DB-INACTIVE"),
         ):
             info = (alignment.get("classifications") or {}).get(side_key) or {}
+            cover = info.get("coverage", "not run")
+            if cover == "not_applicable":
+                lines.append(f"- {label} classification: not run ({info.get('source', 'empty population')})")
+                continue
             lines.append(
-                f"- {label} classification: coverage {info.get('coverage', 'not run')} "
-                f"({info.get('classified', 0):,} of {info.get('population', 0):,} IDs, cap {info.get('cap')}, "
-                f"source: {info.get('source', 'n/a')})"
+                f"- {label} classification: coverage **{cover}** ({info.get('classified', 0):,} of "
+                f"{info.get('population', 0):,} IDs classified, cap {info.get('cap')}) - population coverage, "
+                "**not** a live refresh"
             )
+            ages = info.get("reused_cache_age_hours") or {}
+            ttl = info.get("cache_ttl_hours")
+            fetch_line = (
+                f"  - this run: {_count_or_unknown(info.get('fetched'))} fetched live from the CQC API, "
+                f"{_count_or_unknown(info.get('reused_from_cache'))} reused from cache"
+            )
+            if ages:
+                fetch_line += (
+                    f" (reused entries {ages.get('oldest')}h-{ages.get('newest')}h old at report time"
+                    + (f", TTL {ttl:g}h)" if isinstance(ttl, (int, float)) else ")")
+                )
+            elif isinstance(ttl, (int, float)):
+                fetch_line += f", cache TTL {ttl:g}h"
+            fetch_line += (
+                f", {_count_or_unknown(info.get('failures'))} API error(s); class source: "
+                f"{info.get('source', 'n/a')}"
+            )
+            lines.append(fetch_line)
         for problem in alignment.get("incompleteness") or []:
             lines.append(f"  - completeness caveat: {problem}")
         context = alignment["count_vs_count_context"]
