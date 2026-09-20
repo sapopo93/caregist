@@ -816,9 +816,17 @@ def confirm_deactivation_candidates(
         # phase before the first request and report progress as it advances, so
         # the next slow confirmation is diagnosable from CI output alone.
         _progress(f"Confirming {total} deactivation candidate(s) against the live CQC API...")
+    confirmed_deregistered = 0
     for index, location_id in enumerate(candidate_ids, start=1):
         if index % 25 == 0:
-            _progress(f"  ...confirmed {index - 1}/{total} candidate(s)")
+            # "checked", not "confirmed": this counter advances on every attempt,
+            # including attempts that failed. Labelling it "confirmed" made a
+            # total failure read as near-success on run 35529037973 (2026-09-20)
+            # and cost diagnosis time, so report both numbers.
+            _progress(
+                f"  ...checked {index - 1}/{total} candidate(s); "
+                f"{confirmed_deregistered} confirmed deregistered"
+            )
         try:
             detail = fetch(base_url, api_key, location_id)
         except Exception as exc:  # noqa: BLE001 - one unconfirmed id must not abort the batch
@@ -846,14 +854,20 @@ def confirm_deactivation_candidates(
         raw_status = detail.get("registrationStatus")
         action, classification = classify_registration_status(raw_status)
         status_text = normalize_whitespace(raw_status) if isinstance(raw_status, str) else ""
-        decisions.append(
-            DeactivationDecision(
-                str(location_id),
-                action,
-                classification,
-                status_text or None,
-                f"registrationStatus={status_text or 'absent'}",
-            )
+        decision = DeactivationDecision(
+            str(location_id),
+            action,
+            classification,
+            status_text or None,
+            f"registrationStatus={status_text or 'absent'}",
+        )
+        decisions.append(decision)
+        if decision.deactivates:
+            confirmed_deregistered += 1
+    if total:
+        _progress(
+            f"  ...checked {total}/{total} candidate(s); "
+            f"{confirmed_deregistered} confirmed deregistered"
         )
     return decisions
 
@@ -2499,30 +2513,45 @@ def _run_reconciliation_phase(args: argparse.Namespace, api_key: str | None, dat
             conn.rollback()
             raise
         except Exception as exc:
-            conn.rollback()
-            if not args.dry_run and args.batch_id:
-                cur.execute(
-                    """
-                    UPDATE reconciliation_batches
-                    SET status = 'failed', error_message = %s
-                    WHERE id = %s AND status != 'completed'
-                    """,
-                    (str(exc)[:4000], args.batch_id),
+            # The rollback and the failure record are best effort. This phase can
+            # spend tens of minutes in network-bound work (the deactivation
+            # confirmation loop), long enough for the server to drop an idle
+            # connection - and a secondary "SSL connection has been closed
+            # unexpectedly" must never replace the real failure or hide it from
+            # the log (run 35529037973, 2026-09-20). If the connection is gone,
+            # say so and let the original exception through: the workflow's
+            # abort-incomplete job records the batch state on a fresh connection.
+            try:
+                conn.rollback()
+                if not args.dry_run and args.batch_id:
+                    cur.execute(
+                        """
+                        UPDATE reconciliation_batches
+                        SET status = 'failed', error_message = %s
+                        WHERE id = %s AND status != 'completed'
+                        """,
+                        (str(exc)[:4000], args.batch_id),
+                    )
+                    cur.execute(
+                        """
+                        UPDATE pipeline_runs
+                        SET status = 'failed', completed_at = NOW(), error_message = %s,
+                            counts_reconciled = FALSE, reconciled_at = NULL,
+                            checkpoint_state = checkpoint_state || '{"restartable": true, "fullCoverage": false}'::jsonb
+                        WHERE id = (
+                          SELECT pipeline_run_id FROM reconciliation_batches
+                          WHERE id = %s AND status != 'completed'
+                        ) AND status != 'completed'
+                        """,
+                        (str(exc)[:4000], args.batch_id),
+                    )
+                    conn.commit()
+            except psycopg2.Error as record_exc:
+                print(
+                    "Could not record this failure on the current connection "
+                    f"({type(record_exc).__name__}: {record_exc}); the abort phase will "
+                    "record the batch state."
                 )
-                cur.execute(
-                    """
-                    UPDATE pipeline_runs
-                    SET status = 'failed', completed_at = NOW(), error_message = %s,
-                        counts_reconciled = FALSE, reconciled_at = NULL,
-                        checkpoint_state = checkpoint_state || '{"restartable": true, "fullCoverage": false}'::jsonb
-                    WHERE id = (
-                      SELECT pipeline_run_id FROM reconciliation_batches
-                      WHERE id = %s AND status != 'completed'
-                    ) AND status != 'completed'
-                    """,
-                    (str(exc)[:4000], args.batch_id),
-                )
-                conn.commit()
             raise
     finally:
         cur.close()
