@@ -4279,7 +4279,7 @@ def render(data: dict[str, Any]) -> str:
         f"- Expected: **{coverage['expected']['runs']}** - {coverage['expected']['derivation']}; "
         f"{coverage['expected']['due']} due, {coverage['expected']['not_yet_due']} not yet due "
         f"(source: {coverage['expected']['source']})",
-        f"- Current cadence: "
+        "- Current cadence: "
         + ", ".join(f"`{expr}`" for expr in cadence.get("expressions") or [])
         + f" = {cadence.get('runs_per_day')}/day x 7 = {cadence.get('runs_per_week')}/week "
         f"({cadence.get('source')})",

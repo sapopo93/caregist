@@ -738,7 +738,7 @@ if __name__ == "__main__":  # pragma: no cover - diagnostic, not an assertion
     # stay green, so the summary is scoped to the targeted (and, for the
     # two-domain shapes, every affected) verdict.
     still_green = []
-    for shape, row in zip(SHAPES, matrix[1:]):
+    for shape, row in zip(SHAPES, matrix[1:], strict=False):
         for domain in shape.domains:
             if row[domain]["verdict"] == MATCHED:
                 still_green.append(f"{row['shape']} -> {domain}")

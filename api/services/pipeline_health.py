@@ -10,6 +10,8 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
+import asyncpg
+
 from api.monitoring_config import monitoring_settings
 from api.services.cqc_freshness import get_cqc_freshness
 
