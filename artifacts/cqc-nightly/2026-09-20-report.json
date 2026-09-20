@@ -1,0 +1,680 @@
+{
+  "alignment": {
+    "classification_summary": {
+      "confirmed_defect": 124,
+      "coverage": "full",
+      "defect_classes": {
+        "only_in_db_active:confirmed_deregistered_still_active_in_db": 67,
+        "source_but_db_inactive:db_inactive_but_source_registered": 57
+      },
+      "legitimate_classes": {
+        "only_in_db_active:registered_after_snapshot_publication": 60,
+        "source_but_db_inactive:db_inactive_matches_deregistration": 4
+      },
+      "legitimate_timing_or_scope": 64,
+      "per_side": {
+        "only_in_db_active": {
+          "confirmed_defect": 67,
+          "coverage": "full",
+          "defect_classes": {
+            "confirmed_deregistered_still_active_in_db": 67
+          },
+          "legitimate_classes": {
+            "registered_after_snapshot_publication": 60
+          },
+          "legitimate_timing_or_scope": 60,
+          "source": "live CQC API location detail (registrationStatus, registrationDate, deregistrationDate)",
+          "unexplained": 0,
+          "unexplained_classes": {}
+        },
+        "only_in_source": {
+          "confirmed_defect": 0,
+          "coverage": "full",
+          "defect_classes": {},
+          "legitimate_classes": {},
+          "legitimate_timing_or_scope": 0,
+          "source": "empty population: nothing to classify",
+          "unexplained": 0,
+          "unexplained_classes": {}
+        },
+        "source_but_db_inactive": {
+          "confirmed_defect": 57,
+          "coverage": "full",
+          "defect_classes": {
+            "db_inactive_but_source_registered": 57
+          },
+          "legitimate_classes": {
+            "db_inactive_matches_deregistration": 4
+          },
+          "legitimate_timing_or_scope": 4,
+          "source": "live CQC API location detail (registrationStatus, registrationDate, deregistrationDate)",
+          "unexplained": 0,
+          "unexplained_classes": {}
+        }
+      },
+      "source": "live CQC API location detail, per divergent population (see per_side)",
+      "unexplained": 0,
+      "unexplained_classes": {}
+    },
+    "classifications": {
+      "only_in_db_active": {
+        "cache_path": "artifacts/cqc-nightly/cache/divergent-db-active.json",
+        "cache_ttl_hours": 168.0,
+        "cap": 250,
+        "classes": {
+          "confirmed_deregistered_still_active_in_db": 67,
+          "registered_after_snapshot_publication": 60
+        },
+        "classified": 127,
+        "coverage": "full",
+        "failures": 0,
+        "fetched": 0,
+        "note": "resumable: cached classifications are reused until the TTL expires",
+        "population": 127,
+        "reused_from_cache": 127,
+        "selected": 127,
+        "side": "db_active_absent_from_source",
+        "source": "live CQC API location detail (registrationStatus, registrationDate, deregistrationDate)"
+      },
+      "only_in_source": {
+        "coverage": "not_applicable",
+        "source": "empty population"
+      },
+      "source_but_db_inactive": {
+        "cache_path": "artifacts/cqc-nightly/cache/source-inactive-vs-db.json",
+        "cache_ttl_hours": 168.0,
+        "cap": 250,
+        "classes": {
+          "db_inactive_but_source_registered": 57,
+          "db_inactive_matches_deregistration": 4
+        },
+        "classified": 61,
+        "coverage": "full",
+        "failures": 0,
+        "fetched": 0,
+        "note": "resumable: cached classifications are reused until the TTL expires",
+        "population": 61,
+        "reused_from_cache": 61,
+        "selected": 61,
+        "side": "source_present_db_inactive",
+        "source": "live CQC API location detail (registrationStatus, registrationDate, deregistrationDate)"
+      }
+    },
+    "count_vs_count_context": {
+      "db_active": 57193,
+      "delta": 42,
+      "last_validated_snapshot_count": 57151,
+      "note": "counts across different publications are not a match signal: a count difference disappears against the newer snapshot and says nothing about identifiers. The identifier diff above is the authority."
+    },
+    "coverage": "full",
+    "definitions": {
+      "only_in_db_active": "ACTIVE in CareGist, absent from the snapshot",
+      "only_in_db_inactive": "INACTIVE in CareGist, absent from the snapshot (expected: the snapshot lists active locations only)",
+      "only_in_source": "present in the snapshot, absent from CareGist entirely",
+      "source_but_db_inactive": "present in the snapshot, INACTIVE in CareGist"
+    },
+    "diff": {
+      "db_active": 57193,
+      "db_inactive": 1837,
+      "definitions": {
+        "only_in_db_active": "ACTIVE in CareGist, absent from the snapshot",
+        "only_in_db_inactive": "INACTIVE in CareGist, absent from the snapshot (expected: the snapshot lists active locations only)",
+        "only_in_source": "present in the snapshot, absent from CareGist entirely",
+        "source_but_db_inactive": "present in the snapshot, INACTIVE in CareGist"
+      },
+      "overlap": 57127,
+      "overlap_active": 57066,
+      "overlap_inactive": 61,
+      "snapshot_ids": 57127
+    },
+    "diff_sets": {
+      "only_in_db_active": 127,
+      "only_in_db_inactive": 1776,
+      "only_in_source": 0,
+      "source_but_db_inactive": 61
+    },
+    "incompleteness": [],
+    "only_in_db_active_split": {
+      "cache_path": "artifacts/cqc-nightly/cache/divergent-db-active.json",
+      "classified": 127,
+      "confirmed_defect": 67,
+      "coverage": "full",
+      "legitimate_timing_or_scope": 60,
+      "population": 127,
+      "side": "db_active_absent_from_source",
+      "source": "live CQC API location detail (registrationStatus, registrationDate, deregistrationDate)",
+      "unexplained": 0
+    },
+    "only_in_source_split": {
+      "classified": 0,
+      "confirmed_defect": 0,
+      "coverage": "full",
+      "legitimate_timing_or_scope": 0,
+      "population": 0,
+      "source": "empty population: nothing to classify",
+      "unexplained": 0
+    },
+    "scope": "snapshot 16 September 2026 (full), 57,127 source IDs vs 57,193 DB ACTIVE IDs",
+    "snapshot": {
+      "byte_cap": 67108864,
+      "bytes_read": 18959346,
+      "checksum_verified": true,
+      "complete": true,
+      "coverage": "full",
+      "declared_bytes": null,
+      "entity_count": 57127,
+      "error": null,
+      "id_cap": 200000,
+      "identity_from_cache": true,
+      "note": "resumed from cache (fetched 2026-09-20T04:35:48Z); re-fetches after 12h or with --refresh-snapshot",
+      "published_at": "16 September 2026",
+      "retrieved_at": "2026-09-20T04:35:48Z",
+      "sha256": "bed9e95a1701ade0c4933bdf3acda7a9c4c94e3940a19ad698575a05a66eecb0",
+      "source": "GET CQC data page -> CQC_directory.csv link -> streamed body (hashlib.sha256)",
+      "uri": "https://www.cqc.org.uk/system/files/2026-09/16_september_2026_CQC_directory.csv"
+    },
+    "source_but_db_inactive_split": {
+      "cache_path": "artifacts/cqc-nightly/cache/source-inactive-vs-db.json",
+      "classified": 61,
+      "confirmed_defect": 57,
+      "coverage": "full",
+      "legitimate_timing_or_scope": 4,
+      "population": 61,
+      "side": "source_present_db_inactive",
+      "source": "live CQC API location detail (registrationStatus, registrationDate, deregistrationDate)",
+      "unexplained": 0
+    }
+  },
+  "attested_failure_cause": {
+    "at": "2026-09-13T11:10:46Z",
+    "candidates_checked": 1,
+    "from_cache": true,
+    "line": "finalize\tUNKNOWN STEP\t2026-09-13T15:59:20.6352240Z Reconciliation finalize failed: Batch finalization refused: 1 manifest locations are not active.",
+    "run_id": 34753758031,
+    "source": "gh run view 34753758031 --log",
+    "status": "attested"
+  },
+  "cadence": {
+    "drift_notes": [],
+    "expression": "7 18,21,0,3 * * *",
+    "expressions": [
+      "7 18,21,0,3 * * *"
+    ],
+    "grace_minutes": 90.0,
+    "match_window_hours": 4.0,
+    "runs_per_day": 4.0,
+    "runs_per_week": 28,
+    "source": "parsed from .github/workflows/cqc-signal-poll.yml",
+    "sweep_size": 1200
+  },
+  "changes_by_type": {
+    "new_registration": 9,
+    "rating_changed": 3,
+    "status_changed": 5
+  },
+  "changes_total": 17,
+  "churn": {
+    "ledger_events_in_window": 17,
+    "note": "a rewritten row is refresh activity, not evidence that CQC published anything; the ledger is the only change evidence this pipeline records, so a rewrite with no location-level event is labelled 'no recorded change' rather than 'no change'",
+    "rows_rewritten": 3209,
+    "rows_rewritten_with_location_event": 17,
+    "rows_rewritten_with_provider_scope_event": 19,
+    "rows_rewritten_without_location_event": 3192,
+    "source": "care_providers.updated_at (rewrites) vs trusted_event_ledger.observed_at / .location_id (recorded changes)",
+    "window_start": "2026-09-19T04:37:05Z"
+  },
+  "coverage_window": {
+    "end": "2026-09-20T04:37:05Z",
+    "hours": 168.0,
+    "start": "2026-09-13T04:37:05Z"
+  },
+  "directory_snapshot_changed": false,
+  "directory_snapshot_sha256": "bed9e95a1701ade0c4933bdf3acda7a9c4c94e3940a19ad698575a05a66eecb0",
+  "failed_batch_shard_evidence": {
+    "note": "the DB error_message is a generic wrapper written when the workflow ends; it is not the reason the batch was refused (see attested_cause)",
+    "shards_by_status": {
+      "completed": 8
+    },
+    "source": "reconciliation_shards grouped by status"
+  },
+  "failures_in_window": [],
+  "freshness": {
+    "ingested_source": {
+      "age_convention": "measured from 00:00 UTC on the publication date",
+      "age_hours": 268.6,
+      "published_at": "2026-09-09",
+      "sla_citation": "SOURCE_FRESHNESS_SLA = timedelta(days=8) (api/services/pipeline_health.py) - CQC publishes the directory weekly; 8 days is the documented customer-facing promise",
+      "sla_hours": 192.0,
+      "source": "CQC directory publication date (from the CSV preamble) / reconciliation_batches.source_published_at",
+      "within_sla": false
+    },
+    "newest_available_source": null,
+    "signal": {
+      "age_hours": 5.5,
+      "observed_at": "2026-09-19T23:09:40Z",
+      "sla_citation": "SIGNAL_POLL_FRESHNESS_SLA = timedelta(hours=16) (api/services/pipeline_health.py)",
+      "sla_hours": 16.0,
+      "source": "trusted_event_ledger.max(observed_at)",
+      "within_sla": true
+    }
+  },
+  "generated_at": "2026-09-20T04:37:05Z",
+  "ingested": {
+    "latest_covered_age_hours": 88.6,
+    "latest_covered_batch_id": "b84cb3de-f70f-4d62-b5b3-639b09ceeffe",
+    "latest_covered_checksum": "cf2e7bc20493b331ca3953c708652ca7b2159cc9b223f0f876c9cf481cde44ce",
+    "latest_covered_completed_at": "2026-09-16T12:00:07Z",
+    "latest_covered_published_at": "2026-09-09",
+    "newest_available_published_at": "16 September 2026",
+    "newest_snapshot_covered": false,
+    "source": "reconciliation_batches (completed) vs the snapshot fetched above"
+  },
+  "last_failed_batch": {
+    "batch_id": "66b53f7f-2fba-4079-abb6-9b33bacbd684",
+    "completed_at": "2026-09-13T16:00:01Z",
+    "created_at": "2026-09-13T11:11:28Z",
+    "recorded_error": "Workflow ended before every shard completed",
+    "source": "reconciliation_batches (newest non-completed batch)",
+    "source_published_at": "2026-09-09",
+    "status": "failed"
+  },
+  "last_reconciliation_run": {
+    "active_records_after": 57151,
+    "active_records_before": 57157,
+    "age_hours": 88.6,
+    "batch_id": "b84cb3de-f70f-4d62-b5b3-639b09ceeffe",
+    "completed_at": "2026-09-16T12:00:07Z",
+    "created_at": "2026-09-16T07:42:01Z",
+    "location_count": 57151,
+    "records_deactivated": 14,
+    "source": "reconciliation_batches WHERE status = 'completed' ORDER BY completed_at DESC",
+    "source_checksum_sha256": "cf2e7bc20493b331ca3953c708652ca7b2159cc9b223f0f876c9cf481cde44ce",
+    "source_published_at": "2026-09-09",
+    "source_uri": "https://www.cqc.org.uk/system/files/2026-09/09_september_2026_CQC_directory.csv"
+  },
+  "ledger_newest": "2026-09-19T23:09:40Z",
+  "ledger_newest_age_hours": 5.5,
+  "observed_sweep": {
+    "arithmetic": "57,127 locations / (24 runs/week x 1,200 per run) = 13.9 days per full sweep",
+    "directory_size": 57127,
+    "full_sweep_days": 13.9,
+    "interval_hours": 7.0,
+    "locations_per_week": 28800,
+    "meets_sla": false,
+    "min_runs_per_week_for_sla": 42,
+    "note": "requirement the schedule must meet to honour the documented 8-day freshness promise",
+    "runs_per_week": 24,
+    "sla_days": 8.0,
+    "sweep_size": 1200
+  },
+  "polls": {
+    "coverage": {
+      "attempted": {
+        "manual_or_other_event_runs": 0,
+        "runs": 24,
+        "source": "gh run list --workflow=cqc-signal-poll.yml --json event,status,conclusion,createdAt,databaseId"
+      },
+      "available": true,
+      "cadence_change": {
+        "at": "2026-09-15T10:38:36Z",
+        "attempted": 11,
+        "due": 20,
+        "expected_runs": 20,
+        "missed": 9,
+        "note": "this window spans a schedule change, so the window-wide expectation mixes two cadences",
+        "source": "git log -1 --format=%cI -- .github/workflows/cqc-signal-poll.yml"
+      },
+      "cancelled": {
+        "runs": 0,
+        "source": "gh run list --workflow=cqc-signal-poll.yml --json event,status,conclusion,createdAt,databaseId; conclusion == cancelled (not counted as failed)"
+      },
+      "consistency": {
+        "attempted": 24,
+        "due_plus_not_yet_due": 28,
+        "expected": 28,
+        "successful_plus_failed_plus_cancelled_plus_in_flight": 24
+      },
+      "coverage_pct": 85.7,
+      "db_cross_check": {
+        "db_all_run_types_rows": 101,
+        "db_reconciliation_rows": 3,
+        "db_signal_poll_completed": 24,
+        "db_signal_poll_total_rows": 24,
+        "reconciliation": "GitHub Actions attempted 24, DB pipeline_runs holds 24 row(s) in the same window (+0); the DB cannot distinguish scheduled from manual runs and records no conclusion for polls, so GitHub Actions is the authority for the buckets above",
+        "source": "pipeline_runs WHERE run_type = 'signal_poll' (started_at window)",
+        "window": {
+          "end": "2026-09-20T04:37:05Z",
+          "start": "2026-09-13T04:37:05Z"
+        }
+      },
+      "delivered_pct": 85.7,
+      "expected": {
+        "derivation": "cron fire times inside the window (UTC)",
+        "due": 28,
+        "not_yet_due": 0,
+        "runs": 28,
+        "source": "workflow cron, see cadence"
+      },
+      "failed": {
+        "by_conclusion": {},
+        "runs": 0,
+        "source": "gh run list --workflow=cqc-signal-poll.yml --json event,status,conclusion,createdAt,databaseId; conclusion in ['failure', 'startup_failure', 'timed_out']"
+      },
+      "fires_without_a_matching_run": {
+        "definition": "due fires with no scheduled run created within 4h after the fire",
+        "runs": 9,
+        "source": "derived from the two rows above"
+      },
+      "grace_minutes": 90,
+      "in_flight": {
+        "runs": 0,
+        "source": "gh run list --workflow=cqc-signal-poll.yml --json event,status,conclusion,createdAt,databaseId; not yet concluded"
+      },
+      "missed": {
+        "definition": "expected due fires (28) minus attempted scheduled runs (24), floored at zero",
+        "fires": [
+          "2026-09-15T21:07:00Z",
+          "2026-09-16T00:07:00Z",
+          "2026-09-16T21:07:00Z",
+          "2026-09-17T00:07:00Z",
+          "2026-09-17T21:07:00Z",
+          "2026-09-18T00:07:00Z",
+          "2026-09-19T00:07:00Z",
+          "2026-09-20T00:07:00Z",
+          "2026-09-20T03:07:00Z"
+        ],
+        "runs": 4,
+        "source": "derived from the two rows above"
+      },
+      "source": "/opt/homebrew/bin/gh run list --workflow cqc-signal-poll.yml --limit 100 --json event,status,conclusion,createdAt,databaseId,url",
+      "successful": {
+        "runs": 24,
+        "source": "gh run list --workflow=cqc-signal-poll.yml --json event,status,conclusion,createdAt,databaseId; conclusion == success"
+      },
+      "window": {
+        "end": "2026-09-20T04:37:05Z",
+        "hours": 168.0,
+        "start": "2026-09-13T04:37:05Z"
+      }
+    },
+    "source": "GitHub Actions (gh run list) with a DB cross-check on pipeline_runs"
+  },
+  "provider_status": {
+    "ACTIVE": 57193,
+    "INACTIVE": 1837
+  },
+  "providers_total": 59030,
+  "quality_gaps": {
+    "no_geocode": 27,
+    "no_local_authority": 34,
+    "no_overall_rating": 25753,
+    "no_postcode": 0,
+    "no_region": 9
+  },
+  "rating_events": {
+    "all_time": {
+      "end": "2026-09-19T23:09:40Z",
+      "no_destination_value": 24486,
+      "old_value_sentinel": 20986,
+      "real_destination": 2428,
+      "rendered": {
+        "no_destination_value": "24,486 / 34,296 (71.4%)",
+        "old_value_sentinel": "20,986 / 34,296 (61.2%)",
+        "real_destination": "2,428 / 34,296 (7.1%)",
+        "sentinel_destination": "7,382 / 34,296 (21.5%)"
+      },
+      "sentinel_destination": 7382,
+      "start": "2026-08-10T22:58:22Z",
+      "total": 34296
+    },
+    "customer_facing_scope": "only events with a real published destination rating are eligible for rating-movement claims; unresolved (null destination) and sentinel-destination events are excluded",
+    "predicate": {
+      "no_destination_value": "new_value::text = 'null'",
+      "real_destination": "neither of the above and new_value is not null",
+      "sentinel_destination": "trim(new_value::text,'\"') in ['Inspected but not rated', 'No published rating', 'Insufficient evidence to rate']",
+      "source": "trusted_event_ledger (event_type = 'rating_changed')"
+    },
+    "real_destination_values": {
+      "Good": 69,
+      "Inadequate": 2,
+      "Outstanding": 4,
+      "Requires improvement": 2353
+    },
+    "representation_classes": {
+      "no_destination_value": "new_value is JSON null: the event records that a rating moved but not what it moved to",
+      "old_value_sentinel": "old_value is a sentinel string, not a rating: ['Not Yet Inspected']",
+      "sentinel_destination": "new_value is a sentinel string, not a rating: ['Inspected but not rated', 'No published rating', 'Insufficient evidence to rate']"
+    },
+    "unresolved_detail": {
+      "definition": "rating_changed events whose destination (new_value) is JSON null - all time",
+      "note": "a sentinel prior value such as 'Not Yet Inspected' is a representation placeholder, not a rating, so these events cannot be presented as rating movements",
+      "rendered": "20,966 / 24,486 (85.6%)",
+      "sentinel_values": [
+        "Not Yet Inspected"
+      ],
+      "source": "trusted_event_ledger (event_type = 'rating_changed', new_value::text = 'null')",
+      "unresolved": 24486,
+      "unresolved_with_sentinel_prior_value": 20966
+    },
+    "window": {
+      "no_destination_value": 3,
+      "old_value_sentinel": 0,
+      "real_destination": 0,
+      "rendered": {
+        "no_destination_value": "3 / 3 (100.0%)",
+        "old_value_sentinel": "0 / 3 (0.0%)",
+        "real_destination": "0 / 3 (0.0%)",
+        "sentinel_destination": "0 / 3 (0.0%)"
+      },
+      "sentinel_destination": 0,
+      "start": "2026-09-19T04:37:05Z",
+      "total": 3
+    }
+  },
+  "report_version": 3,
+  "runs_by_type": {
+    "feed_cycle": {
+      "completed": 4
+    },
+    "signal_poll": {
+      "completed": 2
+    }
+  },
+  "status_transitions": {
+    "ACTIVE->INACTIVE": 5
+  },
+  "sweep": {
+    "arithmetic": "57,127 locations / (28 runs/week x 1,200 per run) = 11.9 days per full sweep",
+    "directory_size": 57127,
+    "full_sweep_days": 11.9,
+    "interval_hours": 6.0,
+    "locations_per_week": 33600,
+    "meets_sla": false,
+    "min_runs_per_week_for_sla": 42,
+    "note": "requirement the schedule must meet to honour the documented 8-day freshness promise",
+    "runs_per_week": 28,
+    "sla_days": 8.0,
+    "sweep_size": 1200
+  },
+  "unrated": {
+    "active": 57193,
+    "classification": {
+      "basis": "classes estimated from the workstream's sample and cross-checked against its measured full-population figures; counts are not measured per class",
+      "class_map": {
+        "api_404_or_gone": "entity_mapping",
+        "api_error": "unknown",
+        "has_published_rating_now": "ingestion_omission",
+        "never_rated_no_historic_overall": "not_yet_inspected",
+        "no_current_ratings_but_historic_overall": "legitimate_unrated",
+        "sentinel_not_a_rating": "not_applicable"
+      },
+      "classes": [
+        {
+          "class": "ingestion_omission",
+          "confidence_95_pct": [
+            0.0,
+            1.26
+          ],
+          "estimate": 0,
+          "estimator": "sample share applied to the measured population (workstream estimate)",
+          "observed_in_sample": 0,
+          "raw_class": "has_published_rating_now",
+          "sample_size": 300,
+          "source": "artifacts/cqc-nightly/2026-09-20-unrated-classification.json (unrated-classification workstream)"
+        },
+        {
+          "class": "not_applicable",
+          "confidence_95_pct": [
+            0.0,
+            1.26
+          ],
+          "estimate": 0,
+          "estimator": "sample share applied to the measured population (workstream estimate)",
+          "observed_in_sample": 0,
+          "raw_class": "sentinel_not_a_rating",
+          "sample_size": 300,
+          "source": "artifacts/cqc-nightly/2026-09-20-unrated-classification.json (unrated-classification workstream)"
+        },
+        {
+          "class": "legitimate_unrated",
+          "confidence_95_pct": [
+            26.98,
+            37.48
+          ],
+          "estimate": 8241,
+          "estimator": "sample share applied to the measured population (workstream estimate)",
+          "observed_in_sample": 96,
+          "raw_class": "no_current_ratings_but_historic_overall",
+          "sample_size": 300,
+          "source": "artifacts/cqc-nightly/2026-09-20-unrated-classification.json (unrated-classification workstream)"
+        },
+        {
+          "class": "not_yet_inspected",
+          "confidence_95_pct": [
+            62.52,
+            73.02
+          ],
+          "estimate": 17512,
+          "estimator": "sample share applied to the measured population (workstream estimate)",
+          "observed_in_sample": 204,
+          "raw_class": "never_rated_no_historic_overall",
+          "sample_size": 300,
+          "source": "artifacts/cqc-nightly/2026-09-20-unrated-classification.json (unrated-classification workstream)"
+        },
+        {
+          "class": "entity_mapping",
+          "confidence_95_pct": [
+            0.0,
+            1.26
+          ],
+          "estimate": 0,
+          "estimator": "sample share applied to the measured population (workstream estimate)",
+          "observed_in_sample": 0,
+          "raw_class": "api_404_or_gone",
+          "sample_size": 300,
+          "source": "artifacts/cqc-nightly/2026-09-20-unrated-classification.json (unrated-classification workstream)"
+        },
+        {
+          "class": "unknown",
+          "confidence_95_pct": [
+            0.0,
+            1.26
+          ],
+          "estimate": 0,
+          "estimator": "sample share applied to the measured population (workstream estimate)",
+          "observed_in_sample": 0,
+          "raw_class": "api_error",
+          "sample_size": 300,
+          "source": "artifacts/cqc-nightly/2026-09-20-unrated-classification.json (unrated-classification workstream)"
+        }
+      ],
+      "cross_check": {
+        "absent_destination_rating_events_all_time": 24486,
+        "finding": "For ALL 25753 unrated ACTIVE rows the most recent rating_changed event has an absent destination ('null'), or no rating_changed event exists at all. ZERO unrated ACTIVE rows have a most-recent ledger destination holding a real rating value. This is a FULL-POPULATION, measured check (not a sample) and it finds no internal evidence of a lost rating.",
+        "new_value_is_sql_null_rows": 4,
+        "new_value_json_null_rows": 80306,
+        "per_event_type": [
+          {
+            "distinct_locations_absent_destination": 0,
+            "event_type": "new_registration",
+            "events": 59034,
+            "events_with_absent_destination": 0
+          },
+          {
+            "distinct_locations_absent_destination": 55815,
+            "event_type": "ownership_changed",
+            "events": 55816,
+            "events_with_absent_destination": 55816
+          },
+          {
+            "distinct_locations_absent_destination": 24484,
+            "event_type": "rating_changed",
+            "events": 34296,
+            "events_with_absent_destination": 24486
+          },
+          {
+            "distinct_locations_absent_destination": 0,
+            "event_type": "status_changed",
+            "events": 1957,
+            "events_with_absent_destination": 0
+          },
+          {
+            "distinct_locations_absent_destination": 4,
+            "event_type": "group_movement",
+            "events": 6,
+            "events_with_absent_destination": 4
+          },
+          {
+            "distinct_locations_absent_destination": 0,
+            "event_type": "integration_connectivity",
+            "events": 4,
+            "events_with_absent_destination": 0
+          }
+        ],
+        "predicate_used": "trusted_event_ledger.new_value::text = 'null'  (new_value is jsonb; NEVER use IS NULL)",
+        "query": "with ev as (\n  select e.location_id as id, e.new_value::text as dest,\n         row_number() over (partition by e.location_id order by e.observed_at desc nulls last, e.id desc) rn\n    from trusted_event_ledger e\n    join care_providers p on p.id = e.location_id\n   where e.event_type = 'rating_changed' and p.status='ACTIVE'\n     and (p.overall_rating IS NULL OR btrim(p.overall_rating) = ''))\nselect count(*) filter (where rn=1 and dest='null'), count(*) filter (where rn=1 and dest<>'null'),\n       count(*) filter (where rn=1) from ev where rn=1",
+        "question": "does any independent internal record contradict the blank overall_rating?",
+        "real_destination_rating_events_all_time": 9810,
+        "unrated_active_population": 25753,
+        "unrated_active_with_any_rating_changed_event": 23597,
+        "unrated_active_with_latest_destination_absent": 23597,
+        "unrated_active_with_latest_destination_real_value": 0,
+        "why": "new_value/old_value are jsonb columns; a JSON null is the text 'null', not SQL NULL. Measured: new_value IS NULL -> 4 rows (all event_type='integration_connectivity'); new_value::text='null' -> 80306 rows."
+      },
+      "generated_at": "2026-09-20T04:21:14.646634+00:00",
+      "population_measured": true,
+      "sample_size": 300,
+      "source": "artifacts/cqc-nightly/2026-09-20-unrated-classification.json"
+    },
+    "count": 25753,
+    "pct_of_active": 45.0,
+    "predicate": "care_providers.status = 'ACTIVE' AND (overall_rating IS NULL OR btrim(overall_rating) = '')",
+    "rendered": "25,753 / 57,193 (45.0%)",
+    "source": "care_providers (direct count over the whole active population, not a sample)"
+  },
+  "verdicts": {
+    "data_alignment": {
+      "reasons": [
+        "124 confirmed defect(s): {'only_in_db_active:confirmed_deregistered_still_active_in_db': 67, 'source_but_db_inactive:db_inactive_but_source_registered': 57}"
+      ],
+      "scope": "snapshot 16 September 2026 sha256 bed9e95a1701... (57,127 IDs, full)",
+      "verdict": "MISMATCHED"
+    },
+    "pipeline_health": {
+      "reasons": [
+        "4 missed tick(s): expected due fires (28) minus attempted scheduled runs (24), floored at zero; 24 attempted, 28 due",
+        "full directory sweep takes 11.9 days at the configured cadence (57,127 locations / (28 runs/week x 1,200 per run) = 11.9 days per full sweep), beyond the documented 8-day promise; needs >= 42 runs/week at sweep size 1,200",
+        "the validated source snapshot is 268.6h old (2026-09-09), beyond the documented 192.0h promise"
+      ],
+      "unverified_reasons": [],
+      "verdict": "MISMATCHED"
+    },
+    "vocabulary": {
+      "MATCHED": "identifier-level reconciliation against the latest available validated snapshot found no unexplained differences within the stated scope",
+      "MISMATCHED": "unexplained differences found",
+      "UNVERIFIED": "reconciliation is stale, incomplete, failed, or has not covered the newest snapshot"
+    }
+  },
+  "window_hours": 24,
+  "window_start": "2026-09-19T04:37:05Z"
+}
