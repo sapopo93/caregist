@@ -14,8 +14,13 @@ makes about a payload that *was* read: the location publishes no current overall
 rating. It is not an evidence gap and it is not licence to keep asserting the
 previous rating, so it resolves to ``not_published`` and clears the column. An
 unfamiliar non-empty string is the only payload shape that resolves to
-``unknown`` (see :func:`classify_rating`): this build cannot read it, so it
-asserts nothing either way. Treating the other shapes as rating values is
+``unknown`` (see :func:`classify_rating`): this build cannot read it, so the
+state asserts nothing either way -- it is never treated as a rating. Because an
+unknown state must not keep a previous rating publicly served, ingestion's
+write policy clears the served rating column for it exactly as it does for the
+other non-rated states, while the stored state stays ``unknown`` so the row and
+the ledger still record that the wording was unreadable rather than absent.
+Treating the other shapes as rating values is
 what wrote blanks and sentinels into ``care_providers.overall_rating`` and
 produced ~24k ``rating_changed`` ledger events whose destination was empty:
 representation churn (sentinel vs omitted field) was being read as rating
@@ -148,7 +153,9 @@ def classify_rating(
       unfamiliar text in CQC's own rating field is a value this build cannot
       read, so it is neither asserted as a rating (the reviewed revision's
       ``ELSE 'rated'`` behaviour for ``"Suspended"``/``"Under review"``) nor
-      used to clear the column. ``UNKNOWN`` stays the honest answer for input
+      allowed to leave a previous rating standing as the current one: the write
+      policy clears the served rating column for it, exactly as for the other
+      non-rated states. ``UNKNOWN`` stays the honest answer for input
       this code cannot interpret; it is not the answer for a field the source
       left empty.
 
