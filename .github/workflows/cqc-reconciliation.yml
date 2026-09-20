@@ -336,6 +336,11 @@ jobs:
       - name: Publish reconciled watermark
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          # The finalize phase confirms every deactivation candidate against the
+          # live CQC API. Without this credential those calls return HTTP 502,
+          # all 126 candidates are recorded unconfirmed, and the batch is refused
+          # (run 35529037973, 2026-09-20). The shard job has always had this key.
+          CQC_API_KEY: ${{ secrets.CQC_API_KEY }}
         run: |
           python incremental_update.py --phase finalize \
             --batch-id "${{ needs.prepare.outputs.batch_id }}" \
