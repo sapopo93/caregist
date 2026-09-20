@@ -52,3 +52,22 @@ than with the earlier report's overstatement.
 
 Not established here: the code-level correctness of the report tool (separate independent review), and
 the freshness of the cached classification (caveat 1).
+
+## Addendum — the unrated count moved, and it was not a defect (2026-09-20, later the same day)
+
+The regenerated report at `72b391c` states `quality_gaps.no_overall_rating = 25755`, whereas this check
+measured **25753**. Re-queried directly against the live database:
+
+| predicate (ACTIVE rows) | count |
+|---|---|
+| `overall_rating IS NULL` | 0 |
+| `btrim(overall_rating) = ''` | **25755** |
+| `IS NULL OR btrim(...) = ''` | 25755 |
+| `IS NULL OR overall_rating ~ '^[[:space:]]*$'` | 25755 |
+| whitespace-only, non-empty | 0 |
+
+`active_total` was 57,193 at both measurements, so no status changed. The count moved by two because two
+rows' ratings became empty between the two readings, from live production ingestion — not from anything in
+these commits, which contain no database write path and are unmerged. This addendum supersedes the
+25,753 figure above; neither reading was wrong, and the tool's current figure is the correct one.
+
