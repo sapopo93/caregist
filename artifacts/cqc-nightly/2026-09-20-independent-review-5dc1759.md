@@ -65,7 +65,30 @@ the schedules in force, not the current one. The error in the second came from a
 update that supplied only the current cron to the builder; that chain is corrected here and the
 corrective brief now requires a tested schedule-history derivation.
 
-## What these reviews do not establish
+## Additional fail-open defect found while verifying finding #4
+
+Verifying the reviewer's date-parsing finding against source exposed a second, unreported defect on the
+live classification path, verified from the code and from captured API evidence:
+
+- `classify_id()` (`tools/nightly_cqc_db_check.py:1046`) decides a timing class with
+  `registration_date > snapshot_published_at`.
+- `registration_date` arrives from the live CQC API in ISO form: the evidence artifacts contain 488
+  `registrationDate` values, all `YYYY-MM-DD` (e.g. `2026-09-15`, `2013-04-01`).
+- `snapshot_published_at` is the raw natural-language preamble string, `"16 September 2026"`.
+
+The comparison therefore mixes formats and is lexicographic: every `YYYY-MM-DD` string sorts greater
+than `"16 September 2026"` because `'2' > '1'`. So every `Registered` location that is active in
+CareGist and absent from the snapshot is classified `registered_after_snapshot_publication` (benign
+timing) instead of `registered_on_or_before_snapshot_but_absent`, which is the class a genuine defect
+would fall into. The live path cannot currently distinguish the two, and it fails in the direction that
+**understates** divergence. The reviewer named only the `newest_available_source: null` symptom.
+
+Scope limit on this finding: the committed report's 32 / 28 split came from the **cached** classification
+(`reused_from_cache: 127`, produced by a separate read-only script), not from this function, so the
+committed figures are not shown to be wrong by it. What is established is that the live path is broken
+and unverified against the cache; the corrected code must reproduce the cache's 60 registered-after /
+4 legitimately-inactive split before either number is relied upon, which is now a stated acceptance test.
+
 
 - No production change was made or verified by either review; both were read-only.
 - Cached divergent-ID classifications were not re-fetched (188 entries); the 124-defect count remains
