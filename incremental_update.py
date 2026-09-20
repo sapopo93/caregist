@@ -773,6 +773,20 @@ def classify_registration_status(raw_status: Any) -> tuple[str, str]:
     return (DEACTIVATION_KEEP, CLASSIFICATION_UNCONFIRMED)
 
 
+def _progress(message: str) -> None:
+    """Best-effort progress output for CI logs.
+
+    A reconciliation phase must never abort because its log stream failed, so a
+    broken stdout is swallowed rather than raised. `ValueError` is caught as
+    well as `OSError` because writing to an already-closed stream raises
+    `ValueError("I/O operation on closed file")`.
+    """
+    try:
+        print(message, flush=True)
+    except (OSError, ValueError):
+        pass
+
+
 def confirm_deactivation_candidates(
     candidate_ids: Sequence[str],
     *,
@@ -794,7 +808,17 @@ def confirm_deactivation_candidates(
     """
     decisions: list[DeactivationDecision] = []
     fetch = fetch_detail or fetch_location_detail
-    for location_id in candidate_ids:
+    total = len(candidate_ids)
+    if total:
+        # A confirmation phase that printed nothing for 29 minutes cost a whole
+        # batch on 2026-09-20 (run 35510678221): the job was cancelled at its
+        # timeout and its log could not say how far the phase had got. Name the
+        # phase before the first request and report progress as it advances, so
+        # the next slow confirmation is diagnosable from CI output alone.
+        _progress(f"Confirming {total} deactivation candidate(s) against the live CQC API...")
+    for index, location_id in enumerate(candidate_ids, start=1):
+        if index % 25 == 0:
+            _progress(f"  ...confirmed {index - 1}/{total} candidate(s)")
         try:
             detail = fetch(base_url, api_key, location_id)
         except Exception as exc:  # noqa: BLE001 - one unconfirmed id must not abort the batch
@@ -1936,6 +1960,7 @@ def _finalize_batch(args: argparse.Namespace, conn, cur) -> int:
     shard_count, location_count = _validate_manifest_for_batch(cur, manifest, batch_id)
     validate_shard_coordinates(shard_count)
     ids = manifest["locationIds"]
+    _progress(f"finalize: manifest loaded ({location_count} location(s), {shard_count} shard(s))")
 
     if not args.dry_run:
         # Freeze shard ownership before evaluating completion. Shard workers use
@@ -1974,6 +1999,7 @@ def _finalize_batch(args: argparse.Namespace, conn, cur) -> int:
     )
     if not complete:
         raise ChangesFetchError("Batch finalization refused: shard coverage is incomplete or inconsistent.")
+    _progress("finalize: shard coverage proven")
 
     batch_select = "SELECT active_records_before, pipeline_run_id FROM reconciliation_batches WHERE id = %s"
     if not args.dry_run:
@@ -2202,6 +2228,7 @@ def _finalize_batch(args: argparse.Namespace, conn, cur) -> int:
     # LockNotAvailable and the batch is simply not finalized -- the outcome this
     # guard already treats as safe, and the one abort-incomplete handles -- in
     # preference to holding the live estate's writes hostage to a nightly batch.
+    _progress("finalize: taking table lock")
     cur.execute("SET LOCAL lock_timeout = '5s'")
     cur.execute("LOCK TABLE care_providers IN SHARE ROW EXCLUSIVE MODE")
     cur.execute(
