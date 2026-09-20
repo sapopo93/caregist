@@ -982,8 +982,14 @@ class _FailingConnection:
 
 @pytest.mark.parametrize(
     "failure",
-    ["rollback", "execute", "commit", "cursor-close"],
-    ids=["rollback-dies", "record-execute-dies", "record-commit-dies", "cleanup-dies"],
+    ["rollback", "execute", "commit", "cursor-close", "execute-with-dead-stdout"],
+    ids=[
+        "rollback-dies",
+        "record-execute-dies",
+        "record-commit-dies",
+        "cleanup-dies",
+        "diagnostic-cannot-be-written",
+    ],
 )
 def test_failure_handling_never_masks_the_real_failure(capsys, monkeypatch, failure):
     """A connection that dies mid-phase must not mask the real failure.
@@ -991,11 +997,20 @@ def test_failure_handling_never_masks_the_real_failure(capsys, monkeypatch, fail
     Run 35529037973 (2026-09-20) refused a batch correctly, then lost its reason
     to ``psycopg2.OperationalError: SSL connection has been closed unexpectedly``
     raised by the handler's own rollback. Whichever database call fails - the
-    rollback, either failure-record statement, the commit, or the cleanup that
-    runs after the handler - the original error must still reach the log intact,
-    and the workflow's abort-incomplete job is left to record the batch state.
+    rollback, either failure-record statement, the commit, the cleanup that runs
+    after the handler, or the diagnostic that reports it - the original error
+    must still reach the log intact, and the workflow's abort-incomplete job is
+    left to record the batch state.
     """
-    connection = _FailingConnection(failure)
+    connection = _FailingConnection("execute" if failure == "execute-with-dead-stdout" else failure)
+
+    if failure == "execute-with-dead-stdout":
+
+        def _dead_print(*args, **_kwargs):
+            if any("Could not record this failure" in str(arg) for arg in args):
+                raise OSError("STDOUT_DIED")
+
+        monkeypatch.setattr("builtins.print", _dead_print)
 
     def _refuse(*_args, **_kwargs):
         raise ChangesFetchError(
@@ -1015,12 +1030,13 @@ def test_failure_handling_never_masks_the_real_failure(capsys, monkeypatch, fail
     assert "Batch finalization refused" in str(excinfo.value)
     assert "SSL connection has been closed unexpectedly" not in str(excinfo.value)
     assert "CURSOR_CLOSE_DIED" not in str(excinfo.value)
+    assert "STDOUT_DIED" not in str(excinfo.value)
     output = capsys.readouterr().out
     if failure == "cursor-close":
         # Cleanup is best effort and must stay silent: reporting it is not worth
         # replacing the exception that is already propagating.
         assert "Could not record this failure" not in output
-    else:
+    elif failure != "execute-with-dead-stdout":
         assert "Could not record this failure on the current connection" in output
 
 

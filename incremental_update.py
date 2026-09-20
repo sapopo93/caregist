@@ -2548,11 +2548,15 @@ def _run_reconciliation_phase(args: argparse.Namespace, api_key: str | None, dat
                     )
                     conn.commit()
             except psycopg2.Error as record_exc:
-                print(
-                    "Could not record this failure on the current connection "
-                    f"({type(record_exc).__name__}: {record_exc}); the abort phase will "
-                    "record the batch state."
-                )
+                # The diagnostic must not become the next thing to fail. If the
+                # log stream itself is gone (closed stdout in CI, say), reporting
+                # is not worth replacing the failure already propagating.
+                with contextlib.suppress(Exception):
+                    print(
+                        f"Could not record this failure on the current connection "
+                        f"({type(record_exc).__name__}: {record_exc}); the abort phase will "
+                        f"record the batch state."
+                    )
             raise
     finally:
         # Cleanup is best effort. The connection may already be dead, and an
