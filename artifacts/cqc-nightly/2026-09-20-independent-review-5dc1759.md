@@ -90,6 +90,8 @@ and unverified against the cache; the corrected code must reproduce the cache's 
 4 legitimately-inactive split before either number is relied upon, which is now a stated acceptance test.
 
 
+## What these reviews do not establish
+
 - No production change was made or verified by either review; both were read-only.
 - Cached divergent-ID classifications were not re-fetched (188 entries); the 124-defect count remains
   provisional until re-classified against the live API immediately before any repair run.
