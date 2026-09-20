@@ -1,0 +1,140 @@
+{
+  "generated_at": "2026-09-19T04:32:12.672396+00:00",
+  "data": {
+    "window_hours": 24,
+    "since": "2026-09-18T04:32:11.650534+00:00",
+    "provider_status": {
+      "ACTIVE": 57189,
+      "INACTIVE": 1832
+    },
+    "providers_total": 59021,
+    "providers_active": 57189,
+    "watermark": {
+      "reconciled_at": "2026-09-16T12:00:07.325481+00:00",
+      "source_total_count": 57151,
+      "checked_count": 57151,
+      "status": "completed",
+      "age_hours": 64.5,
+      "counts_match": true
+    },
+    "match": {
+      "ours": 57189,
+      "source_total": 57151,
+      "delta": 38
+    },
+    "snapshots": [
+      {
+        "source_type": "cqc_report_index",
+        "checksum_sha256": "e2853965438efeebbec53fa9a602539d4a22fc231ddb281496ad25d7da76be42",
+        "record_count": 0,
+        "source_checked_at": "2026-09-19T04:28:02.777987+00:00",
+        "age_hours": 0.1
+      },
+      {
+        "source_type": "cqc_report_index",
+        "checksum_sha256": "712f9e9d642903816bf200df05624e14f5c63baed5a06d0518c8aa6a875cb524",
+        "record_count": 0,
+        "source_checked_at": "2026-09-18T23:12:56.596324+00:00",
+        "age_hours": 5.3
+      },
+      {
+        "source_type": "cqc_location_index",
+        "checksum_sha256": "e334611711ee5794deaf4d08570073e2ddd61592ae281f56bda510792d0778f5",
+        "record_count": 122686,
+        "source_checked_at": "2026-09-18T20:50:24.708637+00:00",
+        "age_hours": 7.7
+      },
+      {
+        "source_type": "cqc_report_index",
+        "checksum_sha256": "e0aca4f05ee0ce7af3c45202ba2f2aaa745f292e380bc8779bed46d526aac004",
+        "record_count": 0,
+        "source_checked_at": "2026-09-18T20:50:24.708637+00:00",
+        "age_hours": 7.7
+      },
+      {
+        "source_type": "cqc_report_index",
+        "checksum_sha256": "cb5b5515dcbd004531d46bd31b59b842678563df6a08751142e173a5b8e85d29",
+        "record_count": 0,
+        "source_checked_at": "2026-09-18T04:31:25.139832+00:00",
+        "age_hours": 24.0
+      }
+    ],
+    "changes_by_type": {
+      "new_registration": 22,
+      "status_changed": 7,
+      "rating_changed": 3
+    },
+    "changes_total": 32,
+    "rating_moves": {
+      "no destination rating": 2,
+      "unrankable": 1
+    },
+    "status_transitions": {
+      "ACTIVE->INACTIVE": 7
+    },
+    "rating_destination": {
+      "window_no_destination": 2,
+      "window_total": 3,
+      "all_time_no_destination": 24479,
+      "all_time_total": 34289,
+      "window_share": 0.67
+    },
+    "ledger_newest": "2026-09-18T23:26:19.846325+00:00",
+    "ledger_newest_age_hours": 5.1,
+    "polls_7d": {
+      "total": 29,
+      "completed": 28,
+      "required": 336
+    },
+    "polls_24h": 2,
+    "runs_by_type": {
+      "feed_cycle/completed": 94,
+      "signal_poll/completed": 28,
+      "reconciliation/completed": 2,
+      "reconciliation/failed": 1,
+      "signal_poll/running": 1
+    },
+    "recent_failures": [
+      {
+        "run_type": "reconciliation",
+        "started_at": "2026-09-13T11:11:28.745698",
+        "error": "Workflow ended before every shard completed"
+      }
+    ],
+    "failures_in_window": [],
+    "quality_gaps": {
+      "no_postcode": {
+        "count": 0,
+        "pct": 0.0
+      },
+      "no_region": {
+        "count": 10,
+        "pct": 0.0
+      },
+      "no_local_authority": {
+        "count": 35,
+        "pct": 0.1
+      },
+      "no_overall_rating": {
+        "count": 26686,
+        "pct": 45.2
+      },
+      "no_geocode": {
+        "count": 28,
+        "pct": 0.0
+      }
+    },
+    "active_unrated": {
+      "count": 25739,
+      "pct": 45.0
+    },
+    "churn_updated_at_24h": 3622,
+    "snapshot_changed": true
+  },
+  "live_index": null,
+  "anomalies": [
+    "rating_changed events carry no destination rating: 2/3 in this window, 71.4% all time - the event records that a rating moved but not what it moved to",
+    "active-set mismatch: 57,189 ACTIVE rows vs 57,151 in the CQC directory snapshot (+38)",
+    "nightly change volume swung materially: 32 events vs 125 in the previous run (-93)"
+  ]
+}

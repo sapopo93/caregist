@@ -1,0 +1,137 @@
+{
+  "generated_at": "2026-09-20T02:15:50.434135+00:00",
+  "data": {
+    "window_hours": 24,
+    "since": "2026-09-19T02:15:49.996968+00:00",
+    "provider_status": {
+      "ACTIVE": 57193,
+      "INACTIVE": 1837
+    },
+    "providers_total": 59030,
+    "providers_active": 57193,
+    "watermark": {
+      "reconciled_at": "2026-09-16T12:00:07.325481+00:00",
+      "source_total_count": 57151,
+      "checked_count": 57151,
+      "status": "completed",
+      "age_hours": 86.3,
+      "counts_match": true
+    },
+    "match": {
+      "ours": 57193,
+      "source_total": 57151,
+      "delta": 42
+    },
+    "snapshots": [
+      {
+        "source_type": "cqc_report_index",
+        "checksum_sha256": "1613d17bd0c17090a165092f051776697b6cf25f5015287f830bd80837476eb6",
+        "record_count": 0,
+        "source_checked_at": "2026-09-19T22:54:01.559148+00:00",
+        "age_hours": 3.4
+      },
+      {
+        "source_type": "cqc_report_index",
+        "checksum_sha256": "e2a9566a3bce739112ad37a371b399f2bea6377d393e68b537459a073b0ff408",
+        "record_count": 0,
+        "source_checked_at": "2026-09-19T20:31:44.763499+00:00",
+        "age_hours": 5.7
+      },
+      {
+        "source_type": "cqc_location_index",
+        "checksum_sha256": "8869611cf476e34bb9920cabc4dd81d0c6f47a72fece40ccbcc3a090a84193be",
+        "record_count": 122695,
+        "source_checked_at": "2026-09-19T20:31:44.763499+00:00",
+        "age_hours": 5.7
+      },
+      {
+        "source_type": "cqc_report_index",
+        "checksum_sha256": "e2853965438efeebbec53fa9a602539d4a22fc231ddb281496ad25d7da76be42",
+        "record_count": 0,
+        "source_checked_at": "2026-09-19T04:28:02.777987+00:00",
+        "age_hours": 21.8
+      },
+      {
+        "source_type": "cqc_report_index",
+        "checksum_sha256": "712f9e9d642903816bf200df05624e14f5c63baed5a06d0518c8aa6a875cb524",
+        "record_count": 0,
+        "source_checked_at": "2026-09-18T23:12:56.596324+00:00",
+        "age_hours": 27.0
+      }
+    ],
+    "changes_by_type": {
+      "new_registration": 9,
+      "rating_changed": 7,
+      "status_changed": 5
+    },
+    "changes_total": 21,
+    "rating_moves": {
+      "no destination rating": 7
+    },
+    "status_transitions": {
+      "ACTIVE->INACTIVE": 5
+    },
+    "rating_destination": {
+      "window_no_destination": 7,
+      "window_total": 7,
+      "all_time_no_destination": 24486,
+      "all_time_total": 34296,
+      "window_share": 1.0
+    },
+    "ledger_newest": "2026-09-19T23:09:40.839364+00:00",
+    "ledger_newest_age_hours": 3.1,
+    "polls_7d": {
+      "total": 24,
+      "completed": 24,
+      "required": 336
+    },
+    "polls_24h": 3,
+    "runs_by_type": {
+      "feed_cycle/completed": 75,
+      "signal_poll/completed": 24,
+      "reconciliation/completed": 2,
+      "reconciliation/failed": 1
+    },
+    "recent_failures": [
+      {
+        "run_type": "reconciliation",
+        "started_at": "2026-09-13T11:11:28.745698",
+        "error": "Workflow ended before every shard completed"
+      }
+    ],
+    "failures_in_window": [],
+    "quality_gaps": {
+      "no_postcode": {
+        "count": 0,
+        "pct": 0.0
+      },
+      "no_region": {
+        "count": 10,
+        "pct": 0.0
+      },
+      "no_local_authority": {
+        "count": 35,
+        "pct": 0.1
+      },
+      "no_overall_rating": {
+        "count": 26700,
+        "pct": 45.2
+      },
+      "no_geocode": {
+        "count": 28,
+        "pct": 0.0
+      }
+    },
+    "active_unrated": {
+      "count": 25753,
+      "pct": 45.0
+    },
+    "churn_updated_at_24h": 3609,
+    "snapshot_changed": true
+  },
+  "live_index": null,
+  "anomalies": [
+    "rating_changed events carry no destination rating: 7/7 in this window, 71.4% all time - the event records that a rating moved but not what it moved to",
+    "active-set mismatch: 57,193 ACTIVE rows vs 57,151 in the CQC directory snapshot (+42)"
+  ]
+}
