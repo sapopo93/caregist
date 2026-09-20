@@ -2139,18 +2139,45 @@ def _finalize_batch(args: argparse.Namespace, conn, cur) -> int:
     # visibility (READ COMMITTED, the connection's mode): any identity
     # substituted by a transaction that *committed* before this read is visible
     # to it, and refuses the batch -- which is the case the reviewer reproduced.
-    #
-    # Residual, stated because it is not fully covered: this guard is a read, so
-    # a substitution another transaction commits *after* this read and before
-    # this transaction commits is not observed here; it is caught by the next
-    # batch's coverage check, not by this guard. An earlier draft of this fix
-    # took SHARE ROW EXCLUSIVE on care_providers to close that window. It was
-    # removed deliberately: that lock blocks every concurrent writer against
-    # this table until the finalize transaction ends, and a writer blocked
-    # inside the window is precisely how the reviewer reproduced the drift (the
-    # drift then lands after the read and is invisible either way, while the
-    # batch stops being reprovable from the same thread).
     _repair_missing_slugs(cur)
+    # FIX 4: hold that comparison under a lock that prevents a concurrent
+    # identity substitution from committing between the read below and this
+    # transaction's commit. The attestation is written from this read and
+    # committed at the same instant as the rest of this transaction, so a read
+    # that is not protected for that whole span can certify a set the estate no
+    # longer has.
+    #
+    # Mechanism: SHARE ROW EXCLUSIVE on care_providers. It conflicts with the
+    # ROW EXCLUSIVE that every INSERT, UPDATE and DELETE on this table takes, so
+    # *every* writer of care_providers.status is held off without having to
+    # cooperate -- the ingestion poll path, the shard path, and ad-hoc operator
+    # SQL alike -- while plain readers (ACCESS SHARE) are unaffected. An
+    # isolation-level change was rejected instead: under REPEATABLE READ or
+    # SERIALIZABLE the read would take this transaction's snapshot from its
+    # *first* statement, which is before the deactivation writes even start, so
+    # a substitution committed after that point would become invisible to the
+    # guard and the guarded refusal below would silently stop firing -- that
+    # weakens an existing refusal path rather than protecting it. A cooperative
+    # advisory lock was rejected because its guarantee evaporates the moment any
+    # writer path forgets to take it, which is the same class of defect as the
+    # one being fixed.
+    #
+    # Placement matters and is load-bearing: the lock is requested after the
+    # last care_providers write this transaction makes (the deactivations above
+    # and _repair_missing_slugs) and after the API confirmation work, so it is
+    # neither requested while holding care_providers row locks a writer is
+    # already waiting on, nor held across network I/O. The held window is one
+    # SELECT plus the batch/pipeline status updates that commit with it.
+    #
+    # Residual, stated explicitly: this transaction's commit releases the lock,
+    # so a substitution committed *after* that commit is not covered by this
+    # attestation. That is a genuinely later change rather than evidence this
+    # batch certified falsely, and it is caught by the next batch's coverage
+    # check. If the lock cannot be acquired (a writer in flight, or an
+    # operator's own lock on this table) the finalize waits, and on the caller's
+    # statement_timeout it aborts: a batch that is not finalized, not a batch
+    # finalized without its evidence.
+    cur.execute("LOCK TABLE care_providers IN SHARE ROW EXCLUSIVE MODE")
     cur.execute(
         "SELECT id::text FROM care_providers WHERE UPPER(status) = 'ACTIVE' ORDER BY id"
     )
