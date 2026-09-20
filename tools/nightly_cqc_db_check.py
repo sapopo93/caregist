@@ -2646,7 +2646,12 @@ def render(data: dict[str, Any]) -> str:
             "- Status transitions: " + ", ".join(f"{name} {count:,}" for name, count in data["status_transitions"].items())
         )
 
-    lines += ["", "## Pipeline runs in the window", ""]
+    lines += [
+        "",
+        f"## Pipeline runs in the change window ({data['window_hours']}h to {data['window_start']})",
+        "",
+        "- Window differs from the 7-day polling-coverage window above; the two are never added together",
+    ]
     for run_type, statuses in data["runs_by_type"].items():
         lines.append(f"- {run_type}: " + ", ".join(f"{status} {count:,}" for status, count in statuses.items()))
     if data["failures_in_window"]:

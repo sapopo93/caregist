@@ -221,12 +221,12 @@
     "rows_rewritten_with_provider_scope_event": 19,
     "rows_rewritten_without_location_event": 3192,
     "source": "care_providers.updated_at (rewrites) vs trusted_event_ledger.observed_at / .location_id (recorded changes)",
-    "window_start": "2026-09-19T04:37:05Z"
+    "window_start": "2026-09-19T04:37:28Z"
   },
   "coverage_window": {
-    "end": "2026-09-20T04:37:05Z",
+    "end": "2026-09-20T04:37:28Z",
     "hours": 168.0,
-    "start": "2026-09-13T04:37:05Z"
+    "start": "2026-09-13T04:37:28Z"
   },
   "directory_snapshot_changed": false,
   "directory_snapshot_sha256": "bed9e95a1701ade0c4933bdf3acda7a9c4c94e3940a19ad698575a05a66eecb0",
@@ -258,7 +258,7 @@
       "within_sla": true
     }
   },
-  "generated_at": "2026-09-20T04:37:05Z",
+  "generated_at": "2026-09-20T04:37:28Z",
   "ingested": {
     "latest_covered_age_hours": 88.6,
     "latest_covered_batch_id": "b84cb3de-f70f-4d62-b5b3-639b09ceeffe",
@@ -343,8 +343,8 @@
         "reconciliation": "GitHub Actions attempted 24, DB pipeline_runs holds 24 row(s) in the same window (+0); the DB cannot distinguish scheduled from manual runs and records no conclusion for polls, so GitHub Actions is the authority for the buckets above",
         "source": "pipeline_runs WHERE run_type = 'signal_poll' (started_at window)",
         "window": {
-          "end": "2026-09-20T04:37:05Z",
-          "start": "2026-09-13T04:37:05Z"
+          "end": "2026-09-20T04:37:28Z",
+          "start": "2026-09-13T04:37:28Z"
         }
       },
       "delivered_pct": 85.7,
@@ -392,9 +392,9 @@
         "source": "gh run list --workflow=cqc-signal-poll.yml --json event,status,conclusion,createdAt,databaseId; conclusion == success"
       },
       "window": {
-        "end": "2026-09-20T04:37:05Z",
+        "end": "2026-09-20T04:37:28Z",
         "hours": 168.0,
-        "start": "2026-09-13T04:37:05Z"
+        "start": "2026-09-13T04:37:28Z"
       }
     },
     "source": "GitHub Actions (gh run list) with a DB cross-check on pipeline_runs"
@@ -467,7 +467,7 @@
         "sentinel_destination": "0 / 3 (0.0%)"
       },
       "sentinel_destination": 0,
-      "start": "2026-09-19T04:37:05Z",
+      "start": "2026-09-19T04:37:28Z",
       "total": 3
     }
   },
@@ -676,5 +676,5 @@
     }
   },
   "window_hours": 24,
-  "window_start": "2026-09-19T04:37:05Z"
+  "window_start": "2026-09-19T04:37:28Z"
 }
