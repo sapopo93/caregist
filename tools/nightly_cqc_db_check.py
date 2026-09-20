@@ -924,7 +924,17 @@ def poll_coverage(
         "window": {"start": _iso(window_start), "end": _iso(window_end), "hours": round(hours_between(window_start, window_end), 1)},
         "grace_minutes": int(grace.total_seconds() // 60),
         "expected": expected,
-        "attempted": {"runs": attempted, "source": bucket_source, "manual_or_other_event_runs": len(other)},
+        "attempted": {
+            "runs": attempted,
+            "source": bucket_source,
+            "manual_or_other_event_runs": len(other),
+            # The count is only evidence when the runs behind it can be named: an
+            # attempted tick with no run identity is a number with no record, and a
+            # number with no record cannot support a green claim. The evidence gate's
+            # ``attempted_runs`` element fails such a bundle closed.
+            "distinct_run_ids": len({run.get("database_id") for run in scheduled if run.get("database_id") is not None}),
+            "runs_without_a_run_identity": sum(1 for run in scheduled if run.get("database_id") is None),
+        },
         "successful": successful_bucket,
         "failed": {
             "runs": len(failed),
@@ -1709,6 +1719,13 @@ def summarize_classification(
         "unexplained_classes": {**unexplained, **other},
         "coverage": classification.get("coverage"),
         "source": classification.get("source"),
+        # The fetch/reuse split travels with the summary: ``coverage`` is
+        # population coverage and cached classes count towards it, so without
+        # these a summary built from cache alone is indistinguishable from one
+        # this run measured (see classification_fetch in the evidence gate).
+        "fetched": _int_or_none(classification.get("fetched")),
+        "reused_from_cache": _int_or_none(classification.get("reused_from_cache")),
+        "reused_cache_age_hours": classification.get("reused_cache_age_hours"),
         # The offered population and the classified subset are recorded as
         # *sizes*: a summary that reports class counts it never derived from the
         # whole population must not be able to read as complete. ``population``
@@ -1830,6 +1847,926 @@ def reconciliation_inputs_are_complete(diff: dict[str, Any], classification: dic
 
 
 # ---------------------------------------------------------------------------
+# evidence completeness: the one gate every green verdict has to pass
+# ---------------------------------------------------------------------------
+# Three review rounds each added a guard named after the bad input they were
+# shown, and each round then found inputs those guards did not name. The
+# requirement is therefore written once, as data, instead of as guards scattered
+# along the verdict path: a manifest of the named elements a MATCHED verdict
+# depends on. ``green_verdict`` is the only place a MATCHED verdict is built, and
+# it refuses unless the whole manifest is complete - so an input nobody
+# enumerated cannot reach green by being unlisted; it reaches green only by
+# supplying every element the manifest names.
+#
+# The states are a closed vocabulary, and every state but ``satisfied`` blocks:
+#   satisfied              present and evaluated
+#   missing                absent from the evidence bundle
+#   unevaluated            present but never evaluated (a sweep that did not run,
+#                          a promise never computed, a fetch that read nothing)
+#   contradictory          two counts of the same thing disagree (a per-class
+#                          breakdown against its aggregate, buckets against their
+#                          total, a total against the fires it was derived from)
+#   unsupported            not backed by the record it claims to rest on (a due
+#                          fire with no run record, an attempted count with no
+#                          run identity, a snapshot whose identity is a cache hit)
+#   unqualified_aggregate  the verdict leans on a total with no breakdown
+
+EVIDENCE_SATISFIED = "satisfied"
+EVIDENCE_MISSING = "missing"
+EVIDENCE_UNEVALUATED = "unevaluated"
+EVIDENCE_CONTRADICTORY = "contradictory"
+EVIDENCE_UNSUPPORTED = "unsupported"
+EVIDENCE_UNQUALIFIED_AGGREGATE = "unqualified_aggregate"
+
+EVIDENCE_STATES: tuple[str, ...] = (
+    EVIDENCE_SATISFIED,
+    EVIDENCE_MISSING,
+    EVIDENCE_UNEVALUATED,
+    EVIDENCE_CONTRADICTORY,
+    EVIDENCE_UNSUPPORTED,
+    EVIDENCE_UNQUALIFIED_AGGREGATE,
+)
+
+EVIDENCE_STATE_MEANING: dict[str, str] = {
+    EVIDENCE_SATISFIED: "present and evaluated",
+    EVIDENCE_MISSING: "absent from the evidence bundle",
+    EVIDENCE_UNEVALUATED: "present but never evaluated",
+    EVIDENCE_CONTRADICTORY: "two counts of the same thing disagree",
+    EVIDENCE_UNSUPPORTED: "not backed by the record it claims to rest on",
+    EVIDENCE_UNQUALIFIED_AGGREGATE: "a total with no breakdown the verdict leans on",
+}
+
+EVIDENCE_BLOCKING_STATES: frozenset[str] = frozenset(EVIDENCE_STATES) - {EVIDENCE_SATISFIED}
+
+# What each named element is for. This table is the requirement: a new evidence
+# need is a row here (and an evaluator row below), not a new guard in the verdict.
+DATA_ALIGNMENT_EVIDENCE_REQUIREMENTS: tuple[tuple[str, str], ...] = (
+    ("directory_snapshot", "the newest available validated directory snapshot, read whole"),
+    ("snapshot_identity", "a checksum of the bytes this run read, not a cache hit or a resumed partial read"),
+    ("snapshot_population", "a non-empty identifier population actually read from that snapshot"),
+    ("snapshot_publication_date", "the directory's own publication date, which freshness is anchored to"),
+    ("classification_summary", "the classification summary the identifier split was measured from"),
+    ("classification_coverage", "a full-coverage label on that summary"),
+    ("classification_failures", "no divergent identifier left unclassified by API errors"),
+    ("classification_population", "the classified count covering the population the split claims"),
+    ("classification_fetch", "a live fetch behind the split, not classes served from the classification cache"),
+    ("defect_breakdown", "per-class defect counts summing to the aggregate defect count"),
+    ("unexplained_breakdown", "per-class unexplained counts summing to the aggregate unexplained count"),
+    ("reconciliation_inputs", "a reported reconciliation-input problem list, and it is empty"),
+    ("identifier_diff", "the identifier-level diff the split was measured over"),
+    ("ingestion_state", "an ingested DB state that covers the snapshot being reconciled"),
+)
+
+PIPELINE_HEALTH_EVIDENCE_REQUIREMENTS: tuple[tuple[str, str], ...] = (
+    ("cadence_constants", "cadence constants that agree with the workflow they describe"),
+    ("run_history", "a readable GitHub Actions run history"),
+    ("classification_output", "a complete classification summary behind the polls' success conclusions"),
+    ("poll_coverage", "an available polling-coverage block"),
+    ("expected_fires", "the fires expected from the schedules in force, derived from the workflow's git history"),
+    ("schedule_history", "the schedules in force, established from that history without gaps"),
+    ("attempted_runs", "every attempted scheduled run backed by a run identity"),
+    ("fires_matched_to_runs", "every due fire matched to a run record"),
+    ("missed_ticks", "no due fire left unattempted"),
+    ("failed_ticks", "no scheduled run concluding in failure"),
+    ("cancelled_ticks", "no scheduled tick cancelled instead of delivered"),
+    ("delivered_polls", "completed polls behind the 'expected cadence met' claim"),
+    ("coverage_consistency", "the coverage block's own buckets adding up to its totals"),
+    ("db_cross_check", "the DB cross-check of poll completeness, agreeing with the GitHub conclusion"),
+    ("sweep_promise", "an evaluated full-directory sweep interval measured against its promise"),
+    ("signal_freshness_promise", "an evaluated poll-freshness verdict measured against its promise"),
+    ("source_freshness_promise", "an evaluated source-freshness verdict against a source publication date the ingestion reported"),
+)
+
+EVIDENCE_REQUIREMENTS: dict[str, tuple[tuple[str, str], ...]] = {
+    "data_alignment": DATA_ALIGNMENT_EVIDENCE_REQUIREMENTS,
+    "pipeline_health": PIPELINE_HEALTH_EVIDENCE_REQUIREMENTS,
+}
+
+# The alignment elements that *are* the classification measurement. The
+# ``classification_evidence_complete`` summary flag is derived from these same
+# element states, so the report cannot carry two answers about classification
+# completeness - one from a verdict-path boolean and one from the gate.
+CLASSIFICATION_EVIDENCE_ELEMENTS: frozenset[str] = frozenset(
+    {
+        "classification_summary",
+        "classification_coverage",
+        "classification_failures",
+        "classification_population",
+        "classification_fetch",
+        "defect_breakdown",
+        "unexplained_breakdown",
+        "reconciliation_inputs",
+    }
+)
+
+EVIDENCE_DOMAINS: tuple[str, ...] = ("data_alignment", "pipeline_health")
+
+
+def evidence_requirements(domain: str) -> tuple[tuple[str, str], ...]:
+    try:
+        return EVIDENCE_REQUIREMENTS[domain]
+    except KeyError:
+        raise ValueError(f"unknown evidence domain: {domain!r}") from None
+
+
+def freshness_promise_evaluated(block: Any) -> bool:
+    """Whether a freshness promise was actually checked against its SLA."""
+    if not isinstance(block, dict):
+        return False
+    if "evaluated" in block:
+        return bool(block["evaluated"])
+    return "within_sla" in block
+
+
+def _element(name: str, state: str, detail: str) -> dict[str, Any]:
+    if state not in EVIDENCE_STATES:
+        raise ValueError(f"unknown evidence state: {state!r}")
+    return {"element": name, "state": state, "detail": detail}
+
+
+def _int_or_none(value: Any) -> int | None:
+    if value is None or isinstance(value, bool):
+        return None
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _block_of(mapping: Any, key: str) -> dict[str, Any] | None:
+    value = (mapping or {}).get(key) if isinstance(mapping, dict) else None
+    return value if isinstance(value, dict) else None
+
+
+def _count_of(mapping: Any, key: str) -> int | None:
+    return _int_or_none((mapping or {}).get(key)) if isinstance(mapping, dict) else None
+
+
+def _breakdown_element(
+    name: str, summary: dict[str, Any], breakdown_key: str, aggregate_key: str, what: str
+) -> dict[str, Any]:
+    """One per-class breakdown against the aggregate total it claims to account for."""
+    aggregate = summary.get(aggregate_key)
+    breakdown = summary.get(breakdown_key)
+    if aggregate is None and breakdown is None:
+        return _element(name, EVIDENCE_MISSING, f"neither the {what} total nor its per-class breakdown is recorded")
+    if breakdown is None:
+        return _element(
+            name,
+            EVIDENCE_UNQUALIFIED_AGGREGATE,
+            f"the {what} total ({aggregate}) is recorded with no per-class breakdown to account for it",
+        )
+    total = _int_or_none(aggregate)
+    if total is None:
+        return _element(
+            name,
+            EVIDENCE_UNQUALIFIED_AGGREGATE,
+            f"the per-class {what} breakdown is recorded with no total to sum to: {breakdown}",
+        )
+    try:
+        summed = sum(int(count) for count in breakdown.values())
+    except (AttributeError, TypeError, ValueError):
+        return _element(name, EVIDENCE_MISSING, f"the {what} breakdown is not a mapping of class counts: {breakdown!r}")
+    if summed != total:
+        return _element(
+            name,
+            EVIDENCE_CONTRADICTORY,
+            f"the per-class {what} breakdown sums to {summed} while the aggregate says {total}: {breakdown}",
+        )
+    return _element(name, EVIDENCE_SATISFIED, f"the per-class {what} counts sum to the aggregate ({summed})")
+
+
+def alignment_evidence_elements(
+    *,
+    snapshot: dict[str, Any] | None,
+    diff: dict[str, Any] | None,
+    summary: dict[str, Any] | None,
+    ingested: dict[str, Any] | None,
+    incompleteness: list[str] | None,
+) -> list[dict[str, Any]]:
+    """State of every element a green data-alignment verdict depends on."""
+    snapshot = snapshot if isinstance(snapshot, dict) else {}
+    summary = summary if isinstance(summary, dict) else None
+    ingested = ingested if isinstance(ingested, dict) else None
+    elements: list[dict[str, Any]] = []
+
+    coverage = snapshot.get("coverage")
+    if coverage != "full":
+        elements.append(
+            _element(
+                "directory_snapshot",
+                EVIDENCE_MISSING,
+                f"the newest snapshot is labelled {coverage or 'nothing at all'}, so it is not the whole newest directory",
+            )
+        )
+    else:
+        elements.append(_element("directory_snapshot", EVIDENCE_SATISFIED, "the newest available snapshot was read whole"))
+
+    if snapshot.get("identity_from_cache") is True:
+        elements.append(
+            _element(
+                "snapshot_identity",
+                EVIDENCE_UNSUPPORTED,
+                "the identifier set was resumed from the snapshot cache, not read from this fetch, "
+                "so this run has no snapshot identity of its own",
+            )
+        )
+    elif snapshot.get("complete") is False or snapshot.get("checksum_verified") is False:
+        elements.append(
+            _element(
+                "snapshot_identity",
+                EVIDENCE_MISSING,
+                "the fetch reports itself incomplete or its checksum unverified, so the snapshot has no verified identity",
+            )
+        )
+    elif not snapshot.get("sha256"):
+        elements.append(
+            _element("snapshot_identity", EVIDENCE_MISSING, "no checksum is recorded for the snapshot, so its identity cannot be cited")
+        )
+    else:
+        elements.append(_element("snapshot_identity", EVIDENCE_SATISFIED, "a checksum of this fetch is recorded"))
+
+    entity_count = _int_or_none(snapshot.get("entity_count"))
+    if entity_count is None:
+        elements.append(
+            _element("snapshot_population", EVIDENCE_MISSING, "the fetch records no identifier count, so nothing says a population was read")
+        )
+    elif entity_count == 0:
+        elements.append(
+            _element(
+                "snapshot_population",
+                EVIDENCE_UNEVALUATED,
+                "the fetch yielded 0 identifiers, so nothing was reconciled and an empty diff is not agreement",
+            )
+        )
+    else:
+        elements.append(_element("snapshot_population", EVIDENCE_SATISFIED, f"{entity_count:,} identifiers were read"))
+
+    published = snapshot.get("published_at")
+    if not published:
+        elements.append(
+            _element(
+                "snapshot_publication_date",
+                EVIDENCE_MISSING,
+                "the snapshot carries no publication date, so the freshness comparison has no source date to anchor to",
+            )
+        )
+    else:
+        elements.append(_element("snapshot_publication_date", EVIDENCE_SATISFIED, f"the snapshot is dated {published}"))
+
+    if summary is None:
+        elements.append(
+            _element("classification_summary", EVIDENCE_MISSING, "no classification summary was produced, so the split was never measured")
+        )
+        for name in (
+            "classification_coverage",
+            "classification_failures",
+            "classification_population",
+            "classification_fetch",
+            "defect_breakdown",
+            "unexplained_breakdown",
+        ):
+            elements.append(_element(name, EVIDENCE_MISSING, "there is no classification summary to read this from"))
+    else:
+        elements.append(_element("classification_summary", EVIDENCE_SATISFIED, "the classification summary the split was measured from is present"))
+
+        coverage_of_split = summary.get("coverage")
+        if coverage_of_split != "full":
+            elements.append(
+                _element(
+                    "classification_coverage",
+                    EVIDENCE_MISSING,
+                    f"classification coverage is {coverage_of_split or 'unrecorded'}, so the split accounts for part of the divergent population only",
+                )
+            )
+        else:
+            elements.append(_element("classification_coverage", EVIDENCE_SATISFIED, "the split claims full coverage of the divergent population"))
+
+        failures = _count_of(summary, "failures")
+        if failures is None:
+            elements.append(
+                _element(
+                    "classification_failures",
+                    EVIDENCE_SATISFIED,
+                    "no failure count is recorded, read as zero; classification_population is what makes that reading safe",
+                )
+            )
+        elif failures > 0:
+            elements.append(
+                _element(
+                    "classification_failures",
+                    EVIDENCE_MISSING,
+                    f"{failures} divergent identifier(s) could not be classified, so the split is not a complete measurement",
+                )
+            )
+        else:
+            elements.append(_element("classification_failures", EVIDENCE_SATISFIED, "every divergent identifier offered to the classifier was classified"))
+
+        population = _count_of(summary, "population")
+        classified = _count_of(summary, "classified")
+        if population is None and classified is None:
+            elements.append(
+                _element(
+                    "classification_population",
+                    EVIDENCE_SATISFIED,
+                    "this producer records no population/classified sizes; the summary's own coverage label carries the completeness claim",
+                )
+            )
+        elif population is None:
+            elements.append(
+                _element(
+                    "classification_population",
+                    EVIDENCE_UNQUALIFIED_AGGREGATE,
+                    f"{classified} identifier(s) are recorded as classified with no population to qualify them",
+                )
+            )
+        elif classified is None:
+            elements.append(
+                _element(
+                    "classification_population",
+                    EVIDENCE_UNQUALIFIED_AGGREGATE,
+                    f"the population ({population}) is recorded with no classified count, so the split's coverage of it is unqualified",
+                )
+            )
+        elif classified < population:
+            elements.append(
+                _element(
+                    "classification_population",
+                    EVIDENCE_CONTRADICTORY,
+                    f"only {classified} of {population} divergent identifiers were classified, which disagrees with the "
+                    "coverage label on the same summary",
+                )
+            )
+        else:
+            elements.append(_element("classification_population", EVIDENCE_SATISFIED, f"{classified} of {population} divergent identifiers were classified"))
+
+        elements.append(_breakdown_element("defect_breakdown", summary, "defect_classes", "confirmed_defect", "defect"))
+
+        # Coverage is population coverage, not evidence that the API was read
+        # this run: cached classes count towards it. The classifier carries the
+        # fetch/reuse split for exactly this reason, so a split whose classes all
+        # came out of the cache is not a measurement made by this run.
+        fetched = _count_of(summary, "fetched")
+        reused = _count_of(summary, "reused_from_cache")
+        if fetched is None and reused is None:
+            elements.append(
+                _element(
+                    "classification_fetch",
+                    EVIDENCE_SATISFIED,
+                    "this producer records no fetch/reuse counters; the provenance of the classes is not recorded here",
+                )
+            )
+        elif fetched == 0 and (classified or 0) > 0:
+            elements.append(
+                _element(
+                    "classification_fetch",
+                    EVIDENCE_UNSUPPORTED,
+                    f"{classified} identifier(s) were classified with 0 fetched ({reused or 0} reused from cache): "
+                    "the split reports cached classes as if this run had measured them",
+                )
+            )
+        elif fetched is None:
+            elements.append(
+                _element(
+                    "classification_fetch",
+                    EVIDENCE_UNQUALIFIED_AGGREGATE,
+                    f"{reused} class(es) are recorded as reused from cache with no fetched count to qualify them",
+                )
+            )
+        else:
+            elements.append(
+                _element("classification_fetch", EVIDENCE_SATISFIED, f"{fetched} identifier(s) fetched, {reused or 0} reused from cache")
+            )
+        elements.append(
+            _breakdown_element("unexplained_breakdown", summary, "unexplained_classes", "unexplained", "unexplained")
+        )
+
+    if incompleteness is None:
+        elements.append(
+            _element(
+                "reconciliation_inputs",
+                EVIDENCE_MISSING,
+                "the reconciliation-input problem list was not reported to the verdict, so the split cannot be called complete",
+            )
+        )
+    elif incompleteness:
+        elements.append(
+            _element(
+                "reconciliation_inputs",
+                EVIDENCE_MISSING,
+                f"{len(incompleteness)} reconciliation-input problem(s) reported: {'; '.join(str(item) for item in incompleteness)}",
+            )
+        )
+    else:
+        elements.append(_element("reconciliation_inputs", EVIDENCE_SATISFIED, "the reconciliation-input problem list was reported and is empty"))
+
+    overlap = _int_or_none((diff or {}).get("overlap")) if isinstance(diff, dict) else None
+    if not isinstance(diff, dict):
+        elements.append(_element("identifier_diff", EVIDENCE_MISSING, "no identifier-level diff was produced, so nothing was reconciled"))
+    elif overlap is None:
+        elements.append(_element("identifier_diff", EVIDENCE_MISSING, "the diff records no overlap count, so it cannot carry an agreement claim"))
+    elif not isinstance(diff.get("only_in_source"), list) or not isinstance(diff.get("only_in_db_active"), list):
+        elements.append(
+            _element(
+                "identifier_diff",
+                EVIDENCE_UNQUALIFIED_AGGREGATE,
+                "the diff reports an overlap total with no source-only/only-in-DB populations to check it against",
+            )
+        )
+    else:
+        elements.append(
+            _element(
+                "identifier_diff",
+                EVIDENCE_SATISFIED,
+                f"overlap {overlap:,} against {len(diff['only_in_source'])} source-only and {len(diff['only_in_db_active'])} only-in-DB identifier(s)",
+            )
+        )
+
+    if ingested is None:
+        elements.append(
+            _element("ingestion_state", EVIDENCE_MISSING, "the ingested DB state was not reported, so nothing says the reconciliation covered the snapshot")
+        )
+    elif ingested.get("newest_snapshot_covered") is None:
+        elements.append(
+            _element(
+                "ingestion_state",
+                EVIDENCE_MISSING,
+                "the ingested state does not record whether a batch covered the snapshot being reconciled",
+            )
+        )
+    elif ingested.get("newest_snapshot_covered") is False:
+        elements.append(
+            _element(
+                "ingestion_state",
+                EVIDENCE_UNSUPPORTED,
+                f"no batch has covered this snapshot (latest covered {ingested.get('latest_covered_published_at')}), "
+                "so the DB side of the comparison is a different publication",
+            )
+        )
+    else:
+        elements.append(_element("ingestion_state", EVIDENCE_SATISFIED, "the ingested DB state covers the snapshot being reconciled"))
+    return elements
+
+
+def pipeline_evidence_elements(
+    *,
+    coverage: dict[str, Any] | None,
+    sweep: dict[str, Any] | None,
+    freshness: dict[str, Any] | None,
+    observed_sweep: dict[str, Any] | None,
+    run_history_status: str,
+    drift_notes: list[str],
+    classification_complete: bool,
+) -> list[dict[str, Any]]:
+    """State of every element a green pipeline-health verdict depends on."""
+    elements: list[dict[str, Any]] = []
+
+    if drift_notes:
+        elements.append(
+            _element(
+                "cadence_constants",
+                EVIDENCE_CONTRADICTORY,
+                f"the cadence constants disagree with the workflow they describe: {list(drift_notes)}",
+            )
+        )
+    else:
+        elements.append(_element("cadence_constants", EVIDENCE_SATISFIED, "the cadence constants agree with the workflow they describe"))
+
+    if run_history_status != "ok":
+        elements.append(
+            _element(
+                "run_history",
+                EVIDENCE_MISSING,
+                f"the GitHub Actions run history is {run_history_status or 'unreported'}, so expected-versus-attempted was never established",
+            )
+        )
+    else:
+        elements.append(_element("run_history", EVIDENCE_SATISFIED, "the run history the expected-versus-attempted arithmetic rests on is readable"))
+
+    if classification_complete is not True:
+        elements.append(
+            _element(
+                "classification_output",
+                EVIDENCE_MISSING,
+                "the classification summary for this window is absent or incomplete, so the polls' success conclusions are not backed by classified output",
+            )
+        )
+    else:
+        elements.append(_element("classification_output", EVIDENCE_SATISFIED, "the classification summary behind the polls' success conclusions is complete"))
+
+    if not isinstance(coverage, dict):
+        elements.append(_element("poll_coverage", EVIDENCE_MISSING, "no polling-coverage block was produced"))
+    elif coverage.get("available") is not True:
+        elements.append(
+            _element(
+                "poll_coverage",
+                EVIDENCE_UNSUPPORTED,
+                f"the coverage block is unavailable ({coverage.get('reason') or coverage.get('source') or 'no reason recorded'}), "
+                "so it cannot carry a green claim",
+            )
+        )
+    else:
+        elements.append(_element("poll_coverage", EVIDENCE_SATISFIED, "a poll-coverage block was produced and is available"))
+
+    blocks = coverage if isinstance(coverage, dict) and coverage.get("available") is True else {}
+    expected = _block_of(blocks, "expected")
+
+    expected_runs = _count_of(expected, "runs")
+    if expected_runs is None:
+        elements.append(_element("expected_fires", EVIDENCE_MISSING, "the coverage block records no expected fire count"))
+    elif expected_runs == 0:
+        elements.append(
+            _element("expected_fires", EVIDENCE_UNEVALUATED, "0 fires were expected in the window, so no cadence was demonstrated")
+        )
+    else:
+        due = _count_of(expected, "due")
+        not_yet_due = _count_of(expected, "not_yet_due")
+        epochs = expected.get("epochs")
+        if due is None and not_yet_due is None and not isinstance(epochs, list):
+            elements.append(
+                _element(
+                    "expected_fires",
+                    EVIDENCE_UNQUALIFIED_AGGREGATE,
+                    f"the expected total ({expected_runs}) has no due/not-yet-due split and no per-epoch breakdown to qualify it",
+                )
+            )
+        elif due is not None and not_yet_due is not None and due + not_yet_due != expected_runs:
+            elements.append(
+                _element(
+                    "expected_fires",
+                    EVIDENCE_CONTRADICTORY,
+                    f"{due} due + {not_yet_due} not yet due do not add up to the expected total {expected_runs}",
+                )
+            )
+        elif isinstance(epochs, list) and epochs and sum(_count_of(epoch, "fires") or 0 for epoch in epochs) != expected_runs:
+            summed = sum(_count_of(epoch, "fires") or 0 for epoch in epochs)
+            elements.append(
+                _element(
+                    "expected_fires",
+                    EVIDENCE_CONTRADICTORY,
+                    f"the per-epoch fires sum to {summed} while the expected total says {expected_runs}",
+                )
+            )
+        elif due is None and not_yet_due is None:
+            elements.append(
+                _element("expected_fires", EVIDENCE_SATISFIED, f"{expected_runs} expected fire(s) over {len(epochs)} schedule epoch(s)")
+            )
+        else:
+            elements.append(_element("expected_fires", EVIDENCE_SATISFIED, f"{expected_runs} expected fire(s) in the window"))
+
+    gaps = expected.get("schedule_history_gaps") if expected else None
+    gap_text = f" (gaps: {'; '.join(str(gap) for gap in gaps)})" if gaps else ""
+    if expected is None or expected.get("schedule_history_available") is None:
+        elements.append(
+            _element(
+                "schedule_history",
+                EVIDENCE_MISSING,
+                "the coverage block does not say whether the schedules in force were established from the workflow's git history",
+            )
+        )
+    elif not expected.get("schedule_history_available"):
+        elements.append(
+            _element(
+                "schedule_history",
+                EVIDENCE_MISSING,
+                f"the schedules in force were not established from git history: {expected.get('derivation') or 'no derivation recorded'}"
+                + gap_text,
+            )
+        )
+    elif gaps:
+        elements.append(
+            _element(
+                "schedule_history",
+                EVIDENCE_CONTRADICTORY,
+                f"the schedule history is reported as available while recording {len(gaps)} gap(s): {'; '.join(str(gap) for gap in gaps)}",
+            )
+        )
+    else:
+        elements.append(_element("schedule_history", EVIDENCE_SATISFIED, "the schedules in force were established from the workflow's git history"))
+
+    attempted = _block_of(blocks, "attempted")
+    attempted_runs = _count_of(attempted, "runs")
+    missing_identity = _count_of(attempted, "runs_without_a_run_identity")
+    if attempted_runs is None:
+        elements.append(_element("attempted_runs", EVIDENCE_MISSING, "the coverage block records no attempted-run count"))
+    elif missing_identity:
+        elements.append(
+            _element(
+                "attempted_runs",
+                EVIDENCE_UNSUPPORTED,
+                f"{missing_identity} of {attempted_runs} attempted run(s) carry no run identity, so the count is not backed by a record",
+            )
+        )
+    else:
+        elements.append(_element("attempted_runs", EVIDENCE_SATISFIED, f"{attempted_runs} attempted scheduled run(s)"))
+
+    unmatched = _block_of(blocks, "fires_without_a_matching_run")
+    unmatched_runs = _count_of(unmatched, "runs")
+    if unmatched is None or unmatched_runs is None:
+        elements.append(
+            _element(
+                "fires_matched_to_runs",
+                EVIDENCE_UNQUALIFIED_AGGREGATE,
+                "the coverage block does not report which due fires were matched to run records, so no-missed-ticks rests on a total alone",
+            )
+        )
+    elif unmatched_runs > 0:
+        elements.append(
+            _element(
+                "fires_matched_to_runs",
+                EVIDENCE_UNSUPPORTED,
+                f"{unmatched_runs} due fire(s) have no run record {'within the match window' if not unmatched.get('definition') else unmatched['definition']}",
+            )
+        )
+    else:
+        elements.append(_element("fires_matched_to_runs", EVIDENCE_SATISFIED, "every due fire has a matching run record"))
+
+    missed = _block_of(blocks, "missed")
+    missed_runs = _count_of(missed, "runs")
+    if missed is None or missed_runs is None:
+        elements.append(_element("missed_ticks", EVIDENCE_MISSING, "the coverage block records no missed-tick count"))
+    elif missed_runs > 0:
+        elements.append(
+            _element("missed_ticks", EVIDENCE_CONTRADICTORY, f"the coverage block records {missed_runs} unattempted due fire(s): {missed.get('fires') or []}")
+        )
+    elif unmatched_runs:
+        elements.append(
+            _element(
+                "missed_ticks",
+                EVIDENCE_CONTRADICTORY,
+                f"the missed count says 0 while {unmatched_runs} due fire(s) have no run record: two counts of the same thing disagree",
+            )
+        )
+    elif not missed.get("fires"):
+        elements.append(_element("missed_ticks", EVIDENCE_SATISFIED, "no due fire was left unattempted"))
+    else:
+        elements.append(_element("missed_ticks", EVIDENCE_SATISFIED, "no due fire was left unattempted"))
+
+    failed = _block_of(blocks, "failed")
+    failed_runs = _count_of(failed, "runs")
+    if failed is None or failed_runs is None:
+        elements.append(_element("failed_ticks", EVIDENCE_MISSING, "the coverage block records no failed-run count"))
+    elif failed_runs > 0:
+        elements.append(
+            _element(
+                "failed_ticks",
+                EVIDENCE_CONTRADICTORY,
+                f"the coverage block records {failed_runs} failed scheduled run(s) ({failed.get('by_conclusion') or {}}), which no green cadence claim can stand on",
+            )
+        )
+    else:
+        elements.append(_element("failed_ticks", EVIDENCE_SATISFIED, "no scheduled run concluded in failure"))
+
+    cancelled = _block_of(blocks, "cancelled")
+    cancelled_runs = _count_of(cancelled, "runs")
+    if cancelled is None or cancelled_runs is None:
+        elements.append(_element("cancelled_ticks", EVIDENCE_MISSING, "the coverage block records no cancelled-run count"))
+    elif cancelled_runs and attempted_runs is not None and cancelled_runs == attempted_runs:
+        elements.append(
+            _element(
+                "cancelled_ticks",
+                EVIDENCE_CONTRADICTORY,
+                f"every one of the {cancelled_runs} attempted tick(s) was cancelled, so no poll was delivered in this window",
+            )
+        )
+    elif cancelled_runs:
+        elements.append(
+            _element(
+                "cancelled_ticks",
+                EVIDENCE_CONTRADICTORY,
+                f"{cancelled_runs} scheduled tick(s) were cancelled rather than delivered, so the window is not a full delivery",
+            )
+        )
+    else:
+        elements.append(_element("cancelled_ticks", EVIDENCE_SATISFIED, "no scheduled tick was cancelled"))
+
+    successful = _block_of(blocks, "successful")
+    completed_polls = _count_of(successful, "completed_polls") if successful else None
+    db_cross_checked = successful.get("db_cross_checked") if successful else None
+    if successful is None or _count_of(successful, "runs") is None:
+        elements.append(_element("delivered_polls", EVIDENCE_MISSING, "the coverage block records no successful-run count"))
+    elif db_cross_checked is not True and completed_polls is None:
+        elements.append(
+            _element(
+                "delivered_polls",
+                EVIDENCE_UNQUALIFIED_AGGREGATE,
+                "the successful total has no completed-poll count behind it (no DB cross-check was supplied)",
+            )
+        )
+    elif completed_polls is None:
+        elements.append(
+            _element("delivered_polls", EVIDENCE_UNQUALIFIED_AGGREGATE, "the successful total is recorded with no completed-poll count to qualify it")
+        )
+    elif completed_polls == 0 and (attempted_runs or 0) > 0:
+        elements.append(
+            _element(
+                "delivered_polls",
+                EVIDENCE_CONTRADICTORY,
+                f"0 of {attempted_runs} attempted run(s) are completed polls, so 'expected cadence met' is not a delivery",
+            )
+        )
+    else:
+        elements.append(_element("delivered_polls", EVIDENCE_SATISFIED, f"{completed_polls} completed poll(s) behind the cadence claim"))
+
+    consistency = _block_of(blocks, "consistency")
+    if consistency is None:
+        elements.append(_element("coverage_consistency", EVIDENCE_MISSING, "the coverage block records no bucket consistency counts"))
+    else:
+        parts = _count_of(consistency, "successful_plus_failed_plus_cancelled_plus_in_flight")
+        attempted_total = _count_of(consistency, "attempted")
+        due_plus = _count_of(consistency, "due_plus_not_yet_due")
+        expected_total = _count_of(consistency, "expected")
+        if parts is None or attempted_total is None or due_plus is None or expected_total is None:
+            elements.append(
+                _element(
+                    "coverage_consistency",
+                    EVIDENCE_MISSING,
+                    f"the consistency block is incomplete: {consistency}",
+                )
+            )
+        elif parts != attempted_total:
+            elements.append(
+                _element(
+                    "coverage_consistency",
+                    EVIDENCE_CONTRADICTORY,
+                    f"the buckets sum to {parts} while the attempted count says {attempted_total}",
+                )
+            )
+        elif due_plus != expected_total:
+            elements.append(
+                _element(
+                    "coverage_consistency",
+                    EVIDENCE_CONTRADICTORY,
+                    f"due + not-yet-due sums to {due_plus} while the expected total says {expected_total}",
+                )
+            )
+        else:
+            elements.append(_element("coverage_consistency", EVIDENCE_SATISFIED, "the coverage block's buckets add up to its totals"))
+
+    recorded = _block_of(successful or {}, "db_recorded_status")
+    db_failed = _count_of(recorded, "failed") if recorded else None
+    if successful is None or successful.get("db_cross_checked") is not True:
+        elements.append(
+            _element(
+                "db_cross_check",
+                EVIDENCE_MISSING,
+                "the GitHub success count was not cross-checked against the DB's own view of the polls it recorded",
+            )
+        )
+    elif db_failed:
+        elements.append(
+            _element(
+                "db_cross_check",
+                EVIDENCE_CONTRADICTORY,
+                f"the DB records {db_failed} failed poll run(s) in this window while the coverage block counts "
+                f"{failed_runs if failed_runs is not None else 'no'} failed run(s): two counts of the same thing disagree",
+            )
+        )
+    elif recorded is None:
+        elements.append(_element("db_cross_check", EVIDENCE_MISSING, "the coverage block claims a DB cross-check but records no DB status counts"))
+    else:
+        elements.append(_element("db_cross_check", EVIDENCE_SATISFIED, f"the DB's own view of these polls agrees: {recorded}"))
+
+    sweeps = [block for block in (sweep, observed_sweep) if isinstance(block, dict)]
+    # A block that carries the key with no verdict in it (``meets_sla: None``) is
+    # present and never evaluated: key presence is not an evaluation.
+    judged = [block for block in sweeps if block.get("meets_sla") is not None]
+    if not judged:
+        elements.append(
+            _element(
+                "sweep_promise",
+                EVIDENCE_UNEVALUATED,
+                "the full-directory sweep interval was never measured against its promise, so 'the sweep meets its SLA' is unstated",
+            )
+        )
+    elif any(block.get("meets_sla") is False for block in judged):
+        elements.append(_element("sweep_promise", EVIDENCE_CONTRADICTORY, "the measured sweep interval does not meet its promise"))
+    else:
+        elements.append(_element("sweep_promise", EVIDENCE_SATISFIED, "the sweep interval was measured against its promise and meets it"))
+
+    signal = _block_of(freshness, "signal")
+    if freshness is None or signal is None:
+        elements.append(_element("signal_freshness_promise", EVIDENCE_MISSING, "no poll-freshness measurement was reported"))
+    elif not freshness_promise_evaluated(signal):
+        elements.append(
+            _element(
+                "signal_freshness_promise",
+                EVIDENCE_UNEVALUATED,
+                "the poll-freshness block records no verdict against the freshness promise, so freshness was never computed",
+            )
+        )
+    elif signal.get("within_sla") is False:
+        elements.append(_element("signal_freshness_promise", EVIDENCE_CONTRADICTORY, "the newest poll is older than the freshness promise"))
+    else:
+        elements.append(_element("signal_freshness_promise", EVIDENCE_SATISFIED, "poll freshness was computed and is within its promise"))
+
+    source_block = _block_of(freshness, "ingested_source")
+    if source_block is None:
+        elements.append(_element("source_freshness_promise", EVIDENCE_MISSING, "no ingested-source freshness measurement was reported"))
+    elif not freshness_promise_evaluated(source_block):
+        elements.append(
+            _element(
+                "source_freshness_promise",
+                EVIDENCE_UNEVALUATED,
+                "the ingested-source block records no verdict against the freshness promise, so source freshness was never computed",
+            )
+        )
+    elif not source_block.get("published_at"):
+        elements.append(
+            _element(
+                "source_freshness_promise",
+                EVIDENCE_MISSING,
+                "the ingested-source block carries no publication date, so its age cannot be measured against anything",
+            )
+        )
+    elif source_block.get("within_sla") is False:
+        elements.append(_element("source_freshness_promise", EVIDENCE_CONTRADICTORY, "the ingested source publication is older than the freshness promise"))
+    else:
+        elements.append(_element("source_freshness_promise", EVIDENCE_SATISFIED, "source freshness was computed from a recorded publication date and is within its promise"))
+    return elements
+
+
+def evidence_completeness_gate(*, domain: str, elements: list[dict[str, Any]]) -> dict[str, Any]:
+    """Evaluate the named elements a green verdict in ``domain`` depends on.
+
+    ``elements`` is what the verdict path measured; the manifest is what it is
+    required to measure. A required element the path never reported is ``missing``
+    (not "not applicable"), and an element the manifest does not name is reported
+    as ``unsupported``, so an unlisted claim cannot ride along unexamined.
+    """
+    requirements = evidence_requirements(domain)
+    declared = [name for name, _ in requirements]
+    reported: dict[str, dict[str, Any]] = {}
+    for row in elements or []:
+        name = row.get("element")
+        if isinstance(name, str) and name not in reported:
+            reported[name] = row
+    ordered: list[dict[str, Any]] = []
+    required_for = dict(requirements)
+    for name in declared:
+        row = reported.pop(name, None)
+        if row is None:
+            ordered.append(
+                _element(name, EVIDENCE_MISSING, "the verdict path did not report this required element")
+            )
+        else:
+            ordered.append({**row, "required_for": required_for[name]})
+    for name, row in reported.items():
+        ordered.append(
+            {
+                **row,
+                "state": EVIDENCE_UNSUPPORTED,
+                "detail": f"the verdict path reported '{name}', which this manifest does not name as required evidence",
+                "required_for": None,
+            }
+        )
+    blocked = [row for row in ordered if row["state"] in EVIDENCE_BLOCKING_STATES]
+    return {
+        "domain": domain,
+        "requirement": "every MATCHED verdict presents every named element below; any other state blocks green",
+        "complete": not blocked,
+        "required_elements": declared,
+        "required_for": required_for,
+        "blocked_by": [{"element": row["element"], "state": row["state"], "detail": row["detail"]} for row in blocked],
+        "elements": ordered,
+    }
+
+
+def green_verdict(
+    *,
+    gate: dict[str, Any],
+    reasons: list[str],
+    scope: str | None = None,
+    unverified_reasons: list[str] | None = None,
+) -> dict[str, Any]:
+    """The only constructor of a MATCHED verdict.
+
+    A verdict reaches MATCHED here and nowhere else, and only when ``gate`` is
+    complete: a shape nobody enumerated reaches green by supplying every element
+    the manifest names, never by being unlisted.
+    """
+    blocked = [
+        f"evidence incomplete ({row['state']}): {row['element']} - {row['detail']}" for row in gate["blocked_by"]
+    ]
+    if gate["complete"]:
+        out: dict[str, Any] = {"verdict": VERDICT_MATCHED, "reasons": list(reasons), "evidence_gate": gate}
+    else:
+        if unverified_reasons is not None:
+            unverified_reasons = blocked + list(unverified_reasons)
+        out = {
+            "verdict": VERDICT_UNVERIFIED,
+            "reasons": blocked + list(reasons),
+            "evidence_gate": gate,
+            "green_blocked_by": [row["element"] for row in gate["blocked_by"]],
+        }
+    if scope is not None:
+        out["scope"] = scope
+    if unverified_reasons is not None:
+        out["unverified_reasons"] = unverified_reasons
+    return out
+
+
+# ---------------------------------------------------------------------------
 # verdicts
 # ---------------------------------------------------------------------------
 def data_alignment_verdict(
@@ -1854,6 +2791,20 @@ def data_alignment_verdict(
     incomplete population, so the split is not a complete account).
     """
     reasons: list[str] = []
+    # What this verdict is *required* to have evidence for, evaluated before any
+    # branch below. Every return carries it, and the MATCHED return at the end is
+    # built by ``green_verdict``, which refuses unless the whole manifest is
+    # complete - so a shape nobody enumerated cannot reach green by being unlisted.
+    evidence_gate = evidence_completeness_gate(
+        domain="data_alignment",
+        elements=alignment_evidence_elements(
+            snapshot=snapshot,
+            diff=diff,
+            summary=summary,
+            ingested=ingested,
+            incompleteness=incompleteness,
+        ),
+    )
     if not diff or snapshot.get("coverage") == "unavailable":
         return {
             "verdict": VERDICT_UNVERIFIED,
@@ -1862,6 +2813,7 @@ def data_alignment_verdict(
                 snapshot.get("error") or "snapshot unavailable",
             ],
             "scope": "identifier-level reconciliation against the newest available validated snapshot",
+            "evidence_gate": evidence_gate,
         }
     if snapshot.get("coverage") != "full":
         reasons.append(
@@ -1887,6 +2839,7 @@ def data_alignment_verdict(
                 "a missing measurement is not 'zero defects'"
             ],
             "scope": scope,
+            "evidence_gate": evidence_gate,
         }
     incomplete_inputs: list[str] = []
     coverage_of_split = summary.get("coverage")
@@ -1942,7 +2895,7 @@ def data_alignment_verdict(
             )
         if ingested_lag:
             gate.append(ingested_lag)
-        return {"verdict": VERDICT_UNVERIFIED, "reasons": gate, "scope": scope}
+        return {"verdict": VERDICT_UNVERIFIED, "reasons": gate, "scope": scope, "evidence_gate": evidence_gate}
 
     if defects or unexplained:
         if defects:
@@ -1953,20 +2906,29 @@ def data_alignment_verdict(
             # Disclosed, not hidden: the original verdict path dropped this note
             # whenever a defect was counted.
             reasons.append(ingested_lag)
-        return {"verdict": VERDICT_MISMATCHED, "reasons": reasons, "scope": scope}
+        return {"verdict": VERDICT_MISMATCHED, "reasons": reasons, "scope": scope, "evidence_gate": evidence_gate}
 
     if ingested_lag:
-        return {"verdict": VERDICT_UNVERIFIED, "reasons": reasons + [ingested_lag], "scope": scope}
+        return {
+            "verdict": VERDICT_UNVERIFIED,
+            "reasons": reasons + [ingested_lag],
+            "scope": scope,
+            "evidence_gate": evidence_gate,
+        }
 
-    return {
-        "verdict": VERDICT_MATCHED,
-        "reasons": [
+    # The only way this verdict is allowed to be MATCHED. ``green_verdict`` reads
+    # the gate above: if any named element is missing, unevaluated, contradictory,
+    # unsupported or an unqualified aggregate, this returns UNVERIFIED and names
+    # the element that blocked it.
+    return green_verdict(
+        gate=evidence_gate,
+        reasons=[
             f"no unexplained differences in scope: {scope}; "
             f"{snapshot.get('entity_count', 0) - diff['overlap']:,} source-only IDs, 0 unexplained only-in-DB IDs; "
             f"classification coverage full over {summary.get('population') or 'the whole'} divergent population"
         ],
-        "scope": scope,
-    }
+        scope=scope,
+    )
 
 
 def pipeline_health_verdict(
@@ -1982,6 +2944,22 @@ def pipeline_health_verdict(
 ) -> dict[str, Any]:
     reasons: list[str] = []
     unverified: list[str] = []
+    # What this verdict is *required* to have evidence for. The MATCHED return at
+    # the end goes through ``green_verdict``, which refuses unless every named
+    # element is present and evaluated. The checks below stay as they are: they
+    # explain a verdict, they no longer decide on their own whether it may be green.
+    evidence_gate = evidence_completeness_gate(
+        domain="pipeline_health",
+        elements=pipeline_evidence_elements(
+            coverage=coverage,
+            sweep=sweep,
+            observed_sweep=observed_sweep,
+            freshness=freshness,
+            run_history_status=run_history_status,
+            drift_notes=drift_notes,
+            classification_complete=classification_complete,
+        ),
+    )
     if drift_notes:
         unverified.append(f"cadence constants disagree with the workflow: {drift_notes}")
     if run_history_status != "ok":
@@ -2054,16 +3032,7 @@ def pipeline_health_verdict(
             f"full directory sweep takes {observed_sweep['full_sweep_days']} days at the measured cadence "
             f"({observed_sweep['arithmetic']})"
         )
-    def _promise_evaluated(block: dict[str, Any]) -> bool:
-        """Whether a freshness promise was actually checked.
-
-        ``evaluated`` is authoritative when present; otherwise the presence of a
-        ``within_sla`` verdict means it was checked (the flag is absent in older
-        report JSON, and silence must not read as success either way).
-        """
-        if "evaluated" in block:
-            return bool(block["evaluated"])
-        return "within_sla" in block
+    _promise_evaluated = freshness_promise_evaluated
 
     if freshness:
         signal = freshness.get("signal") or {}
@@ -2088,9 +3057,19 @@ def pipeline_health_verdict(
                 f"({ingested.get('published_at')}), beyond the documented {ingested.get('sla_hours')}h promise"
             )
     if reasons:
-        return {"verdict": VERDICT_MISMATCHED, "reasons": reasons, "unverified_reasons": unverified}
+        return {
+            "verdict": VERDICT_MISMATCHED,
+            "reasons": reasons,
+            "unverified_reasons": unverified,
+            "evidence_gate": evidence_gate,
+        }
     if unverified:
-        return {"verdict": VERDICT_UNVERIFIED, "reasons": unverified, "unverified_reasons": unverified}
+        return {
+            "verdict": VERDICT_UNVERIFIED,
+            "reasons": unverified,
+            "unverified_reasons": unverified,
+            "evidence_gate": evidence_gate,
+        }
     # Only promises that were actually evaluated are claimed here. A MATCHED
     # verdict that lists a promise nobody checked is the same defect as an
     # unverified success, so the sweep clause is only asserted when a sweep
@@ -2100,7 +3079,12 @@ def pipeline_health_verdict(
         unverified.append(
             "no full-directory sweep estimate was available, so the sweep-interval promise was not evaluated"
         )
-        return {"verdict": VERDICT_UNVERIFIED, "reasons": unverified, "unverified_reasons": unverified}
+        return {
+            "verdict": VERDICT_UNVERIFIED,
+            "reasons": unverified,
+            "unverified_reasons": unverified,
+            "evidence_gate": evidence_gate,
+        }
     matched_reasons: list[str] = []
     if coverage is not None and coverage.get("available") is True:
         matched_reasons.append("expected cadence met: no missed, failed, or in-flight ticks in the window")
@@ -2121,8 +3105,13 @@ def pipeline_health_verdict(
             "verdict": VERDICT_UNVERIFIED,
             "reasons": ["no documented promise could be evaluated, so no health verdict is claimed"],
             "unverified_reasons": [],
+            "evidence_gate": evidence_gate,
         }
-    return {"verdict": VERDICT_MATCHED, "reasons": matched_reasons, "unverified_reasons": []}
+    # The only way this verdict is allowed to be MATCHED: ``green_verdict`` reads
+    # the gate, so a due fire with no matching run, an unevaluated promise, a
+    # total with no breakdown, or a per-class breakdown that disagrees with the
+    # aggregate all return UNVERIFIED naming the element that blocked them.
+    return green_verdict(gate=evidence_gate, reasons=matched_reasons, unverified_reasons=[])
 
 
 def build_verdicts(
@@ -2147,27 +3136,66 @@ def build_verdicts(
     reported = list(incompleteness or [])
     merged_incompleteness = reported + [problem for problem in derived if problem not in reported]
     classification_complete = summary is not None and not merged_incompleteness
+    alignment = data_alignment_verdict(
+        snapshot=snapshot,
+        diff=diff,
+        summary=summary,
+        ingested=ingested,
+        incompleteness=merged_incompleteness,
+    )
+    classification_gate_blocked = [
+        row["element"] for row in (alignment.get("evidence_gate") or {}).get("blocked_by", [])
+        if row["element"] in CLASSIFICATION_EVIDENCE_ELEMENTS
+    ]
+    # The headline flag and the gate read the same element states: a summary whose
+    # per-class counts contradict its own aggregate is not complete evidence, and
+    # the report must not say otherwise in two places.
+    classification_evidence_complete = classification_complete and not classification_gate_blocked
+    health = pipeline_health_verdict(
+        coverage=coverage,
+        sweep=sweep,
+        freshness=freshness,
+        observed_sweep=observed_sweep,
+        run_history_status=run_history_status,
+        drift_notes=drift_notes,
+        freshness_unavailable_reason=freshness_unavailable_reason,
+        classification_complete=classification_complete,
+    )
     return {
         "vocabulary": VERDICT_VOCABULARY,
         "completeness_derived_in_verdict_path": True,
-        "classification_evidence_complete": classification_complete,
-        "data_alignment": data_alignment_verdict(
-            snapshot=snapshot,
-            diff=diff,
-            summary=summary,
-            ingested=ingested,
-            incompleteness=merged_incompleteness,
-        ),
-        "pipeline_health": pipeline_health_verdict(
-            coverage=coverage,
-            sweep=sweep,
-            freshness=freshness,
-            observed_sweep=observed_sweep,
-            run_history_status=run_history_status,
-            drift_notes=drift_notes,
-            freshness_unavailable_reason=freshness_unavailable_reason,
-            classification_complete=classification_complete,
-        ),
+        "classification_evidence_complete": classification_evidence_complete,
+        # Readable at the top of the report: which named element, if any, stopped
+        # each verdict from being green. A MATCHED verdict here is one that
+        # presented every element its manifest names (see the gate in each verdict).
+        "evidence_completeness": {
+            "requirement": (
+                "every MATCHED verdict presents every named element of its manifest; any other state "
+                "blocks green"
+            ),
+            "data_alignment": {
+                "verdict": alignment["verdict"],
+                "complete": bool((alignment.get("evidence_gate") or {}).get("complete")),
+                "elements": (alignment.get("evidence_gate") or {}).get("required_elements", []),
+                "blocked_by": list(alignment.get("green_blocked_by") or [])
+                or [
+                    row["element"]
+                    for row in (alignment.get("evidence_gate") or {}).get("blocked_by", [])
+                ],
+            },
+            "pipeline_health": {
+                "verdict": health["verdict"],
+                "complete": bool((health.get("evidence_gate") or {}).get("complete")),
+                "elements": (health.get("evidence_gate") or {}).get("required_elements", []),
+                "blocked_by": list(health.get("green_blocked_by") or [])
+                or [
+                    row["element"]
+                    for row in (health.get("evidence_gate") or {}).get("blocked_by", [])
+                ],
+            },
+        },
+        "data_alignment": alignment,
+        "pipeline_health": health,
     }
 
 
