@@ -65,30 +65,26 @@ async def subscribe(
                 "<p>Your search results are available on the site. Data sourced from the CQC public register.</p>"
                 "<p style='color:#8a6a4a;font-size:12px'>Unsubscribe anytime by replying to this email.</p>",
             )
-            # Day 3: monitor upsell
+            # Day 7: explain the paid, one-off weekly pilot. Do not promote
+            # stopped monitoring or instant-alert products from a free search.
             await queue_email(
                 req.email,
-                "Ratings change — want to be notified?",
-                "<p>Care provider ratings can change after inspections. "
-                "Want to be notified when providers near you change rating?</p>"
-                "<p><a href='https://caregist.co.uk/pricing'>Set up monitoring alerts →</a></p>",
-                send_after=now + timedelta(days=3),
-            )
-            # Day 7: area movers
-            await queue_email(
-                req.email,
-                "Weekly area movers — CQC rating changes near you",
-                "<p>Get a weekly digest of CQC rating changes in your area.</p>"
+                "CareGist weekly digest pilot",
+                "<p>The CareGist Weekly Digest is a one-off four-week pilot covering "
+                "one England region. Each weekly email contains verified, observation-dated "
+                "CQC register movement with an official source link.</p>"
                 "<p><a href='https://caregist.co.uk/find-care'>Search again →</a></p>"
-                "<p><a href='https://caregist.co.uk/pricing'>Upgrade for instant alerts →</a></p>",
+                "<p><a href='https://caregist.co.uk/pricing'>Read about the £150 pilot →</a></p>",
                 send_after=now + timedelta(days=7),
             )
         else:
             await queue_email(
                 req.email,
                 "Welcome to CareGist",
-                "<p>Thanks for subscribing to CareGist. You'll receive weekly CQC rating changes.</p>"
-                "<p>Data sourced from the CQC public register, refreshed weekly.</p>"
+                "<p>Thanks for subscribing to CareGist. We'll send occasional updates about "
+                "the directory and available research products.</p>"
+                "<p>The paid Weekly Digest is a separate one-off four-week pilot. It uses "
+                "observation-dated CQC public-register data and official source links.</p>"
                 "<p style='color:#8a6a4a;font-size:12px'>Unsubscribe anytime by replying to this email.</p>",
             )
 

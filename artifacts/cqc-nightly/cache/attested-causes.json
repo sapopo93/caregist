@@ -1,0 +1,12 @@
+{
+  "batches": {
+    "66b53f7f-2fba-4079-abb6-9b33bacbd684": {
+      "at": "2026-09-13T11:10:46Z",
+      "candidates_checked": 1,
+      "line": "finalize\tUNKNOWN STEP\t2026-09-13T15:59:20.6352240Z Reconciliation finalize failed: Batch finalization refused: 1 manifest locations are not active.",
+      "run_id": 34753758031,
+      "source": "gh run view 34753758031 --log",
+      "status": "attested"
+    }
+  }
+}

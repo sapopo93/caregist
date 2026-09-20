@@ -1,0 +1,311 @@
+{
+  "alignment": null,
+  "attested_failure_cause": {
+    "reason": "skipped (--no-remote)",
+    "status": "skipped"
+  },
+  "cadence": {
+    "drift_notes": [],
+    "expression": "7 18,21,0,3 * * *",
+    "expressions": [
+      "7 18,21,0,3 * * *"
+    ],
+    "grace_minutes": 90.0,
+    "match_window_hours": 4.0,
+    "runs_per_day": 4.0,
+    "runs_per_week": 28,
+    "source": "parsed from .github/workflows/cqc-signal-poll.yml",
+    "sweep_size": 1200
+  },
+  "changes_by_type": {
+    "new_registration": 9,
+    "rating_changed": 6,
+    "status_changed": 5
+  },
+  "changes_total": 20,
+  "churn": {
+    "ledger_events_in_window": 20,
+    "note": "a rewritten row is refresh activity, not evidence that CQC published anything; the ledger is the only change evidence this pipeline records, so a rewrite with no location-level event is labelled 'no recorded change' rather than 'no change'",
+    "rows_rewritten": 3409,
+    "rows_rewritten_with_location_event": 20,
+    "rows_rewritten_with_provider_scope_event": 26,
+    "rows_rewritten_without_location_event": 3389,
+    "source": "care_providers.updated_at (rewrites) vs trusted_event_ledger.observed_at / .location_id (recorded changes)",
+    "window_start": "2026-09-19T04:33:56Z"
+  },
+  "coverage_window": {
+    "end": "2026-09-20T04:33:56Z",
+    "hours": 168.0,
+    "start": "2026-09-13T04:33:56Z"
+  },
+  "directory_snapshot_changed": false,
+  "directory_snapshot_sha256": null,
+  "failed_batch_shard_evidence": {
+    "note": "the DB error_message is a generic wrapper written when the workflow ends; it is not the reason the batch was refused (see attested_cause)",
+    "shards_by_status": {
+      "completed": 8
+    },
+    "source": "reconciliation_shards grouped by status"
+  },
+  "failures_in_window": [],
+  "freshness": {
+    "ingested_source": {
+      "age_convention": "measured from 00:00 UTC on the publication date",
+      "age_hours": 268.6,
+      "published_at": "2026-09-09",
+      "sla_citation": "SOURCE_FRESHNESS_SLA = timedelta(days=8) (api/services/pipeline_health.py) - CQC publishes the directory weekly; 8 days is the documented customer-facing promise",
+      "sla_hours": 192.0,
+      "source": "CQC directory publication date (from the CSV preamble) / reconciliation_batches.source_published_at",
+      "within_sla": false
+    },
+    "newest_available_source": null,
+    "signal": {
+      "age_hours": 5.4,
+      "observed_at": "2026-09-19T23:09:40Z",
+      "sla_citation": "SIGNAL_POLL_FRESHNESS_SLA = timedelta(hours=16) (api/services/pipeline_health.py)",
+      "sla_hours": 16.0,
+      "source": "trusted_event_ledger.max(observed_at)",
+      "within_sla": true
+    }
+  },
+  "generated_at": "2026-09-20T04:33:56Z",
+  "ingested": {
+    "latest_covered_age_hours": 88.6,
+    "latest_covered_batch_id": "b84cb3de-f70f-4d62-b5b3-639b09ceeffe",
+    "latest_covered_checksum": "cf2e7bc20493b331ca3953c708652ca7b2159cc9b223f0f876c9cf481cde44ce",
+    "latest_covered_completed_at": "2026-09-16T12:00:07Z",
+    "latest_covered_published_at": "2026-09-09",
+    "newest_available_published_at": null,
+    "newest_snapshot_covered": false,
+    "source": "reconciliation_batches (completed) vs the snapshot fetched above"
+  },
+  "last_failed_batch": {
+    "batch_id": "66b53f7f-2fba-4079-abb6-9b33bacbd684",
+    "completed_at": "2026-09-13T16:00:01Z",
+    "created_at": "2026-09-13T11:11:28Z",
+    "recorded_error": "Workflow ended before every shard completed",
+    "source": "reconciliation_batches (newest non-completed batch)",
+    "source_published_at": "2026-09-09",
+    "status": "failed"
+  },
+  "last_reconciliation_run": {
+    "active_records_after": 57151,
+    "active_records_before": 57157,
+    "age_hours": 88.6,
+    "batch_id": "b84cb3de-f70f-4d62-b5b3-639b09ceeffe",
+    "completed_at": "2026-09-16T12:00:07Z",
+    "created_at": "2026-09-16T07:42:01Z",
+    "location_count": 57151,
+    "records_deactivated": 14,
+    "source": "reconciliation_batches WHERE status = 'completed' ORDER BY completed_at DESC",
+    "source_checksum_sha256": "cf2e7bc20493b331ca3953c708652ca7b2159cc9b223f0f876c9cf481cde44ce",
+    "source_published_at": "2026-09-09",
+    "source_uri": "https://www.cqc.org.uk/system/files/2026-09/09_september_2026_CQC_directory.csv"
+  },
+  "ledger_newest": "2026-09-19T23:09:40Z",
+  "ledger_newest_age_hours": 5.4,
+  "observed_sweep": null,
+  "polls": {
+    "coverage": {
+      "attempted": {
+        "runs": null,
+        "source": "unavailable"
+      },
+      "available": false,
+      "cancelled": {
+        "runs": null,
+        "source": "unavailable"
+      },
+      "consistency": null,
+      "coverage_pct": null,
+      "db_cross_check": {
+        "db_all_run_types_rows": 101,
+        "db_reconciliation_rows": 3,
+        "db_signal_poll_completed": 24,
+        "db_signal_poll_total_rows": 24,
+        "reconciliation": "GitHub Actions history is unavailable (skipped (--no-remote)), so no expected-vs-attempted comparison is made; the DB holds 24 signal_poll row(s) in this window, and DB rows cannot distinguish scheduled from manual runs or report a conclusion for polls",
+        "source": "pipeline_runs WHERE run_type = 'signal_poll' (started_at window)",
+        "window": {
+          "end": "2026-09-20T04:33:56Z",
+          "start": "2026-09-13T04:33:56Z"
+        }
+      },
+      "delivered_pct": null,
+      "expected": {
+        "derivation": null,
+        "due": 27,
+        "not_yet_due": 1,
+        "runs": 28,
+        "source": "cron parsed from the workflow file (no network needed)"
+      },
+      "failed": {
+        "by_conclusion": {},
+        "runs": null,
+        "source": "unavailable"
+      },
+      "fires_without_a_matching_run": {
+        "definition": "not assertable",
+        "runs": null,
+        "source": "unavailable"
+      },
+      "grace_minutes": 90.0,
+      "in_flight": {
+        "runs": null,
+        "source": "unavailable"
+      },
+      "missed": {
+        "definition": "not assertable without run history",
+        "fires": [],
+        "runs": null,
+        "source": "unavailable"
+      },
+      "reason": "skipped (--no-remote)",
+      "source": "unavailable",
+      "successful": {
+        "runs": null,
+        "source": "unavailable"
+      },
+      "window": {
+        "end": "2026-09-20T04:33:56Z",
+        "hours": 168.0,
+        "start": "2026-09-13T04:33:56Z"
+      }
+    },
+    "source": "GitHub Actions (gh run list) with a DB cross-check on pipeline_runs"
+  },
+  "provider_status": {
+    "ACTIVE": 57193,
+    "INACTIVE": 1837
+  },
+  "providers_total": 59030,
+  "quality_gaps": {
+    "no_geocode": 27,
+    "no_local_authority": 34,
+    "no_overall_rating": 25753,
+    "no_postcode": 0,
+    "no_region": 9
+  },
+  "rating_events": {
+    "all_time": {
+      "end": "2026-09-19T23:09:40Z",
+      "no_destination_value": 24486,
+      "old_value_sentinel": 20986,
+      "real_destination": 2428,
+      "rendered": {
+        "no_destination_value": "24,486 / 34,296 (71.4%)",
+        "old_value_sentinel": "20,986 / 34,296 (61.2%)",
+        "real_destination": "2,428 / 34,296 (7.1%)",
+        "sentinel_destination": "7,382 / 34,296 (21.5%)"
+      },
+      "sentinel_destination": 7382,
+      "start": "2026-08-10T22:58:22Z",
+      "total": 34296
+    },
+    "customer_facing_scope": "only events with a real published destination rating are eligible for rating-movement claims; unresolved (null destination) and sentinel-destination events are excluded",
+    "predicate": {
+      "no_destination_value": "new_value::text = 'null'",
+      "real_destination": "neither of the above and new_value is not null",
+      "sentinel_destination": "trim(new_value::text,'\"') in ['Inspected but not rated', 'No published rating', 'Insufficient evidence to rate']",
+      "source": "trusted_event_ledger (event_type = 'rating_changed')"
+    },
+    "real_destination_values": {
+      "Good": 69,
+      "Inadequate": 2,
+      "Outstanding": 4,
+      "Requires improvement": 2353
+    },
+    "representation_classes": {
+      "no_destination_value": "new_value is JSON null: the event records that a rating moved but not what it moved to",
+      "old_value_sentinel": "old_value is a sentinel string, not a rating: ['Not Yet Inspected']",
+      "sentinel_destination": "new_value is a sentinel string, not a rating: ['Inspected but not rated', 'No published rating', 'Insufficient evidence to rate']"
+    },
+    "unresolved_detail": {
+      "definition": "rating_changed events whose destination (new_value) is JSON null - all time",
+      "note": "a sentinel prior value such as 'Not Yet Inspected' is a representation placeholder, not a rating, so these events cannot be presented as rating movements",
+      "rendered": "20,966 / 24,486 (85.6%)",
+      "sentinel_values": [
+        "Not Yet Inspected"
+      ],
+      "source": "trusted_event_ledger (event_type = 'rating_changed', new_value::text = 'null')",
+      "unresolved": 24486,
+      "unresolved_with_sentinel_prior_value": 20966
+    },
+    "window": {
+      "no_destination_value": 6,
+      "old_value_sentinel": 0,
+      "real_destination": 0,
+      "rendered": {
+        "no_destination_value": "6 / 6 (100.0%)",
+        "old_value_sentinel": "0 / 6 (0.0%)",
+        "real_destination": "0 / 6 (0.0%)",
+        "sentinel_destination": "0 / 6 (0.0%)"
+      },
+      "sentinel_destination": 0,
+      "start": "2026-09-19T04:33:56Z",
+      "total": 6
+    }
+  },
+  "report_version": 3,
+  "runs_by_type": {
+    "feed_cycle": {
+      "completed": 4
+    },
+    "signal_poll": {
+      "completed": 2
+    }
+  },
+  "status_transitions": {
+    "ACTIVE->INACTIVE": 5
+  },
+  "sweep": null,
+  "unrated": {
+    "active": 57193,
+    "classification": {
+      "basis": "no classification evidence file present; classes are reported as unknown rather than guessed",
+      "classes": [
+        {
+          "class": "unknown",
+          "confidence_95_pct": null,
+          "estimate": 25753,
+          "estimator": null,
+          "observed_in_sample": null,
+          "sample_size": 0,
+          "source": "no classification evidence file found in /tmp/cqc-smoke"
+        }
+      ],
+      "sample_size": 0,
+      "source": null
+    },
+    "count": 25753,
+    "pct_of_active": 45.0,
+    "predicate": "care_providers.status = 'ACTIVE' AND (overall_rating IS NULL OR btrim(overall_rating) = '')",
+    "rendered": "25,753 / 57,193 (45.0%)",
+    "source": "care_providers (direct count over the whole active population, not a sample)"
+  },
+  "verdicts": {
+    "data_alignment": {
+      "reasons": [
+        "the newest available directory snapshot could not be fetched, so identifiers were not reconciled",
+        "skipped (--no-remote)"
+      ],
+      "scope": "identifier-level reconciliation against the newest available validated snapshot",
+      "verdict": "UNVERIFIED"
+    },
+    "pipeline_health": {
+      "reasons": [
+        "the validated source snapshot is 268.6h old (2026-09-09), beyond the documented 192.0h promise"
+      ],
+      "unverified_reasons": [
+        "GitHub Actions run history is unavailable, so expected-vs-attempted cannot be established"
+      ],
+      "verdict": "MISMATCHED"
+    },
+    "vocabulary": {
+      "MATCHED": "identifier-level reconciliation against the latest available validated snapshot found no unexplained differences within the stated scope",
+      "MISMATCHED": "unexplained differences found",
+      "UNVERIFIED": "reconciliation is stale, incomplete, failed, or has not covered the newest snapshot"
+    }
+  },
+  "window_hours": 24,
+  "window_start": "2026-09-19T04:33:56Z"
+}

@@ -29,7 +29,14 @@ jobs:
     name: Backend (pytest + pip check + audit)
     runs-on: ubuntu-latest
     steps:
+      # Full history is required: tests/test_nightly_cqc_db_check.py derives the
+      # signal-poll schedule epochs from the workflow file's commit history and
+      # asserts the earliest commit each cadence was in force from. A shallow
+      # checkout exposes only the merge ref, so those assertions collapse to a
+      # single epoch and fail spuriously.
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
@@ -67,7 +74,11 @@ jobs:
         # job below. Keeping it out of this unit/service job prevents the test
         # bootstrap's local DATABASE_URL default from targeting a nonexistent
         # localhost database on the runner.
-        run: pytest -q --ignore=tests/integration
+        #
+        # CAREGIST_ALLOW_UNIT_ONLY=1 states that narrower scope on the record:
+        # scripts/run_tests.sh otherwise refuses to run without a database, so
+        # no job can report a green that skipped every DB-backed test silently.
+        run: CAREGIST_ALLOW_UNIT_ONLY=1 scripts/run_tests.sh -q --ignore=tests/integration
 
       - name: pip-audit (vulnerabilities)
         # Fail the build on known CVEs in backend deps.
@@ -141,7 +152,7 @@ jobs:
           CAREGIST_TEST_DATABASE_URL: postgresql://caregist_test:caregist_test@localhost:5432/postgres
           API_MASTER_KEY: ci_test_master_key
           SUPPORT_INTERNAL_TOKEN: ci_test_support_token
-        run: pytest tests/integration/ -v
+        run: scripts/run_tests.sh tests/integration/ -v
 
   container-scan:
     name: Container images (build + vulnerability scan)

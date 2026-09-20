@@ -11,10 +11,6 @@ import sys
 from pathlib import Path
 from urllib import request as urllib_request
 
-import asyncpg
-
-from api.services.pipeline_health import get_pipeline_health
-
 SLO_BREACH_ALERT_KEY = "new_registration_ingestion_slo_breach"
 WATCHDOG_ALERT_PREFIX = "freshness_watchdog:"
 
@@ -220,6 +216,13 @@ async def _fetch_ingestion_slo_breach(conn) -> dict | None:
 
 
 async def check_pipeline(database_url: str, *, notify: bool) -> int:
+    try:
+        import asyncpg
+        from api.services.pipeline_health import get_pipeline_health
+    except ImportError as exc:
+        raise RuntimeError(
+            "Watchdog dependencies are missing. Install requirements-api.txt before running the check."
+        ) from exc
     conn = await asyncpg.connect(database_url)
     try:
         slo_breach = await _fetch_ingestion_slo_breach(conn)
@@ -275,7 +278,11 @@ def main() -> int:
     if not args.database_url:
         print("ERROR: DATABASE_URL not set.", file=sys.stderr)
         return 1
-    return asyncio.run(check_pipeline(args.database_url, notify=args.notify))
+    try:
+        return asyncio.run(check_pipeline(args.database_url, notify=args.notify))
+    except RuntimeError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
 
 
 if __name__ == "__main__":

@@ -37,7 +37,9 @@ describe("revenue path contracts", () => {
       "app/api/page.tsx",
       "app/dashboard/page.tsx",
       "app/pricing/page.tsx",
+      "app/pricing/territory/page.tsx",
       "app/terms/page.tsx",
+      "app/territory-opportunity-brief/page.tsx",
       "lib/caregist-config.ts",
     ];
     const combined = publicPricingFiles.map(source).join("\n");

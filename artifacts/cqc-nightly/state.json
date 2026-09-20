@@ -1,0 +1,12 @@
+{
+  "changes_total": 17,
+  "directory_snapshot_sha256": "bed9e95a1701ade0c4933bdf3acda7a9c4c94e3940a19ad698575a05a66eecb0",
+  "generated_at": "2026-09-20T05:52:17Z",
+  "ingested_source_published_at": "2026-09-09",
+  "providers_total": 59030,
+  "report_version": 3,
+  "verdicts": {
+    "data_alignment": "MISMATCHED",
+    "pipeline_health": "MISMATCHED"
+  }
+}

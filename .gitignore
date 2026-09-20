@@ -153,3 +153,7 @@ outreach/recon/
 # Local Hermes agent state (environment recipes, session plumbing). Machine-local,
 # never a deliverable - and this repository is public.
 .hermes/
+
+# Nightly CQC report: the raw published snapshot is checksum-only evidence (too large to commit).
+# The report pins it by sha256 + the CQC publication URI instead.
+artifacts/cqc-nightly/cache/directory-snapshot.json
