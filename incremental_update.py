@@ -12,6 +12,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import contextlib
 import csv
 import hashlib
 import io
@@ -2554,8 +2555,13 @@ def _run_reconciliation_phase(args: argparse.Namespace, api_key: str | None, dat
                 )
             raise
     finally:
-        cur.close()
-        conn.close()
+        # Cleanup is best effort. The connection may already be dead, and an
+        # error raised while unwinding would replace the real failure that is
+        # already propagating - the exact masking this handler exists to stop.
+        with contextlib.suppress(Exception):
+            cur.close()
+        with contextlib.suppress(Exception):
+            conn.close()
 
 
 def parse_args() -> argparse.Namespace:

@@ -903,12 +903,17 @@ def test_confirmation_progress_survives_a_failed_log_stream(monkeypatch, stream_
     """Progress output is diagnostic only: a dead log stream must not cost the batch.
 
     The candidate list is long enough to reach the every-25-candidates report as
-    well as the opening line, and both attempts are asserted, so this test fails
-    if progress output is dropped or a call site bypasses ``_progress``.
+    well as the opening line, one candidate is deregistered so the confirmed
+    counter is exercised, and every call site is asserted, so this test fails if
+    progress output is dropped or a call site bypasses ``_progress``.
     """
     candidate_ids = [f"1-{index:05d}" for index in range(1, 27)]
 
     def fake_fetch_detail(base_url, api_key, location_id):
+        # One deregistered business, so the confirmed count is non-zero at both
+        # the periodic report and the closing report.
+        if location_id == "1-00003":
+            return {"registrationStatus": "Deregistered"}
         return {"registrationStatus": "Registered"}
 
     attempts = []
@@ -927,33 +932,70 @@ def test_confirmation_progress_survives_a_failed_log_stream(monkeypatch, stream_
     )
 
     assert [decision.location_id for decision in decisions] == candidate_ids
-    assert not any(decision.deactivates for decision in decisions)
+    assert sum(1 for decision in decisions if decision.deactivates) == 1
     assert [attempt.strip() for attempt in attempts] == [
         "Confirming 26 deactivation candidate(s) against the live CQC API...",
-        "...checked 24/26 candidate(s); 0 confirmed deregistered",
-        "...checked 26/26 candidate(s); 0 confirmed deregistered",
+        "...checked 24/26 candidate(s); 1 confirmed deregistered",
+        "...checked 26/26 candidate(s); 1 confirmed deregistered",
     ]
 
 
-def test_failure_recording_survives_a_dead_connection(capsys, monkeypatch):
+class _FailingCursor:
+    """Cursor whose ``execute`` or ``close`` can fail on demand."""
+
+    def __init__(self, failure):
+        self.failure = failure
+        self.statements = []
+
+    def execute(self, statement, params=None):
+        if self.failure == "execute":
+            raise psycopg2.OperationalError("SSL connection has been closed unexpectedly")
+        self.statements.append(statement)
+
+    def close(self):
+        if self.failure == "cursor-close":
+            raise psycopg2.InterfaceError("CURSOR_CLOSE_DIED")
+
+
+class _FailingConnection:
+    """Connection whose rollback, commit or cursor close can fail on demand."""
+
+    def __init__(self, failure):
+        self.failure = failure
+        self.autocommit = False
+        self.cur = _FailingCursor(failure)
+
+    def cursor(self):
+        return self.cur
+
+    def rollback(self):
+        if self.failure == "rollback":
+            raise psycopg2.OperationalError("SSL connection has been closed unexpectedly")
+
+    def commit(self):
+        if self.failure == "commit":
+            raise psycopg2.OperationalError("SSL connection has been closed unexpectedly")
+
+    def close(self):
+        pass
+
+
+@pytest.mark.parametrize(
+    "failure",
+    ["rollback", "execute", "commit", "cursor-close"],
+    ids=["rollback-dies", "record-execute-dies", "record-commit-dies", "cleanup-dies"],
+)
+def test_failure_handling_never_masks_the_real_failure(capsys, monkeypatch, failure):
     """A connection that dies mid-phase must not mask the real failure.
 
     Run 35529037973 (2026-09-20) refused a batch correctly, then lost its reason
     to ``psycopg2.OperationalError: SSL connection has been closed unexpectedly``
-    raised by the rollback itself. The original error must reach the log intact.
+    raised by the handler's own rollback. Whichever database call fails - the
+    rollback, either failure-record statement, the commit, or the cleanup that
+    runs after the handler - the original error must still reach the log intact,
+    and the workflow's abort-incomplete job is left to record the batch state.
     """
-
-    class _DeadConnection:
-        autocommit = False
-
-        def cursor(self):
-            return Mock()
-
-        def rollback(self):
-            raise psycopg2.OperationalError("SSL connection has been closed unexpectedly")
-
-        def close(self):
-            pass
+    connection = _FailingConnection(failure)
 
     def _refuse(*_args, **_kwargs):
         raise ChangesFetchError(
@@ -962,17 +1004,24 @@ def test_failure_recording_survives_a_dead_connection(capsys, monkeypatch):
         )
 
     monkeypatch.setattr(incremental_update, "_prepare_batch", _refuse)
-    monkeypatch.setattr(incremental_update.psycopg2, "connect", lambda *_a, **_k: _DeadConnection())
-    args = argparse.Namespace(phase="prepare", checkpoint_size=1, dry_run=False, batch_id=None)
+    monkeypatch.setattr(incremental_update.psycopg2, "connect", lambda *_a, **_k: connection)
+    args = argparse.Namespace(
+        phase="prepare", checkpoint_size=1, dry_run=False, batch_id="batch-under-test"
+    )
 
     with pytest.raises(ChangesFetchError) as excinfo:
         incremental_update._run_reconciliation_phase(args, None, "postgresql://ignored")
 
     assert "Batch finalization refused" in str(excinfo.value)
     assert "SSL connection has been closed unexpectedly" not in str(excinfo.value)
-    assert (
-        "Could not record this failure on the current connection" in capsys.readouterr().out
-    )
+    assert "CURSOR_CLOSE_DIED" not in str(excinfo.value)
+    output = capsys.readouterr().out
+    if failure == "cursor-close":
+        # Cleanup is best effort and must stay silent: reporting it is not worth
+        # replacing the exception that is already propagating.
+        assert "Could not record this failure" not in output
+    else:
+        assert "Could not record this failure on the current connection" in output
 
 
 def test_checkpoint_resume_starts_at_persisted_offset_without_overlap():
