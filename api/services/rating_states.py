@@ -50,6 +50,14 @@ NON_RATED_STATES = frozenset(
     {NOT_YET_INSPECTED, NOT_PUBLISHED, UNRATED, NOT_APPLICABLE}
 )
 
+#: Normalised texts of CQC's real published ratings. This is the *only* set of
+#: values that may be read as "a rating". It is the shared authority referenced
+#: by db/migrations/061_provider_rating_state.sql (asserted by
+#: tests/test_migration_governance.py), so SQL and Python cannot drift.
+PUBLISHED_RATING_VALUES = frozenset(
+    {"outstanding", "good", "requires improvement", "inadequate"}
+)
+
 #: Sentinel strings CQC publishes instead of a rating, keyed by their
 #: normalised form. Every one of these is "not a rating"; none is a rating
 #: problem, a hold, or a pending inspection to be guessed at.
@@ -72,6 +80,11 @@ _SENTINEL_STATES: dict[str, str] = {
 #: because an omitted ratings block reaches it as well; callers that care
 #: about the difference must inspect the raw payload.
 SENTINEL_STATES = frozenset({NOT_YET_INSPECTED, UNRATED, NOT_APPLICABLE})
+
+#: Public read-only view of the sentinel vocabulary. The migration governance
+#: test reads it (with :data:`PUBLISHED_RATING_VALUES`) to prove that SQL
+#: migration 061 classifies stored values exactly the way this module does.
+SENTINEL_STATE_BY_TEXT: dict[str, str] = _SENTINEL_STATES
 
 
 def normalize_rating_text(raw_value: Any) -> str | None:
@@ -138,18 +151,44 @@ def is_sentinel_rating_text(raw_value: Any) -> bool:
     return normalized is not None and normalized in _SENTINEL_STATES
 
 
+def classify_stored_rating(raw_value: Any) -> tuple[str, str | None]:
+    """Classify a value that is *stored* in ``care_providers.overall_rating``.
+
+    Stricter than :func:`classify_rating`, deliberately:
+
+    * :func:`classify_rating` reads a CQC *payload field*
+      (``currentRatings.overall.rating``), where an unfamiliar string is still
+      CQC's own text in CQC's own rating field;
+    * a stored column has no such provenance -- older code wrote blanks and
+      sentinels there -- so an unrecognised value resolves to ``unknown`` (the
+      honest answer) instead of being asserted as a rating.
+
+    Only a value in :data:`PUBLISHED_RATING_VALUES` yields ``rated``. That is
+    what makes an ``ELSE 'rated'`` catch-all unnecessary in SQL migration 061
+    and keeps the two classifiers in step. A blank or absent value is
+    ``unknown`` here because the caller is reading storage, not a payload.
+    """
+    normalized = normalize_rating_text(raw_value)
+    if normalized is None:
+        return (UNKNOWN, None)
+    if normalized in PUBLISHED_RATING_VALUES:
+        return (RATED, str(raw_value).strip())
+    sentinel_state = _SENTINEL_STATES.get(normalized)
+    if sentinel_state is not None:
+        return (sentinel_state, None)
+    return (UNKNOWN, None)
+
+
 def stored_rating_is_published(raw_value: Any) -> bool:
     """True when a stored column value is a published rating.
 
     Used to decide whether an existing ``care_providers.overall_rating`` is
-    real evidence (never overwrite it from an absence) or representation
-    garbage left by the old ``""``-on-missing behaviour (safe to clear).
+    real evidence (never treat it as a current rating from an absence) or
+    representation garbage left by the old ``""``-on-missing behaviour (safe to
+    clear). Uses :func:`classify_stored_rating`, so an unrecognised value such
+    as ``"Suspended"`` is not read as a published rating.
     """
-    state, value = classify_rating(
-        raw_value,
-        current_ratings_present=True,
-        historic_rating_present=False,
-    )
+    state, value = classify_stored_rating(raw_value)
     return is_published_value(state) and value is not None
 
 

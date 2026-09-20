@@ -12,6 +12,7 @@ import pytest
 
 from api.services.provider_state_events import ProviderStateEvent
 from incremental_update import (
+    _abort_batch,
     _fetch_all_cqc_location_stubs,
     _finalize_batch,
     _insert_trusted_provider_event,
@@ -21,12 +22,20 @@ from incremental_update import (
     _resume_batch,
     _sync_reconciliation_run_evidence,
     ALLOWED_COLUMNS,
+    CLASSIFICATION_DEREGISTERED,
+    CLASSIFICATION_REGISTERED,
+    CLASSIFICATION_UNCONFIRMED,
     CqcActiveSnapshot,
     ChangesFetchError,
+    DEACTIVATION_DEACTIVATE,
+    DEACTIVATION_KEEP,
+    DeactivationDecision,
     ShardAlreadyRunning,
     build_snapshot_manifest,
     build_snapshot_reconciliation,
     checkpoint_slices,
+    classify_registration_status,
+    confirm_deactivation_candidates,
     fetch_active_location_snapshot,
     fetch_changes,
     fetch_location_detail,
@@ -37,6 +46,7 @@ from incremental_update import (
     resolve_since,
     should_process_list_scan_record,
     shard_for_location,
+    summarise_deactivation_decisions,
     validate_shard_coordinates,
 )
 
@@ -505,12 +515,29 @@ def test_ensure_no_active_batch_refuses_if_another_batch_is_active_after_abort(m
     assert args.batch_id == "new-batch"
 
 
-def test_prepare_still_fail_closes_without_marking_partial_imports_complete():
-    source = Path("incremental_update.py").read_text(encoding="utf-8")
-    assert "_ensure_no_active_reconciliation_batch" in source
-    assert "counts_reconciled = TRUE, reconciled_at = NOW()" in source
-    assert "counts_reconciled = FALSE, reconciled_at = NULL" in source
-    assert "A completed reconciliation batch cannot be aborted." in source
+def test_abort_refuses_a_completed_batch_and_clears_reconciliation_evidence_when_it_runs():
+    batch_id = "12345678-1234-5678-9234-567812345678"
+    args = argparse.Namespace(batch_id=batch_id, dry_run=False)
+
+    completed = Mock()
+    completed.fetchone.return_value = (1, "completed", 7)
+
+    with pytest.raises(ChangesFetchError, match="cannot be aborted"):
+        _abort_batch(args, Mock(), completed)
+    assert not any(
+        "counts_reconciled" in str(call.args[0])
+        for call in completed.execute.call_args_list
+        if call.args
+    )
+
+    running = Mock()
+    running.fetchone.side_effect = [(2, "running", 7), (True,), (True,)]
+
+    assert _abort_batch(args, Mock(), running) == 0
+    statements = [str(call.args[0]) for call in running.execute.call_args_list if call.args]
+    # An aborted batch must not leave a reconciled, non-restartable run behind.
+    assert any("counts_reconciled = FALSE, reconciled_at = NULL" in item for item in statements)
+    assert any('"restartable": true, "fullCoverage": false' in item for item in statements)
 
 
 def test_reconciliation_evidence_is_derived_from_committed_shard_state():
@@ -529,25 +556,335 @@ def test_reconciliation_evidence_is_derived_from_committed_shard_state():
     assert params == (str(batch_id),)
 
 
-def test_reconciliation_authority_requires_atomic_full_coverage_fields():
-    source = Path("incremental_update.py").read_text(encoding="utf-8")
+def _json_param(value):
+    """Read a jsonb parameter the way the driver will serialise it."""
+    adapted = getattr(value, "adapted", value)
+    return json.loads(adapted) if isinstance(adapted, str) else adapted
 
-    assert "source_total_count = %s, checked_count = %s" in source
-    assert "success_count = %s, failure_count = 0" in source
-    assert "counts_reconciled = TRUE, reconciled_at = NOW()" in source
-    assert 'json.dumps(' in source
-    # The two full-coverage fields must still be written atomically, by one
-    # json.dumps call: extra per-batch evidence (the deactivation confirmation
-    # counts) travels alongside them, not in place of them.
-    coverage_marker = source.index('"fullCoverage": True')
-    assert source.rindex("json.dumps(", 0, coverage_marker) < coverage_marker
-    assert coverage_marker < source.index('"restartable": False') < source.index(
-        ")", coverage_marker
+
+def _issued_statements(cursor):
+    return [
+        " ".join(str(call.args[0]).split())
+        for call in cursor.execute.call_args_list
+        if call.args
+    ]
+
+
+def _finalizer_run_write(cursor):
+    writes = [
+        call
+        for call in cursor.execute.call_args_list
+        if call.args
+        and "counts_reconciled = TRUE, reconciled_at = NOW()" in str(call.args[0])
+    ]
+    assert len(writes) == 1
+    return writes[0]
+
+
+def _finalizer_batch_write(cursor):
+    writes = [
+        call
+        for call in cursor.execute.call_args_list
+        if call.args and "records_deactivated = %s" in str(call.args[0])
+    ]
+    assert len(writes) == 1
+    return writes[0]
+
+
+def test_finalizer_records_full_coverage_evidence_atomically_for_the_confirmed_manifest(tmp_path):
+    """The reconciled run row is written by one statement, never in two steps."""
+    manifest, batch_id, shards = _finalize_fixture(tmp_path)
+    cursor = _finalize_cursor(manifest, shards, active_manifest_count=100)
+
+    assert (
+        _finalize_batch(
+            _finalize_args(tmp_path, manifest, batch_id, dry_run=False), Mock(), cursor
+        )
+        == 0
     )
-    assert "counts_reconciled = FALSE, reconciled_at = NULL" in source
-    assert "AND counts_reconciled = TRUE AND reconciled_at IS NOT NULL" in source
-    assert "pg_try_advisory_xact_lock" in source
-    assert "shard {shard_index} is still running" in source
+
+    statement, params = _finalizer_run_write(cursor).args
+    assert "counts_reconciled = TRUE, reconciled_at = NOW()" in statement
+    assert "success_count = %s, failure_count = 0" in statement
+    location_count = int(manifest["locationCount"])
+    # source_total_count, checked_count and success_count each carry the manifest
+    # total, so a partially covered run can never be reconciled.
+    assert params[9] == params[10] == params[11] == location_count
+    assert isinstance(params[12], str), "the coverage evidence must travel as one json document"
+    payload = json.loads(params[12])
+    assert payload["fullCoverage"] is True
+    assert payload["restartable"] is False
+    assert "deactivationConfirmation" in payload
+
+    batch_params = _finalizer_batch_write(cursor).args[1]
+    assert batch_params[3] == 0  # deactivated
+    assert batch_params[4] == 0  # unconfirmed candidates acknowledged
+    assert _json_param(batch_params[5])["acknowledged"] is False
+
+
+def test_finalizer_refuses_while_a_shard_worker_holds_its_lock(tmp_path):
+    manifest, batch_id, shards = _finalize_fixture(tmp_path)
+    cursor = _finalize_cursor(manifest, shards, active_manifest_count=100)
+    inner = cursor.fetchone.side_effect
+
+    def _next_row():
+        statement = " ".join(str(cursor.execute.call_args_list[-1].args[0]).split()).lower()
+        if "pg_try_advisory_xact_lock" in statement:
+            return (False,)
+        return inner()
+
+    cursor.fetchone.side_effect = _next_row
+
+    with pytest.raises(ChangesFetchError, match="still running"):
+        _finalize_batch(
+            _finalize_args(tmp_path, manifest, batch_id, dry_run=False), Mock(), cursor
+        )
+    assert any(
+        "pg_try_advisory_xact_lock" in item for item in _issued_statements(cursor)
+    )
+
+
+def test_finalizer_refuses_a_same_date_source_checksum_conflict(tmp_path):
+    """Only a reconciled watermark counts, and a same-date rewrite must never win."""
+    manifest, batch_id, shards = _finalize_fixture(tmp_path)
+    cursor = _finalize_cursor(manifest, shards, active_manifest_count=100)
+    inner = cursor.fetchone.side_effect
+    watermark = (date(2026, 8, 1), "0" * 64)
+
+    def _next_row():
+        statement = " ".join(str(cursor.execute.call_args_list[-1].args[0]).split()).upper()
+        if "COUNTS_RECONCILED = TRUE AND RECONCILED_AT IS NOT NULL" in statement:
+            return watermark
+        return inner()
+
+    cursor.fetchone.side_effect = _next_row
+
+    with pytest.raises(ChangesFetchError, match="checksum conflicts with the watermark"):
+        _finalize_batch(
+            _finalize_args(tmp_path, manifest, batch_id, dry_run=False), Mock(), cursor
+        )
+    assert any(
+        "counts_reconciled = TRUE AND reconciled_at IS NOT NULL" in item
+        for item in _issued_statements(cursor)
+    )
+
+
+def _finalize_cursor_with_candidates(
+    manifest,
+    shards,
+    active_manifest_count,
+    *,
+    candidate_ids,
+    active_after=None,
+):
+    cursor = _finalize_cursor(
+        manifest, shards, active_manifest_count, active_after=active_after
+    )
+    cursor.fetchall.side_effect = [
+        shards,
+        [(location_id,) for location_id in candidate_ids],
+    ] + [[] for _ in range(20)]
+    return cursor
+
+
+def _unconfirmed_decision(location_id, detail="candidate detail could not be read"):
+    return DeactivationDecision(
+        str(location_id),
+        DEACTIVATION_KEEP,
+        CLASSIFICATION_UNCONFIRMED,
+        None,
+        detail,
+    )
+
+
+def _monkeypatch_confirmation(monkeypatch, decisions):
+    monkeypatch.setattr(
+        "incremental_update.confirm_deactivation_candidates",
+        lambda candidate_ids, **_kwargs: [
+            decisions[str(location_id)] for location_id in candidate_ids
+        ],
+    )
+
+
+def test_finalizer_refuses_while_a_candidate_confirmation_is_unconfirmed(tmp_path, monkeypatch):
+    """An unconfirmed candidate must fail the run closed, not be absorbed."""
+    manifest, batch_id, shards = _finalize_fixture(tmp_path)
+    cursor = _finalize_cursor_with_candidates(
+        manifest, shards, 100, candidate_ids=["1-77777"]
+    )
+    _monkeypatch_confirmation(monkeypatch, {"1-77777": _unconfirmed_decision("1-77777")})
+
+    with pytest.raises(ChangesFetchError, match="could not be confirmed"):
+        _finalize_batch(
+            _finalize_args(tmp_path, manifest, batch_id, dry_run=False, api_key="unit-test-key"),
+            Mock(),
+            cursor,
+        )
+    assert not any(
+        "records_deactivated" in item or "SET status" in item
+        for item in _issued_statements(cursor)
+    )
+
+
+def test_finalizer_acknowledged_unconfirmed_candidates_are_recorded_and_guarded(
+    tmp_path, monkeypatch
+):
+    manifest, batch_id, shards = _finalize_fixture(tmp_path)
+    cursor = _finalize_cursor_with_candidates(
+        manifest, shards, 100, candidate_ids=["1-77777"], active_after=101
+    )
+    _monkeypatch_confirmation(monkeypatch, {"1-77777": _unconfirmed_decision("1-77777")})
+
+    args = _finalize_args(
+        tmp_path,
+        manifest,
+        batch_id,
+        dry_run=False,
+        api_key="unit-test-key",
+        acknowledge_unconfirmed_deactivations=True,
+    )
+    assert _finalize_batch(args, Mock(), cursor) == 0
+
+    batch_params = _finalizer_batch_write(cursor).args[1]
+    assert batch_params[3] == 0  # nothing was deactivated
+    assert batch_params[4] == 1  # one candidate stayed active without confirmation
+    record = _json_param(batch_params[5])
+    assert record["acknowledged"] is True
+    assert record["unconfirmed_ids"] == ["1-77777"]
+
+    payload = json.loads(_finalizer_run_write(cursor).args[1][12])
+    assert payload["deactivationConfirmation"]["unconfirmed_ids"] == ["1-77777"]
+    assert payload["fullCoverage"] is True
+
+
+def test_finalizer_acknowledgement_does_not_absorb_a_residual_mismatch(tmp_path, monkeypatch):
+    """Even acknowledged, anything still unexplained must fail the run closed."""
+    manifest, batch_id, shards = _finalize_fixture(tmp_path)
+    cursor = _finalize_cursor_with_candidates(
+        manifest, shards, 100, candidate_ids=["1-77777"], active_after=102
+    )
+    _monkeypatch_confirmation(monkeypatch, {"1-77777": _unconfirmed_decision("1-77777")})
+
+    args = _finalize_args(
+        tmp_path,
+        manifest,
+        batch_id,
+        dry_run=False,
+        api_key="unit-test-key",
+        acknowledge_unconfirmed_deactivations=True,
+    )
+    with pytest.raises(ChangesFetchError, match="does not match the authoritative manifest"):
+        _finalize_batch(args, Mock(), cursor)
+
+
+@pytest.mark.parametrize(
+    ("raw_status", "expected_action", "expected_classification"),
+    [
+        ("Registered", DEACTIVATION_KEEP, CLASSIFICATION_REGISTERED),
+        ("Deregistered", DEACTIVATION_DEACTIVATE, CLASSIFICATION_DEREGISTERED),
+        ("  deregistered\n", DEACTIVATION_DEACTIVATE, CLASSIFICATION_DEREGISTERED),
+        ("Suspended", DEACTIVATION_KEEP, CLASSIFICATION_UNCONFIRMED),
+        ("Not registered", DEACTIVATION_KEEP, CLASSIFICATION_UNCONFIRMED),
+        ("Deregistration in progress", DEACTIVATION_KEEP, CLASSIFICATION_UNCONFIRMED),
+        ("", DEACTIVATION_KEEP, CLASSIFICATION_UNCONFIRMED),
+        ("   ", DEACTIVATION_KEEP, CLASSIFICATION_UNCONFIRMED),
+        (None, DEACTIVATION_KEEP, CLASSIFICATION_UNCONFIRMED),
+        (42, DEACTIVATION_KEEP, CLASSIFICATION_UNCONFIRMED),
+        (["Deregistered"], DEACTIVATION_KEEP, CLASSIFICATION_UNCONFIRMED),
+        ({"registrationStatus": "Deregistered"}, DEACTIVATION_KEEP, CLASSIFICATION_UNCONFIRMED),
+    ],
+)
+def test_deactivation_requires_affirmative_proof(
+    raw_status, expected_action, expected_classification
+):
+    assert classify_registration_status(raw_status) == (
+        expected_action,
+        expected_classification,
+    )
+
+
+def test_only_allow_listed_status_values_can_ever_deactivate():
+    """No string outside the published vocabulary may turn a live location off."""
+    for value in (
+        "Suspended",
+        "Not registered",
+        "Deregistered (historic)",
+        "Deregistering",
+        "Application withdrawn",
+        "unknown",
+        "N/A",
+        "0",
+    ):
+        assert classify_registration_status(value) == (
+            DEACTIVATION_KEEP,
+            CLASSIFICATION_UNCONFIRMED,
+        ), value
+
+    # Affirmative proof of registration is kept active and labelled registered.
+    for value in ("Registered", "registered", " REGISTERED "):
+        assert classify_registration_status(value) == (
+            DEACTIVATION_KEEP,
+            CLASSIFICATION_REGISTERED,
+        )
+
+    for value in ("Deregistered", "deregistered", "  DEREGISTERED "):
+        assert classify_registration_status(value) == (
+            DEACTIVATION_DEACTIVATE,
+            CLASSIFICATION_DEREGISTERED,
+        )
+
+
+def test_confirmation_decisions_keep_every_candidate_except_the_deregistered_one():
+    outcomes = {
+        "1-00001": {"registrationStatus": "Registered"},
+        "1-00002": {"registrationStatus": "Deregistered"},
+        "1-00003": {"registrationStatus": "Suspended"},
+        "1-00004": {},
+        "1-00005": {"registrationStatus": 42},
+        "1-00006": ["not", "an", "object"],
+        "1-00007": None,
+        "1-00008": ChangesFetchError("CQC detail request failed"),
+    }
+    calls: list[str] = []
+
+    def fake_fetch_detail(base_url, api_key, location_id):
+        calls.append(location_id)
+        outcome = outcomes[location_id]
+        if isinstance(outcome, Exception):
+            raise outcome
+        return outcome
+
+    decisions = confirm_deactivation_candidates(
+        list(outcomes),
+        base_url="https://api.example.invalid/public/v1/locations/",
+        api_key="unit-test-key",
+        fetch_detail=fake_fetch_detail,
+    )
+
+    assert calls == list(outcomes)
+    by_id = {decision.location_id: decision for decision in decisions}
+    assert [decision.location_id for decision in decisions if decision.deactivates] == [
+        "1-00002"
+    ]
+    assert by_id["1-00001"].classification == CLASSIFICATION_REGISTERED
+    assert by_id["1-00001"].action == DEACTIVATION_KEEP
+    assert by_id["1-00002"].classification == CLASSIFICATION_DEREGISTERED
+    for location_id in ("1-00003", "1-00004", "1-00005", "1-00006", "1-00007", "1-00008"):
+        assert by_id[location_id].action == DEACTIVATION_KEEP, location_id
+        assert by_id[location_id].classification == CLASSIFICATION_UNCONFIRMED, location_id
+
+    summary = summarise_deactivation_decisions(decisions)
+    assert summary["candidates"] == 8
+    assert summary["deactivated"] == 1
+    assert summary["confirmed_still_registered_ids"] == ["1-00001"]
+    assert sorted(summary["unconfirmed_ids"]) == [
+        "1-00003",
+        "1-00004",
+        "1-00005",
+        "1-00006",
+        "1-00007",
+        "1-00008",
+    ]
 
 
 def test_checkpoint_resume_starts_at_persisted_offset_without_overlap():
@@ -659,13 +996,14 @@ def _finalize_cursor(
     return cursor
 
 
-def _finalize_args(tmp_path, manifest, batch_id, *, dry_run=True):
+def _finalize_args(tmp_path, manifest, batch_id, *, dry_run=True, **extra):
     manifest_path = tmp_path / "manifest.json"
     manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
     return argparse.Namespace(
         batch_id=str(batch_id),
         snapshot_manifest=str(manifest_path),
         dry_run=dry_run,
+        **extra,
     )
 
 

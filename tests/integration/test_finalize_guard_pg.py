@@ -22,6 +22,7 @@ import json
 import uuid
 from datetime import date, datetime, timezone
 from types import SimpleNamespace
+from typing import Any
 
 import psycopg2
 import pytest
@@ -30,6 +31,7 @@ from incremental_update import (
     CqcActiveSnapshot,
     ChangesFetchError,
     _finalize_batch,
+    _repair_missing_slugs,
     build_snapshot_manifest,
     partition_location_ids,
 )
@@ -125,11 +127,12 @@ async def _seed_batch(conn, tmp_path, *, statuses: dict[str, str | None]) -> uui
     return batch_id
 
 
-def _run_finalize(fresh_db: str, batch_id: uuid.UUID, tmp_path, *, dry_run: bool) -> int:
+def _run_finalize(fresh_db: str, batch_id: uuid.UUID, tmp_path, *, dry_run: bool, **extra) -> int:
     args = SimpleNamespace(
         batch_id=str(batch_id),
         snapshot_manifest=str(tmp_path / f"manifest-{batch_id}.json"),
         dry_run=dry_run,
+        **extra,
     )
     conn = psycopg2.connect(fresh_db)
     try:
@@ -156,8 +159,15 @@ async def _active_count(conn) -> int:
     return int(await conn.fetchval("SELECT COUNT(*) FROM care_providers WHERE UPPER(status) = 'ACTIVE'"))
 
 
-async def test_finalizer_accepts_a_manifest_location_the_poll_deactivated(tmp_path, fresh_db, capsys):
-    """One of 100 manifest locations is inactive: a genuinely attributed loss inside the bound."""
+async def test_finalizer_accepts_a_manifest_location_the_poll_deactivated(
+    tmp_path, fresh_db, capsys, monkeypatch
+):
+    """One of 100 manifest locations is inactive: a genuinely attributed loss inside the bound.
+
+    The two rogue candidates are confirmed deregistered by the injected detail
+    fetcher, so the deactivations are real API-confirmed writes rather than a
+    side effect of an unreachable API.
+    """
     async_conn = await asyncpg.connect(fresh_db)
     try:
         await apply_full_schema(async_conn)
@@ -168,6 +178,10 @@ async def test_finalizer_accepts_a_manifest_location_the_poll_deactivated(tmp_pa
         assert await _active_count(async_conn) == 101
     finally:
         await async_conn.close()
+    monkeypatch.setattr(
+        "incremental_update.fetch_location_detail",
+        _detail_fetcher({rogue: {"registrationStatus": "Deregistered"} for rogue in ROGUE_IDS}),
+    )
     capsys.readouterr()
 
     assert _run_finalize(fresh_db, batch_id, tmp_path, dry_run=False) == 0
@@ -260,3 +274,219 @@ async def test_finalizer_fails_closed_on_unattributable_manifest_state(
 
     with pytest.raises(ChangesFetchError, match="1 manifest locations are missing or carry a status"):
         _run_finalize(fresh_db, batch_id, tmp_path, dry_run=True)
+
+
+# --------------------------------------------------------------------------
+# FIX 3: the API-confirmation path, driven for real against PostgreSQL.
+#
+# ROGUE_IDS are ACTIVE rows absent from the manifest, so they are the
+# deactivation candidates the finalizer must confirm against the live CQC API.
+# ``fetch_location_detail`` is replaced at the transport level only: the real
+# ``confirm_deactivation_candidates`` classifier and the real ``_finalize_batch``
+# guard run unchanged.
+# --------------------------------------------------------------------------
+
+
+def _detail_fetcher(payloads: dict[str, Any]):
+    """Answer a candidate lookup from ``payloads`` (an Exception raises)."""
+
+    def _fetch(base_url, api_key, location_id):
+        outcome = payloads.get(location_id, {"registrationStatus": "Registered"})
+        if isinstance(outcome, Exception):
+            raise outcome
+        return outcome
+
+    return _fetch
+
+
+async def _seed_rogue_candidates(tmp_path, fresh_db, statuses: dict[str, Any]):
+    async_conn = await asyncpg.connect(fresh_db)
+    try:
+        await apply_full_schema(async_conn)
+        estate = _estate()
+        estate.update({rogue: "ACTIVE" for rogue in statuses})
+        await _seed(async_conn, estate)
+        batch_id = await _seed_batch(async_conn, tmp_path, statuses=estate)
+        assert await _active_count(async_conn) == 100 + len(statuses)
+    finally:
+        await async_conn.close()
+    return batch_id
+
+
+async def test_finalizer_refuses_while_candidate_details_cannot_be_confirmed(
+    tmp_path, fresh_db, monkeypatch
+):
+    """An unreadable detail and an unfamiliar status both refuse the batch.
+
+    Nothing is absorbed into the expected active count, and no candidate is
+    deactivated, so an API failure can never masquerade as a real loss.
+    """
+    payloads = {
+        ROGUE_IDS[0]: ChangesFetchError("CQC API returned 503"),
+        ROGUE_IDS[1]: {"registrationStatus": "Suspended"},
+    }
+    batch_id = await _seed_rogue_candidates(tmp_path, fresh_db, payloads)
+    monkeypatch.setattr(
+        "incremental_update.fetch_location_detail", _detail_fetcher(payloads)
+    )
+
+    with pytest.raises(ChangesFetchError, match="could not be confirmed"):
+        _run_finalize(
+            fresh_db,
+            batch_id,
+            tmp_path,
+            dry_run=False,
+            api_key="integration-test-key",
+        )
+
+    async_conn = await asyncpg.connect(fresh_db)
+    try:
+        row = await _batch_row(async_conn, batch_id)
+        assert row["status"] == "running"
+        assert row["run_status"] == "running"
+        assert row["counts_reconciled"] is False
+        assert await async_conn.fetchval(
+            "SELECT COUNT(*) FROM care_providers WHERE id = ANY($1) AND UPPER(status) = 'ACTIVE'",
+            ROGUE_IDS,
+        ) == len(ROGUE_IDS)
+    finally:
+        await async_conn.close()
+
+
+async def test_finalizer_records_acknowledged_unconfirmed_candidates_on_the_batch_row(
+    tmp_path, fresh_db, monkeypatch
+):
+    """The explicit operator acknowledgement is recorded, not silently absorbed."""
+    payloads = {
+        ROGUE_IDS[0]: ChangesFetchError("CQC API returned 503"),
+        ROGUE_IDS[1]: {"registrationStatus": "Suspended"},
+    }
+    batch_id = await _seed_rogue_candidates(tmp_path, fresh_db, payloads)
+    monkeypatch.setattr(
+        "incremental_update.fetch_location_detail", _detail_fetcher(payloads)
+    )
+
+    assert _run_finalize(
+        fresh_db,
+        batch_id,
+        tmp_path,
+        dry_run=False,
+        api_key="integration-test-key",
+        acknowledge_unconfirmed_deactivations=True,
+    ) == 0
+
+    async_conn = await asyncpg.connect(fresh_db)
+    try:
+        row = await async_conn.fetchrow(
+            """
+            SELECT status, active_records_after, records_deactivated,
+                   deactivation_unconfirmed_count, deactivation_confirmation
+            FROM reconciliation_batches WHERE id = $1
+            """,
+            batch_id,
+        )
+        assert row["status"] == "completed"
+        assert row["records_deactivated"] == 0
+        assert row["active_records_after"] == 102
+        assert row["deactivation_unconfirmed_count"] == len(ROGUE_IDS)
+        confirmation = json.loads(row["deactivation_confirmation"])
+        assert sorted(confirmation["unconfirmed_ids"]) == sorted(ROGUE_IDS)
+        assert confirmation["acknowledged"] is True
+        assert confirmation["unconfirmed_count"] == len(ROGUE_IDS)
+        assert confirmation["expected_active_after"] == 102
+        assert confirmation["active_after"] == 102
+        assert await _active_count(async_conn) == 102
+    finally:
+        await async_conn.close()
+
+
+async def test_finalizer_deactivates_only_allow_listed_deregistration(
+    tmp_path, fresh_db, monkeypatch
+):
+    """'Deregistered' deactivates; 'Suspended' is kept and recorded as unconfirmed."""
+    payloads = {
+        ROGUE_IDS[0]: {"registrationStatus": "Deregistered"},
+        ROGUE_IDS[1]: {"registrationStatus": "Suspended"},
+    }
+    batch_id = await _seed_rogue_candidates(tmp_path, fresh_db, payloads)
+    monkeypatch.setattr(
+        "incremental_update.fetch_location_detail", _detail_fetcher(payloads)
+    )
+
+    assert _run_finalize(
+        fresh_db,
+        batch_id,
+        tmp_path,
+        dry_run=False,
+        api_key="integration-test-key",
+        acknowledge_unconfirmed_deactivations=True,
+    ) == 0
+
+    async_conn = await asyncpg.connect(fresh_db)
+    try:
+        assert await async_conn.fetchval(
+            "SELECT UPPER(status) FROM care_providers WHERE id = $1", ROGUE_IDS[0]
+        ) == "INACTIVE"
+        assert await async_conn.fetchval(
+            "SELECT UPPER(status) FROM care_providers WHERE id = $1", ROGUE_IDS[1]
+        ) == "ACTIVE"
+        row = await async_conn.fetchrow(
+            """
+            SELECT records_deactivated, active_records_after,
+                   deactivation_unconfirmed_count, deactivation_confirmation
+            FROM reconciliation_batches WHERE id = $1
+            """,
+            batch_id,
+        )
+        assert row["records_deactivated"] == 1
+        assert row["active_records_after"] == 101
+        assert row["deactivation_unconfirmed_count"] == 1
+        confirmation = json.loads(row["deactivation_confirmation"])
+        assert confirmation["unconfirmed_ids"] == [ROGUE_IDS[1]]
+        assert confirmation["deregistered"] == 1
+    finally:
+        await async_conn.close()
+
+
+async def test_finalizer_acknowledgement_still_fails_on_an_unexplained_mismatch(
+    tmp_path, fresh_db, monkeypatch
+):
+    """Acknowledging unconfirmed candidates must not absorb a real divergence.
+
+    One extra ACTIVE location appears that was neither in the manifest nor a
+    candidate; the guard must still refuse.
+    """
+    payloads = {ROGUE_IDS[0]: {"registrationStatus": "Suspended"}}
+    batch_id = await _seed_rogue_candidates(tmp_path, fresh_db, payloads)
+    monkeypatch.setattr(
+        "incremental_update.fetch_location_detail", _detail_fetcher(payloads)
+    )
+
+    # A location goes ACTIVE after the candidate probe has already run: it was
+    # never a candidate, so it cannot be acknowledged away and the guard must
+    # still see the unexplained extra row.
+    real_repair = _repair_missing_slugs
+
+    def _repair_with_drift(cur):
+        with psycopg2.connect(fresh_db) as drift_conn, drift_conn.cursor() as drift_cur:
+            drift_cur.execute(
+                """
+                INSERT INTO care_providers (id, name, slug, status)
+                VALUES (%s, %s, %s, 'ACTIVE')
+                ON CONFLICT (id) DO NOTHING
+                """,
+                ("1-96001", "Drift Provider", "provider-drift"),
+            )
+        real_repair(cur)
+
+    monkeypatch.setattr("incremental_update._repair_missing_slugs", _repair_with_drift)
+
+    with pytest.raises(ChangesFetchError, match="does not match the authoritative manifest"):
+        _run_finalize(
+            fresh_db,
+            batch_id,
+            tmp_path,
+            dry_run=False,
+            api_key="integration-test-key",
+            acknowledge_unconfirmed_deactivations=True,
+        )

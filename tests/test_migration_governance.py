@@ -1,4 +1,105 @@
+import re
+from pathlib import Path
+
+from api.services.rating_states import (
+    NOT_APPLICABLE,
+    NOT_PUBLISHED,
+    NOT_YET_INSPECTED,
+    PUBLISHED_RATING_VALUES,
+    SENTINEL_STATE_BY_TEXT,
+    UNRATED,
+)
 from tools.check_migration_governance import check_governance
+
+MIGRATION_061 = (
+    Path(__file__).resolve().parents[1]
+    / "db"
+    / "migrations"
+    / "061_provider_rating_state.sql"
+)
+
+# WHEN src.normalized IN (<values>) THEN '<state>'
+_BRANCH = re.compile(
+    r"WHEN\s+src\.normalized\s+IN\s*\(([^)]*)\)\s*THEN\s+'([a-z_]+)'", re.IGNORECASE
+)
+
+
+def _sql_without_comments() -> str:
+    """Migration 061 with its ``--`` commentary stripped.
+
+    The prose deliberately *quotes* the removed ``ELSE 'rated'`` catch-all, so
+    assertions about the executable classification must ignore comments.
+    """
+
+    return "\n".join(
+        line.split("--", 1)[0] for line in MIGRATION_061.read_text(encoding="utf-8").splitlines()
+    )
+
+
+def _sql_vocabulary() -> dict[str, set[str]]:
+    """Parse the per-state IN-lists out of migration 061.
+
+    This is the SQL half of the rating-classification authority.  The Python
+    half is ``api/services/rating_states.py``; the two must classify every
+    stored value identically or a value can be ``rated`` in one and not the
+    other (the FIX 4 finding).
+    """
+    sql = _sql_without_comments()
+    groups: dict[str, set[str]] = {}
+    for raw_values, state in _BRANCH.findall(sql):
+        groups[state] = {
+            value.strip().strip("'") for value in raw_values.split(",") if value.strip()
+        }
+    return groups
+
+
+def _python_vocabulary() -> dict[str, set[str]]:
+    """The Python half of the same authority, grouped the way SQL groups it."""
+
+    groups: dict[str, set[str]] = {"rated": set(PUBLISHED_RATING_VALUES)}
+    for text, state in SENTINEL_STATE_BY_TEXT.items():
+        groups.setdefault(state, set()).add(text)
+    return groups
+
+
+def test_migration_061_rating_vocabulary_is_the_python_authority():
+    """The SQL branches must equal the Python vocabulary, state by state."""
+
+    sql_groups = _sql_vocabulary()
+
+    assert sql_groups, "migration 061 no longer classifies with IN-lists"
+    assert set(sql_groups) == {
+        "rated",
+        NOT_YET_INSPECTED,
+        NOT_PUBLISHED,
+        UNRATED,
+        NOT_APPLICABLE,
+    }
+    assert sql_groups["rated"] == set(PUBLISHED_RATING_VALUES)
+    for state in (NOT_YET_INSPECTED, NOT_PUBLISHED, UNRATED, NOT_APPLICABLE):
+        assert sql_groups[state] == {
+            text for text, mapped in SENTINEL_STATE_BY_TEXT.items() if mapped == state
+        }, state
+    assert _python_vocabulary() == sql_groups
+
+
+def test_migration_061_never_classifies_a_sentinel_as_rated():
+    """No sentinel text may appear in the 'rated' branch."""
+
+    published = _sql_vocabulary()["rated"]
+
+    assert published == set(PUBLISHED_RATING_VALUES)
+    for sentinel_text in SENTINEL_STATE_BY_TEXT:
+        assert sentinel_text not in published
+
+
+def test_migration_061_unrecognised_values_fall_back_to_unknown_not_rated():
+    """There must be no `ELSE 'rated'` catch-all asserting an unobserved rating."""
+
+    sql = _sql_without_comments()
+
+    assert re.search(r"ELSE\s+'unknown'", sql, re.IGNORECASE)
+    assert not re.search(r"ELSE\s+'rated'", sql, re.IGNORECASE)
 
 
 def test_governance_rejects_prisma_db_push(tmp_path):

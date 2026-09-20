@@ -723,20 +723,54 @@ class DeactivationDecision:
         return self.action == DEACTIVATION_DEACTIVATE
 
 
+#: ``registrationStatus`` values that are AFFIRMATIVE proof of deregistration.
+#:
+#: Source of the vocabulary — the real CQC records held in this repository, which
+#: anyone can re-check without network access:
+#:   * ``raw_providers.json`` (a 97.7 MB CQC dump) contains exactly two distinct
+#:     ``registrationStatus`` values: "Registered" (36,942 occurrences) and
+#:     "Deregistered" (26,202).
+#:   * ``artifacts/cqc-nightly/2026-09-20-reconciliation-detail.json`` holds
+#:     117 "Registered" / 71 "Deregistered", and
+#:     ``artifacts/cqc-nightly/2026-09-20-unrated-classification.json`` holds
+#:     299 "Registered" / 1 "Deregistered".
+#: No other value appears anywhere in that evidence, and the live public API was
+#: not reachable when this was written (HTTP 502), so no live confirmation of any
+#: value is claimed here. Values such as "Suspended", "Deregistering" or "Not
+#: registered" therefore have no evidence behind them and are NOT treated as
+#: deregistration proof.
+#:
+#: Deactivation therefore requires an exact (case- and whitespace-insensitive)
+#: match against this list. Substring matching is never used: "Not registered"
+#: contains "registered" and is neither affirmative proof of registration nor of
+#: deregistration, so it keeps the location ACTIVE and is counted unconfirmed.
+DEREGISTERED_STATUS_VALUES = frozenset({"deregistered"})
+
+#: ``registrationStatus`` values that are AFFIRMATIVE proof of registration,
+#: from the same evidence as ``DEREGISTERED_STATUS_VALUES``. Only these ids may
+#: be added to the finalizer's expected active count: an unrecognised status is
+#: never treated as confirmed-registered, so it can never absorb an
+#: unexplained active-set mismatch.
+REGISTERED_STATUS_VALUES = frozenset({"registered"})
+
+
 def classify_registration_status(raw_status: Any) -> tuple[str, str]:
     """Classify one live ``registrationStatus`` value into (action, class).
 
-    Only a value that positively identifies a non-registered location may
-    deactivate it. A missing or unreadable status is never proof of removal, so
-    it is classified ``unconfirmed`` and the location is left alone.
+    Deactivation requires affirmative proof of deregistration: only an exact
+    match against ``DEREGISTERED_STATUS_VALUES`` may deactivate a location.
+    Every other value — missing, empty, non-string, malformed, unfamiliar such
+    as "Suspended", or registered-like text such as "Not registered" — resolves
+    to ``DEACTIVATION_KEEP`` and is classified ``unconfirmed``, so the location
+    stays ACTIVE and the batch summary records that it was never confirmed.
     """
     status = normalize_whitespace(raw_status if isinstance(raw_status, str) else "") or ""
-    if not status:
-        return (DEACTIVATION_KEEP, CLASSIFICATION_UNCONFIRMED)
-    lowered = status.lower()
-    if "register" in lowered and "deregister" not in lowered:
+    normalized = status.casefold()
+    if normalized in DEREGISTERED_STATUS_VALUES:
+        return (DEACTIVATION_DEACTIVATE, CLASSIFICATION_DEREGISTERED)
+    if normalized in REGISTERED_STATUS_VALUES:
         return (DEACTIVATION_KEEP, CLASSIFICATION_REGISTERED)
-    return (DEACTIVATION_DEACTIVATE, CLASSIFICATION_DEREGISTERED)
+    return (DEACTIVATION_KEEP, CLASSIFICATION_UNCONFIRMED)
 
 
 def confirm_deactivation_candidates(
@@ -744,9 +778,13 @@ def confirm_deactivation_candidates(
     *,
     base_url: str,
     api_key: str | None,
-    fetch_detail: Callable[[str, str | None, str], dict[str, Any] | None] = fetch_location_detail,
+    fetch_detail: Callable[[str, str | None, str], dict[str, Any] | None] | None = None,
 ) -> list[DeactivationDecision]:
     """Confirm every candidate deactivation against the live CQC API.
+
+    ``fetch_detail`` is injectable and defaults to the live location-detail
+    fetch, resolved at call time so a test can replace the transport without
+    changing the decision logic under test.
 
     One unreadable candidate never aborts the batch and never becomes a write:
     it is recorded as ``unconfirmed`` and left ACTIVE. The caller deactivates
@@ -755,9 +793,10 @@ def confirm_deactivation_candidates(
     fails the run.
     """
     decisions: list[DeactivationDecision] = []
+    fetch = fetch_detail or fetch_location_detail
     for location_id in candidate_ids:
         try:
-            detail = fetch_detail(base_url, api_key, location_id)
+            detail = fetch(base_url, api_key, location_id)
         except Exception as exc:  # noqa: BLE001 - one unconfirmed id must not abort the batch
             decisions.append(
                 DeactivationDecision(
@@ -806,6 +845,22 @@ def summarise_deactivation_decisions(
     summary["kept_active"] = sum(1 for decision in decisions if not decision.deactivates)
     summary["not_deactivated_ids"] = [
         decision.location_id for decision in decisions if not decision.deactivates
+    ]
+    # Split the kept-active bucket: only ``confirmed_still_registered_ids`` may
+    # complete the finalizer's expected active count. ``unconfirmed_ids`` stay
+    # ACTIVE but are never absorbed into the expectation — the finalizer refuses
+    # the batch while they exist unless the operator explicitly acknowledges
+    # them, in which case it records them on the batch row and still fails on any
+    # residual mismatch.
+    summary["confirmed_still_registered_ids"] = [
+        decision.location_id
+        for decision in decisions
+        if decision.classification == CLASSIFICATION_REGISTERED
+    ]
+    summary["unconfirmed_ids"] = [
+        decision.location_id
+        for decision in decisions
+        if decision.classification == CLASSIFICATION_UNCONFIRMED
     ]
     return summary
 
@@ -896,9 +951,18 @@ def clean_location(data: dict[str, Any], *, directory_active: bool = False) -> d
         if report_url:
             break
 
-    reg_status = normalize_whitespace(data.get("registrationStatus", ""))
-    status = "ACTIVE" if directory_active else (
-        "ACTIVE" if "register" in reg_status.lower() and "deregister" not in reg_status.lower() else "INACTIVE"
+    # Deactivation requires affirmative proof of deregistration (FIX 2): only an
+    # explicit allow-listed 'Deregistered' status may turn a location INACTIVE.
+    # Every other value — unfamiliar ('Suspended'), missing, non-string or
+    # registered-like ('Not registered') — keeps the location ACTIVE and is
+    # recorded as unconfirmed so the summary shows it was never confirmed.
+    registration_action, registration_classification = classify_registration_status(
+        data.get("registrationStatus")
+    )
+    status = (
+        "ACTIVE"
+        if directory_active or registration_action == DEACTIVATION_KEEP
+        else "INACTIVE"
     )
 
     record = {
@@ -939,12 +1003,17 @@ def clean_location(data: dict[str, Any], *, directory_active: bool = False) -> d
         "last_updated": data.get("lastUpdated") or data.get("lastUpdatedDate") or data.get("lastUpdatedTimestamp"),
         # The state is always recorded, even when there is no rating to record.
         "rating_state": rating.state,
+        # Evidence only (there is no column for it): lets the batch/shard
+        # summary count locations whose registration status could not be
+        # confirmed rather than silently treating them as expected.
+        "registration_status_classification": registration_classification,
     }
+    # Only a rating the current payload itself publishes is written here. Every
+    # other case is decided by apply_rating_write_policy inside upsert_provider,
+    # which clears a stale rating column when the payload positively reports
+    # that no rating is published now, and writes nothing at all when the source
+    # could not be read.
     if is_published_value(rating.state) and rating.value is not None:
-        # Only a real published rating may reach the column. A sentinel, a
-        # blank, an omission or an evidence gap must leave the stored value
-        # alone (upsert_provider simply has no overall_rating key to write) so
-        # representation churn can never overwrite rating evidence.
         record["overall_rating"] = rating.value
     # Evidence, not columns: why the state is what it is, and the last rating
     # the source still reports. upsert_provider carries these to the rating
@@ -963,7 +1032,12 @@ ALLOWED_COLUMNS = frozenset({
     "id", "provider_id", "name", "slug", "type", "status", "registration_date",
     "address_line1", "address_line2", "town", "county", "postcode",
     "region", "local_authority", "latitude", "longitude", "phone", "website",
-    "overall_rating", "rating_state", "rating_safe", "rating_effective",
+    "overall_rating", "rating_state", "rating_state_source",
+    # FIX 1 evidence columns: the last rating the source actually published, kept
+    # separately (with its own date) so clearing ``overall_rating`` when the
+    # current payload publishes no rating loses nothing. See migration 062.
+    "last_published_rating", "last_published_rating_date",
+    "rating_safe", "rating_effective",
     "rating_caring", "rating_responsive", "rating_well_led",
     "last_inspection_date", "inspection_report_url",
     "registered_manager_absent_date", "service_types", "specialisms",
@@ -984,38 +1058,104 @@ RATING_EVIDENCE_KEYS = (
 )
 
 
+def last_published_rating_evidence(
+    source: dict[str, Any] | None,
+) -> tuple[str, str | None] | None:
+    """Return ``(rating, date)`` for evidence of the last rating the source published.
+
+    Accepts either an explicit ``last_published_rating`` field (the dedicated
+    evidence column) or a legacy ``overall_rating`` still holding a real
+    published rating. A sentinel, a blank or a non-string never counts: only a
+    value ``stored_rating_is_published`` accepts is retained, and the date is
+    only ever one we were given (never invented).
+    """
+    if not source:
+        return None
+    rating = source.get("last_published_rating")
+    if not isinstance(rating, str) or not rating.strip():
+        rating = source.get("overall_rating")
+    if not isinstance(rating, str) or not stored_rating_is_published(rating):
+        return None
+    date = source.get("last_published_rating_date")
+    date_text = str(date).strip() if date else None
+    return (rating.strip(), date_text or None)
+
+
 def apply_rating_write_policy(
     safe_record: dict[str, Any],
     existing: dict[str, Any] | None,
+    *,
+    full_record: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Decide what one cleaned record may write to the rating column.
+    """Decide what one cleaned record may write to the rating columns.
 
-    ``clean_location`` carries an ``overall_rating`` key only when the source
-    published a real rating, so a missing rating can never overwrite a stored
-    one. The single exception is the mirror image of the old defect: a row
-    whose stored value is itself representation garbage ('', or a sentinel
-    written by the old behaviour) while the source positively reports that the
-    location has no current rating. Leaving that value in a rating column is
-    what kept re-reading representation churn as rating movement, so it is
-    cleared to NULL.
+    ``safe_record`` holds the columns this write may touch. ``full_record`` is
+    the whole cleaned record, which also carries the rating evidence that has no
+    column of its own (``rating_report_date``, ``historic_rating``,
+    ``historic_rating_date``) — it is read here, never written to the table.
 
-    A real stored rating is never touched, an evidence gap ('unknown') never
-    writes at all, and a rating value is never invented here.
+    The current source payload is the only authority for what is published
+    *now*:
+
+    * the payload published a rating -> ``overall_rating`` holds it, and the
+      last-published evidence columns are refreshed with the source's own
+      publication date;
+    * the payload positively reports the location is not currently rated (a
+      sentinel such as ``Not Yet Inspected``, or any other non-rated state) ->
+      ``overall_rating`` is cleared to NULL. Leaving the previous value there
+      asserted a rating the source no longer publishes, which suppressed the
+      real rated -> not-currently-rated transition and produced a false movement
+      later. The old value is preserved as ``last_published_rating`` (+ date),
+      which is evidence about the past and is never read as the current rating;
+    * the payload could not be read ('unknown') -> no rating column is written:
+      an evidence gap is not a statement about the rating, and the recorded
+      state ('unknown') already stops the event classifier treating the row as
+      rated.
+
+    A rating value is never invented here, and a negative claim is only ever
+    made from the payload's own state.
     """
-    if "overall_rating" in safe_record or "rating_state" not in safe_record:
-        return safe_record
-    if safe_record["rating_state"] not in NON_RATED_STATES:
-        # 'unknown' means we could not read the source, which is not a
-        # statement that the location has no rating.
-        return safe_record
-    if not existing:
-        return safe_record
-    stored = existing.get("overall_rating")
-    if stored is None or stored_rating_is_published(stored):
+    if "rating_state" not in safe_record:
         return safe_record
 
     amended = dict(safe_record)
+    # Provenance marker: what wrote this rating_state. Migration 061 only backfills
+    # rows still marked 'unclassified', so stamping 'pipeline' here is what keeps
+    # that one-time backfill from ever rewriting a row ingestion has cleaned.
+    amended["rating_state_source"] = "pipeline"
+    state = safe_record["rating_state"]
+    # The evidence that has no column of its own travels on the whole record.
+    payload_evidence = full_record or {}
+
+    if is_published_value(state) and safe_record.get("overall_rating"):
+        amended["last_published_rating"] = safe_record["overall_rating"]
+        report_date = payload_evidence.get("rating_report_date")
+        if report_date:
+            amended["last_published_rating_date"] = report_date
+        return amended
+
+    if state not in NON_RATED_STATES:
+        # 'unknown': we could not read the source, which is not a statement
+        # that the location has no rating.
+        return amended
+
+    # The source positively says no rating is published right now: stop
+    # asserting one, and keep what it last published as labelled evidence.
     amended["overall_rating"] = None
+    evidence = last_published_rating_evidence(existing) or last_published_rating_evidence(
+        {
+            "last_published_rating": payload_evidence.get("historic_rating"),
+            "last_published_rating_date": payload_evidence.get("historic_rating_date"),
+        }
+    )
+    if evidence:
+        amended["last_published_rating"] = evidence[0]
+        # The recorded date wins; the payload's own historic date is used only
+        # to date what we know when the row had no date of its own. Neither is
+        # invented.
+        date = evidence[1] or payload_evidence.get("historic_rating_date")
+        if date:
+            amended["last_published_rating_date"] = date
     return amended
 
 
@@ -1038,6 +1178,10 @@ def upsert_provider(cur, record: dict[str, Any]) -> str:
         "id", "provider_id", "overall_rating", "rating_state", "status",
         "ownership_type", "name", "slug", "town", "postcode", "region",
         "registration_date", "last_inspection_date", "last_updated",
+        # Read the last-published evidence too: when the incoming payload
+        # publishes no current rating, that evidence is what preserves the value
+        # as history instead of leaving it asserting a current rating.
+        "last_published_rating", "last_published_rating_date",
     )
     cur.execute(
         f"SELECT {', '.join(existing_columns)} FROM care_providers WHERE id = %s",
@@ -1048,7 +1192,7 @@ def upsert_provider(cur, record: dict[str, Any]) -> str:
         dict(zip(existing_columns, existing_row, strict=True)) if existing_row else None
     )
 
-    safe_record = apply_rating_write_policy(safe_record, existing)
+    safe_record = apply_rating_write_policy(safe_record, existing, full_record=record)
 
     # Generate slug for new inserts; never overwrite an existing slug on update
     if not existing and not safe_record.get("slug"):
@@ -1789,7 +1933,7 @@ def _finalize_batch(args: argparse.Namespace, conn, cur) -> int:
     # refused legitimate batches whenever the poll flipped a location inside the batch
     # window. Divergence is bounded instead: an unexplained loss above
     # MAX_ACTIVE_COUNT_DROP_RATIO still refuses the batch, and the end-state equality below
-    # is retargeted to the covered count. Counting ACTIVE rows rather than selecting rows
+    # is retargeted to the covered count.
     # The three-way split below keeps a missing row, a NULL status and any status other than
     # ACTIVE/INACTIVE out of the tolerated divergence: the source poll always writes a status,
     # so it cannot account for them, and they still fail closed.
@@ -1872,9 +2016,44 @@ def _finalize_batch(args: argparse.Namespace, conn, cur) -> int:
         decisions = []
     deactivation_summary = summarise_deactivation_decisions(decisions)
     deactivation_ids = [decision.location_id for decision in decisions if decision.deactivates]
-    # Locations confirmed as still registered were ACTIVE before and stay
-    # ACTIVE: count them in the expectation instead of relaxing the guard.
-    expected_active += deactivation_summary["kept_active"]
+    unconfirmed_ids = list(deactivation_summary["unconfirmed_ids"])
+    # FIX 3: only ids the live API affirmatively confirmed as still REGISTERED
+    # may complete the expectation. A candidate whose status was missing,
+    # non-string, malformed, unfamiliar ("Suspended") or unreadable (API error)
+    # stays ACTIVE — we never deactivate on a guess — but it is never absorbed
+    # into the expectation either, because absorbing it would let an API failure
+    # or an unfamiliar status silently become the explanation for a change in
+    # the active set, which is precisely what this guard exists to catch.
+    confirmed_still_registered = len(deactivation_summary["confirmed_still_registered_ids"])
+    acknowledged_unconfirmed = 0
+    if unconfirmed_ids:
+        if not getattr(args, "acknowledge_unconfirmed_deactivations", False):
+            raise ChangesFetchError(
+                "Batch finalization refused: "
+                f"{len(unconfirmed_ids)} deactivation candidate(s) could not be confirmed as "
+                "deregistered against the live CQC API (unconfirmed ids: "
+                f"{', '.join(unconfirmed_ids[:10])}"
+                f"{', ...' if len(unconfirmed_ids) > 10 else ''}). They remain ACTIVE and are "
+                "NOT counted as expected; re-run with "
+                "--acknowledge-unconfirmed-deactivations to record them as explicitly "
+                "unconfirmed and finalize anyway."
+            )
+        acknowledged_unconfirmed = len(unconfirmed_ids)
+    # Every ACTIVE row after this transaction must be accounted for by exactly
+    # one of: a manifest location, an API-confirmed still-registered candidate,
+    # or an unconfirmed candidate the operator explicitly acknowledged (recorded
+    # on the batch row below).
+    #
+    # Deactivated candidates deliberately do NOT appear here: they were never
+    # counted in ``active_manifest_covered`` (they are active rows *absent* from
+    # the manifest), so they leave the ACTIVE set without changing this
+    # expectation. Subtracting them would understate the expectation and let a
+    # real divergence through — the failure mode this guard exists to catch.
+    expected_active = (
+        active_manifest_covered
+        + confirmed_still_registered
+        + acknowledged_unconfirmed
+    )
     for location_id in deactivation_ids:
         upsert_provider(cur, {"id": location_id, "status": "INACTIVE"})
     deactivated = len(deactivation_ids)
@@ -1883,19 +2062,43 @@ def _finalize_batch(args: argparse.Namespace, conn, cur) -> int:
     active_after = int(cur.fetchone()[0])
     if active_after != expected_active:
         raise ChangesFetchError(
-            "Final active-location count does not match the authoritative manifest."
+            "Final active-location count does not match the authoritative manifest: "
+            f"expected {expected_active} (manifest_active={active_manifest_covered}, "
+            f"confirmed_registered={confirmed_still_registered}, "
+            f"acknowledged_unconfirmed={acknowledged_unconfirmed}, deactivated={deactivated}) "
+            f"but found {active_after}."
         )
     inserted = sum(int(row[4]) for row in shards)
     updated = sum(int(row[5]) for row in shards)
+    deactivation_record = {
+        **deactivation_summary,
+        # FIX 3: the operator acknowledgement and the unconfirmed ids are
+        # recorded on the batch row itself, so a reader can see exactly which
+        # active locations the batch could not confirm.
+        "unconfirmed_count": len(unconfirmed_ids),
+        "unconfirmed_ids": unconfirmed_ids,
+        "acknowledged": bool(acknowledged_unconfirmed),
+        "expected_active_after": expected_active,
+        "active_after": active_after,
+    }
     cur.execute(
         """
         UPDATE reconciliation_batches
         SET status = 'completed', completed_at = NOW(), active_records_after = %s,
             records_inserted = %s, records_updated = %s, records_deactivated = %s,
+            deactivation_unconfirmed_count = %s, deactivation_confirmation = %s,
             error_message = NULL
         WHERE id = %s
         """,
-        (active_after, inserted, updated, deactivated, str(batch_id)),
+        (
+            active_after,
+            inserted,
+            updated,
+            deactivated,
+            len(unconfirmed_ids),
+            Json(deactivation_record),
+            str(batch_id),
+        ),
     )
     cur.execute(
         """
@@ -2110,6 +2313,16 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--base-url", default=DEFAULT_BASE_URL, help="CQC API base URL")
     parser.add_argument("--sleep", type=float, default=DEFAULT_SLEEP, help="Sleep between API calls")
     parser.add_argument("--dry-run", action="store_true", help="Show changes without writing to DB")
+    parser.add_argument(
+        "--acknowledge-unconfirmed-deactivations",
+        action="store_true",
+        help=(
+            "Finalize even when a deactivation candidate's live registration status could not "
+            "be confirmed as deregistered. Unconfirmed candidates stay ACTIVE; their ids and "
+            "count are recorded on the batch row and are never absorbed into the expected "
+            "active count, so a residual mismatch still refuses the batch."
+        ),
+    )
     parser.add_argument("--database-url", help="PostgreSQL connection URL")
     parser.add_argument(
         "--phase",

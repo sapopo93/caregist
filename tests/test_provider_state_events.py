@@ -20,6 +20,7 @@ from api.services.provider_state_events import (
     RATING_STATUS_EVENT,
     build_provider_state_events,
 )
+from incremental_update import apply_rating_write_policy, clean_location
 
 
 OBSERVED_AT = datetime(2026, 7, 30, 12, 0, tzinfo=timezone.utc)
@@ -259,19 +260,59 @@ def test_sentinel_to_published_rating_is_a_status_event_with_no_previous_rating(
     assert events[0].metadata["destination_evidenced"] is True
 
 
-def test_published_rating_to_no_current_rating_is_evidenced_and_not_a_change():
-    """The 2026-09 shape: the rating is withdrawn while a historic one is published."""
+def _stored_after_payload(payload, existing=None):
+    """Merge one CQC payload into a stored row the way ``upsert_provider`` does.
 
-    previous = _rated("Good")
-    current = {
-        "id": "LOC1",
-        "overall_rating": None,
-        "rating_state": "not_published",
-        "historic_rating": "Good",
-        "historic_rating_date": "2025-01-05",
-        "rating_report_date": "2026-09-10",
-        "last_updated": "2026-09-16T08:00:00Z",
-    }
+    The payload goes through the real ``clean_location`` and the real
+    ``apply_rating_write_policy`` (the same call ``upsert_provider`` makes with
+    ``full_record=record``); only the SQL round-trip is skipped. Hand-building
+    the stored row instead would bypass the decision under test.
+    """
+    cleaned = clean_location(payload)
+    assert cleaned is not None
+    written = apply_rating_write_policy(cleaned, existing, full_record=cleaned)
+    return {**(existing or {}), **written}
+
+
+RATED_PAYLOAD = {
+    "locationId": "LOC1",
+    "name": "Alpha Care",
+    "registrationStatus": "Registered",
+    "currentRatings": {"overall": {"rating": "Good", "reportDate": "2026-02-01"}},
+    "lastUpdated": "2026-03-01T08:00:00Z",
+}
+
+WITHDRAWN_PAYLOAD = {
+    **RATED_PAYLOAD,
+    # The source no longer publishes a current overall rating, and still
+    # publishes the historic rating it withdrew.
+    "currentRatings": {},
+    "historicRatings": [{"overall": {"rating": "Good"}, "date": "2025-01-05"}],
+    "lastUpdated": "2026-09-16T08:00:00Z",
+}
+
+
+def test_published_rating_withdrawn_by_the_source_is_a_real_transition_not_a_carry_forward():
+    """The 2026-09 shape, driven through the real clean/merge path.
+
+    The source stops publishing a current overall rating: the stored row must
+    stop asserting one, keep the withdrawn rating as labelled evidence with its
+    date, and the classifier must report the real rated -> not current
+    transition rather than a carried-forward value.
+    """
+    previous = _stored_after_payload(RATED_PAYLOAD)
+    assert previous["overall_rating"] == "Good"
+    assert previous["rating_state"] == "rated"
+
+    current = _stored_after_payload(WITHDRAWN_PAYLOAD, previous)
+
+    assert current["overall_rating"] is None
+    assert current["rating_state"] == "not_published"
+    assert current["last_published_rating"] == "Good"
+    # The row's own recorded publication date wins over the historic entry's
+    # date (2025-01-05): the merge does not overwrite a date it already knows.
+    assert current["last_published_rating_date"] == "2026-02-01"
+    assert current["rating_report_date"] == "2025-01-05"
 
     events = build_provider_state_events(previous, current, observed_at=OBSERVED_AT)
 
@@ -284,7 +325,31 @@ def test_published_rating_to_no_current_rating_is_evidenced_and_not_a_change():
     assert event.metadata["destination_evidenced"] is True
     assert event.metadata["incomplete"] is False
     assert event.metadata["historic_rating"] == "Good"
-    assert event.metadata["publication_date"] == "2026-09-10"
+    # The event is dated by the current payload: the source now reports only
+    # the historic entry, and its date is what the source publishes today.
+    assert event.metadata["publication_date"] == "2025-01-05"
+
+    # A later genuine rating must move from the recorded state, never from the
+    # withdrawn value: not_published -> rated, with no rating_changed event
+    # pretending "Good" was still the live rating.
+    republished = _stored_after_payload(
+        {
+            **WITHDRAWN_PAYLOAD,
+            "currentRatings": {
+                "overall": {"rating": "Requires Improvement", "reportDate": "2026-10-01"}
+            },
+        },
+        current,
+    )
+    assert republished["overall_rating"] == "Requires Improvement"
+
+    again = build_provider_state_events(current, republished, observed_at=OBSERVED_AT)
+
+    assert [event.event_type for event in again] == [RATING_STATUS_EVENT]
+    assert again[0].old_value == "not_published"
+    assert again[0].new_value == "rated"
+    assert again[0].metadata["destination_rating"] == "Requires Improvement"
+    assert "rating_changed" not in {event.event_type for event in again}
 
 
 def test_previous_rating_evidenced_only_by_historic_data_is_labelled_as_such():

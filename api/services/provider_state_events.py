@@ -162,18 +162,66 @@ def _stored_rating_state(record: dict[str, Any]) -> str | None:
     return None
 
 
+def _last_published_evidence(
+    record: dict[str, Any] | None,
+) -> tuple[str | None, str | None]:
+    """Return ``(rating, date)`` of the last rating the source published, if held.
+
+    ``care_providers.last_published_rating`` is evidence about the past, kept
+    deliberately separate from the current rating columns. Only a real published
+    rating counts here, so a sentinel can never be promoted back into a rating
+    claim.
+    """
+    if not record:
+        return (None, None)
+    raw = record.get("last_published_rating")
+    if not isinstance(raw, str) or not raw.strip():
+        return (None, None)
+    state, value = classify_rating(
+        raw,
+        current_ratings_present=False,
+        historic_rating_present=True,
+    )
+    if not (is_published_value(state) and value is not None):
+        return (None, None)
+    stored_date = record.get("last_published_rating_date")
+    return (value, str(stored_date) if stored_date else None)
+
+
 def _rating_observation(record: dict[str, Any] | None) -> tuple[str, str | None]:
     """Return ``(state, published_value_or_None)`` for one side of a transition.
 
-    The stored rating column is authoritative when it holds a real rating or a
-    sentinel; when it is blank (the representation the old pipeline wrote for
-    "no rating in this payload"), the recorded ``rating_state`` is the
-    secondary evidence so an existing row does not look like it just changed
-    state. A published value is returned only for the ``rated`` state.
+    The row's recorded ``rating_state`` is authoritative, because it is written
+    from the *current* source payload. The stored rating column is only
+    consulted when there is no usable recorded state (a legacy row written
+    before states existed). Trusting the column first was the defect: a value
+    left in the column by an earlier payload suppressed the real
+    rated -> not-currently-rated transition and then invented a movement when
+    the source published a rating again. A published value is returned only for
+    the ``rated`` state.
     """
     if not record:
         return (UNKNOWN, None)
 
+    recorded = _stored_rating_state(record)
+    if recorded is not None:
+        if is_published_value(recorded):
+            value = record.get("overall_rating")
+            return (
+                recorded,
+                value if isinstance(value, str) and value.strip() else None,
+            )
+        if recorded != UNKNOWN:
+            # A recorded non-rated state (a sentinel) names itself. The column
+            # is not allowed to override it.
+            return (recorded, None)
+        # 'unknown': we could not read the source for this row. That is an
+        # evidence gap, not a statement about the rating, so an old value still
+        # sitting in the column must not be read as a current rating.
+        return (UNKNOWN, None)
+
+    # No usable recorded state at all (legacy row): fall back to the column,
+    # which may name a real rating or a sentinel the old behaviour left there.
     state, value = classify_rating(
         record.get("overall_rating"),
         current_ratings_present=True,
@@ -182,15 +230,7 @@ def _rating_observation(record: dict[str, Any] | None) -> tuple[str, str | None]
     if is_published_value(state) and value is not None:
         return (state, value)
     if state != UNKNOWN:
-        # A sentinel left in the column by the old behaviour still names its
-        # own non-rated state.
         return (state, None)
-
-    recorded = _stored_rating_state(record)
-    if recorded is not None and not is_published_value(recorded):
-        return (recorded, None)
-    # Blank column, no usable recorded state (or a contradictory 'rated' with
-    # no value): the honest answer is that we cannot classify it.
     return (UNKNOWN, None)
 
 
@@ -202,6 +242,8 @@ def _rating_metadata(
     current_value: str | None,
     *,
     movement: bool,
+    previous_last_published: str | None = None,
+    previous_last_published_date: str | None = None,
 ) -> dict[str, Any]:
     """Evidence bundle stored with a rating-scoped event.
 
@@ -217,9 +259,22 @@ def _rating_metadata(
         current_ratings_present=False,
         historic_rating_present=True,
     )
+    last_published_value, last_published_date = _last_published_evidence(current)
 
     previous_rating = previous_value
+    previous_rating_date = current.get("rating_report_date") if previous_value else None
     previous_source = "care_providers.overall_rating" if previous_value else None
+    if (
+        previous_rating is None
+        and not is_published_value(previous_state)
+        and previous_last_published
+    ):
+        # The row no longer asserts a current rating, but it holds the last
+        # rating the source did publish, with its own date. Recorded as labelled
+        # evidence of the value being left behind — never as a current rating.
+        previous_rating = previous_last_published
+        previous_rating_date = previous_last_published_date
+        previous_source = "care_providers.last_published_rating"
     if (
         previous_rating is None
         and not is_published_value(previous_state)
@@ -241,6 +296,7 @@ def _rating_metadata(
         "previous_rating": previous_rating,
         "previous_rating_state": previous_state,
         "previous_rating_source": previous_source,
+        "previous_rating_date": previous_rating_date,
         "destination_rating": current_value,
         "destination_rating_state": current_state,
         "destination_evidenced": destination_evidenced,
@@ -248,6 +304,11 @@ def _rating_metadata(
         "historic_rating": historic_raw if has_historic else None,
         "historic_rating_state": historic_state if has_historic else None,
         "historic_rating_date": current.get("historic_rating_date"),
+        # The last rating the source actually published, kept as its own labelled
+        # evidence (with its own date) so clearing the current rating when the
+        # source stops publishing one loses nothing.
+        "last_published_rating": last_published_value,
+        "last_published_rating_date": last_published_date,
         "publication_date": publication_date,
         "observed_at": current.get("last_updated"),
         "source_reference": current.get("source_url")
@@ -275,6 +336,10 @@ def _rating_transition_event(
     """
     previous_state, previous_value = _rating_observation(previous)
     current_state, current_value = _rating_observation(current)
+    # Evidence of what the row says the source last published. Kept separate
+    # from the current rating: it names the value being left behind when the row
+    # itself can no longer evidence one, and the event records it as such.
+    previous_last_published, previous_last_published_date = _last_published_evidence(previous)
 
     if is_published_value(previous_state) and is_published_value(current_state):
         if normalize_rating_text(previous_value) == normalize_rating_text(current_value):
@@ -295,6 +360,8 @@ def _rating_transition_event(
                 current_state,
                 current_value,
                 movement=True,
+                previous_last_published=previous_last_published,
+                previous_last_published_date=previous_last_published_date,
             ),
         )
 
@@ -315,6 +382,8 @@ def _rating_transition_event(
             current_state,
             current_value,
             movement=False,
+            previous_last_published=previous_last_published,
+            previous_last_published_date=previous_last_published_date,
         ),
     )
 
