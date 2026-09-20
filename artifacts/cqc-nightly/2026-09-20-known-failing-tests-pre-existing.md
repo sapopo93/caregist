@@ -45,7 +45,13 @@ the privilege error.
 
 * Status: **pre-existing defect in the test environment**, outside the CQC nightly brief.
 * Not fixed here, and not repaired by weakening anything.
-* Owner/next action (for the operator): the harness needs a superuser connection to build the schema and
-  a separate non-superuser owner/worker connection for the RLS assertions — one throwaway cluster role
-  cannot satisfy both. Until then, a fully green `pytest tests` is not achievable locally.
+* CORRECTION (added after the second independent review of the ratings workstream): the claim in the
+  original version of this section — that a fully green `pytest tests` is not achievable locally — was
+  **wrong**. The reviewer created a temporary non-superuser, non-bypass role, used the fixture's separate
+  admin URL, and the full nine-test file then reported **9 passed in 1.85s**; a second standalone
+  non-superuser schema probe also passed. The claimed `permission denied for language c` failure was not
+  reproduced in this environment.
+* Owner/next action (for the operator): connect the harness's schema-build path with the admin role and
+  its RLS assertions with a non-superuser role. That is the whole fix; no code change is implied by these
+  two failures.
 * The relevant CQC suite is green: `222 passed in 7.91s` at `3456195` (independently re-run).
