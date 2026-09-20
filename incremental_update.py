@@ -794,7 +794,20 @@ def confirm_deactivation_candidates(
     """
     decisions: list[DeactivationDecision] = []
     fetch = fetch_detail or fetch_location_detail
-    for location_id in candidate_ids:
+    total = len(candidate_ids)
+    if total:
+        # A confirmation phase that printed nothing for 29 minutes cost a whole
+        # batch on 2026-09-20 (run 35510678221): the job was cancelled at its
+        # timeout and its log could not say how far the phase had got. Name the
+        # phase before the first request and report progress as it advances, so
+        # the next slow confirmation is diagnosable from CI output alone.
+        print(
+            f"Confirming {total} deactivation candidate(s) against the live CQC API...",
+            flush=True,
+        )
+    for index, location_id in enumerate(candidate_ids, start=1):
+        if index % 25 == 0:
+            print(f"  ...confirmed {index - 1}/{total} candidate(s)", flush=True)
         try:
             detail = fetch(base_url, api_key, location_id)
         except Exception as exc:  # noqa: BLE001 - one unconfirmed id must not abort the batch

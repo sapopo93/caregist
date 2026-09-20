@@ -285,7 +285,17 @@ jobs:
     if: github.event_name == 'schedule' || inputs.dry_run == false
     needs: [prepare, shards]
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # 60, not 30. This job confirms every deactivation candidate against the
+    # live CQC API one request at a time, immediately after the shards have been
+    # hammering the same API for hours. On 2026-09-20 a 127-candidate batch spent
+    # 29m37s in that confirmation work and was cancelled by the old 30-minute cap
+    # (run 35510678221) having written nothing, losing the batch and leaving the
+    # freshness surface degraded. The cap is an operational bound, not a
+    # correctness gate: the fail-closed refusal for unconfirmed candidates and
+    # the identity-equality guard are both untouched by this value. Prior
+    # finalizes with few candidates took 42s and 75s, so this is headroom for a
+    # legitimate slow path rather than a threshold lowered to obtain a pass.
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
