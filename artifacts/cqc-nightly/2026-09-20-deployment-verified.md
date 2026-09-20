@@ -88,3 +88,41 @@ EXPORT_GUARD: OK - anonymous export access is blocked with HTTP 401
 
 `DEPLOYMENT: DONE and VERIFIED.` The CQC *repair* work remains `NOT READY` — it is blocked on the
 operator's equality-boundary decision and on authorising a production data run.
+
+## Addendum — 11:01 BST: a pre-fix production run was stopped *before* its finalize step
+
+Verifying the deploy rather than trusting the pipeline status surfaced a live production run:
+**`35497685490`** (`schedule` event, created `2026-09-20T07:44:37Z`, pinned to **`e38841c`** — the
+pre-merge `main`). Direct inspection:
+
+- `git show e38841c:incremental_update.py` -> **0 x `SHARE ROW EXCLUSIVE`**, **0 x `DEREGISTERED_STATUS_VALUES`**
+- `git show 565f2f2:incremental_update.py` -> both present (`:2206` lock, `:2205` `SET LOCAL lock_timeout = '5s'`, `:747` fail-closed classifier)
+
+So production was about to apply the **fail-open** classification logic — the logic whose defects are
+measured at 57 Registered-but-INACTIVE and 67 deregistered-but-ACTIVE (124 confirmed) — to live
+care-location records. 3 of 8 shards had completed; four were in progress, one queued; **`finalize`
+(the committing step) had not started.**
+
+**Action: cancelled before finalize.** Evidence read back after the cancel, not inferred:
+
+| Check | Result |
+|---|---|
+| `finalize` job | `completed / cancelled` — no batch committed |
+| `abort-incomplete` (workflow's designed clean-abort path) | `completed / success` |
+| Live `totalSourceLocations` | **57,151** — identical to the 09:47Z pre-cancel read |
+| Live release identity | `565f2f2472a19dd7a63de4dacd20b4eb2c1d156f` (deploy intact) |
+
+**Not re-dispatched.** Starting a fresh production run is a live change and requires the operator's
+approval; the next scheduled tick (cron `15 2 * * 3` -> Wednesday **2026-09-23 02:15 UTC**) runs the
+fixed code automatically. Re-dispatch is available on one word.
+
+**Consequence, stated plainly:** the 09-20 refresh did not complete, so the newest ingested snapshot
+remains the 2026-09-16 CSV. The 8-day `SOURCE_FRESHNESS_SLA` still holds to 2026-09-24 — but the
+margin is now three days rather than nine. The 124 wrong statuses remain wrong: the guard prevents new
+corruption, it does not repair existing rows.
+
+Rationale for acting without an answer: the operator decision form timed out. Cancelling is the
+**reversible** side of an asymmetric risk — it destroys no data and is re-dispatchable — whereas a bad
+finalize cannot be undone without a full repair exercise. It is also consistent with the fail-closed
+posture this deployment installs: a pipeline that now refuses rather than assumes should not itself be
+permitted to finalize on logic already judged defective.
