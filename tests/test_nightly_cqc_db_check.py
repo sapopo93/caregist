@@ -13,6 +13,7 @@ things that made earlier reports lie:
 
 from __future__ import annotations
 
+import hashlib
 import importlib.util
 import json
 import sys
@@ -359,9 +360,31 @@ def test_pipeline_health_matched_only_when_every_documented_promise_holds():
         now=NOW,
     )
     fresh = {
-        "signal": {"within_sla": True, "age_hours": 2.0, "sla_hours": 16.0},
-        "ingested_source": {"within_sla": True, "age_hours": 20.0, "published_at": "2026-09-19", "sla_hours": 192.0},
+        "signal": {"within_sla": True, "evaluated": True, "age_hours": 2.0, "sla_hours": 16.0},
+        "ingested_source": {
+            "within_sla": True,
+            "evaluated": True,
+            "age_hours": 20.0,
+            "published_at": "2026-09-19",
+            "sla_hours": 192.0,
+        },
     }
+    sweep = nightly.sweep_coverage(
+        2000, runs_per_week=28, sweep_size=nightly.derive_cadence(now=NOW)["sweep_size"]
+    )
+    assert (
+        nightly.pipeline_health_verdict(
+            coverage=coverage,
+            sweep=sweep,
+            freshness=fresh,
+            observed_sweep=None,
+            run_history_status="ok",
+            drift_notes=[],
+        )["verdict"]
+        == nightly.VERDICT_MATCHED
+    )
+    # MATCHED is only for promises that were actually evaluated: no sweep estimate
+    # means the sweep-interval promise was never checked, so it cannot be claimed.
     assert (
         nightly.pipeline_health_verdict(
             coverage=coverage,
@@ -371,7 +394,34 @@ def test_pipeline_health_matched_only_when_every_documented_promise_holds():
             run_history_status="ok",
             drift_notes=[],
         )["verdict"]
-        == nightly.VERDICT_MATCHED
+        == nightly.VERDICT_UNVERIFIED
+    )
+    # a promise that was never evaluated is UNVERIFIED, not silently green
+    assert (
+        nightly.pipeline_health_verdict(
+            coverage=coverage,
+            sweep=sweep,
+            freshness={"signal": {"within_sla": None, "evaluated": False}, "ingested_source": {}},
+            observed_sweep=None,
+            run_history_status="ok",
+            drift_notes=[],
+        )["verdict"]
+        == nightly.VERDICT_UNVERIFIED
+    )
+    # a promise that was evaluated and broken is MISMATCHED, not UNVERIFIED
+    assert (
+        nightly.pipeline_health_verdict(
+            coverage=coverage,
+            sweep=sweep,
+            freshness={
+                "signal": {"within_sla": False, "evaluated": True, "age_hours": 30.0, "sla_hours": 16.0},
+                "ingested_source": {"within_sla": True, "evaluated": True},
+            },
+            observed_sweep=None,
+            run_history_status="ok",
+            drift_notes=[],
+        )["verdict"]
+        == nightly.VERDICT_MISMATCHED
     )
 
 
@@ -622,3 +672,406 @@ def test_rendered_report_labels_both_verdicts_separately():
         assert label in markdown
     assert "24" in markdown and "27" in markdown  # numerator and denominator both printed
     assert "identifier-level reconciliation against the latest available validated snapshot" in markdown
+
+
+# --------------------------------------------------------------------------
+# 9. corrective commit for the independent FAIL review of 5dc1759
+#    (reviewer gpt-5.6-sol: 2 high, 3 medium, 2 low - one test per finding)
+# --------------------------------------------------------------------------
+REVIEW_CHANGE_AT = datetime(2026, 9, 15, 10, 38, tzinfo=UTC)
+REVIEW_START = datetime(2026, 9, 13, 4, 37, tzinfo=UTC)
+REVIEW_END = datetime(2026, 9, 20, 4, 37, tzinfo=UTC)
+REVIEW_NOW = datetime(2026, 9, 20, 4, 10, tzinfo=UTC)
+OLD_CRON = "7,37 * * * *"
+NEW_CRON = "7 18,21,0,3 * * *"
+CACHE_DIR = REPO_ROOT / "artifacts" / "cqc-nightly" / "cache"
+
+
+def _epoch(crons, effective_from):
+    return nightly.ScheduleEpoch(
+        crons=tuple(crons), effective_from=effective_from, commit="fixture", source="test fixture"
+    )
+
+
+def _straddling_epochs():
+    """The two schedules the 2026-09-13..2026-09-20 window actually straddles."""
+    return [_epoch([OLD_CRON], None), _epoch([NEW_CRON], REVIEW_CHANGE_AT)]
+
+
+def _review_coverage(runs=(), *, epochs=None, db_statuses=None):
+    return nightly.poll_coverage(
+        list(runs),
+        epochs=_straddling_epochs() if epochs is None else epochs,
+        window_start=REVIEW_START,
+        window_end=REVIEW_END,
+        now=REVIEW_NOW,
+        db_statuses=db_statuses,
+    )
+
+
+def _clean_coverage(*, epochs=None, db_statuses=None):
+    """Every in-force tick in the window ran, so nothing but the tested factor moves.
+
+    Without this the fixtures inherit a window full of missed ticks, and a
+    MISMATCHED verdict would prove nothing about the promise under test.
+    """
+    epochs = _straddling_epochs() if epochs is None else epochs
+    due: list[datetime] = []
+    for index, epoch in enumerate(epochs):
+        start = REVIEW_START if epoch.effective_from is None else max(REVIEW_START, epoch.effective_from)
+        end = REVIEW_END
+        if index + 1 < len(epochs) and epochs[index + 1].effective_from is not None:
+            end = min(end, epochs[index + 1].effective_from)
+        for expression in epoch.crons:
+            due.extend(nightly.parse_cron(expression).fires_between(start, end))
+    due = sorted({fire for fire in due if fire <= REVIEW_NOW - nightly.MISSED_GRACE})
+    if db_statuses is None:
+        db_statuses = {"completed": len(due), "partial": 0, "failed": 0, "total": len(due)}
+    coverage = nightly.poll_coverage(
+        [_run(fire) for fire in due],
+        epochs=epochs,
+        window_start=REVIEW_START,
+        window_end=REVIEW_END,
+        now=REVIEW_NOW,
+        db_statuses=db_statuses,
+    )
+    assert coverage["missed"]["runs"] == 0, coverage["missed"]
+    return coverage
+
+
+def _fresh(**overrides):
+    block = {
+        "signal": {"within_sla": True, "evaluated": True, "age_hours": 2.0, "sla_hours": 16.0},
+        "ingested_source": {
+            "within_sla": True,
+            "evaluated": True,
+            "age_hours": 20.0,
+            "published_at": "2026-09-16",
+            "sla_hours": 192.0,
+        },
+    }
+    block.update(overrides)
+    return block
+
+
+def _sweep_within_sla():
+    cadence = nightly.derive_cadence(now=NOW)
+    return nightly.sweep_coverage(2000, runs_per_week=cadence["runs_per_week"], sweep_size=cadence["sweep_size"])
+
+
+def _health(coverage, freshness):
+    return nightly.pipeline_health_verdict(
+        coverage=coverage,
+        sweep=_sweep_within_sla(),
+        freshness=freshness,
+        observed_sweep=None,
+        run_history_status="ok",
+        drift_notes=[],
+    )
+
+
+def test_high1_a_window_spanning_a_cadence_change_sums_every_schedule_in_force():
+    """HIGH 1: 5dc1759 applied today's cron across a window that straddles a change.
+
+    The review's arithmetic: 28 expected / 4 missed was the answer for one
+    schedule, while the window in force held two - 108 old-cadence fires plus 20
+    from the new cadence.
+    """
+    coverage = _review_coverage()
+    assert coverage["expected"]["runs"] == 129
+    assert [row["fires"] for row in coverage["expected"]["epochs"]] == [109, 20]
+    assert coverage["expected"]["schedule_history_available"] is True
+    assert coverage["expected"]["derivation"].endswith("summed per schedule epoch")
+    assert coverage["cadence_change"]["expected_runs"] == 20
+
+
+def test_high1_one_epoch_matches_the_reviewed_reports_28_expected():
+    """The reviewed report's 28/4 is only right when one schedule covers the window."""
+    single = _review_coverage(epochs=[_epoch([NEW_CRON], None)])
+    assert single["expected"]["runs"] == 28
+    assert "cadence_change" not in single
+
+
+def test_high1_an_unreadable_schedule_history_is_loud_and_unverified():
+    """No git history means the expectation is not backed by the schedules in force."""
+    coverage = nightly.poll_coverage(
+        [],
+        schedules=_schedules(),
+        window_start=REVIEW_START,
+        window_end=REVIEW_END,
+        now=REVIEW_NOW,
+    )
+    assert coverage["expected"]["runs"] == 28
+    assert coverage["expected"]["schedule_history_available"] is None  # nothing was claimed either way
+    assert "cron fire times inside the window (UTC)" in coverage["expected"]["derivation"]
+    covered = _clean_coverage(epochs=[_epoch([NEW_CRON], None)])
+    assert covered["expected"]["schedule_history_available"] is False
+    verdict = _health(covered, _fresh())
+    assert verdict["verdict"] == nightly.VERDICT_UNVERIFIED
+    assert any("schedule history" in reason for reason in verdict["unverified_reasons"])
+
+
+def test_high1_repository_history_reproduces_the_reviewers_expected_count():
+    """The fix is only real if it reads the repository's own schedule history."""
+    epochs = nightly.schedule_history()
+    if not any(epoch.effective_from for epoch in epochs):
+        pytest.skip("shallow checkout: the workflow's schedule history is not available")
+    fires = [
+        fire
+        for fire in nightly.parse_cron(NEW_CRON).fires_between(REVIEW_START, REVIEW_END)
+        if fire <= REVIEW_NOW - nightly.MISSED_GRACE
+    ]
+    coverage = _review_coverage([_run(fire) for fire in fires], epochs=epochs)
+    assert coverage["expected"]["runs"] == 129
+    assert coverage["expected"]["due"] >= 120  # the review's 128 due, not the report's 28
+    assert coverage["missed"]["runs"] >= 90  # the review's 104 missed, not the report's 4
+
+
+def test_high2_a_sampled_classification_cannot_produce_matched():
+    """HIGH 2a: MATCHED is not ours to claim while the classification is sampled."""
+    classification = {
+        "coverage": "sampled",
+        "selected": 130,
+        "population": 188,
+        "cap": 130,
+        "failures": 2,
+        "classes": {"unexplained_source_id_absent_from_db": 3},
+    }
+    sampled = nightly.reconciliation_inputs_are_complete(DIFF, classification)
+    assert any("classification sampled" in problem for problem in sampled)
+    assert any("could not be classified" in problem for problem in sampled)
+    assert any("unexplained class" in problem for problem in sampled)
+    # a complete classification produces no incompleteness reasons...
+    assert nightly.reconciliation_inputs_are_complete(DIFF, {"coverage": "full", "classes": {}}) == []
+    # ...and only then may the alignment verdict be MATCHED
+    incomplete_verdict = nightly.data_alignment_verdict(
+        snapshot=FULL_SNAPSHOT,
+        diff=DIFF,
+        summary=_summary(defect=0, legitimate=0),
+        ingested=UP_TO_DATE,
+        incompleteness=sampled,
+    )
+    assert incomplete_verdict["verdict"] == nightly.VERDICT_UNVERIFIED
+    assert any("sampled" in reason for reason in incomplete_verdict["reasons"])
+    complete_verdict = nightly.data_alignment_verdict(
+        snapshot=FULL_SNAPSHOT,
+        diff=DIFF,
+        summary=_summary(defect=0, legitimate=0),
+        ingested=UP_TO_DATE,
+        incompleteness=[],
+    )
+    assert complete_verdict["verdict"] == nightly.VERDICT_MATCHED
+
+
+def test_high2_freshness_promises_must_be_evaluated_to_be_claimed():
+    """HIGH 2b: an absent freshness block is unverified, never a stated success."""
+    coverage = _clean_coverage()
+    assert _health(coverage, None)["verdict"] == nightly.VERDICT_UNVERIFIED
+    unevaluated = _fresh(signal={"within_sla": False, "evaluated": False, "age_hours": None, "sla_hours": 16.0})
+    assert _health(coverage, unevaluated)["verdict"] == nightly.VERDICT_UNVERIFIED
+    beyond = _fresh(signal={"within_sla": False, "evaluated": True, "age_hours": 40.0, "sla_hours": 16.0})
+    assert _health(coverage, beyond)["verdict"] == nightly.VERDICT_MISMATCHED
+    matched = _health(coverage, _fresh())
+    assert matched["verdict"] == nightly.VERDICT_MATCHED
+    assert not matched["unverified_reasons"]
+
+
+def test_high2_a_sweep_that_was_never_estimated_is_not_a_promise_that_held():
+    """The same overclaim: MATCHED may not list a promise nobody evaluated."""
+    coverage = _clean_coverage()
+    verdict = nightly.pipeline_health_verdict(
+        coverage=coverage,
+        sweep=None,
+        freshness=_fresh(),
+        observed_sweep=None,
+        run_history_status="ok",
+        drift_notes=[],
+    )
+    assert verdict["verdict"] == nightly.VERDICT_UNVERIFIED
+    assert any("sweep" in reason for reason in verdict["unverified_reasons"])
+
+
+def test_medium3_a_partial_database_run_is_not_a_complete_poll():
+    """MEDIUM 3: poll_cqc_signals.py records 'partial'; GitHub still says success."""
+    due = [
+        fire
+        for fire in _fire_times(_schedules(), WINDOW_START, WINDOW_END)
+        if fire <= NOW - nightly.MISSED_GRACE
+    ]
+    coverage = nightly.poll_coverage(
+        [_run(fire) for fire in due],
+        schedules=_schedules(),
+        window_start=WINDOW_START,
+        window_end=WINDOW_END,
+        now=NOW,
+        db_statuses={"completed": len(due) - 4, "partial": 4, "failed": 0, "total": len(due)},
+    )
+    assert coverage["missed"]["runs"] == 0 and coverage["failed"]["runs"] == 0
+    assert coverage["successful"]["incomplete_runs"] == 4
+    assert "partial" in coverage["successful"]["note"]
+    verdict = _health(coverage, _fresh())
+    assert verdict["verdict"] == nightly.VERDICT_MISMATCHED
+    assert any("partial" in reason for reason in verdict["reasons"])
+
+
+def test_medium4_the_publication_date_is_read_as_a_date_not_a_string():
+    """MEDIUM 4: '16 September 2026' is a date the report could not previously read."""
+    assert nightly.parse_publication_date("16 September 2026") == "2026-09-16"
+    assert nightly.parse_publication_date("16/09/2026") == "2026-09-16"
+    assert nightly.parse_publication_date("2026-09-16") == "2026-09-16"
+    assert nightly.parse_publication_date("2026-09-16T04:37:00Z") == "2026-09-16"
+    assert nightly.parse_publication_date("") is None
+    assert nightly.parse_publication_date("not a date") is None
+    assert nightly.parse_publication_date(None) is None
+
+
+def test_medium4_the_mixed_format_comparison_can_no_longer_classify_an_id():
+    """The fail-open defect the review found under MEDIUM 4.
+
+    Comparing an ISO registration date with a natural-language publication date
+    put ``2026-09-15`` *after* ``16 September 2026`` on the string "2" > "1", so
+    the timing class could never be reached.
+    """
+    assert nightly.timing_order("2026-09-15", "16 September 2026") == -1
+    assert nightly.timing_order("2026-09-16", "16 September 2026") == -1
+    assert nightly.timing_order("2026-09-17", "16 September 2026") == 1
+    assert nightly.timing_order(None, "16 September 2026") is None
+    assert nightly.timing_order("2026-09-17", "not a date") is None
+    assert (
+        nightly.classify_id(
+            side="db_active_absent_from_source",
+            status="Registered",
+            registration_date="2026-09-15",
+            deregistration_date=None,
+            snapshot_published_at="16 September 2026",
+        )
+        == "registered_on_or_before_snapshot_but_absent"
+    )
+    assert (
+        nightly.classify_id(
+            side="db_active_absent_from_source",
+            status="Registered",
+            registration_date="2026-09-17",
+            deregistration_date=None,
+            snapshot_published_at="16 September 2026",
+        )
+        == "registered_after_snapshot_publication"
+    )
+    undated = nightly.classify_id(
+        side="db_active_absent_from_source",
+        status="Registered",
+        registration_date=None,
+        deregistration_date=None,
+        snapshot_published_at="16 September 2026",
+    )
+    assert undated == "unclassified_publication_date"
+    assert undated in nightly.UNEXPLAINED_CLASSES
+
+
+def test_medium4_cached_classifications_are_re_derived_before_they_are_reused():
+    """The review's acceptance test, run against the committed cache.
+
+    The cache labels 60 IDs ``registered_after_snapshot_publication`` under the
+    string comparison. Re-derived against the snapshot's own publication date
+    ("16 September 2026") only 20 of them really registered after it; the other
+    40 registered on or before it and sit in the timing class the broken
+    comparison could not reach. The date-independent half of the split - 4
+    ``db_inactive_matches_deregistration`` and 67
+    ``confirmed_deregistered_still_active_in_db`` - reproduces exactly.
+    """
+    if not (CACHE_DIR / "divergent-db-active.json").is_file():
+        pytest.skip("classification cache is not present in this checkout")
+    published = "16 September 2026"
+    classes: dict[str, int] = {}
+    for name, side, expected_entries in (
+        ("divergent-db-active.json", "db_active_absent_from_source", 127),
+        ("source-inactive-vs-db.json", "source_present_db_inactive", 61),
+    ):
+        entries = json.loads((CACHE_DIR / name).read_text(encoding="utf-8"))["classes"]
+        assert len(entries) == expected_entries
+        for entry in entries.values():
+            recomputed = nightly._reclassify_cached_entry(
+                entry, side=side, snapshot_published_at=published
+            )["class"]
+            classes[recomputed] = classes.get(recomputed, 0) + 1
+    assert sum(classes.values()) == 188
+    assert classes["db_inactive_matches_deregistration"] == 4
+    assert classes["db_inactive_but_source_registered"] == 57
+    assert classes["confirmed_deregistered_still_active_in_db"] == 67
+    assert classes["registered_after_snapshot_publication"] == 20
+    assert classes["registered_on_or_before_snapshot_but_absent"] == 40
+    assert "unclassified_publication_date" not in classes
+
+
+def test_medium5_a_cited_checksum_must_match_the_file_the_run_leaves_behind(tmp_path):
+    """A cited checksum that does not match the committed file is not evidence.
+
+    ``state.json`` is rewritten by every run, so hashing it before it is rewritten cites
+    the previous run's file - exactly the mismatch the reviewer would find next.
+    """
+    payload = json.loads(FIXTURE.read_text(encoding="utf-8"))
+    payload["evidence"] = []  # non-None, so the run recomputes it
+    stale = tmp_path / "state.json"
+    stale.write_text('{"generated_at": "2026-09-19T04:33:56Z"}', encoding="utf-8")
+
+    report_md = nightly.finalize_outputs(payload, tmp_path, now=REVIEW_END)
+
+    written = json.loads(
+        (tmp_path / f"{REVIEW_END:%Y-%m-%d}-report.json").read_text(encoding="utf-8")
+    )
+    entry = next(e for e in written["evidence"] if e["path"].endswith("state.json"))
+    assert entry["present"] is True
+    assert entry["sha256"] == hashlib.sha256(stale.read_bytes()).hexdigest()
+    assert entry["bytes"] == stale.stat().st_size
+    assert entry["sha256"] != json.loads(stale.read_text(encoding="utf-8")).get("generated_at")
+    assert report_md.name.endswith("-report.md")
+
+
+def test_medium5_cited_evidence_is_flagged_when_the_commit_does_not_carry_it(tmp_path):
+    """MEDIUM 5: 5dc1759's report cited evidence the reviewed SHA did not contain."""
+    out_dir = tmp_path / "cqc-nightly"
+    (out_dir / "cache").mkdir(parents=True)
+    (out_dir / "cache" / "divergent-db-active.json").write_text('{"classes": {}}', encoding="utf-8")
+    index = nightly.evidence_index(out_dir, now=NOW)
+    by_suffix = {entry["path"].split("/")[-1]: entry for entry in index}
+    cited = by_suffix["divergent-db-active.json"]
+    assert cited["present"] is True and cited["sha256"] and cited["bytes"]
+    assert cited["checksum_only"] is False
+    assert cited["git_tracked"] is False  # a path outside the repository is not committed
+    assert by_suffix["directory-snapshot.json"]["checksum_only"] is True
+    assert by_suffix["2026-09-20-unrated-classification.json"]["present"] is False
+    findings = nightly.findings({"evidence": index})
+    assert any(
+        "[evidence] cited evidence is not tracked by git" in reason and "divergent-db-active.json" in reason
+        for reason in findings
+    )
+    assert any("[evidence] cited evidence is missing" in reason for reason in findings)
+    marked_up = nightly.render({**json.loads(FIXTURE.read_text(encoding="utf-8")), "evidence": index})
+    assert "## Evidence index" in marked_up
+    assert "divergent-db-active.json" in marked_up
+
+
+def test_low6_the_change_window_heading_names_both_ends():
+    """LOW 6: the heading ended the window at its own start timestamp."""
+    payload = json.loads(FIXTURE.read_text(encoding="utf-8"))
+    markdown = nightly.render(payload)
+    heading = next(line for line in markdown.splitlines() if line.startswith("## Pipeline runs in the change window"))
+    start, end = payload["window_start"], payload["generated_at"]
+    assert start in heading and end in heading
+    assert heading.index(start) < heading.index(end)
+    assert f"{payload['window_hours']}h," in heading
+
+
+def test_low7_the_historical_336_polls_per_week_figure_is_marked_historical():
+    """LOW 7: a 2026-08-10 audit kept stating 336/week as if it were current."""
+    audit = REPO_ROOT / "artifacts" / "audits" / "2026-08-10-cqc-database-change-frequency-report.md"
+    text = audit.read_text(encoding="utf-8")
+    assert "336 polls/seven days" in text  # the historical finding is preserved, not rewritten
+    assert "Historical figures — do not read as current (annotated 2026-09-20)" in text
+    assert "4 polls/day, 28/week" in text
+    assert "Every `336` below is historical." in text
+    annotation = text[text.index("Historical figures"):]
+    for expression in ("`37 * * * *`", "`7,37 * * * *`", "`7 18,21,0,3 * * *`"):
+        assert expression in annotation
+    for commit in ("1e7d594", "39fa9a3", "6bc9880"):
+        assert commit in annotation

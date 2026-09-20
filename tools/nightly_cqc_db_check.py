@@ -147,7 +147,19 @@ LEGITIMATE_CLASSES = frozenset(
         "db_inactive_matches_deregistration",
     }
 )
-UNEXPLAINED_CLASSES = frozenset({"not_found_in_cqc_api", "unclassified_status", "api_error"})
+UNEXPLAINED_CLASSES = frozenset(
+    {
+        "not_found_in_cqc_api",
+        "unclassified_status",
+        "unclassified_publication_date",
+        "api_error",
+    }
+)
+
+# Bumped whenever classify_id's mapping or its date handling changes, so entries
+# written by an older classifier are visible in the cache instead of silently
+# reused (a cached class is always re-derived from the cached raw fields).
+CLASSIFIER_REVISION = 2
 
 UNRATED_CLASS_NAMES = (
     "legitimate_unrated",
@@ -231,6 +243,82 @@ def wilson_interval(successes: int, total: int, *, z: float = 1.96) -> tuple[flo
 
 def hours_between(earlier: datetime, later: datetime) -> float:
     return (later - earlier).total_seconds() / 3600.0
+
+
+CQC_MONTH_NAMES = {
+    "january": 1,
+    "february": 2,
+    "march": 3,
+    "april": 4,
+    "may": 5,
+    "june": 6,
+    "july": 7,
+    "august": 8,
+    "september": 9,
+    "october": 10,
+    "november": 11,
+    "december": 12,
+}
+
+
+def parse_publication_date(value: Any) -> str | None:
+    """Normalise a CQC publication date to ISO ``YYYY-MM-DD``.
+
+    The directory CSV preamble states its date in natural language
+    ("16 September 2026") while ``reconciliation_batches.source_published_at`` is
+    a DATE rendered as ``YYYY-MM-DD``. Comparing those two forms as strings is a
+    lexicographic comparison that always reports the natural-language side as
+    later, so every date used in a comparison is normalised through here first.
+
+    An unparseable value returns ``None``; callers must fail closed (refuse to
+    order the two dates) rather than guess which one is later.
+    """
+    if value is None:
+        return None
+    text = str(value).strip()
+    if not text:
+        return None
+    try:
+        return datetime.fromisoformat(text.replace("Z", "+00:00")).date().isoformat()
+    except ValueError:
+        pass
+    day_month_year = re.fullmatch(r"(\d{1,2})\s+([A-Za-z]+)\.?,?\s+(\d{4})", text)
+    month_day_year = re.fullmatch(r"([A-Za-z]+)\.?\s+(\d{1,2}),?\s+(\d{4})", text)
+    numeric = re.fullmatch(r"(\d{1,2})[/.](\d{1,2})[/.](\d{4})", text)
+    if numeric:
+        # day first, matching CQC's own file naming (16_september_2026_...)
+        day_text, month_text, year_text = numeric.groups()
+        try:
+            return date(int(year_text), int(month_text), int(day_text)).isoformat()
+        except ValueError:
+            return None
+    if day_month_year:
+        day_text, month_text, year_text = day_month_year.groups()
+    elif month_day_year:
+        month_text, day_text, year_text = month_day_year.groups()
+    else:
+        return None
+    month = CQC_MONTH_NAMES.get(month_text.strip().lower().rstrip("."))
+    if month is None:
+        return None
+    try:
+        return date(int(year_text), month, int(day_text)).isoformat()
+    except ValueError:
+        return None
+
+
+def timing_order(registration_date: Any, snapshot_published_at: Any) -> int | None:
+    """Order two CQC dates: -1 on/before, 1 after, ``None`` when undecidable.
+
+    Both sides go through :func:`parse_publication_date` first: a raw string
+    comparison of ``"2026-03-22"`` against ``"16 September 2026"`` reports
+    "after" for every identifier, which silently moves classes between buckets.
+    """
+    registered = parse_publication_date(registration_date)
+    published = parse_publication_date(snapshot_published_at)
+    if registered is None or published is None:
+        return None
+    return 1 if registered > published else -1
 
 
 def _as_row_dict(cur) -> dict[str, Any]:
@@ -351,6 +439,11 @@ def parse_cron(expression: str) -> CronSchedule:
     )
 
 
+def _crons_in_workflow_text(text: str) -> list[str]:
+    """Cron lines of a workflow file, in file order (one source of truth)."""
+    return re.findall(r"^\s*-\s*cron:\s*[\"']([^\"']+)[\"']\s*$", text, re.MULTILINE)
+
+
 def workflow_schedule(path: Path | str = SIGNAL_POLL_WORKFLOW) -> dict[str, Any]:
     """Read the cron schedule(s) and the sweep_size default out of the workflow."""
     workflow_path = Path(path)
@@ -358,7 +451,7 @@ def workflow_schedule(path: Path | str = SIGNAL_POLL_WORKFLOW) -> dict[str, Any]
         text = workflow_path.read_text(encoding="utf-8")
     except OSError as exc:
         raise ValueError(f"cannot read {workflow_path}: {exc}") from exc
-    crons = re.findall(r"^\s*-\s*cron:\s*[\"']([^\"']+)[\"']\s*$", text, re.MULTILINE)
+    crons = _crons_in_workflow_text(text)
     sweep_size: int | None = None
     index = text.find("sweep_size:")
     if index != -1:
@@ -420,27 +513,192 @@ def derive_cadence(*, path: Path | str = SIGNAL_POLL_WORKFLOW, now: datetime) ->
     }
 
 
-def cadence_change_at(path: Path | str = SIGNAL_POLL_WORKFLOW) -> str | None:
-    """Commit time of the last change to the workflow's cron, from local git."""
+@dataclass(frozen=True)
+class ScheduleEpoch:
+    """One cron schedule set and the moment it came into force."""
+
+    crons: tuple[str, ...]
+    effective_from: datetime | None
+    commit: str | None = None
+    source: str = ""
+
+    def as_dict(self) -> dict[str, Any]:
+        return {
+            "crons": list(self.crons),
+            "effective_from": _iso(self.effective_from),
+            "commit": self.commit,
+            "source": self.source,
+        }
+
+    def schedules(self) -> list[CronSchedule]:
+        return [parse_cron(expression) for expression in self.crons]
+
+    def label(self) -> str:
+        return " / ".join(self.crons)
+
+
+SCHEDULE_HISTORY_SOURCE = (
+    "git log --format=%H%x09%cI -- .github/workflows/cqc-signal-poll.yml, with each revision's "
+    "cron lines read via git show (fallback: the workflow file on disk)"
+)
+
+
+def _git_workflow_text(git: str, commit: str, path: Path) -> str | None:
+    # git show needs a repository-relative path; an absolute one silently fails
+    # and would leave every revision unreadable, collapsing the schedule history
+    # to a single "no history" epoch.
+    candidates = [str(path)]
+    try:
+        relative = os.path.relpath(path, REPO_ROOT)
+    except ValueError:  # different drive on Windows
+        relative = None
+    if relative and not relative.startswith("..") and relative not in candidates:
+        candidates.append(relative)
+    for candidate in candidates:
+        try:
+            proc = subprocess.run(
+                [git, "show", f"{commit}:{candidate}"],
+                cwd=REPO_ROOT,
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+        except (OSError, subprocess.TimeoutExpired):
+            return None
+        if proc.returncode == 0:
+            return proc.stdout
+    return None
+
+
+def schedule_history(path: Path | str = SIGNAL_POLL_WORKFLOW, *, max_commits: int = 50) -> list[ScheduleEpoch]:
+    """Every cron schedule set that has been in force for ``path``, oldest first.
+
+    A coverage window can straddle a cadence change. Applying the *current* cron
+    across such a window invents fires that never happened and hides ones that
+    did, so the schedules that were actually in force are read from the workflow
+    file's own git history: each revision whose cron lines differ from the newer
+    revision starts an epoch, and fires are counted per epoch inside the window.
+
+    Returns a single epoch built from the on-disk file when git or the history is
+    unavailable. That epoch carries ``effective_from=None``, which marks the
+    window-wide expectation as not backed by schedule history so callers can say
+    so instead of presenting it as authoritative.
+    """
+    workflow_path = Path(path)
     git = shutil.which("git")
-    if git is None:
-        return None
+    revisions: list[tuple[str, datetime]] = []
+    if git is not None:
+        try:
+            proc = subprocess.run(
+                [git, "log", f"-n{max_commits}", "--format=%H%x09%cI", "--", str(workflow_path)],
+                cwd=REPO_ROOT,
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+        except (OSError, subprocess.TimeoutExpired):
+            proc = None
+        if proc is not None and proc.returncode == 0:
+            for line in proc.stdout.splitlines():
+                sha, _, committed_at = line.partition("\t")
+                if not sha.strip() or not committed_at.strip():
+                    continue
+                try:
+                    revisions.append((sha.strip(), datetime.fromisoformat(committed_at.strip())))
+                except ValueError:
+                    continue
+    epochs: list[ScheduleEpoch] = []  # newest change first while building
+    if git is not None:
+        for sha, committed_at in revisions:
+            text = _git_workflow_text(git, sha, workflow_path)
+            if text is None:
+                continue
+            crons = tuple(_crons_in_workflow_text(text))
+            if not crons or (epochs and epochs[-1].crons == crons):
+                continue
+            epochs.append(
+                ScheduleEpoch(crons=crons, effective_from=committed_at, commit=sha, source=SCHEDULE_HISTORY_SOURCE)
+            )
+    epochs.reverse()  # oldest epoch first
+    if epochs:
+        return epochs
     try:
-        proc = subprocess.run(
-            [git, "log", "-1", "--format=%cI", "--", str(path)],
-            cwd=REPO_ROOT,
-            capture_output=True,
-            text=True,
-            timeout=30,
+        crons = tuple(workflow_schedule(workflow_path)["crons"])
+    except ValueError as exc:
+        raise ValueError(f"cannot derive a schedule history for {workflow_path}: {exc}") from exc
+    return [
+        ScheduleEpoch(
+            crons=crons,
+            effective_from=None,
+            commit=None,
+            source=(
+                "single epoch: no git schedule history was available, so the on-disk cron is applied "
+                "to the whole window"
+            ),
         )
-    except (OSError, subprocess.TimeoutExpired):
-        return None
-    if proc.returncode != 0 or not proc.stdout.strip():
-        return None
-    try:
-        return _iso(datetime.fromisoformat(proc.stdout.strip()))
-    except ValueError:
-        return None
+    ]
+
+
+def expected_fires(
+    epochs: list[ScheduleEpoch],
+    *,
+    window_start: datetime,
+    window_end: datetime,
+    now: datetime,
+    grace: timedelta = MISSED_GRACE,
+    from_history: bool = True,
+) -> dict[str, Any]:
+    """Fires the schedules in force called for inside a window, epoch by epoch."""
+    fires: list[datetime] = []
+    breakdown: list[dict[str, Any]] = []
+    for index, epoch in enumerate(epochs):
+        segment_start = window_start if epoch.effective_from is None else max(window_start, epoch.effective_from)
+        segment_end = window_end
+        following = epochs[index + 1].effective_from if index + 1 < len(epochs) else None
+        if following is not None:
+            segment_end = min(segment_end, following)
+        if segment_end <= segment_start:
+            continue
+        count = 0
+        for schedule in epoch.schedules():
+            in_segment = schedule.fires_between(segment_start, segment_end)
+            fires.extend(in_segment)
+            count += len(in_segment)
+        breakdown.append(
+            {
+                "crons": list(epoch.crons),
+                "effective_from": _iso(epoch.effective_from),
+                "in_force_to": _iso(segment_end),
+                "commit": epoch.commit,
+                "fires": count,
+            }
+        )
+    fires = sorted(set(fires))
+    due = [fire for fire in fires if fire <= now - grace]
+    if from_history:
+        history_available = bool(epochs) and any(epoch.effective_from is not None for epoch in epochs)
+        derivation = (
+            "cron fire times of the schedules in force during the window, summed per schedule epoch"
+            if history_available
+            else "cron fire times of the on-disk cron applied to the whole window: the schedule history could "
+            "not be read, so this expectation is not backed by the schedules in force"
+        )
+        source = SCHEDULE_HISTORY_SOURCE
+    else:
+        history_available = None
+        derivation = "cron fire times inside the window (UTC)"
+        source = "workflow cron, see cadence"
+    return {
+        "runs": len(fires),
+        "due": len(due),
+        "not_yet_due": len(fires) - len(due),
+        "fires": fires,
+        "due_fires": due,
+        "epochs": breakdown,
+        "schedule_history_available": history_available,
+        "derivation": derivation,
+        "source": source,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -504,17 +762,44 @@ def _match_fires_to_runs(
 def poll_coverage(
     runs: list[dict[str, Any]],
     *,
-    schedules: list[CronSchedule],
+    epochs: list[ScheduleEpoch] | None = None,
+    schedules: list[CronSchedule] | None = None,
     window_start: datetime,
     window_end: datetime,
     now: datetime,
     grace: timedelta = MISSED_GRACE,
     match_window: timedelta = FIRE_MATCH_WINDOW,
-    cadence_change: datetime | None = None,
+    db_statuses: dict[str, int] | None = None,
 ) -> dict[str, Any]:
-    """Five buckets - expected, attempted, successful, failed, missed - per source."""
-    fires = sorted({fire for schedule in schedules for fire in schedule.fires_between(window_start, window_end)})
-    due = [fire for fire in fires if fire <= now - grace]
+    """Five buckets - expected, attempted, successful, failed, missed - per source.
+
+    ``epochs`` (the schedules actually in force, from
+    :func:`schedule_history`) is the correct input for any window that could
+    straddle a cadence change. ``schedules`` is kept for callers that can assert
+    a single schedule set covered the whole window; passing neither is an error
+    rather than a silent guess.
+
+    ``db_statuses`` carries the DB's own ``pipeline_runs`` status counts for the
+    same window so a GitHub ``success`` conclusion cannot be presented as a
+    complete poll when the DB recorded the run as ``partial``.
+    """
+    if epochs is not None:
+        derived = expected_fires(
+            list(epochs), window_start=window_start, window_end=window_end, now=now, grace=grace
+        )
+    elif schedules is not None:
+        pseudo_epoch = ScheduleEpoch(
+            crons=tuple(schedule.expression for schedule in schedules),
+            effective_from=None,
+            source="caller-supplied schedules applied to the whole window",
+        )
+        derived = expected_fires(
+            [pseudo_epoch], window_start=window_start, window_end=window_end, now=now, grace=grace, from_history=False
+        )
+    else:
+        raise ValueError("poll_coverage needs epochs= (preferred) or schedules=")
+    fires = derived["fires"]
+    due = derived["due_fires"]
     not_yet_due = [fire for fire in fires if fire > now - grace]
 
     in_window = [run for run in runs if window_start <= run["created_at"] < window_end]
@@ -531,18 +816,40 @@ def poll_coverage(
     matched_fires, unmatched_fires = _match_fires_to_runs(due, scheduled, window=match_window)
 
     bucket_source = "gh run list --workflow=cqc-signal-poll.yml --json event,status,conclusion,createdAt,databaseId"
+    expected: dict[str, Any] = {
+        "runs": derived["runs"],
+        "due": derived["due"],
+        "not_yet_due": derived["not_yet_due"],
+        "derivation": derived["derivation"],
+        "source": derived["source"],
+    }
+    if epochs is not None:
+        expected["epochs"] = derived["epochs"]
+    # Both keys are always present: an absent key reads as "not applicable" when the
+    # truth is "no schedule history was consulted" (``None``).
+    expected["schedule_history_available"] = derived["schedule_history_available"]
+    successful_bucket: dict[str, Any] = {
+        "runs": len(successful),
+        "source": f"{bucket_source}; conclusion == success (GitHub workflow conclusion only)",
+        "conclusion_source": "GitHub Actions",
+    }
+    if db_statuses is not None:
+        recorded = {name: int(count or 0) for name, count in db_statuses.items()}
+        partial = recorded.get("partial", 0)
+        successful_bucket["db_recorded_status"] = recorded
+        if partial:
+            successful_bucket["incomplete_runs"] = partial
+            successful_bucket["note"] = (
+                f"the DB records {partial} signal_poll run(s) in this window as 'partial': a GitHub success is "
+                "a workflow conclusion, not evidence that every source record was collected, so these runs are "
+                "not complete polls"
+            )
     coverage: dict[str, Any] = {
         "window": {"start": _iso(window_start), "end": _iso(window_end), "hours": round(hours_between(window_start, window_end), 1)},
         "grace_minutes": int(grace.total_seconds() // 60),
-        "expected": {
-            "runs": len(fires),
-            "due": len(due),
-            "not_yet_due": len(not_yet_due),
-            "derivation": "cron fire times inside the window (UTC)",
-            "source": "workflow cron, see cadence",
-        },
+        "expected": expected,
         "attempted": {"runs": attempted, "source": bucket_source, "manual_or_other_event_runs": len(other)},
-        "successful": {"runs": len(successful), "source": f"{bucket_source}; conclusion == success"},
+        "successful": successful_bucket,
         "failed": {
             "runs": len(failed),
             "source": f"{bucket_source}; conclusion in {sorted(FAILED_CONCLUSIONS)}",
@@ -578,18 +885,19 @@ def poll_coverage(
             "runs": attempted - len(due),
             "note": "more scheduled runs than due fires, e.g. a manual dispatch recorded as schedule or a window spanning a cadence change",
         }
-    if cadence_change is not None and window_start <= cadence_change < window_end:
-        post_fires = [fire for fire in fires if fire >= cadence_change]
-        post_due = [fire for fire in post_fires if fire <= now - grace]
-        post_runs = [run for run in scheduled if run["created_at"] >= cadence_change]
+    epoch_rows = expected.get("epochs") or []
+    if len(epoch_rows) > 1:
+        latest = epoch_rows[-1]
         coverage["cadence_change"] = {
-            "at": _iso(cadence_change),
-            "source": "git log -1 --format=%cI -- .github/workflows/cqc-signal-poll.yml",
-            "expected_runs": len(post_fires),
-            "due": len(post_due),
-            "attempted": len(post_runs),
-            "missed": max(0, len(post_due) - len(post_runs)),
-            "note": "this window spans a schedule change, so the window-wide expectation mixes two cadences",
+            "at": latest["effective_from"],
+            "source": SCHEDULE_HISTORY_SOURCE,
+            "crons": latest["crons"],
+            "expected_runs": latest["fires"],
+            "note": (
+                "this window spans a schedule change, so the window-wide expectation is the sum of the fires of "
+                "the schedules actually in force - see expected.epochs for the per-epoch counts"
+            ),
+            "per_epoch": epoch_rows,
         }
     return coverage
 
@@ -597,7 +905,8 @@ def poll_coverage(
 def coverage_unavailable(
     reason: str | None,
     *,
-    schedules: list[CronSchedule],
+    epochs: list[ScheduleEpoch] | None = None,
+    schedules: list[CronSchedule] | None = None,
     window_start: datetime,
     window_end: datetime,
     now: datetime,
@@ -605,12 +914,36 @@ def coverage_unavailable(
 ) -> dict[str, Any]:
     """Placeholder for the no-run-history case.
 
-    Expected fires are still derived from the cron (that never needs a network
-    call); the four delivered buckets stay None rather than guessing zero, and
-    the verdict for the pipeline becomes UNVERIFIED instead of MATCHED.
+    Expected fires are still derived from the cron schedule history (that never
+    needs a network call); the four delivered buckets stay None rather than
+    guessing zero, and the verdict for the pipeline becomes UNVERIFIED instead
+    of MATCHED.
     """
-    fires = sorted({fire for schedule in schedules for fire in schedule.fires_between(window_start, window_end)})
-    due = [fire for fire in fires if fire <= now - grace]
+    if epochs is not None:
+        derived = expected_fires(
+            list(epochs), window_start=window_start, window_end=window_end, now=now, grace=grace
+        )
+    elif schedules is not None:
+        pseudo_epoch = ScheduleEpoch(
+            crons=tuple(schedule.expression for schedule in schedules),
+            effective_from=None,
+            source="caller-supplied schedules applied to the whole window",
+        )
+        derived = expected_fires(
+            [pseudo_epoch], window_start=window_start, window_end=window_end, now=now, grace=grace, from_history=False
+        )
+    else:
+        raise ValueError("coverage_unavailable needs epochs= (preferred) or schedules=")
+    expected: dict[str, Any] = {
+        "runs": derived["runs"],
+        "due": derived["due"],
+        "not_yet_due": derived["not_yet_due"],
+        "derivation": derived["derivation"],
+        "source": derived["source"],
+    }
+    if epochs is not None:
+        expected["epochs"] = derived["epochs"]
+        expected["schedule_history_available"] = derived["schedule_history_available"]
     return {
         "available": False,
         "reason": reason or "run history unavailable",
@@ -620,13 +953,7 @@ def coverage_unavailable(
             "hours": round(hours_between(window_start, window_end), 1),
         },
         "grace_minutes": grace.total_seconds() / 60,
-        "expected": {
-            "runs": len(fires),
-            "due": len(due),
-            "not_yet_due": len(fires) - len(due),
-            "derivation": None,
-            "source": "cron parsed from the workflow file (no network needed)",
-        },
+        "expected": expected,
         "attempted": {"runs": None, "source": "unavailable"},
         "successful": {"runs": None, "source": "unavailable"},
         "failed": {"runs": None, "source": "unavailable", "by_conclusion": {}},
@@ -682,7 +1009,8 @@ def sweep_coverage(
 @dataclass
 class DirectorySnapshot:
     uri: str | None = None
-    published_at: str | None = None
+    published_at: str | None = None  # ISO YYYY-MM-DD, normalised at read time
+    published_at_text: str | None = None  # as stated by CQC, e.g. "16 September 2026"
     retrieved_at: str | None = None
     sha256: str | None = None
     ids: frozenset[str] = field(default_factory=frozenset)
@@ -702,6 +1030,7 @@ class DirectorySnapshot:
         return {
             "uri": self.uri,
             "published_at": self.published_at,
+            "published_at_text": self.published_at_text,
             "retrieved_at": self.retrieved_at,
             "sha256": self.sha256,
             "entity_count": len(self.ids),
@@ -761,10 +1090,12 @@ def _decode_ids(text: str, *, id_cap: int, collected: set[str]) -> dict[str, Any
         if len(collected) >= id_cap:
             capped = True
             break
+    raw_published = published.group(1).strip() if published else None
     return {
         "ids_found": found,
         "complete_scan": not capped,
-        "published_at": published.group(1).strip() if published else None,
+        "published_at": parse_publication_date(raw_published),
+        "published_at_text": raw_published,
         "error": None,
     }
 
@@ -848,7 +1179,12 @@ def fetch_directory_snapshot(
     ):
         return DirectorySnapshot(
             uri=uri,
-            published_at=cached.get("published_at"),
+            published_at=parse_publication_date(cached.get("published_at")),
+            published_at_text=(
+                str(cached.get("published_at_text") or cached.get("published_at"))
+                if (cached.get("published_at_text") or cached.get("published_at"))
+                else None
+            ),
             retrieved_at=_iso(cached_retrieved),
             sha256=cached.get("sha256"),
             ids=frozenset(str(value) for value in cached["ids"]),
@@ -866,7 +1202,11 @@ def fetch_directory_snapshot(
 
     offset = 0
     collected: set[str] = set()
-    published_at = cached.get("published_at") if str(cached.get("uri")) == uri else None
+    resumed_identity = str(cached.get("uri")) == uri
+    published_text = (
+        str(cached.get("published_at_text") or cached.get("published_at")) if resumed_identity else None
+    ) or None
+    published_at = parse_publication_date(published_text)
     resumed = False
     if not force and str(cached.get("uri")) == uri and not cached.get("complete"):
         offset = int(cached.get("bytes_read") or 0)
@@ -891,6 +1231,7 @@ def fetch_directory_snapshot(
                 offset = 0
                 collected = set()
                 published_at = None
+                published_text = None
             raw_length = response.headers.get("Content-Length")
             if raw_length and raw_length.isdigit():
                 declared = int(raw_length) + offset
@@ -924,6 +1265,7 @@ def fetch_directory_snapshot(
     parsed = _decode_ids(text, id_cap=id_cap, collected=collected)
     if parsed.get("published_at"):
         published_at = parsed["published_at"]
+        published_text = parsed.get("published_at_text") or published_text
     if len(collected) >= id_cap:
         parsed["complete_scan"] = False
     complete = bool(parsed["complete_scan"]) and not hit_cap and not resumed_partial(offset, hit_cap)
@@ -937,6 +1279,7 @@ def fetch_directory_snapshot(
     snapshot = DirectorySnapshot(
         uri=uri,
         published_at=published_at,
+        published_at_text=published_text,
         retrieved_at=_iso(now),
         sha256=checksum,
         ids=frozenset(collected),
@@ -964,6 +1307,7 @@ def fetch_directory_snapshot(
             payload = {
                 "uri": uri,
                 "published_at": published_at,
+                "published_at_text": published_text,
                 "retrieved_at": snapshot.retrieved_at,
                 "sha256": checksum,
                 "ids": sorted(collected),
@@ -976,6 +1320,7 @@ def fetch_directory_snapshot(
             payload = {
                 "uri": uri,
                 "published_at": published_at,
+                "published_at_text": published_text,
                 "retrieved_at": _iso(now),
                 "sha256": None,
                 "ids": sorted(collected),
@@ -1037,13 +1382,24 @@ def classify_id(
     deregistration_date: str | None,
     snapshot_published_at: str | None,
 ) -> str:
-    """Map one live CQC API record onto an alignment class. Source: CQC API detail."""
+    """Map one live CQC API record onto an alignment class. Source: CQC API detail.
+
+    The registration date and the snapshot's publication date only decide a
+    class when both can be read as dates; if either is unparseable the ID lands
+    in ``unclassified_publication_date`` (unexplained) instead of defaulting to
+    the benign "registered on or before the publication date" bucket. A string
+    comparison of the two raw forms is never used - see
+    :func:`parse_publication_date`.
+    """
     status = (status or "").strip() or None
     if side == "db_active_absent_from_source":
         if status == "Deregistered":
             return "confirmed_deregistered_still_active_in_db"
         if status == "Registered":
-            if registration_date and snapshot_published_at and registration_date > snapshot_published_at:
+            order = timing_order(registration_date, snapshot_published_at)
+            if order is None:
+                return "unclassified_publication_date"
+            if order > 0:
                 return "registered_after_snapshot_publication"
             return "registered_on_or_before_snapshot_but_absent"
         return "unclassified_status"
@@ -1100,6 +1456,32 @@ def classification_unavailable(
     }
 
 
+def _reclassify_cached_entry(
+    entry: dict[str, Any], *, side: str, snapshot_published_at: str | None
+) -> dict[str, Any]:
+    """Re-derive a cached entry's class from its cached raw fields.
+
+    The raw API fields are stored per ID exactly so the class can be recomputed
+    without another API call. Re-deriving on every reuse means a cache written
+    under an older classifier (or with a differently-normalised publication
+    date) cannot keep serving a stale bucket: the previous value is preserved as
+    ``class_at_cache_write`` rather than silently replaced.
+    """
+    recomputed = classify_id(
+        side=side,
+        status=entry.get("registration_status"),
+        registration_date=entry.get("registration_date"),
+        deregistration_date=entry.get("deregistration_date"),
+        snapshot_published_at=snapshot_published_at,
+    )
+    refreshed = dict(entry)
+    if recomputed != entry.get("class"):
+        refreshed["class_at_cache_write"] = entry.get("class")
+    refreshed["class"] = recomputed
+    refreshed["class_revision"] = CLASSIFIER_REVISION
+    return refreshed
+
+
 def classify_divergent(
     ids: list[str] | tuple[str, ...],
     *,
@@ -1132,7 +1514,9 @@ def classify_divergent(
             except (TypeError, ValueError):
                 fresh = False
             if fresh:
-                per_id[location_id] = entry
+                per_id[location_id] = _reclassify_cached_entry(
+                    entry, side=side, snapshot_published_at=snapshot_published_at
+                )
                 reused += 1
                 continue
         try:
@@ -1157,6 +1541,7 @@ def classify_divergent(
             "registration_date": detail.get("registrationDate"),
             "deregistration_date": detail.get("deregistrationDate"),
             "fetched_at": _iso(now),
+            "class_revision": CLASSIFIER_REVISION,
         }
         per_id[location_id] = entry
         fetched += 1
@@ -1290,6 +1675,11 @@ def reconciliation_inputs_are_complete(diff: dict[str, Any], classification: dic
         problems.append(f"{classification['failures']} divergent IDs could not be classified (CQC API errors)")
     if diff.get("only_in_source") and not classification:
         problems.append("source-only IDs were not classified")
+    unexplained = int((classification.get("classes") or {}).get("unexplained_source_id_absent_from_db") or 0)
+    if unexplained:
+        problems.append(
+            f"{unexplained} source-only ID(s) sit in an unexplained class, so the split is not a complete account"
+        )
     return problems
 
 
@@ -1302,8 +1692,15 @@ def data_alignment_verdict(
     diff: dict[str, Any] | None,
     summary: dict[str, Any] | None,
     ingested: dict[str, Any] | None,
+    incompleteness: list[str] | None = None,
 ) -> dict[str, Any]:
-    """Identifier-level verdict. Reasons are always printed, verdict or not."""
+    """Identifier-level verdict. Reasons are always printed, verdict or not.
+
+    ``incompleteness`` carries the reconciliation-input problems (crowd-sourced
+    coverage, API errors, unclassified records). A zero defect count over inputs
+    that could not be fully reconcilled is not agreement, so those problems make
+    the verdict UNVERIFIED rather than MATCHED.
+    """
     reasons: list[str] = []
     if not diff or snapshot.get("coverage") == "unavailable":
         return {
@@ -1335,6 +1732,8 @@ def data_alignment_verdict(
             reasons.append(f"{unexplained} unexplained difference(s): {summary.get('unexplained_classes')}")
         return {"verdict": VERDICT_MISMATCHED, "reasons": reasons, "scope": scope}
 
+    if incompleteness:
+        reasons.extend(f"reconciliation inputs are incomplete: {problem}" for problem in incompleteness)
     if ingested is not None and not ingested.get("newest_snapshot_covered", True):
         reasons.append(
             "the ingested database state is one publication behind: no reconciliation batch has covered the "
@@ -1360,6 +1759,7 @@ def pipeline_health_verdict(
     observed_sweep: dict[str, Any] | None,
     run_history_status: str,
     drift_notes: list[str],
+    freshness_unavailable_reason: str | None = None,
 ) -> dict[str, Any]:
     reasons: list[str] = []
     unverified: list[str] = []
@@ -1367,6 +1767,13 @@ def pipeline_health_verdict(
         unverified.append(f"cadence constants disagree with the workflow: {drift_notes}")
     if run_history_status != "ok":
         unverified.append("GitHub Actions run history is unavailable, so expected-vs-attempted cannot be established")
+    if not freshness:
+        # A green pipeline verdict needs the freshness promises it claims to check:
+        # no freshness block means the SLA promises were never evaluated.
+        unverified.append(
+            freshness_unavailable_reason
+            or "freshness was not evaluated, so the signal and source SLA promises are unverified"
+        )
     if coverage and coverage.get("available", True):
         if coverage["missed"]["runs"]:
             reasons.append(
@@ -1377,6 +1784,17 @@ def pipeline_health_verdict(
             reasons.append(f"{coverage['failed']['runs']} failed scheduled run(s): {coverage['failed']['by_conclusion']}")
         if coverage["in_flight"]["runs"]:
             reasons.append(f"{coverage['in_flight']['runs']} scheduled run(s) still in flight at report time")
+        incomplete = int((coverage.get("successful") or {}).get("incomplete_runs") or 0)
+        if incomplete:
+            reasons.append(
+                f"{incomplete} scheduled run(s) count as successful by GitHub conclusion but are recorded "
+                f"'partial' in the DB: {(coverage.get('successful') or {}).get('note')}"
+            )
+        if (coverage.get("expected") or {}).get("schedule_history_available") is False:
+            unverified.append(
+                "the cron schedule history could not be read, so expected fires were derived from the on-disk cron "
+                "applied to the whole window instead of the schedules in force"
+            )
     if sweep and sweep.get("meets_sla") is False:
         reasons.append(
             f"full directory sweep takes {sweep['full_sweep_days']} days at the configured cadence "
@@ -1388,15 +1806,35 @@ def pipeline_health_verdict(
             f"full directory sweep takes {observed_sweep['full_sweep_days']} days at the measured cadence "
             f"({observed_sweep['arithmetic']})"
         )
+    def _promise_evaluated(block: dict[str, Any]) -> bool:
+        """Whether a freshness promise was actually checked.
+
+        ``evaluated`` is authoritative when present; otherwise the presence of a
+        ``within_sla`` verdict means it was checked (the flag is absent in older
+        report JSON, and silence must not read as success either way).
+        """
+        if "evaluated" in block:
+            return bool(block["evaluated"])
+        return "within_sla" in block
+
     if freshness:
         signal = freshness.get("signal") or {}
-        if signal and not signal.get("within_sla", True):
+        if not _promise_evaluated(signal):
+            unverified.append(
+                "no CQC signal timestamp was available, so the poll-freshness promise was not evaluated"
+            )
+        elif not signal.get("within_sla", True):
             reasons.append(
                 f"newest CQC signal is {signal.get('age_hours')}h old, beyond the documented "
                 f"{signal.get('sla_hours')}h poll promise"
             )
         ingested = freshness.get("ingested_source") or {}
-        if ingested and not ingested.get("within_sla", True):
+        if not _promise_evaluated(ingested):
+            unverified.append(
+                "no validated source publication date was available, so the source-freshness promise was not "
+                "evaluated"
+            )
+        elif not ingested.get("within_sla", True):
             reasons.append(
                 f"the validated source snapshot is {ingested.get('age_hours')}h old "
                 f"({ingested.get('published_at')}), beyond the documented {ingested.get('sla_hours')}h promise"
@@ -1405,14 +1843,38 @@ def pipeline_health_verdict(
         return {"verdict": VERDICT_MISMATCHED, "reasons": reasons, "unverified_reasons": unverified}
     if unverified:
         return {"verdict": VERDICT_UNVERIFIED, "reasons": unverified, "unverified_reasons": unverified}
-    return {
-        "verdict": VERDICT_MATCHED,
-        "reasons": [
-            "expected cadence met: no missed, failed, or in-flight ticks in the window; "
-            "full-sweep interval within the documented promise; signal and source freshness within SLA"
-        ],
-        "unverified_reasons": [],
-    }
+    # Only promises that were actually evaluated are claimed here. A MATCHED
+    # verdict that lists a promise nobody checked is the same defect as an
+    # unverified success, so the sweep clause is only asserted when a sweep
+    # block was evaluated at all.
+    sweep_evaluated = bool(sweep and "meets_sla" in sweep) or bool(observed_sweep and "meets_sla" in observed_sweep)
+    if not sweep_evaluated:
+        unverified.append(
+            "no full-directory sweep estimate was available, so the sweep-interval promise was not evaluated"
+        )
+        return {"verdict": VERDICT_UNVERIFIED, "reasons": unverified, "unverified_reasons": unverified}
+    matched_reasons: list[str] = []
+    if coverage and coverage.get("available", True):
+        matched_reasons.append("expected cadence met: no missed, failed, or in-flight ticks in the window")
+    matched_reasons.append("full-sweep interval within the documented promise")
+    signal = (freshness or {}).get("signal") or {}
+    if signal.get("within_sla"):
+        matched_reasons.append(
+            f"newest CQC signal {signal.get('age_hours')}h old, within the {signal.get('sla_hours')}h poll promise"
+        )
+    ingested = (freshness or {}).get("ingested_source") or {}
+    if ingested.get("within_sla"):
+        matched_reasons.append(
+            f"validated source snapshot published {ingested.get('published_at')} is within the "
+            f"{ingested.get('sla_hours')}h source promise"
+        )
+    if not matched_reasons:
+        return {
+            "verdict": VERDICT_UNVERIFIED,
+            "reasons": ["no documented promise could be evaluated, so no health verdict is claimed"],
+            "unverified_reasons": [],
+        }
+    return {"verdict": VERDICT_MATCHED, "reasons": matched_reasons, "unverified_reasons": []}
 
 
 def build_verdicts(
@@ -1427,11 +1889,17 @@ def build_verdicts(
     freshness: dict[str, Any] | None,
     run_history_status: str,
     drift_notes: list[str],
+    incompleteness: list[str] | None = None,
+    freshness_unavailable_reason: str | None = None,
 ) -> dict[str, Any]:
     return {
         "vocabulary": VERDICT_VOCABULARY,
         "data_alignment": data_alignment_verdict(
-            snapshot=snapshot, diff=diff, summary=summary, ingested=ingested
+            snapshot=snapshot,
+            diff=diff,
+            summary=summary,
+            ingested=ingested,
+            incompleteness=incompleteness,
         ),
         "pipeline_health": pipeline_health_verdict(
             coverage=coverage,
@@ -1440,6 +1908,7 @@ def build_verdicts(
             observed_sweep=observed_sweep,
             run_history_status=run_history_status,
             drift_notes=drift_notes,
+            freshness_unavailable_reason=freshness_unavailable_reason,
         ),
     }
 
@@ -1846,7 +2315,6 @@ def gather(
     detail_fetcher: Callable[[str], dict[str, Any]],
     attest: dict[str, Any],
     cadence: dict[str, Any],
-    cadence_change: datetime | None,
     previous: dict[str, Any],
 ) -> dict[str, Any]:
     window_start = now - timedelta(hours=window_hours)
@@ -1976,7 +2444,10 @@ def gather(
 
     cur.execute(
         """
-        SELECT count(*) FILTER (WHERE status = 'completed') AS completed, count(*) AS total
+        SELECT count(*) FILTER (WHERE status = 'completed') AS completed,
+               count(*) FILTER (WHERE status = 'partial') AS partial,
+               count(*) FILTER (WHERE status = 'failed') AS failed,
+               count(*) AS total
         FROM pipeline_runs WHERE run_type = 'signal_poll' AND started_at > %s
         """,
         (coverage_window_start,),
@@ -2067,30 +2538,46 @@ def gather(
     cur.close()
 
     # ---- polling coverage -------------------------------------------------
-    schedules = [parse_cron(expr) for expr in cadence["expressions"]]
+    # The schedules actually in force, from the workflow file's git history: a
+    # window that straddles a cadence change cannot be modelled with today's cron.
+    epochs = schedule_history()
+    db_poll_statuses = {
+        "completed": int(db_poll_row["completed"] or 0),
+        "partial": int(db_poll_row["partial"] or 0),
+        "failed": int(db_poll_row["failed"] or 0),
+    }
     if run_history.get("status") == "ok":
         coverage = poll_coverage(
             run_history["runs"],
-            schedules=schedules,
+            epochs=epochs,
             window_start=coverage_window_start,
             window_end=coverage_window_end,
             now=now,
-            cadence_change=cadence_change,
+            db_statuses=db_poll_statuses,
         )
         coverage["available"] = True
         coverage["source"] = run_history.get("command")
     else:
         coverage = coverage_unavailable(
             run_history.get("reason"),
-            schedules=schedules,
+            epochs=epochs,
             window_start=coverage_window_start,
             window_end=coverage_window_end,
             now=now,
         )
         coverage["source"] = "unavailable"
+        coverage["successful"]["db_recorded_status"] = db_poll_statuses
+        if db_poll_statuses["partial"]:
+            coverage["successful"]["incomplete_runs"] = db_poll_statuses["partial"]
+            coverage["successful"]["note"] = (
+                f"the DB records {db_poll_statuses['partial']} signal_poll run(s) in this window as 'partial': "
+                "GitHub run history was unavailable, so these runs are not evidence of complete polls"
+            )
     coverage["db_cross_check"] = {
         "window": {"start": _iso(coverage_window_start), "end": _iso(coverage_window_end)},
         "db_signal_poll_completed": int(db_poll_row["completed"] or 0),
+        "db_signal_poll_partial": int(db_poll_row["partial"] or 0),
+        "db_signal_poll_failed": int(db_poll_row["failed"] or 0),
         "db_signal_poll_total_rows": int(db_poll_row["total"] or 0),
         "db_all_run_types_rows": int(db_all_row["total"] or 0),
         "db_reconciliation_rows": int(db_all_row["reconciliation"] or 0),
@@ -2108,8 +2595,9 @@ def gather(
     else:
         coverage["db_cross_check"]["reconciliation"] = (
             f"GitHub Actions attempted {gh_attempted}, DB pipeline_runs holds {db_total} row(s) in the same window "
-            f"({db_total - gh_attempted:+d}); the DB cannot distinguish scheduled from manual runs and records no "
-            "conclusion for polls, so GitHub Actions is the authority for the buckets above"
+            f"({db_total - gh_attempted:+d}); of those {db_poll_statuses['completed']} completed and "
+            f"{db_poll_statuses['partial']} partial. The DB cannot distinguish scheduled from manual runs and records "
+            "no conclusion for polls, so GitHub Actions is the authority for the buckets above"
         )
 
     # ---- alignment --------------------------------------------------------
@@ -2206,6 +2694,15 @@ def gather(
             )
             for key, classification in classifications.items()
         }
+        # The class split is only reproducible if the mapping that produced it is
+        # pinned: a class may legitimately change as CQC's own publication dates
+        # change, and the revision makes that visible instead of silent.
+        alignment["classifier_revision"] = CLASSIFIER_REVISION
+        alignment["classifier_classes"] = {
+            "defect": sorted(DEFECT_CLASSES),
+            "legitimate_timing_or_scope": sorted(LEGITIMATE_CLASSES),
+            "unexplained": sorted(UNEXPLAINED_CLASSES),
+        }
         problems: list[str] = []
         for key, classification in classifications.items():
             if classification is not None:
@@ -2217,7 +2714,8 @@ def gather(
     ingested = None
     if last_run:
         newest_snapshot_covered = bool(
-            snapshot.published_at and last_run.get("source_published_at") == snapshot.published_at
+            snapshot.published_at
+            and parse_publication_date(last_run.get("source_published_at")) == snapshot.published_at
         )
         ingested = {
             "latest_covered_batch_id": last_run["batch_id"],
@@ -2245,6 +2743,7 @@ def gather(
             "sla_hours": FRESHNESS_SLA.total_seconds() / 3600,
             "sla_citation": FRESHNESS_SLA_CITATION,
             "within_sla": age <= FRESHNESS_SLA.total_seconds() / 3600,
+            "evaluated": True,
             "age_convention": "measured from 00:00 UTC on the publication date",
             "source": "CQC directory publication date (from the CSV preamble) / reconciliation_batches.source_published_at",
         }
@@ -2260,11 +2759,25 @@ def gather(
                 signal_age_hours is not None
                 and signal_age_hours <= SIGNAL_POLL_FRESHNESS_SLA.total_seconds() / 3600
             ),
+            "evaluated": signal_age_hours is not None,
             "source": "trusted_event_ledger.max(observed_at)",
         },
         "newest_available_source": source_age(snapshot.published_at),
         "ingested_source": source_age((last_run or {}).get("source_published_at")),
     }
+    freshness["available"] = bool(
+        (freshness["signal"] or {}).get("observed_at")
+        or freshness["newest_available_source"]
+        or freshness["ingested_source"]
+    )
+    freshness["unavailable_reason"] = (
+        None
+        if freshness["available"]
+        else (
+            "neither a CQC signal timestamp nor a publication date could be read, so the freshness SLA promises "
+            "were not evaluated"
+        )
+    )
 
     sweep = None
     observed_sweep = None
@@ -2289,6 +2802,8 @@ def gather(
         freshness=freshness,
         run_history_status=run_history.get("status", "unavailable"),
         drift_notes=cadence.get("drift_notes") or [],
+        incompleteness=(alignment or {}).get("incompleteness"),
+        freshness_unavailable_reason=freshness.get("unavailable_reason"),
     )
 
     directory_snapshot_changed = bool(
@@ -2334,13 +2849,76 @@ def gather(
         "observed_sweep": observed_sweep,
         "directory_snapshot_changed": directory_snapshot_changed,
         "directory_snapshot_sha256": snapshot.sha256,
+        "evidence": evidence_index(out_dir, now=now),
         "verdicts": verdicts,
     }
 
 
 # ---------------------------------------------------------------------------
-# findings and rendering
+# evidence index
 # ---------------------------------------------------------------------------
+# (relative path template, checksum-only): the raw published snapshot is the one
+# cited artifact too large to commit, so it is pinned by sha256 instead.
+EVIDENCE_ARTIFACTS: tuple[tuple[str, bool], ...] = (
+    ("cache/directory-snapshot.json", True),
+    ("cache/divergent-db-active.json", False),
+    ("cache/source-inactive-vs-db.json", False),
+    ("cache/attested-causes.json", False),
+    ("{date}-unrated-classification.json", False),
+    ("state.json", False),
+)
+
+
+def _git_tracks(path: Path) -> bool | None:
+    """Whether git tracks ``path``; None when git cannot be asked."""
+    git = shutil.which("git")
+    if git is None:
+        return None
+    try:
+        path.relative_to(REPO_ROOT)
+    except ValueError:
+        return False  # outside the repository: no commit can ever carry it
+    try:
+        proc = subprocess.run(
+            [git, "ls-files", "--error-unmatch", "--", str(path)],
+            cwd=REPO_ROOT,
+            capture_output=True,
+            text=True,
+            timeout=20,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if proc.returncode == 0:
+        return True
+    return False if "did not match any file" in proc.stderr or "error: pathspec" in proc.stderr else None
+
+
+def evidence_index(out_dir: Path, *, now: datetime) -> list[dict[str, Any]]:
+    """Every file the report cites as evidence, with checksum and tracked state.
+
+    A report that cites a path nobody can open from the commit is not verifiable,
+    so each referenced artifact is listed with its sha256, size and whether git
+    tracks it. The raw published snapshot is checksum-only: it is too large to
+    commit, and the report's sha256 plus the CQC URI is what pins it.
+    """
+    entries: list[dict[str, Any]] = []
+    for template, checksum_only in EVIDENCE_ARTIFACTS:
+        relative = template.format(date=now.strftime("%Y-%m-%d"))
+        path = out_dir / relative
+        entry: dict[str, Any] = {
+            "path": os.path.relpath(path, REPO_ROOT) if path.is_absolute() else relative,
+            "present": path.is_file(),
+            "checksum_only": checksum_only,
+        }
+        if path.is_file():
+            payload = path.read_bytes()
+            entry["bytes"] = len(payload)
+            entry["sha256"] = hashlib.sha256(payload).hexdigest()
+        entry["git_tracked"] = _git_tracks(path)
+        entries.append(entry)
+    return entries
+
+
 def findings(data: dict[str, Any]) -> list[str]:
     """Reasons this night deserves attention. Each names its class."""
     out: list[str] = []
@@ -2370,6 +2948,19 @@ def findings(data: dict[str, Any]) -> list[str]:
         )
     if data.get("directory_snapshot_changed"):
         out.append("[source movement] CQC published a new directory snapshot since the previous run (checksum changed)")
+    unverifiable = [
+        entry.get("path")
+        for entry in data.get("evidence") or []
+        if entry.get("present") and not entry.get("checksum_only") and entry.get("git_tracked") is False
+    ]
+    if unverifiable:
+        out.append(
+            "[evidence] cited evidence is not tracked by git, so the report cannot be verified from the commit: "
+            + ", ".join(str(path) for path in unverifiable)
+        )
+    missing = [entry.get("path") for entry in data.get("evidence") or [] if not entry.get("present")]
+    if missing:
+        out.append("[evidence] cited evidence is missing from the filesystem: " + ", ".join(str(p) for p in missing))
     return out
 
 
@@ -2397,12 +2988,29 @@ def render(data: dict[str, Any]) -> str:
         "",
         f"- Window: {coverage['window']['start']} -> {coverage['window']['end']} "
         f"({coverage['window']['hours']}h), grace {coverage['grace_minutes']}m",
-        f"- Expected: **{coverage['expected']['runs']}** - derived from cron "
-        + ", ".join(f"`{expr}`" for expr in cadence["expressions"])
-        + f" = {cadence['runs_per_day']}/day x 7 = {cadence['runs_per_week']}/week "
-        f"({cadence['source']}); {coverage['expected']['due']} due, "
-        f"{coverage['expected']['not_yet_due']} not yet due",
+        f"- Expected: **{coverage['expected']['runs']}** - {coverage['expected']['derivation']}; "
+        f"{coverage['expected']['due']} due, {coverage['expected']['not_yet_due']} not yet due "
+        f"(source: {coverage['expected']['source']})",
+        f"- Current cadence: "
+        + ", ".join(f"`{expr}`" for expr in cadence.get("expressions") or [])
+        + f" = {cadence.get('runs_per_day')}/day x 7 = {cadence.get('runs_per_week')}/week "
+        f"({cadence.get('source')})",
     ]
+    epoch_rows = coverage["expected"].get("epochs") or []
+    if len(epoch_rows) > 1:
+        lines.append("- Schedules in force during this window (per-epoch fires):")
+        for epoch in epoch_rows:
+            lines.append(
+                f"  - from {epoch['effective_from'] or '(undated)'} to {epoch['in_force_to']}: "
+                + " / ".join(f"`{expr}`" for expr in epoch["crons"])
+                + f" = {epoch['fires']} fire(s)"
+                + (f", commit {epoch['commit'][:12]}" if epoch.get("commit") else "")
+            )
+    elif coverage["expected"].get("schedule_history_available") is False:
+        lines.append(
+            "- Schedule history unavailable: expected fires above apply today's cron to the whole window, so they "
+            "are not backed by the schedules in force at the time."
+        )
     if coverage.get("available", True):
         lines += [
             f"- Attempted: **{coverage['attempted']['runs']}** scheduled runs - {coverage['attempted']['source']}",
@@ -2422,9 +3030,13 @@ def render(data: dict[str, Any]) -> str:
         ]
     lines += [
         f"- DB cross-check ({coverage['db_cross_check']['source']}, same window): "
-        f"{coverage['db_cross_check']['db_signal_poll_completed']} completed / "
+        f"{coverage['db_cross_check'].get('db_signal_poll_completed', 0)} completed, "
+        f"{coverage['db_cross_check'].get('db_signal_poll_partial', 0)} partial, "
+        f"{coverage['db_cross_check'].get('db_signal_poll_failed', 0)} failed / "
         f"{coverage['db_cross_check']['db_signal_poll_total_rows']} rows. {coverage['db_cross_check']['reconciliation']}",
     ]
+    if coverage.get("available", True) and coverage["successful"].get("incomplete_runs"):
+        lines.append(f"- **Partial polls**: {coverage['successful']['note']}")
     if coverage.get("available", True):
         lines += [
             f"- Delivered: {_ratio(coverage['attempted']['runs'], coverage['expected']['due'])} of due fires attempted, "
@@ -2436,11 +3048,12 @@ def render(data: dict[str, Any]) -> str:
         change = coverage["cadence_change"]
         lines.append(
             f"- Cadence change at {change['at']} ({change['source']}): this window spans two schedules - "
-            f"post-change expected {change['expected_runs']} fire(s), {change['due']} due, "
-            f"{change['attempted']} attempted, {change['missed']} missed. {change['note']}"
+            "latest schedule "
+            + " / ".join(f"`{expr}`" for expr in change["crons"])
+            + f" = {change['expected_runs']} fire(s) against the rest of the window. {change['note']}"
         )
-    if data.get("unexpected_extra"):
-        lines.append(f"- {data['unexpected_extra']}")
+    if coverage.get("unexpected_extra"):
+        lines.append(f"- {coverage['unexpected_extra']}")
     if cadence.get("drift_notes"):
         lines.append(f"- **Cadence drift**: {'; '.join(cadence['drift_notes'])}")
     if data.get("sweep"):
@@ -2458,14 +3071,25 @@ def render(data: dict[str, Any]) -> str:
         )
 
     freshness = data["freshness"]
+    signal = freshness.get("signal") or {}
     lines += [
         "",
         "## Freshness (documented thresholds, cited)",
         "",
-        f"- Newest CQC signal observed: {data.get('ledger_newest') or 'never'} "
-        f"({freshness['signal']['age_hours']}h ago) against {freshness['signal']['sla_citation']} -> "
-        f"{'within' if freshness['signal']['within_sla'] else '**BREACH**'}",
     ]
+    if signal.get("evaluated", "within_sla" in signal):
+        lines.append(
+            f"- Newest CQC signal observed: {data.get('ledger_newest') or 'never'} "
+            f"({signal['age_hours']}h ago) against {signal['sla_citation']} -> "
+            f"{'within' if signal['within_sla'] else '**BREACH**'}"
+        )
+    else:
+        lines.append(
+            "- Newest CQC signal observed: **not evaluable** - no signal timestamp is available, so the "
+            "poll-freshness promise is unverified"
+        )
+    if not freshness.get("available", True):
+        lines.append(f"- **Freshness unverified**: {freshness.get('unavailable_reason')}")
     if freshness.get("newest_available_source"):
         item = freshness["newest_available_source"]
         lines.append(
@@ -2648,7 +3272,8 @@ def render(data: dict[str, Any]) -> str:
 
     lines += [
         "",
-        f"## Pipeline runs in the change window ({data['window_hours']}h to {data['window_start']})",
+        f"## Pipeline runs in the change window ({data['window_hours']}h, "
+        f"{data['window_start']} to {data['generated_at']})",
         "",
         "- Window differs from the 7-day polling-coverage window above; the two are never added together",
     ]
@@ -2686,12 +3311,39 @@ def render(data: dict[str, Any]) -> str:
 
     lines += [
         "",
+        "## Evidence index",
+        "",
+        "Every artifact this report cites, with its checksum and whether the commit carries it.",
+        "",
+    ]
+    for entry in data.get("evidence") or []:
+        if not entry.get("present"):
+            lines.append(f"- `{entry['path']}`: **missing** from the filesystem")
+            continue
+        tracked = {True: "tracked", False: "**not tracked by git**", None: "tracked state unknown"}[
+            entry.get("git_tracked")
+        ]
+        size = f"{entry.get('bytes', 0) / 1024:,.1f} KiB"
+        lines.append(
+            f"- `{entry['path']}`: {size}, sha256 `{str(entry.get('sha256'))[:12]}...`, {tracked}"
+            + (
+                " - too large to commit: the checksum above is what pins it to the CQC URI in the alignment section"
+                if entry.get("checksum_only")
+                else ""
+            )
+        )
+
+    lines += [
+        "",
         "## Sources",
         "",
         "- Poll buckets: GitHub Actions `gh run list --workflow=cqc-signal-poll.yml`; DB cross-check: `pipeline_runs`",
         f"- Expected cadence: {cadence['source']}",
+        f"- Schedules in force: {SCHEDULE_HISTORY_SOURCE}",
+        f"- Divergent-ID classifier: revision {data.get('alignment', {}).get('classifier_revision') if data.get('alignment') else CLASSIFIER_REVISION}"
+        f" (classes: {'; '.join(f'{group} = ' + ', '.join(names) for group, names in (data.get('alignment') or {}).get('classifier_classes', {}).items()) or 'n/a'})",
         "- Snapshot identity and identifier diff: CQC directory CSV (streamed, sha256) vs `care_providers`",
-        "- Divergent-ID classes: live CQC API location detail",
+        "- Publication dates: CQC's printed date form is normalised to ISO `YYYY-MM-DD` before storage and comparison",
         "- Change counts: `trusted_event_ledger`; rewrites: `care_providers.updated_at`",
         f"- Thresholds: {PIPELINE_HEALTH_SOURCE} (never loosened here)",
         "",
@@ -2714,6 +3366,25 @@ def state_payload(data: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def finalize_outputs(data: dict[str, Any], out_dir: Path, *, now: datetime) -> Path:
+    """Write ``state.json``, then the report, with evidence hashed from the files on disk.
+
+    ``state.json`` is rewritten by every run, so the report has to cite the checksum of
+    the file this run leaves behind, not the one the previous run left: a cited checksum
+    that does not match the committed file is not evidence.
+    """
+    stamp = now.strftime("%Y-%m-%d")
+    report_md = out_dir / f"{stamp}-report.md"
+    report_json = out_dir / f"{stamp}-report.json"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    _write_json(out_dir / "state.json", state_payload(data))
+    if data.get("evidence") is not None:
+        data["evidence"] = evidence_index(out_dir, now=now)
+    report_md.write_text(render(data))
+    _write_json(report_json, data)
+    return report_md
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--window-hours", type=int, default=24, help="change-event window (default 24)")
@@ -2732,13 +3403,6 @@ def main(argv: list[str] | None = None) -> int:
     previous = _load_json(out_dir / "state.json")
 
     cadence = derive_cadence(now=now)
-    change_at_raw = cadence_change_at()
-    cadence_change = None
-    if change_at_raw:
-        try:
-            cadence_change = datetime.fromisoformat(change_at_raw.replace("Z", "+00:00"))
-        except ValueError:
-            cadence_change = None
 
     run_history: dict[str, Any] = {"status": "unavailable", "reason": "skipped (--no-remote)"}
     recon_history: dict[str, Any] = {"status": "unavailable", "reason": "skipped (--no-remote)"}
@@ -2816,18 +3480,12 @@ def main(argv: list[str] | None = None) -> int:
             detail_fetcher=detail_fetcher,
             attest=attest,
             cadence=cadence,
-            cadence_change=cadence_change,
             previous=previous,
         )
     finally:
         conn.close()
 
-    stamp = now.strftime("%Y-%m-%d")
-    report_md = out_dir / f"{stamp}-report.md"
-    report_json = out_dir / f"{stamp}-report.json"
-    report_md.write_text(render(data))
-    _write_json(report_json, data)
-    _write_json(out_dir / "state.json", state_payload(data))
+    report_md = finalize_outputs(data, out_dir, now=now)
 
     notices = findings(data)
     print(

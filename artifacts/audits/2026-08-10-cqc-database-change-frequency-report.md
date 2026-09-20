@@ -71,6 +71,13 @@ Repository schedule: `.github/workflows/cqc-signal-poll.yml:10-11`
 - Public Actions history: 13 total runs from 2026-08-09 22:36 UTC through 2026-08-10 16:27 UTC; 13 failures, 0 successes.
 - Latest job setup, checkout, Python setup, and dependency installation passed; the **“Poll approved CQC sources in shadow mode”** step failed with exit code 1.
 
+> **Historical figures — do not read as current (annotated 2026-09-20).** The 48/day, 336/week figures in
+> this 2026-08-10 audit describe the schedule in force on that date. `.github/workflows/cqc-signal-poll.yml`
+> has changed three times since: `37 * * * *` (2026-08-31, `1e7d594`), back to `7,37 * * * *`
+> (2026-09-03, `39fa9a3`), then `7 18,21,0,3 * * *` (2026-09-15 10:38Z, `6bc9880`). The cadence in force
+> now is 4 polls/day, 28/week, and the nightly report derives it from the workflow file rather than from a
+> stored constant. Every `336` below is historical.
+
 The collector failure is also explained by release drift. The failing workflow
 runs use production SHA `b2deb57b...`, where the collector was invoked as a file
 and Python excluded the repository root, causing `ModuleNotFoundError` before
