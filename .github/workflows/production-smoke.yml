@@ -32,7 +32,11 @@ jobs:
           CAREGIST_APP_URL: https://www.caregist.co.uk
           CAREGIST_SMOKE_ATTEMPTS: "15"
           CAREGIST_SMOKE_RETRY_DELAY_SECONDS: "20"
-          CAREGIST_EXPECTED_FRONTEND_GIT_SHA: ${{ vars.CAREGIST_PRODUCTION_FRONTEND_SHA }}
-          CAREGIST_EXPECTED_BACKEND_GIT_SHA: ${{ vars.CAREGIST_PRODUCTION_BACKEND_SHA }}
+          # A push-triggered run must prove that the commit which triggered the
+          # deploy is the commit being served. Scheduled and manually dispatched
+          # runs keep using the operator-pinned repository variables, which also
+          # remain available as an override.
+          #
+          # Pinning only via the variabl...[truncated]
           CAREGIST_REQUIRE_RELEASE_IDENTITY: "true"
         run: python tools/verify-deploy.py
