@@ -893,6 +893,32 @@ def test_confirmation_decisions_keep_every_candidate_except_the_deregistered_one
     ]
 
 
+def test_confirmation_progress_never_aborts_the_phase_on_a_broken_stdout(monkeypatch):
+    """A failed log stream must not cost the batch: progress output is best-effort."""
+    outcomes = {
+        "1-00001": {"registrationStatus": "Registered"},
+        "1-00002": {"registrationStatus": "Deregistered"},
+    }
+
+    def fake_fetch_detail(base_url, api_key, location_id):
+        return outcomes[location_id]
+
+    def broken_print(*args, **kwargs):
+        raise OSError("stdout is gone")
+
+    monkeypatch.setattr("builtins.print", broken_print)
+
+    decisions = confirm_deactivation_candidates(
+        list(outcomes),
+        base_url="https://api.example.invalid/public/v1/locations/",
+        api_key="unit-test-key",
+        fetch_detail=fake_fetch_detail,
+    )
+
+    assert [decision.location_id for decision in decisions] == list(outcomes)
+    assert [decision.deactivates for decision in decisions] == [False, True]
+
+
 def test_checkpoint_resume_starts_at_persisted_offset_without_overlap():
     location_ids = [f"LOC-{index}" for index in range(10)]
 

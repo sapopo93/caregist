@@ -773,6 +773,18 @@ def classify_registration_status(raw_status: Any) -> tuple[str, str]:
     return (DEACTIVATION_KEEP, CLASSIFICATION_UNCONFIRMED)
 
 
+def _progress(message: str) -> None:
+    """Best-effort progress output for CI logs.
+
+    A reconciliation phase must never abort because its log stream failed, so a
+    broken stdout is swallowed rather than raised.
+    """
+    try:
+        print(message, flush=True)
+    except OSError:
+        pass
+
+
 def confirm_deactivation_candidates(
     candidate_ids: Sequence[str],
     *,
@@ -801,13 +813,10 @@ def confirm_deactivation_candidates(
         # timeout and its log could not say how far the phase had got. Name the
         # phase before the first request and report progress as it advances, so
         # the next slow confirmation is diagnosable from CI output alone.
-        print(
-            f"Confirming {total} deactivation candidate(s) against the live CQC API...",
-            flush=True,
-        )
+        _progress(f"Confirming {total} deactivation candidate(s) against the live CQC API...")
     for index, location_id in enumerate(candidate_ids, start=1):
         if index % 25 == 0:
-            print(f"  ...confirmed {index - 1}/{total} candidate(s)", flush=True)
+            _progress(f"  ...confirmed {index - 1}/{total} candidate(s)")
         try:
             detail = fetch(base_url, api_key, location_id)
         except Exception as exc:  # noqa: BLE001 - one unconfirmed id must not abort the batch
