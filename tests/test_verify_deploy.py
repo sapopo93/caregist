@@ -450,3 +450,72 @@ def test_lead_smoke_accepts_explicitly_retired_product(verifier, monkeypatch):
     )
 
     verifier.verify_lead_capture_and_export()
+
+
+def test_provider_api_check_catches_missing_column_503(verifier, monkeypatch):
+    """Regression for 2026-09-20: a release passed every page-level check while
+    /api/v1/providers/search returned HTTP 503, because the deployed code selected a
+    database column that had never been migrated. The page-level SEARCH and PROVIDER
+    checks render server-side and could not see it.
+    """
+    monkeypatch.setattr(
+        verifier,
+        "fetch",
+        lambda *_args, **_kwargs: verifier.Response(
+            503,
+            {"content-type": "application/json"},
+            '{"detail":"Database query failed."}',
+        ),
+    )
+
+    with pytest.raises(verifier.SmokeFailure):
+        verifier.verify_provider_api(57151)
+
+
+def test_provider_api_check_passes_when_search_and_detail_respond(verifier, monkeypatch):
+    calls = []
+
+    def fake_fetch(path, **_kwargs):
+        calls.append(path)
+        if "providers/search" in path:
+            return verifier.Response(
+                200,
+                {"content-type": "application/json"},
+                json.dumps(
+                    {
+                        "data": [
+                            {
+                                "name": "London Care (East London)",
+                                "slug": "london-care-east-london-london",
+                            }
+                        ]
+                    }
+                ),
+            )
+        return verifier.Response(
+            200,
+            {"content-type": "application/json"},
+            json.dumps({"data": {"name": "London Care (East London)"}}),
+        )
+
+    monkeypatch.setattr(verifier, "fetch", fake_fetch)
+
+    verifier.verify_provider_api(57151)
+
+    assert calls[0].startswith("/api/v1/providers/search?")
+    assert calls[1] == "/api/v1/providers/london-care-east-london-london"
+
+
+def test_provider_api_check_fails_when_search_returns_no_rows(verifier, monkeypatch):
+    monkeypatch.setattr(
+        verifier,
+        "fetch",
+        lambda *_args, **_kwargs: verifier.Response(
+            200,
+            {"content-type": "application/json"},
+            '{"data":[]}',
+        ),
+    )
+
+    with pytest.raises(verifier.SmokeFailure):
+        verifier.verify_provider_api(57151)

@@ -284,6 +284,60 @@ def verify_provider_page(active_location_count: int | None = None) -> None:
     print_ok("PROVIDER", f"/provider/{PROVIDER_SLUG} rendered {EXPECTED_PROVIDER!r}")
 
 
+def verify_provider_api(active_location_count: int | None = None) -> None:
+    """Exercise the JSON provider API the client-side UI actually calls.
+
+    Added 2026-09-20: a production release passed every check above while
+    /api/v1/providers/search returned HTTP 503 because the deployed code required a
+    database column that had never been migrated. The page-level SEARCH and PROVIDER
+    checks render server-side, so they cannot see this path.
+    """
+    response = fetch(f"/api/v1/providers/search?{urlencode({'q': SEARCH_QUERY, 'per_page': 1})}")
+    assert_true(
+        response.status == 200,
+        f"/api/v1/providers/search failed: {response_diagnostic(response)}",
+    )
+    try:
+        payload = json.loads(response.body)
+    except json.JSONDecodeError as error:
+        raise SmokeFailure(f"/api/v1/providers/search returned invalid JSON: {error}") from error
+
+    rows = payload.get("data")
+    assert_true(
+        isinstance(rows, list),
+        f"/api/v1/providers/search returned an unexpected payload: {sorted(payload)[:6]}",
+    )
+
+    if active_location_count == 0:
+        assert_true(rows == [], "empty preview dataset returned provider rows from the search API")
+        print_ok("PROVIDER_API", "search API returned an empty data list for the empty preview dataset")
+        return
+
+    assert_true(bool(rows), "/api/v1/providers/search returned no rows for a non-empty dataset")
+    first = rows[0] if isinstance(rows[0], dict) else {}
+    slug = str(first.get("slug") or "")
+    assert_true(bool(first.get("name")), "search API row was missing a name")
+    assert_true(bool(slug), "search API row was missing a slug")
+
+    detail = fetch(f"/api/v1/providers/{slug}")
+    assert_true(detail.status == 200, f"/api/v1/providers/{slug} failed: {response_diagnostic(detail)}")
+    try:
+        detail_payload = json.loads(detail.body)
+    except json.JSONDecodeError as error:
+        raise SmokeFailure(f"/api/v1/providers/{slug} returned invalid JSON: {error}") from error
+
+    detail_data = detail_payload.get("data") if isinstance(detail_payload, dict) else None
+    if not isinstance(detail_data, dict):
+        raise SmokeFailure(f"/api/v1/providers/{slug} returned an unexpected payload")
+    detail_name = detail_data.get("name")
+    assert_true(bool(detail_name), f"/api/v1/providers/{slug} returned no provider name")
+
+    print_ok(
+        "PROVIDER_API",
+        f"search API returned {len(rows)} row(s); detail API rendered {detail_name!r}",
+    )
+
+
 def verify_export_requires_token() -> bool:
     response = fetch("/api/export")
     if response.status == 503:
@@ -408,6 +462,13 @@ def main() -> int:
                 verify_provider_sitemap(active_location_count)
             verify_search(active_location_count)
             verify_provider_page(active_location_count)
+            if operating_mode == "fallback":
+                print(
+                    "PROVIDER_API: SKIPPED - frontend fallback mode does not serve the "
+                    "database-backed provider API"
+                )
+            else:
+                verify_provider_api(active_location_count)
             exports_enabled = verify_export_requires_token()
 
             if LEAD_EMAIL:
