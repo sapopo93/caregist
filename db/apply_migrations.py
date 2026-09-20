@@ -41,6 +41,15 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Confirm a production backup/PITR point exists before production migrations.",
     )
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help=(
+            "Report migrations present in this checkout but not applied to the target, "
+            "then exit non-zero if any are pending. Read-only: applies nothing and "
+            "never creates the ledger table, so it needs no backup confirmation."
+        ),
+    )
     return parser.parse_args()
 
 
@@ -61,6 +70,7 @@ def resolve_database_url(
     *,
     target: str = "local",
     confirm_production_backup: bool = False,
+    read_only: bool = False,
 ) -> str | None:
     if target == "staging":
         staging_url = os.getenv("STAGING_DATABASE_URL") or _read_env_file_value("STAGING_DATABASE_URL")
@@ -69,7 +79,9 @@ def resolve_database_url(
         return staging_url
 
     if target == "production":
-        if not confirm_production_backup:
+        # A read-only check (--check) mutates nothing, so it needs no restore-point
+        # assertion. Every write path still requires the explicit confirmation.
+        if not confirm_production_backup and not read_only:
             raise RuntimeError("--confirm-production-backup is required before production migrations.")
         prod_url = os.getenv("PROD_DATABASE_URL") or _read_env_file_value("PROD_DATABASE_URL")
         if not prod_url:
@@ -130,6 +142,37 @@ async def apply_migrations(database_url: str) -> int:
     return applied_count
 
 
+async def pending_migrations(database_url: str) -> list[str]:
+    """Return migrations in this checkout that the target database has not applied.
+
+    Read-only by construction: it resolves the ledger with ``to_regclass`` (which
+    returns NULL instead of raising when the table is absent) and issues only
+    ``SELECT`` statements. It never creates ``schema_migrations`` and never applies
+    anything, so a missing ledger is reported as "everything is pending" rather
+    than silently materialising a table.
+    """
+    import asyncpg
+
+    migration_files = sorted(MIGRATIONS_DIR.glob("[0-9][0-9][0-9]_*.sql"))
+    if not migration_files:
+        return []
+
+    conn = await asyncpg.connect(database_url)
+    try:
+        ledger = await conn.fetchval("SELECT to_regclass('schema_migrations')::text")
+        if ledger is None:
+            return [path.name for path in migration_files]
+
+        applied = {
+            row["filename"]
+            for row in await conn.fetch("SELECT filename FROM schema_migrations")
+        }
+    finally:
+        await conn.close()
+
+    return [path.name for path in migration_files if path.name not in applied]
+
+
 def main() -> int:
     args = parse_args()
     try:
@@ -137,12 +180,31 @@ def main() -> int:
             args.database_url,
             target=args.target,
             confirm_production_backup=args.confirm_production_backup,
+            read_only=args.check,
         )
     except RuntimeError as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 1
     if not database_url:
         print("ERROR: DATABASE_URL not set. Pass --database-url or set it in the environment.", file=sys.stderr)
+        return 1
+
+    if args.check:
+        try:
+            pending = asyncio.run(pending_migrations(database_url))
+        except Exception as exc:
+            print(f"Schema check failed: {type(exc).__name__}: {exc}", file=sys.stderr)
+            return 1
+        if not pending:
+            print("Schema is current: no pending migrations.")
+            return 0
+        print(
+            f"SCHEMA DRIFT: {len(pending)} migration(s) exist in this checkout but are not "
+            f"applied to the {args.target} database:",
+            file=sys.stderr,
+        )
+        for name in pending:
+            print(f"  - {name}", file=sys.stderr)
         return 1
 
     try:

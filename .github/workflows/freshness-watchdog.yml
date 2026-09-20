@@ -2,6 +2,11 @@ name: Freshness Watchdog
 
 on:
   workflow_dispatch:
+    inputs:
+      confirm_production_backup:
+        description: "Assert a production restore point (Neon PITR) exists before applying migrations"
+        type: boolean
+        default: false
   schedule:
     # One checkpoint at the end of the night, after the 03:00 poll has finished.
     # A daytime run would only report the staleness the night window intends.
@@ -15,9 +20,13 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  radar-checkout-migrate:
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/codex/radar-checkout-audit-20260814'
-    name: Apply Radar checkout migration
+  apply-production-migrations:
+    # This job was hard-gated to `codex/radar-checkout-audit-20260814`, a branch that
+    # no longer exists, which left `main` with no supported route to apply a
+    # migration — the drift that took search down on 2026-09-20. The deliberate act
+    # is now the explicit restore-point input below, not a remembered branch name.
+    if: github.event_name == 'workflow_dispatch'
+    name: Apply production migrations (explicitly confirmed)
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -30,6 +39,14 @@ jobs:
       - run: python -m pip install -r requirements.txt
       - name: Validate migration chain
         run: python tools/check_migration_governance.py
+      - name: Refuse without an asserted restore point
+        # The deliberate act that must accompany a production schema change. A
+        # human asserts it at dispatch time; CI cannot assert it on its own behalf.
+        run: |
+          if [ "${{ inputs.confirm_production_backup }}" != "true" ]; then
+            echo "Refusing to apply: re-dispatch with confirm_production_backup=true to assert a production restore point (Neon PITR)." >&2
+            exit 1
+          fi
       - name: Apply forward-only production migrations
         env:
           # The production pipeline is provisioned with DATABASE_URL. Map it
@@ -67,6 +84,10 @@ jobs:
 
           asyncio.run(verify())
           PY
+      - name: Verify production has no pending migrations
+        env:
+          PROD_DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: python db/apply_migrations.py --target production --check
 
   freshness:
     name: Check reconciled CQC freshness
