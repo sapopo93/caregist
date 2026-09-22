@@ -219,7 +219,7 @@ describe("page contracts", () => {
     const commercialSources = [pricingSource, apiSource, configSource, dashboardSource];
 
     assert.match(pricingSource, /VAT is not currently charged/);
-    assert.match(termsSource, /not VAT registered, so no VAT is added/);
+    assert.match(termsSource, /No VAT is added/);
     for (const source of commercialSources) {
       assert.doesNotMatch(source, /prices? exclude(?:s)? VAT/i);
     }
