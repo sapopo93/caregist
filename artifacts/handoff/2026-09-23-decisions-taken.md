@@ -143,3 +143,59 @@ against production.
 
 The ceiling stays where it was: do not state that an order is accepted until the
 paid journey has been checked once.
+
+---
+
+## D1 — REVISED 2026-09-23 05:05Z, after Codex's investigation landed.
+
+**Codex corrected me and is right.** I stated the Wednesday 02:15Z scheduled run
+"did not fire", checking at 03:33Z — 1h18m past the slot. That was premature.
+The two prior scheduled events were created **5h26m** and **5h29m** after their
+declared slots:
+
+| Run | Slot | Created | Delay | Result |
+|---|---|---|---|---|
+| `35069788326` | 09-16 02:15Z | 07:41:07Z | 5h26m | success |
+| `35497685490` | 09-20 02:15Z | 07:44:37Z | 5h29m | cancelled |
+
+At 05:04Z today the slot is **2.83h old** — still inside the observed envelope.
+Absence is **not yet distinguishable from delay**. Codex also ruled out
+repository-side suppression: workflow `330711851` is `active`, Actions are
+`enabled` with `allowed_actions: all`, `main` is the default branch and carries
+the workflow, and the 03:28Z push rules out the 60-day public-repo inactivity
+disable. Diagnosis: GitHub schedule delivery delay.
+
+### Where I now differ from Codex, on timing rather than diagnosis
+
+Codex says re-check after 07:45Z. Correct for *diagnosis*, wrong for the
+*deadline*. Do the arithmetic:
+
+- Wait to 07:45Z to confirm a drop, then dispatch → finishes **~12:00Z**, exactly
+  at the breach, **with no retry window at all**.
+- Dispatch now (~05:05Z) → finishes **~09:20Z**, leaving roughly 2h40m of margin
+  for one resume or retry.
+
+A run takes ~4h15m and the known failure mode (a transient upstream 500 killing
+a shard) is *not* fixed. Planning with zero margin against a failure mode you
+have already seen twice is the wrong risk trade.
+
+**Revised decision: dispatch now. Do not wait for 07:45Z.**
+
+If the delayed scheduled run then arrives, that is fine and costs only duplicated
+work — the concurrency group `cqc-reconciliation-production` is
+`cancel-in-progress: false`, so the two serialize rather than collide.
+
+**Codex's operational warning stands and is important:** do **not** cancel a late
+scheduled run in order to replace it with a manual one. Let it queue.
+
+### Acknowledgement input — Codex's design is right, and I withdraw my objection
+
+I declined to add this overnight because a badly-gated input would let a
+*scheduled* run accept deactivations CQC never confirmed. Codex's version gates
+exactly that: default `false`, rejected on dry runs, rejected on scheduled
+events, CLI flag passed only when the manual input is exactly `true`, and the
+CLI semantics preserved (unconfirmed candidates stay ACTIVE, IDs and count
+recorded, residual identity mismatch still refuses the batch). 96 tests pass.
+That meets the safety property I was protecting. **It should ship** — it makes
+the documented recovery path reachable from Actions. It is still not on the
+pushed branch.
