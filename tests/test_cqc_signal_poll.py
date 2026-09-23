@@ -119,8 +119,14 @@ def test_interruption_after_partial_progress_preserves_attempted_evidence():
 def test_production_smoke_uses_promoted_frontend_and_backend_release_pins():
     workflow = (Path(__file__).resolve().parents[1] / ".github/workflows/production-smoke.yml").read_text()
 
-    assert "vars.CAREGIST_PRODUCTION_FRONTEND_SHA" in workflow
-    assert "vars.CAREGIST_PRODUCTION_BACKEND_SHA" in workflow
+    # The expected SHA is now derived from the live deployment (see
+    # tools/resolve_production_sha.py) rather than hand-pinned repo variables,
+    # which went stale on every merge. Both services still get independent
+    # identity checks, driven from the one resolved SHA.
+    assert "vars.CAREGIST_PRODUCTION_FRONTEND_SHA" not in workflow
+    assert "vars.CAREGIST_PRODUCTION_BACKEND_SHA" not in workflow
+    assert "CAREGIST_EXPECTED_FRONTEND_GIT_SHA: ${{ steps.release.outputs.sha }}" in workflow
+    assert "CAREGIST_EXPECTED_BACKEND_GIT_SHA: ${{ steps.release.outputs.sha }}" in workflow
     assert 'CAREGIST_REQUIRE_RELEASE_IDENTITY: "true"' in workflow
     assert "CAREGIST_EXPECTED_GIT_SHA: ${{ github.sha }}" not in workflow
 

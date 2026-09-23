@@ -39,13 +39,37 @@ def test_production_smoke_requires_independent_release_identities():
     env = step["env"]
 
     assert env["CAREGIST_EXPECTED_FRONTEND_GIT_SHA"] == (
-        "${{ vars.CAREGIST_PRODUCTION_FRONTEND_SHA }}"
+        "${{ steps.release.outputs.sha }}"
     )
     assert env["CAREGIST_EXPECTED_BACKEND_GIT_SHA"] == (
-        "${{ vars.CAREGIST_PRODUCTION_BACKEND_SHA }}"
+        "${{ steps.release.outputs.sha }}"
     )
     assert env["CAREGIST_REQUIRE_RELEASE_IDENTITY"] == "true"
     assert "CAREGIST_EXPECTED_GIT_SHA: ${{ github.sha }}" not in source
+    assert "vars.CAREGIST_PRODUCTION_" not in source
+
+
+def test_production_smoke_derives_expected_sha_from_the_live_deployment():
+    workflow, source = _workflow("production-smoke.yml")
+    job = workflow["jobs"]["smoke"]
+
+    assert "push" not in workflow["on"]
+    assert "deployment_status" in workflow["on"]
+    condition = job["if"]
+    assert "github.event_name != 'deployment_status'" in condition
+    assert "github.event.deployment_status.state == 'success'" in condition
+    assert "github.event.deployment.environment == 'Production'" in condition
+    assert workflow["permissions"]["deployments"] == "read"
+    assert workflow["concurrency"]["cancel-in-progress"] == "false"
+
+    release_step = next(
+        step for step in job["steps"] if step.get("id") == "release"
+    )
+    assert "tools/resolve_production_sha.py" in release_step["run"]
+    # Event data reaches the script only through env, never ${{ }} interpolation.
+    assert release_step["env"]["DEPLOYMENT_SHA"] == "${{ github.event.deployment.sha }}"
+    assert "${{" not in release_step["run"]
+    assert "inputs.expected_sha" in source
 
 
 def test_radar_release_uses_available_database_secret_and_real_constraint():

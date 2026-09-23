@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { DM_Sans, Playfair_Display } from "next/font/google";
+import localFont from "next/font/local";
 import { unstable_cache } from "next/cache";
 import { connection } from "next/server";
 
@@ -39,18 +39,22 @@ const getDataCurrentAsOf = unstable_cache(async (): Promise<string | null> => {
   }
 }, ["caregist-data-current-as-of"], { revalidate: 3600 });
 
-const dmSans = DM_Sans({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600"],
+const dmSans = localFont({
+  src: "./fonts/dm-sans-latin-wght-normal.woff2",
+  weight: "300 600",
   variable: "--font-dm-sans",
   display: "swap",
+  fallback: ["system-ui", "sans-serif"],
+  adjustFontFallback: "Arial",
 });
 
-const playfairDisplay = Playfair_Display({
-  subsets: ["latin"],
-  weight: ["700", "800"],
+const playfairDisplay = localFont({
+  src: "./fonts/playfair-display-latin-wght-normal.woff2",
+  weight: "700 800",
   variable: "--font-playfair-display",
   display: "swap",
+  fallback: ["Georgia", "serif"],
+  adjustFontFallback: "Times New Roman",
 });
 
 export const metadata: Metadata = {
