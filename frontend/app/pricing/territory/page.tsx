@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Inter, Source_Serif_4 } from "next/font/google";
+import localFont from "next/font/local";
 
 import TerritoryScopePicker from "@/components/TerritoryScopePicker";
 import { CQC_INDEPENDENCE_LINE } from "@/lib/caregist-config";
@@ -10,17 +10,21 @@ import styles from "./territory.module.css";
 
 // Scoped to this route only — see DESIGN.md: adopting these fonts sitewide is
 // a separate, reviewed decision, not a side effect of polishing one page.
-const territorySerif = Source_Serif_4({
-  subsets: ["latin"],
-  weight: ["600"],
+const territorySerif = localFont({
+  src: "../../fonts/source-serif-4-latin-wght-normal.woff2",
+  weight: "600",
   variable: "--font-territory-serif",
   display: "swap",
+  fallback: ["Georgia", "serif"],
+  adjustFontFallback: "Times New Roman",
 });
-const territoryInter = Inter({
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
+const territoryInter = localFont({
+  src: "../../fonts/inter-latin-wght-normal.woff2",
+  weight: "400 600",
   variable: "--font-territory-inter",
   display: "swap",
+  fallback: ["system-ui", "sans-serif"],
+  adjustFontFallback: "Arial",
 });
 
 export const metadata: Metadata = {
