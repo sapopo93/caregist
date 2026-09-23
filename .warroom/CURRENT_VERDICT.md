@@ -1,5 +1,28 @@
 # CURRENT VERDICT — CareGist
 
+## 2026-09-23 04:04Z checkpoint
+
+- Frontend `/api/health/directory` and backend `/api/v1/version` both serve
+  `68121f80fe311912777c3e6cd99c2785149cdf66`, current `main`.
+- The customer directory is HTTP 200 and database-backed. Commercial health remains
+  deliberately degraded/fail-closed: `checkoutReady=false`, delivery disabled,
+  source age 164.4h/192h, latest authoritative attempt incomplete.
+- The VA may agree scope and quote the £745 fixed fee with no VAT added. The VA must
+  not send a payment link or represent an accepted order until the founder clears
+  the checkout policy-link and independently checked paid-journey gates.
+- The 02:15Z reconciliation event had not appeared by 03:51Z, but the two prior cron
+  events arrived 5h26m and 5h30m late. Evidence supports delivery delay; loss cannot
+  be classified until after the observed delay window. See
+  `artifacts/handoff/2026-09-23-reconciliation-critical-path.md`.
+- PR #71 is rebased: implementation, preview and disposable-Postgres checks pass;
+  the production-schema gate correctly remains red because migration 064 is unapplied.
+  PR #72 is fully green and exposes only the existing manual, default-off
+  reconciliation acknowledgement.
+
+**Status:** customer directory and manual VA scoping/quoting are available. Taking
+payment, accepting an order, checkout, delivery and production reconciliation remain
+behind their named founder gates.
+
 **Established:** 2026-09-11 00:07–00:30 BST
 **Method:** live production probes, GitHub API, repository inspection, local test execution
 **Previous version:** 2026-08-20 (22 days stale — superseded)

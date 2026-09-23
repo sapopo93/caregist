@@ -1,5 +1,18 @@
 # NEXT ACTIONS — CareGist
 
+## 2026-09-23 04:04Z ordered checkpoint
+
+1. At/after 07:45Z, check whether the 02:15Z reconciliation event arrived inside
+   the delay window observed on both prior scheduled runs. If running, do not cancel it.
+2. If no reconciliation exists, Henry decides whether to dispatch one production run
+   from `main` with `dry_run=false`; allow the measured ~4h15m and change no thresholds.
+3. Obtain independent review of the final PR #71 head and PR #72. PR #72 is fully
+   green; PR #71 is green except for the expected production-schema gate.
+4. Apply migration 064 only through the approved production migration path before
+   PR #71 merge, then require the schema gate and CI to pass. No bypass.
+5. The VA may agree scope and quote £745 fixed fee/no VAT. Do not send a payment link
+   or accept an order until the founder clears the two structural sales gates.
+
 **Refreshed:** 2026-09-11 00:30 BST · One next action per workstream. No competing plans.
 
 ---

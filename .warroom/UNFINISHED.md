@@ -1,5 +1,17 @@
 # UNFINISHED — CareGist
 
+## 2026-09-23 04:04Z checkpoint
+
+- The 02:15Z reconciliation event is not yet classified as delayed versus dropped;
+  re-check after the previously observed ~5.5h delay window.
+- No production reconciliation was dispatched. The last complete watermark remains
+  2026-09-16T12:00:07Z and breaches its 192h SLA on 2026-09-24T12:00Z.
+- PR #72 is green but unmerged and independently unreviewed.
+- PR #71 is rebased and its implementation/disposable-Postgres checks pass, but
+  migration 064 is unapplied in production, so its schema gate is correctly red.
+- The customer directory and manual scope conversation work. Payment links, accepted
+  orders, checkout and delivery remain fail-closed pending founder gates.
+
 **Refreshed:** 2026-09-11 00:30 BST. Everything here is **incomplete**. None of it is "nearly
 done" in the sense of being externally provable.
 
