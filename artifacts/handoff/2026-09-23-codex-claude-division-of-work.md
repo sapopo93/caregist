@@ -366,10 +366,21 @@ tries, and the known blocker is clear, so **triggering a run is now reasonable**
 
 1. If a shard dies on a transient 500, **resume it** with `resume_batch_id` +
    `resume_run_id` rather than starting over.
-2. If finalize is reached and refuses on unconfirmed deactivations, there is
-   **no way to clear it from the Actions UI** — the
-   `--acknowledge-unconfirmed-deactivations` input Codex prepared is still local
-   and unpushed. Getting that pushed before the run would remove the one dead end
-   that has no in-UI escape.
+2. If finalize is reached and refuses on unconfirmed deactivations, there is no
+   way to clear it **from the Actions UI**. It is not a dead end, though —
+   *(corrected 04:55Z; an earlier line here called it one, which overstated it)*
+   — `--acknowledge-unconfirmed-deactivations` exists on `origin/main` today as
+   an argparse flag (`incremental_update.py:2578`), so the recovery path is
+   available by running the tool directly against production.
+
+   It is also already manual-only by construction, which is the property that
+   matters: it defaults to false and the workflow never passes it, so a
+   *scheduled* run cannot acknowledge unconfirmed deactivations no matter what.
+   That safety property is what must survive if the input is ever added to
+   `workflow_dispatch` — an input wired so a scheduled run could reach it would
+   let automatic reconciliation silently accept deactivations CQC never
+   confirmed, which is exactly the "never assert what the source did not say"
+   rule. Claude deliberately did not add that input unsupervised at 05:00 for
+   this reason; the gating deserves a reviewer who is awake.
 
 Still a production write. Still Henry's call.
