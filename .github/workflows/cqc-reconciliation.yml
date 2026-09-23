@@ -35,6 +35,14 @@ on:
         description: Actions run containing the immutable manifest (requires resume_batch_id)
         type: string
         default: ""
+      acknowledge_unconfirmed_deactivations:
+        description: >-
+          Manual recovery only. Record deactivation candidates the live CQC API
+          could not confirm as explicitly unconfirmed and finalize anyway. They
+          stay ACTIVE and their ids and count are recorded on the batch. Refused
+          on scheduled runs and on dry runs.
+        type: boolean
+        default: false
 
   schedule:
     - cron: "15 2 * * 0"  # Sunday 02:15 UTC
@@ -341,11 +349,37 @@ jobs:
           # all 126 candidates are recorded unconfirmed, and the batch is refused
           # (run 35529037973, 2026-09-20). The shard job has always had this key.
           CQC_API_KEY: ${{ secrets.CQC_API_KEY }}
+          # Read as data and gated in shell rather than interpolated into the
+          # command: an empty `inputs` context (every non-dispatch event) must
+          # not be able to produce the flag.
+          ACK_INPUT: ${{ inputs.acknowledge_unconfirmed_deactivations }}
+          EVENT_NAME: ${{ github.event_name }}
+          DRY_RUN: ${{ inputs.dry_run }}
         run: |
+          set -euo pipefail
+          ACK_FLAG=""
+          if [ "${ACK_INPUT:-}" = "true" ]; then
+            # Manual-only. On a schedule the inputs context is empty, so this
+            # branch is unreachable there; the check is explicit anyway so a
+            # future edit that wires an input into the schedule path fails loudly
+            # instead of silently acknowledging unconfirmed deactivations.
+            if [ "${EVENT_NAME:-}" != "workflow_dispatch" ]; then
+              echo "::error::acknowledge_unconfirmed_deactivations is manual-only; refusing on ${EVENT_NAME:-unknown}."
+              exit 1
+            fi
+            if [ "${DRY_RUN:-}" = "true" ]; then
+              echo "::error::acknowledge_unconfirmed_deactivations cannot be combined with a dry run."
+              exit 1
+            fi
+            echo "Operator explicitly acknowledged unconfirmed deactivation candidates for this batch."
+            echo "They remain ACTIVE; their ids and count are recorded on the batch row."
+            ACK_FLAG="--acknowledge-unconfirmed-deactivations"
+          fi
           python incremental_update.py --phase finalize \
             --batch-id "${{ needs.prepare.outputs.batch_id }}" \
             --snapshot-manifest "$SNAPSHOT_MANIFEST" \
-            --shard-count "${{ needs.prepare.outputs.shard_count }}"
+            --shard-count "${{ needs.prepare.outputs.shard_count }}" \
+            ${ACK_FLAG}
   abort-incomplete:
     if: ${{ always() && (github.event_name == 'schedule' || inputs.dry_run == false) && needs.prepare.outputs.state_opened == 'true' && (needs.prepare.result != 'success' || needs.shards.result != 'success' || needs.finalize.result != 'success') }}
     needs: [prepare, shards, finalize]
