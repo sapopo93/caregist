@@ -1,5 +1,6 @@
 import {
   DEFAULT_REGION_OPTIONS,
+  DEFAULT_SERVICE_TYPE_OPTIONS,
   DIRECTORY_OPPORTUNITY_OPTIONS,
   isDirectoryOpportunity,
   type DirectoryOpportunity,
@@ -78,6 +79,9 @@ export function normalizeTerritoryScope(
   }
   if (!isDirectoryOpportunity(buyerType)) {
     throw new Error("That buyer type is not one of the available options.");
+  }
+  if (serviceType && !DEFAULT_SERVICE_TYPE_OPTIONS.includes(serviceType)) {
+    throw new Error("That service type is not one of the available options.");
   }
   if ([region, buyerType, serviceType].some((v) => v.length > MAX_FIELD_LENGTH)) {
     throw new Error("A selection is too long.");

@@ -43,6 +43,17 @@ test("normalizeTerritoryScope rejects an unknown buyer type", () => {
   );
 });
 
+test("normalizeTerritoryScope rejects an unknown service type", () => {
+  assert.throws(
+    () => normalizeTerritoryScope({
+      region: "London",
+      buyerType: "requires_improvement",
+      serviceType: "Invented service",
+    }),
+    /service type is not one of the available options/i,
+  );
+});
+
 test("normalizeTerritoryScope requires both fields", () => {
   assert.throws(() => normalizeTerritoryScope({ region: "London" }), /buyer type/i);
   assert.throws(() => normalizeTerritoryScope({ buyerType: "inadequate" }), /region/i);
