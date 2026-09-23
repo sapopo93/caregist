@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import {
   createTerritoryScopeRequest,
   getTerritoryScopeCoverage,
+  recordTerritoryScopeRequestAttempt,
   TerritoryScopeRequestRateLimitError,
 } from "@/lib/directory-db";
 import {
@@ -12,6 +13,7 @@ import {
 import {
   createTerritoryScopeRequestSecurityIdentity,
   normalizeTerritoryScopeRequestContact,
+  TerritoryScopeRequestInputError,
 } from "@/lib/territory-scope-request";
 
 export const runtime = "nodejs";
@@ -44,6 +46,26 @@ export async function POST(request: Request) {
   }
 
   try {
+    const securityIdentity = createTerritoryScopeRequestSecurityIdentity(request, {
+      ...contact,
+      region: scope.region,
+      buyerType: scope.buyerType,
+      serviceType: scope.serviceType,
+    });
+    const duplicate = await recordTerritoryScopeRequestAttempt(securityIdentity);
+    if (duplicate) {
+      return NextResponse.json(
+        {
+          ...duplicate,
+          status: "requested",
+          duplicate: true,
+          message: "Scope request already recorded. No order has been placed and no payment has been taken.",
+          checkoutEligible: false,
+        },
+        { status: 200, headers: NO_STORE },
+      );
+    }
+
     // Recompute server-side at intake; never persist browser-supplied counts.
     const coverageRow = await getTerritoryScopeCoverage({
       region: scope.region,
@@ -62,12 +84,6 @@ export async function POST(request: Request) {
       providerOrganisationCount: coverageRow.providerOrganisationCount,
       mostRecentObservation,
     });
-    const securityIdentity = createTerritoryScopeRequestSecurityIdentity(request, {
-      ...contact,
-      region: scope.region,
-      buyerType: scope.buyerType,
-      serviceType: scope.serviceType,
-    });
     const recorded = await createTerritoryScopeRequest({
       contactEmail: contact.email,
       contactName: contact.name,
@@ -79,7 +95,8 @@ export async function POST(request: Request) {
       providerOrganisationCount: coverage.providerOrganisationCount,
       coverageVerdict: coverage.verdict,
       coverageSufficient: coverage.coverageSufficient,
-      ...securityIdentity,
+      requesterFingerprint: securityIdentity.requesterFingerprint,
+      submissionKey: securityIdentity.submissionKey,
     });
 
     return NextResponse.json(
@@ -91,6 +108,9 @@ export async function POST(request: Request) {
       { status: recorded.duplicate ? 200 : 201, headers: NO_STORE },
     );
   } catch (error) {
+    if (error instanceof TerritoryScopeRequestInputError) {
+      return NextResponse.json({ error: error.message }, { status: 400, headers: NO_STORE });
+    }
     if (error instanceof TerritoryScopeRequestRateLimitError) {
       return NextResponse.json(
         { error: "Too many scope requests. Try again later." },

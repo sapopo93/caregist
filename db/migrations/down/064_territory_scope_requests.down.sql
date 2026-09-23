@@ -1,6 +1,11 @@
 DROP TRIGGER IF EXISTS territory_scope_request_events_immutable ON territory_scope_request_events;
 DROP TRIGGER IF EXISTS territory_scope_request_transition_guard ON territory_scope_requests;
+DROP TRIGGER IF EXISTS territory_scope_request_event_log ON territory_scope_requests;
+DROP TRIGGER IF EXISTS territory_scope_request_event_guard ON territory_scope_request_events;
 DROP FUNCTION IF EXISTS prevent_territory_scope_request_event_mutation();
 DROP FUNCTION IF EXISTS enforce_territory_scope_request_transition();
+DROP FUNCTION IF EXISTS append_territory_scope_request_event();
+DROP FUNCTION IF EXISTS validate_territory_scope_request_event();
 DROP TABLE IF EXISTS territory_scope_request_events;
 DROP TABLE IF EXISTS territory_scope_requests;
+DROP TABLE IF EXISTS territory_scope_request_attempts;

@@ -16,6 +16,7 @@ test("coverage enquiry clears obsolete selections and recovers from errors", asy
     } });
   });
   await page.route("**/api/territory/requests", async (route) => {
+    expect(route.request().headers()["idempotency-key"]).toMatch(/^[0-9a-f-]{36}$/);
     await route.fulfill({
       status: 201,
       json: { reference: "TSR-TEST00000001", status: "requested", checkoutEligible: false },

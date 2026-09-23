@@ -38,6 +38,7 @@ export default function TerritoryScopePicker() {
   const [requestReference, setRequestReference] = useState("");
 
   const requestVersion = useRef(0);
+  const requestIdempotencyKey = useRef("");
 
   function changeSelection(setValue: (value: string) => void, value: string) {
     requestVersion.current += 1;
@@ -46,6 +47,7 @@ export default function TerritoryScopePicker() {
     setError("");
     setLoading(false);
     setRequestReference("");
+    requestIdempotencyKey.current = "";
   }
 
   const selectedBuyer = TERRITORY_BUYER_TYPES.find((b) => b.value === buyerType) ?? null;
@@ -88,9 +90,13 @@ export default function TerritoryScopePicker() {
     setRequesting(true);
     setError("");
     try {
+      requestIdempotencyKey.current ||= crypto.randomUUID();
       const response = await fetch("/api/territory/requests", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": requestIdempotencyKey.current,
+        },
         body: JSON.stringify({
           ...result.scope,
           email: contactEmail,

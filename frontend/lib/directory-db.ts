@@ -507,6 +507,54 @@ export class TerritoryScopeRequestRateLimitError extends Error {
   }
 }
 
+export async function recordTerritoryScopeRequestAttempt(input: {
+  requesterFingerprint: string;
+  contactFingerprint: string;
+  submissionKey: string;
+}): Promise<{ reference: string } | null> {
+  assertDatabaseConfigured();
+  const client = await getSql().connect();
+  try {
+    await client.query("BEGIN");
+    const lockKeys = [
+      `territory-scope-contact:${input.contactFingerprint}`,
+      `territory-scope-source:${input.requesterFingerprint}`,
+    ].sort();
+    await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", [lockKeys[0]]);
+    await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", [lockKeys[1]]);
+    const quota = await client.query<{ source_count: number; contact_count: number }>(
+      `
+        SELECT
+          COUNT(*) FILTER (WHERE requester_fingerprint = $1)::int AS source_count,
+          COUNT(*) FILTER (WHERE contact_fingerprint = $2)::int AS contact_count
+        FROM territory_scope_request_attempts
+        WHERE created_at >= NOW() - INTERVAL '1 hour'
+          AND (requester_fingerprint = $1 OR contact_fingerprint = $2)
+      `,
+      [input.requesterFingerprint, input.contactFingerprint],
+    );
+    if ((quota.rows[0]?.source_count ?? 0) >= 5 || (quota.rows[0]?.contact_count ?? 0) >= 3) {
+      throw new TerritoryScopeRequestRateLimitError();
+    }
+    await client.query(
+      `INSERT INTO territory_scope_request_attempts (requester_fingerprint, contact_fingerprint)
+       VALUES ($1, $2)`,
+      [input.requesterFingerprint, input.contactFingerprint],
+    );
+    const existing = await client.query<{ public_reference: string }>(
+      "SELECT public_reference FROM territory_scope_requests WHERE submission_key = $1",
+      [input.submissionKey],
+    );
+    await client.query("COMMIT");
+    return existing.rows[0] ? { reference: existing.rows[0].public_reference } : null;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
 export async function createTerritoryScopeRequest(input: {
   contactEmail: string;
   contactName: string;
@@ -526,12 +574,9 @@ export async function createTerritoryScopeRequest(input: {
   const client = await getSql().connect();
   try {
     await client.query("BEGIN");
-    const lockKeys = [
-      `territory-scope-email:${input.contactEmail}`,
-      `territory-scope-source:${input.requesterFingerprint}`,
-    ].sort();
-    await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", [lockKeys[0]]);
-    await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", [lockKeys[1]]);
+    await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", [
+      `territory-scope-submission:${input.submissionKey}`,
+    ]);
 
     const existing = await client.query<{ public_reference: string }>(
       "SELECT public_reference FROM territory_scope_requests WHERE submission_key = $1",
@@ -542,22 +587,7 @@ export async function createTerritoryScopeRequest(input: {
       return { reference: existing.rows[0].public_reference, status: "requested", duplicate: true };
     }
 
-    const quota = await client.query<{ source_count: number; email_count: number }>(
-      `
-        SELECT
-          COUNT(*) FILTER (WHERE requester_fingerprint = $1)::int AS source_count,
-          COUNT(*) FILTER (WHERE contact_email = $2)::int AS email_count
-        FROM territory_scope_requests
-        WHERE created_at >= NOW() - INTERVAL '1 hour'
-          AND (requester_fingerprint = $1 OR contact_email = $2)
-      `,
-      [input.requesterFingerprint, input.contactEmail],
-    );
-    if ((quota.rows[0]?.source_count ?? 0) >= 5 || (quota.rows[0]?.email_count ?? 0) >= 3) {
-      throw new TerritoryScopeRequestRateLimitError();
-    }
-
-    const created = await client.query<{ id: string }>(
+    await client.query(
       `
         INSERT INTO territory_scope_requests (
           public_reference, submission_key, requester_fingerprint,
@@ -584,13 +614,6 @@ export async function createTerritoryScopeRequest(input: {
         input.coverageVerdict,
         input.coverageSufficient,
       ],
-    );
-    await client.query(
-      `
-        INSERT INTO territory_scope_request_events (request_id, event_type, actor_type)
-        VALUES ($1, 'requested', 'customer')
-      `,
-      [created.rows[0].id],
     );
     await client.query("COMMIT");
     return { reference, status: "requested", duplicate: false };
