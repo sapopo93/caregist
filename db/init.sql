@@ -85,11 +85,16 @@ CREATE TABLE IF NOT EXISTS api_keys (
 );
 
 -- Pipeline run tracking
+-- started_at/completed_at are TIMESTAMPTZ so freshness evidence (see
+-- api/services/cqc_freshness.py) can trust the timezone rather than treating
+-- the value as unprovable. A fresh install gets this directly; a database
+-- that ran an older naive-TIMESTAMP version of this file is converted by
+-- migration 065_pipeline_runs_timestamptz.sql.
 CREATE TABLE IF NOT EXISTS pipeline_runs (
   id SERIAL PRIMARY KEY,
   run_type VARCHAR(20) NOT NULL,
-  started_at TIMESTAMP DEFAULT NOW(),
-  completed_at TIMESTAMP,
+  started_at TIMESTAMPTZ DEFAULT NOW(),
+  completed_at TIMESTAMPTZ,
   records_added INT DEFAULT 0,
   records_updated INT DEFAULT 0,
   records_deactivated INT DEFAULT 0,
