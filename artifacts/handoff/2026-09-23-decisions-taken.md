@@ -91,26 +91,54 @@ identity already in PR #71, which makes this pin unnecessary once merged.
 
 ---
 
-## D4 — Stripe: **I am not deciding this one, and no delegation should make me.**
+## D4 — CORRECTED 2026-09-23 05:45Z. The payment link is dead.
 
-Configuring payment collection and running a real test transaction is money
-movement. I will not do it and I would not recommend any agent does, regardless
-of authority granted. This is yours personally:
+**My first version of D4 was wrong in emphasis**, and Henry was right to push
+back on it. I listed CareGist Terms/Privacy URLs at Stripe checkout and a
+Terms-acceptance control as blockers. In a scope-first manual flow they are not:
+step 5 of the sales workflow has the VA send the terms link with the confirmed
+scope *before* payment, so the contract is formed in writing beforehand and the
+Stripe page is not carrying that weight. Worth tidying; not worth blocking a
+sale over.
 
-1. In Stripe product public details, set the CareGist **Terms** and **Privacy**
-   URLs (currently they point at Stripe's own legal pages).
-2. Enable Terms acceptance at checkout where available.
-3. Complete one permitted test transaction and check the receipt, the
-   post-payment confirmation and the fulfilment handoff end to end.
+**The real finding, which I only made by checking instead of restating:**
 
-Until these are done the VA's ceiling is: agree scope in writing, quote £745,
-record the buyer's criteria. **No payment link, no accepted order.**
+`https://buy.stripe.com/bJe4gs4L5ed26vQ0nd3AY02` — the £745 link the 9 September
+readiness check verified as showing the correct product and price — was loaded
+in a browser on 23 September and returns **"The link is no longer active."**
+
+So on the agreed manual model (agree scope, then send a link) there is
+**currently no payment mechanism at all**. A VA who agrees scope on Monday has
+nothing to send. This is more commercially urgent than anything else outstanding,
+because every other blocker delays automation while this one stops a manual sale.
+
+**Decision: restore a payment mechanism before the VA opens on Monday.** The
+first question is Henry's alone, because it is commercial intent and not a
+technical fact:
+
+- **If the deactivation was deliberate** — the sales workflow does retire the
+  direct-checkout route — then the gap is that no replacement is written down.
+  "The approved payment process" appears in the VA workflow and is never defined.
+  Define it.
+- **If it was accidental**, recreate the link.
+
+Either way this should be quick: a deactivated *link* does not invalidate the
+Price behind it, so `prod_VE1CdaKNxE0yVP` / `price_1UDZAQ4mijLHzRRkvwXjtaQK`
+should still be usable.
+
+**Still not mine to execute.** Creating or restoring a payment collection
+mechanism is money movement, and no delegation makes that appropriate for an
+agent. I have recorded the dead link in the VA readiness check so nobody sends
+it in the meantime.
 
 ---
 
 ## What needs none of the above
 
-The VA can work at 08:00 regardless. Pricing wording is correct and identical
-across every buyer surface and all three packs, verified against production;
-the readiness check no longer wrongly tells them terms are a blocker. That part
-is done.
+The VA can work at 08:00: agree scope in writing, quote £745, record the
+buyer's criteria. Pricing wording is correct and identical across every buyer
+surface and all three packs, verified against production, and the readiness
+check no longer wrongly tells them terms are a blocker.
+
+**But they cannot collect money until D4 is resolved.** That is a hard stop now,
+not a caution.

@@ -21,7 +21,7 @@ this buyer".
 | Source supports the proposed buyer scope | PARTIAL | `verify_pack.py` passes for the retained Birmingham/Solihull prototype: 353 locations, 329 providers, 25 shortlisted organisations, two hashed CQC source editions and 25 page checks. The source edition is 1 September 2026 and was retrieved on 8 September. | Re-run the source check for the buyer's agreed territory and criteria. Do not treat the prototype as a current buyer delivery. |
 | Specific delivery date confirmed by delivery owner | FAIL | The documented target is three working days, but no buyer start date, delivery date or delivery owner confirmation is recorded. | Record the named delivery owner, start date and promised delivery date after the scope check. |
 | Customer terms and cancellation/refund wording fit the one-off Brief | **PASS — RE-CHECKED 23 Sep** | `frontend/app/terms/page.tsx` on `main` now defines the Brief as "a one-off, buyer-specific research pack for an agreed England territory" with the 25–50 shortlist, CSV/Excel dataset and 3–5 page brief (section 2); states the £745 fee, payment due in full before work begins, **cancel by email before work begins for a full refund**, non-refundable once work has begun except where CareGist fails to deliver the agreed scope or a remedy cannot lawfully be excluded, and a revised delivery date or full refund if a post-payment source issue prevents the agreed scope (section 6); a three-working-day delivery target (section 7); and liability limited to the fee paid (section 11). | Nothing. This row was the 9 September state and is no longer accurate. |
-| £745 Stripe link works with the correct product and price *(describes the RETIRED direct-checkout route — see the sales workflow; do not send a payment link before scope is agreed)* | PARTIAL | Buyer-view check of `https://buy.stripe.com/bJe4gs4L5ed26vQ0nd3AY02` on 9 September showed `CareGist Territory Opportunity Brief`, £745.00 and no quantity selector. It uses live Product `prod_VE1CdaKNxE0yVP` and Price `price_1UDZAQ4mijLHzRRkvwXjtaQK`, supplied by the founder. Payment and post-payment behaviour were not attempted. | Independently complete a permitted test transaction before relying on post-payment confirmation, receipt and fulfilment handoff. |
+| £745 Stripe payment link | **FAIL — RE-CHECKED 23 Sep. THE LINK IS DEAD.** | `https://buy.stripe.com/bJe4gs4L5ed26vQ0nd3AY02` was loaded in a browser on 23 September 2026 and returns **“The link is no longer active.”** The 9 September buyer-view check below is historical and no longer describes reality. | **Do not send this link to anyone.** There is currently no working payment mechanism, so no order can be collected even manually. The founder must decide whether the deactivation was deliberate (the sales workflow retires the direct-checkout route) or accidental, and either restore a link or define the replacement. The Product and Price behind it (`prod_VE1CdaKNxE0yVP`, `price_1UDZAQ4mijLHzRRkvwXjtaQK`) are unaffected by a deactivated link, so recreating should be quick. |
 | VAT status and customer wording confirmed | **PASS — RE-CHECKED 23 Sep** | H-Kay Limited is not VAT registered. `/pricing/territory`, `/terms`, the offer page and all three VA packs now carry the identical shipped wording **"£745 fixed fee. No VAT added."** (merged as `56b38a2`). No surface anywhere still says "excludes VAT". | Nothing for the VA to say differently. Quote that wording verbatim. |
 | CareGist policy links appear at checkout | FAIL | Buyer-view check found checkout Terms and Privacy links pointing to Stripe legal pages. It did not expose CareGist policy links or a CareGist Terms acceptance control. | First amend Terms for the one-off Brief. Then configure CareGist Terms and Privacy URLs in Stripe public details, enable Terms acceptance where available, and re-check checkout. |
 
@@ -37,6 +37,7 @@ What still blocks taking payment, and who can clear it:
 
 | Remaining blocker | Who clears it |
 |---|---|
+| **No working payment link — the £745 link is dead (verified 23 Sep)** | **Founder** |
 | CareGist policy links and Terms acceptance at checkout | Founder (Stripe dashboard config) |
 | An independently checked paid / post-payment journey | Founder (a permitted test transaction) |
 | Buyer territory, criteria and exclusions recorded | **VA, per deal** |
@@ -44,7 +45,13 @@ What still blocks taking payment, and who can clear it:
 
 The VA can do everything up to and including agreeing scope in writing and
 quoting the £745 price. The VA must not send a payment link or state that an
-order is accepted until the founder has cleared the two rows above.
+order is accepted until the founder has cleared the rows above.
+
+**Re-checked 23 September: this is now a hard stop, not a caution.** The £745
+payment link is dead, so there is no mechanism to collect money even manually.
+Agreeing scope and quoting the price remains correct and useful work — but
+nothing can be collected until the founder restores a link or defines the
+replacement.
 
 ## Local buyer simulation completed
 
