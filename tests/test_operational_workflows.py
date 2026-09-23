@@ -66,7 +66,9 @@ def test_production_smoke_derives_expected_sha_from_the_live_deployment():
         step for step in job["steps"] if step.get("id") == "release"
     )
     assert "tools/resolve_production_sha.py" in release_step["run"]
-    assert "github.event.deployment.sha" in release_step["run"]
+    # Event data reaches the script only through env, never ${{ }} interpolation.
+    assert release_step["env"]["DEPLOYMENT_SHA"] == "${{ github.event.deployment.sha }}"
+    assert "${{" not in release_step["run"]
     assert "inputs.expected_sha" in source
 
 

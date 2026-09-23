@@ -41,10 +41,12 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           DISPATCH_EXPECTED_SHA: ${{ inputs.expected_sha }}
+          EVENT_NAME: ${{ github.event_name }}
+          DEPLOYMENT_SHA: ${{ github.event.deployment.sha }}
         run: |
           set -euo pipefail
-          if [ "${{ github.event_name }}" = "deployment_status" ]; then
-            sha="${{ github.event.deployment.sha }}"
+          if [ "$EVENT_NAME" = "deployment_status" ]; then
+            sha="${DEPLOYMENT_SHA:-}"
           elif [ -n "${DISPATCH_EXPECTED_SHA:-}" ]; then
             sha="$DISPATCH_EXPECTED_SHA"
             if ! [[ "$sha" =~ ^[0-9a-f]{40}$ ]]; then
