@@ -2,9 +2,9 @@
 
 ## The only product to sell today
 
-**Territory Opportunity Brief, £745. £745 is the final price. H-Kay Limited is not VAT registered, so no VAT is added.**
+**Territory Opportunity Brief, £745. £745 fixed fee. No VAT added.**
 
-*(Corrected 2026-09-20. This line previously read "Price excludes VAT", which was wrong: H-Kay Limited is not VAT registered, so no VAT is added on top. Never quote "excludes VAT" or "plus VAT" to a buyer — the live offer pages and `/terms` state the final-price wording above.)*
+*(Corrected 2026-09-20, wording simplified 2026-09-21 to match the live pages. This line previously read "Price excludes VAT", which was wrong: H-Kay Limited is not VAT registered, so no VAT is added on top. Never quote "excludes VAT" or "plus VAT" to a buyer — quote the wording above, exactly as `/pricing/territory` and `/terms` state it.)*
 
 Public offer: `https://www.caregist.co.uk/territory-opportunity-brief`
 
