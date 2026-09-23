@@ -35,6 +35,7 @@ FROZEN_APPROVED_DESTRUCTIVE_MIGRATIONS = frozenset(
     {
         "047_expand_analytics_provider_reference.sql",
         "059_widen_provider_phone.sql",
+        "065_pipeline_runs_timestamptz.sql",
     }
 )
 
