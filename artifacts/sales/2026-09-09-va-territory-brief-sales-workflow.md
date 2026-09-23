@@ -27,7 +27,11 @@ Organisations selling into, advising or investing in UK care, including complian
 3. Record the agreed territory and criteria in writing. This is the order scope.
 4. Confirm internally that the public-source path is available for that scope. If it is not, do not issue payment or promise delivery.
 5. Send the buyer the confirmed scope, the £745 price, the terms link and the delivery target: three working days after scope and source checks are complete.
-6. Only then send the existing Stripe Payment Link.
+6. Only then send the payment link, and only this one:
+   **https://buy.stripe.com/bJe8wI7Xhd8YdYi2vl3AY04**
+   Verified live on 23 September 2026: “Territory Opportunity Brief”, quantity 1, £745.00.
+   An older link (`buy.stripe.com/...3AY02`) is **deactivated** and returns “The link is no
+   longer active.” It still appears in older copies of the 9 September packs. Do not send it.
 
 ## What the buyer receives
 

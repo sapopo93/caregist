@@ -46,6 +46,8 @@ The founder or delivery owner must mark every item true:
 - The delivery owner confirms a specific three-working-day delivery date.
 - Customer terms and refund/cancellation wording are approved.
 - The £745 Stripe payment link works and shows the correct product name and price.
+  The live link is **https://buy.stripe.com/bJe8wI7Xhd8YdYi2vl3AY04** (verified 23 September 2026, £745.00). An older link
+  ending `3AY02` is deactivated — do not send it.
 - The payment page states: £745 fixed fee. No VAT added.
 
 If any item is false, the VA can prepare records and book a scoping conversation but must not send a payment link or state that an order is accepted.
