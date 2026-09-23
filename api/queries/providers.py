@@ -43,6 +43,19 @@ _TSVECTOR = """to_tsvector('english',
 # definition of "the rating this row may publish".
 SERVED_RATING = "CASE WHEN rating_state = 'rated' THEN overall_rating END"
 SERVED_RATING_COLUMN = f"{SERVED_RATING} AS overall_rating"
+
+# The companion of SERVED_RATING: *why* no rating is rendered.
+#
+# Six distinct source conditions ('not_yet_inspected', 'not_published',
+# 'unrated', 'not_applicable', 'unknown') all render the same NULL rating
+# above. Collapsing them at the API boundary throws away the difference between
+# a location CQC has never inspected -- a new entrant -- and one whose rating
+# the source has withdrawn, which are opposite signals to a reader. The state is
+# already recorded per row; this exposes it rather than re-deriving or inventing
+# it, and it is NULL exactly when a rating IS served, so the two fields are
+# never both populated and never both empty.
+SERVED_RATING_ABSENCE = "CASE WHEN rating_state = 'rated' THEN NULL ELSE rating_state END"
+SERVED_RATING_ABSENCE_COLUMN = f"{SERVED_RATING_ABSENCE} AS rating_absence_reason"
 SERVED_RATING_NORMALISED = f"LOWER(BTRIM({SERVED_RATING}))"
 #: The published vocabulary, taken from the module the ingestion classifier and
 #: migration 061 both use, so a rating filter can only ever match a rating this
@@ -54,7 +67,7 @@ SERVED_RATING_IS_PUBLISHED = "{} IN ({})".format(
 
 SEARCH_SELECT = f"""
 SELECT id, provider_id, name, slug, type, status, town, county, postcode,
-       region, local_authority, {SERVED_RATING_COLUMN}, service_types, specialisms,
+       region, local_authority, {SERVED_RATING_COLUMN}, {SERVED_RATING_ABSENCE_COLUMN}, service_types, specialisms,
        number_of_beds, data_completeness_score, data_completeness_tier, latitude, longitude, phone,
        is_claimed, profile_tier, review_count, avg_review_rating
 FROM care_providers
@@ -63,7 +76,7 @@ FROM care_providers
 # Ranked search select — adds ts_rank for relevance sorting
 SEARCH_SELECT_RANKED = f"""
 SELECT id, provider_id, name, slug, type, status, town, county, postcode,
-       region, local_authority, {SERVED_RATING_COLUMN}, service_types, specialisms,
+       region, local_authority, {SERVED_RATING_COLUMN}, {SERVED_RATING_ABSENCE_COLUMN}, service_types, specialisms,
        number_of_beds, data_completeness_score, data_completeness_tier, latitude, longitude, phone,
        is_claimed, profile_tier, review_count, avg_review_rating,
        ts_rank({_TSVECTOR}, plainto_tsquery('english', coalesce($1, ''))) AS rank
@@ -222,7 +235,7 @@ LIMIT 1
 
 NEARBY_QUERY = f"""
 SELECT id, provider_id, name, slug, type, status, town, county, postcode,
-       region, {SERVED_RATING_COLUMN}, service_types, specialisms, number_of_beds,
+       region, {SERVED_RATING_COLUMN}, {SERVED_RATING_ABSENCE_COLUMN}, service_types, specialisms, number_of_beds,
        data_completeness_score, data_completeness_tier, latitude, longitude, phone,
        ST_Distance(geom::geography, ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography) / 1000.0 AS distance_km
 FROM care_providers

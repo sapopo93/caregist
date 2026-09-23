@@ -15,7 +15,7 @@ from urllib.parse import urlparse
 
 from pydantic_settings import BaseSettings
 
-from api.services.rating_states import RATED, classify_stored_rating
+from api.services.rating_states import RATED, UNKNOWN, classify_stored_rating
 
 
 AWS_SECRET_ID_ENV = "AWS_SECRETS_MANAGER_SECRET_ID"
@@ -988,7 +988,7 @@ BASIC_CSV_FIELDS = [
 
 BASIC_FIELDS = [
     "id", "name", "slug", "type", "status", "town", "county", "postcode",
-    "region", "local_authority", "overall_rating", "service_types",
+    "region", "local_authority", "overall_rating", "rating_absence_reason", "service_types",
     "specialisms", "number_of_beds", "data_completeness_score", "data_completeness_tier",
     "phone", "website", "last_inspection_date", "inspection_report_url",
     "inspection_summary", "profile_description", "profile_photos",
@@ -1137,16 +1137,64 @@ def _servable_rating(record: Mapping[str, Any]) -> Any:
     return value
 
 
+def _rating_absence_reason(record: Mapping[str, Any], served_rating: Any) -> Any:
+    """Why no rating is rendered, or None when one is.
+
+    A suppressed rating with no stated reason is a *false gap*: the response
+    asserts "no rating" without saying whether the source never published one or
+    whether this build simply could not read what it published. That is a claim
+    about CQC that CQC did not make, so every suppression must name its reason.
+
+    ``SERVED_RATING_ABSENCE`` already derives this from ``rating_state`` for the
+    query paths. Two paths arrive without it and are resolved here, the same two
+    :func:`_servable_rating` fails closed for:
+
+    * ``SELECT *`` lookups (detail, CQC-id, compare) that carry the raw state
+      but not the derived column -- and pre-migration rows that carry neither;
+    * a writer that changed ``overall_rating`` while leaving ``rating_state``
+      saying 'rated'. SQL derives NULL for such a row (state says rated) while
+      the serialiser still suppresses the value, which would emit a rating-less
+      row with no reason. The stored value is classified with ingestion's own
+      authority instead, so the reason reports what the storage actually holds.
+
+    The vocabulary is ``rating_states``' own; no public synonym is invented.
+    """
+    if served_rating is not None:
+        return None
+
+    declared = record.get("rating_absence_reason", _STATE_ABSENT)
+    if declared is not _STATE_ABSENT and declared:
+        return declared
+
+    state = record.get("rating_state", _STATE_ABSENT)
+    if state is not _STATE_ABSENT and state and state != RATED:
+        return state
+
+    value = record.get("overall_rating")
+    if value is None:
+        # Storage holds nothing and no state says why: 'unknown' is the honest
+        # answer, never an inferred 'not_published'.
+        return UNKNOWN
+    stored_state, _ = classify_stored_rating(value)
+    return stored_state
+
+
 def filter_fields(record: dict, tier: str) -> dict:
     """Strip fields not allowed by the tier. Hidden fields become None.
 
     Masking is one-way: a field the tier hides stays hidden, and a field the
     tier allows still carries no rating unless the record may publish one (see
-    :func:`_servable_rating`).
+    :func:`_servable_rating`). A rating that is withheld carries the reason it
+    was withheld (see :func:`_rating_absence_reason`), so an absence is always
+    attributed rather than left bare.
     """
     allowed = get_allowed_fields(tier)
     filtered = {k: (v if k in allowed else None) for k, v in record.items()}
     for field in RATING_VALUE_FIELDS:
         if filtered.get(field) is not None:
             filtered[field] = _servable_rating(record)
+    if "rating_absence_reason" in allowed:
+        filtered["rating_absence_reason"] = _rating_absence_reason(
+            record, filtered.get("overall_rating")
+        )
     return filtered
