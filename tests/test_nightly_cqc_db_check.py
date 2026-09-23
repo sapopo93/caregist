@@ -1374,13 +1374,21 @@ def test_round2_9_epoch_start_dates_use_the_earliest_commit_a_schedule_was_in_fo
     ), "epochs must be built oldest-first"
     # The earliest commit at which each schedule became effective, read from the
     # workflow file's own revision history (git log --format=%H%x09%cI).
-    assert starts == [
+    assert starts[:4] == [
         ("7,37 * * * *", datetime(2026, 8, 9, 14, 49, 7, tzinfo=UTC), "218f608e09cbb4f3715b8f15959b3460640ab72b"),
         ("37 * * * *", datetime(2026, 8, 31, 13, 48, 47, tzinfo=UTC), one_hour_commit),
         ("7,37 * * * *", datetime(2026, 9, 3, 12, 24, 24, tzinfo=UTC), "39fa9a39d56a042abaa20057d008392706ff21f0"),
         ("7 18,21,0,3 * * *", datetime(2026, 9, 15, 10, 38, 36, tzinfo=UTC), "6bc98802611b5e98fad9410677c1fea1f5fc2209"),
-        ("37 18,21,0,3 * * *", datetime(2026, 9, 23, 3, 22, 10, tzinfo=UTC), "12d0584d24a80b7a0f659f07a22cf4bca4105460"),
     ]
+    # The current schedule was introduced on this PR. Its commit identity and
+    # committer timestamp are deliberately not pinned: both change on a required
+    # rebase even though the schedule history and fire count do not. Pin the
+    # durable facts instead — it is the fifth chronological epoch and it became
+    # effective no earlier than the original reviewed commit.
+    assert len(starts) == 5
+    assert starts[4][0] == "37 18,21,0,3 * * *"
+    assert starts[4][1].astimezone(UTC) >= datetime(2026, 9, 23, 3, 22, 10, tzinfo=UTC)
+    assert len(starts[4][2]) == 40
     # Regression guard for the reported bug: the identical-run compression used to
     # keep the newest commit in the run (2026-09-03T10:23:23Z).
     one_hour = [row for row in starts if row[0] == "37 * * * *"]
