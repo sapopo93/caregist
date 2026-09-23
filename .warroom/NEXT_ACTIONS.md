@@ -1,5 +1,22 @@
 # NEXT ACTIONS — CareGist
 
+## 2026-09-23 ordered checkpoint
+
+1. Merge and run CI for the current bounded change set; require the migrations job to execute
+   territory fulfilment and scope-request lifecycle tests against disposable Postgres.
+2. Observe the `:37` signal-poll schedule for seven days. Acceptance: at least 24 starts, at
+   least 90% complete, and latest completed poll remains within 16 h.
+3. Run the next scheduled reconciliation unchanged. If `1-147345129` still returns HTTP 500,
+   preserve full-run evidence and choose an explicit record-level retry/quarantine design;
+   do not lower reconciliation or freshness thresholds.
+4. Update `CAREGIST_PRODUCTION_FRONTEND_SHA` and `CAREGIST_PRODUCTION_BACKEND_SHA` only through
+   the approved deployment process, then require scheduled smoke green.
+5. Do not enable checkout. First obtain legal approval, apply migrations through 064, prove a
+   real request → review → accepted → paid → fulfilled → downloadable journey in a disposable
+   environment, and obtain independent review.
+
+---
+
 **Refreshed:** 2026-09-11 00:30 BST · One next action per workstream. No competing plans.
 
 ---

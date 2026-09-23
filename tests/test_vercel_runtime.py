@@ -81,7 +81,7 @@ def test_recurring_workflow_schedules_match_evidence_gates():
     repo_root = Path(__file__).parents[1]
     expected_schedules = {
         ".github/workflows/freshness-watchdog.yml": 'cron: "10 4 * * *"',
-        ".github/workflows/cqc-signal-poll.yml": 'cron: "7 18,21,0,3 * * *"',
+        ".github/workflows/cqc-signal-poll.yml": 'cron: "37 18,21,0,3 * * *"',
         ".github/workflows/production-smoke.yml": 'cron: "50 18,21,0,3 * * *"',
     }
 

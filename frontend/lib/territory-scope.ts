@@ -100,19 +100,24 @@ export const TERRITORY_STALE_YEARS = 3;
 export type TerritoryCoverageVerdict = "ready" | "partial" | "insufficient";
 
 export interface TerritoryCoverageSignals {
-  /** Count of active providers matching region + buyer type (+ service type). */
-  providerCount: number;
+  /** Count of active CQC locations matching the selected filters. */
+  locationCount: number;
+  /** Distinct CQC provider organisations represented by those locations. */
+  providerOrganisationCount: number;
   /** Most recent inspection or registration date in the matched set (ISO). */
   mostRecentObservation: string | null;
 }
 
 export interface TerritoryCoverageResult {
   verdict: TerritoryCoverageVerdict;
-  providerCount: number;
+  locationCount: number;
+  providerOrganisationCount: number;
   mostRecentObservation: string | null;
   stale: boolean;
-  /** Whether checkout is allowed for this scope. */
-  canCheckout: boolean;
+  /** Whether the record contains enough organisations to produce the brief. */
+  coverageSufficient: boolean;
+  /** Commercial eligibility is a separate gate and is currently fail-closed. */
+  checkoutEligible: boolean;
   headline: string;
   detail: string;
 }
@@ -130,14 +135,18 @@ export function evaluateTerritoryCoverage(
   signals: TerritoryCoverageSignals,
   now: Date = new Date(),
 ): TerritoryCoverageResult {
-  const providerCount = Math.max(0, Math.floor(signals.providerCount || 0));
+  const locationCount = Math.max(0, Math.floor(signals.locationCount || 0));
+  const providerOrganisationCount = Math.max(
+    0,
+    Math.floor(signals.providerOrganisationCount || 0),
+  );
   const buyerType = getTerritoryBuyerType(scope.buyerType);
   const label = buyerType ? buyerType.label.toLowerCase() : "matching organisations";
 
   let verdict: TerritoryCoverageVerdict = "insufficient";
-  if (providerCount >= TERRITORY_MIN_READY) {
+  if (providerOrganisationCount >= TERRITORY_MIN_READY) {
     verdict = "ready";
-  } else if (providerCount >= TERRITORY_MIN_PARTIAL) {
+  } else if (providerOrganisationCount >= TERRITORY_MIN_PARTIAL) {
     verdict = "partial";
   }
 
@@ -145,19 +154,20 @@ export function evaluateTerritoryCoverage(
     signals.mostRecentObservation != null &&
     yearsBetween(signals.mostRecentObservation, now) > TERRITORY_STALE_YEARS;
 
-  const canCheckout = verdict !== "insufficient";
+  const coverageSufficient = verdict !== "insufficient";
+  const checkoutEligible = false;
 
   let headline: string;
   let detail: string;
   if (verdict === "ready") {
     headline = `${scope.region} is ready for a ${label} brief.`;
-    detail = `The published CQC record currently supports ${providerCount} ${label} in ${scope.region}. That is enough for the full ranked shortlist of 25–50 organisations.`;
+    detail = `The published CQC record currently supports ${providerOrganisationCount} distinct ${label} across ${locationCount} locations in ${scope.region}. That is enough for the full ranked shortlist of 25–50 organisations.`;
   } else if (verdict === "partial") {
     headline = `${scope.region} can be covered, with a smaller shortlist.`;
-    detail = `The published CQC record currently supports ${providerCount} ${label} in ${scope.region}. The brief will rank every one of them, but the shortlist will be shorter than the usual 25–50.`;
+    detail = `The published CQC record currently supports ${providerOrganisationCount} distinct ${label} across ${locationCount} locations in ${scope.region}. The brief will rank every organisation, but the shortlist will be shorter than the usual 25–50.`;
   } else {
     headline = `${scope.region} does not have enough ${label} to build a brief.`;
-    detail = `The published CQC record currently supports only ${providerCount} ${label} in ${scope.region}. Pick a wider region or a different buyer type, or contact us about a custom scope.`;
+    detail = `The published CQC record currently supports only ${providerOrganisationCount} distinct ${label} across ${locationCount} locations in ${scope.region}. Pick a wider region or a different buyer type, or contact us about a custom scope.`;
   }
 
   if (stale && verdict !== "insufficient") {
@@ -166,10 +176,12 @@ export function evaluateTerritoryCoverage(
 
   return {
     verdict,
-    providerCount,
+    locationCount,
+    providerOrganisationCount,
     mostRecentObservation: signals.mostRecentObservation,
     stale,
-    canCheckout,
+    coverageSufficient,
+    checkoutEligible,
     headline,
     detail,
   };

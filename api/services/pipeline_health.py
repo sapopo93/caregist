@@ -14,6 +14,12 @@ import asyncpg
 
 from api.monitoring_config import monitoring_settings
 from api.services.cqc_freshness import get_cqc_freshness
+from api.services.cqc_polling_policy import (
+    LATEST_COMPLETED_POLL_SLA,
+    MINIMUM_POLLS_IN_WINDOW,
+    MINIMUM_SUCCESS_RATIO,
+    POLLING_WINDOW,
+)
 
 
 SOURCE_FRESHNESS_SLA = timedelta(days=8)
@@ -23,15 +29,15 @@ SOURCE_FRESHNESS_SLA = timedelta(days=8)
 # legitimately ~15 hours old by early evening. Sixteen hours tolerates that gap and
 # still fails when the last night slot is missed: the 00:00 run would then be 17.5
 # hours old by 18:00. Derived from the schedule, not guessed.
-SIGNAL_POLL_FRESHNESS_SLA = timedelta(hours=16)
+SIGNAL_POLL_FRESHNESS_SLA = LATEST_COMPLETED_POLL_SLA
 
-SHADOW_WINDOW = timedelta(days=7)
+SHADOW_WINDOW = POLLING_WINDOW
 NIGHTLY_POLLS = 4
 # Seven nights of four slots, less one full night of slack. The scheduler drops
 # runs when a slot collides with the previous run, so a 99% ratio over completed
 # polls was unreachable at any cadence and held production at "degraded" forever.
-SHADOW_MIN_POLLS = 7 * NIGHTLY_POLLS - NIGHTLY_POLLS
-SHADOW_SUCCESS_RATIO = 0.9
+SHADOW_MIN_POLLS = MINIMUM_POLLS_IN_WINDOW
+SHADOW_SUCCESS_RATIO = MINIMUM_SUCCESS_RATIO
 LEDGER_LATENCY_SLA_SECONDS = 45 * 60
 DELIVERY_STUCK_AFTER = timedelta(minutes=15)
 

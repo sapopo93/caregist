@@ -16,7 +16,7 @@ def test_workflow_runs_poller_as_importable_module():
 
     assert "python -m tools.poll_cqc_signals" in workflow
     assert "python tools/poll_cqc_signals.py" not in workflow
-    assert 'cron: "7 18,21,0,3 * * *"' in workflow
+    assert 'cron: "37 18,21,0,3 * * *"' in workflow
     assert "timeout-minutes: 50" in workflow
     assert "cancel-in-progress: false" in workflow
     assert 'RADAR_DELIVERY_ENABLED: "false"' in workflow
