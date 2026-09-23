@@ -384,3 +384,44 @@ tries, and the known blocker is clear, so **triggering a run is now reasonable**
    this reason; the gating deserves a reviewer who is awake.
 
 Still a production write. Still Henry's call.
+
+---
+
+## REVIEWER VERDICT — PR #71, 2026-09-23 05:15Z
+
+**Claude's independent review: APPROVED, conditional on migration `064` being
+applied to production first.** Recorded because the repo's own rule is that a
+producing model cannot approve its own work, and this PR had no review on it.
+
+Reviewed and found sound:
+
+- **Security surface.** Four findings raised by Claude, all four fixed by Codex
+  and re-verified: the global rate-limit fallback, the dedupe window (replaced
+  with a required `Idempotency-Key`, a better fix than the one proposed), the
+  duplicate-reference disclosure, and the unvalidated service scope.
+- **Migration 064 schema.** `checkout_eligible BOOLEAN NOT NULL DEFAULT FALSE
+  CHECK (checkout_eligible = FALSE)` makes checkout eligibility impossible **at
+  the database level**, not merely in application code — it cannot be flipped by
+  a bug or a careless write. `CHECK (status <> 'fulfilled' OR fulfilled_at IS
+  NOT NULL)`, a status enum, `ON DELETE RESTRICT` on the events FK and
+  `UNIQUE (request_id, event_type)` all hold the lifecycle honest.
+- **Identity separation.** Hashed fingerprints in `territory_scope_request_attempts`
+  for rate limiting; real contact details only in `territory_scope_requests`,
+  where they are the business purpose. Checked specifically that no query
+  references a column its table lacks — the failure mode that produced the
+  `rating_state` production crash. It does not.
+- **Concurrency.** Transaction-scoped advisory locks on both the source and
+  contact keys are taken *before* the quota read, and the keys are sorted before
+  acquisition, so same-fingerprint requests serialize and cannot burst past the
+  limit, without deadlocking. A rejected request records no attempt, so an
+  attacker cannot lock a victim out by hammering. Defensible as designed.
+- **Execution.** ruff clean · migration governance clean · **1254 passed,
+  1 skipped against a real Postgres** at `457a5ca` · CI green on every job except
+  the production-schema gate.
+
+Not covered by this verdict: the Playwright territory journey (Codex reports
+3/3; Claude did not re-run it), and the live behaviour of the intake form, which
+cannot be exercised before the migration exists in production.
+
+**The only thing standing between this PR and merge is migration `064`, which is
+a production write and therefore Henry's.**
