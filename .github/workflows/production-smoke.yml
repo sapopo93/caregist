@@ -2,11 +2,16 @@ name: Production Smoke
 
 permissions:
   contents: read
+  deployments: read
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
+    inputs:
+      expected_sha:
+        description: "Manual override for the expected release SHA (40-hex). Leave blank to auto-resolve."
+        required: false
+        type: string
+  deployment_status:
   schedule:
     # Night window only: four slots, and a public journey against the live site
     # each time. A daytime outage is therefore not seen until the next night run.
@@ -14,12 +19,15 @@ on:
 
 concurrency:
   group: production-smoke
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   smoke:
     name: Smoke live directory
     runs-on: ubuntu-latest
+    if: >-
+      github.event_name != 'deployment_status' ||
+      (github.event.deployment_status.state == 'success' && github.event.deployment.environment == 'Production')
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
@@ -27,12 +35,37 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Resolve expected release SHA
+        id: release
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          DISPATCH_EXPECTED_SHA: ${{ inputs.expected_sha }}
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "deployment_status" ]; then
+            sha="${{ github.event.deployment.sha }}"
+          elif [ -n "${DISPATCH_EXPECTED_SHA:-}" ]; then
+            sha="$DISPATCH_EXPECTED_SHA"
+            if ! [[ "$sha" =~ ^[0-9a-f]{40}$ ]]; then
+              echo "expected_sha input is not a 40-hex commit SHA: $sha" >&2
+              exit 1
+            fi
+          else
+            sha="$(python tools/resolve_production_sha.py)"
+          fi
+          if ! [[ "$sha" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "resolved an empty or invalid SHA: '$sha'" >&2
+            exit 1
+          fi
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+
       - name: Run production smoke
         env:
           CAREGIST_APP_URL: https://www.caregist.co.uk
           CAREGIST_SMOKE_ATTEMPTS: "15"
           CAREGIST_SMOKE_RETRY_DELAY_SECONDS: "20"
-          CAREGIST_EXPECTED_FRONTEND_GIT_SHA: ${{ vars.CAREGIST_PRODUCTION_FRONTEND_SHA }}
-          CAREGIST_EXPECTED_BACKEND_GIT_SHA: ${{ vars.CAREGIST_PRODUCTION_BACKEND_SHA }}
+          CAREGIST_EXPECTED_FRONTEND_GIT_SHA: ${{ steps.release.outputs.sha }}
+          CAREGIST_EXPECTED_BACKEND_GIT_SHA: ${{ steps.release.outputs.sha }}
           CAREGIST_REQUIRE_RELEASE_IDENTITY: "true"
         run: python tools/verify-deploy.py
