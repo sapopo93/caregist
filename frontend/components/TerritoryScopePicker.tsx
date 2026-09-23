@@ -205,7 +205,7 @@ export default function TerritoryScopePicker() {
                 <dd>{result.coverage.providerCount}</dd>
               </div>
               <div>
-                <dt>Most recent observation</dt>
+                <dt>Latest CQC registration or inspection</dt>
                 <dd>{result.coverage.mostRecentObservation ?? "Not recorded"}</dd>
               </div>
             </dl>
