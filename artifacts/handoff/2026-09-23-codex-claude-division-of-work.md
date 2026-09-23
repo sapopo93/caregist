@@ -325,3 +325,51 @@ production write. **Henry only.**
 - The reconciliation *report and patch* Codex was generating had not landed at
   the time of writing.
 - No reconciliation has run since 2026-09-20T23:34:58Z.
+
+---
+
+## RECONCILIATION — go/no-go check for the morning, 2026-09-23 04:45Z
+
+Checked before Henry spends four hours on a run that might be doomed.
+
+### The blocker that killed the last run has CLEARED
+`1-147345129` — the location that returned five consecutive HTTP 500s and
+aborted shard 2 in run `35545070099` — **now returns HTTP 200** against the live
+CQC API. A second previously-unconfirmed id (`1-10057845166`) also returns 200.
+That outage was transient and is over. A fresh run has a real chance of
+completing.
+
+### The amplifier is still UNFIXED — this is the residual risk
+`finalize` on **both** `origin/main` and `origin/codex/release-evidence-gates-main`
+is still:
+
+```yaml
+  finalize:
+    needs: [prepare, shards]     # no always()
+```
+
+So **any single** shard failure still skips finalize and discards the whole run.
+Across 57,151 locations in a ~4h15m window, one transient upstream 500 anywhere
+costs the entire attempt. The specific poison is gone; the mechanism that turns
+one bad location into a total loss is not.
+
+### Resume exists — a failure does not cost the full four hours again
+`workflow_dispatch` accepts `resume_batch_id` (failed batch UUID) plus
+`resume_run_id` (the Actions run holding the immutable manifest). A run that dies
+part-way can be resumed from its manifest rather than restarted. Both inputs are
+required together.
+
+### Recommendation for Henry
+With ~32h to the breach and ~4h15m per attempt there is room for two or three
+tries, and the known blocker is clear, so **triggering a run is now reasonable**
+— it was a coin flip 24h ago, it is not now. Two things to know going in:
+
+1. If a shard dies on a transient 500, **resume it** with `resume_batch_id` +
+   `resume_run_id` rather than starting over.
+2. If finalize is reached and refuses on unconfirmed deactivations, there is
+   **no way to clear it from the Actions UI** — the
+   `--acknowledge-unconfirmed-deactivations` input Codex prepared is still local
+   and unpushed. Getting that pushed before the run would remove the one dead end
+   that has no in-UI escape.
+
+Still a production write. Still Henry's call.
