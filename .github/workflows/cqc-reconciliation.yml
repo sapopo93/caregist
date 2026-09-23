@@ -35,6 +35,10 @@ on:
         description: Actions run containing the immutable manifest (requires resume_batch_id)
         type: string
         default: ""
+      acknowledge_unconfirmed_deactivations:
+        description: Keep unconfirmed candidates active, record their IDs, and finalize anyway
+        type: boolean
+        default: false
 
   schedule:
     - cron: "15 2 * * 0"  # Sunday 02:15 UTC
@@ -70,6 +74,7 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           RESUME_BATCH_ID: ${{ inputs.resume_batch_id }}
           RESUME_RUN_ID: ${{ inputs.resume_run_id }}
+          ACKNOWLEDGE_UNCONFIRMED: ${{ inputs.acknowledge_unconfirmed_deactivations }}
           EXECUTING_REF: ${{ github.ref }}
         run: |
           python - <<'PY'
@@ -79,12 +84,17 @@ jobs:
           scheduled = os.environ["EVENT_NAME"] == "schedule"
           batch = os.environ["RESUME_BATCH_ID"].strip()
           run = os.environ["RESUME_RUN_ID"].strip()
+          acknowledge_unconfirmed = os.environ["ACKNOWLEDGE_UNCONFIRMED"].lower() == "true"
           if bool(batch) != bool(run):
               raise SystemExit("resume_batch_id and resume_run_id must be supplied together")
           if dry_run and batch:
               raise SystemExit("resume inputs cannot be combined with dry_run=true")
+          if dry_run and acknowledge_unconfirmed:
+              raise SystemExit("unconfirmed deactivations cannot be acknowledged in a dry run")
           if scheduled and (batch or run):
               raise SystemExit("a scheduled run takes no resume inputs")
+          if scheduled and acknowledge_unconfirmed:
+              raise SystemExit("a scheduled run cannot acknowledge unconfirmed deactivations")
           if scheduled and dry_run:
               raise SystemExit("a scheduled run reconciles for real and cannot be a dry run")
           if not dry_run and os.environ["EXECUTING_REF"] != "refs/heads/main":
@@ -336,16 +346,22 @@ jobs:
       - name: Publish reconciled watermark
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          ACKNOWLEDGE_UNCONFIRMED: ${{ inputs.acknowledge_unconfirmed_deactivations }}
           # The finalize phase confirms every deactivation candidate against the
           # live CQC API. Without this credential those calls return HTTP 502,
           # all 126 candidates are recorded unconfirmed, and the batch is refused
           # (run 35529037973, 2026-09-20). The shard job has always had this key.
           CQC_API_KEY: ${{ secrets.CQC_API_KEY }}
         run: |
+          ACKNOWLEDGEMENT_ARGS=()
+          if [ "$ACKNOWLEDGE_UNCONFIRMED" = "true" ]; then
+            ACKNOWLEDGEMENT_ARGS+=(--acknowledge-unconfirmed-deactivations)
+          fi
           python incremental_update.py --phase finalize \
             --batch-id "${{ needs.prepare.outputs.batch_id }}" \
             --snapshot-manifest "$SNAPSHOT_MANIFEST" \
-            --shard-count "${{ needs.prepare.outputs.shard_count }}"
+            --shard-count "${{ needs.prepare.outputs.shard_count }}" \
+            "${ACKNOWLEDGEMENT_ARGS[@]}"
   abort-incomplete:
     if: ${{ always() && (github.event_name == 'schedule' || inputs.dry_run == false) && needs.prepare.outputs.state_opened == 'true' && (needs.prepare.result != 'success' || needs.shards.result != 'success' || needs.finalize.result != 'success') }}
     needs: [prepare, shards, finalize]

@@ -1,5 +1,18 @@
 # TOP BLOCKERS — CareGist
 
+## 2026-09-23 04:04Z delta
+
+1. **Reconciliation freshness — Critical.** The complete watermark remains
+   2026-09-16T12:00:07Z and reaches 192h at 2026-09-24T12:00Z. A manual production
+   dispatch is the smallest bounded action if the delayed schedule does not land;
+   it requires Henry's explicit approval.
+2. **PR #71 production schema gate — correctly red.** Disposable Postgres replay
+   passes, but production has not applied `064_territory_scope_requests.sql`. Do not
+   bypass this gate or merge code ahead of schema.
+3. **Checkout — founder-blocked.** The VA may scope and quote, not take payment.
+   CareGist policy links/Terms acceptance at checkout and an independently checked
+   paid journey remain absent.
+
 **Refreshed:** 2026-09-11 00:30 BST (previous: 2026-08-20)
 Ranked by what actually stops an external invoice settling.
 
