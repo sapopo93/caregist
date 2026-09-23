@@ -91,54 +91,55 @@ identity already in PR #71, which makes this pin unnecessary once merged.
 
 ---
 
-## D4 — CORRECTED 2026-09-23 05:45Z. The payment link is dead.
+## D4 — RESOLVED. A live £745 link exists; the docs pointed at a dead one.
 
-**My first version of D4 was wrong in emphasis**, and Henry was right to push
-back on it. I listed CareGist Terms/Privacy URLs at Stripe checkout and a
-Terms-acceptance control as blockers. In a scope-first manual flow they are not:
-step 5 of the sales workflow has the VA send the terms link with the confirmed
-scope *before* payment, so the contract is formed in writing beforehand and the
-Stripe page is not carrying that weight. Worth tidying; not worth blocking a
-sale over.
+**This entry has been wrong twice. Both corrections are kept, because the second
+mistake is the more instructive one.**
 
-**The real finding, which I only made by checking instead of restating:**
+*First version:* listed CareGist Terms/Privacy URLs at Stripe checkout and a
+Terms-acceptance control as blockers. Overstated — in a scope-first flow the VA
+sends the terms link with the confirmed scope before payment, so the contract is
+formed in writing beforehand. Henry pushed back and was right.
 
-`https://buy.stripe.com/bJe4gs4L5ed26vQ0nd3AY02` — the £745 link the 9 September
-readiness check verified as showing the correct product and price — was loaded
-in a browser on 23 September and returns **"The link is no longer active."**
+*Second version:* checked the link recorded in the VA pack
+(`buy.stripe.com/...3AY02`), found it returns "The link is no longer active",
+and concluded there was **no payment mechanism at all**. Committed that to the
+repo. **That was wrong and it was sloppy** — it generalised from one dead URL
+without asking whether a replacement existed. Henry caught it.
 
-So on the agreed manual model (agree scope, then send a link) there is
-**currently no payment mechanism at all**. A VA who agrees scope on Monday has
-nothing to send. This is more commercially urgent than anything else outstanding,
-because every other blocker delays automation while this one stops a manual sale.
+**What is actually true**, established from the Stripe API and confirmed in a
+browser:
 
-**Decision: restore a payment mechanism before the VA opens on Monday.** The
-first question is Henry's alone, because it is commercial intent and not a
-technical fact:
+| | |
+|---|---|
+| Live link | `https://buy.stripe.com/bJe8wI7Xhd8YdYi2vl3AY04` (`plink_1UEkzy4mijLHzRRkWjk3pFVW`, active) |
+| Sells | "Territory Opportunity Brief", quantity 1, **74500 GBP = £745.00** |
+| Price / Product | `price_1UDzJP4mijLHzRRkfYJG3OZZ` / `prod_VESD16ql3keycy` |
+| Superseded | `plink_1UDZBR...` (`...3AY02`), and the Product/Price IDs in the 9 Sep pack |
 
-- **If the deactivation was deliberate** — the sales workflow does retire the
-  direct-checkout route — then the gap is that no replacement is written down.
-  "The approved payment process" appears in the VA workflow and is never defined.
-  Define it.
-- **If it was accidental**, recreate the link.
+**The defect was in the documentation, not in Stripe**, and it is now fixed: all
+three VA packs point at the live URL and the readiness check records the correct
+identifiers. No Stripe change was made and none was needed.
 
-Either way this should be quick: a deactivated *link* does not invalidate the
-Price behind it, so `prod_VE1CdaKNxE0yVP` / `price_1UDZAQ4mijLHzRRkvwXjtaQK`
-should still be usable.
+**What genuinely remains, unchanged:** the paid journey has still never been
+checked end to end — receipt, post-payment confirmation, fulfilment handoff. That
+needs one permitted test transaction, it is money movement, and it stays with
+Henry. It is a real gap, but it is not the emergency the second version claimed.
 
-**Still not mine to execute.** Creating or restoring a payment collection
-mechanism is money movement, and no delegation makes that appropriate for an
-agent. I have recorded the dead link in the VA readiness check so nobody sends
-it in the meantime.
+**Method note, since this is the second time tonight the same error appeared:**
+a dead identifier in a document is evidence the document is stale, not evidence
+the underlying thing is gone. Ask the system, not the note about the system. The
+identical mistake produced the earlier false claim about `a1357fe`, where commit
+timestamps were used instead of asking the run what it checked out.
 
 ---
 
 ## What needs none of the above
 
-The VA can work at 08:00: agree scope in writing, quote £745, record the
-buyer's criteria. Pricing wording is correct and identical across every buyer
-surface and all three packs, verified against production, and the readiness
-check no longer wrongly tells them terms are a blocker.
+The VA can work at 08:00: agree scope in writing, quote £745, record the buyer's
+criteria, and now send a payment link that actually resolves. Pricing wording is
+correct and identical across every buyer surface and all three packs, verified
+against production.
 
-**But they cannot collect money until D4 is resolved.** That is a hard stop now,
-not a caution.
+The ceiling stays where it was: do not state that an order is accepted until the
+paid journey has been checked once.

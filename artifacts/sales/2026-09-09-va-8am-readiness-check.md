@@ -21,7 +21,7 @@ this buyer".
 | Source supports the proposed buyer scope | PARTIAL | `verify_pack.py` passes for the retained Birmingham/Solihull prototype: 353 locations, 329 providers, 25 shortlisted organisations, two hashed CQC source editions and 25 page checks. The source edition is 1 September 2026 and was retrieved on 8 September. | Re-run the source check for the buyer's agreed territory and criteria. Do not treat the prototype as a current buyer delivery. |
 | Specific delivery date confirmed by delivery owner | FAIL | The documented target is three working days, but no buyer start date, delivery date or delivery owner confirmation is recorded. | Record the named delivery owner, start date and promised delivery date after the scope check. |
 | Customer terms and cancellation/refund wording fit the one-off Brief | **PASS — RE-CHECKED 23 Sep** | `frontend/app/terms/page.tsx` on `main` now defines the Brief as "a one-off, buyer-specific research pack for an agreed England territory" with the 25–50 shortlist, CSV/Excel dataset and 3–5 page brief (section 2); states the £745 fee, payment due in full before work begins, **cancel by email before work begins for a full refund**, non-refundable once work has begun except where CareGist fails to deliver the agreed scope or a remedy cannot lawfully be excluded, and a revised delivery date or full refund if a post-payment source issue prevents the agreed scope (section 6); a three-working-day delivery target (section 7); and liability limited to the fee paid (section 11). | Nothing. This row was the 9 September state and is no longer accurate. |
-| £745 Stripe payment link | **FAIL — RE-CHECKED 23 Sep. THE LINK IS DEAD.** | `https://buy.stripe.com/bJe4gs4L5ed26vQ0nd3AY02` was loaded in a browser on 23 September 2026 and returns **“The link is no longer active.”** The 9 September buyer-view check below is historical and no longer describes reality. | **Do not send this link to anyone.** There is currently no working payment mechanism, so no order can be collected even manually. The founder must decide whether the deactivation was deliberate (the sales workflow retires the direct-checkout route) or accidental, and either restore a link or define the replacement. The Product and Price behind it (`prod_VE1CdaKNxE0yVP`, `price_1UDZAQ4mijLHzRRkvwXjtaQK`) are unaffected by a deactivated link, so recreating should be quick. |
+| £745 Stripe payment link | **PASS (link) — RE-CHECKED 23 Sep** | The link recorded in the 9 September pack (`buy.stripe.com/...3AY02`, `plink_1UDZBR...`) is **deactivated** and returns “The link is no longer active.” It has been **superseded**. The live one is **https://buy.stripe.com/bJe8wI7Xhd8YdYi2vl3AY04** (`plink_1UEkzy4mijLHzRRkWjk3pFVW`), confirmed active via the Stripe API and loaded in a browser: one line item, “Territory Opportunity Brief”, quantity 1, **74500 GBP = £745.00**, `price_1UDzJP4mijLHzRRkfYJG3OZZ` / `prod_VESD16ql3keycy`. The Product and Price IDs in the 9 September pack are also superseded. | Use the live URL above and no other. Payment and post-payment behaviour (receipt, confirmation, fulfilment handoff) remain **unverified** — that still needs one permitted test transaction by the founder. |
 | VAT status and customer wording confirmed | **PASS — RE-CHECKED 23 Sep** | H-Kay Limited is not VAT registered. `/pricing/territory`, `/terms`, the offer page and all three VA packs now carry the identical shipped wording **"£745 fixed fee. No VAT added."** (merged as `56b38a2`). No surface anywhere still says "excludes VAT". | Nothing for the VA to say differently. Quote that wording verbatim. |
 | CareGist policy links appear at checkout | FAIL | Buyer-view check found checkout Terms and Privacy links pointing to Stripe legal pages. It did not expose CareGist policy links or a CareGist Terms acceptance control. | First amend Terms for the one-off Brief. Then configure CareGist Terms and Privacy URLs in Stripe public details, enable Terms acceptance where available, and re-check checkout. |
 
@@ -37,7 +37,6 @@ What still blocks taking payment, and who can clear it:
 
 | Remaining blocker | Who clears it |
 |---|---|
-| **No working payment link — the £745 link is dead (verified 23 Sep)** | **Founder** |
 | CareGist policy links and Terms acceptance at checkout | Founder (Stripe dashboard config) |
 | An independently checked paid / post-payment journey | Founder (a permitted test transaction) |
 | Buyer territory, criteria and exclusions recorded | **VA, per deal** |
@@ -47,11 +46,17 @@ The VA can do everything up to and including agreeing scope in writing and
 quoting the £745 price. The VA must not send a payment link or state that an
 order is accepted until the founder has cleared the rows above.
 
-**Re-checked 23 September: this is now a hard stop, not a caution.** The £745
-payment link is dead, so there is no mechanism to collect money even manually.
-Agreeing scope and quoting the price remains correct and useful work — but
-nothing can be collected until the founder restores a link or defines the
-replacement.
+**Re-checked 23 September — correcting an overstatement made earlier the same
+day.** A first pass reported that there was no payment mechanism at all. That
+was wrong: it checked the one URL recorded in this pack, found it deactivated,
+and did not check whether a replacement existed. One does, it is live, and it
+sells the right thing at the right price. What was actually wrong is that this
+pack pointed at a superseded link and superseded Product/Price IDs.
+
+The ceiling is unchanged and is a caution, not a hard stop: the VA must not send
+a payment link or state that an order is accepted until the founder has cleared
+the rows above — the paid journey itself has still never been checked end to
+end.
 
 ## Local buyer simulation completed
 
