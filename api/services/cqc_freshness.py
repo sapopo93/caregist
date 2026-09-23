@@ -13,6 +13,11 @@ import asyncpg
 
 
 FRESHNESS_SLA = timedelta(days=8)
+
+# A reconciliation normally runs ~4.5 h (8 shards, max-parallel 4). A running
+# attempt younger than this does not invalidate an existing in-SLA watermark.
+# Older than this, it is treated as stuck and fails closed as before.
+RECONCILIATION_IN_PROGRESS_GRACE = timedelta(hours=8)
 _REQUIRED_COLUMNS = (
     "source_uri",
     "source_published_at",
@@ -93,18 +98,49 @@ def _attempt_summary(row: Mapping[str, Any] | None) -> dict[str, Any] | None:
     }
 
 
+def _in_progress_within_grace(
+    latest_attempt: Mapping[str, Any],
+    *,
+    now: datetime,
+) -> bool:
+    """True when latest_attempt is a bounded, healthy, still-running reconciliation.
+
+    A running attempt within its normal duration does not invalidate an
+    existing in-SLA watermark; the watermark still stands until the run
+    either completes or overruns the grace window.
+    """
+    if _value(latest_attempt, "status") != "running":
+        return False
+    if _value(latest_attempt, "completed_at") is not None:
+        return False
+    started = _utc(_value(latest_attempt, "started_at"))
+    if started is None:
+        return False
+    if started > now + timedelta(minutes=5):
+        return False
+    if now - started > RECONCILIATION_IN_PROGRESS_GRACE:
+        return False
+    failure_count = _value(latest_attempt, "failure_count")
+    if failure_count not in (None, 0):
+        return False
+    return True
+
+
 def _newer_incomplete_attempt(
     watermark: Mapping[str, Any] | None,
     latest_attempt: Mapping[str, Any] | None,
+    *,
+    now: datetime,
 ) -> bool:
     if watermark is None or latest_attempt is None:
         return latest_attempt is not None
+    if _value(latest_attempt, "id") == _value(watermark, "id"):
+        return False
+    if _in_progress_within_grace(latest_attempt, now=now):
+        return False
     return bool(
-        _value(latest_attempt, "id") != _value(watermark, "id")
-        and (
-            _value(latest_attempt, "status") != "completed"
-            or not _complete_evidence(latest_attempt)
-        )
+        _value(latest_attempt, "status") != "completed"
+        or not _complete_evidence(latest_attempt)
     )
 
 
@@ -209,7 +245,7 @@ def build_cqc_freshness(
         "latestAttempt": latest_summary,
     }
 
-    if _newer_incomplete_attempt(watermark, latest_attempt):
+    if _newer_incomplete_attempt(watermark, latest_attempt, now=_utc(now)):
         return {
             "status": "partial",
             **common,

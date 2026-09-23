@@ -158,3 +158,49 @@ async def test_partial_reconciliation_does_not_advance_watermark(fresh_db):
         ) == watermark_id
     finally:
         await conn.close()
+
+
+async def test_running_reconciliation_within_grace_keeps_watermark_fresh(fresh_db):
+    conn = await asyncpg.connect(fresh_db)
+    try:
+        await apply_full_schema(conn)
+        watermark_id = await conn.fetchval(
+            """
+            INSERT INTO pipeline_runs (
+              run_type, status, started_at, completed_at, source_uri,
+              source_retrieved_at, source_checksum_sha256,
+              source_total_count, checked_count, success_count, failure_count,
+              reconciled_at, counts_reconciled
+            ) VALUES (
+              'reconciliation', 'completed', NOW() - INTERVAL '2 hours', NOW() - INTERVAL '1 hour',
+              'https://api.service.cqc.org.uk/public/v1/locations', NOW() - INTERVAL '1 hour',
+              $1, 2, 2, 2, 0, NOW() - INTERVAL '1 hour', TRUE
+            ) RETURNING id
+            """,
+            "e" * 64,
+        )
+        # A scheduled run that started after the watermark and is still
+        # in progress, well within the ~4.5 h normal duration.
+        await conn.execute(
+            """
+            INSERT INTO pipeline_runs (
+              run_type, status, started_at, completed_at, source_uri,
+              source_total_count, checked_count, success_count, failure_count,
+              counts_reconciled
+            ) VALUES (
+              'reconciliation', 'running', NOW() - INTERVAL '30 minutes', NULL,
+              'https://api.service.cqc.org.uk/public/v1/locations',
+              2, 1, 1, 0, FALSE
+            )
+            """
+        )
+
+        result = await get_cqc_freshness(conn, now=datetime.now(UTC))
+        assert result["status"] == "fresh"
+        assert result["reason"] is None
+        assert result["latestAttempt"]["status"] == "running"
+        assert await conn.fetchval(
+            "SELECT id FROM pipeline_runs WHERE counts_reconciled = TRUE ORDER BY source_retrieved_at DESC LIMIT 1"
+        ) == watermark_id
+    finally:
+        await conn.close()

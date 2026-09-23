@@ -5,7 +5,11 @@ from contextlib import asynccontextmanager
 
 import pytest
 
-from api.services.cqc_freshness import build_cqc_freshness, get_cqc_freshness
+from api.services.cqc_freshness import (
+    RECONCILIATION_IN_PROGRESS_GRACE,
+    build_cqc_freshness,
+    get_cqc_freshness,
+)
 
 
 NOW = datetime(2026, 8, 10, 22, 0, tzinfo=UTC)
@@ -210,3 +214,110 @@ def test_invalid_coverage_and_naive_authoritative_times_fail_closed():
     assert invalid_coverage["status"] == "unknown"
     assert invalid_coverage["coveragePercentage"] is None
     assert naive_time["status"] == "unknown"
+
+
+def _running(**overrides):
+    row = _run(
+        id=42,
+        status="running",
+        started_at=NOW - timedelta(hours=2),
+        completed_at=None,
+        checked_count=400,
+        success_count=400,
+        failure_count=0,
+        reconciled_at=None,
+        counts_reconciled=False,
+        source_checksum_sha256=None,
+    )
+    row.update(overrides)
+    return row
+
+
+def test_running_attempt_within_grace_does_not_invalidate_a_fresh_watermark():
+    watermark = _run()
+    running = _running(started_at=NOW - timedelta(hours=2))
+
+    result = build_cqc_freshness(watermark, running, now=NOW)
+
+    assert result["status"] == "fresh"
+    assert result["reason"] is None
+    assert result["latestAttempt"]["status"] == "running"
+
+
+def test_running_attempt_beyond_grace_fails_closed():
+    watermark = _run()
+    running = _running(started_at=NOW - timedelta(hours=9))
+
+    result = build_cqc_freshness(watermark, running, now=NOW)
+
+    assert result["status"] == "partial"
+    assert result["reason"] == "latest_authoritative_attempt_incomplete"
+
+
+def test_running_attempt_with_failures_fails_closed():
+    watermark = _run()
+    running = _running(started_at=NOW - timedelta(hours=2), failure_count=3)
+
+    result = build_cqc_freshness(watermark, running, now=NOW)
+
+    assert result["status"] == "partial"
+    assert result["reason"] == "latest_authoritative_attempt_incomplete"
+
+
+def test_running_attempt_with_naive_started_at_fails_closed():
+    watermark = _run()
+    running = _running(started_at=datetime(2026, 8, 10, 20, 0))
+
+    result = build_cqc_freshness(watermark, running, now=NOW)
+
+    assert result["status"] == "partial"
+    assert result["reason"] == "latest_authoritative_attempt_incomplete"
+
+
+def test_running_attempt_started_in_the_future_fails_closed():
+    watermark = _run()
+    running = _running(started_at=NOW + timedelta(hours=1))
+
+    result = build_cqc_freshness(watermark, running, now=NOW)
+
+    assert result["status"] == "partial"
+    assert result["reason"] == "latest_authoritative_attempt_incomplete"
+
+
+def test_running_attempt_with_a_stale_watermark_reports_stale_not_partial():
+    watermark = _run(source_retrieved_at=NOW - timedelta(days=9))
+    running = _running(started_at=NOW - timedelta(hours=2))
+
+    result = build_cqc_freshness(watermark, running, now=NOW)
+
+    assert result["status"] == "stale"
+    assert result["reason"] == "latest_successful_retrieval_exceeds_freshness_sla"
+
+
+def test_running_attempt_with_completed_at_set_is_inconsistent_and_fails_closed():
+    watermark = _run()
+    running = _running(started_at=NOW - timedelta(hours=2), completed_at=NOW - timedelta(minutes=5))
+
+    result = build_cqc_freshness(watermark, running, now=NOW)
+
+    assert result["status"] == "partial"
+    assert result["reason"] == "latest_authoritative_attempt_incomplete"
+
+
+def test_running_attempt_exactly_at_grace_boundary_is_still_fresh():
+    watermark = _run()
+    running = _running(started_at=NOW - RECONCILIATION_IN_PROGRESS_GRACE)
+
+    result = build_cqc_freshness(watermark, running, now=NOW)
+
+    assert result["status"] == "fresh"
+
+
+def test_running_attempt_one_second_past_grace_boundary_is_partial():
+    watermark = _run()
+    running = _running(started_at=NOW - RECONCILIATION_IN_PROGRESS_GRACE - timedelta(seconds=1))
+
+    result = build_cqc_freshness(watermark, running, now=NOW)
+
+    assert result["status"] == "partial"
+    assert result["reason"] == "latest_authoritative_attempt_incomplete"
