@@ -286,3 +286,115 @@ async def test_public_reads_mask_a_rating_left_by_a_writer_that_left_the_state_a
         assert _rows_named(await _search(client, q=LOCATION_NAME, rating="suspended")) == []
         facets = (await _search(client, q=LOCATION_NAME, facets=True))["facets"]
         assert facets["ratings"] == {}
+
+
+# --- Attributing the absence -------------------------------------------------
+#
+# The guard above proves a stale rating is never served. It leaves every
+# suppression looking identical: a bare ``overall_rating: null``. CQC publishes
+# at least four distinct reasons for having no current rating, and "never
+# inspected" (a new entrant) versus "rating withdrawn" are opposite signals to a
+# reader. A null that does not say which is also a claim this build cannot
+# support -- it asserts CQC published nothing when CQC may have published text
+# this build simply could not read. These tests read the reason back through the
+# same real router, SQL and serialiser.
+
+
+def _absence_reason(body: dict) -> object:
+    rows = _rows_named(body)
+    assert len(rows) == 1, f"expected this location exactly once, got {rows}"
+    return rows[0]["rating_absence_reason"]
+
+
+async def test_a_served_rating_carries_no_absence_reason(fresh_db: str) -> None:
+    """Positive control: the two fields are complementary, never both set."""
+    location = await _location(fresh_db)
+    location.ingest(_payload(overall_rating="Good"))
+
+    async with _public_api(fresh_db) as client:
+        body = await _search(client, q=LOCATION_NAME)
+
+    assert _served_rating(body) == "Good"
+    assert _absence_reason(body) is None
+
+
+async def test_a_sentinel_is_reported_as_the_sentinel_it_is(fresh_db: str) -> None:
+    location = await _location(fresh_db)
+    location.ingest(_payload(overall_rating="Not Yet Inspected"))
+
+    async with _public_api(fresh_db) as client:
+        body = await _search(client, q=LOCATION_NAME)
+
+    assert _served_rating(body) is None
+    assert _absence_reason(body) == "not_yet_inspected"
+
+
+async def test_an_absent_current_rating_is_reported_as_not_published(
+    fresh_db: str,
+) -> None:
+    location = await _location(fresh_db)
+    location.ingest(_payload(overall_rating=None))
+
+    async with _public_api(fresh_db) as client:
+        body = await _search(client, q=LOCATION_NAME)
+
+    assert _served_rating(body) is None
+    assert _absence_reason(body) == "not_published"
+
+
+async def test_unreadable_source_text_is_not_reported_as_cqc_publishing_nothing(
+    fresh_db: str,
+) -> None:
+    """The false-gap case. CQC *did* publish something; this build cannot read it.
+
+    Reporting that as 'not_published' would put a claim in the response that the
+    source never made. It must surface as 'unknown'.
+    """
+    location = await _location(fresh_db)
+    location.ingest(_payload(overall_rating="Suspended"))
+
+    async with _public_api(fresh_db) as client:
+        body = await _search(client, q=LOCATION_NAME)
+
+    assert _served_rating(body) is None
+    reason = _absence_reason(body)
+    assert reason == "unknown", reason
+    assert reason != "not_published", "unreadable text must not claim CQC published nothing"
+
+
+async def test_a_legacy_write_that_left_the_state_alone_still_explains_itself(
+    fresh_db: str,
+) -> None:
+    """SQL derives NULL here (the state still says 'rated') while the serialiser
+    suppresses the unreadable value -- the one path that could emit an
+    unattributed null. The stored value is classified instead."""
+    location = await _location(fresh_db)
+    location.ingest(_payload(overall_rating="Good"))
+    location.write_rating_the_way_the_unmigrated_ingestion_did("Suspended")
+
+    async with _public_api(fresh_db) as client:
+        body = await _search(client, q=LOCATION_NAME)
+
+    assert _served_rating(body) is None
+    assert _absence_reason(body) == "unknown"
+
+
+async def test_the_kinds_of_absence_do_not_collapse_into_one_answer(
+    fresh_db: str,
+) -> None:
+    """The whole point: two locations with no rating, distinguishable."""
+    location = await _location(fresh_db)
+
+    location.ingest(_payload(overall_rating="Not Yet Inspected"))
+    async with _public_api(fresh_db) as client:
+        never_inspected = _absence_reason(await _search(client, q=LOCATION_NAME))
+
+    location.ingest(_payload(overall_rating=None))
+    async with _public_api(fresh_db) as client:
+        withdrawn = _absence_reason(await _search(client, q=LOCATION_NAME))
+
+    assert never_inspected is not None and withdrawn is not None
+    assert never_inspected != withdrawn, (
+        "a never-inspected location and one whose rating the source stopped "
+        "publishing must not look identical to a reader"
+    )

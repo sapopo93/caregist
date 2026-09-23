@@ -8,6 +8,14 @@ export interface Provider {
   postcode: string | null;
   region: string | null;
   overall_rating: string | null;
+  /**
+   * Why `overall_rating` is null, in the API's own vocabulary:
+   * "not_yet_inspected" | "not_published" | "unrated" | "not_applicable" |
+   * "unknown" (CQC published rating text the pipeline could not read).
+   * Null exactly when a rating IS served, so the two are never both set.
+   * Optional so responses predating the field still type-check.
+   */
+  rating_absence_reason?: string | null;
   service_types: string | null;
   data_completeness_tier: string | null;
   phone: string | null;
