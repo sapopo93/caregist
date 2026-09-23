@@ -2,7 +2,7 @@
 
 ## The one offer
 
-Sell only the **CareGist Territory Opportunity Brief** at **£745**. Price excludes VAT.
+Sell only the **CareGist Territory Opportunity Brief** at **£745**. £745 fixed fee. No VAT added.
 
 The buyer is a UK care-sector supplier or compliance consultancy that needs to decide which care organisations in a defined territory deserve account research first.
 
@@ -46,13 +46,13 @@ The founder or delivery owner must mark every item true:
 - The delivery owner confirms a specific three-working-day delivery date.
 - Customer terms and refund/cancellation wording are approved.
 - The £745 Stripe payment link works and shows the correct product name and price.
-- The payment page states that the price excludes VAT.
+- The payment page states: £745 fixed fee. No VAT added.
 
 If any item is false, the VA can prepare records and book a scoping conversation but must not send a payment link or state that an order is accepted.
 
 ## VA wording after the readiness check passes
 
-> CareGist prepares a Territory Opportunity Brief for care-sector suppliers and advisers deciding which organisations to research first in a defined area. It includes an editable territory dataset, a 25–50 organisation shortlist selected against your agreed criteria, the published evidence behind each selection, and a short executive brief. The price is £745 and excludes VAT. We confirm your territory, criteria and delivery date before payment.
+> CareGist prepares a Territory Opportunity Brief for care-sector suppliers and advisers deciding which organisations to research first in a defined area. It includes an editable territory dataset, a 25–50 organisation shortlist selected against your agreed criteria, the published evidence behind each selection, and a short executive brief. £745 fixed fee. No VAT added. We confirm your territory, criteria and delivery date before payment.
 
 ## Do not offer at 8am
 
