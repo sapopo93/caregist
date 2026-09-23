@@ -2,11 +2,11 @@
 
 Runs the whole fulfilment path (`fulfil_territory_brief_order`) against a real
 Postgres that has migration 060 applied, inside a transaction that is always
-rolled back so nothing persists. Skipped unless TB_PG_URL points at such a DB
-(use a disposable Neon branch, never production).
+rolled back so nothing persists. CI supplies the disposable Postgres database;
+TB_PG_URL remains an explicit disposable-Neon override (never production).
 
     TB_PG_URL='postgresql://.../neondb?sslmode=require' \
-      .venv/bin/python -m pytest tests/test_territory_brief_pg_integration.py -q
+      .venv/bin/python -m pytest tests/integration/test_territory_brief_pg_integration.py -q
 """
 
 from __future__ import annotations
@@ -19,16 +19,23 @@ from pathlib import Path
 import pytest
 
 TB_PG_URL = os.environ.get("TB_PG_URL")
-FIXTURE = Path(__file__).parent / "fixtures" / "territory_brief"
+FIXTURE = Path(__file__).parents[1] / "fixtures" / "territory_brief"
 
-pytestmark = pytest.mark.skipif(
-    not TB_PG_URL or not (FIXTURE / "locations_detail.jsonl").exists(),
-    reason="set TB_PG_URL to a migration-060 Postgres branch (and keep the fixture) to run",
-)
+if TB_PG_URL:
+    @pytest.fixture
+    async def fresh_db():
+        yield TB_PG_URL
 
 
 @pytest.mark.asyncio
-async def test_full_fulfilment_against_real_postgres():
+async def test_full_fulfilment_against_real_postgres(fresh_db):
+    required_fixtures = [
+        FIXTURE / "locations_detail.jsonl",
+        FIXTURE / "providers_detail.jsonl",
+    ]
+    missing = [str(path) for path in required_fixtures if not path.is_file()]
+    assert not missing, f"required territory-brief fixtures are unavailable: {missing}"
+
     import asyncpg
 
     from api.services import territory_brief_fulfilment as tbf
@@ -89,7 +96,12 @@ async def test_full_fulfilment_against_real_postgres():
 
     session = {"id": "cs_pg_itest", "metadata": {"type": tbf.METADATA_TYPE}}
 
-    conn = await asyncpg.connect(TB_PG_URL)
+    conn = await asyncpg.connect(fresh_db)
+    if not TB_PG_URL:
+        from tests.integration.conftest import apply_full_schema
+
+        applied = await apply_full_schema(conn)
+        assert "060_territory_brief_fulfilment.sql" in applied
     tx = conn.transaction()
     await tx.start()
     try:

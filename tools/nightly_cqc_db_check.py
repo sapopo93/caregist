@@ -59,6 +59,12 @@ from typing import Any, Callable
 import psycopg2
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(REPO_ROOT))
+
+from api.services.cqc_polling_policy import (  # noqa: E402
+    SIGNAL_POLL_CRON,
+)
+
 SIGNAL_POLL_WORKFLOW = REPO_ROOT / ".github" / "workflows" / "cqc-signal-poll.yml"
 RECONCILIATION_WORKFLOW = REPO_ROOT / ".github" / "workflows" / "cqc-reconciliation.yml"
 PIPELINE_HEALTH_SOURCE = "api/services/pipeline_health.py"
@@ -91,7 +97,7 @@ SIGNAL_POLL_FRESHNESS_CITATION = f"SIGNAL_POLL_FRESHNESS_SLA = timedelta(hours=1
 # case where the workflow file cannot be read; a test asserts they agree with
 # the workflow, and main() reports drift loudly when they stop agreeing.
 # ---------------------------------------------------------------------------
-WORKFLOW_CRON_FALLBACK = "7 18,21,0,3 * * *"
+WORKFLOW_CRON_FALLBACK = SIGNAL_POLL_CRON
 WORKFLOW_SWEEP_SIZE_FALLBACK = 1200
 CADENCE_SOURCES = {
     "workflow": "parsed from .github/workflows/cqc-signal-poll.yml",

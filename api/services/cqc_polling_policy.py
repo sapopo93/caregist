@@ -5,8 +5,9 @@ from __future__ import annotations
 from datetime import timedelta
 
 
-# :37 avoids the start-of-hour Actions scheduling peak. The former :07 cadence
-# missed whole slots despite completed jobs being far shorter than three hours.
+# :37 is an operational hypothesis intended to avoid the earlier part of the
+# Actions scheduling window. It is not a proven fix: readiness still requires
+# observing at least 24 starts in seven days at >=90% completion.
 SIGNAL_POLL_CRON = "37 18,21,0,3 * * *"
 SIGNAL_POLL_TIMEOUT_MINUTES = 50
 SIGNAL_POLL_TIME_BUDGET_SECONDS = 45 * 60

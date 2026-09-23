@@ -69,7 +69,7 @@ def _fire_times(schedules, start: datetime, end: datetime) -> list[datetime]:
 # --------------------------------------------------------------------------
 def test_expected_cadence_is_derived_from_the_workflow_cron():
     cadence = nightly.derive_cadence(now=NOW)
-    assert cadence["expressions"] == ["7 18,21,0,3 * * *"]
+    assert cadence["expressions"] == ["37 18,21,0,3 * * *"]
     assert cadence["runs_per_day"] == 4
     assert cadence["runs_per_week"] == 28
     assert "cqc-signal-poll.yml" in cadence["source"]
@@ -1379,6 +1379,7 @@ def test_round2_9_epoch_start_dates_use_the_earliest_commit_a_schedule_was_in_fo
         ("37 * * * *", datetime(2026, 8, 31, 13, 48, 47, tzinfo=UTC), one_hour_commit),
         ("7,37 * * * *", datetime(2026, 9, 3, 12, 24, 24, tzinfo=UTC), "39fa9a39d56a042abaa20057d008392706ff21f0"),
         ("7 18,21,0,3 * * *", datetime(2026, 9, 15, 10, 38, 36, tzinfo=UTC), "6bc98802611b5e98fad9410677c1fea1f5fc2209"),
+        ("37 18,21,0,3 * * *", datetime(2026, 9, 23, 3, 22, 10, tzinfo=UTC), "12d0584d24a80b7a0f659f07a22cf4bca4105460"),
     ]
     # Regression guard for the reported bug: the identical-run compression used to
     # keep the newest commit in the run (2026-09-03T10:23:23Z).

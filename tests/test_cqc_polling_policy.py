@@ -7,13 +7,13 @@ from api.services.cqc_polling_policy import (
     SIGNAL_POLL_TIME_BUDGET_SECONDS,
     SIGNAL_POLL_TIMEOUT_MINUTES,
 )
-from tools.nightly_cqc_db_check import REQUIRED_WEEKLY_POLLS
+from tools.nightly_cqc_db_check import WORKFLOW_CRON_FALLBACK
 
 
 def test_polling_consumers_share_one_minimum():
     assert MINIMUM_POLLS_IN_WINDOW == 24
     assert SCHEDULED_POLLS_IN_WINDOW == 28
-    assert REQUIRED_WEEKLY_POLLS == MINIMUM_POLLS_IN_WINDOW
+    assert WORKFLOW_CRON_FALLBACK == SIGNAL_POLL_CRON
 
 
 def test_workflow_matches_shared_cadence_and_budget():

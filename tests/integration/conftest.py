@@ -141,7 +141,11 @@ async def apply_full_schema(conn, *, through: str | None = None) -> list[str]:
 
 @pytest.fixture
 async def fresh_db():
-    """Create and drop an isolated database with the full schema applied."""
+    """Create and drop an isolated, empty database (PostGIS enabled if available).
+
+    Callers apply the schema with `apply_full_schema`, optionally stopping at a
+    chosen migration via `through=`.
+    """
     if not DATABASE_URL:
         pytest.skip("Set the explicit isolated CAREGIST_TEST_DATABASE_URL to run integration tests.")
     validate_test_database_url(DATABASE_URL)
