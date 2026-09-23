@@ -14,15 +14,14 @@
 -- latestAttempt.startedAt = null in production, and PR #73's CI migration
 -- replay caught the same thing against a freshly-applied schema.
 --
--- init.sql sets `SET timezone = 'UTC'` for the session that creates and
--- writes these rows, and every writer uses NOW() under that session, so the
--- stored naive values are UTC clock time with no offset recorded. Converting
--- with `AT TIME ZONE 'UTC'` (interpret-as-UTC, not shift) is therefore exact,
--- not a guess.
+-- Writers store NOW() into these naive columns, which records wall-clock time
+-- in the writing session's TimeZone -- the server default, since writers do
+-- not SET it (init.sql's `SET timezone` covers only its own session).
+-- `AT TIME ZONE 'UTC'` is exact only if that default is UTC. Before applying,
+-- confirm `SHOW timezone;` on the target returns UTC/Etc/UTC/GMT.
 --
--- Approved by Henry (2026-09-23): a same-meaning type correction of an
--- operational tracking table, not user data, needed to make an existing,
--- already-approved fix take effect. Idempotent: the DO block only runs the
+-- A same-meaning type correction of an operational tracking table, not user
+-- data. Idempotent: the DO block only runs the
 -- ALTER when the column is still `timestamp without time zone`, so this is
 -- safe to apply more than once and safe on a database that already has
 -- TIMESTAMPTZ (e.g. one that only ever ran 020's CREATE TABLE path).
@@ -66,6 +65,6 @@ CREATE INDEX IF NOT EXISTS idx_pipeline_runs_cqc_attempts
   WHERE run_type IN ('signal_poll', 'incremental', 'reconciliation');
 
 COMMENT ON COLUMN pipeline_runs.started_at IS
-  'TIMESTAMPTZ. Historically naive TIMESTAMP on databases that ran init.sql before this migration; converted assuming the writing session was UTC (init.sql sets SET timezone = ''UTC''). See migration 065.';
+  'TIMESTAMPTZ. Historically naive TIMESTAMP on databases that ran init.sql before this migration; converted assuming the server default TimeZone was UTC. See migration 065.';
 COMMENT ON COLUMN pipeline_runs.completed_at IS
-  'TIMESTAMPTZ. Historically naive TIMESTAMP on databases that ran init.sql before this migration; converted assuming the writing session was UTC (init.sql sets SET timezone = ''UTC''). See migration 065.';
+  'TIMESTAMPTZ. Historically naive TIMESTAMP on databases that ran init.sql before this migration; converted assuming the server default TimeZone was UTC. See migration 065.';
