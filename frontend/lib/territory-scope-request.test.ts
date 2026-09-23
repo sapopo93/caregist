@@ -71,6 +71,38 @@ test("creates stable, opaque abuse and duplicate keys", () => {
   assert.equal(first.submissionKey.includes("buyer@example.com"), false);
 });
 
+test("does not collapse missing proxy headers into one global rate-limit bucket", () => {
+  process.env.DIRECTORY_TOKEN_SECRET = "test-secret-with-at-least-32-characters";
+  delete process.env.VERCEL;
+  const request = new Request("https://example.test/api/territory/requests", {
+    headers: { "idempotency-key": "550e8400-e29b-41d4-a716-446655440000" },
+  });
+  const common = {
+    name: "Buyer",
+    company: "Acme",
+    region: "London",
+    buyerType: "requires_improvement",
+    serviceType: "",
+  };
+
+  const first = createTerritoryScopeRequestSecurityIdentity(request, {
+    ...common,
+    email: "first@example.com",
+  });
+  const sameContact = createTerritoryScopeRequestSecurityIdentity(request, {
+    ...common,
+    email: "first@example.com",
+  });
+  const otherContact = createTerritoryScopeRequestSecurityIdentity(request, {
+    ...common,
+    email: "other@example.com",
+  });
+
+  assert.equal(first.requesterFingerprint, sameContact.requesterFingerprint);
+  assert.notEqual(first.requesterFingerprint, otherContact.requesterFingerprint);
+  assert.equal(first.requesterFingerprint.includes("first@example.com"), false);
+});
+
 test("fails closed without a sufficiently strong intake secret", () => {
   delete process.env.DIRECTORY_TOKEN_SECRET;
   assert.throws(

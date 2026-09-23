@@ -37,15 +37,20 @@ export function normalizeTerritoryScopeRequestContact(input: {
   return { email, name, company };
 }
 
-function getRequestSource(request: Request): string {
+function getRequestSource(request: Request, contactEmail: string): string {
   if (process.env.VERCEL === "1") {
-    return (
+    const forwardedSource =
       request.headers.get("x-vercel-forwarded-for")?.split(",")[0]?.trim() ||
-      request.headers.get("x-real-ip")?.trim() ||
-      "unknown"
-    );
+      request.headers.get("x-real-ip")?.trim();
+    if (forwardedSource) return `network:${forwardedSource}`;
   }
-  return "unknown";
+
+  // A shared "unknown" source turns the five-per-hour network quota into a
+  // global outage switch whenever trusted proxy headers are unavailable. Fall
+  // back to the normalized contact identity instead: the source quota becomes
+  // per-contact for that request, while the independent contact quota remains
+  // enforced and no raw email address is persisted.
+  return `contact:${contactEmail}`;
 }
 
 export function createTerritoryScopeRequestSecurityIdentity(
@@ -58,7 +63,9 @@ export function createTerritoryScopeRequestSecurityIdentity(
   }
 
   const hmac = (value: string) => createHmac("sha256", secret).update(value).digest("hex");
-  const requesterFingerprint = hmac(`territory-scope-source:${getRequestSource(request)}`);
+  const requesterFingerprint = hmac(
+    `territory-scope-source:${getRequestSource(request, input.email)}`,
+  );
   const idempotencyKey = request.headers.get("idempotency-key")?.trim() ?? "";
   if (!IDEMPOTENCY_KEY_RE.test(idempotencyKey)) {
     throw new TerritoryScopeRequestInputError("Send a valid Idempotency-Key header.");
