@@ -392,5 +392,20 @@ def test_validator_states_the_scheduled_run_contract():
     source = _source()
 
     assert "a scheduled run takes no resume inputs" in source
+    assert "a scheduled run cannot acknowledge unconfirmed deactivations" in source
     assert "a scheduled run reconciles for real and cannot be a dry run" in source
     assert "production reconciliation writes must run from refs/heads/main" in source
+
+
+def test_unconfirmed_acknowledgement_is_explicit_manual_only_and_defaults_off():
+    inputs = _workflow()["on"]["workflow_dispatch"]["inputs"]
+    acknowledgement = inputs["acknowledge_unconfirmed_deactivations"]
+
+    assert acknowledgement["type"] == "boolean"
+    assert acknowledgement["default"] == "false"
+
+    source = _source()
+    assert 'ACKNOWLEDGE_UNCONFIRMED: ${{ inputs.acknowledge_unconfirmed_deactivations }}' in source
+    assert 'if [ "$ACKNOWLEDGE_UNCONFIRMED" = "true" ]; then' in source
+    assert "ACKNOWLEDGEMENT_ARGS+=(--acknowledge-unconfirmed-deactivations)" in source
+    assert source.count("--acknowledge-unconfirmed-deactivations") == 1
