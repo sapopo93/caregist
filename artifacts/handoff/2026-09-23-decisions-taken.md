@@ -218,3 +218,27 @@ Checked against the systems, not against this document.
 will be applied to production **after** 065. Verified safe: governance only
 rejects duplicate numbers, `apply_migrations.py` applies by filename set rather
 than highest version, and 064/065 touch unrelated tables. **Do not renumber.**
+
+### Update 2026-09-25 09:05Z — PR #71 rebased and verified
+
+Codex failed three times on tooling before touching any code — auth, then the
+plugin's default model (`gpt-6-sol`, not available on this ChatGPT account),
+then a read-only no-network sandbox whose workspace excluded the repo's `.git`.
+Per the standing rule to fix where Codex fails, Claude did the rebase.
+
+- Rebased 6 commits onto `origin/main`: **no conflicts**. The two files both
+  sides touched auto-merged, and both intents were checked to have survived:
+  main's #74 label "Latest CQC registration or inspection" and the PR's
+  `Idempotency-Key` flow.
+- Local: ruff clean · governance clean · **1288 passed, 1 skipped on real
+  Postgres** · frontend **191 passed** · type-check clean.
+- Pushed with `--force-with-lease` pinned to Codex's last head `457a5ca`; PR
+  head is now **`c912a0d`**, based on current `main`.
+- GitHub CI on `c912a0d`: every job passes except **"Production schema is
+  current"** — the drift gate, correctly waiting for migration `064`.
+
+**Remaining: two items, both Henry's.**
+1. Apply `064` to production (purely additive; classifier blocks Claude from
+   production reads and writes), then merge PR #71.
+2. One completed payment on the live link. The link has had **8 checkout
+   sessions, all expired unpaid** — no payment has ever completed on this path.
