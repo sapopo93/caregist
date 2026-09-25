@@ -1,5 +1,37 @@
 # CURRENT VERDICT — CareGist
 
+## 2026-09-23 02:27–03:50 BST update — supersedes the operational facts below
+
+- **Release identity:** frontend `/api/health/directory` and backend `/api/v1/version` both
+  report `9ece88698b0a3a812d9a0a3af1a0fa17aaba091c`, exactly `origin/main`. Served identity is
+  aligned. Scheduled smoke run `35799450671` still expected stale `a1357fee…`, so the smoke
+  gate remains red because its repository variables lag deployment. Local fix makes the
+  frontend prefer `VERCEL_GIT_COMMIT_SHA` over a pinned override.
+- **Authoritative source:** the 2026-09-16 reconciliation completed 57,151 / 57,151 with zero
+  failures. At the live probe the retrieved source was 162.8 h old against a 192 h SLA, but
+  health remained `partial`/`freshness_ok: false` because newer authoritative attempts failed.
+- **Latest failure:** GitHub run `35545070099`, shard 2, exhausted five HTTP 500 retries for
+  CQC location `1-147345129` after committing 1,750 / 7,129. Seven other shards completed;
+  finalization was skipped and abort closed the incomplete batch. The fail-closed gate worked.
+- **Signal polls:** 17 completed of 17 started in seven days, below the unchanged readiness
+  minimum of 24 and the 28 scheduled opportunities. Completed-run success is 100%; scheduling
+  coverage is 60.7%. The old nightly report denominator of 336 was wrong.
+- **Commercial readiness:** `checkoutReady: false`, `shadowCoveragePassed: false`, delivery
+  disabled and healthy. Checkout stays closed.
+- **Scale:** 59,040 location rows; 57,248 active locations; 37,141 distinct active provider
+  organisations; 10,004 named group labels.
+- **Verification of this change set:** Ruff green; 927 non-Postgres backend tests green;
+  184 frontend tests green; TypeScript and production build green; targeted browser journey
+  3/3 green. Real-Postgres tests are wired into CI but were not executable locally because no
+  Postgres or Docker daemon was available.
+
+**Status: implemented locally; database and independent verification pending.** This is not
+release approval. Collection freshness/reliability and scheduled poll coverage remain below
+existing gates. Scope requests are durable, fail-closed enquiries only; nothing is deployed
+or enabled, and checkout remains closed.
+
+---
+
 **Established:** 2026-09-11 00:07–00:30 BST
 **Method:** live production probes, GitHub API, repository inspection, local test execution
 **Previous version:** 2026-08-20 (22 days stale — superseded)

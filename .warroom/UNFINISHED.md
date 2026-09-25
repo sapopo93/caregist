@@ -1,5 +1,21 @@
 # UNFINISHED — CareGist
 
+## 2026-09-23 current open work
+
+- The latest authoritative reconciliation failed on repeated upstream HTTP 500 responses for
+  location `1-147345129`; the last complete watermark is still 2026-09-16.
+- Only 17 of 28 scheduled signal-poll opportunities started in the measured seven-day window;
+  the unchanged readiness minimum is 24.
+- Production smoke expected `a1357fee…` while both deployed surfaces served `9ece886…`.
+- The new migration 064, durable scope intake and lifecycle tests are local only and unapplied.
+- Real-Postgres CI execution of territory fulfilment and scope lifecycle is not yet observed on
+  a run from this change set. Local Docker/Postgres was unavailable.
+- No real payment was attempted. Solicitor approval, live Stripe objects, Blob/Resend readiness,
+  independent review, merge and deployment all remain outstanding.
+- Checkout, outbound delivery and customer-facing fulfilment remain fail-closed.
+
+---
+
 **Refreshed:** 2026-09-11 00:30 BST. Everything here is **incomplete**. None of it is "nearly
 done" in the sense of being externally provable.
 

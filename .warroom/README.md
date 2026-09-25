@@ -3,9 +3,15 @@
 **Authoritative status record for the CareGist 2026-09-11 completion target.**
 Owned by: `ai-company-governed` (Chief of Staff). Sole portfolio dispatcher.
 
-**Freshness stamp:** content verified against live production on **2026-09-11 00:07–00:30 BST**.
-Previous stamp: 2026-08-20 (22 days stale). If this stamp is more than 7 days old, treat every
-claim below as `NOT VERIFIED` and re-run the evidence commands in `CURRENT_VERDICT.md`.
+**Freshness stamp:** re-verified against live production, GitHub Actions and the repository on
+**2026-09-23 02:27–03:50 BST**. Previous full stamp: 2026-09-11.
+If this stamp is more than 7 days old, treat every claim below as `NOT VERIFIED` and re-run the
+evidence commands in `CURRENT_VERDICT.md`.
+
+**2026-09-23 scope.** Read-only live probes confirmed frontend and backend both serve
+`9ece88698b0a3a812d9a0a3af1a0fa17aaba091c` (= `origin/main`). GitHub run logs were inspected
+for reconciliation, signal polls, smoke and the freshness watchdog. No deployment, live data
+mutation, Stripe change, merge or outbound message was performed.
 
 ## Files
 | File | Purpose |

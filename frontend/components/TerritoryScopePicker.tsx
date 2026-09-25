@@ -5,7 +5,6 @@ import { useRef, useState } from "react";
 import { trackEvent } from "@/lib/analytics";
 import { DEFAULT_SERVICE_TYPE_OPTIONS } from "@/lib/directory-constants";
 import {
-  TERRITORY_BRIEF_PRICE_GBP,
   TERRITORY_BUYER_TYPES,
   TERRITORY_REGION_OPTIONS,
   type TerritoryCoverageResult,
@@ -32,8 +31,14 @@ export default function TerritoryScopePicker() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState<CoverageResponse | null>(null);
+  const [contactName, setContactName] = useState("");
+  const [contactEmail, setContactEmail] = useState("");
+  const [company, setCompany] = useState("");
+  const [requesting, setRequesting] = useState(false);
+  const [requestReference, setRequestReference] = useState("");
 
   const requestVersion = useRef(0);
+  const requestIdempotencyKey = useRef("");
 
   function changeSelection(setValue: (value: string) => void, value: string) {
     requestVersion.current += 1;
@@ -41,6 +46,8 @@ export default function TerritoryScopePicker() {
     setResult(null);
     setError("");
     setLoading(false);
+    setRequestReference("");
+    requestIdempotencyKey.current = "";
   }
 
   const selectedBuyer = TERRITORY_BUYER_TYPES.find((b) => b.value === buyerType) ?? null;
@@ -78,22 +85,42 @@ export default function TerritoryScopePicker() {
       }`
     : "";
 
-  const mailtoHref = result
-    ? `mailto:outreach@caregist.co.uk?subject=${encodeURIComponent(
-        `Territory Opportunity Brief — ${scopeSummary}`,
-      )}&body=${encodeURIComponent(
-        [
-          "Please review availability for this Territory Opportunity Brief scope. This is an enquiry, not an order.",
-          "",
-          `Region: ${result.scope.region}`,
-          `Buyer type: ${selectedBuyer?.label ?? result.scope.buyerType}`,
-          `Service type: ${result.scope.serviceType || "All"}`,
-          `Providers in scope: ${result.coverage.providerCount}`,
-          `Coverage verdict: ${result.coverage.verdict}`,
-          `Price: £${TERRITORY_BRIEF_PRICE_GBP}`,
-        ].join("\n"),
-      )}`
-    : "";
+  async function requestScopeReview() {
+    if (!result || requesting) return;
+    setRequesting(true);
+    setError("");
+    try {
+      requestIdempotencyKey.current ||= crypto.randomUUID();
+      const response = await fetch("/api/territory/requests", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": requestIdempotencyKey.current,
+        },
+        body: JSON.stringify({
+          ...result.scope,
+          email: contactEmail,
+          name: contactName,
+          company,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setError(data.error || "Could not record the scope request. Try again.");
+        return;
+      }
+      setRequestReference(data.reference);
+      void trackEvent("territory_scope_request", "territory_picker", {
+        region: result.scope.region,
+        buyer_type: result.scope.buyerType,
+        verdict: result.coverage.verdict,
+      });
+    } catch {
+      setError("Could not record the scope request. No order has been placed.");
+    } finally {
+      setRequesting(false);
+    }
+  }
 
   return (
     <div className={styles.checkCard}>
@@ -193,16 +220,20 @@ export default function TerritoryScopePicker() {
           >
             <p className={styles.scopeSummary}>{scopeSummary}</p>
             <p className={styles.resultDetail}>
-              {result.coverage.providerCount < 12
+              {result.coverage.providerOrganisationCount < 12
                 ? "Too few matching organisations for the proposed brief. Try another region or remove the service filter."
-                : result.coverage.providerCount < 25
+                : result.coverage.providerOrganisationCount < 25
                   ? "This scope has fewer than 25 matching organisations. A review is needed to establish whether a smaller brief is suitable."
                   : "This count is a starting point for reviewing your scope. It does not verify a ranked shortlist or confirm delivery availability."}
             </p>
             <dl className={styles.dl}>
               <div>
-                <dt>Providers in scope</dt>
-                <dd>{result.coverage.providerCount}</dd>
+                <dt>Provider organisations</dt>
+                <dd>{result.coverage.providerOrganisationCount}</dd>
+              </div>
+              <div>
+                <dt>CQC locations</dt>
+                <dd>{result.coverage.locationCount}</dd>
               </div>
               <div>
                 <dt>Latest CQC registration or inspection</dt>
@@ -210,26 +241,44 @@ export default function TerritoryScopePicker() {
               </div>
             </dl>
 
-            {result.coverage.canCheckout ? (
+            {result.coverage.coverageSufficient ? (
               <div style={{ marginTop: 18 }}>
-                <a
-                  href={mailtoHref}
-                  className={styles.button}
-                  onClick={() =>
-                    void trackEvent("territory_scope_request", "territory_picker", {
-                      region: result.scope.region,
-                      buyer_type: result.scope.buyerType,
-                      verdict: result.coverage.verdict,
-                    })
-                  }
-                >
-                  Email this scope for review
-                </a>
-                <p className={styles.note}>
-                  Opens your email app with your selections. Send the email to request a
-                  review. This does not reserve a brief or take payment. Online ordering is
-                  not available.
-                </p>
+                {requestReference ? (
+                  <p role="status" className={styles.note}>
+                    Scope request recorded: <strong>{requestReference}</strong>. We will review
+                    it before any commercial step. No order has been placed and no payment has
+                    been taken.
+                  </p>
+                ) : (
+                  <form
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      void requestScopeReview();
+                    }}
+                  >
+                    <div className={styles.fieldGrid}>
+                      <div className={styles.field}>
+                        <label htmlFor="territory-contact-name" className={styles.label}>Name</label>
+                        <input id="territory-contact-name" className={styles.select} value={contactName} onChange={(event) => setContactName(event.target.value)} autoComplete="name" />
+                      </div>
+                      <div className={styles.field}>
+                        <label htmlFor="territory-company" className={styles.label}>Company</label>
+                        <input id="territory-company" className={styles.select} value={company} onChange={(event) => setCompany(event.target.value)} autoComplete="organization" />
+                      </div>
+                      <div className={`${styles.field} ${styles.fieldFull}`}>
+                        <label htmlFor="territory-contact-email" className={styles.label}>Work email</label>
+                        <input id="territory-contact-email" className={styles.select} type="email" required value={contactEmail} onChange={(event) => setContactEmail(event.target.value)} autoComplete="email" />
+                      </div>
+                    </div>
+                    <button type="submit" className={styles.button} disabled={requesting}>
+                      {requesting ? "Recording request…" : "Request a scope review"}
+                    </button>
+                    <p className={styles.note}>
+                      This records an enquiry for review. It does not reserve a brief, enable
+                      checkout, or take payment.
+                    </p>
+                  </form>
+                )}
               </div>
             ) : null}
           </div>

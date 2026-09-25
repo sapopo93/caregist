@@ -68,7 +68,8 @@ export async function POST(request: Request) {
       .at(-1) ?? null;
 
   const result = evaluateTerritoryCoverage(scope, {
-    providerCount: coverageRow.providerCount,
+    locationCount: coverageRow.locationCount,
+    providerOrganisationCount: coverageRow.providerOrganisationCount,
     mostRecentObservation,
   });
 

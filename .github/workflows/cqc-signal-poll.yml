@@ -11,9 +11,11 @@ on:
     # Night window only: four slots three hours apart, nothing during the UK
     # working day. The poll takes 16-24 minutes and each slot is three hours
     # clear, so runs no longer collide with the previous one and get dropped.
+    # :37 avoids the start-of-hour scheduling peak; the former :07 cadence
+    # missed whole slots despite no job overlap.
     # The Python time budget is 45 minutes, below the 50-minute job timeout, so
     # GitHub does not kill a still-running poll unmarked.
-    - cron: "7 18,21,0,3 * * *"
+    - cron: "37 18,21,0,3 * * *"
 
 permissions:
   contents: read

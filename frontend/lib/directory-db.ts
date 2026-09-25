@@ -1,5 +1,5 @@
 import { consumeTerritoryBriefDownload } from "./territory-brief-download.ts";
-import { createHash, randomBytes } from "node:crypto";
+import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { canonicalizeServiceCounts, canonicalServices, resolveServiceAliases } from "@/lib/service-taxonomy";
 
 import { createPool } from "@vercel/postgres";
@@ -446,7 +446,8 @@ export async function getDirectoryOpportunityStats(): Promise<DirectoryOpportuni
 }
 
 export interface TerritoryScopeCoverageRow {
-  providerCount: number;
+  locationCount: number;
+  providerOrganisationCount: number;
   mostRecentInspection: string | null;
   mostRecentRegistration: string | null;
 }
@@ -473,13 +474,15 @@ export async function getTerritoryScopeCoverage(scope: {
   });
 
   const result = await getSql().query<{
-    provider_count: number;
+    location_count: number;
+    provider_organisation_count: number;
     most_recent_inspection: string | null;
     most_recent_registration: string | null;
   }>(
     `
       SELECT
-        COUNT(*)::int AS provider_count,
+        COUNT(*)::int AS location_count,
+        COUNT(DISTINCT NULLIF(BTRIM(provider_id), ''))::int AS provider_organisation_count,
         MAX(last_inspection_date)::text AS most_recent_inspection,
         MAX(registration_date)::text AS most_recent_registration
       FROM care_providers
@@ -490,10 +493,136 @@ export async function getTerritoryScopeCoverage(scope: {
 
   const row = result.rows[0];
   return {
-    providerCount: row?.provider_count ?? 0,
+    locationCount: row?.location_count ?? 0,
+    providerOrganisationCount: row?.provider_organisation_count ?? 0,
     mostRecentInspection: row?.most_recent_inspection ?? null,
     mostRecentRegistration: row?.most_recent_registration ?? null,
   };
+}
+
+export class TerritoryScopeRequestRateLimitError extends Error {
+  constructor() {
+    super("Territory scope request rate limit exceeded.");
+    this.name = "TerritoryScopeRequestRateLimitError";
+  }
+}
+
+export async function recordTerritoryScopeRequestAttempt(input: {
+  requesterFingerprint: string;
+  contactFingerprint: string;
+  submissionKey: string;
+}): Promise<{ reference: string } | null> {
+  assertDatabaseConfigured();
+  const client = await getSql().connect();
+  try {
+    await client.query("BEGIN");
+    const lockKeys = [
+      `territory-scope-contact:${input.contactFingerprint}`,
+      `territory-scope-source:${input.requesterFingerprint}`,
+    ].sort();
+    await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", [lockKeys[0]]);
+    await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", [lockKeys[1]]);
+    const quota = await client.query<{ source_count: number; contact_count: number }>(
+      `
+        SELECT
+          COUNT(*) FILTER (WHERE requester_fingerprint = $1)::int AS source_count,
+          COUNT(*) FILTER (WHERE contact_fingerprint = $2)::int AS contact_count
+        FROM territory_scope_request_attempts
+        WHERE created_at >= NOW() - INTERVAL '1 hour'
+          AND (requester_fingerprint = $1 OR contact_fingerprint = $2)
+      `,
+      [input.requesterFingerprint, input.contactFingerprint],
+    );
+    if ((quota.rows[0]?.source_count ?? 0) >= 5 || (quota.rows[0]?.contact_count ?? 0) >= 3) {
+      throw new TerritoryScopeRequestRateLimitError();
+    }
+    await client.query(
+      `INSERT INTO territory_scope_request_attempts (requester_fingerprint, contact_fingerprint)
+       VALUES ($1, $2)`,
+      [input.requesterFingerprint, input.contactFingerprint],
+    );
+    const existing = await client.query<{ public_reference: string }>(
+      "SELECT public_reference FROM territory_scope_requests WHERE submission_key = $1",
+      [input.submissionKey],
+    );
+    await client.query("COMMIT");
+    return existing.rows[0] ? { reference: existing.rows[0].public_reference } : null;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+export async function createTerritoryScopeRequest(input: {
+  contactEmail: string;
+  contactName: string;
+  companyName: string;
+  region: string;
+  buyerType: string;
+  serviceType: string;
+  locationCount: number;
+  providerOrganisationCount: number;
+  coverageVerdict: "ready" | "partial" | "insufficient";
+  coverageSufficient: boolean;
+  requesterFingerprint: string;
+  submissionKey: string;
+}): Promise<{ reference: string; status: "requested"; duplicate: boolean }> {
+  assertDatabaseConfigured();
+  const reference = `TSR-${randomUUID().replaceAll("-", "").slice(0, 24).toUpperCase()}`;
+  const client = await getSql().connect();
+  try {
+    await client.query("BEGIN");
+    await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", [
+      `territory-scope-submission:${input.submissionKey}`,
+    ]);
+
+    const existing = await client.query<{ public_reference: string }>(
+      "SELECT public_reference FROM territory_scope_requests WHERE submission_key = $1",
+      [input.submissionKey],
+    );
+    if (existing.rows[0]) {
+      await client.query("COMMIT");
+      return { reference: existing.rows[0].public_reference, status: "requested", duplicate: true };
+    }
+
+    await client.query(
+      `
+        INSERT INTO territory_scope_requests (
+          public_reference, submission_key, requester_fingerprint,
+          contact_email, contact_name, company_name,
+          region, buyer_type, service_type, location_count,
+          provider_organisation_count, coverage_verdict, coverage_sufficient,
+          checkout_eligible, status
+        ) VALUES ($1, $2, $3, $4, NULLIF($5, ''), NULLIF($6, ''), $7, $8, $9,
+                  $10, $11, $12, $13, FALSE, 'requested')
+        RETURNING id
+      `,
+      [
+        reference,
+        input.submissionKey,
+        input.requesterFingerprint,
+        input.contactEmail,
+        input.contactName,
+        input.companyName,
+        input.region,
+        input.buyerType,
+        input.serviceType,
+        input.locationCount,
+        input.providerOrganisationCount,
+        input.coverageVerdict,
+        input.coverageSufficient,
+      ],
+    );
+    await client.query("COMMIT");
+    return { reference, status: "requested", duplicate: false };
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
 }
 
 export async function searchDirectoryProviders(filters: DirectorySearchParams): Promise<DirectorySearchResult> {
