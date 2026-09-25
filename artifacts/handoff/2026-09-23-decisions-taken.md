@@ -199,3 +199,22 @@ recorded, residual identity mismatch still refuses the batch). 96 tests pass.
 That meets the safety property I was protecting. **It should ship** — it makes
 the documented recovery path reachable from Actions. It is still not on the
 pushed branch.
+
+---
+
+## STATUS 2026-09-25 08:40Z — three of four resolved
+
+Checked against the systems, not against this document.
+
+| Item | State | Evidence |
+|---|---|---|
+| D1 Reconciliation | ✅ **RESOLVED** | Run `35821214442` (dispatched 05:08:56Z on 23 Sep, `13025de`) **succeeded** at 09:44:33Z — 2h16m inside the breach. The delayed scheduled run arrived at 07:45:13Z, 5h30m after its slot, exactly the pattern Codex predicted, and also succeeded; the two serialized as expected. A further dispatch on 24 Sep 11:38Z succeeded. `/api/v1/health/freshness`: `status: fresh`, `reconciledAt 2026-09-24T15:52:17Z`, source published 2026-09-23, `countsReconciled: true`, coverage 100.0%. |
+| D3 Smoke | ✅ **RESOLVED** | Production Smoke **success** on `218e573`, 24 Sep 21:51Z and 25 Sep 05:28Z. The `CAREGIST_EXPECTED_*_GIT_SHA` repo variables no longer appear in `gh variable list`, consistent with PR #73 moving smoke to deployment-derived identity. |
+| D2 Migration `064` + PR #71 | ❌ **OPEN** | PR #71 still fails only "Production schema is current". It is now 21 commits behind `main`. Being rebased by Codex. |
+| D4 Paid journey | ⏳ **UNVERIFIED** | Founder only. |
+
+### Planner check before the #71 rebase
+`main` gained `065_pipeline_runs_timestamptz.sql` and never used 064. So 064
+will be applied to production **after** 065. Verified safe: governance only
+rejects duplicate numbers, `apply_migrations.py` applies by filename set rather
+than highest version, and 064/065 touch unrelated tables. **Do not renumber.**
