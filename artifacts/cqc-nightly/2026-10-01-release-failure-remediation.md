@@ -31,3 +31,18 @@ other branches and product gate settings were not modified. A fresh deployment
 must verify database mode and release identity before production promotion.
 
 No secret values or provider connection strings are included in this record.
+
+## Staging schema and smoke follow-up
+
+The authenticated staging database had 25 pending migrations (040–063 and 065).
+The exact-commit CI migration replay and local governance check passed before the
+missing staging chain was applied successfully. Read-only pipeline health then
+reported readiness_ok=true and locationRows=activeLocationRows=0. Production
+migration state passed its separate CI check; no production migration was run.
+
+The preview smoke confused an absent authoritative source watermark with an
+unknown provider population. It now uses same-release backend health evidence
+only when totalSourceLocations is unknown: both total and active database rows
+must be integer zero and traffic readiness must pass. Otherwise the normal,
+non-empty provider checks remain required. No source watermark is fabricated,
+and freshness, checkout and delivery gates remain closed.
