@@ -1,0 +1,175 @@
+{
+  "generated_at": "2026-09-21T01:00:33.609997+00:00",
+  "data": {
+    "window_hours": 24,
+    "since": "2026-09-20T01:00:33.030495+00:00",
+    "provider_status": {
+      "ACTIVE": 57250,
+      "INACTIVE": 1780
+    },
+    "providers_total": 59030,
+    "providers_active": 57250,
+    "watermark": {
+      "reconciled_at": "2026-09-16T12:00:07.325481+00:00",
+      "source_total_count": 57151,
+      "checked_count": 57151,
+      "status": "completed",
+      "age_hours": 109.0,
+      "counts_match": true
+    },
+    "match": {
+      "ours": 57250,
+      "source_total": 57151,
+      "delta": 99
+    },
+    "snapshots": [
+      {
+        "source_type": "cqc_report_index",
+        "checksum_sha256": "00c726affe59848f7355d1f527888e55c9922b8f25bfdd4ae903a35f3353944f",
+        "record_count": 0,
+        "source_checked_at": "2026-09-20T23:10:18.670976+00:00",
+        "age_hours": 1.8
+      },
+      {
+        "source_type": "cqc_report_index",
+        "checksum_sha256": "81a3bf7e1d4bb988cf1b9a193889284bd8b325e03ed9edad46b01780d9a7101c",
+        "record_count": 0,
+        "source_checked_at": "2026-09-20T20:43:51.721430+00:00",
+        "age_hours": 4.3
+      },
+      {
+        "source_type": "cqc_report_index",
+        "checksum_sha256": "c9a9f4119292398413b0b744644dc104cdf023d9e94fc098468fb4c429839fe9",
+        "record_count": 0,
+        "source_checked_at": "2026-09-20T04:45:01.386665+00:00",
+        "age_hours": 20.3
+      },
+      {
+        "source_type": "cqc_report_index",
+        "checksum_sha256": "1613d17bd0c17090a165092f051776697b6cf25f5015287f830bd80837476eb6",
+        "record_count": 0,
+        "source_checked_at": "2026-09-19T22:54:01.559148+00:00",
+        "age_hours": 26.1
+      },
+      {
+        "source_type": "cqc_report_index",
+        "checksum_sha256": "e2a9566a3bce739112ad37a371b399f2bea6377d393e68b537459a073b0ff408",
+        "record_count": 0,
+        "source_checked_at": "2026-09-19T20:31:44.763499+00:00",
+        "age_hours": 28.5
+      }
+    ],
+    "changes_by_type": {
+      "rating_status_changed": 25771,
+      "status_changed": 65,
+      "rating_changed": 36
+    },
+    "changes_total": 25872,
+    "rating_moves": {
+      "no destination rating": 36
+    },
+    "status_transitions": {
+      "INACTIVE->ACTIVE": 61,
+      "ACTIVE->INACTIVE": 4
+    },
+    "rating_destination": {
+      "window_no_destination": 36,
+      "window_total": 36,
+      "all_time_no_destination": 24522,
+      "all_time_total": 34332,
+      "window_share": 1.0
+    },
+    "ledger_newest": "2026-09-20T23:31:04.978273+00:00",
+    "ledger_newest_age_hours": 1.5,
+    "polls_7d": {
+      "total": 21,
+      "completed": 21,
+      "required": 336
+    },
+    "polls_24h": 3,
+    "runs_by_type": {
+      "feed_cycle/completed": 57,
+      "signal_poll/completed": 21,
+      "reconciliation/failed": 4,
+      "reconciliation/completed": 2,
+      "reconciliation/running": 1
+    },
+    "recent_failures": [
+      {
+        "run_type": "reconciliation",
+        "started_at": "2026-09-20T18:26:51.372750",
+        "error": "Workflow ended before every shard completed"
+      },
+      {
+        "run_type": "reconciliation",
+        "started_at": "2026-09-20T12:28:31.212635",
+        "error": "Workflow ended before every shard completed"
+      },
+      {
+        "run_type": "reconciliation",
+        "started_at": "2026-09-20T12:16:31.500926",
+        "error": "Workflow ended before every shard completed"
+      },
+      {
+        "run_type": "reconciliation",
+        "started_at": "2026-09-20T07:45:23.082601",
+        "error": "Workflow ended before every shard completed"
+      }
+    ],
+    "failures_in_window": [
+      {
+        "run_type": "reconciliation",
+        "started_at": "2026-09-20T18:26:51.372750"
+      },
+      {
+        "run_type": "reconciliation",
+        "started_at": "2026-09-20T12:28:31.212635"
+      },
+      {
+        "run_type": "reconciliation",
+        "started_at": "2026-09-20T12:16:31.500926"
+      },
+      {
+        "run_type": "reconciliation",
+        "started_at": "2026-09-20T07:45:23.082601"
+      }
+    ],
+    "quality_gaps": {
+      "no_postcode": {
+        "count": 0,
+        "pct": 0.0
+      },
+      "no_region": {
+        "count": 10,
+        "pct": 0.0
+      },
+      "no_local_authority": {
+        "count": 35,
+        "pct": 0.1
+      },
+      "no_overall_rating": {
+        "count": 34036,
+        "pct": 57.7
+      },
+      "no_geocode": {
+        "count": 28,
+        "pct": 0.0
+      }
+    },
+    "active_unrated": {
+      "count": 33139,
+      "pct": 57.9
+    },
+    "churn_updated_at_24h": 59030,
+    "snapshot_changed": true
+  },
+  "live_index": null,
+  "anomalies": [
+    "pipeline failure: reconciliation at 2026-09-20T18:26Z",
+    "pipeline failure: reconciliation at 2026-09-20T12:28Z",
+    "pipeline failure: reconciliation at 2026-09-20T12:16Z",
+    "pipeline failure: reconciliation at 2026-09-20T07:45Z",
+    "active-set mismatch: 57,250 ACTIVE rows vs 57,151 in the CQC directory snapshot (+99)",
+    "nightly change volume swung materially: 25,872 events vs 21 in the previous run (+25,851)"
+  ]
+}

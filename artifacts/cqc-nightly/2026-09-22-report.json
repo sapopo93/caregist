@@ -1,0 +1,155 @@
+{
+  "generated_at": "2026-09-22T01:00:54.199648+00:00",
+  "data": {
+    "window_hours": 24,
+    "since": "2026-09-21T01:00:53.543956+00:00",
+    "provider_status": {
+      "ACTIVE": 57241,
+      "INACTIVE": 1789
+    },
+    "providers_total": 59030,
+    "providers_active": 57241,
+    "watermark": {
+      "reconciled_at": "2026-09-16T12:00:07.325481+00:00",
+      "source_total_count": 57151,
+      "checked_count": 57151,
+      "status": "completed",
+      "age_hours": 133.0,
+      "counts_match": true
+    },
+    "match": {
+      "ours": 57241,
+      "source_total": 57151,
+      "delta": 90
+    },
+    "snapshots": [
+      {
+        "source_type": "cqc_report_index",
+        "checksum_sha256": "01cb93078932278bed71ed42e17b115ec09df18ed3d9d0ae9b441764bcf7b893",
+        "record_count": 0,
+        "source_checked_at": "2026-09-21T21:56:23.801516+00:00",
+        "age_hours": 3.1
+      },
+      {
+        "source_type": "cqc_report_index",
+        "checksum_sha256": "71720b3ab6fb0286634cff52b6e829c6b2eae4e2f7ada135f7ebaf50eebb44f4",
+        "record_count": 0,
+        "source_checked_at": "2026-09-21T04:44:56.445287+00:00",
+        "age_hours": 20.3
+      },
+      {
+        "source_type": "cqc_report_index",
+        "checksum_sha256": "00c726affe59848f7355d1f527888e55c9922b8f25bfdd4ae903a35f3353944f",
+        "record_count": 0,
+        "source_checked_at": "2026-09-20T23:10:18.670976+00:00",
+        "age_hours": 25.8
+      },
+      {
+        "source_type": "cqc_report_index",
+        "checksum_sha256": "81a3bf7e1d4bb988cf1b9a193889284bd8b325e03ed9edad46b01780d9a7101c",
+        "record_count": 0,
+        "source_checked_at": "2026-09-20T20:43:51.721430+00:00",
+        "age_hours": 28.3
+      },
+      {
+        "source_type": "cqc_report_index",
+        "checksum_sha256": "c9a9f4119292398413b0b744644dc104cdf023d9e94fc098468fb4c429839fe9",
+        "record_count": 0,
+        "source_checked_at": "2026-09-20T04:45:01.386665+00:00",
+        "age_hours": 44.3
+      }
+    ],
+    "changes_by_type": {
+      "status_changed": 13,
+      "rating_status_changed": 3
+    },
+    "changes_total": 16,
+    "rating_moves": {},
+    "status_transitions": {
+      "ACTIVE->INACTIVE": 11,
+      "INACTIVE->ACTIVE": 2
+    },
+    "rating_destination": {
+      "window_no_destination": 0,
+      "window_total": 0,
+      "all_time_no_destination": 24522,
+      "all_time_total": 34332,
+      "window_share": 0.0
+    },
+    "ledger_newest": "2026-09-21T22:14:58.365065+00:00",
+    "ledger_newest_age_hours": 2.8,
+    "polls_7d": {
+      "total": 18,
+      "completed": 18,
+      "required": 336
+    },
+    "polls_24h": 2,
+    "runs_by_type": {
+      "feed_cycle/completed": 37,
+      "signal_poll/completed": 18,
+      "reconciliation/failed": 5,
+      "reconciliation/completed": 1
+    },
+    "recent_failures": [
+      {
+        "run_type": "reconciliation",
+        "started_at": "2026-09-20T23:35:46.886619",
+        "error": "Workflow ended before every shard completed"
+      },
+      {
+        "run_type": "reconciliation",
+        "started_at": "2026-09-20T18:26:51.372750",
+        "error": "Workflow ended before every shard completed"
+      },
+      {
+        "run_type": "reconciliation",
+        "started_at": "2026-09-20T12:28:31.212635",
+        "error": "Workflow ended before every shard completed"
+      },
+      {
+        "run_type": "reconciliation",
+        "started_at": "2026-09-20T12:16:31.500926",
+        "error": "Workflow ended before every shard completed"
+      },
+      {
+        "run_type": "reconciliation",
+        "started_at": "2026-09-20T07:45:23.082601",
+        "error": "Workflow ended before every shard completed"
+      }
+    ],
+    "failures_in_window": [],
+    "quality_gaps": {
+      "no_postcode": {
+        "count": 0,
+        "pct": 0.0
+      },
+      "no_region": {
+        "count": 10,
+        "pct": 0.0
+      },
+      "no_local_authority": {
+        "count": 35,
+        "pct": 0.1
+      },
+      "no_overall_rating": {
+        "count": 34036,
+        "pct": 57.7
+      },
+      "no_geocode": {
+        "count": 28,
+        "pct": 0.0
+      }
+    },
+    "active_unrated": {
+      "count": 33133,
+      "pct": 57.9
+    },
+    "churn_updated_at_24h": 31213,
+    "snapshot_changed": true
+  },
+  "live_index": null,
+  "anomalies": [
+    "active-set mismatch: 57,241 ACTIVE rows vs 57,151 in the CQC directory snapshot (+90)",
+    "nightly change volume swung materially: 16 events vs 25,872 in the previous run (-25,856)"
+  ]
+}

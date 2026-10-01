@@ -1,6 +1,27 @@
 # TOP BLOCKERS — CareGist
 
-**Refreshed:** 2026-09-11 00:30 BST (previous: 2026-08-20)
+## 2026-10-01 archive review — current live status NOT VERIFIED
+
+The September 23 closure below is a historical checkpoint. The saved September 24
+nightly report corroborates its 13:18 reconciliation watermark. Saved reports through
+October 1 record later reconciliations, but were not independently revalidated live
+in this review. See `artifacts/cqc-nightly/ARCHIVE_NOTES.md` for reporting limitations.
+Keep all named gates closed pending their separate evidence and independent review.
+
+## 2026-09-23 14:16 BST reconciliation update
+
+- **Reconciliation reliability is provisionally closed:** manual run `35821214442` and its
+  delayed scheduled successor `35833372207` both completed successfully on 2026-09-23 with
+  all eight shards and 57,127 / 57,127 coverage. Production freshness is HTTP 200 `fresh`.
+- The remaining direct checkout blockers are signal-poll shadow coverage (17/24 required),
+  delivery disabled, migrations/release proof, solicitor approval, and payment-journey proof.
+- Keep observing subsequent scheduled reconciliations; two consecutive successes replace the
+  earlier one-in-six evidence but do not yet establish a long reliability window.
+
+This update supersedes B2 and the current-ranking reconciliation wording below.
+
+**Refreshed:** 2026-09-23 02:27–03:50 BST against live production, GitHub Actions and the
+repository.
 Ranked by what actually stops an external invoice settling.
 
 ---

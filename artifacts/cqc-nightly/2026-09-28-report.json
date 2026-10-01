@@ -1,0 +1,129 @@
+{
+  "generated_at": "2026-09-28T01:00:06.290760+00:00",
+  "data": {
+    "window_hours": 24,
+    "since": "2026-09-27T01:00:05.747357+00:00",
+    "provider_status": {
+      "ACTIVE": 57182,
+      "INACTIVE": 1903
+    },
+    "providers_total": 59085,
+    "providers_active": 57182,
+    "watermark": {
+      "reconciled_at": "2026-09-27T12:03:00.145219+00:00",
+      "source_total_count": 57139,
+      "checked_count": 57139,
+      "status": "completed",
+      "age_hours": 13.0,
+      "counts_match": true
+    },
+    "match": {
+      "ours": 57182,
+      "source_total": 57139,
+      "delta": 43
+    },
+    "snapshots": [
+      {
+        "source_type": "cqc_report_index",
+        "checksum_sha256": "cb1d5507c4a4b4fbdcf6c1a6311e6c8430422ac75f993b7a322c190a94a2dc58",
+        "record_count": 0,
+        "source_checked_at": "2026-09-27T21:16:42.073448+00:00",
+        "age_hours": 3.7
+      },
+      {
+        "source_type": "cqc_report_index",
+        "checksum_sha256": "77d77568a0acfaa8e505738b1762f1d7cca5d620602cb297963b951a4942f3fc",
+        "record_count": 0,
+        "source_checked_at": "2026-09-27T05:09:34.639995+00:00",
+        "age_hours": 19.8
+      },
+      {
+        "source_type": "cqc_report_index",
+        "checksum_sha256": "12b432735c358f1731cacd0fd8f111ae3a57ade50fa277bfea7c9be2a92f5aa4",
+        "record_count": 0,
+        "source_checked_at": "2026-09-26T23:31:08.996413+00:00",
+        "age_hours": 25.5
+      },
+      {
+        "source_type": "cqc_report_index",
+        "checksum_sha256": "874a7892457b2e2056c93bb7e8f66c92aad30e6262608f70ac548790f4806c2c",
+        "record_count": 0,
+        "source_checked_at": "2026-09-26T21:02:07.653651+00:00",
+        "age_hours": 28.0
+      },
+      {
+        "source_type": "cqc_location_index",
+        "checksum_sha256": "8f4f198b692018509aef54f147828ee365ab2892b5f3ba3f54203ba9b262b0d5",
+        "record_count": 122749,
+        "source_checked_at": "2026-09-26T21:02:07.653651+00:00",
+        "age_hours": 28.0
+      }
+    ],
+    "changes_by_type": {
+      "rating_status_changed": 29,
+      "status_changed": 5,
+      "new_registration": 1
+    },
+    "changes_total": 35,
+    "rating_moves": {},
+    "status_transitions": {
+      "INACTIVE->ACTIVE": 4,
+      "ACTIVE->INACTIVE": 1
+    },
+    "rating_destination": {
+      "window_no_destination": 0,
+      "window_total": 0,
+      "all_time_no_destination": 24522,
+      "all_time_total": 34332,
+      "window_share": 0.0
+    },
+    "ledger_newest": "2026-09-27T21:21:13.554377+00:00",
+    "ledger_newest_age_hours": 3.6,
+    "polls_7d": {
+      "total": 15,
+      "completed": 15,
+      "required": 24,
+      "scheduled": 28
+    },
+    "polls_24h": 2,
+    "runs_by_type": {
+      "feed_cycle/completed": 28,
+      "signal_poll/completed": 15,
+      "reconciliation/completed": 4
+    },
+    "recent_failures": [],
+    "failures_in_window": [],
+    "quality_gaps": {
+      "no_postcode": {
+        "count": 0,
+        "pct": 0.0
+      },
+      "no_region": {
+        "count": 11,
+        "pct": 0.0
+      },
+      "no_local_authority": {
+        "count": 34,
+        "pct": 0.1
+      },
+      "no_overall_rating": {
+        "count": 34180,
+        "pct": 57.8
+      },
+      "no_geocode": {
+        "count": 29,
+        "pct": 0.0
+      }
+    },
+    "active_unrated": {
+      "count": 33219,
+      "pct": 58.1
+    },
+    "churn_updated_at_24h": 57139,
+    "snapshot_changed": true
+  },
+  "live_index": null,
+  "anomalies": [
+    "active-set mismatch: 57,182 ACTIVE rows vs 57,139 in the CQC directory snapshot (+43)"
+  ]
+}

@@ -1,5 +1,26 @@
 # PIPELINE — CareGist collection → publication → sale → fulfilment
 
+## 2026-10-01 archive review — current live status NOT VERIFIED
+
+The September 23 closure below is a historical checkpoint. The saved September 24
+nightly report corroborates its 13:18 reconciliation watermark. Saved reports through
+October 1 record later reconciliations, but were not independently revalidated live
+in this review. See `artifacts/cqc-nightly/ARCHIVE_NOTES.md` for reporting limitations.
+Keep all named gates closed pending their separate evidence and independent review.
+
+## 2026-09-23 live delta
+
+| Stage | Current evidence |
+|---|---|
+| Collection | `PARTIAL`: one full 57,151/57,151 reconciliation succeeded on 2026-09-16, but the latest run failed on repeated CQC HTTP 500 for `1-147345129`; 17/28 scheduled signal-poll opportunities landed. |
+| Publication | `RUNNING`: frontend/backend both serve `origin/main` SHA `9ece886…`; directory database is available. |
+| Sale | `NOT RUNNING`: production remains human-scoped. Local code adds durable scope-request intake, not ordering. |
+| Payment | `NOT RUNNING`: live `checkoutReady=false`; thresholds and flags unchanged. |
+| Fulfilment | `NOT ENABLED`: migration/code are on main; real-Postgres execution is now in CI. Legal and operational gates remain. |
+| Operations | `DEGRADED`: watchdog executes and reports stale/partial evidence, but notifications remain disabled; smoke variables lag the deployed SHA. |
+
+---
+
 **Refreshed:** 2026-09-11 00:30 BST. Measured against live production.
 
 ---

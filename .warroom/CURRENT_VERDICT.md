@@ -1,5 +1,65 @@
 # CURRENT VERDICT — CareGist
 
+## 2026-10-01 archive review — current live status NOT VERIFIED
+
+The September 23 closure below is a historical checkpoint. The saved September 24
+nightly report corroborates its 13:18 reconciliation watermark. Saved reports through
+October 1 record later reconciliations, but were not independently revalidated live
+in this review. See `artifacts/cqc-nightly/ARCHIVE_NOTES.md` for reporting limitations.
+Keep all named gates closed pending their separate evidence and independent review.
+
+## 2026-09-23 14:16 BST production reconciliation closure
+
+- Approved manual run `35821214442` completed successfully at 09:44 UTC. Its eight shards
+  covered 57,127 / 57,127 source locations with zero collection failures and finalized batch
+  `c21571b3-37ec-41e8-83f6-46145f2abb4e`.
+- Delayed scheduled run `35833372207` then ran unchanged and completed successfully at
+  13:18 UTC. It finalized batch `3c955cd7-dc03-4ef3-af79-3257c1f1b476`; all eight shards
+  succeeded, coverage was 57,127 / 57,127 (100%), `countsReconciled: true`, and abort was
+  correctly skipped.
+- Live `/api/v1/health/freshness` is HTTP 200 `fresh`: source retrieved
+  2026-09-23T09:45:30Z, reconciled 2026-09-23T13:18:04Z, checksum
+  `bed9e95a1701ade0c4933bdf3acda7a9c4c94e3940a19ad698575a05a66eecb0`, zero failures.
+- Live `/api/v1/health` is HTTP 200 `healthy`; the source watermark and count-reconciliation
+  checks pass. Reconciliation is no longer blocking sale readiness.
+- **Checkout remains closed:** `checkoutReady: false` because seven-day shadow coverage is
+  17 successful polls against the required 24, and delivery is disabled. Legal, migration,
+  deployment, and payment-journey gates remain separate and unresolved.
+
+This section supersedes older reconciliation and freshness statements below.
+
+## 2026-09-23 02:27–03:50 BST update — supersedes the operational facts below
+
+- **Release identity:** frontend `/api/health/directory` and backend `/api/v1/version` both
+  report `9ece88698b0a3a812d9a0a3af1a0fa17aaba091c`, exactly `origin/main`. Served identity is
+  aligned. Scheduled smoke run `35799450671` still expected stale `a1357fee…`, so the smoke
+  gate remains red because its repository variables lag deployment. Local fix makes the
+  frontend prefer `VERCEL_GIT_COMMIT_SHA` over a pinned override.
+- **Authoritative source:** the 2026-09-16 reconciliation completed 57,151 / 57,151 with zero
+  failures. At the live probe the retrieved source was 162.8 h old against a 192 h SLA, but
+  health remained `partial`/`freshness_ok: false` because newer authoritative attempts failed.
+- **Latest failure:** GitHub run `35545070099`, shard 2, exhausted five HTTP 500 retries for
+  CQC location `1-147345129` after committing 1,750 / 7,129. Seven other shards completed;
+  finalization was skipped and abort closed the incomplete batch. The fail-closed gate worked.
+- **Signal polls:** 17 completed of 17 started in seven days, below the unchanged readiness
+  minimum of 24 and the 28 scheduled opportunities. Completed-run success is 100%; scheduling
+  coverage is 60.7%. The old nightly report denominator of 336 was wrong.
+- **Commercial readiness:** `checkoutReady: false`, `shadowCoveragePassed: false`, delivery
+  disabled and healthy. Checkout stays closed.
+- **Scale:** 59,040 location rows; 57,248 active locations; 37,141 distinct active provider
+  organisations; 10,004 named group labels.
+- **Verification of this change set:** Ruff green; 927 non-Postgres backend tests green;
+  184 frontend tests green; TypeScript and production build green; targeted browser journey
+  3/3 green. Real-Postgres tests are wired into CI but were not executable locally because no
+  Postgres or Docker daemon was available.
+
+**Status: implemented locally; database and independent verification pending.** This is not
+release approval. Collection freshness/reliability and scheduled poll coverage remain below
+existing gates. Scope requests are durable, fail-closed enquiries only; nothing is deployed
+or enabled, and checkout remains closed.
+
+---
+
 **Established:** 2026-09-11 00:07–00:30 BST
 **Method:** live production probes, GitHub API, repository inspection, local test execution
 **Previous version:** 2026-08-20 (22 days stale — superseded)
