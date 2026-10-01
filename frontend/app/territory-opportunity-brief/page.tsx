@@ -52,12 +52,9 @@ export default function TerritoryOpportunityBriefPage() {
             <p className="text-sm text-stone">Territory Opportunity Brief</p>
             <p className="mt-2 font-[family-name:var(--font-playfair-display)] text-5xl font-bold text-amber">£{TERRITORY_BRIEF_PRICE_GBP}</p>
             <p className="mt-2 text-sm text-stone">£{TERRITORY_BRIEF_PRICE_GBP} fixed fee. No VAT added.</p>
-            <a
-              href="mailto:outreach@caregist.co.uk?subject=CareGist%20Territory%20Opportunity%20Brief"
-              className="mt-7 inline-flex w-full items-center justify-center rounded-xl bg-amber px-5 py-3 text-sm font-semibold text-charcoal transition hover:bg-cream focus:outline-none focus:ring-2 focus:ring-cream focus:ring-offset-2 focus:ring-offset-bark"
-            >
-              Start a scope conversation
-            </a>
+            <Link href="/pricing/territory" className="cta-primary mt-7 w-full">
+              Check your territory
+            </Link>
             <p className="mt-3 text-xs leading-5 text-stone">We confirm your territory, buyer criteria and source readiness before accepting payment.</p>
           </div>
         </div>

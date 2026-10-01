@@ -10,7 +10,7 @@ test("coverage enquiry clears obsolete selections and recovers from errors", asy
     } });
   });
   await page.goto("/pricing");
-  await page.getByRole("link", { name: "Check territory coverage" }).click();
+  await page.getByRole("link", { name: "Check your territory" }).click();
   await expect(page.getByRole("heading", { name: "See how many organisations match your scope" })).toBeVisible();
   const check = page.getByRole("button", { name: "Check this territory" });
   await expect(check).toBeDisabled();

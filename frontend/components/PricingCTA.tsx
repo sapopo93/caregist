@@ -84,10 +84,10 @@ export default function PricingCTA({
     return (
       <Link
         href="/pricing/territory"
-        className="inline-block text-center py-2.5 px-6 rounded-lg font-medium text-sm transition-colors border border-clay text-clay hover:bg-clay hover:text-white"
+        className="cta-primary"
         onClick={() => void trackEvent("one_off_scope_click", "pricing_card", { tier: tierKey })}
       >
-        Check territory coverage
+        Check your territory
       </Link>
     );
   }
@@ -97,7 +97,7 @@ export default function PricingCTA({
     return (
       <Link
         href={`mailto:outreach@caregist.co.uk?subject=${encodeURIComponent(oneOffContact.subject)}`}
-        className="inline-block text-center py-2.5 px-6 rounded-lg font-medium text-sm transition-colors border border-clay text-clay hover:bg-clay hover:text-white"
+        className="cta-secondary"
         onClick={() => void trackEvent("one_off_scope_click", "pricing_card", { tier: tierKey })}
       >
         {ctaLabel}

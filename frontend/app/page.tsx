@@ -94,15 +94,18 @@ export default async function HomePage() {
               every item. The directory remains free for discovery and source checking.
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
+              <Link href="/pricing/territory" className="cta-primary">
+                Check your territory
+              </Link>
               <Link
                 href="/pricing"
-                className="rounded-xl bg-amber px-5 py-3 text-sm font-semibold text-charcoal transition hover:bg-cream"
+                className="inline-flex min-h-12 items-center rounded-xl border-2 border-cream/40 px-5 py-3 text-sm font-semibold transition hover:bg-white/10"
               >
                 See the two products
               </Link>
               <Link
                 href="/search"
-                className="rounded-xl border border-cream/25 px-5 py-3 text-sm font-semibold transition hover:bg-white/10"
+                className="inline-flex min-h-12 items-center px-2 py-3 text-sm font-semibold text-stone underline underline-offset-4 transition hover:text-cream"
               >
                 Search the free directory
               </Link>
@@ -177,7 +180,7 @@ export default async function HomePage() {
                 Four weekly digests covering one England region: new registrations, rating
                 changes, and closures, each linking to the official CQC record.
               </p>
-              <Link href="/pricing" className="mt-5 inline-flex text-sm font-semibold text-clay">See the Weekly Digest</Link>
+              <Link href="/pricing" className="cta-secondary mt-5">See the Weekly Digest</Link>
             </article>
             <article className="rounded-xl border border-stone bg-cream p-6">
               <p className="font-mono text-xs uppercase tracking-wider text-clay">Territory</p>
@@ -186,7 +189,7 @@ export default async function HomePage() {
                 A ranked shortlist of 25&ndash;50 priority organisations, plus a brief on territory
                 size, structure, and notable movements, with the evidence behind each priority.
               </p>
-              <Link href="/pricing/territory" className="mt-5 inline-flex text-sm font-semibold text-clay">Check your territory</Link>
+              <Link href="/pricing/territory" className="cta-primary mt-5">Check your territory</Link>
             </article>
           </div>
         </div>

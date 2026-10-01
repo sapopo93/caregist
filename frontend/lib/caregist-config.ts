@@ -105,7 +105,7 @@ export type ProviderTierKey = (typeof PROVIDER_TIERS)[number]["tier"];
 
 export const PLAN_PRIMARY_CTA: Record<string, string> = {
   "weekly-digest": "Enquire about the £150 pilot",
-  "territory-opportunity-brief": "Check territory coverage",
+  "territory-opportunity-brief": "Check your territory",
   free: "See the two products",
   "free-directory": "Open the directory",
   "radar-regional": "Not available",

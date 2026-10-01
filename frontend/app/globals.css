@@ -14,6 +14,9 @@
   --color-amber: #D4943A;
   --color-sage: #7E9B79;
   --color-alert: #C44444;
+  /* Reserved for the one primary action: Check your territory. Do not reuse for other buttons. */
+  --color-cta: #0A7A57;
+  --color-cta-hover: #075F44;
   --sp-accent: #6B4C35;
   --sp-accent-foreground: #FDFAF5;
   --sp-surface: #FDFAF5;
@@ -32,6 +35,49 @@
     font-family: var(--font-playfair-display), Georgia, serif;
     color: var(--color-bark);
   }
+}
+
+@layer components {
+  /* Primary call to action. One colour, used only for the action we want clicked. */
+  .cta-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 3rem;
+    padding: 0.75rem 1.5rem;
+    border: 2px solid rgba(253, 250, 245, 0.9);
+    border-radius: 0.75rem;
+    background: var(--color-cta);
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1.2;
+    text-decoration: none;
+    box-shadow: 0 6px 18px rgba(10, 122, 87, 0.38);
+    transition: background-color 0.15s ease, transform 0.15s ease;
+  }
+  .cta-primary::after { content: "\2192" / ""; font-weight: 700; }
+  .cta-primary:hover { background: var(--color-cta-hover); transform: translateY(-1px); }
+  .cta-primary:focus-visible { outline: 3px solid var(--color-amber); outline-offset: 3px; }
+  .cta-primary--sm { min-height: 2.5rem; padding: 0.5rem 1.1rem; font-size: 0.875rem; }
+  /* Secondary action: clearly a button, clearly quieter than the primary. */
+  .cta-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.75rem;
+    padding: 0.6rem 1.25rem;
+    border: 2px solid var(--color-clay);
+    border-radius: 0.75rem;
+    color: var(--color-clay);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background-color 0.15s ease, color 0.15s ease;
+  }
+  .cta-secondary:hover { background: var(--color-clay); color: #fff; }
+  .cta-secondary:focus-visible { outline: 3px solid var(--color-amber); outline-offset: 3px; }
 }
 
 @media print {
