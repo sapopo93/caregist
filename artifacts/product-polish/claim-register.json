@@ -3,6 +3,7 @@
   "generated": "2026-09-08",
   "purpose": "Wave 1 claim register. Each row records a statement that appears or is proposed in customer-facing surfaces, where it comes from, how it was verified, the wording permitted today, what must not be said, and whether it may be released. Verification values are literal: 'read-in-code' means the file was read this session; 'unverified' means no check has been performed.",
   "verification_vocabulary": [
+    "read-live-query",
     "read-in-code",
     "read-in-manifest",
     "read-in-plan",
@@ -38,7 +39,7 @@
     {
       "id": "CLM-3",
       "product": "territory-opportunity-brief",
-      "statement": "Ranked shortlist of 25\u201350 priority organisations, each with a stated reason.",
+      "statement": "Ranked shortlist of 25–50 priority organisations, each with a stated reason.",
       "source": "frontend/lib/caregist-config.ts includes",
       "verification": "read-in-plan",
       "allowed_wording": "Releasable once each selection carries a buyer-specific reason and a source. The sample currently carries generic reasons.",
@@ -58,7 +59,7 @@
     {
       "id": "CLM-5",
       "product": "market-movement-report",
-      "statement": "20\u201335 page current-edition report covering registrations, closures and rating movements.",
+      "statement": "20–35 page current-edition report covering registrations, closures and rating movements.",
       "source": "frontend/lib/caregist-config.ts includes",
       "verification": "unverified",
       "allowed_wording": "Describe as the planned edition scope until one checked edition exists.",
@@ -68,7 +69,7 @@
     {
       "id": "CLM-6",
       "product": "radar-founding-buyer-pilot",
-      "statement": "Four weekly digest deliveries for \u00a3150.",
+      "statement": "Four weekly digest deliveries for £150.",
       "source": "Founder decision 2026-09-07; three recorded contacts",
       "verification": "read-in-plan",
       "allowed_wording": "Honour exactly as offered to the three recorded contacts.",
@@ -184,12 +185,133 @@
       "allowed_wording": "None in the present tense while these products are held closed.",
       "exclusion": "Same gate as CLM-7 and CLM-8. Copy in an entitlement panel is not evidence the ingest, dedup, saved views or export exist.",
       "release_status": "blocked-pending-gate"
+    },
+    {
+      "id": "CLM-18",
+      "product": "cold-email first-contact pack (outreach tranche, drafts of 22 and 25 September 2026)",
+      "statement": "977 — new CQC registrations in the last 90 days (snapshot of 27 September 2026).",
+      "source": "read-live-query 2026-09-28, live public query, data stamp 27 September 2026 at 08:11 UTC: https://www.caregist.co.uk/search?opportunity=new_90 = 977; corroborated by the homepage tile 'New registrations — 977 — Locations first registered in the last 90 days' on https://www.caregist.co.uk/. Supersedes 966 (24 September 2026 snapshot). Stored evidence: company-os/artifacts/claim-verification/2026-09-28-buyer-facing-figures-live-verified.md",
+      "verification": "unverified",
+      "allowed_wording": "No customer-facing use approved by this review. Historical wording retained for review: Quote 977 with its source and as-of date: '977 locations first registered in the last 90 days (CareGist directory of the CQC public register, data current at 27 September 2026).'",
+      "exclusion": "Not a fixed figure: it drifts with the register and is void after the next directory refresh until re-queried. It is a count of published registration status only — no quality, compliance, vacancy or buying-intent meaning.",
+      "release_status": "blocked-pending-gate",
+      "review_note": "Historical assertion only; supporting external evidence is absent from this repository. Retrieve a sanitized evidence packet and obtain independent review before release; refresh drifting counts before use."
+    },
+    {
+      "id": "CLM-19",
+      "product": "cold-email first-contact pack",
+      "statement": "218 — new home care agencies (snapshot of 27 September 2026).",
+      "source": "read-live-query 2026-09-28, live public query, data stamp 27 September 2026 at 08:11 UTC: https://www.caregist.co.uk/search?opportunity=new_90&service_type=home-care = 218. Supersedes 220 (24 September 2026 snapshot). Stored evidence: company-os/artifacts/claim-verification/2026-09-28-buyer-facing-figures-live-verified.md",
+      "verification": "unverified",
+      "allowed_wording": "No customer-facing use approved by this review. Historical wording retained for review: '218 home care agencies first registered in the last 90 days', with the same source and as-of date as CLM-18.",
+      "exclusion": "Same drift and meaning limits as CLM-18. Do not present as an addressable market, pipeline or demand figure.",
+      "release_status": "blocked-pending-gate",
+      "review_note": "Historical assertion only; supporting external evidence is absent from this repository. Retrieve a sanitized evidence packet and obtain independent review before release; refresh drifting counts before use."
+    },
+    {
+      "id": "CLM-20",
+      "product": "cold-email first-contact pack (West Midlands / home care variant)",
+      "statement": "840 — West Midlands home care agencies that have never been inspected (snapshot of 27 September 2026).",
+      "source": "read-live-query 2026-09-28, live public query, data stamp 27 September 2026 at 08:11 UTC: https://www.caregist.co.uk/search?opportunity=not_yet_inspected&region=West+Midlands&service_type=home-care = 840. Supersedes 839 (24 September 2026 snapshot). Stored evidence: company-os/artifacts/claim-verification/2026-09-28-buyer-facing-figures-live-verified.md",
+      "verification": "unverified",
+      "allowed_wording": "No customer-facing use approved by this review. Historical wording retained for review: State it as the count of 'not yet inspected' listings in that region and service type, with the source and as-of date.",
+      "exclusion": "Forbidden reading: that these providers are substandard, failing, or at risk. The CQC field records that no inspection rating has been published; it is not a quality judgement and must not be implied to be one.",
+      "release_status": "blocked-pending-gate",
+      "review_note": "Historical assertion only; supporting external evidence is absent from this repository. Retrieve a sanitized evidence packet and obtain independent review before release; refresh drifting counts before use."
+    },
+    {
+      "id": "CLM-21",
+      "product": "cold-email first-contact pack",
+      "statement": "106 — new residential care-home registrations (snapshot of 27 September 2026).",
+      "source": "read-live-query 2026-09-28, live public query, data stamp 27 September 2026 at 08:11 UTC: https://www.caregist.co.uk/search?opportunity=new_90&service_type=residential-care-homes = 106. Supersedes 104 (24 September 2026 snapshot). Stored evidence: company-os/artifacts/claim-verification/2026-09-28-buyer-facing-figures-live-verified.md",
+      "verification": "unverified",
+      "allowed_wording": "No customer-facing use approved by this review. Historical wording retained for review: Quote 106 with the source and as-of date, as in CLM-18.",
+      "exclusion": "Same drift limit as CLM-18. Do not combine with 966 in a way that implies the subsets exhaust the total.",
+      "release_status": "blocked-pending-gate",
+      "review_note": "Historical assertion only; supporting external evidence is absent from this repository. Retrieve a sanitized evidence packet and obtain independent review before release; refresh drifting counts before use."
+    },
+    {
+      "id": "CLM-22",
+      "product": "cold-email first-contact pack",
+      "statement": "86 — new nursing care-home registrations (snapshot of 27 September 2026).",
+      "source": "read-live-query 2026-09-28, live public query, data stamp 27 September 2026 at 08:11 UTC: https://www.caregist.co.uk/search?opportunity=new_90&service_type=nursing-care-homes = 86. The 85 that was shipped in earlier drafts is off by one against this source; the corrected pack reads 86. Stored evidence: company-os/artifacts/claim-verification/2026-09-28-buyer-facing-figures-live-verified.md",
+      "verification": "unverified",
+      "allowed_wording": "No customer-facing use approved by this review. Historical wording retained for review: Quote 86 with the source and as-of date.",
+      "exclusion": "Same drift limit as CLM-18. Do not ship 85: it is off by one against the source it is drawn from.",
+      "release_status": "blocked-pending-gate",
+      "review_note": "Historical assertion only; supporting external evidence is absent from this repository. Retrieve a sanitized evidence packet and obtain independent review before release; refresh drifting counts before use."
+    },
+    {
+      "id": "CLM-23",
+      "product": "cold-email first-contact pack — signature block",
+      "statement": "Signature block excludes an unapproved provisional telephone number.",
+      "source": "Historical September 28 report asserted removal from 24 drafts. Supporting draft/mailbox records and business-contact control record are external and were not inspected in this review.",
+      "verification": "unverified",
+      "allowed_wording": "No customer-facing use approved by this review. Historical wording retained for review: Keep the number out of outreach. The signature carries name, role and the mailbox address; the mailbox is already the send route and the CTA.",
+      "exclusion": "Keep the provisional number out of public and customer-facing materials. This record neither verifies draft edits nor authorizes outbound messages.",
+      "release_status": "blocked-pending-gate",
+      "review_note": "Historical assertion only; supporting external evidence is absent from this repository. Retrieve a sanitized evidence packet and obtain independent review before release; refresh drifting counts before use."
+    },
+    {
+      "id": "CLM-24",
+      "product": "cold-email first-contact pack — footer identity line",
+      "statement": "CareGist is a trading name of H-Kay Limited, registered in England & Wales, company no. 10417923.",
+      "source": "read-live-query 2026-09-26 20:03 BST: https://find-and-update.company-information.service.gov.uk/company/10417923 returns HTTP 200 for 'H-KAY LIMITED, Company number 10417923'. Name and number reconcile with the copy. The trading-name linkage itself (that H-Kay Limited trades as CareGist) is not evidenced by that source.",
+      "verification": "unverified",
+      "allowed_wording": "Blocked until evidence establishes both the company identity and the CareGist trading-name relationship; company-name/number correspondence alone is insufficient.",
+      "exclusion": "Do not add company details beyond name, number and jurisdiction without a source. The Companies House record does not evidence the trading-name linkage or any licence, registration or accreditation.",
+      "release_status": "blocked-pending-gate",
+      "review_note": "Historical assertion only; supporting external evidence is absent from this repository. Retrieve a sanitized evidence packet and obtain independent review before release; refresh drifting counts before use."
+    },
+    {
+      "id": "CLM-25",
+      "product": "cold-email first-contact pack",
+      "statement": "69 — new supported living services (snapshot of 27 September 2026).",
+      "source": "read-live-query 2026-09-28, live public query, data stamp 27 September 2026 at 08:11 UTC: https://www.caregist.co.uk/search?opportunity=new_90&service_type=supported-living = 69. Supersedes 71 in the drafts of 22–25 September 2026. Stored evidence: company-os/artifacts/claim-verification/2026-09-28-buyer-facing-figures-live-verified.md",
+      "verification": "unverified",
+      "allowed_wording": "No customer-facing use approved by this review. Historical wording retained for review: Quote 69 with its source and as-of date, as in CLM-18.",
+      "exclusion": "Same drift limit as CLM-18. Registration status only — not a demand, spend or capacity figure.",
+      "release_status": "blocked-pending-gate",
+      "review_note": "Historical assertion only; supporting external evidence is absent from this repository. Retrieve a sanitized evidence packet and obtain independent review before release; refresh drifting counts before use."
+    },
+    {
+      "id": "CLM-26",
+      "product": "cold-email first-contact pack — regional variant tile",
+      "statement": "51 — care-home registrations in the North West alone, in the last 90 days (26 residential + 25 nursing).",
+      "source": "read-live-query 2026-09-28, live public query, data stamp 27 September 2026 at 08:11 UTC: https://www.caregist.co.uk/search?opportunity=new_90&region=North+West&service_type=residential-care-homes = 26 and …&service_type=nursing-care-homes = 25, so 26 + 25 = 51. The unfiltered North West total (all service types) is 149 — 51 is the care-home subset only, as the wording says. Stored evidence: company-os/artifacts/claim-verification/2026-09-28-buyer-facing-figures-live-verified.md",
+      "verification": "unverified",
+      "allowed_wording": "Do not quote 51 distinct care-home registrations until location-ID union/deduplication establishes that the residential and nursing counts do not overlap.",
+      "exclusion": "Do not present 51 as the North West total of new registrations (that is 149) or as any market-size or demand figure. Arithmetic addition alone does not establish a distinct-location total.",
+      "release_status": "blocked-pending-gate",
+      "review_note": "Historical assertion only; supporting external evidence is absent from this repository. Retrieve a sanitized evidence packet and obtain independent review before release; refresh drifting counts before use."
+    },
+    {
+      "id": "CLM-27",
+      "product": "cold-email first-contact pack — 'Top 5 regions' table",
+      "statement": "New care-home registrations, last 90 days, top 5 regions: North West 26/25, South East 20/12, East Midlands 18/9, West Midlands 11/17, East 15/1 (residential/nursing).",
+      "source": "read-live-query 2026-09-28, live public query, data stamp 27 September 2026 at 08:11 UTC, ten region × service-type queries, each with the filter-validity control (invalid region returns 0, so the region filter is applied): company-os/artifacts/claim-verification/2026-09-28-buyer-facing-figures-live-verified.md",
+      "verification": "unverified",
+      "allowed_wording": "No customer-facing use approved by this review. Historical wording retained for review: Present as a dated extract of the top five regions with the source and as-of date, and keep the column labels Residential / Nursing.",
+      "exclusion": "Eight of the ten cells were verified as shipped; South East residential (19→20) and East residential (14→15) were one behind the source and were corrected on 2026-09-28. Do not present the five regions as the national total: they are a subset of 106 residential and 86 nursing. Top-five ranking also needs comparison against all regions and an explicit ranking metric; ten selected queries alone do not establish that ranking.",
+      "release_status": "blocked-pending-gate",
+      "review_note": "Historical assertion only; supporting external evidence is absent from this repository. Retrieve a sanitized evidence packet and obtain independent review before release; refresh drifting counts before use."
+    },
+    {
+      "id": "CLM-28",
+      "product": "cold-email first-contact pack — West Midlands / home care variant tile",
+      "statement": "20 — new home care registrations in the last 90 days (West Midlands).",
+      "source": "read-live-query 2026-09-28, live public query, data stamp 27 September 2026 at 08:11 UTC: https://www.caregist.co.uk/search?opportunity=new_90&region=West+Midlands&service_type=home-care = 20. Stored evidence: company-os/artifacts/claim-verification/2026-09-28-buyer-facing-figures-live-verified.md",
+      "verification": "unverified",
+      "allowed_wording": "No customer-facing use approved by this review. Historical wording retained for review: Quote 20 with its region, source and as-of date. Keep the region in the sentence: nationally the same query returns 218.",
+      "exclusion": "Must not be read as a national figure (218) or as an addressable market.",
+      "release_status": "blocked-pending-gate",
+      "review_note": "Historical assertion only; supporting external evidence is absent from this repository. Retrieve a sanitized evidence packet and obtain independent review before release; refresh drifting counts before use."
     }
   ],
   "conflicts": [
     {
       "id": "CONF-1",
-      "summary": "Live Stripe product and price IDs exist for radar-regional (\u00a3299/mo), radar-national (\u00a3799/mo) and intelligence-feed (\u00a36,000/yr), and deploy/stripe-price-manifest.json sets checkout_enabled: true, while the founder decision holds all three closed and the public catalogue shows 'Request access \u00b7 no paid checkout'.",
+      "summary": "Live Stripe product and price IDs exist for radar-regional (£299/mo), radar-national (£799/mo) and intelligence-feed (£6,000/yr), and deploy/stripe-price-manifest.json sets checkout_enabled: true, while the founder decision holds all three closed and the public catalogue shows 'Request access · no paid checkout'.",
       "verification": "read-in-manifest; read-in-code",
       "current_mitigation": "The pricing card's GATED_TIERS branch returns a disabled control before the checkout call, so these prices are not reachable from that surface (CLM-13).",
       "residual_risk": "The mitigation is presentational. Live prices remain purchasable by anyone who reaches the billing endpoint another way; that has not been audited.",
@@ -220,6 +342,8 @@
     "archived_excluded_from_new_sales": true,
     "no_unsupported_claim_upgraded_to_verified": true,
     "price_status_wording_aligned_to_founder_decision": true,
-    "note": "Verification values reflect reading files this session only. No live-state, delivery or capability testing was performed and none is claimed."
-  }
+    "note": "Original Wave 1 checks describe the September 8 code review. CLM-18–28 were later historical additions asserting external live-query/draft checks; those assertions were not independently reproduced in the October 1 archival review and remain blocked."
+  },
+  "reviewed": "2026-10-01",
+  "review_scope": "Local archival review only. Historical live-query assertions are retained as reported, not independently verified. New claims remain blocked pending accessible evidence and independent review."
 }
