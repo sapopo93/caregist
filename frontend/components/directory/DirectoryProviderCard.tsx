@@ -1,6 +1,6 @@
 import type { DirectoryProviderSummary } from "@/lib/directory-db";
 import CompareButton from "@/components/CompareButton";
-import { getProviderHref } from "@/lib/provider-path";
+import { getProviderHref, directoryReturnHref } from "@/lib/provider-path";
 
 function splitPipeValue(value: string | null): string[] {
   return (value ?? "")
@@ -37,10 +37,10 @@ function formatRegistrationDate(date: string | null) {
   });
 }
 
-export default function DirectoryProviderCard({ provider }: { provider: DirectoryProviderSummary }) {
+export default function DirectoryProviderCard({ provider, returnTo }: { provider: DirectoryProviderSummary; returnTo?: string }) {
   const services = splitPipeValue(provider.service_types).slice(0, 3);
   const specialisms = splitPipeValue(provider.specialisms).slice(0, 3);
-  const href = getProviderHref(provider);
+  const href = `${getProviderHref(provider)}${returnTo ? `?returnTo=${encodeURIComponent(directoryReturnHref(returnTo))}` : ""}`;
 
   return (
     <article className="min-w-0 rounded-xl border border-stone bg-cream p-5 shadow-sm transition hover:border-clay sm:p-6">

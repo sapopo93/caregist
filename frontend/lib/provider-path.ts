@@ -17,3 +17,12 @@ export function getProviderHref(provider: ProviderPathSource): string {
   const key = getProviderPathKey(provider);
   return key ? `/provider/${encodeURIComponent(key)}` : "/search";
 }
+
+/** Keep provider navigation within the customer's filtered directory search. */
+export function directoryReturnHref(value: unknown): string {
+  if (typeof value !== "string" || value.length > 2048 || !/^\/search(?:\?|$)/.test(value)) return "/search";
+  const url = new URL(value, "https://caregist.co.uk");
+  return url.origin === "https://caregist.co.uk" && url.pathname === "/search"
+    ? `${url.pathname}${url.search}`
+    : "/search";
+}

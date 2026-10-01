@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 
 import { getDirectoryProvider } from "@/lib/directory-db";
 import { normalizeExternalHttpUrl, cqcEvidenceUrl } from "@/lib/external-url";
-import { getProviderHref } from "@/lib/provider-path";
+import { getProviderHref, directoryReturnHref } from "@/lib/provider-path";
 import { getSiteUrl } from "@/lib/site";
 
 const ratingDimensions = [
@@ -61,7 +61,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   };
 }
 
-export default async function ProviderPage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function ProviderPage({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const returnTo = directoryReturnHref((await searchParams).returnTo);
   const { slug } = await params;
   let provider = null;
 
@@ -85,7 +86,7 @@ export default async function ProviderPage({ params }: { params: Promise<{ slug:
 
   return (
     <div className="mx-auto max-w-5xl px-6 py-10">
-      <Link href="/search" className="text-sm font-medium text-clay hover:text-bark">
+      <Link href={returnTo} className="text-sm font-medium text-clay hover:text-bark">
         Back to search
       </Link>
 
