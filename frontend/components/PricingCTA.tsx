@@ -98,7 +98,7 @@ export default function PricingCTA({
       <div>
         <Link
           href={`mailto:outreach@caregist.co.uk?subject=${encodeURIComponent(oneOffContact.subject)}&body=${encodeURIComponent("Please review availability for the £150 four-week Weekly Digest pilot. This is an enquiry, not an order.\n\nEngland region:\nProvider group:\nPreferred start date:")}`}
-          className="cta-secondary"
+          className="cta-primary"
           onClick={() => void trackEvent("one_off_scope_click", "pricing_card", { tier: tierKey })}
         >
           {ctaLabel}
@@ -168,7 +168,7 @@ export default function PricingCTA({
     return (
       <Link
         href="/search"
-        className="inline-block text-center py-2.5 px-6 rounded-lg font-medium text-sm transition-colors border border-clay text-clay hover:bg-clay hover:text-white"
+        className="cta-primary"
         onClick={() => {
           void trackEvent("pricing_cta_click", "pricing_card", { tier: tierKey, target_tier: "free", action: "open_directory" });
           void trackEvent("plan_selection", "pricing_card", { source_tier: tierKey, target_tier: "free" });
@@ -183,7 +183,7 @@ export default function PricingCTA({
     return (
       <Link
         href={`mailto:enterprise@caregist.co.uk?subject=CareGist+${tier.replace(/\s+/g, "+")}`}
-        className="inline-block text-center py-2.5 px-6 rounded-lg font-medium text-sm transition-colors border border-clay text-clay hover:bg-clay hover:text-white"
+        className="cta-primary"
         onClick={() => void trackEvent("enterprise_contact_click", "pricing_card", { tier: tierKey })}
       >
         {ctaLabel}
@@ -270,7 +270,7 @@ export default function PricingCTA({
   return (
     <Link
       href={isFreeTier ? "/signup" : `/signup?plan=${targetTier}`}
-      className="inline-block text-center py-2.5 px-6 rounded-lg font-medium text-sm transition-colors border border-clay text-clay hover:bg-clay hover:text-white"
+      className="cta-primary"
       onClick={() => {
         void trackEvent("pricing_cta_click", "pricing_card", { tier: tierKey, target_tier: targetTier, action: isFreeTier ? "signup_free" : "signup_paid" });
         void trackEvent("plan_selection", "pricing_card", { source_tier: tierKey, target_tier: targetTier });
