@@ -11,6 +11,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Credentials and API keys live in `.env` — never store secrets anywhere else.
 - Final deliverables go to cloud services (Google Sheets, Slides, etc.). Local files are for processing only. Everything in `.tmp/` is disposable.
 
+## Jev / TypeSafe
+
+- For portable setup and disclosure rules, read `tools/JEV.md`. If the optional TypeSafe skill is installed at `.claude/skills/typesafe-ai/`, read it and the current TypeSafe docs before designing an integration. The skill directory is machine-local and ignored by Git.
+- Jev supplies typed judgments to application code; it is not a replacement for Claude's chat or coding model. The Python SDK is in `.jev-venv/`, and its API key is `TYPESAFE_API_KEY` in `.env`.
+- Start Jev use in shadow mode: record advisory results and compare them with existing decisions, but do not let them change customer-facing outputs or open checkout, collector, delivery, lead, claim, or export gates. A producing model's judgment cannot approve its own work.
+- Before substantial research, repeating a failed approach, loading several tools or skills, spawning agents, choosing between materially different execution routes, or proposing a consequential action, consider whether a small bounded Jev decision would change the next step. If yes, build a compact state with no secrets, run `.jev-venv/bin/python tools/jev_route.py --task "..." --context "..." --option key="..." --option key="..."`, interpret its choice, and continue the original task. Skip Jev for simple answers, deterministic calculations, routine file edits, and when the call adds no useful decision. Respect "bypass jev". Keep irreversible actions behind human confirmation.
+- Decisions log to `.tmp/jev-decisions.jsonl` (shadow mode). Each call is paid and sends the task, context, and options to the TypeSafe API. Obtain authorization for the call and its disclosure scope; exclude credentials, personal data, and private customer materials. A previous approval applies only within its stated scope.
+
 ## Architecture Overview
 
 CareGist is a UK care provider intelligence platform with four main subsystems:

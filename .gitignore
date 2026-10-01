@@ -165,3 +165,10 @@ artifacts/presentations/
 artifacts/offer-v2/
 artifacts/sales/2026-09-15-fulcrum-*/
 artifacts/radar-verification/Fulcrum_Care.html
+.tmp/
+
+# Jev local environment, experiments and nightly comparison memory
+.jev-venv/
+/tools/jev_compare.py
+/tools/jev_hermes_test.py
+/artifacts/cqc-nightly/state.json
