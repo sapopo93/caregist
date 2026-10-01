@@ -22,8 +22,8 @@ export const metadata: Metadata = {
 
 const PLAN_BADGES: Record<string, string> = {
   "Weekly Digest": "£150 one-off pilot",
-  "Territory Opportunity Brief": "Lead product",
-  "Free Directory": "Discovery · not a sale",
+  "Territory Opportunity Brief": "One-off brief",
+  "Free Directory": "Free · no account required",
 };
 
 export default async function PricingPage() {
@@ -48,7 +48,6 @@ export default async function PricingPage() {
           there. Both are built on observation-dated evidence from CQC&apos;s published
           record. The pilot costs £150 for four weekly digests. The Brief costs £745.
           Both are one-off purchases, with no subscription or automatic renewal.
-          Everything else is stopped.
         </p>
       </header>
 

@@ -23,7 +23,7 @@ interface Props {
 
 export default function DirectorySearchForm({
   action = "/search",
-  title = "Search 55,818 active CQC providers",
+  title = "Search CQC-registered care services",
   titleHeading = "h2",
   description = "Search by provider name or town, then narrow by region, service type, and rating.",
   query = "",
@@ -114,7 +114,7 @@ export default function DirectorySearchForm({
             <option value="">All service types</option>
             {serviceTypes.map((value) => (
               <option key={value} value={value}>
-                {value}
+                {value.includes("-") ? value.split("-").map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(" ") : value}
               </option>
             ))}
           </select>

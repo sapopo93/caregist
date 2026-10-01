@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { getDirectoryProvider } from "@/lib/directory-db";
-import { normalizeExternalHttpUrl } from "@/lib/external-url";
+import { normalizeExternalHttpUrl, cqcEvidenceUrl } from "@/lib/external-url";
 import { getProviderHref } from "@/lib/provider-path";
 import { getSiteUrl } from "@/lib/site";
 
@@ -81,7 +81,7 @@ export default async function ProviderPage({ params }: { params: Promise<{ slug:
     .filter(Boolean)
     .join(", ");
   const providerWebsite = normalizeExternalHttpUrl(provider.website);
-  const inspectionReportUrl = normalizeExternalHttpUrl(provider.inspection_report_url);
+  const inspectionReportUrl = cqcEvidenceUrl(provider.inspection_report_url, provider.id);
 
   return (
     <div className="mx-auto max-w-5xl px-6 py-10">
@@ -215,7 +215,7 @@ export default async function ProviderPage({ params }: { params: Promise<{ slug:
                       rel="noreferrer noopener"
                       className="text-clay underline"
                     >
-                      View report
+                      View CQC record and reports
                     </a>
                   </p>
                 ) : null}

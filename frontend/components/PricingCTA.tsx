@@ -95,13 +95,16 @@ export default function PricingCTA({
   const oneOffContact = ONE_OFF_CONTACT[tierKey];
   if (oneOffContact) {
     return (
-      <Link
-        href={`mailto:outreach@caregist.co.uk?subject=${encodeURIComponent(oneOffContact.subject)}`}
-        className="cta-secondary"
-        onClick={() => void trackEvent("one_off_scope_click", "pricing_card", { tier: tierKey })}
-      >
-        {ctaLabel}
-      </Link>
+      <div>
+        <Link
+          href={`mailto:outreach@caregist.co.uk?subject=${encodeURIComponent(oneOffContact.subject)}&body=${encodeURIComponent("Please review availability for the £150 four-week Weekly Digest pilot. This is an enquiry, not an order.\n\nEngland region:\nProvider group:\nPreferred start date:")}`}
+          className="cta-secondary"
+          onClick={() => void trackEvent("one_off_scope_click", "pricing_card", { tier: tierKey })}
+        >
+          {ctaLabel}
+        </Link>
+        <p className="mt-3 text-sm text-dusk">No email app? Email <strong>outreach@caregist.co.uk</strong> from your webmail with your England region, provider group and preferred start date. We confirm availability before any payment.</p>
+      </div>
     );
   }
 

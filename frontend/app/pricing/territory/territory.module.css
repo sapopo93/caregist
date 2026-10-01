@@ -363,3 +363,10 @@
     align-self: auto;
   }
 }
+
+.resultActions { margin-top: 12px; }
+.emailFallback { margin-top: 18px; }
+.emailFallback summary { cursor: pointer; text-decoration: underline; }
+.emailFallback .label { display: block; margin-top: 14px; }
+.enquiryText { width: 100%; margin-top: 6px; padding: 12px; border: 1px solid var(--line); border-radius: 5px; background: var(--paper); color: var(--ink); font: inherit; font-size: 13px; resize: vertical; }
+.buttonOutline:focus-visible, .emailFallback summary:focus-visible, .enquiryText:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }

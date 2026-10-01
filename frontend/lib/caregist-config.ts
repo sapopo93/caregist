@@ -31,7 +31,7 @@ export const PRICING_LADDER: PricingTier[] = [
       "3–5 page brief on territory size, market structure, notable movements, and recommended approach",
       "Observation dates carried through the deliverable",
     ],
-    limit: "Confirm online that the published CQC record supports your exact region and buyer type before any payment. No scoping call required.",
+    limit: "Check matching organisations online, then email your scope. We confirm suitability, availability and delivery before any payment.",
     pricingLogic: "Choose the accounts worth approaching next and see the evidence behind each priority.",
   },
   {
