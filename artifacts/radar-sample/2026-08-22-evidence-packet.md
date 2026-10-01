@@ -38,7 +38,7 @@ Status: PRE-APPROVAL PREP — no contact, no price communication, no invoice. Al
 - **Method:** direct GET of each org's own public website (browser UA); org-level published routes only; no named-individual harvesting; no enrichment; no contact made; £0 spend.
 - **Result:**
   1. CQC Consultants — email dan@cqc-consultants.com (published mailto) + phone 01843 278765 (tel: link + text) — VERIFIED by henry-proof spot-check 25/08 (Companies House 09888898; dan@ is organisation mailbox) ✅
-  2. Fulcrum Care Consulting — phone 020 3411 4014 (published CTAs) + email info@fulcrum.care — VERIFIED by henry-proof spot-check 25/08 (matches published site) ✅
+  2. Fulcrum Care Consulting — phone [phone redacted] (published CTAs) + email [email redacted] — VERIFIED by henry-proof spot-check 25/08 (matches published site) ✅
   3. The UK Care Consultants — phone 0203 475 4334 (contact page visible text; tel: link masked) — PHONE ONLY, no published email — PROVISIONAL (pending independent site confirmation) ⚠️
   4. Cura Compliance UK — phone 07470 390526 (JSON-LD schema) + email info@curacompliance.co.uk — PROVISIONAL (pending independent site confirmation) ⚠️
   5. Team Care Compliance — phone 07155 410220 (JSON-LD ContactPoint) + alt 0115 845 0220 (tel: link; primary to confirm) + email help@teamcarecompliance.org.uk — PROVISIONAL (pending independent site confirmation; primary phone unresolved) ⚠️

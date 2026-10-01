@@ -11,8 +11,8 @@
 |---|---|---|---|---|---|---|
 | 1 | CQC Consultants | https://cqc-consultants.com/ | Email | dan@cqc-consultants.com | Published mailto on homepage: "Email: dan@cqc-consultants.com" | ✅ VERIFIED |
 | 1 | CQC Consultants | https://cqc-consultants.com/ | Phone | 01843 278765 | Published tel: link + "Phone: 01843 278765" text; registered office 128 City Road, London | ✅ VERIFIED |
-| 2 | Fulcrum Care Consulting | https://fulcrumcareconsulting.com/cqc-consultancy/ | Phone | 020 3411 4014 | "Call Us Now on 020 3411 4014"; "For Urgent Help Call 0203 411 4014" (same number, alternate formatting) | ✅ VERIFIED |
-| 2 | Fulcrum Care Consulting | https://fulcrumcareconsulting.com/cqc-consultancy/ | Email | info@fulcrum.care | Present in fetched page content | ✅ VERIFIED |
+| 2 | Fulcrum Care Consulting | https://fulcrumcareconsulting.com/cqc-consultancy/ | Phone | [phone redacted] | "Call Us Now on [phone redacted]"; "For Urgent Help Call [phone redacted]" (same number, alternate formatting) | ✅ VERIFIED |
+| 2 | Fulcrum Care Consulting | https://fulcrumcareconsulting.com/cqc-consultancy/ | Email | [email redacted] | Present in fetched page content | ✅ VERIFIED |
 | 3 | The UK Care Consultants | https://www.theukcareconsultants.co.uk/ | Phone | 0203 475 4334 | Contact page visible text: "Contact Information 0203 475 4334"; tel: link present but masked in markup (+442****4334 — consistent prefix); no published email found (contact form only) | ✅ VERIFIED (phone only) |
 | 4 | Cura Compliance UK | https://curacompliance.co.uk/ | Phone | 07470 390526 | JSON-LD schema `telephone: "07470390526"`; tel: link masked in markup (+447****0526 — consistent) | ✅ VERIFIED |
 | 4 | Cura Compliance UK | https://curacompliance.co.uk/ | Email | info@curacompliance.co.uk | Present in fetched page content | ✅ VERIFIED |
