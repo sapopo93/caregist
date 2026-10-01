@@ -104,3 +104,17 @@ test("a stalled coverage check times out and allows retry", async ({ page }) => 
   await expect(page.getByRole("alert").filter({ hasText: "coverage check failed" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Check this territory", exact: true })).toBeEnabled();
 });
+
+test("territory selectors cannot lose input before hydration", async ({ page }) => {
+  let release!: () => void;
+  const pending = new Promise<void>((resolve) => { release = resolve; });
+  await page.route(/\/_next\/.*\.js(?:\?.*)?$/, async (route) => { await pending; await route.continue(); });
+  await page.goto("/pricing/territory", { waitUntil: "commit" });
+  await expect(page.locator("#territory-region")).toBeDisabled();
+  await expect(page.locator("#territory-buyer")).toBeDisabled();
+  release();
+  await expect(page.locator("#territory-region")).toBeEnabled();
+  await page.locator("#territory-region").selectOption("London");
+  await page.locator("#territory-buyer").selectOption("inadequate");
+  await expect(page.getByRole("button", { name: "Check this territory", exact: true })).toBeEnabled();
+});

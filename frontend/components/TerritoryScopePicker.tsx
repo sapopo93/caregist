@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { trackEvent } from "@/lib/analytics";
 import { DEFAULT_SERVICE_TYPE_OPTIONS } from "@/lib/directory-constants";
@@ -26,6 +26,8 @@ const VERDICT_STYLES: Record<string, string> = {
 };
 
 export default function TerritoryScopePicker() {
+  const [interactive, setInteractive] = useState(false);
+  useEffect(() => setInteractive(true), []);
   const [region, setRegion] = useState("");
   const [buyerType, setBuyerType] = useState("");
   const [serviceType, setServiceType] = useState("");
@@ -134,6 +136,7 @@ export default function TerritoryScopePicker() {
           </label>
           <select
             id="territory-region"
+            disabled={!interactive}
             value={region}
             onChange={(e) => changeSelection(setRegion, e.target.value)}
             className={styles.select}
@@ -153,6 +156,7 @@ export default function TerritoryScopePicker() {
           </label>
           <select
             id="territory-buyer"
+            disabled={!interactive}
             value={buyerType}
             onChange={(e) => changeSelection(setBuyerType, e.target.value)}
             className={styles.select}
@@ -172,6 +176,7 @@ export default function TerritoryScopePicker() {
           </label>
           <select
             id="territory-service"
+            disabled={!interactive}
             value={serviceType}
             onChange={(e) => changeSelection(setServiceType, e.target.value)}
             className={styles.select}
