@@ -8,6 +8,8 @@ the real 700MB register.
 from __future__ import annotations
 
 import json
+import re
+import zlib
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -371,3 +373,77 @@ def test_pdf_renders_multipage_with_appendix(tmp_path):
     # multi-page: the /Type /Page count in the object stream
     assert pdf.count(b"/Type /Page") >= 4
     assert b"Appendix A" not in pdf  # compressed streams; sanity that we don't accidentally store plaintext
+
+
+def test_undated_current_rating_refuses_recent_changes_claim(tmp_path):
+    brief = _generate(tmp_path, [_loc(
+        currentRatings={"overall": {"rating": "Requires improvement"}},
+        historicRatings=[_historic("Good", "2020-01-01")],
+    )])
+    status = brief.territory_insights["rating_date_coverage"]
+    assert status["recent_rating_changes_available"] is False
+    assert "unavailable" in status["limitation"]
+    assert b"Recent rating changes unavailable" in _pdf_stream_text(render_brief_pdf(brief))
+    assert not brief.territory_insights["events_by_type"].get("rating_changed")
+    assert brief.evidence_coverage[0]["rating_publication_date"] is None
+    assert "no publication date" in brief.evidence_coverage[0]["rating_freshness"]
+
+
+def test_old_snapshot_does_not_make_stale_ri_fresh(tmp_path):
+    loc, prov = _write_snapshot(tmp_path, [_loc(
+        registrationDate="2020-01-01",
+        currentRatings=_rating_block("Requires improvement", "2024-04-26"),
+    )])
+    brief = generate_territory_opportunity_brief(
+        {"kind": "local_authority", "name": "Testershire"},
+        PurchaseContext("stale-test", datetime(2026, 10, 2, tzinfo=timezone.utc)),
+        locations_source=loc, providers_source=prov,
+    )
+    row = brief.evidence_coverage[0]
+    assert row["rating_publication_date"] == "2024-04-26"
+    assert row["rating_freshness"] == "stale (over 12 months)"
+    assert "fresh regulatory" not in str(brief.to_json())
+    assert b"2024-04-26" in _pdf_stream_text(render_brief_pdf(brief))
+    assert "stale (over 12 months)" in brief_to_csv(brief)
+
+
+def test_registration_metadata_gaps_are_reported_without_dropping_rows(tmp_path):
+    brief = _generate(tmp_path, [
+        _loc(locationId="missing"),
+        _loc(locationId="complete", providerId="other",
+             source_url="https://api.service.cqc.org.uk/public/v1/locations/complete",
+             source_snapshot_sha256="a" * 64),
+    ])
+    rows = {r["location_id"]: r for r in brief.evidence_coverage}
+    assert set(rows) == {"missing", "complete"}
+    assert rows["missing"]["registration_metadata_gaps"] == ["source URL", "source hash"]
+    assert rows["complete"]["registration_metadata_gaps"] == []
+    assert b"source URL, source hash" in _pdf_stream_text(render_brief_pdf(brief))
+    assert "source URL; source hash" in brief_to_csv(brief)
+
+
+def test_ri_missing_registration_date_remains_visible(tmp_path):
+    brief = _generate(tmp_path, [_loc(
+        registrationDate=None,
+        currentRatings={"reportDate": "2024-04-26", "overall": {"rating": "Requires improvement"}},
+    )])
+    assert brief.evidence_coverage[0]["rating_publication_date"] == "2024-04-26"
+    assert "registration date" in brief.evidence_coverage[0]["registration_metadata_gaps"]
+
+
+def _pdf_stream_text(pdf):
+    return b"\n".join(zlib.decompress(stream) for stream in re.findall(
+        rb"stream\n(.*?)\nendstream", pdf, re.S
+    ))
+
+
+def test_stale_ri_without_window_signal_is_retained_as_context(tmp_path):
+    brief = _generate(tmp_path, [
+        _loc(registrationDate="2020-01-01",
+             currentRatings=_rating_block("Requires improvement", "2024-04-26")),
+        _loc(locationId="anchor", providerId="anchor", dormancy="Y", registrationDate="2025-12-31"),
+    ])
+    assert not brief.shortlist
+    stale = next(row for row in brief.evidence_coverage if row["location_id"] == "1-001")
+    assert stale["rating_freshness"] == "stale (over 12 months)"
+    assert b"2024-04-26" in _pdf_stream_text(render_brief_pdf(brief))

@@ -1065,6 +1065,16 @@ def clean_location(data: dict[str, Any], *, directory_active: bool = False) -> d
     record["historic_rating_state"] = rating.historic_rating_state
     record["historic_rating_date"] = rating.historic_rating_date
     record["rating_report_date"] = rating.report_date
+    current_ratings = data.get("currentRatings") or {}
+    overall = current_ratings.get("overall") or {} if isinstance(current_ratings, dict) else {}
+    record["rating_report_date_source"] = None
+    if isinstance(current_ratings, dict) and current_ratings.get("reportDate"):
+        record["rating_report_date_source"] = "cqc.currentRatings.reportDate"
+    elif isinstance(overall, dict):
+        for field in ("reportDate", "date"):
+            if overall.get(field):
+                record["rating_report_date_source"] = f"cqc.currentRatings.overall.{field}"
+                break
     return record
 
 
@@ -1095,6 +1105,7 @@ RATING_EVIDENCE_KEYS = (
     "historic_rating_state",
     "historic_rating_date",
     "rating_report_date",
+    "rating_report_date_source",
 )
 
 

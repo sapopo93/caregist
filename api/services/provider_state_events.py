@@ -300,6 +300,7 @@ def _rating_metadata(
         "destination_rating_state": current_state,
         "destination_evidenced": destination_evidenced,
         "destination_report_date": current.get("rating_report_date"),
+        "effective_date_kind": "rating_publication_date" if movement else None,
         "historic_rating": historic_raw if has_historic else None,
         "historic_rating_state": historic_state if has_historic else None,
         "historic_rating_date": current.get("historic_rating_date"),
@@ -349,7 +350,14 @@ def _rating_transition_event(
         return _event(
             "rating_changed",
             current,
-            effective_date=None,
+            # This is the destination rating's CQC publication/report date,
+            # not an inferred transition time. Never use inspection, historic,
+            # observation or collection dates as a substitute.
+            effective_date=_as_explicit_date(current.get("rating_report_date")),
+            effective_date_source=(
+                current.get("rating_report_date_source") or "cqc.currentRatings report date"
+                if _as_explicit_date(current.get("rating_report_date")) else None
+            ),
             old_value=previous_value,
             new_value=current_value,
             extra_metadata=_rating_metadata(

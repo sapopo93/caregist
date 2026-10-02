@@ -1643,3 +1643,20 @@ def test_trusted_event_insert_keeps_unknown_effective_time_null():
     )
     assert params[4:7] == (None, None, None)
     assert "ON CONFLICT (dedupe_key) DO NOTHING" in sql
+
+
+def test_rating_publication_date_survives_trusted_ledger_insert():
+    from api.services.provider_state_events import build_provider_state_events
+    current = clean_location({
+        "locationId": "LOC1", "name": "Test", "registrationStatus": "Registered",
+        "type": "Social Care Org", "providerId": "PROV1",
+        "currentRatings": {"reportDate": "2026-09-10", "overall": {"rating": "Outstanding"}},
+    })
+    event = build_provider_state_events({"id": "LOC1", "overall_rating": "Good"}, current)[0]
+    cur = Mock()
+    cur.fetchone.return_value = None
+    _insert_trusted_provider_event(cur, event, current)
+    sql, params = cur.execute.call_args.args
+    assert "INSERT INTO trusted_event_ledger" in sql
+    assert params[4] == date(2026, 9, 10)
+    assert params[6] == "cqc.currentRatings.reportDate"

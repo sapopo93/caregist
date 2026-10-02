@@ -110,8 +110,12 @@ def render_brief_pdf(brief: TerritoryBrief) -> bytes:
     pdf.key_values(
         [
             ("Events by type", ", ".join(f"{k}: {v}" for k, v in ins["events_by_type"].items()) or "none"),
-            ("Rating moves", f"{ins['rating_moves']['declines']} downgrades, "
-                             f"{ins['rating_moves']['improvements']} upgrades"),
+            ("Rating moves", (
+                ins["rating_date_coverage"]["limitation"]
+                if not ins["rating_date_coverage"]["recent_rating_changes_available"]
+                else f"{ins['rating_moves']['declines']} downgrades, "
+                     f"{ins['rating_moves']['improvements']} upgrades"
+            )),
             ("New beds entering market", str(ins["new_beds_entering_market"])),
         ]
     )
@@ -194,6 +198,26 @@ def render_brief_pdf(brief: TerritoryBrief) -> bytes:
         pdf.paragraph(f"   Evidence: {ev}", muted=True)
         pdf.paragraph(f"   CQC record: {_cqc_url(o.location_id)}", muted=True)
 
+    if brief.evidence_coverage:
+        pdf.heading("Appendix B. Evidence dates and metadata coverage")
+        pdf.paragraph(
+            "RI context remains visible even without an in-window event. Freshness is measured "
+            "at generation. Metadata gaps refer to the supplied snapshot; constructed reference "
+            "links do not replace missing recorded source metadata.", muted=True,
+        )
+        for row in brief.evidence_coverage:
+            pdf.paragraph(f"{row['location_name']} ({row['location_id']}; provider {row['provider_id']})")
+            pdf.paragraph(
+                f"Rating evidence date: {row['rating_publication_date'] or 'not supplied'}; "
+                f"{row['rating_freshness']}. Registration date: "
+                f"{row['registration_date'] or 'not supplied'}.", muted=True,
+            )
+            pdf.paragraph(
+                "Registration metadata gaps: " + (", ".join(row["registration_metadata_gaps"]) or "none")
+                + f". Recorded URL: {row['recorded_source_url'] or 'not supplied'}; "
+                + f"hash: {row['recorded_source_hash'] or 'not supplied'}.", muted=True,
+            )
+            pdf.paragraph(f"CQC reference: {row['reference_url']}", muted=True)
     return pdf.build()
 
 
