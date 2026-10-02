@@ -102,3 +102,25 @@ If a migration file fails, its transaction is rolled back and its filename is no
 For an application defect, disable feature flags first and roll back code only while schema compatibility remains intact. For an isolated schema/data defect, use a new forward-fix migration. Use Neon PITR only for destructive or irrecoverable damage, then perform the complete restored-branch validation and reconciliation before sending traffic.
 
 Never delete a production `schema_migrations` row to force replay, run a down migration as an ordinary production rollback, or restore over the production branch during a drill.
+
+
+## Disposable local Brief verification (2 October 2026)
+
+The actual paid-path test is `tests/test_territory_brief_pg_integration.py`, not
+`tests/integration/test_territory_brief_pg_integration.py`. It requires `TB_PG_URL`
+and the committed Brief fixtures. Stripe, blob upload and outbound email are
+mocked; passing establishes database-backed fulfilment, not a live paid sale.
+
+Start a fresh Compose project with `db/init.sql`, then run every migration with
+an explicit local `--database-url`. Use a dedicated localhost port if 5432 is
+already occupied; do not rely on shell or `.env` database URLs. On the October 2
+run, the initial 5432 attempt failed with `permission denied for schema public`;
+a dedicated port 55439 replay applied all 64 migrations successfully. The
+Docker Desktop Compose executable was available inside the application bundle
+although the shell's Compose plugin link was unavailable.
+
+Run the Brief integration test with `TB_PG_URL` set to that same disposable DB,
+then the full pytest suite and frontend build. Never use production or a paid
+Neon branch for this local test without founder approval. Stop the disposable
+Compose project after verification. No migration or test result grants release
+or commercial acceptance.

@@ -45,10 +45,10 @@ undated-summary refusal, stale RI context and incomplete registration metadata.
 The full migration chain and real-Postgres fulfilment were exercised locally.
 See the final engineering report for aggregate test output.
 
-## Workflow changes awaiting permission
+## Approved workflow notes
 
 `workflows/run-feed-cycle.md`: publication vs observation date rules and no
 historical backfill without a migration and founder approval.
 `workflows/apply-migrations.md`: use an isolated local port for disposable replay;
 run the actual `tests/test_territory_brief_pg_integration.py` path with TB_PG_URL.
-These workflow files have not been edited.
+The founder approved these two workflow updates in the current task.
