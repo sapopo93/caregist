@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { WEEKLY_DIGEST_PILOT_PRICE_GBP } from "@/lib/caregist-config";
 import Link from "next/link";
 
 import DirectorySearchForm from "@/components/directory/DirectorySearchForm";
@@ -175,7 +176,7 @@ export default async function HomePage() {
           <div className="grid gap-4 md:grid-cols-2">
             <article className="rounded-xl border border-stone bg-cream p-6">
               <p className="font-mono text-xs uppercase tracking-wider text-clay">Weekly</p>
-              <h3 className="mt-3 text-2xl font-bold text-bark">Weekly Digest &middot; &pound;150</h3>
+              <h3 className="mt-3 text-2xl font-bold text-bark">Weekly Digest &middot; &pound;{WEEKLY_DIGEST_PILOT_PRICE_GBP}</h3>
               <p className="mt-3 text-sm leading-6 text-dusk">
                 Four weekly digests covering one England region: new registrations, rating
                 changes, and closures, each linking to the official CQC record.
