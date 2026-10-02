@@ -1,5 +1,43 @@
 # NEXT ACTIONS — CareGist
 
+## 2026-10-01 archive review — current live status NOT VERIFIED
+
+The September 23 closure below is a historical checkpoint. The saved September 24
+nightly report corroborates its 13:18 reconciliation watermark. Saved reports through
+October 1 record later reconciliations, but were not independently revalidated live
+in this review. See `artifacts/cqc-nightly/ARCHIVE_NOTES.md` for reporting limitations.
+Keep all named gates closed pending their separate evidence and independent review.
+
+## 2026-09-23 14:16 BST ordered checkpoint
+
+1. Treat reconciliation and source freshness as passed: runs `35821214442` and `35833372207`
+   succeeded, and production freshness is HTTP 200 `fresh` with 100% coverage.
+2. Do not enable checkout. The next measured blocker is shadow coverage: observe until at
+   least 24 signal-poll starts exist in the seven-day window with at least 90% completion.
+3. Keep delivery disabled until the legal, migration, release, and disposable payment-to-
+   fulfilment journey gates pass independently.
+4. Continue normal scheduled reconciliation observation; do not dispatch another manual run
+   or weaken thresholds based on this closure.
+
+The earlier D1 reconciliation decision is satisfied and no longer requires founder action.
+
+## 2026-09-23 ordered checkpoint
+
+1. Merge and run CI for the current bounded change set; require the migrations job to execute
+   territory fulfilment and scope-request lifecycle tests against disposable Postgres.
+2. Observe the `:37` signal-poll schedule for seven days. Acceptance: at least 24 starts, at
+   least 90% complete, and latest completed poll remains within 16 h.
+3. Run the next scheduled reconciliation unchanged. If `1-147345129` still returns HTTP 500,
+   preserve full-run evidence and choose an explicit record-level retry/quarantine design;
+   do not lower reconciliation or freshness thresholds.
+4. Update `CAREGIST_PRODUCTION_FRONTEND_SHA` and `CAREGIST_PRODUCTION_BACKEND_SHA` only through
+   the approved deployment process, then require scheduled smoke green.
+5. Do not enable checkout. First obtain legal approval, apply migrations through 064, prove a
+   real request → review → accepted → paid → fulfilled → downloadable journey in a disposable
+   environment, and obtain independent review.
+
+---
+
 **Refreshed:** 2026-09-11 00:30 BST · One next action per workstream. No competing plans.
 
 ---

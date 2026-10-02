@@ -116,11 +116,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 <Link href="/why-caregist" className="hover:text-amber">
                   About
                 </Link>
-                <Link
-                  href="/pricing"
-                  className="rounded-full bg-amber px-4 py-2 text-sm font-semibold text-charcoal transition hover:bg-cream"
-                >
-                  See the two products
+                <Link href="/pricing/territory" className="cta-primary cta-primary--sm">
+                  Check your territory
                 </Link>
               </nav>
               <AuthNav />

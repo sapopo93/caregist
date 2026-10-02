@@ -1,0 +1,9 @@
+# Customer journey repairs — 2026-10-01
+
+Browser trace on production release 340469e: home → territory → London/new registrations returned 158 providers and only an email-app CTA. London/inadequate returned seven providers and no next-step CTA. Pricing contradicted manual review with “No scoping call required”. Directory service options exposed internal slugs. Provider “Back to search” discarded the customer’s filters and pagination. Search → London Care (East London) rendered a report URL with the invalid hostname https://reports/.
+
+Bounded fixes: provide free matching-directory links and custom-scope enquiries even below the advertised brief threshold; provide copyable scope text and visible webmail instructions; time out stalled coverage requests after 15 seconds; clarify provider-group selection, service labels and manual review; retain directory filters on provider return links and offer a clear-filter recovery for empty results; route malformed report references to the official CQC location reports page, preserving valid official CQC report URLs.
+
+Validation: 183 frontend unit tests passed; eight territory/directory Playwright journey tests passed, including insufficient coverage, rejected clipboard access, mobile overflow, timeout/retry and obsolete response protection; TypeScript passed. Customer enquiry emails were not sent. Payment, collection, claims, exports and outbound gates were not enabled. These checks establish the bounded UI changes, not legal or commercial gate approval or measured conversion improvement.
+
+Live retest also exposed a pre-hydration interaction race: selections made before event handlers attached appeared selected while the check button stayed disabled. The server-rendered selectors now stay disabled until client handlers are ready, preventing lost customer input.

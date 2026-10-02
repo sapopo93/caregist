@@ -23,3 +23,17 @@ export function normalizeExternalHttpUrl(value: string | null | undefined): stri
     return null;
   }
 }
+
+/** Use a verified CQC host, falling back to the official location's reports page. */
+export function cqcEvidenceUrl(value: string | null | undefined, locationId: string): string | null {
+  const absolute = value && !value.trim().startsWith("/")
+    ? normalizeExternalHttpUrl(value)
+    : null;
+  if (absolute) {
+    const url = new URL(absolute);
+    if (url.hostname === "cqc.org.uk" || url.hostname.endsWith(".cqc.org.uk")) return absolute;
+  }
+  return /^\d+-\d+$/.test(locationId)
+    ? `https://www.cqc.org.uk/location/${locationId}/reports`
+    : null;
+}

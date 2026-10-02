@@ -1,5 +1,13 @@
 # .warroom — CareGist completion status
 
+## 2026-10-01 archive review — current live status NOT VERIFIED
+
+The September 23 closure below is a historical checkpoint. The saved September 24
+nightly report corroborates its 13:18 reconciliation watermark. Saved reports through
+October 1 record later reconciliations, but were not independently revalidated live
+in this review. See `artifacts/cqc-nightly/ARCHIVE_NOTES.md` for reporting limitations.
+Keep all named gates closed pending their separate evidence and independent review.
+
 **Authoritative status record for the CareGist 2026-09-11 completion target.**
 Owned by: `ai-company-governed` (Chief of Staff). Sole portfolio dispatcher.
 

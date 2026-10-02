@@ -27,7 +27,7 @@
 | Row | Org | Email (source) | Phone | GO match |
 |---|---|---|---|---|
 | 1 | CQC Consultants | dan@cqc-consultants.com (homepage mailto, verified 2026-08-22; homepage since redesigned, mailto no longer published — pre-send re-check advised) | 01843 278765 | email VERIFIED → retained |
-| 2 | Fulcrum Care Consulting | info@fulcrum.care (contact page) | 020 3411 4014 | match |
+| 2 | Fulcrum Care Consulting | [email redacted] (contact page) | [phone redacted] | match |
 | 3 | The UK Care Consultants | — (form only) | 0203 475 4334 | phone-only as recorded |
 | 4 | Cura Compliance UK | info@curacompliance.co.uk (contact page) | +44 7470 390526 | match |
 | 5 | Team Care Compliance | hello@teamcarecompliance.org.uk (site footer) | 07456 388400 (WhatsApp); 0115 845 0220 on record | match |

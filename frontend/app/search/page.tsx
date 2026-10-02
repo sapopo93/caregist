@@ -23,6 +23,11 @@ export default async function SearchPage({
 }) {
   const rawParams = await searchParams;
   const filters = parseDirectorySearchParams(rawParams);
+  const returnParams = new URLSearchParams();
+  for (const [key, value] of Object.entries({ q: filters.query, region: filters.region, service_type: filters.serviceType, rating: filters.rating, opportunity: filters.opportunity, page: String(filters.page) })) {
+    if (value) returnParams.set(key, value);
+  }
+  const returnTo = `/search?${returnParams}`;
   const opportunity = getDirectoryOpportunity(filters.opportunity);
   const [optionsResult, resultsResult] = await Promise.allSettled([
     getDirectoryFilterOptions(),
@@ -55,7 +60,7 @@ export default async function SearchPage({
             <div className="rounded-3xl border border-alert/20 bg-alert/10 p-6">
               <p className="text-lg font-semibold text-bark">Search is temporarily unavailable.</p>
               <p className="mt-2 text-sm text-dusk">
-                Check the database connection and try again. The page itself is up, but the directory query failed.
+                Try again shortly. If the problem continues, contact support@caregist.co.uk.
               </p>
             </div>
           ) : null}
@@ -86,7 +91,7 @@ export default async function SearchPage({
               {results.providers.length > 0 ? (
                 <div className="grid gap-4">
                   {results.providers.map((provider) => (
-                    <DirectoryProviderCard key={provider.id} provider={provider} />
+                    <DirectoryProviderCard key={provider.id} provider={provider} returnTo={returnTo} />
                   ))}
                 </div>
               ) : (
@@ -95,6 +100,7 @@ export default async function SearchPage({
                   <p className="mt-2 text-sm text-dusk">
                     Try removing one filter or using a broader town or provider name.
                   </p>
+                  <Link href="/search" className="mt-4 inline-block font-semibold text-clay underline">Clear filters and start again</Link>
                 </div>
               )}
 

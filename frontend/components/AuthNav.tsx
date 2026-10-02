@@ -81,11 +81,11 @@ export default function AuthNav() {
             About
           </Link>
           <a
-            href="/pricing"
-            className="hover:text-amber transition-colors"
+            href="/pricing/territory"
+            className="cta-primary cta-primary--sm"
             onClick={() => setMenuOpen(false)}
           >
-            See the two products
+            Check your territory
           </a>
           <div className="my-1 h-px bg-cream/10" />
           {user ? (

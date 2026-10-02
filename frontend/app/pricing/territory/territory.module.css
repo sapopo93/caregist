@@ -236,18 +236,28 @@
   display: inline-block;
   text-align: center;
   text-decoration: none;
-  background: var(--ink);
+  background: #0a7a57;
   color: #fff;
-  padding: 12px 22px;
+  padding: 15px 28px;
+  min-height: 48px;
   border: 0;
-  border-radius: 3px;
-  font-weight: 600;
-  font-size: 13px;
+  border-radius: 6px;
+  box-shadow: 0 6px 16px rgba(10, 122, 87, 0.3);
+  font-weight: 700;
+  font-size: 15px;
   font-family: var(--font-territory-inter), Inter, Arial, sans-serif;
   cursor: pointer;
 }
 .button:hover {
-  background: #363944;
+  background: #075f44;
+}
+.button:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+}
+.priceBox .button {
+  display: block;
+  width: 100%;
 }
 .button:disabled {
   opacity: 0.5;
@@ -353,3 +363,10 @@
     align-self: auto;
   }
 }
+
+.resultActions { margin-top: 12px; }
+.emailFallback { margin-top: 18px; }
+.emailFallback summary { cursor: pointer; text-decoration: underline; }
+.emailFallback .label { display: block; margin-top: 14px; }
+.enquiryText { width: 100%; margin-top: 6px; padding: 12px; border: 1px solid var(--line); border-radius: 5px; background: var(--paper); color: var(--ink); font: inherit; font-size: 13px; resize: vertical; }
+.buttonOutline:focus-visible, .emailFallback summary:focus-visible, .enquiryText:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }

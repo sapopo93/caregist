@@ -219,6 +219,32 @@ def verify_backend_binding() -> int | None:
             backend_sha == EXPECTED_BACKEND_GIT_SHA,
             f"backend Git SHA {backend_sha!r} did not match expected SHA {EXPECTED_BACKEND_GIT_SHA!r}",
         )
+    # A new staging DB can be genuinely empty without having a reconciled source
+    # watermark. Unknown source coverage is not itself evidence of an empty DB.
+    # Accept the existing empty-dataset checks only with same-release, explicit
+    # database row counts and traffic readiness from the backend health snapshot.
+    if active_location_count is None and status == "unknown":
+        health_response = fetch("/api/v1/health")
+        if health_response.status == 200:
+            try:
+                health = json.loads(health_response.body)
+            except json.JSONDecodeError:
+                health = {}
+            if isinstance(health, dict):
+                units = health.get("units") or {}
+                health_sha = str((health.get("release") or {}).get("git_sha") or "").lower()
+                if (
+                    isinstance(units, dict)
+                    and type(units.get("locationRows")) is int
+                    and units["locationRows"] == 0
+                    and type(units.get("activeLocationRows")) is int
+                    and units["activeLocationRows"] == 0
+                    and health.get("readiness_ok") is True
+                    and backend_sha
+                    and health_sha == backend_sha
+                ):
+                    active_location_count = 0
+
     print_ok(
         "BACKEND_BINDING",
         f"freshnessStatus={status} activeLocationCount={active_location_count!r} gitSha={backend_sha or 'missing'}",

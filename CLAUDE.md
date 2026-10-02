@@ -11,6 +11,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Credentials and API keys live in `.env` — never store secrets anywhere else.
 - Final deliverables go to cloud services (Google Sheets, Slides, etc.). Local files are for processing only. Everything in `.tmp/` is disposable.
 
+## Jev / TypeSafe
+
+- For portable setup and disclosure rules, read `tools/JEV.md`. If the optional TypeSafe skill is installed at `.claude/skills/typesafe-ai/`, read it and the current TypeSafe docs before designing an integration. The skill directory is machine-local and ignored by Git.
+- Jev supplies typed judgments to application code; it is not a replacement for Claude's chat or coding model. The Python SDK is in `.jev-venv/`, and its API key is `TYPESAFE_API_KEY` in `.env`.
+- Start Jev use in shadow mode: record advisory results and compare them with existing decisions, but do not let them change customer-facing outputs or open checkout, collector, delivery, lead, claim, or export gates. A producing model's judgment cannot approve its own work.
+- Before substantial research, repeating a failed approach, loading several tools or skills, spawning agents, choosing between materially different execution routes, or proposing a consequential action, consider whether a small bounded Jev decision would change the next step. If yes, build a compact state with no secrets, run `.jev-venv/bin/python tools/jev_route.py --task "..." --context "..." --option key="..." --option key="..."`, interpret its choice, and continue the original task. Skip Jev for simple answers, deterministic calculations, routine file edits, and when the call adds no useful decision. Respect "bypass jev". Keep irreversible actions behind human confirmation.
+- Decisions log to `.tmp/jev-decisions.jsonl` (shadow mode). Each call is paid and sends the task, context, and options to the TypeSafe API. Obtain authorization for the call and its disclosure scope; exclude credentials, personal data, and private customer materials. A previous approval applies only within its stated scope.
+
 ## Architecture Overview
 
 CareGist is a UK care provider intelligence platform with four main subsystems:
@@ -32,7 +40,7 @@ CareGist is a UK care provider intelligence platform with four main subsystems:
 
 ### Database
 
-PostgreSQL with PostGIS. Schema in `db/init.sql`, migrations in `db/migrations/` (17 numbered SQL files, applied via `db/apply_migrations.py`). Applied migrations are tracked in `schema_migrations`.
+PostgreSQL with PostGIS. Schema in `db/init.sql`, migrations in `db/migrations/` (64 numbered SQL files, 001–065 with 064 unused, applied via `db/apply_migrations.py`). Applied migrations are tracked in `schema_migrations`.
 
 **Primary tables:**
 
@@ -68,7 +76,8 @@ The `care_providers.id` column is the CQC `locationId` (VARCHAR, not auto-increm
 
 ### API Routers
 
-All routers are registered in `api/main.py`. Full list:
+All routers are registered in `api/main.py`. Full list (26 modules; the
+`crm`, `crm_extended`, `cron` and `radar` routers are omitted from the table below):
 
 | Router | Prefix | Purpose |
 |--------|--------|---------|
@@ -132,6 +141,32 @@ must not be sold or advertised. They were managed via `api/routers/provider_prof
 
 Maps to `care_providers.profile_tier`. Historical listing Price configuration
 may remain in compatibility code, but it is not current release configuration.
+
+### Territory Opportunity Brief (the current paid offer)
+
+This is the offer the public site sells. Earlier versions of this file pointed
+readers only at the retired tier catalogue above.
+
+- **Price:** £745 one-off. Buyer-facing wording is "£745 fixed fee. No VAT added."
+  (H-Kay Limited is not VAT registered.) The price literal is
+  `TERRITORY_BRIEF_PRICE_GBP` in `frontend/lib/territory-scope.ts`.
+- **Services:** `api/services/territory_brief.py` (selection and CSV),
+  `territory_brief_render.py` (PDF via the in-repo `pdf_writer`),
+  `territory_brief_fulfilment.py` (the paid path: consent, blob upload, download
+  tokens, delivery email), `territory_brief_delivery.py`.
+- **Endpoint:** `POST /api/v1/billing/territory-brief-checkout` in
+  `api/routers/billing.py`; there is no separate `territory` router.
+- **Schema:** migration `060_territory_brief_fulfilment.sql` creates
+  `territory_brief_orders`, `territory_brief_consents` and
+  `territory_brief_download_tokens`.
+- **Gates:** `territory_self_serve_checkout_enabled` defaults `False` in
+  `api/config.py` and also requires `billing_checkout_enabled`. Fail-closed is
+  deliberate: enabling the self-serve path needs solicitor sign-off on the Terms
+  and immediate-supply consent, not an engineering decision.
+- **Real-schema test:** `tests/test_territory_brief_pg_integration.py` runs the
+  fulfilment path against a real Postgres, but it **skips unless `TB_PG_URL` is
+  set** and no workflow currently sets it, so it silently skips in CI. Treat the
+  paid path as not proven end to end until that is wired.
 
 ### New Registration Feed
 
@@ -265,7 +300,7 @@ api/                       # FastAPI backend
   database.py              # asyncpg connection pool
   main.py                  # App factory — router registration, middleware, lifespan
   logging_config.py        # Structured JSON logging
-  routers/                 # All 22 route modules
+  routers/                 # All 26 route modules
   queries/                 # Raw SQL query modules
   middleware/
     auth.py                # API key validation + seat enforcement
@@ -286,7 +321,7 @@ frontend/                  # Next.js 15 app
     caregist-config.ts     # PRICING_LADDER, PROVIDER_TIERS, feature gates
 db/
   init.sql                 # Base schema (PostGIS, all core tables)
-  migrations/              # 17 numbered SQL migrations (001–017)
+  migrations/              # 64 numbered SQL migrations (001–065, 064 unused)
   apply_migrations.py      # Migration runner (idempotent)
   seed.py                  # CSV → PostgreSQL seeder
 tools/

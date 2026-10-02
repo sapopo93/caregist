@@ -120,7 +120,7 @@ export default function TerritoryScopePage() {
         <div className={styles.kicker}>Check coverage first</div>
         <h2>See how many organisations match your scope</h2>
         <p className={styles.sectionLead}>
-          Pick a region and buyer type below. We check the published CQC record for that exact
+          Pick a region and provider group below. We check the published CQC record for that exact
           scope before you email us — this is free, and it does not place an order.
         </p>
         <TerritoryScopePicker />
@@ -134,8 +134,8 @@ export default function TerritoryScopePage() {
             <div className={styles.num}>STEP 1</div>
             <h3>Check coverage</h3>
             <p>
-              Use the tool above to see how many organisations match your region and buyer
-              type, then email us your scope.
+              Use the tool above to see how many organisations match your region and provider
+              group, then email us your scope.
             </p>
           </article>
           <article className={styles.card}>

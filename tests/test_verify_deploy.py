@@ -519,3 +519,36 @@ def test_provider_api_check_fails_when_search_returns_no_rows(verifier, monkeypa
 
     with pytest.raises(verifier.SmokeFailure):
         verifier.verify_provider_api(57151)
+
+
+@pytest.mark.parametrize(
+    ("rows", "active", "ready", "same_release", "expected"),
+    [
+        (0, 0, True, True, 0),
+        (1, 0, True, True, None),
+        (0, 1, True, True, None),
+        (0, 0, False, True, None),
+        (0, 0, True, False, None),
+        (False, False, True, True, None),
+    ],
+)
+def test_unknown_watermark_requires_explicit_ready_same_release_empty_database(
+    verifier, monkeypatch, rows, active, ready, same_release, expected
+):
+    sha = "a" * 40
+    payloads = {
+        "/api/v1/health/freshness": {
+            "status": "unknown", "totalSourceLocations": None,
+            "release": {"git_sha": sha},
+        },
+        "/api/v1/health": {
+            "readiness_ok": ready,
+            "units": {"locationRows": rows, "activeLocationRows": active},
+            "release": {"git_sha": sha if same_release else "b" * 40},
+        },
+    }
+    monkeypatch.setattr(
+        verifier, "fetch",
+        lambda path: verifier.Response(200, {}, json.dumps(payloads[path])),
+    )
+    assert verifier.verify_backend_binding() == expected

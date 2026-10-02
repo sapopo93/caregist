@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { trackEvent } from "@/lib/analytics";
 import { DEFAULT_SERVICE_TYPE_OPTIONS } from "@/lib/directory-constants";
@@ -26,11 +26,14 @@ const VERDICT_STYLES: Record<string, string> = {
 };
 
 export default function TerritoryScopePicker() {
+  const [interactive, setInteractive] = useState(false);
+  useEffect(() => setInteractive(true), []);
   const [region, setRegion] = useState("");
   const [buyerType, setBuyerType] = useState("");
   const [serviceType, setServiceType] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [copyStatus, setCopyStatus] = useState("");
   const [result, setResult] = useState<CoverageResponse | null>(null);
 
   const requestVersion = useRef(0);
@@ -38,6 +41,7 @@ export default function TerritoryScopePicker() {
   function changeSelection(setValue: (value: string) => void, value: string) {
     requestVersion.current += 1;
     setValue(value);
+    setCopyStatus("");
     setResult(null);
     setError("");
     setLoading(false);
@@ -51,9 +55,13 @@ export default function TerritoryScopePicker() {
     setLoading(true);
     setError("");
     setResult(null);
+    setCopyStatus("");
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
     void trackEvent("territory_scope_check", "territory_picker", { region, buyer_type: buyerType, service_type: serviceType });
     try {
       const res = await fetch("/api/territory/coverage", {
+        signal: controller.signal,
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ region, buyerType, serviceType }),
@@ -68,6 +76,7 @@ export default function TerritoryScopePicker() {
     } catch {
       if (version === requestVersion.current) setError("The coverage check failed. Try again. No order has been placed.");
     } finally {
+      clearTimeout(timeout);
       if (version === requestVersion.current) setLoading(false);
     }
   }
@@ -78,22 +87,39 @@ export default function TerritoryScopePicker() {
       }`
     : "";
 
+  const enquiryText = result
+    ? [
+        "Please review availability for this Territory Opportunity Brief scope. This is an enquiry, not an order.",
+        "",
+        `Region: ${result.scope.region}`,
+        `Buyer type: ${selectedBuyer?.label ?? result.scope.buyerType}`,
+        `Service type: ${result.scope.serviceType || "All"}`,
+        `Providers in scope: ${result.coverage.providerCount}`,
+        `Coverage verdict: ${result.coverage.verdict}`,
+        `Advertised brief price: £${TERRITORY_BRIEF_PRICE_GBP}. Please confirm suitability and any custom scope before work starts.`,
+      ].join("\n")
+    : "";
   const mailtoHref = result
     ? `mailto:outreach@caregist.co.uk?subject=${encodeURIComponent(
         `Territory Opportunity Brief — ${scopeSummary}`,
-      )}&body=${encodeURIComponent(
-        [
-          "Please review availability for this Territory Opportunity Brief scope. This is an enquiry, not an order.",
-          "",
-          `Region: ${result.scope.region}`,
-          `Buyer type: ${selectedBuyer?.label ?? result.scope.buyerType}`,
-          `Service type: ${result.scope.serviceType || "All"}`,
-          `Providers in scope: ${result.coverage.providerCount}`,
-          `Coverage verdict: ${result.coverage.verdict}`,
-          `Price: £${TERRITORY_BRIEF_PRICE_GBP}`,
-        ].join("\n"),
-      )}`
+      )}&body=${encodeURIComponent(enquiryText)}`
     : "";
+  const directoryHref = result
+    ? `/search?${new URLSearchParams({
+        region: result.scope.region,
+        opportunity: result.scope.buyerType,
+        ...(result.scope.serviceType ? { service_type: result.scope.serviceType } : {}),
+      })}`
+    : "";
+
+  async function copyEnquiry() {
+    try {
+      await navigator.clipboard.writeText(enquiryText);
+      setCopyStatus("Enquiry copied. Paste it into an email to outreach@caregist.co.uk and send it to request a review.");
+    } catch {
+      setCopyStatus("Copy is unavailable in this browser. Select and copy the enquiry text below instead.");
+    }
+  }
 
   return (
     <div className={styles.checkCard}>
@@ -110,6 +136,7 @@ export default function TerritoryScopePicker() {
           </label>
           <select
             id="territory-region"
+            disabled={!interactive}
             value={region}
             onChange={(e) => changeSelection(setRegion, e.target.value)}
             className={styles.select}
@@ -125,15 +152,16 @@ export default function TerritoryScopePicker() {
 
         <div className={styles.field}>
           <label htmlFor="territory-buyer" className={styles.label}>
-            Which organisations do you sell to?
+            Which provider group do you want to research?
           </label>
           <select
             id="territory-buyer"
+            disabled={!interactive}
             value={buyerType}
             onChange={(e) => changeSelection(setBuyerType, e.target.value)}
             className={styles.select}
           >
-            <option value="">Choose a buyer type…</option>
+            <option value="">Choose a provider group…</option>
             {TERRITORY_BUYER_TYPES.map((b) => (
               <option key={b.value} value={b.value}>
                 {b.label}
@@ -148,6 +176,7 @@ export default function TerritoryScopePicker() {
           </label>
           <select
             id="territory-service"
+            disabled={!interactive}
             value={serviceType}
             onChange={(e) => changeSelection(setServiceType, e.target.value)}
             className={styles.select}
@@ -210,8 +239,10 @@ export default function TerritoryScopePicker() {
               </div>
             </dl>
 
-            {result.coverage.canCheckout ? (
-              <div style={{ marginTop: 18 }}>
+            <div className={styles.resultActions}>
+              <a href={directoryHref} className={styles.buttonOutline}>View matching providers for free</a>
+            </div>
+            <div style={{ marginTop: 18 }}>
                 <a
                   href={mailtoHref}
                   className={styles.button}
@@ -223,15 +254,22 @@ export default function TerritoryScopePicker() {
                     })
                   }
                 >
-                  Email this scope for review
+                  {result.coverage.verdict === "insufficient" ? "Ask about a custom scope" : "Email this scope for review"}
                 </a>
                 <p className={styles.note}>
                   Opens your email app with your selections. Send the email to request a
                   review. This does not reserve a brief or take payment. Online ordering is
                   not available.
                 </p>
+                <details className={styles.emailFallback}>
+                  <summary>No email app? Copy your enquiry</summary>
+                  <p className={styles.note}>Send this text from your webmail to <strong>outreach@caregist.co.uk</strong>. Your enquiry is only sent when you send the email.</p>
+                  <label htmlFor="territory-enquiry" className={styles.label}>Your scope enquiry</label>
+                  <textarea id="territory-enquiry" readOnly value={enquiryText} rows={9} className={styles.enquiryText} />
+                  <button type="button" onClick={() => void copyEnquiry()} className={styles.buttonOutline}>Copy enquiry</button>
+                  <p role="status" className={styles.note}>{copyStatus}</p>
+                </details>
               </div>
-            ) : null}
           </div>
         </div>
       )}

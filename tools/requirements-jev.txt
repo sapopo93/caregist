@@ -1,0 +1,2 @@
+# Optional local advisory tooling; isolated from product dependencies.
+typesafe-sdk==0.7.2
