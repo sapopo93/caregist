@@ -35,7 +35,7 @@ export default function TermsPage() {
           <h2 className="mb-3 mt-8 text-xl font-bold text-bark">1. Products and scope</h2>
           <ul className="list-disc space-y-1 pl-6">
             <li><strong>Free Directory:</strong> provider search, profiles, source dates, and free correction or claim requests when verification intake is available.</li>
-            <li><strong>Territory Opportunity Brief:</strong> a one-off, buyer-specific research pack for an agreed England territory. It includes a shortlist of 25 to 50 organisations, a CRM-ready CSV or Excel dataset, a three to five page executive brief, and source links and observation dates for the public CQC information used.</li>
+            <li><strong>Territory Opportunity Brief:</strong> a one-off, buyer-specific research pack for an agreed England territory. It includes a shortlist of 25 to 50 organisations, a CRM-ready CSV dataset, a three to five page executive brief, and source links and observation dates for the public CQC information used.</li>
             <li><strong>Radar Regional:</strong> one contracted England region, 2 users, 10 saved views, and 90 days of event export.</li>
             <li><strong>Radar National:</strong> all England, 5 users, 50 saved views or lists, 365 days of event export, and onboarding.</li>
             <li><strong>Intelligence Feed Pilot:</strong> a sales-assisted, contracted API and webhook pilot with a stated region, signal, and delivery scope.</li>
