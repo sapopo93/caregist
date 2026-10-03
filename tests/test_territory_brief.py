@@ -447,3 +447,25 @@ def test_stale_ri_without_window_signal_is_retained_as_context(tmp_path):
     stale = next(row for row in brief.evidence_coverage if row["location_id"] == "1-001")
     assert stale["rating_freshness"] == "stale (over 12 months)"
     assert b"2024-04-26" in _pdf_stream_text(render_brief_pdf(brief))
+def test_provider_dedup_uses_best_location_before_limit(tmp_path):
+    locs = [_loc(locationId=f"dup-{i:02}", numberOfBeds=60) for i in range(12)]
+    locs += [_loc(locationId="other", providerId="other", numberOfBeds=1)]
+    brief = _generate(tmp_path, locs, shortlist_target=10)
+    assert [o.location_id for o in brief.shortlist] == ["dup-00", "other"]
+    assert len({o.provider_id for o in brief.shortlist}) == len(brief.shortlist)
+    reversed_brief = _generate(tmp_path, list(reversed(locs)), shortlist_target=10)
+    assert [o.location_id for o in reversed_brief.shortlist] == ["dup-00", "other"]
+
+
+def test_provider_dedup_prefers_score_then_event_date(tmp_path):
+    locs = [
+        _loc(locationId="older", registrationDate="2026-02-01", numberOfBeds=20),
+        _loc(locationId="newer", registrationDate="2026-02-10", numberOfBeds=20),
+        _loc(locationId="small", registrationDate="2026-02-10", numberOfBeds=1),
+    ]
+    assert [o.location_id for o in _generate(tmp_path, locs).shortlist] == ["newer"]
+
+
+def test_missing_provider_id_is_not_a_provider(tmp_path):
+    brief = _generate(tmp_path, [_loc(providerId=""), _loc(locationId="known")])
+    assert [o.location_id for o in brief.shortlist] == ["known"]

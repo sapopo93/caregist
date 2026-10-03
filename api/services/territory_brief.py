@@ -863,7 +863,17 @@ def generate_territory_opportunity_brief(
             o.location_id,
         )
     )
-    shortlist_rows = candidates[: validated.shortlist_target]
+    # The first location in the total ranking represents its provider: highest
+    # score, then newest event, then name and lexicographically smallest ID.
+    # Deduplicate before slicing so duplicates cannot consume shortlist slots.
+    seen_providers: set[str] = set()
+    unique_candidates: list[RankedOrganisation] = []
+    for candidate in candidates:
+        if not candidate.provider_id or candidate.provider_id in seen_providers:
+            continue
+        seen_providers.add(candidate.provider_id)
+        unique_candidates.append(candidate)
+    shortlist_rows = unique_candidates[: validated.shortlist_target]
     shortlist = tuple(
         RankedOrganisation(**{**org.__dict__, "rank": i})
         for i, org in enumerate(shortlist_rows, start=1)
@@ -920,7 +930,9 @@ def generate_territory_opportunity_brief(
         "1.05 within 180) + rating-direction adjustment (downgrade +16, upgrade +9) + a bed-count "
         "size factor + a provider-cluster bonus where the same provider has multiple locations "
         "moving. Scores are capped at 100.",
-        "Ties break by most recent event date, then organisation name, then CQC location id, so "
+        "One location represents each provider: highest score, then most recent event date, "
+        "then organisation name, then lexicographically smallest CQC location id. "
+        "Deduplication happens before the shortlist limit. Ties break by those same keys, so "
         "the same source data always yields the same ranking.",
     )
 
@@ -1042,7 +1054,7 @@ def _executive_summary(
         for o in shortlist[:3]
     ]
     headline = (
-        f"{considered} organisation(s) in {scope.name} show a supported opportunity signal in the "
+        f"{considered} location(s) in {scope.name} show a supported opportunity signal in the "
         f"{scope.window_days}-day window ending {window_end.strftime('%d %b %Y')}; "
         f"{len(shortlist)} are shortlisted and ranked."
     )
