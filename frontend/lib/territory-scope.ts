@@ -16,6 +16,9 @@ import {
  */
 
 export const TERRITORY_BRIEF_PRICE_GBP = 745;
+// Founder-confirmed September two-product manifest: manual four-week pilot,
+// one-off payment, no automatic renewal or automated fulfilment promise.
+export const WEEKLY_DIGEST_PILOT_PRICE_GBP = 150;
 
 /** Regions a client can choose from. Matches the directory's region facet. */
 export const TERRITORY_REGION_OPTIONS = DEFAULT_REGION_OPTIONS;
