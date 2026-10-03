@@ -4,7 +4,7 @@ import { describe, it } from "node:test";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { PRICING_LADDER, PROVIDER_TIERS } from "./caregist-config.ts";
+import { PRICING_LADDER, PROVIDER_TIERS, WEEKLY_DIGEST_PILOT_PRICE_GBP, TERRITORY_BRIEF_PRICE_GBP } from "./caregist-config.ts";
 
 const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -145,4 +145,12 @@ describe("revenue path contracts", () => {
     assert.match(dashboard, /fetch\("\/api\/v1\/billing\/portal"/);
     assert.match(dashboard, /Manage billing or cancel/);
   });
+});
+
+
+it("keeps one-off code prices aligned to the authoritative September manifest", () => {
+  const manifest = JSON.parse(readFileSync(join(frontendRoot, "..", "deploy", "stripe-price-manifest.json"), "utf8"));
+  assert.equal(manifest.catalog_version, "2026-09-two-product");
+  assert.equal(TERRITORY_BRIEF_PRICE_GBP * 100, manifest.products["territory-opportunity-brief"].unit_amount);
+  assert.equal(WEEKLY_DIGEST_PILOT_PRICE_GBP * 100, manifest.retired_products["weekly-digest-pilot"].unit_amount);
 });

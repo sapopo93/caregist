@@ -1,5 +1,14 @@
 # CareGist Master Strategy
 
+> **Catalogue authority correction — founder reaffirmed 2 October 2026:**
+> `deploy/stripe-price-manifest.json`, catalogue `2026-09-two-product`, governs
+> current offers: Territory Opportunity Brief £745 one-off, and Weekly Digest
+> £150 for four weeks, sold and delivered manually with no automatic renewal.
+> The August Radar/Feed prices and catalogue lock below are historical and do
+> not authorize current sales. This later founder decision supersedes the
+> August catalogue precedence for product names, prices and sale channels.
+> All checkout and delivery gates remain closed; this is no release approval.
+
 **Status:** Authoritative product, market, promise, and launch strategy
 **Version:** `2026-08`
 **Effective date:** 9 August 2026

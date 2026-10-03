@@ -1,3 +1,5 @@
+import { TERRITORY_BRIEF_PRICE_GBP, WEEKLY_DIGEST_PILOT_PRICE_GBP } from "./territory-scope.ts";
+export { TERRITORY_BRIEF_PRICE_GBP, WEEKLY_DIGEST_PILOT_PRICE_GBP };
 import type { PricingTier } from "@/lib/types";
 
 // The public catalogue is intentionally small. Historical product keys live in
@@ -7,7 +9,7 @@ export const PRICING_LADDER: PricingTier[] = [
     tier: "Weekly Digest",
     forWho: "Watch one England region week by week: new CQC registrations, rating changes, and closures, each with the published record behind it.",
     color: "#10b981",
-    price: "£150",
+    price: `£${WEEKLY_DIGEST_PILOT_PRICE_GBP}`,
     priceNote: "One-off pilot · four weekly digests · no automatic renewal",
     includes: [
       "Four consecutive weekly digests covering one England region you choose",
@@ -22,7 +24,7 @@ export const PRICING_LADDER: PricingTier[] = [
     tier: "Territory Opportunity Brief",
     forWho: "Should your sales team prioritise Birmingham and Solihull, or put its next quarter elsewhere?",
     color: "#C8862A",
-    price: "£745",
+    price: `£${TERRITORY_BRIEF_PRICE_GBP}`,
     priceNote: "One-off · no subscription · check territory coverage",
     recommended: true,
     includes: [
@@ -104,7 +106,7 @@ export const PROVIDER_TIERS = [
 export type ProviderTierKey = (typeof PROVIDER_TIERS)[number]["tier"];
 
 export const PLAN_PRIMARY_CTA: Record<string, string> = {
-  "weekly-digest": "Enquire about the £150 pilot",
+  "weekly-digest": `Enquire about the £${WEEKLY_DIGEST_PILOT_PRICE_GBP} pilot`,
   "territory-opportunity-brief": "Check your territory",
   free: "See the two products",
   "free-directory": "Open the directory",
@@ -120,7 +122,7 @@ export const CQC_INDEPENDENCE_LINE =
   "CareGist is independent and is not affiliated with or endorsed by the Care Quality Commission.";
 
 export const PLAN_NEXT_STEP: Record<string, string> = {
-  free: "Choose the £150 one-off Weekly Digest pilot or the £745 one-off Territory Opportunity Brief. No automatic renewal.",
+  free: `Choose the £${WEEKLY_DIGEST_PILOT_PRICE_GBP} one-off Weekly Digest pilot or the £${TERRITORY_BRIEF_PRICE_GBP} one-off Territory Opportunity Brief. No automatic renewal.`,
   "radar-regional": "This product is stopped and unavailable for purchase.",
   "radar-national": "This product is stopped and unavailable for purchase.",
   "intelligence-feed": "This product is stopped and unavailable for purchase.",
