@@ -383,6 +383,8 @@ _BASE_WEIGHT = {
 
 def _recency_multiplier(event_date: date, as_of: date) -> float:
     age = (as_of - event_date).days
+    if age < 0:
+        return 1.0  # A future source date cannot establish recency.
     if age <= 30:
         return 1.5
     if age <= 90:
@@ -802,7 +804,7 @@ def generate_territory_opportunity_brief(
         )
         has_history = bool(_rating_sequence(row))
         score, breakdown = _score(
-            events, beds=beds, provider_cluster=cluster, as_of=as_of,
+            events, beds=beds, provider_cluster=cluster, as_of=generated_on,
             re_registration=bool(any(e.event_type == "new_registration" for e in events) and (has_history or current_rating)),
         )
         most_recent = max((e.effective_date for e in events), default=None)
@@ -926,6 +928,7 @@ def generate_territory_opportunity_brief(
         "Supported events: new CQC registration in-window (excluding dormant locations); overall "
         "rating change in-window (derived from ordered historic/current ratings); new inspection "
         "report in-window where no change can be derived.",
+        "Score recency is measured against generation, not the source window. "
         "Score = base weight per event x recency multiplier (1.5 within 30 days, 1.2 within 90, "
         "1.05 within 180) + rating-direction adjustment (downgrade +16, upgrade +9) + a bed-count "
         "size factor + a provider-cluster bonus where the same provider has multiple locations "

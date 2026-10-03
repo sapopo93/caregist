@@ -27,7 +27,7 @@ message; dated movements are only partial evidence where coverage is incomplete.
 ## Freshness and coverage
 
 The former Brief reason used the newest source date as its recency clock, which
-could make an old snapshot appear fresh. Reasons now use the generation date.
+could make an old snapshot appear fresh. Reasons and recency score multipliers now use the generation date.
 RI records remain visible in an evidence appendix even when no in-window event
 qualifies them for ranking. Each shows its published date or explicit absence,
 and freshness against the generation date (calendar 12 months).

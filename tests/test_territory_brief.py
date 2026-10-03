@@ -403,6 +403,7 @@ def test_old_snapshot_does_not_make_stale_ri_fresh(tmp_path):
     assert row["rating_publication_date"] == "2024-04-26"
     assert row["rating_freshness"] == "stale (over 12 months)"
     assert "fresh regulatory" not in str(brief.to_json())
+    assert brief.shortlist[0].score_breakdown["rating_published@2024-04-26"] == 14.0
     assert b"2024-04-26" in _pdf_stream_text(render_brief_pdf(brief))
     assert "stale (over 12 months)" in brief_to_csv(brief)
 
