@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 
 const deliverables = [
   "A buyer-specific shortlist of 25 to 50 care organisations in an agreed England territory.",
-  "A CRM-ready CSV or Excel dataset covering the agreed shortlist and the fields available from the checked public sources.",
+  "A CRM-ready CSV dataset covering the agreed shortlist and the fields available from the checked public sources.",
   "A three to five page executive brief explaining the agreed selection criteria and the factual reasons each organisation was included.",
   "Source links and observation dates for the public CQC information used in the brief.",
 ];
@@ -24,7 +24,7 @@ const boundaries = [
 const workRemoved = [
   ["Find the relevant organisations", "A buyer-specific 25 to 50 organisation shortlist for the agreed territory."],
   ["Decide why each one belongs", "A stated factual reason for each organisation against the agreed criteria."],
-  ["Prepare a usable working file", "A CRM-ready CSV or Excel dataset."],
+  ["Prepare a usable working file", "A CRM-ready CSV dataset."],
   ["Trace information back to source", "Public CQC source links and observation dates carried into the pack."],
   ["Brief the wider team", "A three to five page executive brief."],
 ];

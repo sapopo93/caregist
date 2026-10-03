@@ -84,7 +84,7 @@ export default function TerritoryScopePage() {
             <div className={styles.num}>01</div>
             <h3>Territory dataset</h3>
             <p>
-              An editable CSV and Excel workbook of qualifying care locations in the agreed
+              An editable CSV dataset of qualifying care locations in the agreed
               scope, with provider grouping and source fields.
             </p>
           </article>
