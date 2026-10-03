@@ -107,3 +107,23 @@ SELECT * FROM webhook_delivery_log WHERE status NOT IN (200, 201) AND created_at
 - The list scan fallback processes all ~55k locations (~56 pages). For a 2-month recovery window expect 8–10 minutes.
 - If `care_providers` data is severely stale (>2 weeks) and list scan finds nothing, run the full pipeline: `./run_enriched_pipeline.sh` then `python3 db/seed.py`
 - After any recovery run, propagate to the feed: `python3 tools/run_new_registration_feed_cycle.py`
+
+
+## Rating publication dates (engineering correction, 2 October 2026)
+
+Future `rating_changed` events retain the destination rating's explicit CQC
+publication/report date, labelled `rating_publication_date`, with the exact
+source field in `effective_date_source`. This dates publication, not an inferred
+transition time. No inspection date, historic date, `last_updated`, observation
+time or retrieval time may substitute for a missing destination report date.
+An event without that date remains undated. The Brief refuses a complete recent
+rating-change summary where date coverage is missing and surfaces the gap.
+
+Historical NULL ledger rows are unchanged. A backfill requires a separately
+reviewed migration, original source evidence for each event and founder approval
+before production. Date presence alone does not open any commercial gate.
+
+Registration source URL/hash/date gaps in supplied Brief snapshots are visible
+in evidence coverage; generated CQC reference links do not replace missing
+recorded metadata. Stale RI records retain their published dates and remain
+visible as context. They must not be labelled recent relative to an old snapshot.

@@ -180,6 +180,7 @@ class TerritoryBrief:
     methodology_notes: tuple[str, ...]
     data_caveats: tuple[str, ...]
     source_provenance: dict[str, Any]
+    evidence_coverage: tuple[dict[str, Any], ...] = ()
 
     def to_json(self) -> dict[str, Any]:
         return {
@@ -197,6 +198,7 @@ class TerritoryBrief:
             "methodology_notes": list(self.methodology_notes),
             "data_caveats": list(self.data_caveats),
             "source_provenance": self.source_provenance,
+            "evidence_coverage": list(self.evidence_coverage),
         }
 
 
@@ -381,6 +383,8 @@ _BASE_WEIGHT = {
 
 def _recency_multiplier(event_date: date, as_of: date) -> float:
     age = (as_of - event_date).days
+    if age < 0:
+        return 1.0  # A future source date cannot establish recency.
     if age <= 30:
         return 1.5
     if age <= 90:
@@ -479,6 +483,10 @@ def _size_emphasis(beds: int | None) -> str:
 
 def _recency_phrase(event_date: date, as_of: date) -> str:
     age = (as_of - event_date).days
+    if age > 365:
+        return f"on the source date (stale evidence, {age} days before generation)"
+    if age < 0:
+        return "on a source date after generation (recency unverified)"
     if age <= 21:
         return "in the last three weeks, so it is still standing up policies, training and systems"
     if age <= 60:
@@ -558,9 +566,8 @@ def _reason(
     if published and not changes:
         ev = published[0]
         parts.append(
-            f"CQC published a new inspection report on {ev.effective_date.strftime('%d %b %Y')} "
-            f"(current rating {ev.new_value}) - a fresh regulatory touchpoint and a natural "
-            f"reason to make contact."
+            f"CQC published an inspection report on {ev.effective_date.strftime('%d %b %Y')} "
+            f"(current rating {ev.new_value}). Verify its age and supporting evidence before contact."
         )
 
     if provider_cluster >= 2:
@@ -754,6 +761,14 @@ def generate_territory_opportunity_brief(
     # First pass: provider cluster counts within scope.
     scoped_rows = [row for row in location_rows if _in_scope(row, validated)]
     territory_locations = len(scoped_rows)
+    generated_on = purchase_context.generated_at.astimezone(timezone.utc).date()
+    coverage = _evidence_coverage(
+        scoped_rows, generated_on=generated_on, window_start=window_start, window_end=window_end
+    )
+    undated_ratings = sum(
+        1 for row in scoped_rows
+        if _current_rating_evidence(row)[0] and _current_rating_evidence(row)[1] is None
+    )
 
     provider_event_locations: Counter[str] = Counter()
     per_row_events: list[tuple[dict[str, Any], list[OrgEvent]]] = []
@@ -789,7 +804,7 @@ def generate_territory_opportunity_brief(
         )
         has_history = bool(_rating_sequence(row))
         score, breakdown = _score(
-            events, beds=beds, provider_cluster=cluster, as_of=as_of,
+            events, beds=beds, provider_cluster=cluster, as_of=generated_on,
             re_registration=bool(any(e.event_type == "new_registration" for e in events) and (has_history or current_rating)),
         )
         most_recent = max((e.effective_date for e in events), default=None)
@@ -802,7 +817,7 @@ def generate_territory_opportunity_brief(
             provider_cluster=cluster,
             current_rating=current_rating,
             has_rating_history=has_history,
-            as_of=as_of,
+            as_of=generated_on,
         )
         evidence = tuple(
             {
@@ -867,6 +882,15 @@ def generate_territory_opportunity_brief(
     )
 
     insights = _territory_insights(list(shortlist), all_event_rows=per_row_events, scope=validated)
+    insights["rating_date_coverage"] = {
+        "undated_locations": undated_ratings,
+        "recent_rating_changes_available": undated_ratings == 0,
+        "limitation": (
+            "Recent rating changes unavailable: undated rating evidence cannot measure recency. "
+            "Dated movements, if any, cover only records with published dates."
+            if undated_ratings else "Only CQC-dated rating movements are counted."
+        ),
+    }
     actions = _next_actions(insights, list(shortlist), validated)
 
     exec_summary = _executive_summary(
@@ -881,6 +905,11 @@ def generate_territory_opportunity_brief(
     )
 
     caveats = (
+        insights["rating_date_coverage"]["limitation"],
+        "Rating freshness is measured against the generation date, separately from the source "
+        "window. Stale RI records remain visible in evidence coverage, outside the shortlist "
+        "when they have no in-window signal. Missing metadata describes the supplied snapshot, "
+        "not a claim that CQC never published it.",
         f"This brief reflects the published CQC register edition dated {as_of.isoformat()} "
         f"(the newest date present in the source), not a live API lookup.",
         "The register carries the latest rating and its report date. Where no rating history is "
@@ -899,6 +928,7 @@ def generate_territory_opportunity_brief(
         "Supported events: new CQC registration in-window (excluding dormant locations); overall "
         "rating change in-window (derived from ordered historic/current ratings); new inspection "
         "report in-window where no change can be derived.",
+        "Score recency is measured against generation, not the source window. "
         "Score = base weight per event x recency multiplier (1.5 within 30 days, 1.2 within 90, "
         "1.05 within 180) + rating-direction adjustment (downgrade +16, upgrade +9) + a bed-count "
         "size factor + a provider-cluster bonus where the same provider has multiple locations "
@@ -935,7 +965,67 @@ def generate_territory_opportunity_brief(
         methodology_notes=methodology,
         data_caveats=caveats,
         source_provenance=provenance,
+        evidence_coverage=coverage,
     )
+
+
+def _current_rating_evidence(row):
+    current = row.get("currentRatings")
+    if not isinstance(current, dict):
+        return None, None
+    overall = current.get("overall")
+    if not isinstance(overall, dict):
+        return None, None
+    return overall.get("rating"), _parse_date(
+        current.get("reportDate") or overall.get("reportDate") or overall.get("date")
+    )
+
+
+def _evidence_coverage(rows, *, generated_on, window_start, window_end):
+    """Keep RI context and registration provenance gaps visible outside ranking.
+
+    Dates and metadata are copied from the snapshot, never inferred from the
+    snapshot's retrieval time. A constructed CQC link is a reference, not proof
+    that recorded source URL/hash metadata exists.
+    """
+    coverage = []
+    try:
+        cutoff = generated_on.replace(year=generated_on.year - 1)
+    except ValueError:  # 29 February: prior year has no leap day.
+        cutoff = generated_on.replace(year=generated_on.year - 1, day=28)
+    for row in rows:
+        rating, publication = _current_rating_evidence(row)
+        registration = _parse_date(row.get("registrationDate"))
+        is_ri = str(rating or "").strip().casefold() == "requires improvement"
+        in_window = registration is not None and window_start <= registration <= window_end
+        if not is_ri and not in_window:
+            continue
+        missing = []
+        if not row.get("source_url"):
+            missing.append("source URL")
+        if not row.get("source_snapshot_sha256"):
+            missing.append("source hash")
+        if not registration:
+            missing.append("registration date")
+        freshness = "unknown (no publication date)"
+        if publication:
+            freshness = "future publication date" if publication > generated_on else (
+                "within 12 months" if publication >= cutoff else "stale (over 12 months)"
+            )
+        coverage.append({
+            "location_id": str(row.get("locationId") or ""),
+            "provider_id": str(row.get("providerId") or ""),
+            "location_name": str(row.get("name") or ""),
+            "current_rating": rating,
+            "rating_publication_date": publication.isoformat() if publication else None,
+            "rating_freshness": freshness,
+            "registration_date": registration.isoformat() if registration else None,
+            "recorded_source_url": row.get("source_url"),
+            "recorded_source_hash": row.get("source_snapshot_sha256"),
+            "registration_metadata_gaps": missing,
+            "reference_url": CQC_PROFILE_URL.format(location_id=row.get("locationId") or ""),
+        })
+    return tuple(sorted(coverage, key=lambda item: (item["provider_id"], item["location_id"])))
 
 
 def _latest_source_date(rows: list[dict[str, Any]]) -> date | None:
@@ -1024,8 +1114,12 @@ def brief_to_csv(brief: TerritoryBrief) -> str:
             "reason",
             "evidence_events",
             "cqc_record_url",
+            "rating_evidence_date",
+            "rating_freshness",
+            "registration_metadata_gaps",
         ]
     )
+    coverage_by_location = {row["location_id"]: row for row in brief.evidence_coverage}
     for org in brief.shortlist:
         evidence_events = " | ".join(
             f"{e['event_type']} {e['effective_date']}"
@@ -1051,6 +1145,9 @@ def brief_to_csv(brief: TerritoryBrief) -> str:
                 org.reason,
                 evidence_events,
                 CQC_PROFILE_URL.format(location_id=org.location_id),
+                coverage_by_location.get(org.location_id, {}).get("rating_publication_date") or "",
+                coverage_by_location.get(org.location_id, {}).get("rating_freshness") or "not assessed",
+                "; ".join(coverage_by_location.get(org.location_id, {}).get("registration_metadata_gaps", [])),
             ]
         )
     return buf.getvalue()

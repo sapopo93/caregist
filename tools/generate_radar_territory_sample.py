@@ -163,7 +163,7 @@ def _rating_sequence(row: dict[str, Any]) -> list[tuple[date, str]]:
     current = row.get("currentRatings")
     current_overall = current.get("overall") if isinstance(current, dict) else None
     if isinstance(current_overall, dict):
-        report_date = _parse_date(current_overall.get("reportDate"))
+        report_date = _parse_date(current.get("reportDate") or current_overall.get("reportDate") or current_overall.get("date"))
         rating = str(current_overall.get("rating") or "").strip()
         if report_date is not None and rating:
             by_report_date[report_date] = rating

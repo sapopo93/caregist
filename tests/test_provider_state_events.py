@@ -456,3 +456,34 @@ def test_new_registration_does_not_emit_a_rating_event():
     events = build_provider_state_events(None, current, observed_at=OBSERVED_AT)
 
     assert [event.event_type for event in events] == ["new_registration"]
+
+
+@pytest.mark.parametrize("published", [None, "", "invalid"])
+def test_rating_change_never_fills_missing_publication_date(published):
+    event = build_provider_state_events(_rated("Good"), _rated(
+        "Outstanding", rating_report_date=published,
+        historic_rating_date="2026-09-01", source_published_at="2026-09-02",
+        last_inspection_date="2026-09-03", last_updated="2026-09-04",
+    ), observed_at=OBSERVED_AT)[0]
+    assert event.effective_date is None
+    assert event.effective_date_source is None
+
+
+def test_rating_change_carries_only_destination_publication_date():
+    event = build_provider_state_events(_rated("Good"), _rated(
+        "Outstanding", rating_report_date="2026-09-10",
+    ))[0]
+    assert event.effective_date == date(2026, 9, 10)
+    assert event.effective_date_source == "cqc.currentRatings report date"
+    assert event.metadata["effective_date_kind"] == "rating_publication_date"
+
+
+def test_extraction_to_event_keeps_cqc_publication_date_and_field():
+    current = clean_location({
+        "locationId": "LOC1", "name": "Test", "registrationStatus": "Registered",
+        "type": "Social Care Org", "providerId": "PROV1",
+        "currentRatings": {"overall": {"rating": "Outstanding", "reportDate": "2026-09-10"}},
+    })
+    event = build_provider_state_events(_rated("Good"), current)[0]
+    assert event.effective_date == date(2026, 9, 10)
+    assert event.effective_date_source == "cqc.currentRatings.overall.reportDate"
