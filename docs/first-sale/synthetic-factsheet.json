@@ -1,0 +1,17 @@
+{
+  "synthetic": true,
+  "provider_id": "SYNTHETIC-PROVIDER",
+  "provider_name": "Example Care Provider (invented)",
+  "location_id": "SYNTHETIC-LOCATION",
+  "location_name": "Example Registered Location (invented)",
+  "registration_status": "Synthetic illustration only",
+  "registration_start": "Not applicable - synthetic sample",
+  "registration_end": "Not applicable - synthetic sample",
+  "regulated_activities": "Personal care (invented sample value)",
+  "service_types": "Homecare (invented sample value)",
+  "published_rating": "No real rating - synthetic sample",
+  "source_urls": ["Synthetic sample: no official record retrieved"],
+  "retrieved_at": "2026-10-05T00:00:00Z",
+  "reviewed_by": "Synthetic demonstration; no real reviewer approval",
+  "limitations": "All identities and facts are invented. No customer, order, source verification, payment, delivery or acceptance is represented. Residential addresses are omitted."
+}
