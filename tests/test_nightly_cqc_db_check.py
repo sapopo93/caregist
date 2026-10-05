@@ -1082,7 +1082,7 @@ def test_medium4_the_mixed_format_comparison_can_no_longer_classify_an_id():
 
 
 def test_medium4_cached_classifications_are_re_derived_before_they_are_reused():
-    """The review's acceptance test, run against the committed cache.
+    """The review's acceptance test, run against a frozen September 16 source fixture.
 
     The cache labels 60 IDs ``registered_after_snapshot_publication`` under the
     string comparison. Re-derived against the snapshot's own publication date
@@ -1092,15 +1092,14 @@ def test_medium4_cached_classifications_are_re_derived_before_they_are_reused():
     ``db_inactive_matches_deregistration`` and 67
     ``confirmed_deregistered_still_active_in_db`` - reproduces exactly.
     """
-    if not (CACHE_DIR / "divergent-db-active.json").is_file():
-        pytest.skip("classification cache is not present in this checkout")
+    fixture_dir = Path(__file__).parent / "fixtures" / "reconciliation-classification"
     published = "16 September 2026"
     classes: dict[str, int] = {}
     for name, side, expected_entries in (
         ("divergent-db-active.json", "db_active_absent_from_source", 127),
         ("source-inactive-vs-db.json", "source_present_db_inactive", 61),
     ):
-        entries = json.loads((CACHE_DIR / name).read_text(encoding="utf-8"))["classes"]
+        entries = json.loads((fixture_dir / name).read_text(encoding="utf-8"))["classes"]
         assert len(entries) == expected_entries
         for entry in entries.values():
             recomputed = nightly._reclassify_cached_entry(

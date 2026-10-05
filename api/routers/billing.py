@@ -457,7 +457,38 @@ async def _persist_subscription_state(
     extra_seats: int = 0,
     cancel_at_period_end: bool = False,
     current_period_end: datetime | None = None,
-) -> None:
+) -> bool:
+    """Atomically synchronize billing stores, serialized per customer account."""
+    async with conn.transaction():
+        owner = await conn.fetchval("SELECT id FROM users WHERE id = $1 FOR UPDATE", user_id)
+        if owner is None:
+            raise RuntimeError("Subscription account does not exist")
+        existing_owner = await conn.fetchval(
+            "SELECT user_id FROM subscriptions WHERE stripe_subscription_id = $1",
+            subscription_id,
+        ) if subscription_id else None
+        if existing_owner is not None and int(existing_owner) != user_id:
+            raise RuntimeError("Subscription identity belongs to a different account")
+        return await _persist_subscription_state_locked(
+            conn, user_id, subscription_id, tier, status,
+            stripe_price_id=stripe_price_id, extra_seats=extra_seats,
+            cancel_at_period_end=cancel_at_period_end,
+            current_period_end=current_period_end,
+        )
+
+
+async def _persist_subscription_state_locked(
+    conn,
+    user_id: int,
+    subscription_id: str | None,
+    tier: str,
+    status: str,
+    *,
+    stripe_price_id: str | None = None,
+    extra_seats: int = 0,
+    cancel_at_period_end: bool = False,
+    current_period_end: datetime | None = None,
+) -> bool:
     entitlements = get_subscription_entitlements(tier, extra_seats)
     rate_limit = get_tier_config(tier)["rate"]
     if status in ENTITLED_SUBSCRIPTION_STATUSES:
@@ -476,7 +507,7 @@ async def _persist_subscription_state(
             user_id,
             subscription_id,
         )
-    await conn.execute(
+    subscription_write = await conn.execute(
         """
         INSERT INTO subscriptions (
             user_id, stripe_subscription_id, stripe_price_id, tier, status,
@@ -494,6 +525,7 @@ async def _persist_subscription_state(
             seat_price_gbp = EXCLUDED.seat_price_gbp,
             cancel_at_period_end = EXCLUDED.cancel_at_period_end,
             current_period_end = EXCLUDED.current_period_end
+        WHERE subscriptions.user_id = EXCLUDED.user_id
         """,
         user_id,
         subscription_id,
@@ -507,6 +539,29 @@ async def _persist_subscription_state(
         cancel_at_period_end,
         current_period_end,
     )
+    if subscription_write == "INSERT 0 0":
+        raise RuntimeError("Subscription identity belongs to a different account")
+    # A canceled older subscription must not revoke the replacement plan.
+    # The caller holds the user row lock through all entitlement writes.
+    current = await conn.fetchrow(
+        """
+        SELECT stripe_subscription_id, tier, status, extra_seats,
+               current_period_end
+        FROM subscriptions
+        WHERE user_id = $1 AND status IN ('active', 'trialing')
+        ORDER BY updated_at DESC, id DESC LIMIT 1
+        """,
+        user_id,
+    )
+    applies_to_current = not current or current["stripe_subscription_id"] == subscription_id
+    if current and not applies_to_current:
+        subscription_id = current["stripe_subscription_id"]
+        tier = current["tier"]
+        status = current["status"]
+        extra_seats = int(current["extra_seats"] or 0)
+        current_period_end = current["current_period_end"]
+        entitlements = get_subscription_entitlements(tier, extra_seats)
+        rate_limit = get_tier_config(tier)["rate"]
     await conn.execute(
         "UPDATE api_keys SET tier = $1, rate_limit = $2 WHERE user_id = $3 AND is_active = true",
         tier, rate_limit, user_id,
@@ -557,6 +612,8 @@ async def _persist_subscription_state(
         user_id,
         max_users,
     )
+
+    return applies_to_current
 
 
 async def _require_radar_commerce_ready() -> None:
@@ -1979,7 +2036,7 @@ async def _handle_subscription_deleted(conn, subscription: dict) -> None:
         sub_id,
     )
     if sub_row:
-        await _persist_subscription_state(
+        cancellation_applied = await _persist_subscription_state(
             conn,
             sub_row["user_id"],
             sub_id,
@@ -1997,7 +2054,7 @@ async def _handle_subscription_deleted(conn, subscription: dict) -> None:
             conn=conn,
         )
         customer_email = sub_row.get("email")
-        if customer_email:
+        if customer_email and cancellation_applied is not False:
             safe_dashboard_url = html.escape(f"{settings.app_url}/dashboard", quote=True)
             await conn.execute(
                 """
@@ -2012,7 +2069,7 @@ async def _handle_subscription_deleted(conn, subscription: dict) -> None:
                 ),
                 f"radar-subscription-canceled:{sub_id}",
             )
-        logger.info("Subscription %s canceled, user downgraded to free", sub_id)
+        logger.info("Subscription %s canceled; replacement entitlement preserved=%s", sub_id, cancellation_applied is False)
 
     # Provider profile cancellation
     await conn.execute(

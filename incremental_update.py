@@ -642,8 +642,14 @@ def resolve_since(cur, explicit_since: str | None, *, now: datetime | None = Non
     return (reference_now - timedelta(days=DEFAULT_LOOKBACK_DAYS)).strftime("%Y-%m-%dT%H:%M:%S")
 
 
-def fetch_location_detail(base_url: str, api_key: str | None, location_id: str) -> dict[str, Any] | None:
-    """Fetch full detail for a single location."""
+def fetch_location_detail(
+    base_url: str, api_key: str | None, location_id: str, *, directory_member: bool = False,
+) -> dict[str, Any] | None:
+    """Fetch matching detail; boundedly retry directory/API publication races.
+
+    A 404 for an ID in the authoritative directory can be a propagation race.
+    It is never a deletion or permission to skip that manifest identity.
+    """
     url = f"{base_url}/locations/{location_id}"
     attempts: list[str] = []
     for attempt in range(1, DETAIL_MAX_RETRIES + 1):
@@ -651,12 +657,17 @@ def fetch_location_detail(base_url: str, api_key: str | None, location_id: str) 
             resp = requests.get(url, headers=api_headers(api_key), timeout=30)
             if resp.status_code == 200:
                 try:
-                    return resp.json()
+                    payload = resp.json()
+                    if not isinstance(payload, dict) or payload.get("locationId") != location_id:
+                        raise ChangesFetchError(f"Detail fetch identity mismatch for {location_id}")
+                    return payload
                 except ValueError as exc:
                     attempts.append(f"{attempt}:json:{type(exc).__name__}")
                     if attempt == DETAIL_MAX_RETRIES:
                         break
-            elif resp.status_code not in RETRYABLE_STATUS_CODES:
+            elif resp.status_code not in RETRYABLE_STATUS_CODES and not (
+                directory_member and resp.status_code == 404
+            ):
                 raise ChangesFetchError(
                     f"Detail fetch failed for {location_id}: status={resp.status_code}; "
                     f"attempts={','.join(attempts) or '1'}"
@@ -1879,7 +1890,7 @@ def _run_shard(args: argparse.Namespace, conn, cur, api_key: str | None) -> int:
                 raise ChangesFetchError("Shard checkpoint offset changed unexpectedly.")
             checkpoint_counts: Counter[str] = Counter()
             for location_id in checkpoint:
-                detail = fetch_location_detail(args.base_url, api_key, location_id)
+                detail = fetch_location_detail(args.base_url, api_key, location_id, directory_member=True)
                 if detail is None:
                     raise ChangesFetchError(f"Detail fetch failed for {location_id}")
                 # The immutable manifest is built from CQC's active-location

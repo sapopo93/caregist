@@ -1660,3 +1660,37 @@ def test_rating_publication_date_survives_trusted_ledger_insert():
     assert "INSERT INTO trusted_event_ledger" in sql
     assert params[4] == date(2026, 9, 10)
     assert params[6] == "cqc.currentRatings.reportDate"
+
+
+def test_directory_detail_publication_race_is_retried_without_skipping(monkeypatch):
+    import incremental_update as iu
+    responses = [
+        SimpleNamespace(status_code=404, headers={}),
+        SimpleNamespace(status_code=200, headers={}, json=lambda: {"locationId": "1-123456"}),
+    ]
+    delays = []
+    monkeypatch.setattr(iu.requests, "get", lambda *args, **kwargs: responses.pop(0))
+    monkeypatch.setattr(iu.time, "sleep", delays.append)
+    assert fetch_location_detail(iu.DEFAULT_BASE_URL, "synthetic", "1-123456", directory_member=True) == {"locationId": "1-123456"}
+    assert delays == [1]
+
+
+def test_missing_directory_detail_exhausts_bounded_attempts_and_still_refuses(monkeypatch):
+    import incremental_update as iu
+    attempts = []
+    def missing(*args, **kwargs):
+        attempts.append(1)
+        return SimpleNamespace(status_code=404, headers={})
+    monkeypatch.setattr(iu.requests, "get", missing)
+    monkeypatch.setattr(iu.time, "sleep", lambda _: None)
+    with pytest.raises(ChangesFetchError, match="exhausted retries.*status:404"):
+        fetch_location_detail(iu.DEFAULT_BASE_URL, "synthetic", "1-123456", directory_member=True)
+    assert len(attempts) == iu.DETAIL_MAX_RETRIES
+
+
+@pytest.mark.parametrize("payload", [{"locationId":"1-654321"}, [], None])
+def test_detail_identity_must_match_requested_manifest_location(monkeypatch, payload):
+    import incremental_update as iu
+    monkeypatch.setattr(iu.requests, "get", lambda *args, **kwargs: SimpleNamespace(status_code=200, headers={}, json=lambda: payload))
+    with pytest.raises(ChangesFetchError, match="identity mismatch"):
+        fetch_location_detail(iu.DEFAULT_BASE_URL, "synthetic", "1-123456", directory_member=True)

@@ -119,6 +119,7 @@ class _Transaction:
 
 def _transactional(conn: AsyncMock) -> AsyncMock:
     conn.transaction = lambda: _Transaction()
+    conn.fetchval = AsyncMock(side_effect=lambda query, *args: args[0] if "FROM users" in query else None)
     return conn
 
 
@@ -183,7 +184,7 @@ async def test_subscription_update_webhook_uses_current_retrieved_state(monkeypa
 @pytest.mark.asyncio
 async def test_checkout_completion_persists_authoritative_non_entitled_status(monkeypatch):
     """A checkout that authoritatively reconciles to past_due must not grant paid access."""
-    conn = AsyncMock()
+    conn = _transactional(AsyncMock())
     conn.fetchrow = AsyncMock(side_effect=_accept_contract(None))
     monkeypatch.setitem(billing.PRICE_TO_TIER, "price_pro", "pro")
     monkeypatch.setattr(
@@ -422,7 +423,7 @@ async def test_account_plan_finalization_rolls_back_as_one_unit_on_audit_failure
 @pytest.mark.asyncio
 async def test_inflight_account_checkout_survives_price_rotation(monkeypatch):
     """A paid session keeps its approved historical Price after deployment rotates config."""
-    conn = AsyncMock()
+    conn = _transactional(AsyncMock())
     conn.fetchrow = AsyncMock(side_effect=_accept_contract(None))
     monkeypatch.delitem(billing.PRICE_TO_TIER, "price_old_pro", raising=False)
     monkeypatch.setitem(billing.PRICE_TO_TIER, "price_new_pro", "pro")
@@ -463,7 +464,7 @@ async def test_inflight_account_checkout_survives_price_rotation(monkeypatch):
 @pytest.mark.asyncio
 async def test_inflight_account_checkout_with_seats_survives_price_rotation(monkeypatch):
     """Historical base and seat Prices remain verifiable for an already-paid session."""
-    conn = AsyncMock()
+    conn = _transactional(AsyncMock())
     conn.fetchrow = AsyncMock(side_effect=_accept_contract(None))
     monkeypatch.delitem(billing.PRICE_TO_TIER, "price_old_pro", raising=False)
     monkeypatch.delitem(billing.PRICE_TO_TIER, "price_old_seat", raising=False)
@@ -511,7 +512,7 @@ async def test_inflight_account_checkout_with_seats_survives_price_rotation(monk
 @pytest.mark.asyncio
 async def test_inflight_provider_checkout_survives_price_rotation(monkeypatch):
     """Provider Checkout metadata preserves the historical approved Price mapping."""
-    conn = AsyncMock()
+    conn = _transactional(AsyncMock())
     conn.execute = AsyncMock(return_value="UPDATE 1")
     monkeypatch.delitem(billing.PRICE_TO_PROFILE_TIER, "price_old_enhanced", raising=False)
     monkeypatch.setitem(billing.PRICE_TO_PROFILE_TIER, "price_new_enhanced", "enhanced")
@@ -565,7 +566,7 @@ async def test_pending_operation_reuses_same_fingerprint_and_rejects_a_different
         "stripe_object_url": "https://checkout.stripe.test/cs_123",
         "expires_at": None,
     }
-    conn = AsyncMock()
+    conn = _transactional(AsyncMock())
     conn.fetchrow = AsyncMock(side_effect=[None, pending, None, pending])
 
     recovered = await billing._reserve_billing_operation(
@@ -594,7 +595,7 @@ async def test_pending_operation_reuses_same_fingerprint_and_rejects_a_different
 async def test_checkout_reuses_reserved_session_without_creating_another(monkeypatch):
     monkeypatch.setattr(settings, "stripe_secret_key", "sk_test_checkout")
     monkeypatch.setattr(settings, "stripe_price_radar_regional", "price_radar_regional")
-    conn = AsyncMock()
+    conn = _transactional(AsyncMock())
     conn.fetchrow = AsyncMock(
         side_effect=[
             {"id": 42, "email": "alice@example.com", "stripe_customer_id": "cus_123"},
@@ -630,7 +631,7 @@ async def test_checkout_reuses_reserved_session_without_creating_another(monkeyp
 @pytest.mark.asyncio
 async def test_billing_portal_requires_owned_customer_before_calling_stripe(monkeypatch):
     monkeypatch.setattr(settings, "stripe_secret_key", "sk_test_checkout")
-    conn = AsyncMock()
+    conn = _transactional(AsyncMock())
     conn.fetchrow = AsyncMock(return_value={"stripe_customer_id": None})
 
     @asynccontextmanager

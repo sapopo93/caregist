@@ -8,6 +8,7 @@ enforcement on downgrade.
 from __future__ import annotations
 
 import json
+import hashlib
 
 import pytest
 
@@ -29,7 +30,7 @@ async def _make_user_with_keys(conn, email: str, n_keys: int, tier: str = "busin
             INSERT INTO api_keys (key_hash, key_prefix, name, email, tier, rate_limit, is_active, user_id)
             VALUES ($1, $2, $3, $4, $5, 60, true, $6)
             """,
-            f"{i:064d}", f"p{i}", f"key{i}", email, tier, user_id,
+            hashlib.sha256(f"{email}:{i}".encode()).hexdigest(), f"p{i}", f"key{i}", email, tier, user_id,
         )
     return user_id
 
@@ -348,3 +349,104 @@ async def test_subscription_sync_rolls_back_all_entitlement_stores(fresh_db):
         ) == "free"
     finally:
         await conn.close()
+
+
+async def test_old_cancellation_keeps_replacement_plan_and_sends_no_false_notice(fresh_db):
+    from api.routers.billing import _handle_subscription_deleted, _persist_subscription_state
+
+    conn = await asyncpg.connect(fresh_db)
+    try:
+        await apply_full_schema(conn)
+        user_id = await _make_user_with_keys(conn, "replacement@test.com", 2, tier="free")
+        organization_id = await _make_owner_workspace(conn, user_id)
+        await _persist_subscription_state(conn, user_id, "sub_old", "business", "active")
+        await _persist_subscription_state(conn, user_id, "sub_new", "business", "active")
+        await _handle_subscription_deleted(conn, {"id": "sub_old"})
+
+        assert await conn.fetchval(
+            "SELECT status FROM subscriptions WHERE stripe_subscription_id = 'sub_old'"
+        ) == "canceled"
+        current = await conn.fetchrow(
+            "SELECT stripe_subscription_id, plan_tier, status FROM organization_subscriptions "
+            "WHERE organization_id = $1", organization_id,
+        )
+        assert tuple(current.values()) == ("sub_new", "business", "active")
+        keys = await conn.fetch("SELECT tier, is_active FROM api_keys WHERE user_id = $1", user_id)
+        assert len(keys) == 2 and all(row["tier"] == "business" and row["is_active"] for row in keys)
+        assert await conn.fetchval(
+            "SELECT COUNT(*) FROM pending_emails WHERE idempotency_key = 'radar-subscription-canceled:sub_old'"
+        ) == 0
+    finally:
+        await conn.close()
+
+
+async def test_subscription_identity_cannot_retarget_another_customer(fresh_db):
+    from api.routers.billing import _persist_subscription_state
+
+    conn = await asyncpg.connect(fresh_db)
+    try:
+        await apply_full_schema(conn)
+        first = await _make_user_with_keys(conn, "first@test.com", 1, tier="free")
+        second = await _make_user_with_keys(conn, "second@test.com", 1, tier="free")
+        await _persist_subscription_state(conn, first, "sub_identity", "business", "active")
+        with pytest.raises(RuntimeError, match="different account"):
+            await _persist_subscription_state(conn, second, "sub_identity", "business", "active")
+        assert await conn.fetchval(
+            "SELECT user_id FROM subscriptions WHERE stripe_subscription_id = 'sub_identity'"
+        ) == first
+        assert await conn.fetchval("SELECT tier FROM api_keys WHERE user_id = $1", second) == "free"
+    finally:
+        await conn.close()
+
+
+async def test_subscription_write_is_atomic_without_callers_transaction(fresh_db):
+    from api.routers.billing import _persist_subscription_state
+
+    conn = await asyncpg.connect(fresh_db)
+    try:
+        await apply_full_schema(conn)
+        user_id = await _make_user_with_keys(conn, "atomic@test.com", 1, tier="free")
+        await _make_owner_workspace(conn, user_id)
+        await conn.execute("""
+            CREATE FUNCTION fail_entitlement_write() RETURNS trigger LANGUAGE plpgsql AS $$
+            BEGIN RAISE EXCEPTION 'synthetic entitlement failure'; END $$;
+            CREATE TRIGGER reject_test_write BEFORE UPDATE ON api_keys
+            FOR EACH ROW EXECUTE FUNCTION fail_entitlement_write();
+        """)
+        with pytest.raises(asyncpg.PostgresError, match="synthetic entitlement failure"):
+            await _persist_subscription_state(conn, user_id, "sub_atomic", "business", "active")
+        assert await conn.fetchval(
+            "SELECT COUNT(*) FROM subscriptions WHERE stripe_subscription_id = 'sub_atomic'"
+        ) == 0
+        assert await conn.fetchval("SELECT tier FROM api_keys WHERE user_id = $1", user_id) == "free"
+    finally:
+        await conn.close()
+
+
+async def test_concurrent_replacement_and_old_cancellation_preserve_new_plan(fresh_db):
+    import asyncio
+    from api.routers.billing import _persist_subscription_state
+
+    setup = await asyncpg.connect(fresh_db)
+    try:
+        await apply_full_schema(setup)
+        user_id = await _make_user_with_keys(setup, 'concurrent@test.invalid', 2, tier='free')
+        organization = await _make_owner_workspace(setup, user_id)
+        await _persist_subscription_state(setup, user_id, 'sub_concurrent_old', 'business', 'active')
+        newer = await asyncpg.connect(fresh_db)
+        canceled = await asyncpg.connect(fresh_db)
+        try:
+            await asyncio.gather(
+                _persist_subscription_state(newer, user_id, 'sub_concurrent_new', 'business', 'active'),
+                _persist_subscription_state(canceled, user_id, 'sub_concurrent_old', 'free', 'canceled'),
+            )
+        finally:
+            await newer.close()
+            await canceled.close()
+        current = await setup.fetchrow(
+            'SELECT stripe_subscription_id, plan_tier, status FROM organization_subscriptions WHERE organization_id=$1', organization,
+        )
+        assert tuple(current.values()) == ('sub_concurrent_new', 'business', 'active')
+        assert await setup.fetchval('SELECT count(*) FROM api_keys WHERE user_id=$1 AND tier=$2 AND is_active', user_id, 'business') >= 1
+    finally:
+        await setup.close()
