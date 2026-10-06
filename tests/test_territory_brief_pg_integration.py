@@ -21,14 +21,24 @@ import pytest
 TB_PG_URL = os.environ.get("TB_PG_URL")
 FIXTURE = Path(__file__).parent / "fixtures" / "territory_brief"
 
-pytestmark = pytest.mark.skipif(
+
+
+@pytest.mark.skipif(
     not TB_PG_URL or not (FIXTURE / "locations_detail.jsonl").exists(),
     reason="set TB_PG_URL to a migration-060 Postgres branch (and keep the fixture) to run",
 )
-
-
 @pytest.mark.asyncio
 async def test_full_fulfilment_against_real_postgres():
+    await run_fulfilment_scenario(TB_PG_URL)
+
+
+async def run_fulfilment_scenario(database_url: str) -> None:
+    """The whole paid fulfilment path, inside one transaction that is rolled back.
+
+    Also run by tests/integration/test_territory_brief_fulfilment_pg.py against a
+    throwaway database built from init.sql and every migration, so CI exercises
+    it without TB_PG_URL.
+    """
     import asyncpg
 
     from api.services import territory_brief_fulfilment as tbf
@@ -89,7 +99,7 @@ async def test_full_fulfilment_against_real_postgres():
 
     session = {"id": "cs_pg_itest", "metadata": {"type": tbf.METADATA_TYPE}}
 
-    conn = await asyncpg.connect(TB_PG_URL)
+    conn = await asyncpg.connect(database_url)
     tx = conn.transaction()
     await tx.start()
     try:
