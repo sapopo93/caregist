@@ -75,3 +75,11 @@ polls / 24 required**, success ratio 1.0, latency passed, `checkoutReady=false`
 and `deliveryEnabled=false`. The threshold and historical records are unchanged.
 No live data, Stripe object, commercial configuration or outbound message was
 modified by this remediation.
+
+## Customer/power-user rehearsal — 6 October 2026
+
+The public directory → selected provider → official source link → pricing → live territory enquiry works. A London/new-registration/supported-living selection returned eight matches, disclosed insufficient coverage and offered a custom-scope enquiry without taking payment. No enquiry was sent and no order invented. All eight selected local directory/territory browser scenarios passed, including stale responses, failure/retry, mobile and unverified payment-return rejection. The first local attempt used a development origin that Next rejected; localhost passed without weakening production security.
+
+Synthetic checkout/webhook/entitlement and real isolated PostgreSQL fulfilment/reconciliation scenarios passed. The payment-to-pack test uses the existing Territory Brief offer with simulated Stripe/storage/outbound providers, real SQL, rendered artifacts, consent, delivery outbox and replay. It is not genuine customer payment/delivery acceptance and does not certify an automated checkout for the separate proposed £49 registration factsheet. That narrow offer was rendered separately, with readable PDF/CSV and matching manifest hashes; its payment/delivery/acceptance remain explicitly unrecorded.
+
+The production read-only observation at 04:50 UTC still reported checkout readiness false, shadow coverage false and delivery disabled. The public £49 offer and its supported quote/terms/payment/checked-pack/delivery/acceptance procedure remain to be approved and established; a previous paid order is not required for the first sale.
