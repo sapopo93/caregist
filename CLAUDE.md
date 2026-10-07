@@ -168,10 +168,13 @@ readers only at the retired tier catalogue above.
   `api/config.py` and also requires `billing_checkout_enabled`. Fail-closed is
   deliberate: enabling the self-serve path needs solicitor sign-off on the Terms
   and immediate-supply consent, not an engineering decision.
-- **Real-schema test:** `tests/test_territory_brief_pg_integration.py` runs the
-  fulfilment path against a real Postgres, but it **skips unless `TB_PG_URL` is
-  set** and no workflow currently sets it, so it silently skips in CI. Treat the
-  paid path as not proven end to end until that is wired.
+- **Real-schema test:** `tests/integration/test_territory_brief_fulfilment_pg.py`
+  runs the fulfilment path (consent, tokens, delivery email, idempotent re-run,
+  append-only consent) against a throwaway Postgres built from `init.sql` and
+  every migration, in CI's migration-replay job. Stripe, Blob upload and email
+  sending are still stubbed, so this proves the schema and order logic, not a
+  real payment or delivery. `tests/test_territory_brief_pg_integration.py` runs
+  the same scenario against an existing database when `TB_PG_URL` is set.
 
 ### New Registration Feed
 
