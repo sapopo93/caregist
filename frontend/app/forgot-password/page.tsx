@@ -71,8 +71,8 @@ export default function ForgotPasswordPage() {
       <h1 className="text-3xl font-bold text-center mb-2">Reset your password</h1>
       <p className="text-dusk text-center mb-8">
         {step === 1
-          ? "Enter your email and we'll send you a reset code."
-          : "Check your email for a 6-digit code."}
+          ? "Enter your email. If it is registered and email delivery is available, reset instructions will be sent."
+          : "If your email is registered and email delivery is available, check your inbox for a 6-digit code."}
       </p>
 
       {error && (

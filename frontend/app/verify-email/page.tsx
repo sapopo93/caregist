@@ -11,6 +11,7 @@ function VerifyEmailScreen() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
   const email = searchParams.get("email") || "";
+  const delivery = searchParams.get("delivery");
   const requestedNext = searchParams.get("next");
 
   const [resendEmail, setResendEmail] = useState(email);
@@ -18,7 +19,11 @@ function VerifyEmailScreen() {
     token
       ? "Verifying your email..."
       : email
-        ? "We sent a verification link to your inbox."
+        ? delivery === "unavailable"
+          ? "Your account was created, but we could not send a verification email. Contact support to arrange verification before logging in."
+          : delivery === "sent"
+            ? "We sent a verification link to your inbox."
+            : "If email delivery is available, a verification link will be sent to your inbox."
         : "Enter your account email to request a new verification link.",
   );
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
