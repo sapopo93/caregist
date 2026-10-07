@@ -1,0 +1,311 @@
+{
+  "observed_at": "2026-10-01T16:26:27.211104+00:00",
+  "method": "Read-only production queries; first three SQL statements exactly as supplied by user",
+  "queries": {
+    "requested_rating_history": {
+      "sql": "SELECT min(effective_date), max(effective_date), count(*)\nFROM trusted_event_ledger WHERE event_type = 'rating_changed'",
+      "rows": [
+        {
+          "min": null,
+          "max": null,
+          "count": 34332
+        }
+      ]
+    },
+    "requested_london_homecare_90d": {
+      "sql": "SELECT count(*) AS events, count(DISTINCT t.provider_id) AS orgs\nFROM trusted_event_ledger t\nJOIN care_providers cp ON cp.id = t.location_id\nWHERE t.event_type = 'rating_changed'\n  AND t.effective_date >= current_date - 90\n  AND cp.region = 'London'\n  AND cp.service_types ILIKE ANY (ARRAY['%domiciliary%', '%homecare%'])",
+      "rows": [
+        {
+          "events": 0,
+          "orgs": 0
+        }
+      ]
+    },
+    "requested_london_ri_inspection_years": {
+      "sql": "SELECT left(last_inspection_date::text, 4) AS yr, count(*)\nFROM care_providers\nWHERE region = 'London' AND overall_rating ILIKE 'requires improvement'\nGROUP BY 1 ORDER BY 1",
+      "rows": [
+        {
+          "yr": "2017",
+          "count": 1
+        },
+        {
+          "yr": "2019",
+          "count": 5
+        },
+        {
+          "yr": "2020",
+          "count": 5
+        },
+        {
+          "yr": "2021",
+          "count": 34
+        },
+        {
+          "yr": "2022",
+          "count": 95
+        },
+        {
+          "yr": "2023",
+          "count": 101
+        },
+        {
+          "yr": null,
+          "count": 33
+        }
+      ]
+    },
+    "london_ri_cohort_sizes": {
+      "sql": "SELECT count(*) AS all_london_ri_locations,\n count(*) FILTER(WHERE service_types ILIKE ANY (ARRAY['%domiciliary%','%homecare%'])) AS london_homecare_ri_locations,\n count(*) FILTER(WHERE upper(status)='ACTIVE') AS active_london_ri_locations,\n count(*) FILTER(WHERE upper(status)='ACTIVE' AND service_types ILIKE ANY (ARRAY['%domiciliary%','%homecare%'])) AS active_london_homecare_ri_locations\nFROM care_providers WHERE region='London' AND overall_rating ILIKE 'requires improvement'",
+      "rows": [
+        {
+          "all_london_ri_locations": 274,
+          "london_homecare_ri_locations": 122,
+          "active_london_ri_locations": 258,
+          "active_london_homecare_ri_locations": 115
+        }
+      ]
+    },
+    "london_ri_rating_events_12m": {
+      "sql": "SELECT count(*) AS events,count(DISTINCT t.location_id) AS locations,count(DISTINCT t.provider_id) AS organisations\n FROM trusted_event_ledger t JOIN care_providers cp ON cp.id=t.location_id\n WHERE cp.region='London' AND cp.overall_rating ILIKE 'requires improvement'\n AND t.event_type='rating_changed' AND t.effective_date>=current_date-365",
+      "rows": [
+        {
+          "events": 0,
+          "locations": 0,
+          "organisations": 0
+        }
+      ]
+    },
+    "london_homecare_ri_rating_events_12m": {
+      "sql": "SELECT count(*) AS events,count(DISTINCT t.location_id) AS locations,count(DISTINCT t.provider_id) AS organisations\n FROM trusted_event_ledger t JOIN care_providers cp ON cp.id=t.location_id\n WHERE cp.region='London' AND cp.overall_rating ILIKE 'requires improvement'\n AND cp.service_types ILIKE ANY (ARRAY['%domiciliary%','%homecare%'])\n AND t.event_type='rating_changed' AND t.effective_date>=current_date-365",
+      "rows": [
+        {
+          "events": 0,
+          "locations": 0,
+          "organisations": 0
+        }
+      ]
+    },
+    "rating_dates_and_observation_depth": {
+      "sql": "SELECT count(*) AS events,\n count(effective_date) AS with_effective_date,count(effective_at) AS with_effective_at,\n min(observed_at) AS first_observed,max(observed_at) AS last_observed,\n count(*) FILTER(WHERE old_value::text IN ('\"Good\"','\"Outstanding\"','\"Requires improvement\"','\"Inadequate\"') AND new_value::text IN ('\"Good\"','\"Outstanding\"','\"Requires improvement\"','\"Inadequate\"')) AS grade_to_grade_events\n FROM trusted_event_ledger WHERE event_type='rating_changed'",
+      "rows": [
+        {
+          "events": 34332,
+          "with_effective_date": 0,
+          "with_effective_at": 0,
+          "first_observed": "2026-08-10 22:58:22.800372+00:00",
+          "last_observed": "2026-09-20 09:55:39.790523+00:00",
+          "grade_to_grade_events": 1
+        }
+      ]
+    },
+    "national_90d_rating_events": {
+      "sql": "SELECT count(*) AS events,count(DISTINCT t.provider_id) AS organisations\n FROM trusted_event_ledger t JOIN care_providers cp ON cp.id=t.location_id\n WHERE t.event_type='rating_changed' AND t.effective_date>=current_date-90\n AND cp.region IN ('London','South East','South West','East','East Midlands','West Midlands','North West','North East','Yorkshire & Humberside')",
+      "rows": [
+        {
+          "events": 0,
+          "organisations": 0
+        }
+      ]
+    },
+    "london_ri_publication_years": {
+      "sql": "SELECT extract(year FROM last_published_rating_date)::int AS yr,count(*) AS locations,\n count(*) FILTER(WHERE service_types ILIKE ANY (ARRAY['%domiciliary%','%homecare%'])) AS homecare_locations\n FROM care_providers WHERE region='London' AND overall_rating ILIKE 'requires improvement' GROUP BY 1 ORDER BY 1",
+      "rows": [
+        {
+          "yr": 2018,
+          "locations": 2,
+          "homecare_locations": 1
+        },
+        {
+          "yr": 2019,
+          "locations": 6,
+          "homecare_locations": 3
+        },
+        {
+          "yr": 2020,
+          "locations": 7,
+          "homecare_locations": 2
+        },
+        {
+          "yr": 2021,
+          "locations": 26,
+          "homecare_locations": 13
+        },
+        {
+          "yr": 2022,
+          "locations": 88,
+          "homecare_locations": 34
+        },
+        {
+          "yr": 2023,
+          "locations": 109,
+          "homecare_locations": 58
+        },
+        {
+          "yr": 2024,
+          "locations": 20,
+          "homecare_locations": 4
+        },
+        {
+          "yr": null,
+          "locations": 16,
+          "homecare_locations": 7
+        }
+      ]
+    },
+    "london_ri_publication_recency": {
+      "sql": "SELECT count(*) AS locations,\n count(last_published_rating_date) AS with_publication_date,\n count(*) FILTER(WHERE last_published_rating_date>=current_date-365) AS publication_within_12m,\n count(*) FILTER(WHERE last_published_rating_date>=current_date-90) AS publication_within_90d,\n count(*) FILTER(WHERE last_published_rating_date>last_inspection_date) AS publication_later_than_inspection,\n max(last_published_rating_date) AS newest_publication,max(last_inspection_date) AS newest_inspection\n FROM care_providers WHERE region='London' AND overall_rating ILIKE 'requires improvement'",
+      "rows": [
+        {
+          "locations": 274,
+          "with_publication_date": 258,
+          "publication_within_12m": 0,
+          "publication_within_90d": 0,
+          "publication_later_than_inspection": 220,
+          "newest_publication": "2024-05-10",
+          "newest_inspection": "2023-12-21"
+        }
+      ]
+    },
+    "national_social_care_registration_90d": {
+      "sql": "SELECT count(*) AS events,count(DISTINCT t.location_id) AS locations,count(DISTINCT t.provider_id) AS organisations\n FROM trusted_event_ledger t JOIN care_providers cp ON cp.id=t.location_id\n WHERE t.event_type='new_registration' AND t.effective_date>=current_date-90\n AND cp.type='Social Care Org' AND upper(cp.status)='ACTIVE'",
+      "rows": [
+        {
+          "events": 428,
+          "locations": 428,
+          "organisations": 302
+        }
+      ]
+    },
+    "london_homecare_registration_90d": {
+      "sql": "SELECT count(*) AS events,count(DISTINCT t.location_id) AS locations,count(DISTINCT t.provider_id) AS organisations\n FROM trusted_event_ledger t JOIN care_providers cp ON cp.id=t.location_id\n WHERE t.event_type='new_registration' AND t.effective_date>=current_date-90\n AND cp.region='London' AND cp.service_types ILIKE ANY (ARRAY['%domiciliary%','%homecare%'])\n AND upper(cp.status)='ACTIVE'",
+      "rows": [
+        {
+          "events": 36,
+          "locations": 36,
+          "organisations": 35
+        }
+      ]
+    },
+    "sample_115_dates": {
+      "sql": "SELECT count(*) AS matched_locations,count(DISTINCT provider_id) AS provider_organisations,count(last_published_rating_date) AS with_publication_date,count(*) FILTER(WHERE last_published_rating_date>last_inspection_date) AS publication_later_than_inspection,count(*) FILTER(WHERE last_inspection_date IS NULL AND last_published_rating_date IS NOT NULL) AS missing_inspection_but_publication_present,count(*) FILTER(WHERE last_published_rating_date>=current_date-365) AS published_within_12m,max(last_published_rating_date) AS newest_publication,max(last_inspection_date) AS newest_inspection FROM care_providers WHERE id=ANY(%s)",
+      "parameter_note": "sample IDs from local source-records.json",
+      "rows": [
+        {
+          "matched_locations": 115,
+          "provider_organisations": 113,
+          "with_publication_date": 115,
+          "publication_later_than_inspection": 106,
+          "missing_inspection_but_publication_present": 9,
+          "published_within_12m": 0,
+          "newest_publication": "2024-04-26",
+          "newest_inspection": "2023-11-28"
+        }
+      ]
+    },
+    "sample_115_publication_years": {
+      "sql": "SELECT extract(year FROM last_published_rating_date)::int AS yr,count(*) AS locations FROM care_providers WHERE id=ANY(%s) GROUP BY 1 ORDER BY 1",
+      "parameter_note": "sample IDs from local source-records.json",
+      "rows": [
+        {
+          "yr": 2018,
+          "locations": 1
+        },
+        {
+          "yr": 2019,
+          "locations": 3
+        },
+        {
+          "yr": 2020,
+          "locations": 2
+        },
+        {
+          "yr": 2021,
+          "locations": 13
+        },
+        {
+          "yr": 2022,
+          "locations": 34
+        },
+        {
+          "yr": 2023,
+          "locations": 58
+        },
+        {
+          "yr": 2024,
+          "locations": 4
+        }
+      ]
+    },
+    "sample_115_events_observed_vs_effective": {
+      "sql": "SELECT count(*) AS rating_event_rows,count(*) FILTER(WHERE t.effective_date>=current_date-365) AS recent_effective_rows,count(*) FILTER(WHERE t.observed_at>=now()-interval '365 days') AS recent_observed_rows,count(DISTINCT t.location_id) AS locations_with_observed_rating_event,count(*) FILTER(WHERE t.old_value::text IN ('\"Good\"','\"Outstanding\"','\"Requires improvement\"','\"Inadequate\"') AND t.new_value::text IN ('\"Good\"','\"Outstanding\"','\"Requires improvement\"','\"Inadequate\"')) AS grade_to_grade_rows FROM trusted_event_ledger t WHERE t.location_id=ANY(%s) AND t.event_type='rating_changed'",
+      "parameter_note": "sample IDs from local source-records.json",
+      "rows": [
+        {
+          "rating_event_rows": 112,
+          "recent_effective_rows": 0,
+          "recent_observed_rows": 112,
+          "locations_with_observed_rating_event": 112,
+          "grade_to_grade_rows": 0
+        }
+      ]
+    },
+    "london_homecare_registrations_provenance90d": {
+      "sql": "SELECT count(*) AS events,count(DISTINCT t.provider_id) AS organisations,count(DISTINCT t.provider_id) FILTER(WHERE t.source_url IS NOT NULL AND t.source_snapshot_sha256 IS NOT NULL AND t.effective_date IS NOT NULL) AS organisations_with_url_hash_date FROM trusted_event_ledger t JOIN care_providers cp ON cp.id=t.location_id WHERE t.event_type='new_registration' AND t.effective_date>=current_date-90 AND cp.region='London' AND cp.service_types ILIKE ANY(ARRAY['%domiciliary%','%homecare%']) AND upper(cp.status)='ACTIVE'",
+      "parameter_note": "no parameters",
+      "rows": [
+        {
+          "events": 36,
+          "organisations": 35,
+          "organisations_with_url_hash_date": 21
+        }
+      ]
+    },
+    "public_source_spotcheck_candidates": {
+      "sql": "SELECT id,last_inspection_date,last_published_rating_date,inspection_report_url FROM care_providers WHERE id=ANY(%s) ORDER BY last_published_rating_date DESC NULLS LAST LIMIT 3",
+      "parameter_note": "sample IDs from local source-records.json",
+      "rows": [
+        {
+          "id": "1-13135350550",
+          "last_inspection_date": "2023-11-28",
+          "last_published_rating_date": "2024-04-26",
+          "inspection_report_url": "/reports/1eaa3d22-a0f2-4cd6-9dd4-230a18ce76d4?20240426120000"
+        },
+        {
+          "id": "1-2851013974",
+          "last_inspection_date": "2023-11-17",
+          "last_published_rating_date": "2024-02-10",
+          "inspection_report_url": "/reports/2176106e-e602-43cc-a9b3-ab4df159bfdc?20240322130000"
+        },
+        {
+          "id": "1-3552850596",
+          "last_inspection_date": "2023-11-28",
+          "last_published_rating_date": "2024-02-10",
+          "inspection_report_url": "/reports/40a05b6a-e97f-4264-a645-c0a71dc38644?20240307130000"
+        }
+      ]
+    },
+    "grade_transition_candidates_all_history": {
+      "sql": "SELECT old_value::text AS old_rating,new_value::text AS new_rating,effective_date,observed_at,count(*) AS events FROM trusted_event_ledger WHERE event_type='rating_changed' AND old_value::text IN ('\"Good\"','\"Outstanding\"','\"Requires improvement\"','\"Inadequate\"') AND new_value::text IN ('\"Good\"','\"Outstanding\"','\"Requires improvement\"','\"Inadequate\"') GROUP BY 1,2,3,4",
+      "parameter_note": "no parameters",
+      "rows": [
+        {
+          "old_rating": "\"Good\"",
+          "new_rating": "\"Inadequate\"",
+          "effective_date": null,
+          "observed_at": "2026-08-11 02:05:42.902737+00:00",
+          "events": 1
+        }
+      ]
+    },
+    "national_social_care_registration_provenance90d": {
+      "sql": "SELECT count(DISTINCT t.provider_id) AS organisations,count(DISTINCT t.provider_id) FILTER(WHERE t.source_url IS NOT NULL AND t.source_snapshot_sha256 IS NOT NULL AND t.effective_date IS NOT NULL) AS organisations_with_url_hash_date FROM trusted_event_ledger t JOIN care_providers cp ON cp.id=t.location_id WHERE t.event_type='new_registration' AND t.effective_date>=current_date-90 AND cp.type='Social Care Org' AND upper(cp.status)='ACTIVE'",
+      "rows": [
+        {
+          "organisations": 302,
+          "organisations_with_url_hash_date": 147
+        }
+      ]
+    }
+  },
+  "transaction_read_only": "on"
+}

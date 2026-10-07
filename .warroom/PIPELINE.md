@@ -1,5 +1,8 @@
 # PIPELINE — CareGist collection → publication → sale → fulfilment
 
+> **2026-10-02 commit/deploy correction:** [COMMIT_DEPLOY_TRUTH.md](COMMIT_DEPLOY_TRUTH.md) is authoritative for release identity. The active checkout, local main, GitHub main, successful Production deployment and both public services match `1a62f84`. PR #75 is merged and Production Smoke 37004402261 PASSED. Local uncommitted work is preserved separately. Older release/smoke claims below are historical; no commercial gate approval is implied.
+
+
 ## 2026-10-01 archive review — current live status NOT VERIFIED
 
 The September 23 closure below is a historical checkpoint. The saved September 24

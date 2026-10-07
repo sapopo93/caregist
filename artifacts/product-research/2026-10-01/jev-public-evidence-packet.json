@@ -1,0 +1,23 @@
+{
+  "scope": "Public web information and generic product concepts only. No private operating metrics, code, buyer records, sales records or internal strategy. Research advice, not approval or revenue prediction.",
+  "date": "2026-10-01",
+  "public_sources": [
+    {"url":"https://www.caregist.co.uk/pricing","facts":"Public offers are GBP150 for a one-off four-week one-region Weekly Digest pilot and GBP745 one-off Territory Opportunity Brief. Free directory. Digest enquiry is sales-assisted. Public brief includes territory dataset, a shortlist and an evidence-based report."},
+    {"url":"https://www.cqc.org.uk/about-us/transparency/using-cqc-data","facts":"CQC supplies API and directory data under Open Government Licence. API daily, CSV normally weekly; source systems can cause delays. Includes England health and care locations; does not include email addresses. An archived location does not necessarily mean business closure."},
+    {"url":"https://www.laingbuisson.com/shop-category/data/","facts":"Advertised CareSearch GBP1655-3150/year, Care Homes Database Subscription GBP3999/year, Care Quality Benchmarks GBP599-5745/year. Advertised prices are not proof of another company's demand."},
+    {"url":"https://go.laingbuisson.com/care-quality-benchmarks","facts":"Care Quality Benchmarks Essential GBP599+VAT per year for 12 personalised monthly quality reports. CareSearch Premium with benchmarks GBP3399+VAT/year."},
+    {"url":"https://www.carehomedata.co.uk/pricing","facts":"Care-sector search and account targeting dashboard advertised GBP199/year. Customer numbers and feature quality not verified."},
+    {"url":"https://fulcrumcareconsulting.com/","facts":"Care consultancy offers registration support, mock inspections, CQC consultancy, governance, turnaround and interim management. Shows a relevant business workflow; no claim they have purchased CareGist."},
+    {"url":"https://www.cqc.org.uk/about-us/improving-how-we-work/0626-update","facts":"CQC assessment pilots June-October 2026 with evaluation November 2026. Assessment-framework-dependent tools need maintenance."}
+  ],
+  "generic_candidate_concepts": {
+    "regional_monitoring":"Personalised weekly care-market monitoring for consultancy firms, initially a defined paid pilot; ongoing service only if customers value recurring updates. Saved provider/client lists and verified changes can support a recurring review workflow.",
+    "territory_research":"Human-reviewed territory strategy report for care-sector sales teams; repeated planning exercises can justify new quarterly research, though a one-off report alone is not recurring revenue.",
+    "licensed_feed":"Maintained licensed data feed for software or CRM tools. Stable identity, provenance, change history, replay and integration support could create ongoing value beyond the free upstream API; requires paid integration validation.",
+    "provider_benchmarking":"Personalised monthly public quality-rating comparison reports for care groups; established competitor at GBP599/year limits price room without a meaningful extra benefit.",
+    "static_directory":"Sell generic lists or raw directory access; freely available upstream data and low-priced competitors limit differentiation and recurring use.",
+    "inspection_readiness":"Sell mock inspection and readiness support directly to care providers; needs qualified practitioners, internal provider evidence and ongoing regulatory-framework expertise.",
+    "paid_listings":"Sell sponsored provider directory listings; recurring demand depends on evidenced consumer traffic and enquiries, not record count."
+  },
+  "rules":"Do not invent customer demand, sales probability, revenue, operator capabilities or retention evidence. Rank only these generic jobs against the public evidence. No guarantee a product will sell. Future rankings are conditional hypotheses."
+}

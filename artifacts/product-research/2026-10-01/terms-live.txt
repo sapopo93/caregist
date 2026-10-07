@@ -1,0 +1,99 @@
+Business Terms of Service | CareGist
+Products
+Directory
+Products
+About
+Check your territory
+Log In
+Sign Up
+Business Terms of Service
+Version 2.1 · In force from 9 September 2026
+These terms govern use of CareGist by a business, public body, charity, or professional customer.
+H-Kay Limited
+provides the CareGist product, registered in England and Wales under company number
+10417923
+, with registered office at C/O Bilberry Accountants Ltd, Castle Court, 41 London Road, Reigate, England, RH2 9RJ ("H-Kay Limited", "we", "us"). If you accept these terms for an organisation, you confirm that you are authorised to bind it.
+The paid services are not offered for personal, family, or household use. A person seeking care should use the free directory and verify information directly with CQC and the provider.
+1. Products and scope
+Free Directory:
+provider search, profiles, source dates, and free correction or claim requests when verification intake is available.
+Territory Opportunity Brief:
+a one-off, buyer-specific research pack for an agreed England territory. It includes a shortlist of 25 to 50 organisations, a CRM-ready CSV or Excel dataset, a three to five page executive brief, and source links and observation dates for the public CQC information used.
+Radar Regional:
+one contracted England region, 2 users, 10 saved views, and 90 days of event export.
+Radar National:
+all England, 5 users, 50 saved views or lists, 365 days of event export, and onboarding.
+Intelligence Feed Pilot:
+a sales-assisted, contracted API and webhook pilot with a stated region, signal, and delivery scope.
+Embedded Enterprise:
+a separately contracted white-label or regulated-use service.
+Radar does not include API or webhook access. Additional seats are not sold separately at launch. A written order form, pilot statement, or enterprise agreement prevails over these terms for its expressly stated scope.
+For a Territory Opportunity Brief, the written scope confirmation identifies the territory, buyer criteria and factual selection criteria. It is the order form for that purchase and prevails where it differs from a general statement on this site.
+2. Source data and evidence
+CareGist reuses CQC public information under the Open Government Licence v3.0. CareGist is independent of and is not endorsed by CQC. Source systems may delay, correct, remove, or republish information. CareGist records when it checked and observed a source; those timestamps are not a statement that the underlying change occurred at that time.
+A location-level signal must not be treated as a provider-group conclusion. Customers must check the linked official evidence before making a regulated, clinical, safeguarding, employment, credit, or other high-impact decision.
+3. Explanations and ranking
+CareGist may attach a plain-language explanation to a verified event only after its factual claims pass the applicable evidence gate. If generation, extraction, or evaluation fails, the verified raw event may be delivered without a narrative. Source facts and CareGist interpretation are labelled separately.
+Initial ranking uses explainable factors such as recency, contracted territory, service type, explicit provider lists, and the organisation's recorded actions. CareGist does not sell predictive scores, vacancy claims, or guaranteed commercial opportunities.
+4. Accounts and organisations
+Users must be at least 18 and provide accurate account information.
+Each organisation controls its members, saved views, provider lists, actions, outcomes, subscriptions, and deliveries.
+Credentials must not be shared outside the named organisation users.
+Owners and admins are responsible for member access and territory configuration.
+Customers must promptly report suspected unauthorised access.
+5. Customer data and outcomes
+Customers may save provider lists, actions, and optional outcomes such as contacted, meeting booked, engagement won, or not relevant. The customer is responsible for having a lawful basis for personal data it submits and must not upload special-category data, patient data, care records, or other data that the product does not request.
+CareGist does not place customer data into report-narrative prompts. Any enterprise processing terms or customer-owned list integration must be agreed in the applicable contract or data-processing agreement.
+6. Fees, subscription and cancellation
+Current prices and included limits are shown on the pricing page or in the signed order form. No VAT is added. Stripe processes self-serve payments; H-Kay Limited does not store full card details.
+Radar subscriptions renew for the displayed billing period until cancelled. Cancellation takes effect at the end of the current paid period unless law or an agreed order form requires otherwise. Customers can use billing management or contact support. Feed and Embedded terms, renewal, service levels, and termination are set out in the signed agreement.
+The Territory Opportunity Brief costs
+£
+745
+. CareGist confirms the scope and the relevant source path before it sends a payment link or accepts payment. Payment is due in full before work begins. The buyer may cancel by email before work begins and receive a full refund. Once work has begun on the agreed bespoke brief, the fee is non-refundable except where CareGist fails to deliver the agreed scope or a remedy cannot lawfully be excluded. If a source issue after payment prevents delivery of the agreed scope, CareGist will offer a revised delivery date or a full refund if the parties do not agree an alternative scope.
+7. Availability and delivery targets
+Public statements labelled as a target are not a guaranteed service level. Any contracted service level applies only when written into the relevant Feed or Embedded agreement. Upstream CQC unavailability, delay, correction, and schema change can affect collection and delivery.
+The delivery target for a Territory Opportunity Brief is three working days after both the written scope confirmation and source-path check are complete. A working day is Monday to Friday, excluding public holidays in England. The target is not a guaranteed service level. If a material source issue affects the agreed scope, CareGist will notify the buyer and apply the remedy in section 6.
+CareGist may pause a collector, signal type, explanation, outbound delivery, or checkout to protect accuracy, security, or tenant isolation.
+8. Acceptable use
+Customers must not:
+use the service unlawfully or to send unlawful unsolicited communications;
+attempt to access another organisation's data or bypass plan scope;
+misrepresent CareGist output as official CQC advice or a guaranteed prediction;
+use a signal as the sole basis for a high-impact decision about a person;
+interfere with, reverse engineer, or overload the service.
+The
+Acceptable Use Policy
+also applies.
+9. Intellectual property and licence
+CQC data remains subject to its source rights and the Open Government Licence. CareGist owns or licenses its original software, event modelling, explanations, interface, and branding. During a paid term, the customer may use included outputs for its internal business purpose. White-label, redistribution, sublicensing, or embedding requires a written agreement.
+Exports must retain the supplied CQC/Open Government Licence attribution and CareGist source metadata.
+10. Disclaimers and liability
+CQC information and third-party links are provided as published and may be incomplete, delayed, or corrected. CareGist does not guarantee a rating change, closure, expansion, engagement, or other commercial result.
+To the fullest extent permitted by law, neither party is liable for indirect or consequential loss. CareGist's aggregate liability under self-serve Radar is limited to fees paid for that service in the preceding 12 months. For a Territory Opportunity Brief, it is limited to the fee paid for that brief. A signed enterprise agreement may set a different cap. Nothing excludes liability that cannot lawfully be limited, including fraud or death or personal injury caused by negligence.
+11. Suspension, termination and changes
+CareGist may suspend access where reasonably necessary for security, non-payment, unlawful use, tenant protection, or material breach. Where practical, notice and an opportunity to remedy will be given. Material terms changes will be notified to registered customers and will not retrospectively alter a completed purchase.
+12. Governing law and contact
+These terms are governed by the laws of England and Wales and the courts of England and Wales have exclusive jurisdiction, subject to any mandatory law. Questions may be sent to
+legal@caregist.co.uk
+or by post to H-Kay Limited at the registered office stated above.
+Contains public sector information licensed under the
+Open Government Licence v3.0
+.
+Data current as of
+30 September 2026 at 08:34
+UTC.
+CareGist is not an official CQC service.
+If you have concerns about care quality, contact CQC directly at
+cqc.org.uk/contact-us
+or call 03000 616161.
+Privacy Policy
+Terms of Service
+Acceptable Use
+Cookies
+Data Status
+Directory
+Find Care
+Pricing
+Why CareGist
+Contact

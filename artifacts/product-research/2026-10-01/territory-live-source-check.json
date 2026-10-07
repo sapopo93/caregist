@@ -1,0 +1,58 @@
+{
+  "release_sha": "b2f519aa8aaebe33197076bd8f2fed6f60a56595",
+  "method": "Read-only GitHub contents API at observed served SHA",
+  "files": {
+    "api/services/territory_brief_delivery.py": {
+      "sha256": "274833eb8ba2cc08a6b1bdb985d3e836479556858a103ac0e3b762a93f683621",
+      "source_url": "https://github.com/sapopo93/caregist/blob/b2f519aa8aaebe33197076bd8f2fed6f60a56595/api/services/territory_brief_delivery.py",
+      "matched_lines": [
+        {
+          "line": 18,
+          "text": "That file is ~734 MB and is not in the serverless bundle, so generation MUST be"
+        },
+        {
+          "line": 50,
+          "text": "_LOCATIONS_SNAPSHOT = _REPO_ROOT / \"_locations_detail.ndjson\""
+        },
+        {
+          "line": 51,
+          "text": "_PROVIDERS_SNAPSHOT = _REPO_ROOT / \"_providers_detail.ndjson\""
+        },
+        {
+          "line": 103,
+          "text": "def _snapshot_paths() -> tuple[Path, Path]:"
+        },
+        {
+          "line": 169,
+          "text": "        pdf_bytes=render_brief_pdf(brief),"
+        },
+        {
+          "line": 170,
+          "text": "        csv_text=brief_to_csv(brief),"
+        }
+      ]
+    },
+    "api/services/territory_brief.py": {
+      "sha256": "dd09016fded73d1443e2e5bcac92701f563893600d36646c4ba0167396461ae6",
+      "source_url": "https://github.com/sapopo93/caregist/blob/b2f519aa8aaebe33197076bd8f2fed6f60a56595/api/services/territory_brief.py",
+      "matched_lines": [
+        {
+          "line": 772,
+          "text": "    for row, events in per_row_events:"
+        },
+        {
+          "line": 821,
+          "text": "        candidates.append("
+        },
+        {
+          "line": 827,
+          "text": "                provider_id=provider_id,"
+        },
+        {
+          "line": 853,
+          "text": "    shortlist_rows = candidates[: validated.shortlist_target]"
+        }
+      ]
+    }
+  }
+}

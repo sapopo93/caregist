@@ -1,0 +1,59 @@
+{
+  "observed_at": "2026-10-01T15:09:42.521180+00:00",
+  "http_status": 200,
+  "status": "healthy",
+  "source": {
+    "source": "Care Quality Commission public directory",
+    "sourceUri": "https://www.cqc.org.uk/system/files/2026-09/23_september_2026_CQC_directory.csv",
+    "sourcePublishedAt": "2026-09-23",
+    "sourceRetrievedAt": "2026-09-30T08:34:28.061250+00:00",
+    "reconciledAt": "2026-09-30T12:28:47.559883+00:00",
+    "checksumSha256": "f693a7b7e9fdb8aca89a6aeb0a0c9bc84ee9c531bd8abb5d6352ce2a9934005e",
+    "sourceLocationCount": 57139,
+    "checkedLocationCount": 57139,
+    "successCount": 57139,
+    "failureCount": 0,
+    "coveragePercentage": 100.0,
+    "activeLocationCount": 57205,
+    "countsReconciled": true,
+    "freshnessStatus": "fresh",
+    "reason": null,
+    "ageHours": 30.6,
+    "slaHours": 192
+  },
+  "units": {
+    "locationRows": 59108,
+    "activeLocationRows": 57205,
+    "activeProviderOrganisations": 37131,
+    "groupedProviderOrganisations": 9994,
+    "namedGroupLabels": 9990,
+    "sourceActiveLocationRows": 57139,
+    "countsReconciled": true
+  },
+  "commercial_readiness": {
+    "checkoutReady": false,
+    "shadowCoveragePassed": false,
+    "ledgerLatencyPassed": true,
+    "deliveryEnabled": false,
+    "deliveryHealthy": true,
+    "explanationsRequired": false
+  },
+  "delivery": {
+    "enabled": false,
+    "healthy": true,
+    "pending": 0,
+    "stuck": 0,
+    "deadLetter": 0
+  },
+  "poll_coverage": {
+    "windowDays": 7,
+    "totalPolls": 15,
+    "completedPolls": 15,
+    "successRatio": 1.0,
+    "minimumPolls": 24,
+    "minimumSuccessRatio": 0.9
+  },
+  "release": {
+    "git_sha": "b2f519aa8aaebe33197076bd8f2fed6f60a56595"
+  }
+}

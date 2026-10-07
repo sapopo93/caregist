@@ -1,0 +1,757 @@
+{
+  "observed_at": "2026-10-01T14:52:08.246225+00:00",
+  "method": "Existing repository connection helper; session read-only; aggregates only",
+  "queries": {
+    "identity": {
+      "sql": "SELECT current_database() AS database_name, current_setting('transaction_read_only') AS read_only",
+      "rows": [
+        {
+          "database_name": "neondb",
+          "read_only": "on"
+        }
+      ]
+    },
+    "location_scale": {
+      "sql": "SELECT count(*) AS total_locations,\n      count(*) FILTER(WHERE upper(status)='ACTIVE') AS active_locations,\n      count(DISTINCT provider_id) FILTER(WHERE upper(status)='ACTIVE') AS active_provider_organisations,\n      count(*) FILTER(WHERE upper(status)='ACTIVE' AND service_types ILIKE '%homecare%') AS homecare_locations,\n      count(*) FILTER(WHERE upper(status)='ACTIVE' AND service_types ILIKE '%care home%') AS care_home_locations,\n      count(*) FILTER(WHERE upper(status)='ACTIVE' AND NULLIF(trim(email),'') IS NOT NULL) AS with_email,\n      count(*) FILTER(WHERE upper(status)='ACTIVE' AND NULLIF(trim(phone),'') IS NOT NULL) AS with_phone,\n      count(*) FILTER(WHERE upper(status)='ACTIVE' AND NULLIF(trim(website),'') IS NOT NULL) AS with_website\n      FROM care_providers",
+      "rows": [
+        {
+          "total_locations": 59108,
+          "active_locations": 57205,
+          "active_provider_organisations": 37132,
+          "homecare_locations": 0,
+          "care_home_locations": 14938,
+          "with_email": 0,
+          "with_phone": 52341,
+          "with_website": 29551
+        }
+      ]
+    },
+    "active_service_types": {
+      "sql": "SELECT type, count(*) AS locations FROM care_providers WHERE upper(status)='ACTIVE' GROUP BY 1 ORDER BY 2 DESC",
+      "rows": [
+        {
+          "type": "Social Care Org",
+          "locations": 30591
+        },
+        {
+          "type": "Primary Dental Care",
+          "locations": 12029
+        },
+        {
+          "type": "Primary Medical Services",
+          "locations": 6467
+        },
+        {
+          "type": "Independent Healthcare Org",
+          "locations": 5980
+        },
+        {
+          "type": "NHS Healthcare Organisation",
+          "locations": 1780
+        },
+        {
+          "type": "Independent Ambulance",
+          "locations": 358
+        }
+      ]
+    },
+    "active_regions": {
+      "sql": "SELECT region,count(*) AS locations FROM care_providers WHERE upper(status)='ACTIVE' GROUP BY 1 ORDER BY 2 DESC",
+      "rows": [
+        {
+          "region": "South East",
+          "locations": 10032
+        },
+        {
+          "region": "London",
+          "locations": 9477
+        },
+        {
+          "region": "North West",
+          "locations": 7305
+        },
+        {
+          "region": "East",
+          "locations": 6321
+        },
+        {
+          "region": "West Midlands",
+          "locations": 6075
+        },
+        {
+          "region": "South West",
+          "locations": 5711
+        },
+        {
+          "region": "Yorkshire & Humberside",
+          "locations": 5074
+        },
+        {
+          "region": "East Midlands",
+          "locations": 4904
+        },
+        {
+          "region": "North East",
+          "locations": 2292
+        },
+        {
+          "region": "",
+          "locations": 11
+        },
+        {
+          "region": "Wales",
+          "locations": 3
+        }
+      ]
+    },
+    "ratings": {
+      "sql": "SELECT overall_rating,rating_state,count(*) AS locations FROM care_providers WHERE upper(status)='ACTIVE' GROUP BY 1,2 ORDER BY 3 DESC",
+      "rows": [
+        {
+          "overall_rating": null,
+          "rating_state": "not_published",
+          "locations": 27670
+        },
+        {
+          "overall_rating": "Good",
+          "rating_state": "rated",
+          "locations": 20295
+        },
+        {
+          "overall_rating": null,
+          "rating_state": "unrated",
+          "locations": 5609
+        },
+        {
+          "overall_rating": "Requires improvement",
+          "rating_state": "rated",
+          "locations": 2302
+        },
+        {
+          "overall_rating": "Outstanding",
+          "rating_state": "rated",
+          "locations": 1269
+        },
+        {
+          "overall_rating": "Inadequate",
+          "rating_state": "rated",
+          "locations": 35
+        },
+        {
+          "overall_rating": null,
+          "rating_state": "unknown",
+          "locations": 25
+        }
+      ]
+    },
+    "ledger_age": {
+      "sql": "SELECT event_type,count(*) AS events,min(observed_at) AS first_observed,max(observed_at) AS last_observed,min(effective_date) AS earliest_effective,max(effective_date) AS latest_effective FROM trusted_event_ledger GROUP BY 1 ORDER BY 2 DESC",
+      "rows": [
+        {
+          "event_type": "new_registration",
+          "events": 59117,
+          "first_observed": "2026-03-28 01:04:17+00:00",
+          "last_observed": "2026-09-30 22:13:00.233793+00:00",
+          "earliest_effective": "2010-04-01",
+          "latest_effective": "2026-09-29"
+        },
+        {
+          "event_type": "ownership_changed",
+          "events": 55816,
+          "first_observed": "2026-08-10 22:58:22.800372+00:00",
+          "last_observed": "2026-08-15 07:43:41.238527+00:00",
+          "earliest_effective": null,
+          "latest_effective": null
+        },
+        {
+          "event_type": "rating_changed",
+          "events": 34332,
+          "first_observed": "2026-08-10 22:58:22.800372+00:00",
+          "last_observed": "2026-09-20 09:55:39.790523+00:00",
+          "earliest_effective": null,
+          "latest_effective": null
+        },
+        {
+          "event_type": "rating_status_changed",
+          "events": 25997,
+          "first_observed": "2026-09-20 12:29:11.440645+00:00",
+          "last_observed": "2026-09-30 12:00:46.135957+00:00",
+          "earliest_effective": null,
+          "latest_effective": null
+        },
+        {
+          "event_type": "status_changed",
+          "events": 2187,
+          "first_observed": "2026-08-10 22:58:27.485592+00:00",
+          "last_observed": "2026-09-30 22:17:51.990189+00:00",
+          "earliest_effective": null,
+          "latest_effective": null
+        },
+        {
+          "event_type": "group_movement",
+          "events": 6,
+          "first_observed": "2026-08-11 02:05:42.902737+00:00",
+          "last_observed": "2026-08-15 10:09:37.647584+00:00",
+          "earliest_effective": null,
+          "latest_effective": null
+        },
+        {
+          "event_type": "integration_connectivity",
+          "events": 4,
+          "first_observed": "2026-07-31 20:12:04.254761+00:00",
+          "last_observed": "2026-07-31 20:27:20.990113+00:00",
+          "earliest_effective": "2026-07-31",
+          "latest_effective": "2026-07-31"
+        }
+      ]
+    },
+    "events_30d": {
+      "sql": "SELECT event_type,count(*) AS observed_events,count(DISTINCT location_id) AS locations,\n      count(*) FILTER(WHERE effective_date >= current_date-30) AS recent_effective_events,\n      count(*) FILTER(WHERE NULLIF(source_url,'') IS NOT NULL) AS with_source_url,\n      count(*) FILTER(WHERE source_snapshot_sha256 IS NOT NULL) AS with_snapshot_hash\n      FROM trusted_event_ledger WHERE observed_at >= now()-interval '30 days' GROUP BY 1 ORDER BY 2 DESC",
+      "rows": [
+        {
+          "event_type": "rating_status_changed",
+          "observed_events": 25997,
+          "locations": 25995,
+          "recent_effective_events": 0,
+          "with_source_url": 25997,
+          "with_snapshot_hash": 19
+        },
+        {
+          "event_type": "status_changed",
+          "observed_events": 498,
+          "locations": 309,
+          "recent_effective_events": 0,
+          "with_source_url": 498,
+          "with_snapshot_hash": 190
+        },
+        {
+          "event_type": "rating_changed",
+          "observed_events": 401,
+          "locations": 401,
+          "recent_effective_events": 0,
+          "with_source_url": 401,
+          "with_snapshot_hash": 196
+        },
+        {
+          "event_type": "new_registration",
+          "observed_events": 354,
+          "locations": 350,
+          "recent_effective_events": 312,
+          "with_source_url": 348,
+          "with_snapshot_hash": 326
+        }
+      ]
+    },
+    "registrations_by_month": {
+      "sql": "SELECT date_trunc('month',registration_date)::date AS month,count(*) AS locations,count(DISTINCT provider_id) AS organisations FROM care_providers WHERE registration_date>='2026-04-01' GROUP BY 1 ORDER BY 1",
+      "rows": [
+        {
+          "month": "2026-04-01",
+          "locations": 428,
+          "organisations": 271
+        },
+        {
+          "month": "2026-05-01",
+          "locations": 236,
+          "organisations": 196
+        },
+        {
+          "month": "2026-06-01",
+          "locations": 379,
+          "organisations": 290
+        },
+        {
+          "month": "2026-07-01",
+          "locations": 385,
+          "organisations": 322
+        },
+        {
+          "month": "2026-08-01",
+          "locations": 272,
+          "organisations": 250
+        },
+        {
+          "month": "2026-09-01",
+          "locations": 312,
+          "organisations": 232
+        }
+      ]
+    },
+    "recent_registration_regions": {
+      "sql": "SELECT cp.region,count(*) AS events FROM trusted_event_ledger t\n      JOIN care_providers cp ON cp.id=coalesce(t.location_id,t.entity_id)\n      WHERE t.event_type='new_registration' AND t.observed_at>=now()-interval '30 days'\n      AND t.effective_date>=current_date-30 GROUP BY 1 ORDER BY 2 DESC",
+      "rows": [
+        {
+          "region": "North West",
+          "events": 66
+        },
+        {
+          "region": "South East",
+          "events": 47
+        },
+        {
+          "region": "London",
+          "events": 47
+        },
+        {
+          "region": "East Midlands",
+          "events": 38
+        },
+        {
+          "region": "West Midlands",
+          "events": 35
+        },
+        {
+          "region": "Yorkshire & Humberside",
+          "events": 26
+        },
+        {
+          "region": "East",
+          "events": 26
+        },
+        {
+          "region": "South West",
+          "events": 18
+        },
+        {
+          "region": "North East",
+          "events": 8
+        },
+        {
+          "region": "",
+          "events": 1
+        }
+      ]
+    },
+    "rating_transition_pairs_30d": {
+      "sql": "SELECT old_value::text AS old_rating,new_value::text AS new_rating,count(*) AS events FROM trusted_event_ledger WHERE event_type='rating_changed' AND observed_at>=now()-interval '30 days' GROUP BY 1,2 ORDER BY 3 DESC",
+      "rows": [
+        {
+          "old_rating": "\"Good\"",
+          "new_rating": "null",
+          "events": 254
+        },
+        {
+          "old_rating": "null",
+          "new_rating": "\"Good\"",
+          "events": 51
+        },
+        {
+          "old_rating": "\"Requires improvement\"",
+          "new_rating": "null",
+          "events": 25
+        },
+        {
+          "old_rating": "\"Inspected but not rated\"",
+          "new_rating": "null",
+          "events": 23
+        },
+        {
+          "old_rating": "\"No published rating\"",
+          "new_rating": "null",
+          "events": 21
+        },
+        {
+          "old_rating": "null",
+          "new_rating": "\"Requires improvement\"",
+          "events": 13
+        },
+        {
+          "old_rating": "\"Outstanding\"",
+          "new_rating": "null",
+          "events": 9
+        },
+        {
+          "old_rating": "null",
+          "new_rating": "\"Inspected but not rated\"",
+          "events": 2
+        },
+        {
+          "old_rating": "\"Inadequate\"",
+          "new_rating": "null",
+          "events": 1
+        },
+        {
+          "old_rating": "null",
+          "new_rating": "\"Outstanding\"",
+          "events": 1
+        },
+        {
+          "old_rating": "\"Good\"",
+          "new_rating": "\"Insufficient evidence to rate\"",
+          "events": 1
+        }
+      ]
+    },
+    "crm_pipeline": {
+      "sql": "SELECT stage,count(*) AS deals,sum(value_pence) AS value_pence FROM crm_deals GROUP BY 1 ORDER BY 2 DESC",
+      "rows": []
+    },
+    "crm_activities": {
+      "sql": "SELECT activity_type,count(*) AS activities,max(created_at) AS latest FROM crm_activities GROUP BY 1 ORDER BY 2 DESC",
+      "rows": [
+        {
+          "activity_type": "contact_created",
+          "activities": 49,
+          "latest": "2026-08-14 06:44:49.055789+00:00"
+        },
+        {
+          "activity_type": "call",
+          "activities": 9,
+          "latest": "2026-09-05 10:12:33.953362+00:00"
+        },
+        {
+          "activity_type": "note",
+          "activities": 3,
+          "latest": "2026-08-19 19:51:15.639052+00:00"
+        }
+      ]
+    },
+    "subscriptions": {
+      "sql": "SELECT tier,status,count(*) AS accounts FROM subscriptions GROUP BY 1,2",
+      "rows": [
+        {
+          "tier": "free",
+          "status": "active",
+          "accounts": 13
+        }
+      ]
+    },
+    "organisation_subscriptions": {
+      "sql": "SELECT plan_tier,status,count(*) AS accounts FROM organization_subscriptions GROUP BY 1,2",
+      "rows": [
+        {
+          "plan_tier": "free",
+          "status": "active",
+          "accounts": 6
+        }
+      ]
+    },
+    "stripe_processed_events": {
+      "sql": "SELECT count(*) AS events,max(processed_at) AS latest FROM stripe_processed_events",
+      "rows": [
+        {
+          "events": 0,
+          "latest": null
+        }
+      ]
+    },
+    "territory_orders": {
+      "sql": "SELECT status,count(*) AS orders,sum(amount_total) AS amount_minor_units,count(*) FILTER(WHERE paid_at IS NOT NULL) AS paid,count(*) FILTER(WHERE fulfilled_at IS NOT NULL) AS fulfilled FROM territory_brief_orders GROUP BY 1",
+      "rows": []
+    },
+    "event_actions": {
+      "sql": "SELECT action_type,count(*) AS actions FROM event_actions GROUP BY 1",
+      "rows": []
+    },
+    "event_outcomes": {
+      "sql": "SELECT outcome_type,count(*) AS outcomes FROM event_outcomes GROUP BY 1",
+      "rows": []
+    },
+    "delivery_outbox": {
+      "sql": "SELECT status,count(*) AS events FROM delivery_outbox GROUP BY 1",
+      "rows": []
+    },
+    "reconciliations": {
+      "sql": "SELECT started_at,completed_at,status,source_total_count,checked_count,counts_reconciled,source_uri FROM pipeline_runs WHERE run_type='reconciliation' ORDER BY started_at DESC LIMIT 4",
+      "rows": [
+        {
+          "started_at": "2026-09-30 08:34:28.177178+00:00",
+          "completed_at": "2026-09-30 12:28:47.559883+00:00",
+          "status": "completed",
+          "source_total_count": 57139,
+          "checked_count": 57139,
+          "counts_reconciled": true,
+          "source_uri": "https://www.cqc.org.uk/system/files/2026-09/23_september_2026_CQC_directory.csv"
+        },
+        {
+          "started_at": "2026-09-27 08:11:42.459967+00:00",
+          "completed_at": "2026-09-27 12:03:00.145219+00:00",
+          "status": "completed",
+          "source_total_count": 57139,
+          "checked_count": 57139,
+          "counts_reconciled": true,
+          "source_uri": "https://www.cqc.org.uk/system/files/2026-09/23_september_2026_CQC_directory.csv"
+        },
+        {
+          "started_at": "2026-09-24 11:39:15.245258+00:00",
+          "completed_at": "2026-09-24 15:52:17.946332+00:00",
+          "status": "completed",
+          "source_total_count": 57139,
+          "checked_count": 57139,
+          "counts_reconciled": true,
+          "source_uri": "https://www.cqc.org.uk/system/files/2026-09/23_september_2026_CQC_directory.csv"
+        },
+        {
+          "started_at": "2026-09-23 09:45:30.399158+00:00",
+          "completed_at": "2026-09-23 13:18:04.488718+00:00",
+          "status": "completed",
+          "source_total_count": 57127,
+          "checked_count": 57127,
+          "counts_reconciled": true,
+          "source_uri": "https://www.cqc.org.uk/system/files/2026-09/16_september_2026_CQC_directory.csv"
+        }
+      ]
+    },
+    "social_care_service_strings": {
+      "sql": "SELECT service_types,count(*) AS locations FROM care_providers WHERE upper(status)='ACTIVE' AND type='Social Care Org' GROUP BY 1 ORDER BY 2 DESC LIMIT 12",
+      "rows": [
+        {
+          "service_types": "Care home service without nursing",
+          "locations": 10057
+        },
+        {
+          "service_types": "Domiciliary care service",
+          "locations": 9888
+        },
+        {
+          "service_types": "Care home service with nursing",
+          "locations": 4337
+        },
+        {
+          "service_types": "Domiciliary care service|Supported living service",
+          "locations": 3680
+        },
+        {
+          "service_types": "Supported living service",
+          "locations": 982
+        },
+        {
+          "service_types": "Extra Care housing services",
+          "locations": 352
+        },
+        {
+          "service_types": "Domiciliary care service|Extra Care housing services",
+          "locations": 234
+        },
+        {
+          "service_types": "Care home service without nursing|Domiciliary care service",
+          "locations": 125
+        },
+        {
+          "service_types": "Domiciliary care service|Extra Care housing services|Supported living service",
+          "locations": 116
+        },
+        {
+          "service_types": "Shared Lives",
+          "locations": 102
+        },
+        {
+          "service_types": "Care home service with nursing|Rehabilitation services",
+          "locations": 78
+        },
+        {
+          "service_types": "Care home service without nursing|Rehabilitation services",
+          "locations": 66
+        }
+      ]
+    },
+    "social_care_registrations_by_month": {
+      "sql": "SELECT date_trunc('month',registration_date)::date AS month,count(*) AS locations,count(DISTINCT provider_id) AS organisations FROM care_providers WHERE type='Social Care Org' AND registration_date>='2026-04-01' GROUP BY 1 ORDER BY 1",
+      "rows": [
+        {
+          "month": "2026-04-01",
+          "locations": 236,
+          "organisations": 124
+        },
+        {
+          "month": "2026-05-01",
+          "locations": 129,
+          "organisations": 93
+        },
+        {
+          "month": "2026-06-01",
+          "locations": 216,
+          "organisations": 149
+        },
+        {
+          "month": "2026-07-01",
+          "locations": 185,
+          "organisations": 140
+        },
+        {
+          "month": "2026-08-01",
+          "locations": 108,
+          "organisations": 101
+        },
+        {
+          "month": "2026-09-01",
+          "locations": 156,
+          "organisations": 87
+        }
+      ]
+    },
+    "social_care_recent_registration_regions": {
+      "sql": "SELECT cp.region,count(DISTINCT cp.id) AS locations,count(DISTINCT cp.provider_id) AS organisations FROM trusted_event_ledger t JOIN care_providers cp ON cp.id=coalesce(t.location_id,t.entity_id) WHERE t.event_type='new_registration' AND t.observed_at>=now()-interval '30 days' AND t.effective_date>=current_date-30 AND cp.type='Social Care Org' GROUP BY 1 ORDER BY 2 DESC",
+      "rows": [
+        {
+          "region": "North West",
+          "locations": 45,
+          "organisations": 13
+        },
+        {
+          "region": "West Midlands",
+          "locations": 22,
+          "organisations": 7
+        },
+        {
+          "region": "South East",
+          "locations": 20,
+          "organisations": 17
+        },
+        {
+          "region": "London",
+          "locations": 18,
+          "organisations": 18
+        },
+        {
+          "region": "East Midlands",
+          "locations": 17,
+          "organisations": 10
+        },
+        {
+          "region": "Yorkshire & Humberside",
+          "locations": 14,
+          "organisations": 14
+        },
+        {
+          "region": "East",
+          "locations": 10,
+          "organisations": 9
+        },
+        {
+          "region": "South West",
+          "locations": 8,
+          "organisations": 7
+        },
+        {
+          "region": "North East",
+          "locations": 1,
+          "organisations": 1
+        },
+        {
+          "region": "",
+          "locations": 1,
+          "organisations": 1
+        }
+      ]
+    },
+    "social_care_scale": {
+      "sql": "SELECT count(*) AS active_locations,count(DISTINCT provider_id) AS active_provider_organisations,count(*) FILTER(WHERE service_types ILIKE '%Domiciliary%') AS domiciliary_locations,count(*) FILTER(WHERE overall_rating IN ('Requires improvement','Inadequate')) AS lower_rated_locations FROM care_providers WHERE upper(status)='ACTIVE' AND type='Social Care Org'",
+      "rows": [
+        {
+          "active_locations": 30591,
+          "active_provider_organisations": 18103,
+          "domiciliary_locations": 14430,
+          "lower_rated_locations": 1991
+        }
+      ]
+    },
+    "recent_registration_provenance": {
+      "sql": "SELECT count(*) AS events,count(DISTINCT location_id) AS distinct_locations,count(*) FILTER(WHERE source_url IS NOT NULL AND source_snapshot_sha256 IS NOT NULL AND effective_date IS NOT NULL) AS with_url_hash_date FROM trusted_event_ledger WHERE event_type='new_registration' AND observed_at>=now()-interval '30 days' AND effective_date>=current_date-30",
+      "rows": [
+        {
+          "events": 312,
+          "distinct_locations": 312,
+          "with_url_hash_date": 308
+        }
+      ]
+    },
+    "rating_grade_to_grade_30d": {
+      "sql": "SELECT count(*) AS events FROM trusted_event_ledger WHERE event_type='rating_changed' AND observed_at>=now()-interval '30 days' AND old_value::text IN ('\"Good\"','\"Outstanding\"','\"Requires improvement\"','\"Inadequate\"') AND new_value::text IN ('\"Good\"','\"Outstanding\"','\"Requires improvement\"','\"Inadequate\"')",
+      "rows": [
+        {
+          "events": 0
+        }
+      ]
+    },
+    "daily_registration_volume": {
+      "sql": "SELECT effective_date,count(DISTINCT location_id) AS locations FROM trusted_event_ledger WHERE event_type='new_registration' AND observed_at>=now()-interval '30 days' AND effective_date>=current_date-30 GROUP BY 1 ORDER BY 1",
+      "rows": [
+        {
+          "effective_date": "2026-09-01",
+          "locations": 77
+        },
+        {
+          "effective_date": "2026-09-02",
+          "locations": 13
+        },
+        {
+          "effective_date": "2026-09-03",
+          "locations": 18
+        },
+        {
+          "effective_date": "2026-09-04",
+          "locations": 10
+        },
+        {
+          "effective_date": "2026-09-07",
+          "locations": 10
+        },
+        {
+          "effective_date": "2026-09-08",
+          "locations": 12
+        },
+        {
+          "effective_date": "2026-09-09",
+          "locations": 10
+        },
+        {
+          "effective_date": "2026-09-10",
+          "locations": 11
+        },
+        {
+          "effective_date": "2026-09-11",
+          "locations": 5
+        },
+        {
+          "effective_date": "2026-09-14",
+          "locations": 12
+        },
+        {
+          "effective_date": "2026-09-15",
+          "locations": 26
+        },
+        {
+          "effective_date": "2026-09-16",
+          "locations": 13
+        },
+        {
+          "effective_date": "2026-09-17",
+          "locations": 13
+        },
+        {
+          "effective_date": "2026-09-18",
+          "locations": 9
+        },
+        {
+          "effective_date": "2026-09-21",
+          "locations": 13
+        },
+        {
+          "effective_date": "2026-09-22",
+          "locations": 8
+        },
+        {
+          "effective_date": "2026-09-23",
+          "locations": 14
+        },
+        {
+          "effective_date": "2026-09-24",
+          "locations": 11
+        },
+        {
+          "effective_date": "2026-09-25",
+          "locations": 9
+        },
+        {
+          "effective_date": "2026-09-28",
+          "locations": 6
+        },
+        {
+          "effective_date": "2026-09-29",
+          "locations": 12
+        }
+      ]
+    }
+  }
+}

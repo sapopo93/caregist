@@ -1,0 +1,174 @@
+{
+  "model": "jev-1.13.0",
+  "usage": {
+    "input_tokens": 3068,
+    "output_tokens": 446
+  },
+  "answers": {
+    "first_cash_2026": {
+      "type": "choice",
+      "choice": "regional_monitoring",
+      "confidence": 0.85,
+      "probabilities": {
+        "territory_research": 0.12,
+        "licensed_feed": 0.0,
+        "inspection_readiness": 0.0,
+        "regional_monitoring": 0.88,
+        "provider_benchmarking": 0.0,
+        "paid_listings": 0.0,
+        "static_directory": 0.0
+      }
+    },
+    "recurring_2027": {
+      "type": "choice",
+      "choice": "regional_monitoring",
+      "confidence": 0.68,
+      "probabilities": {
+        "territory_research": 0.0,
+        "provider_benchmarking": 0.0,
+        "inspection_readiness": 0.0,
+        "regional_monitoring": 0.73,
+        "licensed_feed": 0.27,
+        "paid_listings": 0.0,
+        "static_directory": 0.0
+      }
+    },
+    "durability_2028": {
+      "type": "choice",
+      "choice": "licensed_feed",
+      "confidence": 0.43,
+      "probabilities": {
+        "paid_listings": 0.0,
+        "provider_benchmarking": 0.0,
+        "inspection_readiness": 0.0,
+        "regional_monitoring": 0.48,
+        "licensed_feed": 0.52,
+        "territory_research": 0.0,
+        "static_directory": 0.0
+      }
+    },
+    "validated_recurring_demand": {
+      "type": "noul",
+      "noul": 0.03
+    },
+    "regional_monitoring_repeat_workflow": {
+      "type": "score",
+      "score": 1.97,
+      "confidence": 0.97,
+      "legend": {
+        "0": "No credible ongoing customer workflow beyond one-off purchase",
+        "1": "Recurring task exists but ongoing relevance is weak or readily substituted",
+        "2": "Clear recurring task with meaningful personalised or maintained value if executed",
+        "3": "Embedded frequent operational dependency with high ongoing maintained value if executed"
+      },
+      "probabilities": {
+        "0": 0.0,
+        "1": 0.03,
+        "2": 0.97,
+        "3": 0.0
+      }
+    },
+    "territory_research_repeat_workflow": {
+      "type": "score",
+      "score": 1.06,
+      "confidence": 0.67,
+      "legend": {
+        "0": "No credible ongoing customer workflow beyond one-off purchase",
+        "1": "Recurring task exists but ongoing relevance is weak or readily substituted",
+        "2": "Clear recurring task with meaningful personalised or maintained value if executed",
+        "3": "Embedded frequent operational dependency with high ongoing maintained value if executed"
+      },
+      "probabilities": {
+        "0": 0.14,
+        "1": 0.66,
+        "2": 0.2,
+        "3": 0.0
+      }
+    },
+    "licensed_feed_repeat_workflow": {
+      "type": "score",
+      "score": 2.16,
+      "confidence": 0.68,
+      "legend": {
+        "0": "No credible ongoing customer workflow beyond one-off purchase",
+        "1": "Recurring task exists but ongoing relevance is weak or readily substituted",
+        "2": "Clear recurring task with meaningful personalised or maintained value if executed",
+        "3": "Embedded frequent operational dependency with high ongoing maintained value if executed"
+      },
+      "probabilities": {
+        "0": 0.01,
+        "1": 0.07,
+        "2": 0.6799999999999999,
+        "3": 0.24
+      }
+    },
+    "provider_benchmarking_repeat_workflow": {
+      "type": "score",
+      "score": 1.47,
+      "confidence": 0.53,
+      "legend": {
+        "0": "No credible ongoing customer workflow beyond one-off purchase",
+        "1": "Recurring task exists but ongoing relevance is weak or readily substituted",
+        "2": "Clear recurring task with meaningful personalised or maintained value if executed",
+        "3": "Embedded frequent operational dependency with high ongoing maintained value if executed"
+      },
+      "probabilities": {
+        "0": 0.0,
+        "1": 0.53,
+        "2": 0.47,
+        "3": 0.0
+      }
+    },
+    "static_directory_repeat_workflow": {
+      "type": "score",
+      "score": 0.4,
+      "confidence": 0.6,
+      "legend": {
+        "0": "No credible ongoing customer workflow beyond one-off purchase",
+        "1": "Recurring task exists but ongoing relevance is weak or readily substituted",
+        "2": "Clear recurring task with meaningful personalised or maintained value if executed",
+        "3": "Embedded frequent operational dependency with high ongoing maintained value if executed"
+      },
+      "probabilities": {
+        "0": 0.61,
+        "1": 0.39,
+        "2": 0.0,
+        "3": 0.0
+      }
+    },
+    "inspection_readiness_repeat_workflow": {
+      "type": "score",
+      "score": 1.41,
+      "confidence": 0.36,
+      "legend": {
+        "0": "No credible ongoing customer workflow beyond one-off purchase",
+        "1": "Recurring task exists but ongoing relevance is weak or readily substituted",
+        "2": "Clear recurring task with meaningful personalised or maintained value if executed",
+        "3": "Embedded frequent operational dependency with high ongoing maintained value if executed"
+      },
+      "probabilities": {
+        "0": 0.12,
+        "1": 0.38,
+        "2": 0.48,
+        "3": 0.02
+      }
+    },
+    "paid_listings_repeat_workflow": {
+      "type": "score",
+      "score": 0.7,
+      "confidence": 0.62,
+      "legend": {
+        "0": "No credible ongoing customer workflow beyond one-off purchase",
+        "1": "Recurring task exists but ongoing relevance is weak or readily substituted",
+        "2": "Clear recurring task with meaningful personalised or maintained value if executed",
+        "3": "Embedded frequent operational dependency with high ongoing maintained value if executed"
+      },
+      "probabilities": {
+        "0": 0.34,
+        "1": 0.62,
+        "2": 0.04,
+        "3": 0.0
+      }
+    }
+  }
+}

@@ -142,13 +142,6 @@ node_modules
 *.csv.bak.*
 outreach/recon/
 
-.projects/cache
-.projects/vault
-.projects/state.test.json
-.projects/state.local.test.json
-.env
-.env.*
-!.env.example
 
 # Local Hermes agent state (environment recipes, session plumbing). Machine-local,
 # never a deliverable - and this repository is public.
@@ -172,3 +165,16 @@ artifacts/radar-verification/Fulcrum_Care.html
 /tools/jev_compare.py
 /tools/jev_hermes_test.py
 /artifacts/cqc-nightly/state.json
+
+# Private generated customer packs stay local.
+/output/pdf/
+# Shared release truth is intentionally versioned.
+!.warroom/COMMIT_DEPLOY_TRUTH.md
+
+.projects/cache
+.projects/vault
+.projects/state.test.json
+.projects/state.local.test.json
+.env
+.env.*
+!.env.example
