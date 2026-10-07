@@ -228,6 +228,16 @@ export default function TerritoryScopePicker() {
                   ? "This scope has fewer than 25 matching organisations. A review is needed to establish whether a smaller brief is suitable."
                   : "This count is a starting point for reviewing your scope. It does not verify a ranked shortlist or confirm delivery availability."}
             </p>
+            {result.coverage.stale ? (
+              <p
+                className={styles.resultDetail}
+                role="note"
+                data-testid="territory-stale-warning"
+              >
+                The latest registration or inspection in this scope is more than three years old.
+                Movement signals may be limited; confirm the source dates before proceeding.
+              </p>
+            ) : null}
             <dl className={styles.dl}>
               <div>
                 <dt>Providers in scope</dt>

@@ -120,7 +120,7 @@ export default function AdminPage() {
       {/* Tab navigation */}
       <div className="flex gap-1 border-b border-stone mb-6">
         {tabs.map((t) => (
-          <button key={t.key} onClick={() => setTab(t.key)}
+          <button key={t.key} onClick={() => { setData(null); setTab(t.key); }}
             className={`px-4 py-2 text-sm font-medium transition-colors -mb-px ${
               tab === t.key ? "border-b-2 border-clay text-clay" : "text-dusk hover:text-bark"
             }`}>

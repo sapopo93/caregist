@@ -35,8 +35,8 @@ WHERE ($1::text IS NULL OR provider_id = $1)
 
 UPDATE_ENQUIRY_STATUS = """
 UPDATE enquiries
-SET status = $2,
-    read_at = CASE WHEN $2 IN ('read', 'responded', 'converted') AND read_at IS NULL
+SET status = $2::text,
+    read_at = CASE WHEN $2::text IN ('read', 'responded', 'converted') AND read_at IS NULL
               THEN NOW() ELSE read_at END
 WHERE id = $1
 RETURNING id, status

@@ -29,6 +29,15 @@ describe("frontend auth proxy source", () => {
     assert.doesNotMatch(source, /runtime:\s*["']/);
   });
 
+  it("does not put the API-key-gated admin page behind the user-session redirect", () => {
+    const protectedRoutes = source.match(/const PROTECTED_ROUTES = \[([\s\S]*?)\]/)?.[1] ?? "";
+    const adminPage = fs.readFileSync(new URL("../app/admin/page.tsx", import.meta.url), "utf-8");
+
+    assert.doesNotMatch(protectedRoutes, /"\/admin"/);
+    assert.match(adminPage, /Master API Key/);
+    assert.match(adminPage, /X-API-Key/);
+  });
+
   it("pairs nonce CSP with dynamic rendering so framework scripts receive nonces", () => {
     assert.match(source, /script-src 'self' 'nonce-\$\{nonce\}' 'strict-dynamic'/);
     const scriptSrcAssignments = source.match(/`script-src[^`]+`/g) ?? [];
