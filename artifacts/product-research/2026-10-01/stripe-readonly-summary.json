@@ -1,0 +1,16 @@
+{
+  "account": {
+    "available": false,
+    "exit_code": 1
+  },
+  "subscriptions": {
+    "available": false,
+    "exit_code": 1
+  },
+  "charges": {
+    "available": false,
+    "exit_code": 1
+  },
+  "limitation": "Direct Stripe CLI default API key expired; live balances, charges and subscriptions not independently verified. Stripe Projects authenticated separately and returned service inventory.",
+  "observed_at": "2026-10-01T15:01:10.937770+00:00"
+}

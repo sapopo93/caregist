@@ -1,0 +1,18 @@
+{
+  "PRODUCT_RECOMMENDATION.md": "c6ca7e6cb45361b42e3d20ca05a909ffa86f76c8bb3e09885a7f06213caee613",
+  "TERRITORY_VERDICT_CHECK.md": "15731552ce1ffff0dc477477ccc4fdff6c6541c746cf598e9229c436a7873c70",
+  "data-status-live.txt": "88682a0c3763c38c5be0e7761c439486aab8100f39119e2abcdfccfe1cc3c764",
+  "database-aggregates.json": "9f706d8acd2517df2680d3f81372fca589544710c5541ac427df10f891bcf7ed",
+  "jev-evidence-packet.json": "5010c54d6c732d80f2bd14eb13028702380b8ce961e753e582f058ee6bfeb4e9",
+  "jev-public-evidence-packet.json": "22458cbc619abf5d44b25f700ff2dd668ca229d5aac17c0127a98dbe9dcbee15",
+  "jev-results.json": "163e494c6fae3a3f44444f43681072d3f6319e3b7e951cfc0b357bd941a8895a",
+  "live-health-probes.json": "c1a50ea84ca6f879c47e82fe558b2308dcbd7dbaa3762e95b71e1f567e728210",
+  "pricing-live.txt": "0ee1d96b6931c6e81d7b2131fcc30d97910f265bb049c4dc41a458d39c801ccf",
+  "pricing-territory-live.txt": "fd5a56e9cf15271da84813be54991c77ca6a680e2f09725c8554416675269136",
+  "status-update-150945.json": "62a1ff775bee1ce3c4e7ca31b4710c13ba8009137581351715bf937ec1f658d4",
+  "stripe-readonly-summary.json": "63331dbdacd330c9cecff36dbb0944926e576eb0f351ffe6acdbba2e89fdd5cc",
+  "terms-live.txt": "c6ce29adc463bbaf040c959940bc6c8420322983b912b6b6966a32d884bd1cdd",
+  "territory-live-source-check.json": "45b1cda6328a3462034193fc27c9b1bcc558e447bd7d545d7f1bc55a35ee74fe",
+  "territory-verdict-query-results.json": "46b13e00cd7bbcea94e3625158801075a45cdb1fc5c9e19f775440a6281e4d65",
+  "territory-workflow-checks.json": "7c13971edd7e888612d7c90c7114aab41782cef4138c542917518f059cda9bf2"
+}

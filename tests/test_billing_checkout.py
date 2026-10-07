@@ -60,6 +60,7 @@ class _Transaction:
 
 def _transactional(conn: AsyncMock) -> AsyncMock:
     conn.transaction = lambda: _Transaction()
+    conn.fetchval = AsyncMock(side_effect=lambda query, *args: args[0] if "FROM users" in query else None)
     return conn
 
 
@@ -449,6 +450,7 @@ async def test_existing_b2b_same_plan_and_seats_is_noop(monkeypatch):
                 "stripe_price_id": "price_radar_national",
                 "extra_seats": 0,
             },
+            None,
         ]
     )
 
@@ -512,6 +514,7 @@ async def test_existing_b2b_change_revokes_stale_paid_access_when_stripe_is_past
                 "stripe_price_id": "price_radar_regional",
                 "extra_seats": 0,
             },
+            None,
         ]
     )
 

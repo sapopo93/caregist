@@ -52,8 +52,9 @@ export default function ApiApplicationForm() {
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid md:grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-bark mb-1">Company</label>
+          <label htmlFor="api-application-company" className="block text-sm font-medium text-bark mb-1">Company</label>
           <input
+            id="api-application-company"
             type="text"
             required
             value={form.company_name}
@@ -62,8 +63,9 @@ export default function ApiApplicationForm() {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-bark mb-1">Your name</label>
+          <label htmlFor="api-application-contact-name" className="block text-sm font-medium text-bark mb-1">Your name</label>
           <input
+            id="api-application-contact-name"
             type="text"
             required
             value={form.contact_name}
@@ -75,8 +77,9 @@ export default function ApiApplicationForm() {
 
       <div className="grid md:grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-bark mb-1">Email</label>
+          <label htmlFor="api-application-contact-email" className="block text-sm font-medium text-bark mb-1">Email</label>
           <input
+            id="api-application-contact-email"
             type="email"
             required
             value={form.contact_email}
@@ -85,8 +88,9 @@ export default function ApiApplicationForm() {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-bark mb-1">Expected monthly requests</label>
+          <label htmlFor="api-application-expected-volume" className="block text-sm font-medium text-bark mb-1">Expected monthly requests</label>
           <select
+            id="api-application-expected-volume"
             value={form.expected_volume}
             onChange={(e) => update("expected_volume", e.target.value)}
             className="w-full px-4 py-2.5 rounded-lg border border-stone bg-white text-sm"
@@ -100,8 +104,9 @@ export default function ApiApplicationForm() {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-bark mb-1">Use case</label>
+        <label htmlFor="api-application-use-case" className="block text-sm font-medium text-bark mb-1">Use case</label>
         <textarea
+          id="api-application-use-case"
           required
           rows={4}
           placeholder="Describe how you plan to use CareGist data..."

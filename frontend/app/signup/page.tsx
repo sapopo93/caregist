@@ -90,7 +90,10 @@ function SignupForm() {
       }
       const safeNext = normalizePostVerificationPath(next) || "/login";
       localStorage.setItem("caregist_post_verify_path", safeNext);
-      router.push(`/verify-email?email=${encodeURIComponent(email)}&next=${encodeURIComponent(safeNext)}`);
+      const delivery = data.verification_email_sent === true ? "sent" : "unavailable";
+      router.push(
+        `/verify-email?email=${encodeURIComponent(email)}&delivery=${delivery}&next=${encodeURIComponent(safeNext)}`,
+      );
     } catch (err) {
       setError(describeFetchError(err));
     } finally {

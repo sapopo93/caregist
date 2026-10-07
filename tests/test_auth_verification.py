@@ -74,7 +74,7 @@ async def test_register_requires_email_verification_and_sends_email():
         yield conn
 
     with patch("api.routers.auth.get_connection", mock_get_connection), \
-         patch("api.routers.auth._send_verification_email", AsyncMock()) as send_email:
+         patch("api.routers.auth._send_verification_email", AsyncMock(return_value=True)) as send_email:
         response = await register(
             RegisterRequest(
                 email="alice@example.com",
@@ -85,8 +85,40 @@ async def test_register_requires_email_verification_and_sends_email():
 
     assert response["tier"] == "free"
     assert response["verification_required"] is True
+    assert response["verification_email_sent"] is True
     assert "verify your email" in response["message"].lower()
     send_email.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_register_reports_when_verification_email_was_not_sent():
+    conn = AsyncMock()
+    conn.fetchrow = AsyncMock(
+        side_effect=[
+            None,
+            {"id": 2, "email": "casey@example.com", "name": "Casey"},
+        ]
+    )
+    conn.execute = AsyncMock()
+    conn.transaction = lambda: _noop_transaction()
+
+    @asynccontextmanager
+    async def mock_get_connection():
+        yield conn
+
+    with patch("api.routers.auth.get_connection", mock_get_connection), \
+         patch("api.routers.auth._send_verification_email", AsyncMock(return_value=False)):
+        response = await register(
+            RegisterRequest(
+                email="casey@example.com",
+                name="Casey",
+                password="StrongExample123!",
+            )
+        )
+
+    assert response["verification_required"] is True
+    assert response["verification_email_sent"] is False
+    assert "could not send a verification email" in response["message"].lower()
 
 
 @pytest.mark.asyncio
@@ -131,7 +163,9 @@ async def test_forgot_password_unknown_email_is_silent_and_issues_no_token():
         response = await forgot_password(ForgotPasswordRequest(email="ghost@example.com"))
 
     # Same generic message as the registered path (no enumeration oracle, F-24).
-    assert "if that email is registered" in response["message"].lower()
+    assert response["message"] == (
+        "If that email is registered and email delivery is available, reset instructions will be sent."
+    )
     send_email.assert_not_awaited()
     assert not any(
         "INSERT INTO password_reset_tokens" in call.args[0]
@@ -532,7 +566,9 @@ async def test_forgot_password_generates_high_entropy_reset_token():
          patch("api.routers.auth._send_reset_email", AsyncMock()) as send_email:
         response = await forgot_password(ForgotPasswordRequest(email="alice@example.com"))
 
-    assert "reset" in response["message"].lower()
+    assert response["message"] == (
+        "If that email is registered and email delivery is available, reset instructions will be sent."
+    )
     # The raw token is emailed to the user; only its hash is persisted (F-23).
     insert_call = next(
         call.args for call in conn.execute.await_args_list

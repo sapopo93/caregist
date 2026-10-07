@@ -1,5 +1,10 @@
 # CLAUDE.md
 
+## Shared commit and deployment truth
+
+Read `.warroom/COMMIT_DEPLOY_TRUTH.md` before reporting commit or deployment status. Verify live GitHub and endpoint evidence when freshness matters; distinguish local uncommitted work from deployed code. Historical chat responses and old worktrees are not current release evidence.
+
+
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Project Rules

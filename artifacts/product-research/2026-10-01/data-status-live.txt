@@ -1,0 +1,57 @@
+CQC Data Status | CareGist
+Products
+Directory
+Products
+About
+Check your territory
+Log In
+Sign Up
+Data operations
+CQC data status
+This page reports the source watermark CareGist has actually reconciled. It does not describe live CQC data.
+Directory snapshot
+fresh
+Exact CQC source
+https://www.cqc.org.uk/system/files/2026-09/23_september_2026_CQC_directory.csv
+Published by CQC
+23 September 2026
+Retrieved by CareGist
+30 September 2026 at 08:34
+Reconciled by CareGist
+30 September 2026 at 12:28
+Coverage
+100%
+Source locations
+57,139
+Checked locations
+57,139
+Successful checks
+57,139
+Failed checks
+0
+Counts reconcile
+Yes
+Source checksum (SHA-256)
+f693a7b7e9fdb8aca89a6aeb0a0c9bc84ee9c531bd8abb5d6352ce2a9934005e
+CareGist data is current as of 30 September 2026 at 08:34 UTC. The last successful CQC retrieval checked 57,139 of 57,139 active locations, reconciled successfully, and completed without collection errors.
+Units are CQC registered locations, not unique provider organisations or ownership groups. CQC states its directory files can lag while it changes source systems.
+Contains public sector information licensed under the
+Open Government Licence v3.0
+.
+Data current as of
+30 September 2026 at 08:34
+UTC.
+CareGist is not an official CQC service.
+If you have concerns about care quality, contact CQC directly at
+cqc.org.uk/contact-us
+or call 03000 616161.
+Privacy Policy
+Terms of Service
+Acceptable Use
+Cookies
+Data Status
+Directory
+Find Care
+Pricing
+Why CareGist
+Contact

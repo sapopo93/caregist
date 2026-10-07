@@ -8,7 +8,6 @@ import { getServicePage } from "@/lib/service-page-config";
 const PROTECTED_ROUTES = [
   "/dashboard",
   "/provider-dashboard",
-  "/admin",
   "/crm",
 ];
 

@@ -2,9 +2,11 @@
 
 CareGist is a UK care-provider directory and intelligence service built from Care Quality Commission data. The **controlled catalogue-safety release is deployed**, but the paid Radar release is not yet approved. Checkout, source collectors, outbound delivery, and other commercial capabilities remain fail-closed until their named recovery, source-trust, legal, and pilot gates pass. A configured vendor credential is not approval to enable a capability.
 
-The live site at https://www.caregist.co.uk serves the Free Directory, provider detail pages, the final Radar/Feed positioning, source-status reporting, and the current legal and licence surfaces. It does not publicly sell legacy data packs, paid listings, extra seats, or predictive products. The live Stripe catalogue contains Radar Regional (£299/month), Radar National (£799/month), Intelligence Feed Pilot (£6,000/year), and quote-only Embedded Enterprise; the three priced products remain checkout-gated. Production contains 56,743 location rows, of which 56,742 are active.
+The live site at https://www.caregist.co.uk serves the Free Directory, provider detail pages, the final Radar/Feed positioning, source-status reporting, and the current legal and licence surfaces. It does not publicly sell legacy data packs, paid listings, extra seats, or predictive products. The live Stripe catalogue contains Radar Regional (£299/month), Radar National (£799/month), Intelligence Feed Pilot (£6,000/year), and quote-only Embedded Enterprise; the three priced products remain checkout-gated. Those historical counts are superseded by the 6 October public health observation: 59,190 location rows and 57,263 active rows. Counts are measured observations, not evidence of record accuracy or source freshness.
 
 Production Neon is on Launch with an evidenced seven-day history window. A point-in-time restore drill, an isolated migration rehearsal, and the production migration chain through `049_cqc_signal_intelligence.sql` passed with provider counts preserved. The recovery branch remains retained. Source collectors may now enter shadow mode, but paid checkout and outbound delivery remain blocked until the seven-day source-trust, legal, billing-lifecycle, and private-pilot gates pass.
+
+Current evidence boundaries are recorded in [the 6 October verification register](docs/verification-register-2026-10-06.md). Fresh read-only health checks report degraded source freshness and checkout/delivery disabled; earlier catalogue, counts, restore and deployment statements above are dated evidence, not a current completion certificate.
 
 ## Production architecture
 
@@ -67,11 +69,11 @@ Operational endpoints:
 - `/api/health/directory` — frontend directory mode and deployed Git SHA
 - `/data-status` — public source-watermark status
 
-The freshness watchdog runs once a night, at 04:10 UTC, after the last poll slot has finished: it records deduplicated state in Postgres and notifies `ops@caregist.co.uk`. Preview and production smoke tests compare the deployed SHA with the tested commit and verify `/data-status` and provider sitemaps.
+The freshness watchdog is configured for a nightly run at 04:10 UTC, after the last poll slot, with deduplicated Postgres state. Actual scheduled execution and delivered notification to `ops@caregist.co.uk` require separate current evidence; configuration alone does not prove delivery. Preview and production smoke tests compare the deployed SHA with the tested commit and verify `/data-status` and provider sitemaps.
 
 ## Recovery and release
 
-Neon-native PITR is the sole database recovery strategy. A seven-day restore window is a release prerequisite. The production resource was verified through the provider integration as Free on 9 August 2026 and therefore cannot meet this gate. Upgrade production to Launch, configure and evidence the full seven-day window, and create a recorded recovery point before any production migration. Monthly drills restore to an isolated branch, run schema/count invariants, record RPO/RTO, and delete the temporary branch only after approval.
+Neon-native PITR is the sole database recovery strategy. A seven-day restore window is a release prerequisite. The Free-tier observation on 9 August 2026 is historical and is superseded by later Launch-tier recovery evidence described above. This audit did not independently query the current provider plan or re-run a customer restore. Verify the current plan, seven-day window and recorded recovery point against the accepted release before production migration. Monthly drills restore to an isolated branch, run schema/count invariants, record RPO/RTO, and delete the temporary branch only after approval.
 
 Use these documents:
 

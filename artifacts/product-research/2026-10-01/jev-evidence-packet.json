@@ -1,0 +1,100 @@
+{
+  "as_of": "2026-10-01",
+  "scope": "Research advice only. No commercial approval, gate changes or outbound contact.",
+  "observed_internal_facts": [
+    "Live health: fresh source, 57,139/57,139 source locations checked, 57,205 active mirrored locations, delivery disabled, checkoutReady false, 15 completed seven-day polls vs minimum 24.",
+    "Read-only DB aggregates match live health scale. 30,591 active Social Care Org locations and 18,103 distinct provider IDs within those. All CQC records include dentists and other healthcare; 57,205 is not the adult social care market.",
+    "14,430 active Social Care Org locations include Domiciliary care service. Multi-service categories overlap.",
+    "Registration dates April-September 2026 across social care: 236,129,216,185,108,156 locations. September includes 87 distinct provider organisations. These are registration entries, not proof of new businesses, openings or buying intent.",
+    "Recent-effective registration ledger: 312 distinct locations across all CQC sectors, 308 have source URL, snapshot hash and effective date. Social care subset is 156 locations; by region North West 45 locations/13 organisations, London 18/18, South East 20/17, North East 1/1. Low-volume regions risk empty weekly digests.",
+    "401 rating_changed events observed in 30 days; zero have both old and new values among Good, Outstanding, Requires improvement, Inadequate. Many involve JSON null. No effective dates populated for these rating_changed events. Exclude them from promises of genuine grade movement without independent verification.",
+    "DB CRM deals zero; no paid subscriptions (13 free active subscriptions, 6 free organisation subscriptions); territory orders zero; event actions/outcomes and delivery outbox empty; processed Stripe events zero. This does not rule out unrecorded manual or bank sales.",
+    "Founder catalogue dated September 13 currently allows exactly two one-off offers: Weekly Digest pilot GBP150 for four weeks, and Territory Opportunity Brief GBP745 one-off. Everything else stopped. Historical Radar GBP299/799 monthly and Feed GBP6000 yearly are retired hypotheses, not currently available.",
+    "Territory generation, rendering, fulfilment and evidence-scoped ranking code exist; scope and runtime release still gated. No contact email addresses in the active directory.",
+    "Digest legal terms draft October 1 is unapproved and notes mismatches around closures and rating changes. Territory sample buyer correspondence exists as prepared local files; not independently verified live buyer response or purchase. Connected Gmail search returned no Fulcrum thread."
+  ],
+  "external_primary_source_facts": [
+    {
+      "url": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data",
+      "fact": "CQC provides reusable API and directory data under OGL. API updated daily; directory CSV usually weekly; CQC warns of source-system delays. Archived locations are not necessarily business closures."
+    },
+    {
+      "url": "https://www.laingbuisson.com/shop-category/data/",
+      "fact": "Advertised CareSearch GBP1655-3150/year; Care Homes Database Subscription GBP3999/year; Care Quality Benchmarks GBP599-5745/year. Asking prices show an established paid category, not CareGist willingness to pay."
+    },
+    {
+      "url": "https://go.laingbuisson.com/care-quality-benchmarks",
+      "fact": "Essential GBP599+VAT/year for 12 monthly personalised care home quality benchmark reports; Premium combination GBP3399+VAT/year. Pure rating summaries face strong price competition."
+    },
+    {
+      "url": "https://www.carehomedata.co.uk/pricing",
+      "fact": "Advertises care-sector search and targeting dashboard GBP199/year. Feature quality, subscriber numbers and operator independence not audited."
+    },
+    {
+      "url": "https://fulcrumcareconsulting.com/",
+      "fact": "Provides registration support, CQC audits, turnaround and retained governance services. Establishes buyer workflow relevance only, not willingness to buy CareGist."
+    },
+    {
+      "url": "https://www.cqc.org.uk/about-us/improving-how-we-work/0626-update",
+      "fact": "CQC assessment pilots June-October 2026 with evaluation November 2026. Framework change creates maintenance risk for compliance products."
+    }
+  ],
+  "candidate_products": {
+    "regional_monitoring": {
+      "offer": "Curated regional care-market monitoring for compliance consultancies: verified new registration entries, buyer relevance, source links, saved client/provider list, manual weekly delivery at first.",
+      "initial_cash": "Current GBP150 four-week Digest pilot after terms and delivery acceptance.",
+      "repeat": "Proposed explicitly opt-in ongoing service; GBP150/month test hypothesis. More expensive Radar only if measurable workflow value supports it.",
+      "retention": "Recurring review and follow-up workflow; client-specific lists and outcome tracking. Not validated by paying buyers.",
+      "risks": "Sparse regional signal supply; free CQC source; rating/closure claims unsupported; no automatic renewal authorised."
+    },
+    "territory_research": {
+      "offer": "Territory Opportunity Brief for care suppliers or specialist staffing sales teams: scoped market map, organisation-deduplicated shortlist, verifiable reasons and three-month action plan.",
+      "initial_cash": "Current GBP745 one-off scope; human reviewed delivery after release acceptance.",
+      "repeat": "Proposed quarterly re-research at GBP745 each, separately accepted. Four briefs/year GBP2980; demand hypothesis, no subscription approval.",
+      "retention": "Sales planning, refresh existing accounts and next territory as decisions recur.",
+      "risks": "One-off alone does not generate MRR. Public registration does not imply vacancy/buying need. Account list value must exceed commodity data; ongoing fulfilment labour."
+    },
+    "licensed_feed": {
+      "offer": "Scoped licensed CQC registration and identity feed for care software, CRM or multi-client consultancy tools, maintained into the buyer's system using stable IDs, replay and provenance.",
+      "initial_cash": "None proven immediately. Historical GBP6000/year pilot anchor; require buyer-funded integration and explicit approval to reopen stopped line.",
+      "repeat": "Annual maintained service licence after paid integration proof.",
+      "retention": "Customer's operational integration creates ongoing use if maintenance cost and reliability beat direct CQC API.",
+      "risks": "Free upstream API, long integration/procurement cycle, SLA/security/support and source-quality gates; zero validated buyers."
+    },
+    "provider_benchmarking": {
+      "offer": "Monthly public CQC rating comparison report for care groups.",
+      "initial_cash": "No current approved product; compare with LaingBuisson GBP599/year.",
+      "repeat": "Possible annual reporting licence.",
+      "retention": "Board reporting cycle.",
+      "risks": "Current rating movement ledger quality and competitor price. Requires richer verified evidence to stand out."
+    },
+    "static_directory": {
+      "offer": "Raw directory exports and contact lists.",
+      "initial_cash": "Removed from current catalogue; low price generic list sales possible only with new approval.",
+      "repeat": "Weak: buyer can obtain free source and import once.",
+      "retention": "Limited without meaningful maintained workflow.",
+      "risks": "Free CQC data, GBP199/year competitor, zero provider emails, no differentiation."
+    },
+    "inspection_readiness": {
+      "offer": "Inspection mock audit or AI readiness pack sold directly to providers.",
+      "initial_cash": "GBP950 is in an old cross-project plan; no validated CareGist offer or audited production audit engine in this review.",
+      "repeat": "Human expert retainer could recur.",
+      "retention": "Compliance support needs persist.",
+      "risks": "Requires domain experts, provider internal evidence, delivery capacity, insurance and evolving assessment framework. Different business and product from current CareGist data capabilities."
+    },
+    "paid_listings": {
+      "offer": "Sell sponsored or premium provider directory listings.",
+      "initial_cash": "Removed from catalogue.",
+      "repeat": "Potential monthly visibility fee.",
+      "retention": "Only if consumer traffic and provider enquiries create measurable value.",
+      "risks": "No traffic/enquiry conversion proof; claims and leads remain gated. Large directory count is not consumer demand."
+    }
+  },
+  "decision_rules": [
+    "Do not invent buyer validation, likelihood of sale, renewal probability, or future revenue.",
+    "Compare narrow candidate jobs and current capabilities; no model decision opens any gate.",
+    "2026 recommendation should favour first cash from a reviewed existing offer; 2027 and 2028 should favour demonstrated repeat value and integration durability, conditionally on validation.",
+    "All numerical prices for new ongoing packages are hypotheses. Existing one-off prices are catalogue prices, not market validation."
+  ],
+  "transport_status": "NOT SENT. Automatic approval review rejected external transfer. Jev received only jev-public-evidence-packet.json."
+}

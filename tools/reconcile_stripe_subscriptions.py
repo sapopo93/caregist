@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Stripe subscription reconciliation tool.
 
-Compares active subscriptions in Stripe against the local `subscriptions` table
+Compares subscriptions in Stripe against the local `subscriptions` table
 and reports (or optionally fixes) divergences.
 
 Run manually or as a weekly cron job:
@@ -53,7 +53,7 @@ def _init_stripe() -> bool:
         stripe.api_key = settings.stripe_secret_key
         return True
     except Exception as exc:
-        logger.error("Failed to initialise Stripe: %s", exc)
+        logger.error("Failed to initialise Stripe (%s)", type(exc).__name__)
         return False
 
 
@@ -61,20 +61,30 @@ async def reconcile(database_url: str, *, fix: bool = False) -> dict:
     """
     Main reconciliation loop.
 
-    Returns a summary dict: {checked, missing_locally, status_mismatch, fixed}.
+    Reports detected divergence and the actual number of confirmed revocations.
     """
     import stripe
+    from api.routers.billing import _persist_subscription_state
 
     conn = await asyncpg.connect(database_url)
     try:
-        # 1. Fetch all active Stripe subscriptions
-        logger.info("Fetching active subscriptions from Stripe...")
+        # 1. Fetch a complete, bounded Stripe subscription listing
+        logger.info("Fetching subscriptions from Stripe...")
         stripe_subs: dict[str, dict] = {}
-        params: dict = {"status": "all", "limit": 100, "expand": ["data.customer"]}
+        params: dict = {"status": "all", "limit": 100}
+        page_count = 0
         while True:
-            page = stripe.Subscription.list(**params)
+            page_count += 1
+            if page_count > 1000:
+                raise RuntimeError("Stripe subscription listing exceeded the bounded page limit")
+            page = await asyncio.to_thread(stripe.Subscription.list, **params)
+            if page.has_more and not page.data:
+                raise RuntimeError("Stripe pagination ended before the complete listing")
             for sub in page.data:
-                stripe_subs[sub["id"]] = sub
+                identifier = sub.get("id")
+                if not identifier or identifier in stripe_subs or not isinstance(sub.get("status"), str):
+                    raise RuntimeError("Stripe listing has missing or duplicate subscription identity")
+                stripe_subs[identifier] = sub
             if not page.has_more:
                 break
             params["starting_after"] = page.data[-1]["id"]
@@ -88,6 +98,7 @@ async def reconcile(database_url: str, *, fix: bool = False) -> dict:
 
         missing_locally = []
         status_mismatch = []
+        fixed_count = 0
 
         for stripe_id, stripe_sub in stripe_subs.items():
             stripe_status = stripe_sub["status"]  # active, past_due, canceled, etc.
@@ -102,60 +113,61 @@ async def reconcile(database_url: str, *, fix: bool = False) -> dict:
                     )
             else:
                 local_status = local["status"]
-                # Divergence: active in Stripe, not active locally
-                if stripe_status == "active" and local_status not in ("active", "trialing"):
+                if stripe_status != local_status:
                     status_mismatch.append((stripe_id, stripe_status, local_status))
-                    logger.warning(
-                        "STATUS MISMATCH: %s — Stripe=%s local=%s (user_id=%s tier=%s)",
-                        stripe_id, stripe_status, local_status, local["user_id"], local["tier"],
-                    )
-                # Divergence: canceled in Stripe but still active locally
-                elif stripe_status == "canceled" and local_status == "active":
-                    status_mismatch.append((stripe_id, stripe_status, local_status))
-                    logger.warning(
-                        "STATUS MISMATCH: %s — Stripe=canceled local=active (user_id=%s tier=%s) — "
-                        "user may still have paid-tier access.",
-                        stripe_id, local["user_id"], local["tier"],
-                    )
-                    if fix:
-                        await conn.execute(
-                            "UPDATE subscriptions SET status = 'canceled' WHERE stripe_subscription_id = $1",
-                            stripe_id,
-                        )
-                        await conn.execute(
-                            "UPDATE api_keys SET tier = 'free' WHERE user_id = $1",
-                            local["user_id"],
-                        )
-                        logger.info("FIXED: Downgraded user %s to free (sub %s).", local["user_id"], stripe_id)
+                    logger.warning("STATUS MISMATCH: %s Stripe=%s local=%s", stripe_id, stripe_status, local_status)
+                    # Reconciliation may revoke, but cannot grant paid access
+                    # from a subscription listing without contract acceptance.
+                    if fix and stripe_status not in {"active", "trialing"}:
+                        authoritative = await asyncio.to_thread(stripe.Subscription.retrieve, stripe_id)
+                        current_status = authoritative.get("status")
+                        if authoritative.get("id") != stripe_id or not isinstance(current_status, str):
+                            raise RuntimeError("Stripe returned inconsistent subscription identity")
+                        if current_status not in {"active", "trialing"}:
+                            await _persist_subscription_state(
+                                conn, int(local["user_id"]), stripe_id, "free", current_status,
+                            )
+                            fixed_count += 1
 
         # 3. Check for local active subs whose Stripe sub no longer exists
         for local in local_rows:
             stripe_id = local["stripe_subscription_id"]
             if not stripe_id:
                 continue
-            if local["status"] == "active" and stripe_id not in stripe_subs:
+            if local["status"] in {"active", "trialing"} and stripe_id not in stripe_subs:
                 logger.warning(
-                    "ORPHANED LOCAL SUB: %s has status=active but Stripe sub %s not found (user_id=%s).",
-                    stripe_id, stripe_id, local["user_id"],
+                    "ORPHANED LOCAL SUB: %s is entitled locally but absent from the Stripe listing.",
+                    stripe_id,
                 )
-                status_mismatch.append((stripe_id, "not_in_stripe", "active"))
+                status_mismatch.append((stripe_id, "not_in_stripe", local["status"]))
+                # An absent list entry can indicate the wrong Stripe account,
+                # incomplete pagination or an API race. Never cancel it on that
+                # evidence. Retrieve the exact object and only revoke when its
+                # current status positively confirms loss of entitlement.
                 if fix:
-                    await conn.execute(
-                        "UPDATE subscriptions SET status = 'canceled' WHERE stripe_subscription_id = $1",
-                        stripe_id,
-                    )
-                    await conn.execute(
-                        "UPDATE api_keys SET tier = 'free' WHERE user_id = $1",
-                        local["user_id"],
-                    )
-                    logger.info("FIXED: Downgraded orphaned user %s to free.", local["user_id"])
+                    try:
+                        authoritative = await asyncio.to_thread(stripe.Subscription.retrieve, stripe_id)
+                    except stripe.InvalidRequestError as exc:
+                        if getattr(exc, "code", None) != "resource_missing":
+                            raise
+                        logger.warning("ORPHAN UNCONFIRMED: %s; entitlement unchanged", stripe_id)
+                        continue
+                    current_status = authoritative.get("status")
+                    if authoritative.get("id") != stripe_id or not isinstance(current_status, str):
+                        raise RuntimeError("Stripe returned inconsistent subscription identity")
+                    if current_status not in {"active", "trialing"}:
+                        await _persist_subscription_state(
+                            conn, int(local["user_id"]), stripe_id, "free", current_status,
+                        )
+                        fixed_count += 1
 
         return {
             "stripe_total": len(stripe_subs),
             "local_total": len(local_rows),
             "missing_locally": len(missing_locally),
             "status_mismatch": len(status_mismatch),
-            "fixed": fix,
+            "fix_requested": fix,
+            "fixed": fixed_count,
         }
     finally:
         await conn.close()
@@ -167,7 +179,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--fix",
         action="store_true",
-        help="Apply fixes: downgrade canceled/orphaned local subs to free tier",
+        help="Revoke non-entitled subscriptions after exact-object verification; no paid grants",
     )
     return parser.parse_args()
 
@@ -184,7 +196,7 @@ def main() -> int:
     result = asyncio.run(reconcile(database_url, fix=args.fix))
     logger.info(
         "Reconciliation complete: stripe_total=%d local_total=%d "
-        "missing_locally=%d status_mismatch=%d fixed=%s",
+        "missing_locally=%d status_mismatch=%d fixed=%d",
         result["stripe_total"],
         result["local_total"],
         result["missing_locally"],

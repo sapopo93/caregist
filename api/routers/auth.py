@@ -295,13 +295,18 @@ async def register(req: RegisterRequest, _ip=Depends(check_ip_rate_limit)) -> di
                 free_entitlements["seat_price_gbp"],
             )
 
-    await _send_verification_email(req.email, req.name, verification_token)
+    verification_email_sent = await _send_verification_email(req.email, req.name, verification_token)
 
     return {
         "user": {"id": user["id"], "email": user["email"], "name": user["name"]},
         "tier": "free",
         "verification_required": True,
-        "message": "Registration successful. Check your inbox to verify your email before you log in.",
+        "verification_email_sent": verification_email_sent,
+        "message": (
+            "Registration successful. Check your inbox to verify your email before you log in."
+            if verification_email_sent
+            else "Registration successful, but we could not send a verification email. Contact support to arrange verification before logging in."
+        ),
     }
 
 
@@ -751,7 +756,9 @@ async def forgot_password(req: ForgotPasswordRequest, _ip=Depends(check_ip_rate_
         if elapsed < FORGOT_PASSWORD_MIN_SECONDS:
             await asyncio.sleep(FORGOT_PASSWORD_MIN_SECONDS - elapsed)
 
-    return {"message": "If that email is registered, a reset token has been sent."}
+    return {
+        "message": "If that email is registered and email delivery is available, reset instructions will be sent."
+    }
 
 
 @router.post("/verify-email")
@@ -807,7 +814,7 @@ async def resend_verification(req: ResendVerificationRequest, _ip=Depends(check_
             req.email,
         )
     if not user or user["is_verified"]:
-        return {"message": "If that email is waiting for verification, a new link has been sent."}
+        return {"message": "If that email is waiting for verification, a new link will be sent when email delivery is available."}
 
     # Always mint a fresh token with a new expiry window so a previously expired
     # link can be replaced (F-51).
@@ -819,7 +826,7 @@ async def resend_verification(req: ResendVerificationRequest, _ip=Depends(check_
             token, expires_at, req.email,
         )
     await _send_verification_email(req.email, user["name"] or "there", token)
-    return {"message": "If that email is waiting for verification, a new link has been sent."}
+    return {"message": "If that email is waiting for verification, a new link will be sent when email delivery is available."}
 
 
 @router.post("/reset-password")
@@ -940,11 +947,11 @@ async def _send_reset_email(email: str, reset_token: str) -> None:
         logger.error("Failed to send reset email: %s", exc)
 
 
-async def _send_verification_email(email: str, name: str, token: str) -> None:
-    """Send email verification link via Resend. Fails silently."""
+async def _send_verification_email(email: str, name: str, token: str) -> bool:
+    """Send email verification link via Resend and report whether delivery was accepted."""
     if not settings.resend_api_key:
         logger.warning("RESEND_API_KEY not set — skipping verification email")
-        return
+        return False
 
     import httpx
 
@@ -972,8 +979,12 @@ async def _send_verification_email(email: str, name: str, token: str) -> None:
             )
             if resp.status_code >= 400:
                 logger.error("Resend verification email error: %s", _safe_resend_error(resp))
+                return False
+            return True
     except Exception as exc:
         logger.error("Failed to send verification email: %s", exc)
+        return False
+    return False
 
 
 class DeleteAccountRequest(BaseModel):

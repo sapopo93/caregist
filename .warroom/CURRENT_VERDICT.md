@@ -1,4 +1,86 @@
+## 2026-10-03 19:25 BST — bounded engineering release checkpoint
+
+Authoritative release: `a0d5b5df564a1d553cc7a9effcca91483a91ab0a`. Primary checkout, local main, GitHub main,
+production frontend `/api/health/directory` and backend `/api/v1/version` match.
+PRs [76](https://github.com/sapopo93/caregist/pull/76),
+[77](https://github.com/sapopo93/caregist/pull/77),
+[78](https://github.com/sapopo93/caregist/pull/78) and
+[79](https://github.com/sapopo93/caregist/pull/79) are merged under explicit
+founder authorization. Production deployment 6831343115 succeeded.
+[Exact-main CI](https://github.com/sapopo93/caregist/actions/runs/37143767171) PASS; [Production Smoke](https://github.com/sapopo93/caregist/actions/runs/37143826320) PASS; schema check PASS.
+Local verification: 64 migrations applied on disposable PostGIS; real-Postgres
+Brief fulfilment PASS; full pytest 1,226 PASS / 70 SKIP; frontend tests 184 PASS;
+Next.js 16.3.8 build PASS. Payment, storage and email in paid-path tests are mocks.
+Smoke verifies the public directory and release identities, anonymous export
+refusal; authorized lead/export delivery is not claimed or tested live.
+
+Live `/api/v1/health`: checkoutReady=false, shadowCoveragePassed=false,
+deliveryEnabled=false, delivery.enabled=false. No commercial gate, source
+backfill, live Stripe object, balance or production data was changed. This
+engineering result is not independent product acceptance or first-sale approval.
+Existing protected local changes are preserved and remain uncommitted.
+Temporary backup: `/private/tmp/caregist-before-final-release-20261003`.
+
+Engineering defects addressed: provider-level shortlist deduplication; future
+CQC publication dates retained through event construction and ledger INSERT;
+undated rating-summary refusal; stale RI evidence dates/context and generation-
+based recency scores; visible registration metadata gaps; CSV-only Brief
+promises; named £150 four-week manual Digest price. Founder confirmed September
+two-product manifest authority; strategy now records that supersession.
+
+---
+
 # CURRENT VERDICT — CareGist
+
+> **2026-10-02 commit/deploy correction:** [COMMIT_DEPLOY_TRUTH.md](COMMIT_DEPLOY_TRUTH.md) is authoritative for release identity. The active checkout, local main, GitHub main, successful Production deployment and both public services match `1a62f84`. PR #75 is merged and Production Smoke 37004402261 PASSED. Local uncommitted work is preserved separately. Older release/smoke claims below are historical; no commercial gate approval is implied.
+
+Commit/deployment consistency PASS: all current release surfaces match 1a62f84; both production smoke runs, Schema Drift and exact-merge CI passed. This is release identity/automated validation evidence, not independent commercial acceptance.
+
+
+## 2026-10-01 Territory Brief follow-up — PARTIAL, no release approval
+
+Evidence: `artifacts/product-research/2026-10-01/TERRITORY_VERDICT_CHECK.md`
+and its saved SQL, served-release source excerpts and workflow results.
+
+- All 34,332 rating-change ledger rows have NULL effective dates. The requested
+  90-day query returns zero but cannot measure recent source-effective changes.
+- The exact 115-location RI sample has 115 publication dates; none is within
+  12 months. Latest stored publication: 2024-04-26.
+- London homecare registration supply is 35 provider IDs in 90 days, only 21
+  with URL/hash/date metadata; national social care is 302 / 147 respectively.
+  Metadata completeness is not independent source acceptance.
+- Served-release Brief code still consumes raw NDJSON and slices location
+  candidates without provider deduplication; fulfilment emits PDF/CSV, not XLSX.
+- Latest scheduled main Production Smoke and Freshness Watchdog runs passed
+  on October 1. This supersedes old failing-job statements, not commercial gates.
+
+Keep the Brief candidate; do not sell a recent-rating-change edition or describe
+automated fulfilment as ready. All named gates remain closed.
+
+## 2026-10-01 product research — read-only observations, no release approval
+
+Research is saved in `artifacts/product-research/2026-10-01/PRODUCT_RECOMMENDATION.md`.
+This is a producer's evidence report, not independent gate acceptance.
+
+- Live public probes at 14:48–14:49 UTC report frontend/backend SHA
+  `b2f519aa8aaebe33197076bd8f2fed6f60a56595`, fresh source and 57,139/57,139
+  checked source locations, reconciled 2026-09-30T12:28:47Z with zero failures.
+- `checkoutReady=false`; successful seven-day polls are 15 against 24 required;
+  outbound delivery is disabled. No gate was changed.
+- Read-only database aggregates agree with the 59,108 stored / 57,205 active
+  location scale. The social-care subset is 30,591 active locations / 18,103
+  distinct provider IDs; do not call all CQC locations care businesses.
+- No paid application subscriptions, CRM deals, territory orders or recorded
+  customer outcomes were found. Manual/bank sales and live Stripe balances are
+  not independently verified; the direct Stripe CLI key is expired.
+- The September two-product catalogue controls: £150 four-week Digest pilot and
+  £745 one-off Territory Brief. Ongoing monitoring and a licensed feed are
+  proposed research directions, not available subscriptions or approved releases.
+
+Raw SQL/results, live responses, public-page captures and Jev's public-only
+comparison are in the research directory. The historical archive qualification
+below remains applicable to the older records; these new observations do not
+retroactively independently verify them.
 
 ## 2026-10-01 archive review — current live status NOT VERIFIED
 

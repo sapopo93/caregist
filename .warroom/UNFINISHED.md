@@ -1,4 +1,76 @@
+## 2026-10-03 19:25 BST — bounded engineering release checkpoint
+
+Authoritative release: `a0d5b5df564a1d553cc7a9effcca91483a91ab0a`. Primary checkout, local main, GitHub main,
+production frontend `/api/health/directory` and backend `/api/v1/version` match.
+PRs [76](https://github.com/sapopo93/caregist/pull/76),
+[77](https://github.com/sapopo93/caregist/pull/77),
+[78](https://github.com/sapopo93/caregist/pull/78) and
+[79](https://github.com/sapopo93/caregist/pull/79) are merged under explicit
+founder authorization. Production deployment 6831343115 succeeded.
+[Exact-main CI](https://github.com/sapopo93/caregist/actions/runs/37143767171) PASS; [Production Smoke](https://github.com/sapopo93/caregist/actions/runs/37143826320) PASS; schema check PASS.
+Local verification: 64 migrations applied on disposable PostGIS; real-Postgres
+Brief fulfilment PASS; full pytest 1,226 PASS / 70 SKIP; frontend tests 184 PASS;
+Next.js 16.3.8 build PASS. Payment, storage and email in paid-path tests are mocks.
+Smoke verifies the public directory and release identities, anonymous export
+refusal; authorized lead/export delivery is not claimed or tested live.
+
+Live `/api/v1/health`: checkoutReady=false, shadowCoveragePassed=false,
+deliveryEnabled=false, delivery.enabled=false. No commercial gate, source
+backfill, live Stripe object, balance or production data was changed. This
+engineering result is not independent product acceptance or first-sale approval.
+Existing protected local changes are preserved and remain uncommitted.
+Temporary backup: `/private/tmp/caregist-before-final-release-20261003`.
+
+No engineering defect group from this bounded request remains unmerged.
+Historical NULL-date ledger rows are deliberately unmodified; prospective date
+retention does not repair history. Manual Digest sales/delivery and protected
+commercial gates remain outside engineering acceptance. Independent product
+review, terms approval, shadow coverage and live financial verification remain
+uncompleted by this task. No paid third-party model API call was made.
+
+---
+
 # UNFINISHED — CareGist
+
+> **2026-10-02 commit/deploy correction:** [COMMIT_DEPLOY_TRUTH.md](COMMIT_DEPLOY_TRUTH.md) is authoritative for release identity. The active checkout, local main, GitHub main, successful Production deployment and both public services match `1a62f84`. PR #75 is merged and Production Smoke 37004402261 PASSED. Local uncommitted work is preserved separately. Older release/smoke claims below are historical; no commercial gate approval is implied.
+
+Commit/deployment reconciliation is complete. Local research and CLI-managed state remain uncommitted and preserved; old branch and stash remain available. PR #71 and independent commercial acceptance remain outside this correction.
+
+
+## 2026-10-01 Territory Brief follow-up — acceptance still unfinished
+
+The requested production SQL is complete and saved in
+`artifacts/product-research/2026-10-01/territory-verdict-query-results.json`.
+The report `TERRITORY_VERDICT_CHECK.md` separates zero date-filtered matches
+from the ledger's wholly missing rating effective dates. No recent rating
+publication is stored for the exact 115-location sample.
+
+Still unfinished: authoritative current checks of the whole sample; comparable
+publication-dated history; scoped evidence acceptance; Postgres generator
+adapter; provider deduplication or corrected location promise; Excel promise
+alignment; paid journey and independent release review. No adapter branch
+or customer pack rebuild was created during this research.
+
+## 2026-10-01 research completion versus commercial work remaining
+
+The requested three-product research is documented in
+`artifacts/product-research/2026-10-01/PRODUCT_RECOMMENDATION.md`. Its suggestions
+are not independently approved products or proof of sales.
+
+Still unfinished: independent customer-output acceptance, supported rating and
+archival interpretation, Digest legal alignment, manual payment/delivery journey,
+signal-poll coverage, actual paid pilots, renewals, acquisition-cost and delivery-
+capacity measurement, any decision to reopen a feed, and a funded integration.
+
+Live Stripe financial records and the actual sales-mailbox buyer replies were
+not accessible in this review. The connected Gmail mailbox did not contain the
+Fulcrum conversation. Bank/manual receipts may exist outside the application.
+Jev received public sources only after automatic approval review rejected a
+private-data transfer; its comparative result is advisory, not acceptance.
+
+No product code, deployment, data, checkout, delivery, lead, claim or export gate
+was changed. Fresh live reconciliation was observed separately from the older
+archive, so do not repeat its historical repair without new failure evidence.
 
 ## 2026-10-01 archive review — current live status NOT VERIFIED
 

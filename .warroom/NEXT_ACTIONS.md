@@ -1,4 +1,71 @@
+## 2026-10-03 19:25 BST — bounded engineering release checkpoint
+
+Authoritative release: `a0d5b5df564a1d553cc7a9effcca91483a91ab0a`. Primary checkout, local main, GitHub main,
+production frontend `/api/health/directory` and backend `/api/v1/version` match.
+PRs [76](https://github.com/sapopo93/caregist/pull/76),
+[77](https://github.com/sapopo93/caregist/pull/77),
+[78](https://github.com/sapopo93/caregist/pull/78) and
+[79](https://github.com/sapopo93/caregist/pull/79) are merged under explicit
+founder authorization. Production deployment 6831343115 succeeded.
+[Exact-main CI](https://github.com/sapopo93/caregist/actions/runs/37143767171) PASS; [Production Smoke](https://github.com/sapopo93/caregist/actions/runs/37143826320) PASS; schema check PASS.
+Local verification: 64 migrations applied on disposable PostGIS; real-Postgres
+Brief fulfilment PASS; full pytest 1,226 PASS / 70 SKIP; frontend tests 184 PASS;
+Next.js 16.3.8 build PASS. Payment, storage and email in paid-path tests are mocks.
+Smoke verifies the public directory and release identities, anonymous export
+refusal; authorized lead/export delivery is not claimed or tested live.
+
+Live `/api/v1/health`: checkoutReady=false, shadowCoveragePassed=false,
+deliveryEnabled=false, delivery.enabled=false. No commercial gate, source
+backfill, live Stripe object, balance or production data was changed. This
+engineering result is not independent product acceptance or first-sale approval.
+Existing protected local changes are preserved and remain uncommitted.
+Temporary backup: `/private/tmp/caregist-before-final-release-20261003`.
+
+The named engineering fixes and authorized release are complete. Next actions
+are independent journey review and the existing human commercial/legal gates.
+Do not fabricate polling history or enable checkout/delivery. Do not retry
+historical date backfills without a separate approved migration. PR #71 remains
+outside this release. Existing CLAUDE.md, .gitignore, .warroom and .projects work
+must not be committed without specific founder authorization.
+
+---
+
 # NEXT ACTIONS — CareGist
+
+> **2026-10-02 commit/deploy correction:** [COMMIT_DEPLOY_TRUTH.md](COMMIT_DEPLOY_TRUTH.md) is authoritative for release identity. The active checkout, local main, GitHub main, successful Production deployment and both public services match `1a62f84`. PR #75 is merged and Production Smoke 37004402261 PASSED. Local uncommitted work is preserved separately. Older release/smoke claims below are historical; no commercial gate approval is implied.
+
+Commit/deployment alignment is complete. Future releases must produce a successful GitHub Production deployment record and pass smoke without a SHA override. Continue only the separately named product/commercial tasks; do not repeat the old branch-alignment work.
+
+
+## 2026-10-01 Territory Brief next step — proposal, not implementation approval
+
+Freeze one named registration-focused scope with enough provider-deduplicated
+candidates and independently review dates, URLs and source evidence before
+promising a count. London homecare's preliminary complete-metadata subset is
+21; broader social-care scope has 147. These counts are not accepted leads.
+Then specify the Postgres source contract, calendar freshness, grouping and
+actual deliverable formats. A source adapter alone cannot close all blockers.
+
+For the rating-change edition, first recover independently checkable,
+publication-dated before/after history. NULL effective dates are not proof of
+no CQC movement. Do not backfill them from observed_at. No source write,
+implementation, invoice, outreach, delivery or gate change was performed.
+
+## 2026-10-01 next bounded commercial step — proposal for independent review
+
+Prepare one current-source, independently reviewed £150 four-week Digest pilot
+pack for a supported consultancy scope. Verify included events and source links,
+align the written scope and terms, and prove the approved manual payment-to-
+delivery path. Keep all gates closed until their named acceptance and founder
+decisions are recorded. This research does not authorise sending or invoicing.
+
+After those gates pass: validate three paid pilots and require explicit paid
+continuations before creating an ongoing offer. Use the £745 Brief only for a
+separately qualified territory decision. Reopen a licensed feed only for a
+buyer-funded integration; do not build a third product speculatively.
+
+See `artifacts/product-research/2026-10-01/PRODUCT_RECOMMENDATION.md` for buyers,
+proposed economics, renewal tests, 2026–2028 sequencing and evidence limitations.
 
 ## 2026-10-01 archive review — current live status NOT VERIFIED
 

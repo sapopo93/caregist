@@ -143,8 +143,9 @@ export default function RadiusFinder() {
       <form onSubmit={handleSearch} className="bg-cream border border-stone rounded-lg p-6 mb-8">
         <div className="grid md:grid-cols-2 gap-4 mb-4">
           <div>
-            <label className="block text-sm font-medium text-bark mb-1">Postcode</label>
+            <label htmlFor="radius-postcode" className="block text-sm font-medium text-bark mb-1">Postcode</label>
             <input
+              id="radius-postcode"
               type="text"
               name="postcode"
               required

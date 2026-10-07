@@ -3,6 +3,7 @@ import { createHash, randomBytes } from "node:crypto";
 import { canonicalizeServiceCounts, canonicalServices, resolveServiceAliases } from "@/lib/service-taxonomy";
 
 import { createPool } from "@vercel/postgres";
+import { Pool as NodePostgresPool } from "pg";
 
 import {
   type DirectoryOpportunity,
@@ -124,13 +125,48 @@ function resolveConnectionString() {
   return raw ? raw.replace(/^['"]|['"]$/g, "") : null;
 }
 
+type DirectoryQueryResult<Row> = { rows: Row[] };
+type DirectoryQueryClient = {
+  query<Row = unknown>(
+    text: string,
+    values?: unknown[],
+  ): Promise<DirectoryQueryResult<Row>>;
+  release(): void;
+};
+type DirectoryQueryExecutor = DirectoryQueryClient & {
+  connect(): Promise<DirectoryQueryClient>;
+};
+
 let sqlPool: ReturnType<typeof createPool> | null = null;
+let localSqlPool: NodePostgresPool | null = null;
 let cachedConnectionString: string | null = null;
 
-function getSql() {
+function getSql(): DirectoryQueryExecutor {
   const connectionString = resolveConnectionString();
   if (!connectionString) {
     throw new Error("POSTGRES_URL or DATABASE_URL is not configured.");
+  }
+
+  if (process.env.CAREGIST_SYNTHETIC_LOCAL_RUN === "1" && process.env.NODE_ENV === "development") {
+    let hostname = "";
+    try {
+      hostname = new URL(connectionString).hostname;
+    } catch {
+      throw new Error("Synthetic local directory mode requires a valid loopback PostgreSQL URL.");
+    }
+    if (!["localhost", "127.0.0.1", "::1"].includes(hostname)) {
+      throw new Error("Synthetic local directory mode refuses non-loopback PostgreSQL hosts.");
+    }
+    if (!localSqlPool || cachedConnectionString !== connectionString) {
+      localSqlPool = new NodePostgresPool({
+        connectionString,
+        max: 5,
+        connectionTimeoutMillis: 5_000,
+        idleTimeoutMillis: 10_000,
+      });
+      cachedConnectionString = connectionString;
+    }
+    return localSqlPool as unknown as DirectoryQueryExecutor;
   }
 
   if (!sqlPool || cachedConnectionString !== connectionString) {
@@ -143,7 +179,7 @@ function getSql() {
     cachedConnectionString = connectionString;
   }
 
-  return sqlPool;
+  return sqlPool as unknown as DirectoryQueryExecutor;
 }
 
 function rethrowUnexpectedDatabaseError(error: unknown): void {
