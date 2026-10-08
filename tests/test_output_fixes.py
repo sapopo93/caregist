@@ -241,3 +241,17 @@ async def test_claim_email_and_api_state_the_same_turnaround(fast_track):
     assert "2 business days" in bodies[0]
     assert "24" not in bodies[0]
     assert not any("higher-visibility placement" in body for body in bodies)
+
+
+# M1 -------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("rel", [
+    "frontend/app/pricing/page.tsx",
+    "frontend/app/page.tsx",
+    "frontend/app/pricing/territory/page.tsx",
+])
+def test_buyer_pages_read_the_brief_price_from_the_constant(rel):
+    text = (ROOT / rel).read_text(encoding="utf-8")
+    assert not re.search(r"(?:£|&pound;)\s?745\b", text), rel
+    assert "TERRITORY_BRIEF_PRICE_GBP" in text
