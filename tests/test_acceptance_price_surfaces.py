@@ -40,10 +40,16 @@ def test_only_the_sold_prices_are_hard_coded_on_public_pages():
     assert not stray, f"unexpected pound amounts on public pages: {stray}"
 
 
-def test_hard_coded_brief_price_equals_the_checkout_amount_in_the_manifest():
+def test_brief_price_on_buyer_pages_equals_the_checkout_amount_in_the_manifest():
+    # The three buyer pages now render TERRITORY_BRIEF_PRICE_GBP (M1, wave 3), so the
+    # check moves to the constant they read; any literal left behind must still match.
     manifest = json.loads((REPO_ROOT / "deploy" / "stripe-price-manifest.json").read_text(encoding="utf-8"))
     pence = manifest["products"]["territory-opportunity-brief"]["unit_amount"]
+    constant = (FRONTEND / "lib" / "territory-scope.ts").read_text(encoding="utf-8")
+    match = re.search(r"export const TERRITORY_BRIEF_PRICE_GBP\s*=\s*(\d+)\s*;", constant)
+    assert match and int(match.group(1)) == pence // 100, "TERRITORY_BRIEF_PRICE_GBP differs from the checkout price"
     for rel in ("app/page.tsx", "app/pricing/page.tsx", "app/pricing/territory/page.tsx"):
         text = (FRONTEND / rel).read_text(encoding="utf-8")
+        assert re.search(r"(?:£|&pound;)\{TERRITORY_BRIEF_PRICE_GBP\}", text), f"{rel} does not render the Brief price"
         shown = {int(m.replace(",", "")) for m in AMOUNT.findall(text)} & {745}
-        assert shown == {pence // 100}, f"{rel} does not show the checkout price {pence // 100}"
+        assert shown <= {pence // 100}, f"{rel} does not show the checkout price {pence // 100}"

@@ -6,6 +6,7 @@ import RetainedPlanFocus from "@/components/RetainedPlanFocus";
 import {
   CQC_INDEPENDENCE_LINE,
   PRICING_LADDER,
+  TERRITORY_BRIEF_PRICE_GBP,
   WEEKLY_DIGEST_PILOT_PRICE_GBP,
 } from "@/lib/caregist-config";
 import { loadCommercialCheckoutReadiness } from "@/lib/commercial-readiness";
@@ -47,7 +48,7 @@ export default async function PricingPage() {
           CareGist sells two products. The Weekly Digest follows one England region week
           by week; the Territory Opportunity Brief ranks the accounts worth approaching
           there. Both are built on observation-dated evidence from CQC&apos;s published
-          record. The pilot costs £{WEEKLY_DIGEST_PILOT_PRICE_GBP} for four weekly digests. The Brief costs £745.
+          record. The pilot costs £{WEEKLY_DIGEST_PILOT_PRICE_GBP} for four weekly digests. The Brief costs £{TERRITORY_BRIEF_PRICE_GBP}.
           Both are one-off purchases, with no subscription or automatic renewal.
         </p>
       </header>

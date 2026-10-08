@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { WEEKLY_DIGEST_PILOT_PRICE_GBP } from "@/lib/caregist-config";
+import { TERRITORY_BRIEF_PRICE_GBP, WEEKLY_DIGEST_PILOT_PRICE_GBP } from "@/lib/caregist-config";
 import Link from "next/link";
 
 import DirectorySearchForm from "@/components/directory/DirectorySearchForm";
@@ -185,7 +185,7 @@ export default async function HomePage() {
             </article>
             <article className="rounded-xl border border-stone bg-cream p-6">
               <p className="font-mono text-xs uppercase tracking-wider text-clay">Territory</p>
-              <h3 className="mt-3 text-2xl font-bold text-bark">Territory Opportunity Brief &middot; &pound;745</h3>
+              <h3 className="mt-3 text-2xl font-bold text-bark">Territory Opportunity Brief &middot; &pound;{TERRITORY_BRIEF_PRICE_GBP}</h3>
               <p className="mt-3 text-sm leading-6 text-dusk">
                 A ranked shortlist of 25&ndash;50 priority organisations, plus a brief on territory
                 size, structure, and notable movements, with the evidence behind each priority.
