@@ -43,7 +43,7 @@ from tools.generate_radar_territory_sample import (
 OGL_ATTRIBUTION = (
     "Contains public sector information licensed under the Open Government Licence v3.0"
 )
-CQC_PROFILE_URL = "https://api.service.cqc.org.uk/public/v1/locations/{location_id}"
+CQC_PROFILE_URL = "https://www.cqc.org.uk/location/{location_id}"
 CQC_DATA_PAGE = "https://www.cqc.org.uk/about-us/transparency/using-cqc-data"
 
 _RATING_RANK = {
@@ -896,6 +896,7 @@ def generate_territory_opportunity_brief(
     exec_summary = _executive_summary(
         scope=validated,
         as_of=as_of,
+        generated_on=generated_on,
         window_start=window_start,
         window_end=window_end,
         considered=len(per_row_events),
@@ -1044,6 +1045,7 @@ def _executive_summary(
     *,
     scope: TerritoryScope,
     as_of: date,
+    generated_on: date,
     window_start: date,
     window_end: date,
     considered: int,
@@ -1071,7 +1073,8 @@ def _executive_summary(
     return {
         "territory": scope.name,
         "territory_kind": scope.kind.replace("_", " "),
-        "date_generated": as_of.isoformat(),
+        "date_generated": generated_on.isoformat(),
+        "source_edition": as_of.isoformat(),
         "window": f"{window_start.isoformat()} to {window_end.isoformat()}",
         "territory_locations_in_source": territory_locations,
         "opportunity_set_size": considered,
@@ -1083,7 +1086,23 @@ def _executive_summary(
             "Reflects the published CQC register edition, not a live lookup; opportunity signals "
             "show where to look first, not provider quality or intent."
         ),
+        "shortfall_notice": shortfall_notice(len(shortlist)),
     }
+
+
+def shortfall_notice(shortlisted: int) -> str | None:
+    """Plain notice when a brief lists fewer organisations than the code floor.
+
+    The generator never pads a shortlist; a small territory is reported as it is,
+    and the buyer is told so in the PDF and the CSV.
+    """
+    if shortlisted >= MIN_SHORTLIST:
+        return None
+    return (
+        f"Shortfall: this territory has {shortlisted} organisation(s) with a supported signal in "
+        f"the window, fewer than the minimum of {MIN_SHORTLIST} this Brief is designed to list. "
+        "All of them are included; none have been added to make up the number."
+    )
 
 
 # --------------------------------------------------------------------------- #
@@ -1117,8 +1136,13 @@ def brief_to_csv(brief: TerritoryBrief) -> str:
             "rating_evidence_date",
             "rating_freshness",
             "registration_metadata_gaps",
+            "shortlist_notice",
+            "licence",
         ]
     )
+    notice = brief.executive_summary.get("shortfall_notice") or ""
+    if notice and not brief.shortlist:
+        writer.writerow([""] * 20 + [notice, OGL_ATTRIBUTION])
     coverage_by_location = {row["location_id"]: row for row in brief.evidence_coverage}
     for org in brief.shortlist:
         evidence_events = " | ".join(
@@ -1148,6 +1172,8 @@ def brief_to_csv(brief: TerritoryBrief) -> str:
                 coverage_by_location.get(org.location_id, {}).get("rating_publication_date") or "",
                 coverage_by_location.get(org.location_id, {}).get("rating_freshness") or "not assessed",
                 "; ".join(coverage_by_location.get(org.location_id, {}).get("registration_metadata_gaps", [])),
+                notice,
+                OGL_ATTRIBUTION,
             ]
         )
     return buf.getvalue()

@@ -54,6 +54,11 @@ jobs:
           pip install -r requirements.txt -r requirements-dev.txt -r requirements-worker.txt
           pip install --no-deps --require-hashes -r requirements-worker-model.txt
 
+      - name: Install pdftotext for the Territory Brief PDF checks
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends poppler-utils
+
       - name: pip check (dependency resolution)
         run: pip check
 

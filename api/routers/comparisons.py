@@ -8,6 +8,7 @@ import secrets
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
+from api.config import settings
 from api.database import get_connection
 from api.middleware.auth import validate_api_key
 from api.middleware.ip_rate_limit import check_public_rate_limit
@@ -63,10 +64,12 @@ async def save_comparison(
         from api.utils.email_queue import queue_email
         from datetime import datetime, timedelta, timezone
         await log_event("comparison_saved", "compare", user_id=user_id, meta={"slugs": req.slug_list})
-        # Schedule follow-up email
+        # Schedule follow-up email (marketing: only while outbound communications are switched on)
         try:
-            async with get_connection() as conn:
-                urow = await conn.fetchrow("SELECT email FROM users WHERE id = $1", user_id)
+            urow = None
+            if settings.outbound_communications_enabled:
+                async with get_connection() as conn:
+                    urow = await conn.fetchrow("SELECT email FROM users WHERE id = $1", user_id)
             if urow and urow["email"]:
                 await queue_email(
                     urow["email"],

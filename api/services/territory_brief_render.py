@@ -7,10 +7,10 @@ without touching ranking or reason logic. Uses the dependency-free
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, timezone
 
 from api.services.pdf_writer import PdfBuilder
-from api.services.territory_brief import TerritoryBrief
+from api.services.territory_brief import CQC_PROFILE_URL, TerritoryBrief
 
 _DISCLAIMER = (
     "CareGist is independent of the Care Quality Commission. This brief is compiled from the "
@@ -34,8 +34,9 @@ def render_brief_pdf(brief: TerritoryBrief) -> bytes:
         footer=f"CareGist  |  {scope.name}  |  Confidential to order {brief.purchase_context.order_reference}",
     )
 
+    generated_on = brief.purchase_context.generated_at.astimezone(timezone.utc).date()
     pdf.title_block(
-        subtitle=f"{scope.name} ({scope.kind.replace('_', ' ')}) - generated {_fmt_date(brief.as_of_date)}",
+        subtitle=f"{scope.name} ({scope.kind.replace('_', ' ')}) - generated {_fmt_date(generated_on)}",
         meta_lines=[
             f"Prepared for order {brief.purchase_context.order_reference}",
             f"Opportunity window: {_fmt_date(brief.window_start)} to {_fmt_date(brief.window_end)} "
@@ -45,7 +46,7 @@ def render_brief_pdf(brief: TerritoryBrief) -> bytes:
             f"Territory locations in source: {brief.territory_locations}",
             f"Source: CQC public register edition {brief.as_of_date.isoformat()}. "
             f"Product: Territory Opportunity Brief (GBP {brief.purchase_context.price_gbp}).",
-            "Contents: sections 1-2 and 4-7 are the executive brief; Appendix A carries the "
+            "Contents: sections 1-7 are the executive brief; Appendix A carries the "
             "reason and evidence for every shortlisted organisation.",
         ],
     )
@@ -53,10 +54,13 @@ def render_brief_pdf(brief: TerritoryBrief) -> bytes:
     # 1. Executive summary
     pdf.heading("1. Executive summary")
     pdf.paragraph(es["headline"])
+    if es.get("shortfall_notice"):
+        pdf.paragraph(es["shortfall_notice"])
     pdf.key_values(
         [
             ("Territory", f'{es["territory"]} ({es["territory_kind"]})'),
             ("Date generated", es["date_generated"]),
+            ("Source edition", es["source_edition"]),
             ("Window", es["window"]),
             ("Opportunity set", str(es["opportunity_set_size"])),
             ("Shortlisted & ranked", str(es["shortlisted"])),
@@ -64,14 +68,14 @@ def render_brief_pdf(brief: TerritoryBrief) -> bytes:
         ]
     )
     pdf.spacer(2)
-    pdf.paragraph("Strongest areas of movement:")
+    pdf.paragraph("Highest-ranked organisations:")
     pdf.bullets(list(es["strongest_opportunities"]) or ["No shortlisted organisations in this window."])
     pdf.paragraph(f"Limitations: {es['limitations']}", muted=True)
 
     # 2. Ranked shortlist
     pdf.heading("2. Ranked opportunity shortlist")
     pdf.paragraph(
-        "Ranked by a deterministic opportunity score (see section 5). Every row carries a stated "
+        "Ranked by a deterministic opportunity score (see section 6). Every row carries a stated "
         "reason and links to the underlying CQC record. The same source data always produces this "
         "same order."
     )
@@ -119,7 +123,8 @@ def render_brief_pdf(brief: TerritoryBrief) -> bytes:
             ("New beds entering market", str(ins["new_beds_entering_market"])),
         ]
     )
-    if ins["activity_by_sub_area"]:
+    # A single row only repeats the territory itself, so it is not shown.
+    if len(ins["activity_by_sub_area"]) > 1:
         pdf.spacer(2)
         pdf.paragraph("Activity by sub-area:")
         pdf.table(
@@ -222,4 +227,4 @@ def render_brief_pdf(brief: TerritoryBrief) -> bytes:
 
 
 def _cqc_url(location_id: str) -> str:
-    return f"https://api.service.cqc.org.uk/public/v1/locations/{location_id}"
+    return CQC_PROFILE_URL.format(location_id=location_id)
