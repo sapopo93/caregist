@@ -103,7 +103,7 @@ async def submit_claim(
             f"Claim received for {provider_name}",
             f"<p>Hi {req.claimant_name},</p>"
             f"<p>We've received your claim for <strong>{provider_name}</strong> on CareGist. "
-            f"We'll review it within {'24 hours (fast-track)' if req.fast_track else '24–48 hours'}.</p>"
+            f"We'll review it within 2 business days.</p>"
             f"<p>— The CareGist Team</p>",
             idempotency_key=f"{claim_key}:day0",
         )
@@ -123,8 +123,8 @@ async def submit_claim(
             req.claimant_email,
             "Unlock visibility analytics for your listing",
             f"<p>Hi {req.claimant_name},</p>"
-            f"<p>Upgrade your claimed listing to unlock richer profile content, "
-            f"competitor benchmarking, and higher-visibility placement for {provider_name}.</p>"
+            f"<p>Upgrade your claimed listing to unlock richer profile content "
+            f"and competitor benchmarking for {provider_name}.</p>"
             f"<p><a href='https://caregist.co.uk/pricing#provider-plans'>See provider plans →</a></p>",
             send_after=now + timedelta(days=7),
             idempotency_key=f"{claim_key}:day7",

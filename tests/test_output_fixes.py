@@ -1,7 +1,7 @@
 """Wave 3 output fixes for the Territory Brief, outbound emails and price copy.
 
-Each test pins one gap from the quality review and failed on
-``claude/acceptance-caregist`` before the fix.
+Each test pins one gap from the quality review (H1, H2, H5, H6, H8, M1, M3, C2)
+and failed on ``claude/acceptance-caregist`` before the fix.
 """
 
 from __future__ import annotations
@@ -10,11 +10,16 @@ import csv
 import io
 import re
 import subprocess
+from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from pathlib import Path
+from unittest.mock import AsyncMock, patch
 
 import pytest
+from httpx import ASGITransport, AsyncClient
 
+from api.main import app
+from api.middleware.auth import validate_api_key
 from api.services.territory_brief import (
     MIN_SHORTLIST,
     OGL_ATTRIBUTION,
@@ -131,3 +136,108 @@ def test_executive_text_points_at_the_right_sections(southampton, tmp_path):
     # repeat the territory.
     assert len(southampton.territory_insights["activity_by_sub_area"]) == 1
     assert "Activity by sub-area" not in text
+
+
+# H5 -------------------------------------------------------------------------
+
+
+def _conn(row):
+    conn = AsyncMock()
+    conn.fetchrow = AsyncMock(return_value=row)
+
+    @asynccontextmanager
+    async def get_connection():
+        yield conn
+
+    return get_connection
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("source", ["homepage", "radius_finder"])
+async def test_subscribe_queues_no_email_while_outbound_gate_closed(source):
+    queue = AsyncMock()
+    with patch("api.routers.subscribe.get_connection", _conn({"id": 1})), \
+         patch("api.routers.subscribe.queue_email", queue), \
+         patch("api.routers.subscribe.log_event", AsyncMock()), \
+         patch("api.config.settings.outbound_communications_enabled", False):
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://t") as client:
+            resp = await client.post("/api/v1/subscribe", json={"email": "a@example.com", "source": source})
+    assert resp.status_code == 200, resp.text
+    assert resp.json() == {"success": True, "existing": False}
+    queue.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_subscribe_still_queues_welcome_email_when_gate_open():
+    queue = AsyncMock()
+    with patch("api.routers.subscribe.get_connection", _conn({"id": 1})), \
+         patch("api.routers.subscribe.queue_email", queue), \
+         patch("api.routers.subscribe.log_event", AsyncMock()), \
+         patch("api.config.settings.outbound_communications_enabled", True):
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://t") as client:
+            resp = await client.post("/api/v1/subscribe", json={"email": "a@example.com"})
+    assert resp.status_code == 200
+    assert queue.await_count == 1
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("gate_open,expected", [(False, 0), (True, 1)])
+async def test_api_application_email_follows_outbound_gate(gate_open, expected):
+    queue = AsyncMock()
+    with patch("api.routers.api_applications.get_connection", _conn({"id": 7})), \
+         patch("api.routers.api_applications.queue_email", queue), \
+         patch("api.routers.api_applications.log_event", AsyncMock()), \
+         patch("api.config.settings.outbound_communications_enabled", gate_open):
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://t") as client:
+            resp = await client.post("/api/v1/api-applications", json={
+                "company_name": "Acme", "contact_name": "Jo", "contact_email": "jo@example.com",
+                "use_case": "Research",
+            })
+    assert resp.status_code == 201, resp.text
+    assert resp.json()["data"] == {"id": 7}
+    assert queue.await_count == expected
+
+
+# H6 -------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("fast_track", [False, True])
+async def test_claim_email_and_api_state_the_same_turnaround(fast_track):
+    conn = AsyncMock()
+    conn.fetchrow = AsyncMock(side_effect=[
+        {"id": "L1", "is_claimed": False},
+        None,
+        {"id": 1, "provider_id": "L1", "status": "pending", "claimant_name": "J",
+         "claimant_email": "jane@care.co.uk", "created_at": "2026-01-01"},
+    ])
+
+    @asynccontextmanager
+    async def get_connection():
+        yield conn
+
+    queue = AsyncMock()
+    app.dependency_overrides[validate_api_key] = lambda: {
+        "tier": "starter", "remaining": {}, "user_id": 1, "email": "jane@care.co.uk",
+    }
+    try:
+        with patch("api.routers.claims.get_connection", get_connection), \
+             patch("api.routers.claims.settings.provider_claims_enabled", True), \
+             patch("api.routers.claims.settings.outbound_communications_enabled", True), \
+             patch("api.utils.email_queue.queue_email", queue), \
+             patch("api.utils.analytics.log_event", AsyncMock()):
+            async with AsyncClient(transport=ASGITransport(app=app), base_url="http://t") as client:
+                resp = await client.post("/api/v1/providers/p/claim", json={
+                    "claimant_name": "Jane Smith", "claimant_email": "jane@care.co.uk",
+                    "claimant_role": "Registered Manager", "fast_track": fast_track,
+                    "proof_of_association": "I am the registered manager, CQC 12345",
+                }, headers={"X-API-Key": "test-master-key-for-pytest"})
+    finally:
+        app.dependency_overrides = {}
+    assert resp.status_code == 201, resp.text
+    assert "2 business days" in resp.json()["message"]
+    bodies = [call.args[2] for call in queue.await_args_list]
+    assert bodies, "no claim email queued"
+    assert "2 business days" in bodies[0]
+    assert "24" not in bodies[0]
+    assert not any("higher-visibility placement" in body for body in bodies)

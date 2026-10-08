@@ -8,6 +8,7 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, EmailStr, Field
 
+from api.config import settings
 from api.database import get_connection
 from api.middleware.ip_rate_limit import check_public_rate_limit
 from api.queries.subscribe import GET_LAST_SYNC_DATE, INSERT_SUBSCRIBER
@@ -52,7 +53,9 @@ async def subscribe(
         meta={"postcode": req.postcode, "new": is_new, "crm_state": "newsletter_lead"},
     )
 
-    if is_new:
+    # Marketing and welcome emails respect the global outbound gate; the
+    # subscription itself is still recorded.
+    if is_new and settings.outbound_communications_enabled:
         from datetime import datetime, timedelta, timezone
 
         now = datetime.now(timezone.utc)
