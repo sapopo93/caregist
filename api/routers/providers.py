@@ -347,7 +347,8 @@ async def export_providers_csv(
         from datetime import datetime, timedelta, timezone
         await log_event("csv_download", "search", meta={"tier": tier, "rows": len(data), "total": total, "crm_state": "data_intent_user"})
         user_email = _auth.get("email")
-        if user_email:
+        # Marketing follow-up: only while outbound communications are switched on.
+        if user_email and settings.outbound_communications_enabled:
             await queue_email(
                 user_email,
                 "Your CareGist export is ready — want alerts?",

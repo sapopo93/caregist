@@ -255,3 +255,70 @@ def test_buyer_pages_read_the_brief_price_from_the_constant(rel):
     text = (ROOT / rel).read_text(encoding="utf-8")
     assert not re.search(r"(?:£|&pound;)\s?745\b", text), rel
     assert "TERRITORY_BRIEF_PRICE_GBP" in text
+
+
+# --- Re-check follow-up: marketing follow-ups after a saved comparison or a CSV export (H5) ---
+
+def _business_auth():
+    return {
+        "tier": "business",
+        "remaining": {"burst_remaining": 10, "daily_remaining": 100, "rolling_7d_remaining": 100, "monthly_remaining": 100},
+        "user_id": 1,
+        "email": "ops@example.com",
+    }
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("gate_open,expected", [(False, 0), (True, 1)])
+async def test_comparison_follow_up_email_follows_outbound_gate(gate_open, expected):
+    from api.middleware.auth import validate_api_key
+
+    queue = AsyncMock()
+    conn = AsyncMock()
+    conn.fetchrow = AsyncMock(side_effect=lambda sql, *a: {"email": "ops@example.com"} if "FROM users" in sql else {"id": 9, "share_token": "t", "slug_list": ["a", "b"], "title": None})
+
+    @asynccontextmanager
+    async def get_conn():
+        yield conn
+
+    app.dependency_overrides[validate_api_key] = _business_auth
+    try:
+        with patch("api.routers.comparisons.get_connection", get_conn), \
+             patch("api.utils.email_queue.queue_email", queue), \
+             patch("api.utils.analytics.log_event", AsyncMock()), \
+             patch("api.config.settings.outbound_communications_enabled", gate_open):
+            async with AsyncClient(transport=ASGITransport(app=app), base_url="http://t") as client:
+                resp = await client.post("/api/v1/comparisons", json={"slug_list": ["a", "b"]}, headers={"X-API-Key": "k"})
+    finally:
+        app.dependency_overrides = {}
+    assert resp.status_code == 201, resp.text
+    assert queue.await_count == expected
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("gate_open,expected", [(False, 0), (True, 1)])
+async def test_csv_export_follow_up_email_follows_outbound_gate(gate_open, expected):
+    from api.middleware.auth import validate_api_key
+
+    queue = AsyncMock()
+    conn = AsyncMock()
+    conn.fetch = AsyncMock(return_value=[{"name": "Sunrise Care Home", "slug": "sunrise", "region": "London", "overall_rating": "Good"}])
+    conn.fetchrow = AsyncMock(return_value={"total": 1})
+
+    @asynccontextmanager
+    async def get_conn():
+        yield conn
+
+    app.dependency_overrides[validate_api_key] = _business_auth
+    try:
+        with patch("api.routers.providers.get_connection", get_conn), \
+             patch("api.routers.providers.settings.directory_export_delivery_enabled", True), \
+             patch("api.utils.email_queue.queue_email", queue), \
+             patch("api.utils.analytics.log_event", AsyncMock()), \
+             patch("api.config.settings.outbound_communications_enabled", gate_open):
+            async with AsyncClient(transport=ASGITransport(app=app), base_url="http://t") as client:
+                resp = await client.get("/api/v1/providers/export.csv?region=London", headers={"X-API-Key": "k"})
+    finally:
+        app.dependency_overrides = {}
+    assert resp.status_code == 200, resp.text
+    assert queue.await_count == expected
