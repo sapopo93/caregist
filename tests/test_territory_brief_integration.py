@@ -93,7 +93,7 @@ def test_csv_round_trips_and_matches_shortlist(brief):
     assert rows[0]["organisation"] == brief.shortlist[0].organisation_name
     for row in rows:
         assert row["reason"].strip()
-        assert row["cqc_record_url"].startswith("https://api.service.cqc.org.uk/")
+        assert row["cqc_record_url"].startswith("https://www.cqc.org.uk/location/")
 
 
 def test_determinism_on_real_data():
