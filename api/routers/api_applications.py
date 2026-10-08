@@ -7,6 +7,7 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, EmailStr, Field
 
+from api.config import settings
 from api.database import get_connection
 from api.middleware.ip_rate_limit import check_public_rate_limit
 from api.queries.api_applications import INSERT_APPLICATION
@@ -52,14 +53,17 @@ async def submit_api_application(
         meta={"company": req.company_name, "volume": req.expected_volume, "crm_state": "enterprise_data_prospect"},
     )
 
-    await queue_email(
-        req.contact_email,
-        "CareGist Intelligence Feed — Pilot Enquiry Received",
-        f"<p>Hi {req.contact_name},</p>"
-        f"<p>Thanks for your CareGist Intelligence Feed pilot enquiry. We'll review your proposed scope within 2 business days.</p>"
-        f"<p>Company: {req.company_name}<br>Use case: {req.use_case[:200]}</p>"
-        f"<p>— The CareGist Team</p>",
-    )
+    # The acknowledgement email respects the global outbound gate; the enquiry
+    # itself is still recorded.
+    if settings.outbound_communications_enabled:
+        await queue_email(
+            req.contact_email,
+            "CareGist Intelligence Feed — Pilot Enquiry Received",
+            f"<p>Hi {req.contact_name},</p>"
+            f"<p>Thanks for your CareGist Intelligence Feed pilot enquiry. We'll review your proposed scope within 2 business days.</p>"
+            f"<p>Company: {req.company_name}<br>Use case: {req.use_case[:200]}</p>"
+            f"<p>— The CareGist Team</p>",
+        )
 
     return {
         "data": dict(row) if row else {},
