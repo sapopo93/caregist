@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import hashlib
 import html
-import json
 import logging
 import secrets
 from datetime import datetime, timedelta, timezone
@@ -1688,15 +1687,58 @@ async def _handle_dataset_checkout_completed(conn, session: dict) -> None:
     if actual_items != [(settings.stripe_price_full_dataset, 1)]:
         raise RuntimeError(f"full-dataset checkout has unexpected line items: {actual_items!r}")
 
+    payment_intent = authoritative.get("payment_intent")
+    if hasattr(payment_intent, "get"):
+        payment_intent = payment_intent.get("id")
+    if (
+        not isinstance(payment_intent, str)
+        or len(payment_intent.strip()) <= 3
+        or not payment_intent.strip().startswith("pi_")
+    ):
+        raise RuntimeError("full-dataset checkout has no valid authoritative payment intent")
+    payment_intent = payment_intent.strip()
+    amount_total = authoritative.get("amount_total")
+    currency = authoritative.get("currency")
+    currency = currency.lower() if isinstance(currency, str) else currency
+    if not isinstance(amount_total, int) or isinstance(amount_total, bool) or amount_total <= 0:
+        raise RuntimeError("full-dataset checkout has invalid authoritative payment amount")
+    if not isinstance(currency, str) or len(currency) != 3 or not currency.isalpha():
+        raise RuntimeError("full-dataset checkout has invalid authoritative payment currency")
+
+    # Refund and fulfilment serialize on the authoritative payment before either
+    # locks an order. The order read then sees any refund audit committed by the
+    # winner, including refunds that arrived before a local payment binding.
+    await conn.execute(
+        "SELECT pg_advisory_xact_lock(hashtextextended('caregist-payment:' || $1, 0))",
+        payment_intent,
+    )
     order = await conn.fetchrow(
         """
-        SELECT id, artifact_id, customer_email, stripe_price_id, status
-        FROM full_dataset_orders
-        WHERE id = $1 AND stripe_checkout_session_id = $2
-        FOR UPDATE
+        SELECT o.id, o.artifact_id, o.customer_email, o.stripe_price_id, o.status,
+               o.stripe_payment_intent_id, o.amount_total, o.currency,
+               EXISTS (
+                 SELECT 1
+                 FROM audit_log a
+                 WHERE a.action = 'billing.charge.refund'
+                   AND a.metadata->>'payment_intent' = $3
+                   AND a.metadata->>'fully_refunded' = 'true'
+               ) AS fully_refunded,
+               c.order_id AS consent_order_id,
+               c.stripe_checkout_session_id AS consent_session_id,
+               c.terms_version AS consent_terms_version,
+               c.terms_sha256 AS consent_terms_sha256,
+               c.consent_text_sha256 AS consent_text_sha256,
+               c.immediate_supply_consented,
+               c.cancellation_right_acknowledged,
+               c.evidence_source AS consent_evidence_source
+        FROM full_dataset_orders o
+        LEFT JOIN digital_content_consents c ON c.order_id = o.id
+        WHERE o.id = $1 AND o.stripe_checkout_session_id = $2
+        FOR UPDATE OF o
         """,
         order_id,
         session_id,
+        payment_intent,
     )
     if (
         not order
@@ -1704,26 +1746,44 @@ async def _handle_dataset_checkout_completed(conn, session: dict) -> None:
         or order["stripe_price_id"] != settings.stripe_price_full_dataset
     ):
         raise RuntimeError("full-dataset checkout does not match its reserved local order")
+    expected_payment = {
+        "stripe_payment_intent_id": payment_intent,
+        "amount_total": amount_total,
+        "currency": currency,
+    }
+    if any(order.get(field) not in (None, value) for field, value in expected_payment.items()):
+        raise RuntimeError("full-dataset checkout conflicts with durable payment evidence")
+    if order.get("consent_order_id") is not None and (
+        order.get("consent_session_id") != session_id
+        or order.get("consent_terms_version") != terms_version
+        or order.get("consent_terms_sha256") != terms_sha
+        or order.get("consent_text_sha256") != consent_sha
+        or order.get("immediate_supply_consented") is not True
+        or order.get("cancellation_right_acknowledged") is not True
+        or order.get("consent_evidence_source") != "stripe_checkout_terms_checkbox"
+    ):
+        raise RuntimeError("full-dataset checkout conflicts with durable consent evidence")
+    if order.get("fully_refunded"):
+        raise RuntimeError("refunded full-dataset payment cannot be fulfilled")
     if order["status"] == "refunded":
         raise RuntimeError("refunded full-dataset order cannot be fulfilled")
     if order["status"] == "paid":
         logger.info("Full-dataset order %s is already fulfilled", order["id"])
         return
 
-    payment_intent = authoritative.get("payment_intent")
-    if hasattr(payment_intent, "get"):
-        payment_intent = payment_intent.get("id")
     await conn.execute(
         """
         UPDATE full_dataset_orders
-        SET status = 'paid', stripe_payment_intent_id = $1,
-            amount_total = $2, currency = LOWER($3), paid_at = COALESCE(paid_at, NOW()),
+        SET status = 'paid',
+            stripe_payment_intent_id = COALESCE(stripe_payment_intent_id, $1),
+            amount_total = COALESCE(amount_total, $2),
+            currency = COALESCE(currency, $3), paid_at = COALESCE(paid_at, NOW()),
             fulfilled_at = COALESCE(fulfilled_at, NOW()), updated_at = NOW()
         WHERE id = $4
         """,
         payment_intent,
-        authoritative.get("amount_total"),
-        authoritative.get("currency"),
+        amount_total,
+        currency,
         order["id"],
     )
     await conn.execute(
@@ -2116,7 +2176,7 @@ async def _handle_profile_checkout_completed(conn, session: dict) -> None:
 async def _handle_refund(conn, charge: dict) -> None:
     """Record a charge.refunded or charge.refund.updated event atomically.
 
-    Updates billing_operations with the refund status and writes an audit log
+    Writes the refund audit record and revokes fully refunded entitlements
     inside the same transaction as the webhook dedup insert. On exception the
     entire transaction rolls back and Stripe will re-deliver the event.
 
@@ -2137,26 +2197,21 @@ async def _handle_refund(conn, charge: dict) -> None:
     amount = charge.get("amount", 0)
     fully_refunded = charge.get("refunded", False)
     payment_intent = charge.get("payment_intent")
+    if hasattr(payment_intent, "get"):
+        payment_intent = payment_intent.get("id")
+    if payment_intent:
+        # Share fulfilment's payment lock before touching orders. A refund
+        # arriving while generation runs must see its eventual payment row,
+        # or leave durable evidence before the failure recorder/replay runs.
+        await conn.execute(
+            "SELECT pg_advisory_xact_lock(hashtextextended('caregist-payment:' || $1, 0))",
+            payment_intent,
+        )
 
-    await conn.execute(
-        """
-        INSERT INTO billing_operations
-            (owner_type, operation_type, stripe_object_id, status,
-             amount_gbp, metadata, created_at, updated_at)
-        VALUES ('account', 'refund', $1, $2, $3, $4, NOW(), NOW())
-        ON CONFLICT (stripe_object_id, operation_type)
-        DO UPDATE SET status = EXCLUDED.status,
-                      amount_gbp = EXCLUDED.amount_gbp,
-                      metadata = EXCLUDED.metadata,
-                      updated_at = NOW()
-        """,
-        charge_id,
-        "refunded" if fully_refunded else "partial_refund",
-        round(amount_refunded / 100, 2),
-        json.dumps({"payment_intent": payment_intent, "amount": amount,
-                     "amount_refunded": amount_refunded,
-                     "fully_refunded": fully_refunded}),
-    )
+    # billing_operations reserves checkout/subscription requests. Its schema
+    # has no refund operation, amount or metadata columns. Refund evidence
+    # belongs in the existing transactional audit log below; webhook event
+    # deduplication is handled by stripe_processed_events.
 
     if fully_refunded and payment_intent:
         refunded_order = await conn.fetchrow(
@@ -2204,6 +2259,7 @@ async def _handle_refund(conn, charge: dict) -> None:
             "payment_intent": payment_intent,
         },
         conn=conn,
+        strict=True,
     )
 
     logger.info(

@@ -32,8 +32,9 @@ async def write_audit_log(
     target_id: str | int | None = None,
     metadata: dict[str, Any] | None = None,
     conn=None,
+    strict: bool = False,
 ) -> None:
-    """Insert one audit_log row. Never raises; audit failures must not block mutations."""
+    """Insert an audit row; strict callers require evidence before committing."""
     actor = actor or {"type": "system"}
     params = (
         action,
@@ -67,4 +68,6 @@ async def write_audit_log(
         async with get_connection() as audit_conn:
             await audit_conn.execute(query, *params)
     except Exception as exc:
+        if strict:
+            raise
         logger.warning("Audit log insert failed (action=%s outcome=%s): %s", action, outcome, exc)

@@ -1,3 +1,15 @@
+## 2026-10-09 buying audit — current blockers
+
+1. Product promises are not proven by the dormant generator: selected provider/service criteria and per-entry qualification questions need fulfilment evidence.
+2. Weekly Digest approved terms, four deliveries and missed-week remedy proof absent.
+3. Authorised synthetic merchant/inbox/private-file path and assigned staff recovery/acceptance unverified.
+4. Outer commit failure, process interruption, orphan cleanup and legacy failed-row reconciliation remain incomplete.
+5. Authoritative source freshness/shadow coverage and named Grok/DeepSeek commercial gates remain closed. Dormant runtime source packaging is unverified.
+
+Refund SQL, mandatory audit, paid evidence after rollback, identity/consent conflicts and refund-first/checkout-first entitlement races are repaired and tested locally; they are not approved commercial activation. [Audit](../artifacts/buying-audit/2026-10-09/BUYING_PROCESS.md). Older entries below are historical.
+
+---
+
 ## 2026-10-09 — current completion audit (PARTIAL)
 
 Current read-only release: `59310ecc100119d6d775d70e62db758882bf5b8f` on GitHub main and both public services. PR #82 is merged. This dated observation supersedes older release/operational claims below; it does not approve commercial gates. Source reconciliation is stale/incomplete, checkout and delivery are closed. Repair branch `codex/completion-20261009` integrates PR #83 and corrects independently reproduced queue/CSV/shortfall defects. See [the audit](../artifacts/completion/2026-10-09/AUDIT.md) and [33-PR inventory](../artifacts/completion/2026-10-09/PR_INVENTORY.md) for raw evidence, actual checks, uncommitted preservation and remaining work. Grok/DeepSeek provider failures leave the prescribed independent gates uncompleted. Historical entries below are archives, not a new action list.

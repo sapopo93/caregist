@@ -1,3 +1,11 @@
+## 2026-10-09 buying audit — current dated checkpoint
+
+PARTIAL. Observed production at 09:07 UTC serves `3d3f3e42e95d3f1829387df19731eb819d93e993`. Discovery and enquiry initiation work; receipt, staff handling and complete paid delivery are unverified. Reviewed local repair branch `codex/buying-process-audit-20261009` fixes refund schema/audit atomicity, failed-generation payment evidence, immutable identity/consent, refund replay ordering and enquiry-only coverage semantics. Final local validation: 1,400 backend/Postgres passed, two explicitly skipped; 82 recovery checks; 183 frontend checks; six live-page browser scenarios. Independent technical re-review clears the HIGH findings for the bounded fail-closed repair; MEDIUM commit/interruption/orphan cleanup remains. Product/criteria, Digest terms, deployable source and real operational receipts remain unverified. This checkpoint is not deployment or commercial approval. [Full evidence](../artifacts/buying-audit/2026-10-09/BUYING_PROCESS.md).
+
+Older dated entries below are historical.
+
+---
+
 ## 2026-10-09 — current completion audit (PARTIAL)
 
 Current read-only release: `59310ecc100119d6d775d70e62db758882bf5b8f` on GitHub main and both public services. PR #82 is merged. This dated observation supersedes older release/operational claims below; it does not approve commercial gates. Source reconciliation is stale/incomplete, checkout and delivery are closed. Repair branch `codex/completion-20261009` integrates PR #83 and corrects independently reproduced queue/CSV/shortfall defects. See [the audit](../artifacts/completion/2026-10-09/AUDIT.md) and [33-PR inventory](../artifacts/completion/2026-10-09/PR_INVENTORY.md) for raw evidence, actual checks, uncommitted preservation and remaining work. Grok/DeepSeek provider failures leave the prescribed independent gates uncompleted. Historical entries below are archives, not a new action list.

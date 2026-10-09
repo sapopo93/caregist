@@ -1,3 +1,9 @@
+## 2026-10-09 buying audit — unfinished evidence
+
+Paid buying remains PARTIAL. Missing: approved Digest terms and four consecutive deliveries, agreed-criteria output fidelity and qualification questions, verified deployable source path, assigned staff handling, merchant sandbox transaction, delivered inbox receipt/bounce recovery, valid private Blob download, customer acceptance/refund settlement, interruption/commit recovery and orphan cleanup. The local repairs and 1,400 backend/Postgres passes (two skips), 183 frontend passes and six browser scenarios do not establish these. No real messages/payments/refunds or gate changes were made. [Full proof and limits](../artifacts/buying-audit/2026-10-09/BUYING_PROCESS.md). Older entries below are historical.
+
+---
+
 ## 2026-10-09 — current completion audit (PARTIAL)
 
 Current read-only release: `59310ecc100119d6d775d70e62db758882bf5b8f` on GitHub main and both public services. PR #82 is merged. This dated observation supersedes older release/operational claims below; it does not approve commercial gates. Source reconciliation is stale/incomplete, checkout and delivery are closed. Repair branch `codex/completion-20261009` integrates PR #83 and corrects independently reproduced queue/CSV/shortfall defects. See [the audit](../artifacts/completion/2026-10-09/AUDIT.md) and [33-PR inventory](../artifacts/completion/2026-10-09/PR_INVENTORY.md) for raw evidence, actual checks, uncommitted preservation and remaining work. Grok/DeepSeek provider failures leave the prescribed independent gates uncompleted. Historical entries below are archives, not a new action list.

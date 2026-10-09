@@ -1,0 +1,326 @@
+{
+  "config": {
+    "argv": [
+      "/Users/user/.hermes/node/bin/node",
+      "/Users/user/CareGist/frontend/node_modules/.bin/playwright",
+      "test",
+      "e2e/territory-journey.spec.ts",
+      "--workers=1",
+      "--reporter=json",
+      "--output=/Users/user/CareGist/artifacts/buying-audit/2026-10-09/browser-results"
+    ],
+    "configFile": "/Users/user/CareGist/frontend/playwright.config.ts",
+    "rootDir": "/Users/user/CareGist/frontend/e2e",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "/Users/user/CareGist/artifacts/buying-audit/2026-10-09/browser-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "",
+        "name": "",
+        "testDir": "/Users/user/CareGist/frontend/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "json"
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.62.1",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "territory-journey.spec.ts",
+      "file": "territory-journey.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "coverage enquiry clears obsolete selections and recovers from errors",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4974,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-09T09:07:36.742Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "b3a5becb41e63f4ec3d8-63612b28e130bd5a0f22",
+          "file": "territory-journey.spec.ts",
+          "line": 3,
+          "column": 5
+        },
+        {
+          "title": "an old response cannot restore coverage after selection changes",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 556,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-09T09:07:42.016Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "b3a5becb41e63f4ec3d8-705838497d0790175eaf",
+          "file": "territory-journey.spec.ts",
+          "line": 38,
+          "column": 5
+        },
+        {
+          "title": "checkout return page does not treat a supplied session ID as payment proof",
+          "ok": false,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "failed",
+                  "duration": 5655,
+                  "error": {
+                    "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('heading', { name: 'Check your email for your Territory Brief' })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('heading', { name: 'Check your email for your Territory Brief' })\u001b[22m\n",
+                    "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('heading', { name: 'Check your email for your Territory Brief' })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('heading', { name: 'Check your email for your Territory Brief' })\u001b[22m\n\n    at /Users/user/CareGist/frontend/e2e/territory-journey.spec.ts:62:98",
+                    "location": {
+                      "file": "/Users/user/CareGist/frontend/e2e/territory-journey.spec.ts",
+                      "column": 98,
+                      "line": 62
+                    },
+                    "snippet": "  60 | test(\"checkout return page does not treat a supplied session ID as payment proof\", async ({ page }) => {\n  61 |   await page.goto(\"/territory-opportunity-brief/success?session_id=cs_unverified\");\n> 62 |   await expect(page.getByRole(\"heading\", { name: \"Check your email for your Territory Brief\" })).toBeVisible();\n     |                                                                                                  ^\n  63 |   await expect(page.getByText(\"This page does not confirm payment or delivery.\", { exact: false })).toBeVisible();\n  64 |   await expect(page.getByRole(\"link\", { name: /Download/ })).toHaveCount(0);\n  65 | });"
+                  },
+                  "errors": [
+                    {
+                      "location": {
+                        "file": "/Users/user/CareGist/frontend/e2e/territory-journey.spec.ts",
+                        "column": 98,
+                        "line": 62
+                      },
+                      "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: getByRole('heading', { name: 'Check your email for your Territory Brief' })\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 5000ms\u001b[22m\n\u001b[2m  - waiting for getByRole('heading', { name: 'Check your email for your Territory Brief' })\u001b[22m\n\n\n  60 | test(\"checkout return page does not treat a supplied session ID as payment proof\", async ({ page }) => {\n  61 |   await page.goto(\"/territory-opportunity-brief/success?session_id=cs_unverified\");\n> 62 |   await expect(page.getByRole(\"heading\", { name: \"Check your email for your Territory Brief\" })).toBeVisible();\n     |                                                                                                  ^\n  63 |   await expect(page.getByText(\"This page does not confirm payment or delivery.\", { exact: false })).toBeVisible();\n  64 |   await expect(page.getByRole(\"link\", { name: /Download/ })).toHaveCount(0);\n  65 | });\n    at /Users/user/CareGist/frontend/e2e/territory-journey.spec.ts:62:98"
+                    }
+                  ],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-09T09:07:42.579Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "screenshot",
+                      "contentType": "image/png",
+                      "path": "/Users/user/CareGist/artifacts/buying-audit/2026-10-09/browser-results/territory-journey-checkout-8a1ee-session-ID-as-payment-proof/test-failed-1.png"
+                    },
+                    {
+                      "name": "error-context",
+                      "contentType": "text/markdown",
+                      "path": "/Users/user/CareGist/artifacts/buying-audit/2026-10-09/browser-results/territory-journey-checkout-8a1ee-session-ID-as-payment-proof/error-context.md"
+                    },
+                    {
+                      "name": "trace",
+                      "contentType": "application/zip",
+                      "path": "/Users/user/CareGist/artifacts/buying-audit/2026-10-09/browser-results/territory-journey-checkout-8a1ee-session-ID-as-payment-proof/trace.zip"
+                    }
+                  ],
+                  "errorLocation": {
+                    "file": "/Users/user/CareGist/frontend/e2e/territory-journey.spec.ts",
+                    "column": 98,
+                    "line": 62
+                  }
+                }
+              ],
+              "status": "unexpected"
+            }
+          ],
+          "id": "b3a5becb41e63f4ec3d8-87c5739e3b8e54def0a9",
+          "file": "territory-journey.spec.ts",
+          "line": 60,
+          "column": 5
+        },
+        {
+          "title": "small territories retain free discovery and a usable webmail enquiry",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 900,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-09T09:07:48.582Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "b3a5becb41e63f4ec3d8-4216f769837ad33454a0",
+          "file": "territory-journey.spec.ts",
+          "line": 67,
+          "column": 5
+        },
+        {
+          "title": "a stalled coverage check times out and allows retry",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 566,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-09T09:07:49.699Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "b3a5becb41e63f4ec3d8-2961bfa04bffa76fcbf1",
+          "file": "territory-journey.spec.ts",
+          "line": 96,
+          "column": 5
+        },
+        {
+          "title": "territory selectors cannot lose input before hydration",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 30000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 575,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-10-09T09:07:50.269Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "b3a5becb41e63f4ec3d8-88004e50b2b6d8edf1b0",
+          "file": "territory-journey.spec.ts",
+          "line": 108,
+          "column": 5
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-10-09T09:07:36.549Z",
+    "duration": 14427.955999999998,
+    "expected": 5,
+    "skipped": 0,
+    "unexpected": 1,
+    "flaky": 0
+  }
+}

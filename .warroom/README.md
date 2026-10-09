@@ -1,3 +1,11 @@
+## 2026-10-09 buying audit — current dated evidence
+
+Production observed at 09:07 UTC: `3d3f3e42e95d3f1829387df19731eb819d93e993` (PR #84 merged). The historical claims below about unmerged/nonexistent fulfilment and earlier releases are not current. Buying remains PARTIAL: enquiry initiation works, source/commercial gates are closed, and complete paid operational delivery is unverified. Local repair branch has 1,400 backend/Postgres passes (two skips), 183 frontend passes, six browser scenarios and an independent bounded technical re-review. Commit/interruption/orphan cleanup, product criteria/qualification questions, Digest terms, deployable source and staff/merchant/inbox/file receipts remain gates. [The buying audit](../artifacts/buying-audit/2026-10-09/BUYING_PROCESS.md) is the dated evidence; it does not authorize activation.
+
+Older dated entries below are historical.
+
+---
+
 ## 2026-10-09 — current completion audit (PARTIAL)
 
 Current read-only release: `59310ecc100119d6d775d70e62db758882bf5b8f` on GitHub main and both public services. PR #82 is merged. This dated observation supersedes older release/operational claims below; it does not approve commercial gates. Source reconciliation is stale/incomplete, checkout and delivery are closed. Repair branch `codex/completion-20261009` integrates PR #83 and corrects independently reproduced queue/CSV/shortfall defects. See [the audit](../artifacts/completion/2026-10-09/AUDIT.md) and [33-PR inventory](../artifacts/completion/2026-10-09/PR_INVENTORY.md) for raw evidence, actual checks, uncommitted preservation and remaining work. Grok/DeepSeek provider failures leave the prescribed independent gates uncompleted. Historical entries below are archives, not a new action list.

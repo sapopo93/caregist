@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="3" skipped="0" tests="4" time="1.912" timestamp="2026-10-09T10:10:53.478578+01:00" hostname="Mac"><testcase classname="tests.integration.test_buying_refund_pg" name="test_full_refund_revokes_a_brief_and_replay_is_safe[fulfilled]" time="0.375"><failure message="asyncpg.exceptions.UndefinedColumnError: column &quot;amount_gbp&quot; of relation &quot;billing_operations&quot; does not exist">tests/integration/test_buying_refund_pg.py:21: in test_full_refund_revokes_a_brief_and_replay_is_safe
+    await billing._handle_refund(conn, event)
+api/routers/billing.py:2141: in _handle_refund
+    await conn.execute(
+.venv/lib/python3.12/site-packages/asyncpg/connection.py:353: in execute
+    _, status, _ = await self._execute(
+.venv/lib/python3.12/site-packages/asyncpg/connection.py:1794: in _execute
+    result, _ = await self.__execute(
+.venv/lib/python3.12/site-packages/asyncpg/connection.py:1892: in __execute
+    result, stmt = await self._do_execute(
+.venv/lib/python3.12/site-packages/asyncpg/connection.py:1925: in _do_execute
+    stmt = await self._get_statement(
+.venv/lib/python3.12/site-packages/asyncpg/connection.py:433: in _get_statement
+    statement = await self._protocol.prepare(
+asyncpg/protocol/protocol.pyx:166: in prepare
+    ???
+E   asyncpg.exceptions.UndefinedColumnError: column "amount_gbp" of relation "billing_operations" does not exist</failure></testcase><testcase classname="tests.integration.test_buying_refund_pg" name="test_full_refund_revokes_a_brief_and_replay_is_safe[failed]" time="0.427"><failure message="asyncpg.exceptions.UndefinedColumnError: column &quot;amount_gbp&quot; of relation &quot;billing_operations&quot; does not exist">tests/integration/test_buying_refund_pg.py:21: in test_full_refund_revokes_a_brief_and_replay_is_safe
+    await billing._handle_refund(conn, event)
+api/routers/billing.py:2141: in _handle_refund
+    await conn.execute(
+.venv/lib/python3.12/site-packages/asyncpg/connection.py:353: in execute
+    _, status, _ = await self._execute(
+.venv/lib/python3.12/site-packages/asyncpg/connection.py:1794: in _execute
+    result, _ = await self.__execute(
+.venv/lib/python3.12/site-packages/asyncpg/connection.py:1892: in __execute
+    result, stmt = await self._do_execute(
+.venv/lib/python3.12/site-packages/asyncpg/connection.py:1925: in _do_execute
+    stmt = await self._get_statement(
+.venv/lib/python3.12/site-packages/asyncpg/connection.py:433: in _get_statement
+    statement = await self._protocol.prepare(
+asyncpg/protocol/protocol.pyx:166: in prepare
+    ???
+E   asyncpg.exceptions.UndefinedColumnError: column "amount_gbp" of relation "billing_operations" does not exist</failure></testcase><testcase classname="tests.integration.test_buying_refund_pg" name="test_observed_gap_refund_cannot_match_failed_order_without_payment_intent" time="0.408"><failure message="asyncpg.exceptions.UndefinedColumnError: column &quot;amount_gbp&quot; of relation &quot;billing_operations&quot; does not exist">tests/integration/test_buying_refund_pg.py:44: in test_observed_gap_refund_cannot_match_failed_order_without_payment_intent
+    await billing._handle_refund(conn, {"id": "ch_unmatched", "amount": 74500, "amount_refunded": 74500, "refunded": True, "payment_intent": "pi_unmatched"})
+api/routers/billing.py:2141: in _handle_refund
+    await conn.execute(
+.venv/lib/python3.12/site-packages/asyncpg/connection.py:353: in execute
+    _, status, _ = await self._execute(
+.venv/lib/python3.12/site-packages/asyncpg/connection.py:1794: in _execute
+    result, _ = await self.__execute(
+.venv/lib/python3.12/site-packages/asyncpg/connection.py:1892: in __execute
+    result, stmt = await self._do_execute(
+.venv/lib/python3.12/site-packages/asyncpg/connection.py:1925: in _do_execute
+    stmt = await self._get_statement(
+.venv/lib/python3.12/site-packages/asyncpg/connection.py:433: in _get_statement
+    statement = await self._protocol.prepare(
+asyncpg/protocol/protocol.pyx:166: in prepare
+    ???
+E   asyncpg.exceptions.UndefinedColumnError: column "amount_gbp" of relation "billing_operations" does not exist</failure></testcase><testcase classname="tests.integration.test_data_lifecycle" name="test_dead_letter_counts_only_old_failed_emails" time="0.390" /></testsuite></testsuites>

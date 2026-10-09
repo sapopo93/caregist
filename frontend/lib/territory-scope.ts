@@ -6,13 +6,12 @@ import {
 } from "./directory-constants.ts";
 
 /**
- * Self-serve scope model for the Territory Opportunity Brief.
+ * Enquiry-only scope model for the Territory Opportunity Brief.
  *
- * A client picks a region and a buyer type ("which organisations do you sell
- * to"), and the system decides — from the live CQC record — whether that scope
- * can be filled without a human scoping call. This replaces the first two manual
- * delivery steps ("Agree the brief" / "Confirm the source check") with a
- * coverage gate the request runs itself.
+ * A client picks a region and buyer type ("which organisations do you sell
+ * to"), and the helper reports the matching-provider count and its coverage
+ * band. A count is useful for scoping, but does not prove that the data is ready
+ * for a brief, that every provider can be ranked, or that an order can proceed.
  */
 
 export const TERRITORY_BRIEF_PRICE_GBP = 745;
@@ -93,9 +92,9 @@ export function normalizeTerritoryScope(
 /* Coverage verdict                                                            */
 /* -------------------------------------------------------------------------- */
 
-/** At or above this many matching providers, the brief can be filled in full. */
+/** At or above this many matching providers, the count is in the ready band. */
 export const TERRITORY_MIN_READY = 25;
-/** Between this and READY, the brief is deliverable but smaller than advertised. */
+/** Between this and READY, the count is in the partial band. */
 export const TERRITORY_MIN_PARTIAL = 12;
 /** Newest observation older than this many years flags the territory as stale. */
 export const TERRITORY_STALE_YEARS = 3;
@@ -114,7 +113,7 @@ export interface TerritoryCoverageResult {
   providerCount: number;
   mostRecentObservation: string | null;
   stale: boolean;
-  /** Whether checkout is allowed for this scope. */
+  /** Always false: this helper supports enquiries and does not authorise checkout. */
   canCheckout: boolean;
   headline: string;
   detail: string;
@@ -148,23 +147,20 @@ export function evaluateTerritoryCoverage(
     signals.mostRecentObservation != null &&
     yearsBetween(signals.mostRecentObservation, now) > TERRITORY_STALE_YEARS;
 
-  const canCheckout = verdict !== "insufficient";
+  const canCheckout = false;
 
-  let headline: string;
-  let detail: string;
+  const headline = `${providerCount} matching ${label} in ${scope.region}.`;
+  let detail = `The published CQC record currently contains ${providerCount} active providers matching the selected scope.`;
   if (verdict === "ready") {
-    headline = `${scope.region} is ready for a ${label} brief.`;
-    detail = `The published CQC record currently supports ${providerCount} ${label} in ${scope.region}. That is enough for the full ranked shortlist of 25–50 organisations.`;
+    detail += " Contact us to review the scope and available evidence before agreeing a brief.";
   } else if (verdict === "partial") {
-    headline = `${scope.region} can be covered, with a smaller shortlist.`;
-    detail = `The published CQC record currently supports ${providerCount} ${label} in ${scope.region}. The brief will rank every one of them, but the shortlist will be shorter than the usual 25–50.`;
+    detail += " A broader region or different buyer type may return more matches. Contact us for a scope review.";
   } else {
-    headline = `${scope.region} does not have enough ${label} to build a brief.`;
-    detail = `The published CQC record currently supports only ${providerCount} ${label} in ${scope.region}. Pick a wider region or a different buyer type, or contact us about a custom scope.`;
+    detail += " A broader region or different buyer type may return more matches. Contact us for a scope review.";
   }
 
-  if (stale && verdict !== "insufficient") {
-    detail += " Note: the most recent observation in this scope is more than three years old, so movement signals will be limited.";
+  if (stale) {
+    detail += " The most recent observation in this scope is more than three years old.";
   }
 
   return {

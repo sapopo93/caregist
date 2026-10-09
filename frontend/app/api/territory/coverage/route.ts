@@ -14,11 +14,11 @@ export const dynamic = "force-dynamic";
 const NO_STORE = { "Cache-Control": "private, no-store" } as const;
 
 /**
- * Self-serve scope check for the Territory Opportunity Brief.
+ * Free coverage check for a Territory Opportunity Brief enquiry.
  *
  * Body: { region: string, buyerType: string, serviceType?: string }
- * Returns a coverage verdict computed live from the CQC directory record, so a
- * client can confirm their own scope without a scoping call.
+ * Returns matching-provider counts from the directory. Staff still confirm the
+ * agreed scope and source path before accepting payment or promising delivery.
  */
 export async function POST(request: Request) {
   let body: unknown;

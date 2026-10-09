@@ -1,0 +1,62 @@
+{
+  "recordedAt": "2026-10-09T13:58:46.225571+00:00",
+  "notice": "Source bytes tested locally; this is not commercial approval",
+  "files": [
+    {
+      "path": "api/routers/billing.py",
+      "sha256": "8f6455cdd51364c529cf7963f7bd28688df73612dcc9b255576706681bcc51cd"
+    },
+    {
+      "path": "api/utils/audit.py",
+      "sha256": "b4b2246aba0b442d3150ac2438368aea9e4a2fa09e35e350428a15e9f4335796"
+    },
+    {
+      "path": "api/services/territory_brief_fulfilment.py",
+      "sha256": "5aa8e0377f5fe0225f4eda3ef333a9cfe2960f688d559966174976c6bf7126d2"
+    },
+    {
+      "path": "api/services/territory_brief_delivery.py",
+      "sha256": "2b03bdb4712a712d887582b4da16042819e702ea88155877922a4b7c8b5f042b"
+    },
+    {
+      "path": "frontend/lib/territory-scope.ts",
+      "sha256": "351a9589b33c587ca99fdbbbe9b0add0d31dc04de60be02e308fe2cc1bee069a"
+    },
+    {
+      "path": "frontend/lib/territory-scope.test.ts",
+      "sha256": "d6ed52dda094fa07bdf9e51b87b28a331fc104dcffa33148f64e3778f543b5a1"
+    },
+    {
+      "path": "frontend/e2e/territory-journey.spec.ts",
+      "sha256": "946f0529347124102b76b4d88108fc3da947894809bbc343bd580b51c9a80c1a"
+    },
+    {
+      "path": "frontend/app/api/territory/coverage/route.ts",
+      "sha256": "221376369f8dd3ba5d40eeded78b4523cca2c7405b012590111349d6fe0f733f"
+    },
+    {
+      "path": "tests/test_territory_brief_fulfilment.py",
+      "sha256": "641f390685c24631e3d58a8904c31c4917d646efaf939af4e57ccadfa92b41ab"
+    },
+    {
+      "path": "tests/test_territory_brief_pg_integration.py",
+      "sha256": "785a53ffa099b26b4f3583e714ceada5b5c4a0ae35289a6127d002380800b2d9"
+    },
+    {
+      "path": "tests/integration/test_buying_dataset_refund_pg.py",
+      "sha256": "2f65ef60bcd274053cf001ace57a1f22b8701c40f7f9b61bca927cd0a78d5d19"
+    },
+    {
+      "path": "tests/integration/test_buying_generation_recovery_pg.py",
+      "sha256": "a9fd98a13af375af2eca4908327454bb9ba648add59df19847d6b230c3b262cf"
+    },
+    {
+      "path": "tests/integration/test_buying_refund_pg.py",
+      "sha256": "209fe8068301f4482c9b5092792b1c57fa0eea4450254f73f5eb53a13c21dc2a"
+    },
+    {
+      "path": "tests/integration/test_buying_webhook_recovery_pg.py",
+      "sha256": "4971b5a9b8449baf3de12cffb6c0db913577220a732ac1fdac7060da9f017637"
+    }
+  ]
+}

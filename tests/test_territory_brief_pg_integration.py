@@ -84,7 +84,7 @@ async def test_full_fulfilment_against_real_postgres():
     async def _audit(**kw):
         audit_calls.append(kw)
 
-    async def _record_failure(order_id, message):  # pragma: no cover - must not run
+    async def _record_failure(order_id, message, context=None):  # pragma: no cover - must not run
         raise AssertionError(f"record_failure should not be called: {message}")
 
     session = {"id": "cs_pg_itest", "metadata": {"type": tbf.METADATA_TYPE}}
@@ -105,8 +105,7 @@ async def test_full_fulfilment_against_real_postgres():
         )
         order_id = str(order["id"])
 
-        scope = {"kind": "local_authority", "name": "Southampton",
-                 "window_days": 365, "shortlist_target": 30}
+        scope = {"kind": "local_authority", "name": "Southampton", "window_days": 365, "shortlist_target": 30}
         authoritative = {
             "id": "cs_pg_itest",
             "metadata": tbf.build_checkout_metadata(order_id, scope, cfg),
@@ -134,9 +133,7 @@ async def test_full_fulfilment_against_real_postgres():
         assert row["artifact_sha256"] and len(row["artifact_sha256"]) == 64
         assert row["paid_at"] is not None and row["fulfilled_at"] is not None
 
-        consent = await conn.fetchrow(
-            "SELECT * FROM territory_brief_consents WHERE order_id = $1", order_id
-        )
+        consent = await conn.fetchrow("SELECT * FROM territory_brief_consents WHERE order_id = $1", order_id)
         assert consent["immediate_supply_consented"] is True
         assert consent["terms_version"] == "pg-itest"
         assert consent["consent_text_sha256"] == consent_sha
@@ -158,16 +155,15 @@ async def test_full_fulfilment_against_real_postgres():
 
         # 2. idempotent re-run: no duplicates, no error
         await tbf.fulfil_territory_brief_order(conn, session, cfg=cfg, deps=deps)
-        assert await conn.fetchval(
-            "SELECT count(*) FROM territory_brief_consents WHERE order_id = $1", order_id
-        ) == 1
-        assert await conn.fetchval(
-            "SELECT count(*) FROM territory_brief_download_tokens WHERE order_id = $1", order_id
-        ) == 2
-        assert await conn.fetchval(
-            "SELECT count(*) FROM pending_emails WHERE idempotency_key = $1",
-            f"territory-brief-delivery:{order_id}",
-        ) == 1
+        assert await conn.fetchval("SELECT count(*) FROM territory_brief_consents WHERE order_id = $1", order_id) == 1
+        assert await conn.fetchval("SELECT count(*) FROM territory_brief_download_tokens WHERE order_id = $1", order_id) == 2
+        assert (
+            await conn.fetchval(
+                "SELECT count(*) FROM pending_emails WHERE idempotency_key = $1",
+                f"territory-brief-delivery:{order_id}",
+            )
+            == 1
+        )
 
         # 3. consent row is append-only
         with pytest.raises(asyncpg.PostgresError, match="append-only"):

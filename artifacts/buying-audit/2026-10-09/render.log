@@ -1,0 +1,92 @@
+{
+  "synthetic": true,
+  "notice": "Historical test fixtures, not a sale or current source assurance",
+  "packs": [
+    {
+      "territory": "Southampton",
+      "target": 30,
+      "shortlisted": 30,
+      "csvRows": 30,
+      "columns": [
+        "rank",
+        "organisation",
+        "location",
+        "cqc_location_id",
+        "cqc_provider_id",
+        "local_authority",
+        "region",
+        "postcode",
+        "service_types",
+        "number_of_beds",
+        "current_rating",
+        "primary_signal",
+        "most_recent_event_date",
+        "opportunity_score",
+        "reason",
+        "evidence_events",
+        "cqc_record_url",
+        "rating_evidence_date",
+        "rating_freshness",
+        "registration_metadata_gaps",
+        "shortlist_notice",
+        "licence"
+      ],
+      "shortfall": null,
+      "files": [
+        {
+          "file": "southampton.pdf",
+          "bytes": 30830,
+          "sha256": "70234f30eb6618bb32ec24c1174be4d850d5a43ff7f6190fd9ac9b74b8331610"
+        },
+        {
+          "file": "southampton.csv",
+          "bytes": 21478,
+          "sha256": "c5b43ae43aaefaa93fd652e68a4b763cf1f48959f275b6ea15bb16d216e55ec1"
+        }
+      ]
+    },
+    {
+      "territory": "Isle of Wight",
+      "target": 50,
+      "shortlisted": 8,
+      "csvRows": 8,
+      "columns": [
+        "rank",
+        "organisation",
+        "location",
+        "cqc_location_id",
+        "cqc_provider_id",
+        "local_authority",
+        "region",
+        "postcode",
+        "service_types",
+        "number_of_beds",
+        "current_rating",
+        "primary_signal",
+        "most_recent_event_date",
+        "opportunity_score",
+        "reason",
+        "evidence_events",
+        "cqc_record_url",
+        "rating_evidence_date",
+        "rating_freshness",
+        "registration_metadata_gaps",
+        "shortlist_notice",
+        "licence"
+      ],
+      "shortfall": "Shortfall: this territory has 8 organisation(s) with a supported signal in the window, fewer than the requested shortlist of 50. All of them are included; none have been added to make up the number.",
+      "files": [
+        {
+          "file": "isle-of-wight.pdf",
+          "bytes": 15334,
+          "sha256": "b424c8991becd8b005d15a81ea9989f031d56533fb74eb6afe24ee83f899bbc9"
+        },
+        {
+          "file": "isle-of-wight.csv",
+          "bytes": 7893,
+          "sha256": "af111f66b0a59d41953999ef4cb3b05eca80186c9be50e30f58a03c082995c6a"
+        }
+      ]
+    }
+  ]
+}
