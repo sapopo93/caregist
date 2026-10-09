@@ -17,17 +17,27 @@ EMAIL_PROCESSING_STALE_SECONDS = 900
 # default 10 rps rate limit even on large batches.
 _SEND_CONCURRENCY = 5
 _RETRY_BACKOFF_SECONDS = (300, 900, 1800)
+# A queued paid download is transactional only when it belongs to the actual
+# fulfilled order and paying address. A caller-supplied prefix alone cannot
+# bypass the outbound marketing gate.
+_PAID_BRIEF_DELIVERY = """EXISTS (
+    SELECT 1 FROM territory_brief_orders tb
+    WHERE tb.status = 'fulfilled'
+      AND tb.customer_email = pe.to_email
+      AND pe.idempotency_key = 'territory-brief-delivery:' || tb.id::text
+)"""
 
 
 async def _claim_pending_emails(conn, batch_size: int) -> list[dict[str, Any]]:
     """Atomically claim a batch of pending emails for processing."""
     rows = await conn.fetch(
-        """
+        f"""
         WITH candidates AS (
             SELECT id
-            FROM pending_emails
+            FROM pending_emails pe
             WHERE send_after <= NOW()
               AND attempts < 3
+              AND ($3 OR {_PAID_BRIEF_DELIVERY})
               AND (
                 status = 'pending'
                 OR (
@@ -46,10 +56,11 @@ async def _claim_pending_emails(conn, batch_size: int) -> list[dict[str, Any]]:
         FROM candidates
         WHERE pe.id = candidates.id
         RETURNING pe.id, pe.to_email, pe.subject, pe.html_body, pe.attempts,
-                  pe.idempotency_key
+                  pe.idempotency_key, {_PAID_BRIEF_DELIVERY} AS paid_brief_delivery
         """,
         batch_size,
         EMAIL_PROCESSING_STALE_SECONDS,
+        settings.outbound_communications_enabled,
     )
     return [dict(row) for row in rows]
 
@@ -131,6 +142,21 @@ async def process_email_queue(batch_size: int = 20) -> int:
 
     async def _send_one(client: httpx.AsyncClient, row: dict[str, Any]) -> dict[str, Any]:
         async with semaphore:
+            if not settings.outbound_communications_enabled:
+                authorized = False
+                if row.get("paid_brief_delivery"):
+                    try:
+                        # A refund can land while a claimed email waits for a
+                        # sender slot. Revalidate just before external I/O.
+                        async with get_connection() as conn:
+                            authorized = bool(await conn.fetchval(
+                                f"SELECT {_PAID_BRIEF_DELIVERY} FROM pending_emails pe WHERE pe.id = $1",
+                                row["id"],
+                            ))
+                    except Exception as exc:
+                        logger.warning("Paid email authorization failed for %s: %s", row["id"], exc)
+                if not authorized:
+                    return {"id": row["id"], "deferred": True}
             try:
                 resp = await client.post(
                     "https://api.resend.com/emails",
@@ -179,7 +205,14 @@ async def process_email_queue(batch_size: int = 20) -> int:
     try:
         async with get_connection() as conn:
             for result in results:
-                if result["success"]:
+                if result.get("deferred"):
+                    await conn.execute(
+                        """UPDATE pending_emails
+                           SET status = 'pending', processing_started_at = NULL
+                           WHERE id = $1""",
+                        result["id"],
+                    )
+                elif result["success"]:
                     await conn.execute(
                         """
                         UPDATE pending_emails

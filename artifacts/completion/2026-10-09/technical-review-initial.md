@@ -1,0 +1,11 @@
+Reviewed `59310ec..3ddc395`. Three findings:
+
+1. **High — outbound closure does not stop queued emails.** New checks such as [subscribe.py:58](/private/tmp/caregist-completion-20261009/api/routers/subscribe.py:58) prevent enqueueing, but [email_queue.py:115](/private/tmp/caregist-completion-20261009/api/utils/email_queue.py:115) checks only the Resend key. A mocked drain with outbound disabled still sent one queued message. This is a pre-existing gap left open by the fix. **Acceptance:** enqueue a delayed marketing email, close outbound, drain; assert zero sends and preserved pending state.
+
+2. **Medium — shortfall notice uses 10 instead of customer scope.** [territory_brief.py:1099](/private/tmp/caregist-completion-20261009/api/services/territory_brief.py:1099) suppresses warnings once 10 providers exist. Portsmouth produces **13 providers against target 50**, with no notice, despite the advertised 25–50. The actual Isle of Wight PDF/CSV contains **8 providers after deduplicating 10 qualifying locations**: 17 below the advertised minimum, 42 below the requested target. [test_output_fixes.py:107](/private/tmp/caregist-completion-20261009/tests/test_output_fixes.py:107) validates the code floor instead. **Acceptance:** cover 8, 13 and 25 distinct providers against agreed targets; reconcile PDF/CSV counts and warnings with buyer criteria.
+
+3. **Medium — empty CSV fabricates a data row.** [territory_brief.py:1145](/private/tmp/caregist-completion-20261009/api/services/territory_brief.py:1145) inserts an empty organisation record to carry the notice. Reproduced: **zero shortlisted providers → one CSV record**, potentially creating a bogus CRM entry. **Acceptance:** a zero-signal territory yields zero organisation records, with the limitation carried separately.
+
+Validation was entirely local: in-memory generation, PDF text extraction, visual inspection of the Isle of Wight cover, mocked sender reproduction, and two directly executed price checks. Full pytest was unavailable; DB-backed/download and live journeys were not executed. The acceptance fixtures do not establish buyer/service-specific scope fidelity.
+
+No files changed, network used, secrets accessed, or gates approved. Persistent CQC404 and stale-source issues remain unresolved per your brief. Failed Grok/DeepSeek reviews remain required.

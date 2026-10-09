@@ -1,3 +1,9 @@
+## 2026-10-09 — current completion audit (PARTIAL)
+
+Current read-only release: `59310ecc100119d6d775d70e62db758882bf5b8f` on GitHub main and both public services. PR #82 is merged. This dated observation supersedes older release/operational claims below; it does not approve commercial gates. Source reconciliation is stale/incomplete, checkout and delivery are closed. Repair branch `codex/completion-20261009` integrates PR #83 and corrects independently reproduced queue/CSV/shortfall defects. See [the audit](../artifacts/completion/2026-10-09/AUDIT.md) and [33-PR inventory](../artifacts/completion/2026-10-09/PR_INVENTORY.md) for raw evidence, actual checks, uncommitted preservation and remaining work. Grok/DeepSeek provider failures leave the prescribed independent gates uncompleted. Historical entries below are archives, not a new action list.
+
+---
+
 # PIPELINE — CareGist collection → publication → sale → fulfilment
 
 > **2026-10-02 commit/deploy correction:** [COMMIT_DEPLOY_TRUTH.md](COMMIT_DEPLOY_TRUTH.md) is authoritative for release identity. The active checkout, local main, GitHub main, successful Production deployment and both public services match `1a62f84`. PR #75 is merged and Production Smoke 37004402261 PASSED. Local uncommitted work is preserved separately. Older release/smoke claims below are historical; no commercial gate approval is implied.

@@ -1,0 +1,44 @@
+
+Running 10 tests using 1 worker
+
+(node:94046) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1/10] e2e/synthetic-workflows.spec.ts:7:5 › synthetic directory filters, pagination, profile return, and provider compare use persisted fixtures
+[2/10] e2e/synthetic-workflows.spec.ts:36:5 › directory filters preserve the selected region, segment, and service in the result URL
+[3/10] e2e/synthetic-workflows.spec.ts:49:5 › find-care displays the actual local spatial-search result or a visible fail-closed error
+[4/10] e2e/synthetic-workflows.spec.ts:66:5 › stale territory coverage is explained, export is scoped, and checkout stays closed
+[5/10] e2e/synthetic-workflows.spec.ts:105:5 › signup persists an unverified synthetic account and does not send mail
+[6/10] e2e/synthetic-workflows.spec.ts:115:5 › password reset does not claim email delivery when the provider is unavailable
+[7/10] e2e/synthetic-workflows.spec.ts:124:5 › login as a synthetic workspace owner, create a CRM task, and browse the manager report
+[8/10] e2e/synthetic-workflows.spec.ts:156:5 › admin UI uses the loopback-only master key and loads real pending-work queues
+e2e/synthetic-workflows.spec.ts:156:5 › admin UI uses the loopback-only master key and loads real pending-work queues
+[synthetic admin API] 401 http://127.0.0.1:18111/api/v1/admin/stats {"detail":"Invalid API key."}
+
+[synthetic admin API] 200 http://127.0.0.1:18111/api/v1/admin/stats {"data":{"total_providers":45,"claimed_providers":0,"pending_claims":1,"pending_reviews":1,"new_enquiries":1,"total_reviews":0,"total_enquiries":1},"top_enquired":[],"provider_types":[{"label":"Social Care Org","count":45}],"service_types":[{"label":"Homecare Agencies","count":45}],"service_growth":[]}
+
+[synthetic admin API] 200 http://127.0.0.1:18111/api/v1/admin/claims?status=pending {"data":[{"id":1,"provider_id":"SYN-WF-0001","status":"pending","claimant_name":"Synthetic Claimant","claimant_email":"claimant@example.com","claimant_phone":null,"claimant_role":"Synthetic test role","organisation_name":"Synthetic Test Organisation","proof_of_association":null,"admin_notes":null,"created_at":"2026-10-09T06:50:50.259760","reviewed_at":null,"provider_name":"Synthetic Workflow Care 01","provider_slug":"synthetic-workflow-provider-01"}],"meta":{"total":1,"page":1,"per_page":20,"pages":1}}
+
+[synthetic admin API] 200 http://127.0.0.1:18111/api/v1/admin/stats {"data":{"total_providers":45,"claimed_providers":0,"pending_claims":1,"pending_reviews":1,"new_enquiries":1,"total_reviews":0,"total_enquiries":1},"top_enquired":[],"provider_types":[{"label":"Social Care Org","count":45}],"service_types":[{"label":"Homecare Agencies","count":45}],"service_growth":[]}
+
+[synthetic admin API] 200 http://127.0.0.1:18111/api/v1/admin/claims/1 {"data":{"id":1,"provider_id":"SYN-WF-0001","status":"rejected"},"message":"Claim rejected."}
+
+[synthetic admin API] 200 http://127.0.0.1:18111/api/v1/admin/claims?status=pending {"data":[],"meta":{"total":0,"page":1,"per_page":20,"pages":1}}
+
+[synthetic admin API] 200 http://127.0.0.1:18111/api/v1/admin/reviews?status=pending {"data":[{"id":1,"provider_id":"SYN-WF-0001","status":"pending","rating":4,"title":"Synthetic test review","body":"Synthetic moderation fixture.","reviewer_name":"Synthetic Reviewer","reviewer_email":"reviewer@example.com","relationship":"Synthetic test only","created_at":"2026-10-09T06:50:50.260173","moderated_at":null,"admin_notes":null,"provider_name":"Synthetic Workflow Care 01","provider_slug":"synthetic-workflow-provider-01"}],"meta":{"total":1,"page":1,"per_page":20,"pages":1}}
+
+[synthetic admin API] 200 http://127.0.0.1:18111/api/v1/admin/reviews/1 {"data":{"id":1,"provider_id":"SYN-WF-0001","status":"rejected"},"message":"Review rejected."}
+
+[synthetic admin API] 200 http://127.0.0.1:18111/api/v1/admin/reviews?status=pending {"data":[],"meta":{"total":0,"page":1,"per_page":20,"pages":1}}
+
+[synthetic admin API] 200 http://127.0.0.1:18111/api/v1/admin/enquiries?status=new {"data":[{"id":1,"provider_id":"SYN-WF-0001","status":"new","enquirer_name":"Synthetic Enquirer","enquirer_email":"enquirer@example.com","enquirer_phone":null,"relationship":"Synthetic test only","care_type":"Synthetic fixture","urgency":"exploring","message":"Synthetic admin review test.","created_at":"2026-10-09T06:50:50.260786","read_at":null,"provider_name":"Synthetic Workflow Care 01","provider_slug":"synthetic-workflow-provider-01"}],"meta":{"total":1,"page":1,"per_page":20,"pages":1}}
+
+[synthetic admin API] 200 http://127.0.0.1:18111/api/v1/admin/enquiries/1 {"data":{"id":1,"status":"read"},"message":"Enquiry marked as read."}
+
+[synthetic admin API] 200 http://127.0.0.1:18111/api/v1/admin/enquiries?status=new {"data":[],"meta":{"total":0,"page":1,"per_page":20,"pages":1}}
+
+[9/10] e2e/synthetic-workflows.spec.ts:191:5 › non-sale API-interest workflow records only synthetic input and reports no payment
+[10/10] e2e/synthetic-workflows.spec.ts:203:5 › retired filtered lead exports and gated payment success do not masquerade as fulfillment
+  10 passed (21.0s)
+

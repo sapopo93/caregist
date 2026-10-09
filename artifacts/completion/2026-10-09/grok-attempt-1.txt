@@ -1,0 +1,7 @@
+Warning: Unknown toolsets: none
+API call failed after 3 retries: [Errno 32] Broken pipe
+
+The model's thinking phase exceeded the upstream proxy's idle timeout before the first content token arrived. This is a known issue with reasoning models (like grok-4.6) behind cloud gateways (NVIDIA NIM, OpenAI, Anthropic, DeepSeek). Workarounds in priority order:
+1. Set `providers.xai-oauth.models.grok-4.6.stale_timeout_seconds: 900` in `~/.hermes/config.yaml` to extend the per-call timeout. (Hermes's built-in floor is 600s for known reasoning models — if you still see this after raising, the upstream cap is even shorter.)
+2. Lower `reasoning_budget` or set `reasoning_effort: medium` on this model if the provider supports it.
+3. Use a smaller / faster reasoning model if the task doesn't require deep thinking.
