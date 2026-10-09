@@ -88,6 +88,7 @@ class TerritoryScope:
     name: str
     window_days: int = DEFAULT_WINDOW_DAYS
     shortlist_target: int = DEFAULT_SHORTLIST
+    service_type: str | None = None
 
     def to_json(self) -> dict[str, Any]:
         return asdict(self)
@@ -153,6 +154,7 @@ class RankedOrganisation:
     score_breakdown: dict[str, float]
     reason: str
     evidence: tuple[dict[str, Any], ...]
+    qualification_question: str = ""
 
     def to_json(self) -> dict[str, Any]:
         data = asdict(self)
@@ -234,8 +236,8 @@ def validate_scope(
     falls back to a default territory.
     """
     if isinstance(raw, TerritoryScope):
-        kind, name, window_days, shortlist_target = (
-            raw.kind, raw.name, raw.window_days, raw.shortlist_target,
+        kind, name, window_days, shortlist_target, service_type = (
+            raw.kind, raw.name, raw.window_days, raw.shortlist_target, raw.service_type,
         )
     else:
         if not isinstance(raw, dict):
@@ -244,6 +246,11 @@ def validate_scope(
         name = str(raw.get("name") or "").strip()
         window_days = raw.get("window_days", DEFAULT_WINDOW_DAYS)
         shortlist_target = raw.get("shortlist_target", DEFAULT_SHORTLIST)
+        service_type = raw.get("service_type")
+
+    service_type = str(service_type).strip() if service_type else None
+    if service_type and not _NAME_OK.match(service_type):
+        raise ScopeError("scope.service_type contains unsupported characters")
 
     if kind not in ("local_authority", "region"):
         raise ScopeError("scope.kind must be 'local_authority' or 'region'")
@@ -281,6 +288,7 @@ def validate_scope(
         name=canonical,
         window_days=window_days,
         shortlist_target=shortlist_target,
+        service_type=service_type or None,
     )
 
 
@@ -300,6 +308,10 @@ def _service_types(row: dict[str, Any]) -> tuple[str, ...]:
 
 
 def _in_scope(row: dict[str, Any], scope: TerritoryScope) -> bool:
+    if scope.service_type and scope.service_type.casefold() not in {
+        t.casefold() for t in _service_types(row)
+    }:
+        return False
     if scope.kind == "local_authority":
         return str(row.get("localAuthority") or "").strip().casefold() == scope.name.casefold()
     return str(row.get("region") or "").strip().casefold() == scope.name.casefold()
@@ -594,6 +606,40 @@ def _reason(
     return " ".join(parts)
 
 
+_QUALIFICATION_QUESTIONS = {
+    "Rating changed": (
+        "Has the change in overall rating altered what this organisation needs to buy or "
+        "change in the next quarter, and who owns that decision?"
+    ),
+    "New registration": (
+        "Who is responsible for choosing suppliers for this newly registered service, and "
+        "when does it expect to start operating?"
+    ),
+    "Rating published": (
+        "Is the recently published inspection outcome prompting a review of suppliers or "
+        "practice, and who leads it?"
+    ),
+    "Returned from dormancy": (
+        "Is this service planning to restart operations, and who is responsible for "
+        "choosing suppliers?"
+    ),
+}
+
+
+def _qualification_question(primary_signal: str, *, provider_cluster: int, territory: str) -> str:
+    """One evidence-bound discovery question to ask before any outreach.
+
+    It asks; it never asserts need or intent, which the CQC record cannot show.
+    """
+    question = _QUALIFICATION_QUESTIONS.get(
+        primary_signal,
+        "What is this organisation's current supplier arrangement, and who decides changes?",
+    )
+    if provider_cluster >= 2:
+        question += f" Is that decided centrally across its {provider_cluster} moving locations in {territory}?"
+    return question
+
+
 def _validate_evidence(evidence: tuple[dict[str, Any], ...]) -> None:
     """Fail closed when a shortlisted event loses its provenance fields."""
     required = {"event_type", "effective_date", "detail", "source_field", "source_url", "source_edition"}
@@ -852,6 +898,9 @@ def generate_territory_opportunity_brief(
                 score_breakdown=breakdown,
                 reason=reason,
                 evidence=evidence,
+                qualification_question=_qualification_question(
+                    _primary_signal(events), provider_cluster=cluster, territory=validated.name
+                ),
             )
         )
 
@@ -1131,6 +1180,7 @@ def brief_to_csv(brief: TerritoryBrief) -> str:
             "most_recent_event_date",
             "opportunity_score",
             "reason",
+            "qualification_question",
             "evidence_events",
             "cqc_record_url",
             "rating_evidence_date",
@@ -1165,6 +1215,7 @@ def brief_to_csv(brief: TerritoryBrief) -> str:
                 org.most_recent_event_date.isoformat() if org.most_recent_event_date else "",
                 org.score,
                 org.reason,
+                org.qualification_question,
                 evidence_events,
                 CQC_PROFILE_URL.format(location_id=org.location_id),
                 coverage_by_location.get(org.location_id, {}).get("rating_publication_date") or "",
