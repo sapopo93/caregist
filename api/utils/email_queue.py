@@ -142,8 +142,21 @@ async def process_email_queue(batch_size: int = 20) -> int:
 
     async def _send_one(client: httpx.AsyncClient, row: dict[str, Any]) -> dict[str, Any]:
         async with semaphore:
-            if not settings.outbound_communications_enabled and not row.get("paid_brief_delivery"):
-                return {"id": row["id"], "deferred": True}
+            if not settings.outbound_communications_enabled:
+                authorized = False
+                if row.get("paid_brief_delivery"):
+                    try:
+                        # A refund can land while a claimed email waits for a
+                        # sender slot. Revalidate just before external I/O.
+                        async with get_connection() as conn:
+                            authorized = bool(await conn.fetchval(
+                                f"SELECT {_PAID_BRIEF_DELIVERY} FROM pending_emails pe WHERE pe.id = $1",
+                                row["id"],
+                            ))
+                    except Exception as exc:
+                        logger.warning("Paid email authorization failed for %s: %s", row["id"], exc)
+                if not authorized:
+                    return {"id": row["id"], "deferred": True}
             try:
                 resp = await client.post(
                     "https://api.resend.com/emails",

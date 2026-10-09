@@ -53,5 +53,34 @@ async def test_closed_outbound_sends_only_actual_fulfilled_order_email(fresh_db,
         rows = await conn.fetch("SELECT status, attempts FROM pending_emails ORDER BY id")
         assert [r["status"] for r in rows] == ["sent"] + ["pending"] * 5
         assert all(r["attempts"] == 0 for r in rows)
+
+        late_order = await conn.fetchval(
+            """INSERT INTO territory_brief_orders
+               (customer_email, stripe_price_id, scope_kind, scope_name, status)
+               VALUES ('buyer@example.com', 'price_test', 'local_authority', 'Southampton', 'fulfilled')
+               RETURNING id""",
+        )
+        late_email = await conn.fetchval(
+            """INSERT INTO pending_emails (to_email, subject, html_body, idempotency_key)
+               VALUES ('buyer@example.com', 'Synthetic late refund', '<p>Fixture</p>', $1)
+               RETURNING id""", f"territory-brief-delivery:{late_order}",
+        )
+        claim = email_queue._claim_pending_emails
+
+        async def refund_after_claim(connection, batch_size):
+            claimed = await claim(connection, batch_size)
+            assert [row["id"] for row in claimed] == [late_email]
+            await connection.execute("UPDATE territory_brief_orders SET status = 'refunded' WHERE id = $1", late_order)
+            return claimed
+
+        monkeypatch.setattr(email_queue, "_claim_pending_emails", refund_after_claim)
+        with patch("httpx.AsyncClient", return_value=client):
+            assert await email_queue.process_email_queue() == 0
+        assert client.post.await_count == 1  # No second external request.
+        deferred = await conn.fetchrow(
+            "SELECT status, attempts, processing_started_at FROM pending_emails WHERE id = $1", late_email,
+        )
+        assert deferred["status"] == "pending" and deferred["attempts"] == 0
+        assert deferred["processing_started_at"] is None
     finally:
         await conn.close()
