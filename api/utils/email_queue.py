@@ -112,7 +112,7 @@ async def process_email_queue(batch_size: int = 20) -> int:
     """
     import httpx
 
-    if not settings.resend_api_key:
+    if not settings.outbound_communications_enabled or not settings.resend_api_key:
         return 0
 
     # Phase 1: claim
@@ -131,6 +131,8 @@ async def process_email_queue(batch_size: int = 20) -> int:
 
     async def _send_one(client: httpx.AsyncClient, row: dict[str, Any]) -> dict[str, Any]:
         async with semaphore:
+            if not settings.outbound_communications_enabled:
+                return {"id": row["id"], "deferred": True}
             try:
                 resp = await client.post(
                     "https://api.resend.com/emails",
@@ -179,7 +181,14 @@ async def process_email_queue(batch_size: int = 20) -> int:
     try:
         async with get_connection() as conn:
             for result in results:
-                if result["success"]:
+                if result.get("deferred"):
+                    await conn.execute(
+                        """UPDATE pending_emails
+                           SET status = 'pending', processing_started_at = NULL
+                           WHERE id = $1""",
+                        result["id"],
+                    )
+                elif result["success"]:
                     await conn.execute(
                         """
                         UPDATE pending_emails

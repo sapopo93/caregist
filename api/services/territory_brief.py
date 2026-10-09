@@ -1086,21 +1086,21 @@ def _executive_summary(
             "Reflects the published CQC register edition, not a live lookup; opportunity signals "
             "show where to look first, not provider quality or intent."
         ),
-        "shortfall_notice": shortfall_notice(len(shortlist)),
+        "shortfall_notice": shortfall_notice(len(shortlist), scope.shortlist_target),
     }
 
 
-def shortfall_notice(shortlisted: int) -> str | None:
-    """Plain notice when a brief lists fewer organisations than the code floor.
+def shortfall_notice(shortlisted: int, target: int) -> str | None:
+    """Disclose a shortage against the buyer's requested organisation count.
 
     The generator never pads a shortlist; a small territory is reported as it is,
     and the buyer is told so in the PDF and the CSV.
     """
-    if shortlisted >= MIN_SHORTLIST:
+    if shortlisted >= target:
         return None
     return (
         f"Shortfall: this territory has {shortlisted} organisation(s) with a supported signal in "
-        f"the window, fewer than the minimum of {MIN_SHORTLIST} this Brief is designed to list. "
+        f"the window, fewer than the requested shortlist of {target}. "
         "All of them are included; none have been added to make up the number."
     )
 
@@ -1141,8 +1141,6 @@ def brief_to_csv(brief: TerritoryBrief) -> str:
         ]
     )
     notice = brief.executive_summary.get("shortfall_notice") or ""
-    if notice and not brief.shortlist:
-        writer.writerow([""] * 20 + [notice, OGL_ATTRIBUTION])
     coverage_by_location = {row["location_id"]: row for row in brief.evidence_coverage}
     for org in brief.shortlist:
         evidence_events = " | ".join(

@@ -11,6 +11,7 @@ import io
 import re
 import subprocess
 from contextlib import asynccontextmanager
+from dataclasses import replace
 from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import AsyncMock, patch
@@ -26,6 +27,7 @@ from api.services.territory_brief import (
     PurchaseContext,
     brief_to_csv,
     generate_territory_opportunity_brief,
+    shortfall_notice,
 )
 from api.services.territory_brief_render import render_brief_pdf
 
@@ -106,7 +108,8 @@ def test_short_brief_carries_a_plain_shortfall_notice_in_pdf_and_csv(isle_of_wig
     shortlisted = len(isle_of_wight.shortlist)
     assert shortlisted < MIN_SHORTLIST  # floor unchanged; the brief is not padded
     notice = isle_of_wight.executive_summary["shortfall_notice"]
-    assert notice and f"{shortlisted} organisation(s)" in notice and str(MIN_SHORTLIST) in notice
+    assert notice and f"{shortlisted} organisation(s)" in notice
+    assert f"requested shortlist of {isle_of_wight.scope.shortlist_target}" in notice
 
     pdf = re.sub(r"\s+", " ", _pdf_text(isle_of_wight, tmp_path))
     assert re.sub(r"\s+", " ", notice) in pdf
@@ -121,6 +124,46 @@ def test_full_brief_has_no_shortfall_notice(southampton, tmp_path):
     assert southampton.executive_summary["shortfall_notice"] is None
     assert "Shortfall" not in _pdf_text(southampton, tmp_path)
     assert all(row["shortlist_notice"] == "" for row in _csv_rows(southampton))
+
+
+@pytest.mark.parametrize("name,target,count", [
+    ("Isle of Wight", 50, 8),
+    ("Portsmouth", 50, 13),
+    ("Southampton", 50, 30),
+    ("Southampton", 25, 25),
+])
+def test_shortfall_matches_requested_distinct_provider_count(name, target, count, tmp_path):
+    brief = _brief(name, target)
+    # Southampton has more than 30 qualifying locations; its exact provider
+    # count is measured below rather than inferred from location totals.
+    if name == "Southampton" and target == 50:
+        count = len(brief.shortlist)
+        assert count >= 25 and count < target
+    assert len(brief.shortlist) == count
+    assert len({org.provider_id for org in brief.shortlist}) == count
+    rows = _csv_rows(brief)
+    assert len(rows) == count
+    notice = brief.executive_summary["shortfall_notice"]
+    if count < target:
+        assert notice and f"requested shortlist of {target}" in notice
+        assert f"{count} organisation(s)" in notice
+        assert re.sub(r"\s+", " ", notice) in re.sub(r"\s+", " ", _pdf_text(brief, tmp_path))
+        assert all(row["shortlist_notice"] == notice for row in rows)
+    else:
+        assert notice is None
+
+
+def test_zero_signal_csv_has_no_fabricated_organisation(tmp_path):
+    source = _brief("Southampton")
+    brief = replace(source, shortlist=(), executive_summary={
+        **source.executive_summary,
+        "shortfall_notice": shortfall_notice(0, source.scope.shortlist_target),
+    })
+    assert not brief.shortlist
+    assert _csv_rows(brief) == []
+    notice = brief.executive_summary["shortfall_notice"]
+    assert notice and "0 organisation(s)" in notice
+    assert re.sub(r"\s+", " ", notice) in re.sub(r"\s+", " ", _pdf_text(brief, tmp_path))
 
 
 # M3 -------------------------------------------------------------------------

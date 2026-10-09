@@ -8,6 +8,11 @@ import pytest
 from api.utils import email_queue
 
 
+@pytest.fixture(autouse=True)
+def outbound_open(monkeypatch):
+    monkeypatch.setattr(email_queue.settings, "outbound_communications_enabled", True)
+
+
 class _FakeResponse:
     def __init__(self, status_code: int):
         self.status_code = status_code
@@ -145,3 +150,41 @@ def test_next_failure_status_switches_to_failed_on_third_attempt():
     assert email_queue._next_failure_status(0) == "pending"
     assert email_queue._next_failure_status(1) == "pending"
     assert email_queue._next_failure_status(2) == "failed"
+
+
+@pytest.mark.asyncio
+async def test_closed_outbound_preserves_pending_queue_without_claiming(monkeypatch):
+    monkeypatch.setattr(email_queue.settings, "outbound_communications_enabled", False)
+    monkeypatch.setattr(email_queue.settings, "resend_api_key", "re_synthetic")
+    with patch.object(email_queue, "get_connection") as db, \
+         patch("httpx.AsyncClient") as sender:
+        assert await email_queue.process_email_queue() == 0
+    db.assert_not_called()
+    sender.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_outbound_closed_after_claim_defers_without_spending_retry(monkeypatch):
+    conn = AsyncMock()
+    monkeypatch.setattr(email_queue.settings, "resend_api_key", "re_synthetic")
+
+    @asynccontextmanager
+    async def connection():
+        yield conn
+
+    async def claim(*args):
+        monkeypatch.setattr(email_queue.settings, "outbound_communications_enabled", False)
+        return [{"id": 102}]
+
+    client = AsyncMock()
+    client.__aenter__.return_value = client
+    monkeypatch.setattr(email_queue, "get_connection", connection)
+    monkeypatch.setattr(email_queue, "_claim_pending_emails", claim)
+    with patch("httpx.AsyncClient", return_value=client):
+        assert await email_queue.process_email_queue() == 0
+    client.post.assert_not_awaited()
+    sql, row_id = conn.execute.await_args.args
+    assert row_id == 102
+    assert "status = 'pending'" in sql
+    assert "processing_started_at = NULL" in sql
+    assert "attempts" not in sql and "send_after" not in sql
