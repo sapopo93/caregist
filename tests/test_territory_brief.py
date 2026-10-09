@@ -470,3 +470,62 @@ def test_provider_dedup_prefers_score_then_event_date(tmp_path):
 def test_missing_provider_id_is_not_a_provider(tmp_path):
     brief = _generate(tmp_path, [_loc(providerId=""), _loc(locationId="known")])
     assert [o.location_id for o in brief.shortlist] == ["known"]
+
+
+# --------------------------------------------------------------------------- #
+# Qualification question + service-type scope
+# --------------------------------------------------------------------------- #
+
+
+def _three_orgs():
+    locs = [
+        _loc(locationId="1-1", providerId="1-P1", name="A", registrationDate="2026-02-10"),
+        _loc(locationId="1-2", providerId="1-P2", name="B", registrationDate="2026-02-11",
+             gacServiceTypes=[{"description": "Doctors/GPs"}]),
+        _loc(locationId="1-3", providerId="1-P3", name="C", registrationDate="2026-02-12",
+             gacServiceTypes=[{"description": "Care home service with nursing"}]),
+    ]
+    providers = [{"providerId": f"1-P{i}", "name": f"P{i} Ltd"} for i in (1, 2, 3)]
+    return locs, providers
+
+
+def test_every_entry_has_a_qualification_question_in_csv_and_pdf(tmp_path):
+    locs, providers = _three_orgs()
+    brief = _generate(tmp_path, locs, providers)
+    assert brief.shortlist
+    for o in brief.shortlist:
+        assert o.qualification_question.strip().endswith("?")
+        assert o.to_json()["qualification_question"] == o.qualification_question
+    import csv as _csv, io as _io
+    rows = list(_csv.DictReader(_io.StringIO(brief_to_csv(brief))))
+    assert [r["qualification_question"] for r in rows] == [
+        o.qualification_question for o in brief.shortlist
+    ]
+    assert _pdf_stream_text(render_brief_pdf(brief)).count(b"Qualification question") == len(brief.shortlist)
+
+
+def test_qualification_question_does_not_assert_intent(tmp_path):
+    locs, providers = _three_orgs()
+    for o in _generate(tmp_path, locs, providers).shortlist:
+        assert not re.search(r"\b(is looking|plans to buy|will buy|needs a supplier)\b",
+                             o.qualification_question, re.I)
+
+
+def test_service_type_scope_excludes_other_services(tmp_path):
+    locs, providers = _three_orgs()
+    brief = _generate(tmp_path, locs, providers, service_type="care home service without nursing")
+    assert [o.location_id for o in brief.shortlist] == ["1-1"]
+    assert brief.scope.service_type == "care home service without nursing"
+
+
+def test_service_type_absent_keeps_unfiltered_behaviour(tmp_path):
+    locs, providers = _three_orgs()
+    brief = _generate(tmp_path, locs, providers)
+    assert {o.location_id for o in brief.shortlist} == {"1-1", "1-2", "1-3"}
+    assert brief.scope.service_type is None
+
+
+def test_service_type_rejects_unsupported_characters(tmp_path):
+    locs, providers = _three_orgs()
+    with pytest.raises(ScopeError):
+        _generate(tmp_path, locs, providers, service_type="<script>")
