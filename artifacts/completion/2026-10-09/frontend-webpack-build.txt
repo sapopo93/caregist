@@ -1,0 +1,82 @@
+
+> caregist-frontend@1.0.0 build
+> node scripts/verify-directory-fallback.js && next build --webpack
+
+Directory fallback verification passed: /private/tmp/caregist-completion-20261009/frontend/data/directory-fallback-full.csv (53 MB)
+▲ Next.js 16.3.8 (webpack)
+✓ Running next.config.ts took 107ms
+- Experiments (use with caution):
+  · clientTraceMetadata
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 10.0s
+  Running TypeScript ...
+  Finished TypeScript in 2.6s ...
+  Collecting page data using 9 workers ...
+  Generating static pages using 9 workers (0/44) ...
+  Generating static pages using 9 workers (11/44) 
+  Generating static pages using 9 workers (22/44) 
+  Generating static pages using 9 workers (33/44) 
+✓ Generating static pages using 9 workers (44/44) in 1729ms
+  Finalizing page optimization ...
+  Collecting build traces ...
+
+Route (app)
+┌ ƒ /
+├ ƒ /_not-found
+├ ƒ /acceptable-use
+├ ƒ /admin
+├ ƒ /api
+├ ƒ /api/export
+├ ƒ /api/health/directory
+├ ƒ /api/leads/request
+├ ƒ /api/territory/coverage
+├ ƒ /api/v1/service-types
+├ ƒ /care-homes/[slug]
+├ ƒ /claim/[slug]
+├ ƒ /compare
+├ ƒ /cookies
+├ ƒ /crm
+├ ƒ /dashboard
+├ ƒ /data-status
+├ ƒ /find-care
+├ ƒ /forgot-password
+├ ƒ /full-dataset
+├ ƒ /good-care-homes/[slug]
+├ ƒ /groups
+├ ƒ /groups/[slug]
+├ ƒ /intelligence-feed
+├ ƒ /lead-list
+├ ƒ /login
+├ ○ /opengraph-image
+├ ƒ /outstanding-care-homes/[slug]
+├ ƒ /pricing
+├ ƒ /pricing/territory
+├ ƒ /privacy
+├ ƒ /provider-dashboard/[slug]
+├ ƒ /provider-sitemap-index.xml
+├ ƒ /provider-sitemaps/[id]
+├ ƒ /provider/[slug]
+├ ƒ /region/[slug]
+├ ƒ /requires-improvement-care-homes/[slug]
+├ ƒ /review-policy
+├ ○ /robots.txt
+├ ƒ /sample-report
+├ ƒ /search
+├ ƒ /services/[slug]
+├ ƒ /signup
+├ ○ /sitemap.xml
+├ ƒ /story-video
+├ ƒ /terms
+├ ƒ /territory-opportunity-brief
+├ ƒ /territory-opportunity-brief/success
+├ ○ /twitter-image
+├ ƒ /verify-email
+└ ƒ /why-caregist
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

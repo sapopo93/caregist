@@ -1,0 +1,37 @@
+[
+  {
+    "original_path": "artifacts/cqc-nightly/2026-10-08-report.json",
+    "snapshot_path": "artifacts/completion/2026-10-09/nightly/2026-10-08-report.json",
+    "sha256": "143137bcd6c4ff93c775a4000e82097f53c1c8e65df98665f2b1243814c98855"
+  },
+  {
+    "original_path": "artifacts/cqc-nightly/2026-10-08-report.md",
+    "snapshot_path": "artifacts/completion/2026-10-09/nightly/2026-10-08-report.md",
+    "sha256": "34c0c5d0a1fc1199b732dc6acc1a7e207c0694d7702ba4342efa412dd580eb97"
+  },
+  {
+    "original_path": "artifacts/cqc-nightly/2026-10-09-report.json",
+    "snapshot_path": "artifacts/completion/2026-10-09/nightly/2026-10-09-report.json",
+    "sha256": "74d64fad33d5b2e9f5684db6f44b9da7236c01e0f80674ed74ae7f551a2f720a"
+  },
+  {
+    "original_path": "artifacts/cqc-nightly/2026-10-09-report.md",
+    "snapshot_path": "artifacts/completion/2026-10-09/nightly/2026-10-09-report.md",
+    "sha256": "5d509693eb25bf65f232f3dcdb33d2bf9ffed99b8b39d3366c7bac8cb76b52f9"
+  },
+  {
+    "original_path": "artifacts/cqc-nightly/cache/divergent-db-active.json",
+    "snapshot_path": "artifacts/completion/2026-10-09/nightly/cache/divergent-db-active.json",
+    "sha256": "bbbf500c6523b1eede8131b4f2b2691a3f73654af0c4ac0c21940bb835052203"
+  },
+  {
+    "original_path": "artifacts/cqc-nightly/cache/source-inactive-vs-db.json",
+    "snapshot_path": "artifacts/completion/2026-10-09/nightly/cache/source-inactive-vs-db.json",
+    "sha256": "87aba6c8a3d4ad93336d066e2dede6edfbffab61c06a9c4ffa3b4d4ef6dfe63a"
+  },
+  {
+    "original_path": "artifacts/cqc-nightly/state.json",
+    "snapshot_path": "artifacts/completion/2026-10-09/nightly/state.json",
+    "sha256": "43d5e81e01ba47955e3a18a7b727e8a90adb9eae5e2aeea0760717e4b3301926"
+  }
+]
