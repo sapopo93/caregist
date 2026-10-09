@@ -1,3 +1,9 @@
+## 2026-10-09 buying audit — next bounded work
+
+Merge only the independently reviewed fail-closed repair after required CI, using Henry’s standing merge authorization. Keep gates closed. Next engineering proof: durable reconciliation for outer-commit failure/process interruption plus orphan-upload cleanup policy. Next product proof: carry agreed criteria through outputs and supply each promised qualification question. Digest-specific terms need approval before a four-week delivery/recovery rehearsal. Assign actual staff owners and exercise authorized synthetic enquiry/payment/inbox/private-file/acceptance receipts. [Evidence and acceptance checklist](../artifacts/buying-audit/2026-10-09/BUYING_PROCESS.md). Older entries below are historical.
+
+---
+
 ## 2026-10-09 — current completion audit (PARTIAL)
 
 Current read-only release: `59310ecc100119d6d775d70e62db758882bf5b8f` on GitHub main and both public services. PR #82 is merged. This dated observation supersedes older release/operational claims below; it does not approve commercial gates. Source reconciliation is stale/incomplete, checkout and delivery are closed. Repair branch `codex/completion-20261009` integrates PR #83 and corrects independently reproduced queue/CSV/shortfall defects. See [the audit](../artifacts/completion/2026-10-09/AUDIT.md) and [33-PR inventory](../artifacts/completion/2026-10-09/PR_INVENTORY.md) for raw evidence, actual checks, uncommitted preservation and remaining work. Grok/DeepSeek provider failures leave the prescribed independent gates uncompleted. Historical entries below are archives, not a new action list.

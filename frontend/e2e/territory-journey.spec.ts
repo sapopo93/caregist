@@ -59,7 +59,7 @@ test("an old response cannot restore coverage after selection changes", async ({
 
 test("checkout return page does not treat a supplied session ID as payment proof", async ({ page }) => {
   await page.goto("/territory-opportunity-brief/success?session_id=cs_unverified");
-  await expect(page.getByRole("heading", { name: "Check your email for your Territory Brief" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Payment status is not confirmed" })).toBeVisible();
   await expect(page.getByText("This page does not confirm payment or delivery.", { exact: false })).toBeVisible();
   await expect(page.getByRole("link", { name: /Download/ })).toHaveCount(0);
 });

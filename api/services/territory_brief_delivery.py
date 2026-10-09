@@ -42,6 +42,8 @@ from api.services.territory_brief_fulfilment import (
     FulfilmentDeps,
     FulfilmentSettings,
     GeneratedPack,
+    validate_existing_consent_evidence,
+    validate_existing_payment_evidence,
 )
 
 logger = logging.getLogger("caregist.billing.territory_brief")
@@ -187,25 +189,134 @@ def upload_pack(order_id: str, kind: str, data: bytes, content_type: str) -> Blo
     return BlobRef(pathname=obj.pathname)
 
 
-async def _record_failure(order_id: str, message: str) -> None:
-    """Persist a generation failure on a fresh connection so it survives the
-    webhook transaction rollback, and advance the attempt counter the next
-    retry reads for its cap."""
+async def _record_failure(
+    order_id: str,
+    message: str,
+    context: dict[str, Any] | None = None,
+) -> None:
+    """Restore trusted payment/consent evidence after generation rollback."""
     from api.database import get_connection
 
+    if context is None:
+        raise RuntimeError("territory-brief failure recorder missing trusted payment context")
+    payment_intent = context.get("payment_intent")
+    amount_total = context.get("amount_total")
+    currency = context.get("currency")
+    session_id = context.get("stripe_checkout_session_id")
+    terms_version = context.get("terms_version")
+    terms_sha = context.get("terms_sha256")
+    consent_sha = context.get("consent_text_sha256")
+    paid_at = context.get("paid_at")
+    accepted_at = context.get("accepted_at")
+    if (
+        not isinstance(payment_intent, str)
+        or len(payment_intent) <= 3
+        or not payment_intent.startswith("pi_")
+        or amount_total != 74500
+        or currency != "gbp"
+        or not isinstance(session_id, str)
+        or not session_id
+        or not isinstance(terms_version, str)
+        or not terms_version.strip()
+        or not isinstance(terms_sha, str)
+        or not _is_sha256(terms_sha)
+        or not isinstance(consent_sha, str)
+        or not _is_sha256(consent_sha)
+        or not isinstance(paid_at, datetime)
+        or not isinstance(accepted_at, datetime)
+    ):
+        raise RuntimeError("territory-brief failure recorder rejected invalid payment context")
+
     async with get_connection() as conn:
-        await conn.execute(
-            """
-            UPDATE territory_brief_orders
-            SET status = 'failed',
-                last_error = $2,
-                generation_attempts = generation_attempts + 1,
-                updated_at = NOW()
-            WHERE id = $1 AND status NOT IN ('fulfilled', 'refunded')
-            """,
-            order_id,
-            message,
-        )
+        async with conn.transaction():
+            await conn.execute(
+                "SELECT pg_advisory_xact_lock(hashtextextended('caregist-payment:' || $1, 0))",
+                payment_intent,
+            )
+            fully_refunded = await conn.fetchval(
+                """
+                SELECT EXISTS (
+                  SELECT 1
+                  FROM audit_log
+                  WHERE action = 'billing.charge.refund'
+                    AND metadata->>'payment_intent' = $1
+                    AND metadata->>'fully_refunded' = 'true'
+                )
+                """,
+                payment_intent,
+            )
+            order = await conn.fetchrow(
+                """
+                SELECT status, stripe_checkout_session_id,
+                       stripe_payment_intent_id, amount_total, currency
+                FROM territory_brief_orders
+                WHERE id = $1
+                FOR UPDATE
+                """,
+                order_id,
+            )
+            if not order:
+                raise RuntimeError("territory-brief failure recorder could not find its order")
+            validate_existing_payment_evidence(order, context)
+            if order["stripe_checkout_session_id"] != session_id:
+                raise RuntimeError("territory-brief failure recorder found conflicting checkout identity")
+            await validate_existing_consent_evidence(
+                conn,
+                order_id,
+                context,
+                required=order["status"] == "fulfilled",
+            )
+            if order["status"] == "fulfilled":
+                return
+
+            target_status = "refunded" if fully_refunded or order["status"] == "refunded" else "failed"
+            await conn.execute(
+                """
+                UPDATE territory_brief_orders
+                SET status = $3,
+                    stripe_payment_intent_id = COALESCE(stripe_payment_intent_id, $4),
+                    amount_total = COALESCE(amount_total, $5),
+                    currency = COALESCE(currency, $6),
+                    paid_at = COALESCE(paid_at, $7),
+                    last_error = $2,
+                    generation_attempts = CASE
+                      WHEN status = 'refunded' THEN generation_attempts
+                      ELSE LEAST(generation_attempts + 1, 5)
+                    END,
+                    updated_at = NOW()
+                WHERE id = $1 AND status <> 'fulfilled'
+                """,
+                order_id,
+                message,
+                target_status,
+                payment_intent,
+                amount_total,
+                currency,
+                paid_at,
+            )
+            await conn.execute(
+                """
+                INSERT INTO territory_brief_consents (
+                  order_id, stripe_checkout_session_id, terms_version, terms_sha256,
+                  consent_text_sha256, immediate_supply_consented,
+                  cancellation_right_acknowledged, accepted_at, evidence_source
+                ) VALUES ($1, $2, $3, $4, $5, TRUE, TRUE, $6,
+                          'stripe_checkout_terms_checkbox')
+                ON CONFLICT (order_id) DO NOTHING
+                """,
+                order_id,
+                session_id,
+                terms_version,
+                terms_sha,
+                consent_sha,
+                accepted_at,
+            )
+            await validate_existing_consent_evidence(
+                conn,
+                order_id,
+                context,
+                required=True,
+            )
 
 
 def _retrieve_session(session_id: str) -> dict[str, Any]:

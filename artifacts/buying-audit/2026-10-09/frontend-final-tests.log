@@ -1,0 +1,1464 @@
+
+> caregist-frontend@1.0.0 test
+> node --experimental-strip-types --test "lib/**/*.test.ts"
+
+TAP version 13
+# (node:52753) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/user/CareGist/frontend/lib/api-error.test.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/user/CareGist/frontend/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: apiErrorMessage
+    # Subtest: returns a string detail
+    ok 1 - returns a string detail
+      ---
+      duration_ms: 0.262375
+      type: 'test'
+      ...
+    # Subtest: flattens FastAPI validation errors without rendering objects
+    ok 2 - flattens FastAPI validation errors without rendering objects
+      ---
+      duration_ms: 0.064667
+      type: 'test'
+      ...
+    # Subtest: uses the safe fallback for unknown payloads
+    ok 3 - uses the safe fallback for unknown payloads
+      ---
+      duration_ms: 0.076167
+      type: 'test'
+      ...
+    1..3
+ok 1 - apiErrorMessage
+  ---
+  duration_ms: 0.818292
+  type: 'suite'
+  ...
+# Subtest: normalizeApiError
+    # Subtest: returns the string detail as the message
+    ok 1 - returns the string detail as the message
+      ---
+      duration_ms: 0.163416
+      type: 'test'
+      ...
+    # Subtest: flags the exact unverified-email message
+    ok 2 - flags the exact unverified-email message
+      ---
+      duration_ms: 0.040583
+      type: 'test'
+      ...
+    # Subtest: does NOT flag a reworded verification message (exact match only)
+    ok 3 - does NOT flag a reworded verification message (exact match only)
+      ---
+      duration_ms: 0.03675
+      type: 'test'
+      ...
+    # Subtest: formats pydantic validation arrays with field names
+    ok 4 - formats pydantic validation arrays with field names
+      ---
+      duration_ms: 0.1285
+      type: 'test'
+      ...
+    # Subtest: tolerates non-string msg values in pydantic arrays
+    ok 5 - tolerates non-string msg values in pydantic arrays
+      ---
+      duration_ms: 0.745042
+      type: 'test'
+      ...
+    # Subtest: treats 5xx as server error regardless of body
+    ok 6 - treats 5xx as server error regardless of body
+      ---
+      duration_ms: 0.189958
+      type: 'test'
+      ...
+    # Subtest: treats unparseable body on 500 as server error
+    ok 7 - treats unparseable body on 500 as server error
+      ---
+      duration_ms: 0.15175
+      type: 'test'
+      ...
+    # Subtest: flags 409 conflict
+    ok 8 - flags 409 conflict
+      ---
+      duration_ms: 0.0385
+      type: 'test'
+      ...
+    # Subtest: flags 429 rate limit
+    ok 9 - flags 429 rate limit
+      ---
+      duration_ms: 0.027833
+      type: 'test'
+      ...
+    # Subtest: falls back when detail is missing entirely
+    ok 10 - falls back when detail is missing entirely
+      ---
+      duration_ms: 0.023792
+      type: 'test'
+      ...
+    # Subtest: falls back when detail is an empty array
+    ok 11 - falls back when detail is an empty array
+      ---
+      duration_ms: 0.023
+      type: 'test'
+      ...
+    # Subtest: does not crash on null data
+    ok 12 - does not crash on null data
+      ---
+      duration_ms: 0.022209
+      type: 'test'
+      ...
+    1..12
+ok 2 - normalizeApiError
+  ---
+  duration_ms: 1.834792
+  type: 'suite'
+  ...
+# Subtest: describeFetchError
+    # Subtest: identifies network failure
+    ok 1 - identifies network failure
+      ---
+      duration_ms: 0.05475
+      type: 'test'
+      ...
+    # Subtest: returns generic message for other errors
+    ok 2 - returns generic message for other errors
+      ---
+      duration_ms: 0.028958
+      type: 'test'
+      ...
+    # Subtest: handles non-Error values
+    ok 3 - handles non-Error values
+      ---
+      duration_ms: 0.022458
+      type: 'test'
+      ...
+    1..3
+ok 3 - describeFetchError
+  ---
+  duration_ms: 0.1455
+  type: 'suite'
+  ...
+# (node:52754) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/user/CareGist/frontend/lib/caregist-sitemap.test.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/user/CareGist/frontend/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: static sitemap preserves the public non-provider routes without fabricated freshness
+ok 4 - static sitemap preserves the public non-provider routes without fabricated freshness
+  ---
+  duration_ms: 0.6425
+  type: 'test'
+  ...
+# Subtest: robots advertises the static sitemap and the single segmented provider sitemap source
+ok 5 - robots advertises the static sitemap and the single segmented provider sitemap source
+  ---
+  duration_ms: 0.234417
+  type: 'test'
+  ...
+# (node:52755) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/user/CareGist/frontend/lib/checkout-return.test.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/user/CareGist/frontend/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: checkout return polling
+    # Subtest: waits for the webhook-backed entitlement instead of trusting payment alone
+    ok 1 - waits for the webhook-backed entitlement instead of trusting payment alone
+      ---
+      duration_ms: 0.321875
+      type: 'test'
+      ...
+    # Subtest: stops after a bounded number of attempts when fulfillment is delayed
+    ok 2 - stops after a bounded number of attempts when fulfillment is delayed
+      ---
+      duration_ms: 0.073125
+      type: 'test'
+      ...
+    1..2
+ok 6 - checkout return polling
+  ---
+  duration_ms: 0.76525
+  type: 'suite'
+  ...
+# (node:52756) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/user/CareGist/frontend/lib/commercial-readiness.test.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/user/CareGist/frontend/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: commercial checkout readiness
+    # Subtest: enables checkout only for an explicit true readiness value
+    ok 1 - enables checkout only for an explicit true readiness value
+      ---
+      duration_ms: 0.838709
+      type: 'test'
+      ...
+    # Subtest: fails closed for false, missing, and non-boolean readiness
+    ok 2 - fails closed for false, missing, and non-boolean readiness
+      ---
+      duration_ms: 0.315292
+      type: 'test'
+      ...
+    # Subtest: fails closed when health is unavailable
+    ok 3 - fails closed when health is unavailable
+      ---
+      duration_ms: 0.181292
+      type: 'test'
+      ...
+    1..3
+ok 7 - commercial checkout readiness
+  ---
+  duration_ms: 2.1825
+  type: 'suite'
+  ...
+# (node:52757) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/user/CareGist/frontend/lib/crm-page.test.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/user/CareGist/frontend/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: CareGist CRM safety contracts
+    # Subtest: protects the CRM route with authenticated middleware
+    ok 1 - protects the CRM route with authenticated middleware
+      ---
+      duration_ms: 0.451709
+      type: 'test'
+      ...
+    # Subtest: lets /crm request the microphone so the browser permission popup can appear
+    ok 2 - lets /crm request the microphone so the browser permission popup can appear
+      ---
+      duration_ms: 0.089208
+      type: 'test'
+      ...
+    # Subtest: does not expose or collect Twilio credentials in the browser
+    ok 3 - does not expose or collect Twilio credentials in the browser
+      ---
+      duration_ms: 0.094083
+      type: 'test'
+      ...
+    # Subtest: uses one-time server authorization instead of sending a destination number to Twilio
+    ok 4 - uses one-time server authorization instead of sending a destination number to Twilio
+      ---
+      duration_ms: 0.133875
+      type: 'test'
+      ...
+    # Subtest: makes phone compliance fool-proof for operators
+    ok 5 - makes phone compliance fool-proof for operators
+      ---
+      duration_ms: 0.073541
+      type: 'test'
+      ...
+    # Subtest: keeps UK SMS disabled and makes recording retention explicit
+    ok 6 - keeps UK SMS disabled and makes recording retention explicit
+      ---
+      duration_ms: 0.093041
+      type: 'test'
+      ...
+    # Subtest: includes pipeline, email campaign, reporting and AI review surfaces
+    ok 7 - includes pipeline, email campaign, reporting and AI review surfaces
+      ---
+      duration_ms: 0.096958
+      type: 'test'
+      ...
+    # Subtest: exposes accessible operator controls and inline recovery
+    ok 8 - exposes accessible operator controls and inline recovery
+      ---
+      duration_ms: 0.176083
+      type: 'test'
+      ...
+    # Subtest: keeps the dialler movable and advances after an outcome
+    ok 9 - keeps the dialler movable and advances after an outcome
+      ---
+      duration_ms: 0.130667
+      type: 'test'
+      ...
+    # Subtest: supports general tasks and serializes call actions
+    ok 10 - supports general tasks and serializes call actions
+      ---
+      duration_ms: 0.250791
+      type: 'test'
+      ...
+    # Subtest: offers the full operator disposition catalogue
+    ok 11 - offers the full operator disposition catalogue
+      ---
+      duration_ms: 0.62575
+      type: 'test'
+      ...
+    1..11
+ok 8 - CareGist CRM safety contracts
+  ---
+  duration_ms: 2.79625
+  type: 'suite'
+  ...
+# (node:52758) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/user/CareGist/frontend/lib/directory-access-token.test.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/user/CareGist/frontend/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: directory access tokens round-trip the requested scope
+ok 9 - directory access tokens round-trip the requested scope
+  ---
+  duration_ms: 1.272917
+  type: 'test'
+  ...
+# Subtest: directory access tokens reject tampered payloads
+ok 10 - directory access tokens reject tampered payloads
+  ---
+  duration_ms: 0.157084
+  type: 'test'
+  ...
+# Subtest: directory access tokens reject expired payloads
+ok 11 - directory access tokens reject expired payloads
+  ---
+  duration_ms: 0.080583
+  type: 'test'
+  ...
+# Subtest: directory access tokens reject weak secrets
+ok 12 - directory access tokens reject weak secrets
+  ---
+  duration_ms: 0.241833
+  type: 'test'
+  ...
+# Subtest: directory access tokens reject extra token segments
+ok 13 - directory access tokens reject extra token segments
+  ---
+  duration_ms: 0.11125
+  type: 'test'
+  ...
+# (node:52759) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/user/CareGist/frontend/lib/directory-db.test.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/user/CareGist/frontend/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: classifyDirectoryDatabaseError identifies configuration errors
+ok 14 - classifyDirectoryDatabaseError identifies configuration errors
+  ---
+  duration_ms: 0.379917
+  type: 'test'
+  ...
+# Subtest: classifyDirectoryDatabaseError identifies auth failures
+ok 15 - classifyDirectoryDatabaseError identifies auth failures
+  ---
+  duration_ms: 0.053625
+  type: 'test'
+  ...
+# Subtest: classifyDirectoryDatabaseError identifies Neon compute quota failures
+ok 16 - classifyDirectoryDatabaseError identifies Neon compute quota failures
+  ---
+  duration_ms: 0.043333
+  type: 'test'
+  ...
+# Subtest: classifyDirectoryDatabaseError identifies connection failures
+ok 17 - classifyDirectoryDatabaseError identifies connection failures
+  ---
+  duration_ms: 0.041125
+  type: 'test'
+  ...
+# Subtest: classifyDirectoryDatabaseError falls back to unknown
+ok 18 - classifyDirectoryDatabaseError falls back to unknown
+  ---
+  duration_ms: 0.087625
+  type: 'test'
+  ...
+# (node:52760) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/user/CareGist/frontend/lib/directory-export.test.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/user/CareGist/frontend/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: resolveExportScope
+    # Subtest: falls back to the stored scope when the request omits filters
+    ok 1 - falls back to the stored scope when the request omits filters
+      ---
+      duration_ms: 1.029084
+      type: 'test'
+      ...
+    # Subtest: rejects requests that do not match the issued token scope
+    ok 2 - rejects requests that do not match the issued token scope
+      ---
+      duration_ms: 0.379625
+      type: 'test'
+      ...
+    1..2
+ok 19 - resolveExportScope
+  ---
+  duration_ms: 2.161083
+  type: 'suite'
+  ...
+# Subtest: providersToCsv
+    # Subtest: serializes rows with a stable header and escaped values
+    ok 1 - serializes rows with a stable header and escaped values
+      ---
+      duration_ms: 0.467041
+      type: 'test'
+      ...
+    # Subtest: neutralizes spreadsheet formulas in exported provider fields
+    ok 2 - neutralizes spreadsheet formulas in exported provider fields
+      ---
+      duration_ms: 0.123708
+      type: 'test'
+      ...
+    # Subtest: attributes every exported row to the CQC Open Government Licence source
+    ok 3 - attributes every exported row to the CQC Open Government Licence source
+      ---
+      duration_ms: 0.189916
+      type: 'test'
+      ...
+    1..3
+ok 20 - providersToCsv
+  ---
+  duration_ms: 1.044666
+  type: 'suite'
+  ...
+# (node:52761) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/user/CareGist/frontend/lib/directory-filters.test.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/user/CareGist/frontend/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: parseDirectorySearchParams
+    # Subtest: defaults pagination to 24 results per page on page 1
+    ok 1 - defaults pagination to 24 results per page on page 1
+      ---
+      duration_ms: 0.298584
+      type: 'test'
+      ...
+    # Subtest: trims incoming filters and clamps invalid pages
+    ok 2 - trims incoming filters and clamps invalid pages
+      ---
+      duration_ms: 0.094125
+      type: 'test'
+      ...
+    # Subtest: ignores unknown opportunity segments
+    ok 3 - ignores unknown opportunity segments
+      ---
+      duration_ms: 0.043667
+      type: 'test'
+      ...
+    # Subtest: calculates offsets for later pages
+    ok 4 - calculates offsets for later pages
+      ---
+      duration_ms: 0.04
+      type: 'test'
+      ...
+    1..4
+ok 21 - parseDirectorySearchParams
+  ---
+  duration_ms: 0.924625
+  type: 'suite'
+  ...
+# (node:52762) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/user/CareGist/frontend/lib/directory-health.test.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/user/CareGist/frontend/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: directory capability status follows readable customer paths while writes fail closed
+ok 22 - directory capability status follows readable customer paths while writes fail closed
+  ---
+  duration_ms: 1.167208
+  type: 'test'
+  ...
+# (node:52763) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/user/CareGist/frontend/lib/directory-leads.test.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/user/CareGist/frontend/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: normalizeLeadRequest
+    # Subtest: normalizes email and trims optional filters
+    ok 1 - normalizes email and trims optional filters
+      ---
+      duration_ms: 0.627833
+      type: 'test'
+      ...
+    # Subtest: rejects empty emails
+    ok 2 - rejects empty emails
+      ---
+      duration_ms: 0.168292
+      type: 'test'
+      ...
+    # Subtest: rejects invalid emails
+    ok 3 - rejects invalid emails
+      ---
+      duration_ms: 0.085208
+      type: 'test'
+      ...
+    # Subtest: rejects oversized lead fields before database or email use
+    ok 4 - rejects oversized lead fields before database or email use
+      ---
+      duration_ms: 0.133084
+      type: 'test'
+      ...
+    # Subtest: rejects unscoped export requests
+    ok 5 - rejects unscoped export requests
+      ---
+      duration_ms: 0.057208
+      type: 'test'
+      ...
+    # Subtest: ignores unknown opportunity values
+    ok 6 - ignores unknown opportunity values
+      ---
+      duration_ms: 0.049792
+      type: 'test'
+      ...
+    1..6
+ok 23 - normalizeLeadRequest
+  ---
+  duration_ms: 1.553834
+  type: 'suite'
+  ...
+# (node:52764) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/user/CareGist/frontend/lib/directory-query-clauses.test.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/user/CareGist/frontend/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: directory query clauses
+    # Subtest: matches the stored Requires improvement casing without depending on case
+    ok 1 - matches the stored Requires improvement casing without depending on case
+      ---
+      duration_ms: 0.28775
+      type: 'test'
+      ...
+    # Subtest: treats every unpublished rating representation as not yet inspected
+    ok 2 - treats every unpublished rating representation as not yet inspected
+      ---
+      duration_ms: 0.087
+      type: 'test'
+      ...
+    # Subtest: keeps the exact no-published-rating token separate from missing data
+    ok 3 - keeps the exact no-published-rating token separate from missing data
+      ---
+      duration_ms: 0.096833
+      type: 'test'
+      ...
+    # Subtest: includes postcode in the HTML directory text-search predicate
+    ok 4 - includes postcode in the HTML directory text-search predicate
+      ---
+      duration_ms: 0.049209
+      type: 'test'
+      ...
+    # Subtest: matches explicit rating filters without relying on display casing
+    ok 5 - matches explicit rating filters without relying on display casing
+      ---
+      duration_ms: 0.040417
+      type: 'test'
+      ...
+    1..5
+ok 24 - directory query clauses
+  ---
+  duration_ms: 1.017792
+  type: 'suite'
+  ...
+# (node:52765) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/user/CareGist/frontend/lib/directory-return.test.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/user/CareGist/frontend/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: provider return links retain filters and pagination but reject external destinations
+ok 25 - provider return links retain filters and pagination but reject external destinations
+  ---
+  duration_ms: 0.387291
+  type: 'test'
+  ...
+# (node:52766) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/user/CareGist/frontend/lib/external-url.test.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/user/CareGist/frontend/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: normalizeExternalHttpUrl
+    # Subtest: makes bare provider hostnames absolute
+    ok 1 - makes bare provider hostnames absolute
+      ---
+      duration_ms: 0.379958
+      type: 'test'
+      ...
+    # Subtest: preserves valid HTTP and HTTPS URLs
+    ok 2 - preserves valid HTTP and HTTPS URLs
+      ---
+      duration_ms: 0.076667
+      type: 'test'
+      ...
+    # Subtest: rejects executable, credential-bearing, and malformed values
+    ok 3 - rejects executable, credential-bearing, and malformed values
+      ---
+      duration_ms: 0.105792
+      type: 'test'
+      ...
+    1..3
+ok 26 - normalizeExternalHttpUrl
+  ---
+  duration_ms: 0.944208
+  type: 'suite'
+  ...
+# Subtest: cqcEvidenceUrl
+    # Subtest: repairs report paths and absent report URLs with the official location page
+    ok 1 - repairs report paths and absent report URLs with the official location page
+      ---
+      duration_ms: 0.098208
+      type: 'test'
+      ...
+    # Subtest: preserves official absolute reports and rejects lookalike or unsafe hosts
+    ok 2 - preserves official absolute reports and rejects lookalike or unsafe hosts
+      ---
+      duration_ms: 0.093459
+      type: 'test'
+      ...
+    1..2
+ok 27 - cqcEvidenceUrl
+  ---
+  duration_ms: 0.293417
+  type: 'suite'
+  ...
+# (node:52767) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/user/CareGist/frontend/lib/feed-capabilities.test.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/user/CareGist/frontend/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: registration-feed capabilities
+    # Subtest: gives Free only the feed preview
+    ok 1 - gives Free only the feed preview
+      ---
+      duration_ms: 0.523666
+      type: 'test'
+      ...
+    # Subtest: does not load registration-feed APIs for Alerts Pro
+    ok 2 - does not load registration-feed APIs for Alerts Pro
+      ---
+      duration_ms: 0.051625
+      type: 'test'
+      ...
+    # Subtest: enables the recurring feed workflow from Starter upward
+    ok 3 - enables the recurring feed workflow from Starter upward
+      ---
+      duration_ms: 0.103333
+      type: 'test'
+      ...
+    # Subtest: fails closed for unknown tiers
+    ok 4 - fails closed for unknown tiers
+      ---
+      duration_ms: 0.03775
+      type: 'test'
+      ...
+    1..4
+ok 28 - registration-feed capabilities
+  ---
+  duration_ms: 1.12525
+  type: 'suite'
+  ...
+# [caregist] API_KEY env var is not set — falling back to API_MASTER_KEY
+# (node:52768) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/user/CareGist/frontend/lib/groups-api.test.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/user/CareGist/frontend/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: public groups API
+    # Subtest: lists groups through the server API without consuming anonymous quota
+    ok 1 - lists groups through the server API without consuming anonymous quota
+      ---
+      duration_ms: 24.37725
+      type: 'test'
+      ...
+    # Subtest: does not silently convert a non-OK groups list response into zero results
+    ok 2 - does not silently convert a non-OK groups list response into zero results
+      ---
+      duration_ms: 0.317417
+      type: 'test'
+      ...
+    # Subtest: filters unnamed groups from public list responses before rendering
+    ok 3 - filters unnamed groups from public list responses before rendering
+      ---
+      duration_ms: 0.3615
+      type: 'test'
+      ...
+    # Subtest: loads group detail through the server API without consuming anonymous quota
+    ok 4 - loads group detail through the server API without consuming anonymous quota
+      ---
+      duration_ms: 0.240666
+      type: 'test'
+      ...
+    1..4
+ok 29 - public groups API
+  ---
+  duration_ms: 25.983792
+  type: 'suite'
+  ...
+# (node:52769) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/user/CareGist/frontend/lib/lead-list-page.test.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/user/CareGist/frontend/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: buildLeadListDefaults
+    # Subtest: preserves filtered search params for the lead request form
+    ok 1 - preserves filtered search params for the lead request form
+      ---
+      duration_ms: 1.075208
+      type: 'test'
+      ...
+    # Subtest: uses the first value for repeated query params
+    ok 2 - uses the first value for repeated query params
+      ---
+      duration_ms: 0.07275
+      type: 'test'
+      ...
+    # Subtest: ignores unknown opportunity params
+    ok 3 - ignores unknown opportunity params
+      ---
+      duration_ms: 0.059791
+      type: 'test'
+      ...
+    1..3
+ok 30 - buildLeadListDefaults
+  ---
+  duration_ms: 1.8295
+  type: 'suite'
+  ...
+# Subtest: buildLeadListExportHref
+    # Subtest: includes token and selected segment
+    ok 1 - includes token and selected segment
+      ---
+      duration_ms: 0.116958
+      type: 'test'
+      ...
+    1..1
+ok 31 - buildLeadListExportHref
+  ---
+  duration_ms: 0.161958
+  type: 'suite'
+  ...
+# (node:52770) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/user/CareGist/frontend/lib/login-redirect.test.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/user/CareGist/frontend/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: post-login destination
+    # Subtest: returns users to an approved protected workspace
+    ok 1 - returns users to an approved protected workspace
+      ---
+      duration_ms: 0.384166
+      type: 'test'
+      ...
+    # Subtest: rejects open redirects and unrelated paths
+    ok 2 - rejects open redirects and unrelated paths
+      ---
+      duration_ms: 0.084459
+      type: 'test'
+      ...
+    1..2
+ok 32 - post-login destination
+  ---
+  duration_ms: 0.899125
+  type: 'suite'
+  ...
+# (node:52771) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/user/CareGist/frontend/lib/middleware-auth.test.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/user/CareGist/frontend/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: frontend auth proxy source
+    # Subtest: fails closed when backend session validation errors
+    ok 1 - fails closed when backend session validation errors
+      ---
+      duration_ms: 0.370209
+      type: 'test'
+      ...
+    # Subtest: validates sessions against the current Vercel origin
+    ok 2 - validates sessions against the current Vercel origin
+      ---
+      duration_ms: 0.105916
+      type: 'test'
+      ...
+    # Subtest: uses the Next 16 proxy convention with its required Node.js runtime
+    ok 3 - uses the Next 16 proxy convention with its required Node.js runtime
+      ---
+      duration_ms: 0.055458
+      type: 'test'
+      ...
+    # Subtest: does not put the API-key-gated admin page behind the user-session redirect
+    ok 4 - does not put the API-key-gated admin page behind the user-session redirect
+      ---
+      duration_ms: 0.168125
+      type: 'test'
+      ...
+    # Subtest: pairs nonce CSP with dynamic rendering so framework scripts receive nonces
+    ok 5 - pairs nonce CSP with dynamic rendering so framework scripts receive nonces
+      ---
+      duration_ms: 0.093083
+      type: 'test'
+      ...
+    # Subtest: applies CSP proxy to the public /api page
+    ok 6 - applies CSP proxy to the public /api page
+      ---
+      duration_ms: 0.051708
+      type: 'test'
+      ...
+    # Subtest: permanently redirects legacy city pages to accurate directory filters
+    ok 7 - permanently redirects legacy city pages to accurate directory filters
+      ---
+      duration_ms: 0.046584
+      type: 'test'
+      ...
+    1..7
+ok 33 - frontend auth proxy source
+  ---
+  duration_ms: 1.35375
+  type: 'suite'
+  ...
+# (node:52772) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/user/CareGist/frontend/lib/no-remote-fonts.test.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/user/CareGist/frontend/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: no remote fonts
+    # Subtest: never imports next/font/google from app/ or components/
+    ok 1 - never imports next/font/google from app/ or components/
+      ---
+      duration_ms: 22.705333
+      type: 'test'
+      ...
+    1..1
+ok 34 - no remote fonts
+  ---
+  duration_ms: 23.327417
+  type: 'suite'
+  ...
+# (node:52773) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/user/CareGist/frontend/lib/page-contracts.test.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/user/CareGist/frontend/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: page contracts
+    # Subtest: service-types API returns counted service type rows
+    ok 1 - service-types API returns counted service type rows
+      ---
+      duration_ms: 1.499875
+      type: 'test'
+      ...
+    # Subtest: missing provider pages return a real 404
+    ok 2 - missing provider pages return a real 404
+      ---
+      duration_ms: 0.596541
+      type: 'test'
+      ...
+    # Subtest: provider pages remove unavailable claim, enquiry, and review journeys
+    ok 3 - provider pages remove unavailable claim, enquiry, and review journeys
+      ---
+      duration_ms: 0.529333
+      type: 'test'
+      ...
+    # Subtest: handles retired stranger-facing routes without generic 404 pages
+    ok 4 - handles retired stranger-facing routes without generic 404 pages
+      ---
+      duration_ms: 0.917042
+      type: 'test'
+      ...
+    # Subtest: keeps service routes and the proxy on one finite taxonomy
+    ok 5 - keeps service routes and the proxy on one finite taxonomy
+      ---
+      duration_ms: 0.320833
+      type: 'test'
+      ...
+    # Subtest: labels unpublished ratings honestly on the homepage
+    ok 6 - labels unpublished ratings honestly on the homepage
+      ---
+      duration_ms: 0.226792
+      type: 'test'
+      ...
+    # Subtest: explains local-authority counts are not town-search counts
+    ok 7 - explains local-authority counts are not town-search counts
+      ---
+      duration_ms: 0.275042
+      type: 'test'
+      ...
+    # Subtest: exposes a real Compare Now link after two selections
+    ok 8 - exposes a real Compare Now link after two selections
+      ---
+      duration_ms: 0.479083
+      type: 'test'
+      ...
+    # Subtest: uses exact geography fields for region and local-authority pages
+    ok 9 - uses exact geography fields for region and local-authority pages
+      ---
+      duration_ms: 0.250791
+      type: 'test'
+      ...
+    # Subtest: keeps the free radius directory ungated
+    ok 10 - keeps the free radius directory ungated
+      ---
+      duration_ms: 0.356083
+      type: 'test'
+      ...
+    # Subtest: redirects Requires Improvement city pages with the stored rating casing
+    ok 11 - redirects Requires Improvement city pages with the stored rating casing
+      ---
+      duration_ms: 0.078334
+      type: 'test'
+      ...
+    # Subtest: permanently retires the commodity lead-list page
+    ok 12 - permanently retires the commodity lead-list page
+      ---
+      duration_ms: 0.073417
+      type: 'test'
+      ...
+    # Subtest: does not advertise commodity provider exports on public directory pages
+    ok 13 - does not advertise commodity provider exports on public directory pages
+      ---
+      duration_ms: 0.148333
+      type: 'test'
+      ...
+    # Subtest: retires the public review-policy surface with a permanent redirect
+    ok 14 - retires the public review-policy surface with a permanent redirect
+      ---
+      duration_ms: 0.080458
+      type: 'test'
+      ...
+    # Subtest: export API maps token lookup failures to unauthorized responses
+    ok 15 - export API maps token lookup failures to unauthorized responses
+      ---
+      duration_ms: 0.080667
+      type: 'test'
+      ...
+    # Subtest: removed lead intake is gone while historical directory export stays gated
+    ok 16 - removed lead intake is gone while historical directory export stays gated
+      ---
+      duration_ms: 0.105375
+      type: 'test'
+      ...
+    # Subtest: keeps generated feed exports alive through the native save dialog
+    ok 17 - keeps generated feed exports alive through the native save dialog
+      ---
+      duration_ms: 0.092958
+      type: 'test'
+      ...
+    # Subtest: paid checkout renders an explicit unavailable state until every gate is configured
+    ok 18 - paid checkout renders an explicit unavailable state until every gate is configured
+      ---
+      duration_ms: 0.071291
+      type: 'test'
+      ...
+    # Subtest: does not claim that a snapshot checksum is always available
+    ok 19 - does not claim that a snapshot checksum is always available
+      ---
+      duration_ms: 0.384958
+      type: 'test'
+      ...
+    # Subtest: keeps provider-result navigation on reliable document requests
+    ok 20 - keeps provider-result navigation on reliable document requests
+      ---
+      duration_ms: 0.808417
+      type: 'test'
+      ...
+    # Subtest: reserves page space for the cookie banner instead of covering actions
+    ok 21 - reserves page space for the cookie banner instead of covering actions
+      ---
+      duration_ms: 0.290542
+      type: 'test'
+      ...
+    # Subtest: states that VAT is not charged while unregistered
+    ok 22 - states that VAT is not charged while unregistered
+      ---
+      duration_ms: 0.358834
+      type: 'test'
+      ...
+    # Subtest: does not issue opportunity lead-list tokens
+    ok 23 - does not issue opportunity lead-list tokens
+      ---
+      duration_ms: 0.112583
+      type: 'test'
+      ...
+    # Subtest: privacy policy covers Radar report processing and outcome tracking
+    ok 24 - privacy policy covers Radar report processing and outcome tracking
+      ---
+      duration_ms: 0.081916
+      type: 'test'
+      ...
+    # Subtest: keeps the legal operator consistent and removes retired API tiers
+    ok 25 - keeps the legal operator consistent and removes retired API tiers
+      ---
+      duration_ms: 0.145417
+      type: 'test'
+      ...
+    # Subtest: does not claim that browser storage contains an API key
+    ok 26 - does not claim that browser storage contains an API key
+      ---
+      duration_ms: 0.065041
+      type: 'test'
+      ...
+    1..26
+ok 35 - page contracts
+  ---
+  duration_ms: 12.029792
+  type: 'suite'
+  ...
+# (node:52774) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/user/CareGist/frontend/lib/post-verification.test.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/user/CareGist/frontend/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: post-verification destination
+    # Subtest: preserves only the two saleable Radar continuations
+    ok 1 - preserves only the two saleable Radar continuations
+      ---
+      duration_ms: 0.3765
+      type: 'test'
+      ...
+    # Subtest: rejects external, protocol-relative, malformed, and unapproved destinations
+    ok 2 - rejects external, protocol-relative, malformed, and unapproved destinations
+      ---
+      duration_ms: 0.106
+      type: 'test'
+      ...
+    # Subtest: uses the server-backed continuation without browser-local state
+    ok 3 - uses the server-backed continuation without browser-local state
+      ---
+      duration_ms: 0.065042
+      type: 'test'
+      ...
+    1..3
+ok 36 - post-verification destination
+  ---
+  duration_ms: 0.970042
+  type: 'suite'
+  ...
+# (node:52775) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/user/CareGist/frontend/lib/pricing-plan-path.test.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/user/CareGist/frontend/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: retained pricing-plan path
+    # Subtest: gives each of the two saleable products a stable pricing-card anchor
+    ok 1 - gives each of the two saleable products a stable pricing-card anchor
+      ---
+      duration_ms: 0.864916
+      type: 'test'
+      ...
+    # Subtest: keeps an anchor for withdrawn plans so an old link degrades instead of breaking
+    ok 2 - keeps an anchor for withdrawn plans so an old link degrades instead of breaking
+      ---
+      duration_ms: 0.123083
+      type: 'test'
+      ...
+    # Subtest: accepts retained login slugs and rejects unknown values
+    ok 3 - accepts retained login slugs and rejects unknown values
+      ---
+      duration_ms: 0.116667
+      type: 'test'
+      ...
+    1..3
+ok 37 - retained pricing-plan path
+  ---
+  duration_ms: 1.890083
+  type: 'suite'
+  ...
+# (node:52776) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/user/CareGist/frontend/lib/pricing-provider-cta.test.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/user/CareGist/frontend/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: pricing page — final catalogue regression
+    # Subtest: does not contain hello@ mailto stub
+    ok 1 - does not contain hello@ mailto stub
+      ---
+      duration_ms: 0.541917
+      type: 'test'
+      ...
+    # Subtest: does not sell a provider-listing path
+    ok 2 - does not sell a provider-listing path
+      ---
+      duration_ms: 0.140167
+      type: 'test'
+      ...
+    # Subtest: uses the catalogue-aware PricingCTA component
+    ok 3 - uses the catalogue-aware PricingCTA component
+      ---
+      duration_ms: 0.181916
+      type: 'test'
+      ...
+    # Subtest: routes one-offs to scoping and keeps continuing products gated
+    ok 4 - routes one-offs to scoping and keeps continuing products gated
+      ---
+      duration_ms: 0.166958
+      type: 'test'
+      ...
+    1..4
+ok 38 - pricing page — final catalogue regression
+  ---
+  duration_ms: 1.907167
+  type: 'suite'
+  ...
+# Subtest: commercial readiness safeguards
+    # Subtest: requires live readiness as well as environment flags
+    ok 1 - requires live readiness as well as environment flags
+      ---
+      duration_ms: 0.297042
+      type: 'test'
+      ...
+    # Subtest: blocks stopped products before the checkout handler
+    ok 2 - blocks stopped products before the checkout handler
+      ---
+      duration_ms: 0.123042
+      type: 'test'
+      ...
+    1..2
+ok 39 - commercial readiness safeguards
+  ---
+  duration_ms: 0.544292
+  type: 'suite'
+  ...
+# (node:52777) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/user/CareGist/frontend/lib/provider-path.test.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/user/CareGist/frontend/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: provider path helpers
+    # Subtest: prefers canonical slug when present
+    ok 1 - prefers canonical slug when present
+      ---
+      duration_ms: 0.411584
+      type: 'test'
+      ...
+    # Subtest: falls back to CQC location id when slug is missing
+    ok 2 - falls back to CQC location id when slug is missing
+      ---
+      duration_ms: 0.049584
+      type: 'test'
+      ...
+    # Subtest: does not generate undefined or null provider routes
+    ok 3 - does not generate undefined or null provider routes
+      ---
+      duration_ms: 0.041958
+      type: 'test'
+      ...
+    # Subtest: falls back to id when slug is null
+    ok 4 - falls back to id when slug is null
+      ---
+      duration_ms: 0.058542
+      type: 'test'
+      ...
+    # Subtest: falls back to id when slug is empty
+    ok 5 - falls back to id when slug is empty
+      ---
+      duration_ms: 0.092833
+      type: 'test'
+      ...
+    # Subtest: falls back to id when slug is whitespace
+    ok 6 - falls back to id when slug is whitespace
+      ---
+      duration_ms: 0.03775
+      type: 'test'
+      ...
+    # Subtest: falls back to id when slug is the string null
+    ok 7 - falls back to id when slug is the string null
+      ---
+      duration_ms: 0.076417
+      type: 'test'
+      ...
+    # Subtest: falls back to id when slug is the string undefined
+    ok 8 - falls back to id when slug is the string undefined
+      ---
+      duration_ms: 0.107166
+      type: 'test'
+      ...
+    # Subtest: uses real slug values
+    ok 9 - uses real slug values
+      ---
+      duration_ms: 0.14975
+      type: 'test'
+      ...
+    1..9
+ok 40 - provider path helpers
+  ---
+  duration_ms: 1.625833
+  type: 'suite'
+  ...
+# (node:52778) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/user/CareGist/frontend/lib/release.test.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/user/CareGist/frontend/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: explicit release SHA takes precedence and is normalized
+ok 41 - explicit release SHA takes precedence and is normalized
+  ---
+  duration_ms: 0.669125
+  type: 'test'
+  ...
+# Subtest: Vercel release SHA is used when no explicit SHA is injected
+ok 42 - Vercel release SHA is used when no explicit SHA is injected
+  ---
+  duration_ms: 0.116166
+  type: 'test'
+  ...
+# Subtest: invalid public release values fail closed
+ok 43 - invalid public release values fail closed
+  ---
+  duration_ms: 0.071041
+  type: 'test'
+  ...
+# (node:52779) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/user/CareGist/frontend/lib/revenue-path-contracts.test.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/user/CareGist/frontend/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: revenue path contracts
+    # Subtest: uses document navigation for revenue-critical provider links
+    ok 1 - uses document navigation for revenue-critical provider links
+      ---
+      duration_ms: 1.517541
+      type: 'test'
+      ...
+    # Subtest: reserves layout space for the visible cookie banner
+    ok 2 - reserves layout space for the visible cookie banner
+      ---
+      duration_ms: 0.33175
+      type: 'test'
+      ...
+    # Subtest: does not advertise VAT charges while H-Kay is unregistered
+    ok 3 - does not advertise VAT charges while H-Kay is unregistered
+      ---
+      duration_ms: 0.932875
+      type: 'test'
+      ...
+    # Subtest: sells exactly two products at exact prices, plus the free directory
+    ok 4 - sells exactly two products at exact prices, plus the free directory
+      ---
+      duration_ms: 1.059584
+      type: 'test'
+      ...
+    # Subtest: keeps one-off requests out of signup and keeps roadmap products non-purchasable
+    ok 5 - keeps one-off requests out of signup and keeps roadmap products non-purchasable
+      ---
+      duration_ms: 0.285917
+      type: 'test'
+      ...
+    # Subtest: carries retained login plan intent to a stable, focused pricing card
+    ok 6 - carries retained login plan intent to a stable, focused pricing card
+      ---
+      duration_ms: 0.504583
+      type: 'test'
+      ...
+    # Subtest: does not spend a Free user's product allowance on unavailable feed controls
+    ok 7 - does not spend a Free user's product allowance on unavailable feed controls
+      ---
+      duration_ms: 0.277375
+      type: 'test'
+      ...
+    # Subtest: removes paid provider-listing checkout and unavailable claim intake
+    ok 8 - removes paid provider-listing checkout and unavailable claim intake
+      ---
+      duration_ms: 0.557667
+      type: 'test'
+      ...
+    # Subtest: offers a plan/seat change action on the current account plan, not a second charge
+    ok 9 - offers a plan/seat change action on the current account plan, not a second charge
+      ---
+      duration_ms: 0.454166
+      type: 'test'
+      ...
+    # Subtest: does not render removed provider sales cards
+    ok 10 - does not render removed provider sales cards
+      ---
+      duration_ms: 0.7185
+      type: 'test'
+      ...
+    # Subtest: backs the cancel-anytime promise with authenticated billing management
+    ok 11 - backs the cancel-anytime promise with authenticated billing management
+      ---
+      duration_ms: 0.66725
+      type: 'test'
+      ...
+    1..11
+ok 44 - revenue path contracts
+  ---
+  duration_ms: 8.442125
+  type: 'suite'
+  ...
+# Subtest: keeps one-off code prices aligned to the authoritative September manifest
+ok 45 - keeps one-off code prices aligned to the authoritative September manifest
+  ---
+  duration_ms: 0.480375
+  type: 'test'
+  ...
+# [caregist] NEXT_PUBLIC_API_URL env var is not set — deriving API host from app URL
+# [caregist] API_URL env var is not set — deriving API host from app URL
+# (node:52780) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/user/CareGist/frontend/lib/server-api-config.test.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/user/CareGist/frontend/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: server API config
+    # Subtest: uses the deployment-scoped backend binding for Vercel preview rendering
+    ok 1 - uses the deployment-scoped backend binding for Vercel preview rendering
+      ---
+      duration_ms: 0.942208
+      type: 'test'
+      ...
+    # Subtest: derives the public API base from production APP_URL
+    ok 2 - derives the public API base from production APP_URL
+      ---
+      duration_ms: 0.893208
+      type: 'test'
+      ...
+    # Subtest: derives the server API base from Vercel production URL without a protocol
+    ok 3 - derives the server API base from Vercel production URL without a protocol
+      ---
+      duration_ms: 0.218584
+      type: 'test'
+      ...
+    # Subtest: ignores localhost public API URL when APP_URL is production
+    ok 4 - ignores localhost public API URL when APP_URL is production
+      ---
+      duration_ms: 0.197542
+      type: 'test'
+      ...
+    # Subtest: uses the current Vercel deployment instead of a retired configured API host
+    ok 5 - uses the current Vercel deployment instead of a retired configured API host
+      ---
+      duration_ms: 0.099125
+      type: 'test'
+      ...
+    # Subtest: uses the private Vercel service binding for server-side API calls
+    ok 6 - uses the private Vercel service binding for server-side API calls
+      ---
+      duration_ms: 0.065959
+      type: 'test'
+      ...
+    # Subtest: does not include a NEXT_PUBLIC_API_KEY server fallback
+    ok 7 - does not include a NEXT_PUBLIC_API_KEY server fallback
+      ---
+      duration_ms: 0.268083
+      type: 'test'
+      ...
+    # Subtest: does not proxy unmatched API routes to the retired backend
+    ok 8 - does not proxy unmatched API routes to the retired backend
+      ---
+      duration_ms: 0.191625
+      type: 'test'
+      ...
+    1..8
+ok 46 - server API config
+  ---
+  duration_ms: 4.318208
+  type: 'suite'
+  ...
+# (node:52781) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/user/CareGist/frontend/lib/service-page-config.test.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/user/CareGist/frontend/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: service page configuration
+    # Subtest: returns the canonical service mapping for known slugs
+    ok 1 - returns the canonical service mapping for known slugs
+      ---
+      duration_ms: 0.518834
+      type: 'test'
+      ...
+    # Subtest: rejects unknown and prototype-like slugs
+    ok 2 - rejects unknown and prototype-like slugs
+      ---
+      duration_ms: 0.054042
+      type: 'test'
+      ...
+    1..2
+ok 47 - service page configuration
+  ---
+  duration_ms: 0.952334
+  type: 'suite'
+  ...
+# (node:52782) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/user/CareGist/frontend/lib/service-taxonomy.test.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/user/CareGist/frontend/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: canonical service taxonomy
+    # Subtest: covers every observed CQC source label exactly once
+    ok 1 - covers every observed CQC source label exactly once
+      ---
+      duration_ms: 0.273
+      type: 'test'
+      ...
+    # Subtest: resolves canonical slugs and legacy labels to the same source aliases
+    ok 2 - resolves canonical slugs and legacy labels to the same source aliases
+      ---
+      duration_ms: 0.174
+      type: 'test'
+      ...
+    # Subtest: aggregates legacy labels under a stable canonical slug
+    ok 3 - aggregates legacy labels under a stable canonical slug
+      ---
+      duration_ms: 0.128
+      type: 'test'
+      ...
+    1..3
+ok 48 - canonical service taxonomy
+  ---
+  duration_ms: 1.014125
+  type: 'suite'
+  ...
+# (node:52784) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/user/CareGist/frontend/lib/site.test.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/user/CareGist/frontend/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: getSiteUrl
+    # Subtest: canonicalises the CareGist apex domain to www
+    ok 1 - canonicalises the CareGist apex domain to www
+      ---
+      duration_ms: 0.394125
+      type: 'test'
+      ...
+    # Subtest: preserves deployment-scoped preview hosts
+    ok 2 - preserves deployment-scoped preview hosts
+      ---
+      duration_ms: 0.1015
+      type: 'test'
+      ...
+    1..2
+ok 49 - getSiteUrl
+  ---
+  duration_ms: 0.874583
+  type: 'suite'
+  ...
+# (node:52785) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/user/CareGist/frontend/lib/territory-brief-download.test.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/user/CareGist/frontend/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: invalid bearer tokens never reach the database
+ok 50 - invalid bearer tokens never reach the database
+  ---
+  duration_ms: 0.413708
+  type: 'test'
+  ...
+# Subtest: only the token hash reaches the database and missing entitlements deny access
+ok 51 - only the token hash reaches the database and missing entitlements deny access
+  ---
+  duration_ms: 0.459958
+  type: 'test'
+  ...
+# Subtest: returns the entitled artifact without accepting a client-selected path
+ok 52 - returns the entitled artifact without accepting a client-selected path
+  ---
+  duration_ms: 0.062875
+  type: 'test'
+  ...
+# (node:52786) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/user/CareGist/frontend/lib/territory-scope.test.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/user/CareGist/frontend/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: normalizeTerritoryScope accepts a known region and buyer type
+ok 53 - normalizeTerritoryScope accepts a known region and buyer type
+  ---
+  duration_ms: 0.638709
+  type: 'test'
+  ...
+# Subtest: normalizeTerritoryScope rejects an unknown region
+ok 54 - normalizeTerritoryScope rejects an unknown region
+  ---
+  duration_ms: 0.190167
+  type: 'test'
+  ...
+# Subtest: normalizeTerritoryScope rejects an unknown buyer type
+ok 55 - normalizeTerritoryScope rejects an unknown buyer type
+  ---
+  duration_ms: 0.101959
+  type: 'test'
+  ...
+# Subtest: normalizeTerritoryScope requires both fields
+ok 56 - normalizeTerritoryScope requires both fields
+  ---
+  duration_ms: 0.084208
+  type: 'test'
+  ...
+# Subtest: every buyer type maps to a directory opportunity value
+ok 57 - every buyer type maps to a directory opportunity value
+  ---
+  duration_ms: 0.074959
+  type: 'test'
+  ...
+# Subtest: evaluateTerritoryCoverage keeps count bands while every enquiry remains non-checkout
+ok 58 - evaluateTerritoryCoverage keeps count bands while every enquiry remains non-checkout
+  ---
+  duration_ms: 0.261833
+  type: 'test'
+  ...
+# Subtest: evaluateTerritoryCoverage keeps a stale observation visible and checkout closed
+ok 59 - evaluateTerritoryCoverage keeps a stale observation visible and checkout closed
+  ---
+  duration_ms: 0.110125
+  type: 'test'
+  ...
+# Subtest: evaluateTerritoryCoverage tolerates a missing observation date
+ok 60 - evaluateTerritoryCoverage tolerates a missing observation date
+  ---
+  duration_ms: 0.041291
+  type: 'test'
+  ...
+1..60
+# tests 183
+# suites 31
+# pass 183
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 371.699541

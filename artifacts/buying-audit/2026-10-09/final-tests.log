@@ -1,0 +1,24 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.12.13, pytest-9.1.1, pluggy-1.6.0
+rootdir: /Users/user/CareGist
+configfile: pytest.ini
+plugins: cov-5.0.0, asyncio-1.4.0, anyio-4.14.2
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
+collected 146 items
+
+tests/test_billing_territory_brief_checkout.py ..................        [ 12%]
+tests/test_billing_adversarial_remediation.py ............               [ 20%]
+tests/test_billing_webhook_handlers.py .......................           [ 36%]
+tests/test_territory_brief_fulfilment.py ........................        [ 52%]
+tests/test_acceptance_territory_gates.py ............                    [ 60%]
+tests/test_acceptance_territory_delivery_email.py .......                [ 65%]
+tests/test_email_queue.py ......                                         [ 69%]
+tests/test_output_fixes.py .........................                     [ 86%]
+tests/integration/test_acceptance_territory_download_pg.py ............  [ 95%]
+tests/integration/test_territory_fulfilment_pg.py .                      [ 95%]
+tests/integration/test_email_queue_gate_pg.py .                          [ 96%]
+tests/integration/test_buying_refund_pg.py ....                          [ 99%]
+tests/integration/test_data_lifecycle.py .                               [100%]
+
+- generated xml file: /Users/user/CareGist/artifacts/buying-audit/2026-10-09/final-tests.xml -
+============================= 146 passed in 9.50s ==============================

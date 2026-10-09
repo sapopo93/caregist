@@ -36,15 +36,36 @@ ORDER_ID = "11111111-1111-1111-1111-111111111111"
 
 
 class FakeConn:
-    def __init__(self, order_row):
+    def __init__(self, order_row, *, fully_refunded=False, consent_row=None, fail_sql=None):
         self._order_row = order_row
+        self._fully_refunded = fully_refunded
+        self._consent_row = consent_row
+        self._fail_sql = fail_sql
         self.execches: list[tuple] = []
+        self.calls: list[tuple] = []
 
-    async def fetchrow(self, *_args):
+    async def fetchrow(self, *args):
+        self.calls.append(("fetchrow", *args))
+        if "FROM territory_brief_consents" in args[0]:
+            return self._consent_row
         return self._order_row
+
+    async def fetchval(self, *args):
+        self.calls.append(("fetchval", *args))
+        return self._fully_refunded
 
     async def execute(self, *args):
         self.execches.append(args)
+        self.calls.append(("execute", *args))
+        if self._fail_sql and self._fail_sql in args[0]:
+            raise RuntimeError("synthetic database write failure")
+        if "INSERT INTO territory_brief_consents" in args[0] and self._consent_row is None:
+            self._consent_row = _consent(
+                stripe_checkout_session_id=args[2],
+                terms_version=args[3],
+                terms_sha256=args[4],
+                consent_text_sha256=args[5],
+            )
         return "UPDATE 1"
 
     def sql_log(self) -> str:
@@ -62,6 +83,24 @@ def _order(**over):
         "scope_window_days": 90,
         "scope_shortlist_target": 30,
         "generation_attempts": 0,
+        "stripe_checkout_session_id": "cs_test_123",
+        "stripe_payment_intent_id": None,
+        "amount_total": None,
+        "currency": None,
+    }
+    row.update(over)
+    return row
+
+
+def _consent(**over):
+    row = {
+        "stripe_checkout_session_id": "cs_test_123",
+        "terms_version": "business-terms-2.2",
+        "terms_sha256": TERMS_SHA,
+        "consent_text_sha256": CONSENT_SHA,
+        "immediate_supply_consented": True,
+        "cancellation_right_acknowledged": True,
+        "evidence_source": "stripe_checkout_terms_checkbox",
     }
     row.update(over)
     return row
@@ -102,6 +141,8 @@ def _deps(*, session=None, generate=None, fail_uploads=False, failures=None, aud
     def _generate(order_row):
         if generate == "raise":
             raise RuntimeError("boom in generator")
+        if callable(generate):
+            return generate(order_row)
         return GeneratedPack(
             pdf_bytes=b"%PDF-1.4 fake",
             csv_text="rank,organisation\n1,Acme Care Ltd\n",
@@ -115,8 +156,8 @@ def _deps(*, session=None, generate=None, fail_uploads=False, failures=None, aud
             raise RuntimeError("blob down")
         return fulfil.BlobRef(pathname=f"territory-briefs/{order_id}/xyz/brief.{kind}")
 
-    async def _record_failure(order_id, message):
-        failures.append((order_id, message))
+    async def _record_failure(order_id, message, context=None):
+        failures.append((order_id, message, context))
 
     async def _audit(**kwargs):
         audits.append(kwargs)
@@ -151,14 +192,26 @@ async def test_happy_path_generates_uploads_entitles_and_emails():
     assert "/api/export?token=" in email_insert[3]
     assert not failures
     assert audits and audits[0]["action"] == "billing.territory_brief.fulfil"
+    lock_index = next(i for i, call in enumerate(conn.calls) if "pg_advisory_xact_lock" in call[1])
+    order_index = next(i for i, call in enumerate(conn.calls) if call[0] == "fetchrow")
+    assert lock_index < order_index
 
 
 @pytest.mark.asyncio
 async def test_duplicate_delivery_on_fulfilled_order_is_a_noop():
-    conn = FakeConn(_order(status="fulfilled"))
+    conn = FakeConn(
+        _order(
+            status="fulfilled",
+            stripe_payment_intent_id="pi_test_123",
+            amount_total=74500,
+            currency="gbp",
+        ),
+        consent_row=_consent(),
+    )
     deps = _deps()
     await fulfil_territory_brief_order(conn, {"id": "cs_test_123"}, cfg=CFG, deps=deps)
-    assert conn.execches == []  # nothing mutated
+    assert len(conn.execches) == 1  # payment lock only; no order or delivery mutation
+    assert "pg_advisory_xact_lock" in conn.execches[0][0]
 
 
 @pytest.mark.asyncio
@@ -175,6 +228,11 @@ async def test_generation_failure_records_failure_and_reraises_without_fulfillin
     assert "SET status = 'fulfilled'" not in sql
     assert failures and failures[0][0] == ORDER_ID
     assert "boom in generator" in failures[0][1]
+    assert failures[0][2]["payment_intent"] == "pi_test_123"
+    assert failures[0][2]["amount_total"] == 74500
+    assert failures[0][2]["currency"] == "gbp"
+    assert failures[0][2]["terms_sha256"] == TERMS_SHA
+    assert failures[0][2]["consent_text_sha256"] == CONSENT_SHA
 
 
 @pytest.mark.asyncio
@@ -196,6 +254,89 @@ async def test_exhausted_attempts_stop_retrying():
     deps = _deps()
     with pytest.raises(TerritoryBriefFulfilmentError, match="manual review"):
         await fulfil_territory_brief_order(conn, {"id": "cs_test_123"}, cfg=CFG, deps=deps)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("payment_intent", [None, "", "pi_", "ch_wrong", {"id": ""}])
+async def test_missing_or_invalid_authoritative_payment_intent_fails_before_generation(payment_intent):
+    generated = []
+
+    def generate(_order):
+        generated.append(True)
+
+    conn = FakeConn(_order())
+    deps = _deps(session=_session(payment_intent=payment_intent), generate=generate)
+    with pytest.raises(TerritoryBriefFulfilmentError, match="valid authoritative payment intent"):
+        await fulfil_territory_brief_order(conn, {"id": "cs_test_123"}, cfg=CFG, deps=deps)
+    assert not generated
+    assert not conn.calls
+
+
+@pytest.mark.asyncio
+async def test_durable_full_refund_audit_fails_closed_before_order_or_generation():
+    conn = FakeConn(_order(), fully_refunded=True)
+    deps = _deps()
+    with pytest.raises(TerritoryBriefFulfilmentError, match="refunded"):
+        await fulfil_territory_brief_order(conn, {"id": "cs_test_123"}, cfg=CFG, deps=deps)
+    assert any(call[0] == "fetchrow" for call in conn.calls)
+    assert "SET status = 'generating'" not in conn.sql_log()
+
+
+@pytest.mark.asyncio
+async def test_conflicting_existing_payment_identity_fails_before_generation():
+    generated = []
+    conn = FakeConn(_order(status="failed", stripe_payment_intent_id="pi_other"))
+    deps = _deps(generate=lambda _order: generated.append(True))
+    with pytest.raises(TerritoryBriefFulfilmentError, match="durable payment evidence"):
+        await fulfil_territory_brief_order(conn, {"id": "cs_test_123"}, cfg=CFG, deps=deps)
+    assert not generated
+    assert "SET status = 'generating'" not in conn.sql_log()
+
+
+@pytest.mark.asyncio
+async def test_conflicting_existing_consent_fails_before_generation_even_for_duplicate():
+    generated = []
+    conn = FakeConn(
+        _order(
+            status="fulfilled",
+            stripe_payment_intent_id="pi_test_123",
+            amount_total=74500,
+            currency="gbp",
+        ),
+        consent_row=_consent(terms_version="other-version"),
+    )
+    deps = _deps(generate=lambda _order: generated.append(True))
+    with pytest.raises(TerritoryBriefFulfilmentError, match="durable consent evidence"):
+        await fulfil_territory_brief_order(conn, {"id": "cs_test_123"}, cfg=CFG, deps=deps)
+    assert not generated
+    assert "SET status = 'generating'" not in conn.sql_log()
+
+
+@pytest.mark.asyncio
+async def test_database_failure_after_both_uploads_carries_recovery_context():
+    failures = []
+    uploads = []
+    conn = FakeConn(_order(), fail_sql="SET status = 'fulfilled'")
+    deps = _deps(failures=failures)
+
+    original_upload = deps.upload
+
+    def recording_upload(*args):
+        uploads.append(args[1])
+        return original_upload(*args)
+
+    deps = fulfil.FulfilmentDeps(
+        generate=deps.generate,
+        upload=recording_upload,
+        retrieve_session=deps.retrieve_session,
+        record_failure=deps.record_failure,
+        write_audit_log=deps.write_audit_log,
+    )
+    with pytest.raises(fulfil.TerritoryBriefGenerationError) as error:
+        await fulfil_territory_brief_order(conn, {"id": "cs_test_123"}, cfg=CFG, deps=deps)
+    assert uploads == ["pdf", "csv"]
+    await error.value.record_failure()
+    assert failures[0][2]["payment_intent"] == "pi_test_123"
 
 
 @pytest.mark.asyncio

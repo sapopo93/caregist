@@ -55,43 +55,40 @@ test("every buyer type maps to a directory opportunity value", () => {
   }
 });
 
-test("evaluateTerritoryCoverage returns ready at or above the ready threshold", () => {
-  const result = evaluateTerritoryCoverage(READY_SCOPE, {
-    providerCount: TERRITORY_MIN_READY,
-    mostRecentObservation: "2025-06-01",
-  }, new Date("2025-09-01T00:00:00Z"));
-  assert.equal(result.verdict, "ready");
-  assert.equal(result.canCheckout, true);
-  assert.equal(result.stale, false);
+test("evaluateTerritoryCoverage keeps count bands while every enquiry remains non-checkout", () => {
+  const cases = [
+    { providerCount: TERRITORY_MIN_READY, verdict: "ready" },
+    { providerCount: TERRITORY_MIN_PARTIAL, verdict: "partial" },
+    { providerCount: TERRITORY_MIN_PARTIAL - 1, verdict: "insufficient" },
+  ] as const;
+
+  for (const expected of cases) {
+    const result = evaluateTerritoryCoverage(READY_SCOPE, {
+      providerCount: expected.providerCount,
+      mostRecentObservation: "2025-06-01",
+    }, new Date("2025-09-01T00:00:00Z"));
+
+    assert.equal(result.verdict, expected.verdict);
+    assert.equal(result.providerCount, expected.providerCount);
+    assert.equal(result.canCheckout, false);
+    assert.equal(result.stale, false);
+    assert.match(result.headline, new RegExp(`^${expected.providerCount} matching `));
+    assert.match(result.detail, new RegExp(`contains ${expected.providerCount} active providers`));
+
+    const customerCopy = `${result.headline} ${result.detail}`;
+    assert.doesNotMatch(customerCopy, /ready for|can be covered|will rank|rank every|full ranked shortlist/i);
+  }
 });
 
-test("evaluateTerritoryCoverage returns partial between the thresholds", () => {
-  const result = evaluateTerritoryCoverage(READY_SCOPE, {
-    providerCount: TERRITORY_MIN_PARTIAL,
-    mostRecentObservation: "2025-06-01",
-  }, new Date("2025-09-01T00:00:00Z"));
-  assert.equal(result.verdict, "partial");
-  assert.equal(result.canCheckout, true);
-});
-
-test("evaluateTerritoryCoverage blocks checkout below the partial threshold", () => {
-  const result = evaluateTerritoryCoverage(READY_SCOPE, {
-    providerCount: TERRITORY_MIN_PARTIAL - 1,
-    mostRecentObservation: "2025-06-01",
-  }, new Date("2025-09-01T00:00:00Z"));
-  assert.equal(result.verdict, "insufficient");
-  assert.equal(result.canCheckout, false);
-});
-
-test("evaluateTerritoryCoverage flags a stale territory but still allows checkout", () => {
+test("evaluateTerritoryCoverage keeps a stale observation visible and checkout closed", () => {
   const result = evaluateTerritoryCoverage(READY_SCOPE, {
     providerCount: 40,
     mostRecentObservation: "2020-01-01",
   }, new Date("2025-09-01T00:00:00Z"));
   assert.equal(result.verdict, "ready");
   assert.equal(result.stale, true);
-  assert.equal(result.canCheckout, true);
-  assert.match(result.detail, /three years/i);
+  assert.equal(result.canCheckout, false);
+  assert.match(result.detail, /most recent observation.*more than three years old/i);
 });
 
 test("evaluateTerritoryCoverage tolerates a missing observation date", () => {

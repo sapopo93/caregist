@@ -1,0 +1,19 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.12.13, pytest-9.1.1, pluggy-1.6.0
+rootdir: /Users/user/CareGist
+configfile: pytest.ini
+plugins: cov-5.0.0, asyncio-1.4.0, anyio-4.14.2
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
+collected 82 items
+
+tests/test_territory_brief_fulfilment.py ............................... [ 37%]
+..                                                                       [ 40%]
+tests/test_billing_webhook_handlers.py .......................           [ 68%]
+tests/test_billing_entitlements.py ........                              [ 78%]
+tests/integration/test_buying_refund_pg.py ....                          [ 82%]
+tests/integration/test_buying_generation_recovery_pg.py .....            [ 89%]
+tests/integration/test_buying_webhook_recovery_pg.py ...                 [ 92%]
+tests/integration/test_buying_dataset_refund_pg.py ......                [100%]
+
+- generated xml file: /Users/user/CareGist/artifacts/buying-audit/2026-10-09/recovery-final-tests.xml -
+============================== 82 passed in 8.59s ==============================
