@@ -153,13 +153,25 @@ def test_next_failure_status_switches_to_failed_on_third_attempt():
 
 
 @pytest.mark.asyncio
-async def test_closed_outbound_preserves_pending_queue_without_claiming(monkeypatch):
+async def test_closed_outbound_filters_claim_without_sending_or_changing_pending(monkeypatch):
     monkeypatch.setattr(email_queue.settings, "outbound_communications_enabled", False)
     monkeypatch.setattr(email_queue.settings, "resend_api_key", "re_synthetic")
-    with patch.object(email_queue, "get_connection") as db, \
+    conn = AsyncMock()
+    conn.fetch.return_value = []
+
+    @asynccontextmanager
+    async def connection():
+        yield conn
+
+    with patch.object(email_queue, "get_connection", connection), \
          patch("httpx.AsyncClient") as sender:
         assert await email_queue.process_email_queue() == 0
-    db.assert_not_called()
+    sql, _, _, outbound = conn.fetch.await_args.args
+    assert outbound is False
+    assert "AND ($3 OR EXISTS" in sql
+    assert "tb.status = 'fulfilled'" in sql
+    assert "tb.customer_email = pe.to_email" in sql
+    conn.execute.assert_not_awaited()
     sender.assert_not_called()
 
 
