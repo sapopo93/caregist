@@ -1,5 +1,7 @@
 """SQL queries for public tool endpoints."""
 
+from api.services.cqc_reconciliation_evidence import BOUNDED_DETAIL_UNAVAILABLE_SQL
+
 NEARBY_PUBLIC_QUERY = """
 SELECT id, name, slug, type, town, postcode, overall_rating,
        data_completeness_tier, service_types, last_inspection_date,
@@ -70,7 +72,7 @@ LEFT JOIN event_days USING (day)
 ORDER BY days.day
 """
 
-CHANGE_FREQUENCY_COLLECTION_COVERAGE = """
+CHANGE_FREQUENCY_COLLECTION_COVERAGE = f"""
 WITH bounds AS (
   SELECT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date - ($1::int - 1) AS start_date,
          (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date AS end_date
@@ -94,8 +96,13 @@ WHERE started_at >= start_date
       AND LENGTH(source_checksum_sha256) = 64
       AND source_total_count IS NOT NULL
       AND checked_count = source_total_count
-      AND success_count = checked_count
-      AND failure_count = 0
+      AND (
+        (success_count = checked_count AND failure_count = 0)
+        OR (
+          success_count >= 0 AND success_count + failure_count = checked_count
+          AND ({BOUNDED_DETAIL_UNAVAILABLE_SQL})
+        )
+      )
     )
   )
 GROUP BY (started_at AT TIME ZONE 'UTC')::date, run_type, status

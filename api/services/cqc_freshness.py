@@ -11,6 +11,11 @@ from typing import Any, Mapping
 
 import asyncpg
 
+from api.services.cqc_reconciliation_evidence import (
+    bounded_detail_unavailable,
+    detail_unavailable_evidence,
+)
+
 
 FRESHNESS_SLA = timedelta(days=8)
 
@@ -29,13 +34,14 @@ _REQUIRED_COLUMNS = (
     "failure_count",
     "reconciled_at",
     "counts_reconciled",
+    "checkpoint_state",
 )
 
 _RUN_FIELDS = """
     id, status, started_at, completed_at, source_uri,
     source_published_at, source_retrieved_at, source_checksum_sha256,
     source_total_count, checked_count, success_count, failure_count,
-    reconciled_at, counts_reconciled
+    reconciled_at, counts_reconciled, checkpoint_state
 """
 
 
@@ -160,8 +166,9 @@ def _complete_evidence(row: Mapping[str, Any]) -> bool:
         and isinstance(failure, int)
         and total >= 0
         and checked == total
-        and success == checked
-        and failure == 0
+        and success >= 0
+        and success + failure == checked
+        and (failure == 0 or bounded_detail_unavailable(row))
         and _value(row, "counts_reconciled") is True
         and isinstance(checksum, str)
         and len(checksum) == 64
@@ -279,14 +286,25 @@ def build_cqc_freshness(
             ),
         }
 
+    unavailable = detail_unavailable_evidence(watermark) if failure else {}
+    exception_fields = {
+        "detailUnavailableIds": unavailable["detailUnavailableIds"],
+        "detailUnavailableCount": failure,
+    } if failure else {}
+    completion_message = (
+        f"reconciled with {failure:,} directory locations whose detail API persistently returned 404; "
+        "their stored details were left unchanged and missing rows remain absent."
+        if failure else "reconciled successfully, and completed without collection errors."
+    )
     return {
         "status": "fresh",
+        **exception_fields,
         **common,
         "reason": None,
         "message": (
             f"CareGist data is current as of {_display_utc(retrieved_at)}. "
             f"The last successful CQC retrieval checked {checked:,} of {total:,} active locations, "
-            "reconciled successfully, and completed without collection errors."
+            f"{completion_message}"
         ),
     }
 

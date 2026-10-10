@@ -36,6 +36,7 @@ import psycopg2
 from psycopg2.extras import Json
 import requests
 
+from api.services.cqc_reconciliation_evidence import DETAIL_UNAVAILABLE_CAP
 from api.services.provider_state_events import ProviderStateEvent, build_provider_state_events
 from api.services.rating_states import (
     assess_location_rating,
@@ -82,6 +83,10 @@ _CQC_ID_RE = re.compile(r"^(?:1-\d{5,12}|[A-Z][A-Z0-9-]{1,19})$")
 
 class ChangesFetchError(RuntimeError):
     """Raised when the CQC changes API cannot be fetched reliably."""
+
+
+class DetailUnavailableError(ChangesFetchError):
+    """Directory identity whose detail returned 404 on every bounded attempt."""
 
 
 class ShardAlreadyRunning(ChangesFetchError):
@@ -648,7 +653,7 @@ def fetch_location_detail(
     """Fetch matching detail; boundedly retry directory/API publication races.
 
     A 404 for an ID in the authoritative directory can be a propagation race.
-    It is never a deletion or permission to skip that manifest identity.
+    Persistent 404s are recorded separately; they never authorize a provider write.
     """
     url = f"{base_url}/locations/{location_id}"
     attempts: list[str] = []
@@ -689,7 +694,10 @@ def fetch_location_detail(
             if attempt < DETAIL_MAX_RETRIES:
                 time.sleep(min(2 ** (attempt - 1), DETAIL_MAX_BACKOFF_SECONDS))
                 continue
-    raise ChangesFetchError(
+    error = DetailUnavailableError if directory_member and attempts == [
+        f"{attempt}:status:404" for attempt in range(1, DETAIL_MAX_RETRIES + 1)
+    ] else ChangesFetchError
+    raise error(
         f"Detail fetch failed for {location_id}: exhausted retries; attempts={','.join(attempts)}"
     )
 
@@ -1536,6 +1544,26 @@ def _record_alert_state(cur, alert_key: str, severity: str, details: dict[str, A
     )
 
 
+def _detail_unavailable_shards(cur, batch_id: uuid.UUID) -> dict[int, list[str]]:
+    cur.execute(
+        """SELECT e.key, e.value
+           FROM pipeline_runs p
+           JOIN reconciliation_batches b ON b.pipeline_run_id = p.id
+           CROSS JOIN LATERAL jsonb_each(
+             COALESCE(p.checkpoint_state -> 'detailUnavailableShards', '{}'::jsonb)
+           ) e WHERE b.id = %s""",
+        (str(batch_id),),
+    )
+    evidence = {}
+    for key, ids in cur.fetchall():
+        if not str(key).isdigit() or str(int(key)) != str(key) or not isinstance(ids, list) or any(
+            not isinstance(value, str) or not value for value in ids
+        ) or len(ids) != len(set(ids)):
+            raise ChangesFetchError("Invalid detail-unavailable shard evidence.")
+        evidence[int(key)] = ids
+    return evidence
+
+
 def _sync_reconciliation_run_evidence(cur, batch_id: uuid.UUID) -> None:
     """Derive bounded run coverage from committed shard checkpoints."""
     cur.execute(
@@ -1546,15 +1574,19 @@ def _sync_reconciliation_run_evidence(cur, batch_id: uuid.UUID) -> None:
             failure_count = evidence.failed,
             checkpoint_state = p.checkpoint_state || jsonb_build_object(
               'shards', evidence.shards,
-              'restartable', evidence.failed > 0 OR evidence.processed < b.location_count
+              'restartable', evidence.hard_failed > 0 OR evidence.handled < b.location_count
             )
         FROM reconciliation_batches AS b
         CROSS JOIN LATERAL (
           SELECT
-            COALESCE(SUM(s.processed_count), 0)::int AS processed,
+            COALESCE(SUM(s.processed_count), 0)::int AS handled,
+            (COALESCE(SUM(s.processed_count), 0) - COALESCE(SUM(u.unavailable), 0))::int AS processed,
             COUNT(*) FILTER (
               WHERE s.status = 'failed' AND s.processed_count < s.expected_count
-            )::int AS failed,
+            )::int AS hard_failed,
+            COUNT(*) FILTER (
+              WHERE s.status = 'failed' AND s.processed_count < s.expected_count
+            )::int + COALESCE(SUM(u.unavailable), 0)::int AS failed,
             COALESCE(
               jsonb_agg(
                 jsonb_build_object(
@@ -1562,12 +1594,23 @@ def _sync_reconciliation_run_evidence(cur, batch_id: uuid.UUID) -> None:
                   'status', s.status,
                   'expectedCount', s.expected_count,
                   'nextOffset', s.next_offset,
-                  'processedCount', s.processed_count
+                  'processedCount', s.processed_count,
+                  'detail_unavailable', u.unavailable,
+                  'detailUnavailableIds', u.ids
                 ) ORDER BY s.shard_index
               ),
               '[]'::jsonb
             ) AS shards
           FROM reconciliation_shards AS s
+          JOIN pipeline_runs AS source_run ON source_run.id = b.pipeline_run_id
+          CROSS JOIN LATERAL (
+            SELECT COALESCE(source_run.checkpoint_state #> ARRAY[
+              'detailUnavailableShards', s.shard_index::text
+            ], '[]'::jsonb) AS ids
+          ) AS saved
+          CROSS JOIN LATERAL (
+            SELECT saved.ids, jsonb_array_length(saved.ids) AS unavailable
+          ) AS u
           WHERE s.batch_id = b.id
         ) AS evidence
         WHERE b.id = %s AND p.id = b.pipeline_run_id
@@ -1862,6 +1905,9 @@ def _run_shard(args: argparse.Namespace, conn, cur, api_key: str | None) -> int:
             return 0
         offset = int(shard[3])
         totals = Counter(inserted=int(shard[4]), updated=int(shard[5]))
+        unavailable_ids = _detail_unavailable_shards(cur, batch_id).get(shard_index, [])
+        if not set(unavailable_ids).issubset(ids[:offset]):
+            raise ChangesFetchError("Unavailable identities disagree with the committed checkpoint.")
         cur.execute(
             "UPDATE reconciliation_shards SET status = 'running', error_message = NULL, updated_at = NOW() WHERE batch_id = %s AND shard_index = %s",
             (str(batch_id), shard_index),
@@ -1890,7 +1936,13 @@ def _run_shard(args: argparse.Namespace, conn, cur, api_key: str | None) -> int:
                 raise ChangesFetchError("Shard checkpoint offset changed unexpectedly.")
             checkpoint_counts: Counter[str] = Counter()
             for location_id in checkpoint:
-                detail = fetch_location_detail(args.base_url, api_key, location_id, directory_member=True)
+                try:
+                    detail = fetch_location_detail(args.base_url, api_key, location_id, directory_member=True)
+                except DetailUnavailableError:
+                    unavailable_ids.append(location_id)
+                    checkpoint_counts["detail_unavailable"] += 1
+                    time.sleep(args.sleep)
+                    continue
                 if detail is None:
                     raise ChangesFetchError(f"Detail fetch failed for {location_id}")
                 # The immutable manifest is built from CQC's active-location
@@ -1921,6 +1973,14 @@ def _run_shard(args: argparse.Namespace, conn, cur, api_key: str | None) -> int:
                 WHERE batch_id = %s AND shard_index = %s
                 """,
                 (offset, offset, totals["inserted"], totals["updated"], str(batch_id), shard_index),
+            )
+            cur.execute(
+                """UPDATE pipeline_runs SET checkpoint_state = checkpoint_state ||
+                   jsonb_build_object('detailUnavailableShards',
+                     COALESCE(checkpoint_state -> 'detailUnavailableShards', '{}'::jsonb)
+                     || jsonb_build_object(%s, %s::jsonb))
+                   WHERE id = (SELECT pipeline_run_id FROM reconciliation_batches WHERE id = %s)""",
+                (str(shard_index), Json(unavailable_ids), str(batch_id)),
             )
             _sync_reconciliation_run_evidence(cur, batch_id)
             conn.commit()
@@ -1964,7 +2024,7 @@ def _run_shard(args: argparse.Namespace, conn, cur, api_key: str | None) -> int:
         conn.commit()
 
 
-def _repair_missing_slugs(cur) -> None:
+def _repair_missing_slugs(cur, excluded_ids: Sequence[str] = ()) -> None:
     cur.execute("SELECT id, name, town FROM care_providers WHERE slug IS NULL OR slug = '' ORDER BY id")
     missing = cur.fetchall()
     if not missing:
@@ -1972,6 +2032,8 @@ def _repair_missing_slugs(cur) -> None:
     cur.execute("SELECT slug FROM care_providers WHERE slug IS NOT NULL AND slug != ''")
     used = {row[0] for row in cur.fetchall()}
     for location_id, name, town in missing:
+        if location_id in excluded_ids:
+            continue
         base = _make_slug(name or "", town or "", location_id)
         slug = base
         if slug in used:
@@ -2036,6 +2098,21 @@ def _finalize_batch(args: argparse.Namespace, conn, cur) -> int:
     )
     if not complete:
         raise ChangesFetchError("Batch finalization refused: shard coverage is incomplete or inconsistent.")
+    unavailable_by_shard = _detail_unavailable_shards(cur, batch_id)
+    if any(index not in range(shard_count) for index in unavailable_by_shard) or any(
+        not set(unavailable_by_shard.get(index, [])).issubset(expected_partitions[index])
+        or int(row[4]) + int(row[5]) + len(unavailable_by_shard.get(index, [])) != int(row[2])
+        for index, row in enumerate(shards)
+    ):
+        raise ChangesFetchError("Batch finalization refused: shard coverage is incomplete or inconsistent.")
+    unavailable_ids = sorted(value for values in unavailable_by_shard.values() for value in values)
+    unavailable_count = len(unavailable_ids)
+    if unavailable_count > DETAIL_UNAVAILABLE_CAP:
+        raise ChangesFetchError(
+            f"Batch finalization refused: detail_unavailable={unavailable_count} exceeds cap={DETAIL_UNAVAILABLE_CAP}."
+        )
+    unavailable_set = set(unavailable_ids)
+    written_ids = [value for value in ids if value not in unavailable_set]
     _progress("finalize: shard coverage proven")
 
     batch_select = "SELECT active_records_before, pipeline_run_id FROM reconciliation_batches WHERE id = %s"
@@ -2047,9 +2124,9 @@ def _finalize_batch(args: argparse.Namespace, conn, cur) -> int:
     if active_before and max(active_before - location_count, 0) / active_before > MAX_ACTIVE_COUNT_DROP_RATIO:
         raise ChangesFetchError("Batch finalization refused: active-count drop exceeds the safety threshold.")
     # A manifest location that is not ACTIVE is not evidence of reconciliation failure.
-    # The shard-coverage check above already proves this batch wrote every manifest
-    # location, and every one of those writes forces status 'ACTIVE' because directory
-    # membership is authoritative. The only other writer of care_providers.status is the
+    # The shard-coverage check proves every identity was written or explicitly
+    # recorded as detail unavailable. Every successful write forces status 'ACTIVE'
+    # because directory membership is authoritative. The only other writer of care_providers.status is the
     # source poll, which derives status from the detailed registrationStatus field and so
     # deregisters locations the snapshot still lists. Requiring exact equality therefore
     # refused legitimate batches whenever the poll flipped a location inside the batch
@@ -2075,7 +2152,7 @@ def _finalize_batch(args: argparse.Namespace, conn, cur) -> int:
         FROM care_providers
         WHERE id = ANY(%s)
         """,
-        (ids,),
+        (written_ids,),
     )
     (
         active_manifest_covered,
@@ -2086,7 +2163,7 @@ def _finalize_batch(args: argparse.Namespace, conn, cur) -> int:
     inactive_manifest_covered = int(inactive_manifest_covered)
     active_manifest_ids = [str(value) for value in active_manifest_id_rows]
     unattributable_manifest = (
-        location_count - active_manifest_covered - inactive_manifest_covered
+        len(written_ids) - active_manifest_covered - inactive_manifest_covered
     )
     if unattributable_manifest:
         raise ChangesFetchError(
@@ -2105,6 +2182,14 @@ def _finalize_batch(args: argparse.Namespace, conn, cur) -> int:
     # have been confirmed against the live API: locations that are still
     # registered stay ACTIVE and are counted explicitly rather than dropped
     # from the expectation, so the end-state equality guard stays strict.
+    if unavailable_ids:
+        cur.execute(
+            "SELECT id::text FROM care_providers WHERE UPPER(status) = 'ACTIVE' AND id = ANY(%s) ORDER BY id",
+            (unavailable_ids,),
+        )
+        unavailable_active_ids = [str(row[0]) for row in cur.fetchall()]
+        active_manifest_ids.extend(unavailable_active_ids)
+        active_manifest_covered += len(unavailable_active_ids)
     expected_active = active_manifest_covered
 
     if args.dry_run:
@@ -2212,7 +2297,10 @@ def _finalize_batch(args: argparse.Namespace, conn, cur) -> int:
     # visibility (READ COMMITTED, the connection's mode): any identity
     # substituted by a transaction that *committed* before this read is visible
     # to it, and refuses the batch -- which is the case the reviewer reproduced.
-    _repair_missing_slugs(cur)
+    if unavailable_ids:
+        _repair_missing_slugs(cur, unavailable_ids)
+    else:
+        _repair_missing_slugs(cur)
     # FIX 4: hold that comparison under a lock that prevents a concurrent
     # identity substitution from committing between the read below and this
     # transaction's commit. The attestation is written from this read and
@@ -2323,6 +2411,9 @@ def _finalize_batch(args: argparse.Namespace, conn, cur) -> int:
     updated = sum(int(row[5]) for row in shards)
     deactivation_record = {
         **deactivation_summary,
+        "detailUnavailableIds": unavailable_ids,
+        "detail_unavailable": unavailable_count,
+        "detailUnavailableCap": DETAIL_UNAVAILABLE_CAP,
         # FIX 3: the operator acknowledgement and the unconfirmed ids are
         # recorded on the batch row itself, so a reader can see exactly which
         # active locations the batch could not confirm.
@@ -2359,8 +2450,9 @@ def _finalize_batch(args: argparse.Namespace, conn, cur) -> int:
             str(batch_id),
         ),
     )
+    failure_assignment = "failure_count = %s" if unavailable_count else "failure_count = 0"
     cur.execute(
-        """
+        f"""
         UPDATE pipeline_runs
         SET status = 'completed', completed_at = NOW(), records_added = %s,
             records_updated = %s, source_uri = %s, source_published_at = %s,
@@ -2368,7 +2460,7 @@ def _finalize_batch(args: argparse.Namespace, conn, cur) -> int:
             source_record_count = %s, active_records_before = %s,
             active_records_after = %s,
             source_total_count = %s, checked_count = %s,
-            success_count = %s, failure_count = 0,
+            success_count = %s, {failure_assignment},
             counts_reconciled = TRUE, reconciled_at = NOW(),
             checkpoint_state = checkpoint_state || %s::jsonb,
             error_message = NULL
@@ -2378,10 +2470,14 @@ def _finalize_batch(args: argparse.Namespace, conn, cur) -> int:
             inserted, updated, manifest["sourceUri"], manifest["sourcePublishedAt"],
             manifest["sourceRetrievedAt"], manifest["sourceChecksumSha256"], location_count,
             active_before, active_after,
-            location_count, location_count, location_count,
+            location_count, location_count, len(written_ids),
+            *((unavailable_count,) if unavailable_count else ()),
             json.dumps(
                 {
                     "fullCoverage": True,
+                    "detailUnavailableIds": unavailable_ids,
+                    "detail_unavailable": unavailable_count,
+                    "detailUnavailableCap": DETAIL_UNAVAILABLE_CAP,
                     "restartable": False,
                     # Per-batch record of how candidate deactivations were
                     # classified from the live API before any write.
@@ -2401,6 +2497,7 @@ def _finalize_batch(args: argparse.Namespace, conn, cur) -> int:
     conn.commit()
     print(
         f"Finalized batch {batch_id}: active={active_after}, deactivated={deactivated}, "
+        f"written={len(written_ids)}, detail_unavailable={unavailable_count}, "
         f"inactive_in_manifest={inactive_manifest_covered} "
         f"({inactive_manifest_covered / location_count:.2%} of {location_count} manifest locations); "
         f"deactivation candidates={deactivation_summary['candidates']} "
