@@ -1,0 +1,21 @@
+name: CQC signal poll (backup slots)
+
+# GitHub drops or skips a large share of scheduled runs: in the seven days to
+# 2026-10-11 only about two of the four 18:07/21:07/00:07/03:07 UTC slots
+# executed each night, leaving ~14 completed polls against the 24 the shadow
+# coverage check requires. These slots sit 90 minutes after each primary slot
+# (a poll takes 16-24 minutes) and call the same job, so the same
+# concurrency group serialises them and nothing runs during the UK working day.
+# The primary cron in cqc-signal-poll.yml is deliberately unchanged: the nightly
+# cadence tooling derives its expectation from that file.
+on:
+  schedule:
+    - cron: "37 19,22,1,4 * * *"
+
+permissions:
+  contents: read
+
+jobs:
+  poll:
+    uses: ./.github/workflows/cqc-signal-poll.yml
+    secrets: inherit
