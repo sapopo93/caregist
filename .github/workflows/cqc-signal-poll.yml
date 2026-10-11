@@ -7,6 +7,12 @@ on:
         description: Active locations to refresh in this shadow run
         type: string
         default: "1200"
+  workflow_call:
+    inputs:
+      sweep_size:
+        description: Active locations to refresh in this shadow run
+        type: string
+        default: "1200"
   schedule:
     # Night window only: four slots three hours apart, nothing during the UK
     # working day. The poll takes 16-24 minutes and each slot is three hours
