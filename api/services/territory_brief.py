@@ -155,10 +155,14 @@ class RankedOrganisation:
     reason: str
     evidence: tuple[dict[str, Any], ...]
     qualification_question: str = ""
+    # Buyer-specific follow-ups keyed by BUYER_QUESTION_TYPES, asked after the
+    # general question above. Like it, each one asks and never asserts need.
+    buyer_questions: tuple[tuple[str, str], ...] = ()
 
     def to_json(self) -> dict[str, Any]:
         data = asdict(self)
         data["service_types"] = list(self.service_types)
+        data["buyer_questions"] = dict(self.buyer_questions)
         data["most_recent_event_date"] = (
             self.most_recent_event_date.isoformat() if self.most_recent_event_date else None
         )
@@ -606,20 +610,22 @@ def _reason(
     return " ".join(parts)
 
 
+# Keyed by the labels _primary_signal actually returns. Literal keys drifted
+# from those labels once, silently giving every entry the generic fallback.
 _QUALIFICATION_QUESTIONS = {
-    "Rating changed": (
+    _SIGNAL_LABEL["rating_changed"]: (
         "Has the change in overall rating altered what this organisation needs to buy or "
         "change in the next quarter, and who owns that decision?"
     ),
-    "New registration": (
+    _SIGNAL_LABEL["new_registration"]: (
         "Who is responsible for choosing suppliers for this newly registered service, and "
         "when does it expect to start operating?"
     ),
-    "Rating published": (
+    _SIGNAL_LABEL["rating_published"]: (
         "Is the recently published inspection outcome prompting a review of suppliers or "
         "practice, and who leads it?"
     ),
-    "Returned from dormancy": (
+    _SIGNAL_LABEL["reactivated"]: (
         "Is this service planning to restart operations, and who is responsible for "
         "choosing suppliers?"
     ),
@@ -638,6 +644,61 @@ def _qualification_question(primary_signal: str, *, provider_cluster: int, terri
     if provider_cluster >= 2:
         question += f" Is that decided centrally across its {provider_cluster} moving locations in {territory}?"
     return question
+
+
+#: Buyer types the Brief carries a follow-up question for, in output order.
+BUYER_QUESTION_TYPES = ("recruitment", "compliance", "software")
+
+_RECRUITMENT_QUESTIONS = {
+    _SIGNAL_LABEL["new_registration"]: (
+        "How many care staff does this service plan to employ, how many are in post now, "
+        "and when do its first packages or contracts start? Are those packages council-funded "
+        "or already confirmed?"
+    ),
+}
+_RECRUITMENT_DEFAULT = (
+    "How many care-worker vacancies does this service have open, how long have they been "
+    "open, and are any linked to council-commissioned packages with a start date?"
+)
+
+_COMPLIANCE_QUESTIONS = {
+    _SIGNAL_LABEL["new_registration"]: (
+        "Who is preparing this service for its first CQC inspection, and has it arranged a "
+        "governance audit, mock inspection or safeguarding training yet?"
+    ),
+    _SIGNAL_LABEL["rating_changed"]: (
+        "Which areas did the inspection report raise, and has the service arranged a "
+        "governance audit, mock inspection or safeguarding training before re-inspection?"
+    ),
+    _SIGNAL_LABEL["rating_published"]: (
+        "Which areas did the published report raise, and who is leading the service's "
+        "response to them?"
+    ),
+}
+_COMPLIANCE_DEFAULT = (
+    "Who leads quality and compliance for this service, and when did it last have an "
+    "independent governance audit or mock inspection?"
+)
+
+_SOFTWARE_QUESTION = (
+    "What does this service use for care records today (paper, spreadsheets or a digital "
+    "system), is that system on the NHS assured supplier list for digital social care "
+    "records, how many users does it have, and when is the contract up for renewal?"
+)
+
+
+def _buyer_questions(primary_signal: str) -> tuple[tuple[str, str], ...]:
+    """One follow-up question per buyer type, chosen by the entry's primary signal.
+
+    These are discovery prompts for the buyer to ask the provider. The CQC record
+    cannot show headcount, systems or audit plans, so each one asks and none
+    asserts.
+    """
+    return (
+        ("recruitment", _RECRUITMENT_QUESTIONS.get(primary_signal, _RECRUITMENT_DEFAULT)),
+        ("compliance", _COMPLIANCE_QUESTIONS.get(primary_signal, _COMPLIANCE_DEFAULT)),
+        ("software", _SOFTWARE_QUESTION),
+    )
 
 
 def _validate_evidence(evidence: tuple[dict[str, Any], ...]) -> None:
@@ -901,6 +962,7 @@ def generate_territory_opportunity_brief(
                 qualification_question=_qualification_question(
                     _primary_signal(events), provider_cluster=cluster, territory=validated.name
                 ),
+                buyer_questions=_buyer_questions(_primary_signal(events)),
             )
         )
 
@@ -1181,6 +1243,7 @@ def brief_to_csv(brief: TerritoryBrief) -> str:
             "opportunity_score",
             "reason",
             "qualification_question",
+            *(f"{buyer}_question" for buyer in BUYER_QUESTION_TYPES),
             "evidence_events",
             "cqc_record_url",
             "rating_evidence_date",
@@ -1216,6 +1279,7 @@ def brief_to_csv(brief: TerritoryBrief) -> str:
                 org.score,
                 org.reason,
                 org.qualification_question,
+                *(dict(org.buyer_questions).get(buyer, "") for buyer in BUYER_QUESTION_TYPES),
                 evidence_events,
                 CQC_PROFILE_URL.format(location_id=org.location_id),
                 coverage_by_location.get(org.location_id, {}).get("rating_publication_date") or "",
