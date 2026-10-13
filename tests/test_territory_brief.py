@@ -529,3 +529,46 @@ def test_service_type_rejects_unsupported_characters(tmp_path):
     locs, providers = _three_orgs()
     with pytest.raises(ScopeError):
         _generate(tmp_path, locs, providers, service_type="<script>")
+
+
+def test_every_entry_carries_one_question_per_buyer_type_in_csv_and_pdf(tmp_path):
+    from api.services.territory_brief import BUYER_QUESTION_TYPES
+
+    locs, providers = _three_orgs()
+    brief = _generate(tmp_path, locs, providers)
+    assert brief.shortlist
+    import csv as _csv, io as _io
+    rows = list(_csv.DictReader(_io.StringIO(brief_to_csv(brief))))
+    for org, row in zip(brief.shortlist, rows, strict=True):
+        questions = dict(org.buyer_questions)
+        assert tuple(questions) == BUYER_QUESTION_TYPES
+        for buyer in BUYER_QUESTION_TYPES:
+            assert questions[buyer].strip().endswith("?")
+            assert row[f"{buyer}_question"] == questions[buyer]
+        assert org.to_json()["buyer_questions"] == questions
+    pdf_text = _pdf_stream_text(render_brief_pdf(brief))
+    for buyer in BUYER_QUESTION_TYPES:
+        assert pdf_text.count(f"For {buyer} buyers".encode()) == len(brief.shortlist)
+
+
+def test_buyer_questions_follow_the_primary_signal_and_do_not_assert_intent(tmp_path):
+    locs, providers = _three_orgs()
+    for org in _generate(tmp_path, locs, providers).shortlist:
+        assert org.primary_signal == "New CQC registration"
+        assert "newly registered service" in org.qualification_question
+        questions = dict(org.buyer_questions)
+        assert "first CQC inspection" in questions["compliance"]
+        assert "first packages or contracts" in questions["recruitment"]
+        for question in questions.values():
+            assert not re.search(r"\b(is looking|plans to buy|will buy|needs a supplier)\b", question, re.I)
+
+
+def test_every_primary_signal_label_has_its_own_questions():
+    from api.services.territory_brief import (
+        _COMPLIANCE_QUESTIONS,
+        _QUALIFICATION_QUESTIONS,
+        _SIGNAL_LABEL,
+    )
+
+    assert set(_QUALIFICATION_QUESTIONS) == set(_SIGNAL_LABEL.values())
+    assert set(_COMPLIANCE_QUESTIONS) <= set(_SIGNAL_LABEL.values())

@@ -200,6 +200,8 @@ def render_brief_pdf(brief: TerritoryBrief) -> bytes:
         pdf.paragraph("   " + "  |  ".join(m for m in meta if m), muted=True)
         pdf.paragraph("   " + o.reason)
         pdf.paragraph("   Qualification question: " + o.qualification_question)
+        for buyer, question in o.buyer_questions:
+            pdf.paragraph(f"   For {buyer} buyers: {question}", muted=True)
         ev = "; ".join(f"{e['effective_date']} {e['detail']}" for e in o.evidence)
         pdf.paragraph(f"   Evidence: {ev}", muted=True)
         pdf.paragraph(f"   CQC record: {_cqc_url(o.location_id)}", muted=True)
