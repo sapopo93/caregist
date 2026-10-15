@@ -32,4 +32,14 @@ CLI-managed `.projects` changes and nightly local runtime state remain outside p
 
 ## Release receipt
 
-Pending exact-commit GitHub checks and deployment verification. No commercial readiness or prescribed Grok/DeepSeek operating approval is claimed by this documentation review.
+Local checks and the production build passed. Exact-commit GitHub CI was not independently revalidated in this release; production deployment verification is recorded below. No commercial readiness or prescribed Grok/DeepSeek operating approval is claimed by this documentation review.
+
+## Production deployment receipt
+
+The owner explicitly authorised all four production releases on 15 October 2026. These provider receipts were retrieved after deployment; `READY` establishes successful deployment, not authenticated customer acceptance. Production flags, cloud schemas, customer memberships, payment and outbound operations were not activated by this release.
+
+| Component | Commit | Production deployment | State |
+| --- | --- | --- | --- |
+| services | `a1504b6` | [dpl_GvNWgaCGLAQWAxe7WTT1V4F5zDXL](https://caregist-3ttn4hfxv-henry-mlalazis-projects.vercel.app) | READY / production |
+
+The [machine-readable receipt](production-deployments.json) records the exact commit, project, alias and timestamps. The receipt commit is a later documentation-only commit; application source remains the deployed revision above. No authenticated hosted care, role, scan/review, payment, notification or delivery journey was newly accepted by these provider-status checks.
