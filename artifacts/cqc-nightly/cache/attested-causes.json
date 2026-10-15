@@ -1,5 +1,13 @@
 {
   "batches": {
+    "393331bf-006d-4831-8989-43474ff4b28e": {
+      "at": "2026-10-10T18:02:08Z",
+      "candidates_checked": 1,
+      "line": "refused: 1 deactivation candidate(s) could not be confirmed as deregistered against the live CQC API (unconfirmed ids: 1-29608453477). They remain ACTIVE and are NOT counted as expected; re-run with --acknowledge-unconfirmed-deactivations to record them as explicitly unconfirmed and finalize anyway.",
+      "run_id": 38074151748,
+      "source": "gh run view 38074151748 --log",
+      "status": "attested"
+    },
     "5f785a10-8284-4f9e-a054-6be48bd5b943": {
       "at": "2026-09-20T18:26:02Z",
       "candidates_checked": 2,
@@ -14,6 +22,14 @@
       "line": "finalize\tUNKNOWN STEP\t2026-09-13T15:59:20.6352240Z Reconciliation finalize failed: Batch finalization refused: 1 manifest locations are not active.",
       "run_id": 34753758031,
       "source": "gh run view 34753758031 --log",
+      "status": "attested"
+    },
+    "7fb63b00-218f-4629-9684-8281d24b21b7": {
+      "at": "2026-10-11T08:51:38Z",
+      "candidates_checked": 1,
+      "line": "refused: 1 deactivation candidate(s) could not be confirmed as deregistered against the live CQC API (unconfirmed ids: 1-29608453477). They remain ACTIVE and are NOT counted as expected; re-run with --acknowledge-unconfirmed-deactivations to record them as explicitly unconfirmed and finalize anyway.",
+      "run_id": 38126298550,
+      "source": "gh run view 38126298550 --log",
       "status": "attested"
     }
   }

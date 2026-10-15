@@ -1,0 +1,21 @@
+{
+  "prepared": "2026-10-11",
+  "verdict": "PASS WITH LIMITS \u2014 document quality only",
+  "pages": 20,
+  "figures": 5,
+  "commercial_approval": false,
+  "outputs": [
+    {
+      "name": "CareGist_30_Day_Operating_Plan.docx",
+      "sha256": "c8897af73d202b0bcb164b8d121968ec67cf675b3e08b9b511d1c90a48b9f59a",
+      "bytes": 442172
+    },
+    {
+      "name": "CareGist_30_Day_Operating_Plan.pdf",
+      "sha256": "12c3cda669e74a7327d90113c8f6ff3a4a98b5d6449e8aed9bc91ccfdb1428fb",
+      "bytes": 802970
+    }
+  ],
+  "source_sha256": "920792636f3aa9b5ffe23c60d8d373cfbeea85bf2f15f58efa0eab4cde472a6e",
+  "independent_review_sha256": "6bdd107fb8fceec9b5971736ce074876e6a77ef7026126e955b005ff5a2fb546"
+}

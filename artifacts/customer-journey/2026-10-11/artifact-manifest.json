@@ -1,0 +1,39 @@
+{
+  "prepared_date": "2026-10-11",
+  "scope": "Enquiry to recipient-confirmed usable PDF/CSV/manifest access",
+  "document_verdict": "PASS WITH LIMITS",
+  "operational_journey": "NOT VERIFIED",
+  "checks": [
+    "timing and date arithmetic",
+    "7 direct service hours vs8 including acquisition",
+    "explicit receipt and post-delivery acceptance predicates",
+    "local Markdown links",
+    "independent challenge and defect recheck"
+  ],
+  "files": [
+    {
+      "name": "ENQUIRY_TO_RECEIPT.md",
+      "sha256": "f3898d42d8fa79062a74af90165d08b5664a4b6c1b32f70935997a9566ea178d"
+    },
+    {
+      "name": "PRINCIPAL_GROWTH_PM.md",
+      "sha256": "2ac53faee1f244564d33d939bca395766b4a8ec9b9f347a74fcd201f761dec0a"
+    },
+    {
+      "name": "REVIEW.md",
+      "sha256": "4968c57fcb2f9dbbbd4b57a6ff80f80e118b4f6dc75901a1d4dee695df483e29"
+    },
+    {
+      "name": "health-public.json",
+      "sha256": "fe09779540a1d900e827f0b9134d9d8d07968dd8fa1868c88bc524c175197e4a"
+    },
+    {
+      "name": "territory-public.json",
+      "sha256": "af68ef66e8bd72045212a3f27b41cbeb9728c218e3bb8cf65e40bf92caa1f615"
+    },
+    {
+      "name": "terms-public.json",
+      "sha256": "3373165b3b3775d0373829a0c5879223b82889f5cfabd5ae6dbf11969d454596"
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "retrieved_at": "2026-10-11T06:49:03.992980+00:00",
+  "status": 200,
+  "request": {
+    "region": "West Midlands",
+    "buyerType": "new_90",
+    "serviceType": "Homecare Agencies"
+  },
+  "body": {
+    "scope": {
+      "region": "West Midlands",
+      "buyerType": "new_90",
+      "serviceType": "Homecare Agencies"
+    },
+    "coverage": {
+      "verdict": "partial",
+      "providerCount": 21,
+      "mostRecentObservation": "2026-10-07",
+      "stale": false,
+      "canCheckout": false,
+      "headline": "21 matching new registrations in West Midlands.",
+      "detail": "The published CQC record currently contains 21 active providers matching the selected scope. A broader region or different buyer type may return more matches. Contact us for a scope review."
+    },
+    "price": {
+      "currency": "GBP",
+      "amount": 745
+    },
+    "checkedAt": "2026-10-11T06:49:03.953Z",
+    "release": {
+      "gitSha": "0fda3cac8b670ed3dddb31ac3c45644ca430e387"
+    }
+  }
+}

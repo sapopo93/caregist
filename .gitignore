@@ -178,3 +178,10 @@ artifacts/radar-verification/Fulcrum_Care.html
 .env
 .env.*
 !.env.example
+
+# Private review products and machine-generated render intermediates.
+# Public manuals and selected dated Markdown evidence are versioned explicitly.
+artifacts/real-product/
+artifacts/ebay-*.png
+artifacts/**/rendered*/
+artifacts/**/pdf-bounds.html

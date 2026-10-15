@@ -1,5 +1,7 @@
 # CareGist customer readiness — 5 October 2026
 
+> Document control update 15 October 2026: use the [current release record](release-2026-10-15.md) and [documentation index](README.md) for the reviewed checkout and current manuals. Dated evidence below retains its original target and outcome; this update does not certify customer activation.
+
 **Verdict: public directory is live; paid customer fulfilment remains gated.** Existing work in progress was preserved. This review did not deploy, mutate live source data, change pricing/Stripe objects, enable checkout/delivery or send messages to customers.
 
 ## Current evidence

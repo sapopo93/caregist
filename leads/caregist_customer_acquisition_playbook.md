@@ -1,5 +1,7 @@
 # CareGist — Caller-Ready Supply and Demand Prospecting Playbook
 
+> **15 October 2026 manual update:** Use the [current manual](../docs/manuals/SALES_GTM_MANUAL.md) for operating instructions, current offers and evidence limits. Older prices, approvals, feature-readiness claims and proposed dates below are dated context, not current authority. This document does not activate any commercial or outreach gate.
+
 **Prepared:** 29 July 2026  
 **Purpose:** Turn 100 supply-side and 100 demand-side public-source prospects into organised, warmer call queues without mass spam or unapproved outreach.
 

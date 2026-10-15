@@ -1,5 +1,7 @@
 # CareGist VA Monday Revenue Pack — Week 1 Pilot
 
+> **15 October 2026 manual update:** Use the [current manual](docs/manuals/SALES_GTM_MANUAL.md) for operating instructions, current offers and evidence limits. Older prices, approvals, feature-readiness claims and proposed dates below are dated context, not current authority. This document does not activate any commercial or outreach gate.
+
 **Status:** VA-READY SELLING AND MANUAL-FULFILMENT PACK — INTERNAL ONLY. Nothing in this pack authorises sending, pricing communication, invoicing, or payment collection until the named approvals are given.
 **Owner:** CareGist VA (with Henry H-Kay approval gates). **Region scope:** ONE region for this pilot. **Window:** 4 weeks, weekly digest, email/PDF.
 
