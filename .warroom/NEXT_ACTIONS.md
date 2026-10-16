@@ -1,3 +1,9 @@
+## 2026-10-16 evening follow-up (Henry's five instructions)
+
+Next single bounded action: Henry runs the read-only backfill dry run locally with the command in [backfill-dry-run-command.md](../artifacts/collection-evidence/2026-10-16/backfill-dry-run-command.md) and returns the two output files. Then review the concrete diff in [STAGE3_REVIEW_PACK.md](../artifacts/product-research/2026-10-16/STAGE3_REVIEW_PACK.md) (migration 066, rollback plan, retention proposal). The 14 Oct cancellation actor is unknown ([analysis](../artifacts/collection-evidence/2026-10-16/reconciliation-cancellation-14-oct.md)). Gates unchanged and closed.
+
+---
+
 ## 2026-10-16 next single bounded action
 From a machine that can reach cqc.org.uk and the CQC API: capture what the poller's request returns (status, content type, hash, markup, robots.txt for /search), then decide replace, supplement or retire the report-index route (fix list S2, S4). In parallel, founder to approve a read-only production dry run of `tools/backfill_rating_change_dates.py` and name the sample buyer. Details and owner decisions: [IMPLEMENTATION_STATUS.md](../artifacts/product-research/2026-10-16/IMPLEMENTATION_STATUS.md). Older entries below are historical.
 

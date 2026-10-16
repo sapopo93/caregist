@@ -1,3 +1,9 @@
+## 2026-10-16 evening: still PARTIAL
+
+Added since the morning entry: migration 066 and private buyer-scope storage built and tested on real PostgreSQL 16 (not deployed); Stripe metadata carries only an opaque reference; backfill dry run is read-only and awaiting a local run (no production access here); 14 Oct reconciliation cancellation has no code cause and an unknown actor; synthetic West Midlands demonstration produced and labelled. No production write, deployment, payment or outbound message. Commercial gates closed.
+
+---
+
 ## 2026-10-16 product-position checkpoint: PARTIAL
 Evidence: [IMPLEMENTATION_STATUS.md](../artifacts/product-research/2026-10-16/IMPLEMENTATION_STATUS.md). Report-index health classification and buyer-rule generator/PDF/CSV changes are in draft PR #90 (CI green on the first commit; later commit pending). The report index returned 0 candidates in 6 of 7 sampled runs and 3 in one (21 Aug) while every run concluded `success`; the full history is NOT VERIFIED. Scheduled reconciliations of 11 and 14 Oct failed; freshness watchdog 16 Oct 08:57 UTC: `partial`, last complete pass 134.9h old. Backfill dry run, sample Brief and delivery rehearsal were not done (no production, CQC or Stripe access). Required reviewers unavailable: gate BLOCKED, not self-approved. No commercial gate changed.
 
