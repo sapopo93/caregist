@@ -105,3 +105,16 @@ async def test_apply_writes_only_datable_rows_with_the_cqc_source_label():
     report = await tool.backfill(conn, apply=True)
     assert conn.updates == [(7, date(2026, 8, 20), tool.EFFECTIVE_DATE_SOURCE)]
     assert report["rows_written"] == 1
+
+
+async def test_dry_run_detail_file_and_rollback_plan(tmp_path):
+    conn = _FakeConn([_row(), _row(id=8, location_id="1-200", overall_rating="Good")], undated=2)
+    detail = tmp_path / "detail.json"
+    report = await tool.backfill(conn, apply=False, detail_path=detail)
+    assert conn.updates == []
+    rows = {r["ledger_id"]: r for r in __import__("json").loads(detail.read_text())}
+    assert rows[7]["effective_date_proposed"] == "2026-08-20"
+    assert rows[7]["effective_date_before"] is None
+    assert rows[8]["effective_date_proposed"] is None and rows[8]["reason"] != "dated"
+    assert report["rollback"]["ids_param"] == [7]
+    assert "effective_date = NULL" in report["rollback"]["sql"]
