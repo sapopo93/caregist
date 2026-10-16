@@ -668,7 +668,7 @@ _COMPLIANCE_QUESTIONS = {
     ),
     _SIGNAL_LABEL["rating_changed"]: (
         "Which areas did the inspection report raise, and has the service arranged a "
-        "governance audit, mock inspection or safeguarding training before re-inspection?"
+        "governance audit, mock inspection or safeguarding training in response?"
     ),
     _SIGNAL_LABEL["rating_published"]: (
         "Which areas did the published report raise, and who is leading the service's "
