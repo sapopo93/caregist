@@ -1,3 +1,8 @@
+## 2026-10-16 known incomplete
+Backfill dry run not run. No real sample Brief or free-CQC comparison (a synthetic render exists, labelled synthetic). Delivery/economics rehearsal not done. Terms copy for quantity and "CRM-ready" wording drafted nowhere yet (fix list S9, held for approval). Autism/ADHD product, refund guarantee and Brief-only Digest access are deliberately not built.
+
+---
+
 ## 2026-10-09 buying audit — unfinished evidence
 
 Paid buying remains PARTIAL. Missing: approved Digest terms and four consecutive deliveries, agreed-criteria output fidelity and qualification questions, verified deployable source path, assigned staff handling, merchant sandbox transaction, delivered inbox receipt/bounce recovery, valid private Blob download, customer acceptance/refund settlement, interruption/commit recovery and orphan cleanup. The local repairs and 1,400 backend/Postgres passes (two skips), 183 frontend passes and six browser scenarios do not establish these. No real messages/payments/refunds or gate changes were made. [Full proof and limits](../artifacts/buying-audit/2026-10-09/BUYING_PROCESS.md). Older entries below are historical.

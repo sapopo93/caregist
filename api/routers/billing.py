@@ -329,6 +329,11 @@ class TerritoryBriefCheckoutRequest(BaseModel):
     scope_name: str = Field(min_length=2, max_length=80)
     window_days: int = Field(90, ge=7, le=365)
     shortlist_target: int = Field(30, ge=10, le=50)
+    # Optional agreed buyer rules. Stored privately; only an opaque reference
+    # reaches Stripe. Identifiers only: names are never matched.
+    buyer_objective: str | None = Field(None, max_length=300)
+    excluded_provider_ids: list[str] = Field(default_factory=list, max_length=500)
+    excluded_location_ids: list[str] = Field(default_factory=list, max_length=500)
 
     model_config = {"extra": "forbid"}
 
@@ -753,6 +758,9 @@ async def create_territory_brief_checkout(req: TerritoryBriefCheckoutRequest) ->
                 "name": req.scope_name,
                 "window_days": req.window_days,
                 "shortlist_target": req.shortlist_target,
+                "buyer_objective": req.buyer_objective,
+                "excluded_provider_ids": req.excluded_provider_ids,
+                "excluded_location_ids": req.excluded_location_ids,
             },
             territory_brief_delivery.scope_catalogue(),
         )
@@ -764,22 +772,28 @@ async def create_territory_brief_checkout(req: TerritoryBriefCheckoutRequest) ->
     territory_brief_delivery.validate_checkout_price()
 
     email = str(req.email).strip().lower()
+    scope_ref: str | None = None
     async with get_connection() as conn:
-        order = await conn.fetchrow(
-            """
-            INSERT INTO territory_brief_orders
-                (customer_email, stripe_price_id, scope_kind, scope_name,
-                 scope_window_days, scope_shortlist_target)
-            VALUES ($1, $2, $3, $4, $5, $6)
-            RETURNING id
-            """,
-            email,
-            settings.stripe_price_territory_brief,
-            scope.kind,
-            scope.name,
-            scope.window_days,
-            scope.shortlist_target,
-        )
+        async with conn.transaction():
+            order = await conn.fetchrow(
+                """
+                INSERT INTO territory_brief_orders
+                    (customer_email, stripe_price_id, scope_kind, scope_name,
+                     scope_window_days, scope_shortlist_target)
+                VALUES ($1, $2, $3, $4, $5, $6)
+                RETURNING id
+                """,
+                email,
+                settings.stripe_price_territory_brief,
+                scope.kind,
+                scope.name,
+                scope.window_days,
+                scope.shortlist_target,
+            )
+            if scope.has_buyer_rules:
+                from api.services.territory_brief_scope_store import insert_scope_version
+
+                scope_ref = await insert_scope_version(conn, str(order["id"]), scope)
 
     order_id = str(order["id"])
     scope_meta = {
@@ -807,7 +821,9 @@ async def create_territory_brief_checkout(req: TerritoryBriefCheckoutRequest) ->
                 },
             },
             invoice_creation={"enabled": True},
-            metadata=territory_brief_fulfilment.build_checkout_metadata(order_id, scope_meta, cfg),
+            metadata=territory_brief_fulfilment.build_checkout_metadata(
+                order_id, scope_meta, cfg, scope_ref=scope_ref
+            ),
             idempotency_key=f"caregist-territory-brief-{order_id}",
         )
     except Exception:

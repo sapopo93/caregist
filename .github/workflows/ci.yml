@@ -151,6 +151,14 @@ jobs:
           SUPPORT_INTERNAL_TOKEN: ci_test_support_token
         run: pytest tests/integration/test_finalize_guard_pg.py -v
 
+      - name: Buyer scope migration 066 and store (real Postgres)
+        # Runs in its own schema and drops it afterwards.
+        env:
+          SCOPE_PG_URL: postgresql://caregist:caregist@localhost:5432/postgres
+          API_MASTER_KEY: ci_test_master_key
+          SUPPORT_INTERNAL_TOKEN: ci_test_support_token
+        run: pytest tests/test_territory_brief_scope_pg.py -v
+
       - name: Replay init.sql + every migration, assert invariants
         env:
           CAREGIST_TEST_ADMIN_DATABASE_URL: postgresql://caregist:caregist@localhost:5432/postgres

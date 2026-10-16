@@ -101,6 +101,9 @@ def _close_stale_running_polls(cur, *, older_than_minutes: int = STALE_RUNNING_P
     return int(cur.rowcount or 0)
 
 
+_LAST_REPORT_INDEX_HEALTH: dict = {}
+
+
 def fetch_report_candidates() -> tuple[set[str], bytes, str]:
     response = _request_with_retries(
         REPORT_INDEX_URL,
@@ -110,7 +113,78 @@ def fetch_report_candidates() -> tuple[set[str], bytes, str]:
     )
     content = response.content
     location_ids = {match.group("location_id") for match in LOCATION_ID_PATTERN.finditer(response.text)}
+    headers = getattr(response, "headers", None) or {}
+    _LAST_REPORT_INDEX_HEALTH.clear()
+    _LAST_REPORT_INDEX_HEALTH.update(
+        classify_report_index(
+            response.text,
+            location_ids,
+            status_code=getattr(response, "status_code", None),
+            content_type=headers.get("Content-Type") if hasattr(headers, "get") else None,
+        )
+    )
     return location_ids, content, str(response.url or REPORT_INDEX_URL)
+
+
+REPORT_INDEX_OK = "ok_with_results"
+REPORT_INDEX_VERIFIED_ZERO = "zero_stated_by_source"
+REPORT_INDEX_UNVERIFIED_ZERO = "zero_unverified"
+REPORT_INDEX_UNEXPECTED_PAGE = "unexpected_page"
+REPORT_INDEX_PAGINATION_INCOMPLETE = "pagination_incomplete"
+# A source that says nothing matched, in CQC's own words. Deliberately narrow:
+# anything else that parses to zero IDs is "zero_unverified", never "healthy".
+_NO_RESULTS_PATTERN = re.compile(
+    r"\b(?:no results? (?:found|matched)|0 results?|did not match any|there are no (?:results|matching))",
+    re.IGNORECASE,
+)
+_CHALLENGE_PATTERN = re.compile(
+    r"(?:captcha|cf-chl|attention required|access denied|enable javascript|are you a robot|"
+    r"request blocked|unusual traffic)",
+    re.IGNORECASE,
+)
+_NEXT_PAGE_PATTERN = re.compile(r"(?:rel=[\"']next[\"']|[?&]page=[1-9][0-9]*)", re.IGNORECASE)
+
+
+def classify_report_index(
+    text: str,
+    location_ids: set[str],
+    *,
+    status_code: int | None = None,
+    content_type: str | None = None,
+) -> dict:
+    """Describe whether the report-index fetch is evidence, without hiding a fault.
+
+    An empty parse is not automatically a quiet week: it is only a verified zero
+    when the page positively says nothing matched. A 200 response alone is not
+    source success. Only page one is ever fetched, so a visible next-page link
+    is surfaced as ``pagination_incomplete`` rather than assumed away.
+    """
+    if status_code is not None and status_code != 200:
+        status = REPORT_INDEX_UNEXPECTED_PAGE
+    elif content_type is not None and "html" not in content_type.lower():
+        status = REPORT_INDEX_UNEXPECTED_PAGE
+    elif _CHALLENGE_PATTERN.search(text or ""):
+        status = REPORT_INDEX_UNEXPECTED_PAGE
+    elif location_ids:
+        status = (
+            REPORT_INDEX_PAGINATION_INCOMPLETE
+            if _NEXT_PAGE_PATTERN.search(text or "")
+            else REPORT_INDEX_OK
+        )
+    elif _NO_RESULTS_PATTERN.search(text or ""):
+        status = REPORT_INDEX_VERIFIED_ZERO
+    else:
+        status = REPORT_INDEX_UNVERIFIED_ZERO
+    return {
+        "status": status,
+        "healthy": status in (REPORT_INDEX_OK, REPORT_INDEX_VERIFIED_ZERO),
+        "httpStatus": status_code,
+        "contentType": content_type,
+        "bodyBytes": len((text or "").encode()),
+        "uniqueIds": len(location_ids),
+        "pagesFetched": 1,
+        "hasNextPage": bool(_NEXT_PAGE_PATTERN.search(text or "")),
+    }
 
 
 def _snapshot_hash(location_ids: set[str]) -> str:
@@ -432,6 +506,7 @@ def run_signal_poll(
                 "checksumSha256": report_checksum,
                 "snapshotId": report_snapshot_id,
                 "recordCount": len(report_ids),
+                "health": dict(_LAST_REPORT_INDEX_HEALTH) if report_enabled else None,
             },
         }
         cur.execute(
@@ -633,6 +708,9 @@ def run_signal_poll(
             "bootstrapped": bootstrapped,
             "new_ids": len(new_ids),
             "report_candidates": len(report_ids),
+            "report_index_status": (
+                _LAST_REPORT_INDEX_HEALTH.get("status") if report_enabled else "disabled"
+            ),
             "processed": processed,
             "events": event_count,
         }

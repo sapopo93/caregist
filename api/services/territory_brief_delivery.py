@@ -156,6 +156,16 @@ def generate_pack(order_row: dict[str, Any]) -> GeneratedPack:
         "window_days": int(order_row["scope_window_days"]),
         "shortlist_target": int(order_row["scope_shortlist_target"]),
     }
+    rules = order_row.get("scope_rules") if hasattr(order_row, "get") else None
+    if rules:
+        scope.update(
+            {
+                "buyer_objective": rules["buyer_objective"],
+                "excluded_provider_ids": rules["excluded_provider_ids"],
+                "excluded_location_ids": rules["excluded_location_ids"],
+                "rule_version": rules["rule_version"],
+            }
+        )
     context = PurchaseContext(
         order_reference=str(order_row["id"]),
         generated_at=datetime.now(timezone.utc),
