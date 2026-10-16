@@ -89,9 +89,31 @@ class TerritoryScope:
     window_days: int = DEFAULT_WINDOW_DAYS
     shortlist_target: int = DEFAULT_SHORTLIST
     service_type: str | None = None
+    # Buyer-specific rules agreed before the order. All optional so a scope
+    # captured before they existed validates and renders exactly as it did.
+    # ``excluded_*`` are CQC identifiers only: names are never matched, so an
+    # exclusion cannot silently remove a different organisation.
+    buyer_objective: str | None = None
+    excluded_provider_ids: tuple[str, ...] = ()
+    excluded_location_ids: tuple[str, ...] = ()
+    rule_version: int = 1
+
+    @property
+    def has_buyer_rules(self) -> bool:
+        return bool(
+            self.buyer_objective or self.excluded_provider_ids or self.excluded_location_ids
+        )
 
     def to_json(self) -> dict[str, Any]:
-        return asdict(self)
+        data = asdict(self)
+        if not self.has_buyer_rules:
+            # Legacy shape: stored and regenerated historical scopes stay identical.
+            for key in ("buyer_objective", "excluded_provider_ids", "excluded_location_ids", "rule_version"):
+                data.pop(key)
+        else:
+            data["excluded_provider_ids"] = list(self.excluded_provider_ids)
+            data["excluded_location_ids"] = list(self.excluded_location_ids)
+        return data
 
 
 @dataclass(frozen=True)
@@ -213,6 +235,9 @@ class TerritoryBrief:
 # --------------------------------------------------------------------------- #
 
 _NAME_OK = re.compile(r"^[A-Za-z0-9 .,'()&/-]{2,80}$")
+_OBJECTIVE_OK = re.compile(r"^[A-Za-z0-9 .,;:'()&/%+-]{10,300}$")
+_CQC_ID_OK = re.compile(r"^1-\d{5,12}$")
+MAX_EXCLUSIONS = 500
 
 
 def known_territories(locations: Iterable[dict[str, Any]]) -> dict[str, dict[str, str]]:
@@ -243,6 +268,9 @@ def validate_scope(
         kind, name, window_days, shortlist_target, service_type = (
             raw.kind, raw.name, raw.window_days, raw.shortlist_target, raw.service_type,
         )
+        objective, ex_providers, ex_locations, rule_version = (
+            raw.buyer_objective, raw.excluded_provider_ids, raw.excluded_location_ids, raw.rule_version,
+        )
     else:
         if not isinstance(raw, dict):
             raise ScopeError("scope must be an object")
@@ -251,6 +279,34 @@ def validate_scope(
         window_days = raw.get("window_days", DEFAULT_WINDOW_DAYS)
         shortlist_target = raw.get("shortlist_target", DEFAULT_SHORTLIST)
         service_type = raw.get("service_type")
+        objective = raw.get("buyer_objective")
+        ex_providers = raw.get("excluded_provider_ids") or ()
+        ex_locations = raw.get("excluded_location_ids") or ()
+        rule_version = raw.get("rule_version", 1)
+
+    objective = str(objective).strip() if objective else None
+    if objective and not _OBJECTIVE_OK.match(objective):
+        raise ScopeError("scope.buyer_objective must be 10-300 plain characters")
+    try:
+        rule_version = int(rule_version)
+    except (TypeError, ValueError):
+        raise ScopeError("scope.rule_version must be an integer")
+    if rule_version < 1:
+        raise ScopeError("scope.rule_version must be at least 1")
+
+    def _ids(values: Any, label: str) -> tuple[str, ...]:
+        if isinstance(values, str) or not hasattr(values, "__iter__"):
+            raise ScopeError(f"scope.{label} must be a list of CQC identifiers")
+        cleaned = sorted({str(v).strip() for v in values if str(v).strip()})
+        if len(cleaned) > MAX_EXCLUSIONS:
+            raise ScopeError(f"scope.{label} has more than {MAX_EXCLUSIONS} entries")
+        bad = [v for v in cleaned if not _CQC_ID_OK.match(v)]
+        if bad:
+            raise ScopeError(f"scope.{label} must contain CQC identifiers only (for example 1-123456789)")
+        return tuple(cleaned)
+
+    ex_providers = _ids(ex_providers, "excluded_provider_ids")
+    ex_locations = _ids(ex_locations, "excluded_location_ids")
 
     service_type = str(service_type).strip() if service_type else None
     if service_type and not _NAME_OK.match(service_type):
@@ -293,6 +349,10 @@ def validate_scope(
         window_days=window_days,
         shortlist_target=shortlist_target,
         service_type=service_type or None,
+        buyer_objective=objective,
+        excluded_provider_ids=ex_providers,
+        excluded_location_ids=ex_locations,
+        rule_version=rule_version,
     )
 
 
@@ -879,12 +939,23 @@ def generate_territory_opportunity_brief(
 
     provider_event_locations: Counter[str] = Counter()
     per_row_events: list[tuple[dict[str, Any], list[OrgEvent]]] = []
+    excluded_providers = set(validated.excluded_provider_ids)
+    excluded_locations = set(validated.excluded_location_ids)
+    excluded_with_signal = 0
     for row in scoped_rows:
         events = _location_events(
             row, window_start=window_start, window_end=window_end, as_of=as_of
         )
         if events:
             provider_id = str(row.get("providerId") or "").strip()
+            if (
+                provider_id in excluded_providers
+                or str(row.get("locationId") or "").strip() in excluded_locations
+            ):
+                # Counted for the audit, never listed: the buyer's exclusion
+                # list is confidential and stays out of every output.
+                excluded_with_signal += 1
+                continue
             provider_event_locations[provider_id] += 1
             row = {**row, "_provider_name": provider_names.get(provider_id, "")}
             per_row_events.append((row, events))
@@ -1016,6 +1087,14 @@ def generate_territory_opportunity_brief(
         insights=insights,
     )
 
+    if validated.has_buyer_rules:
+        exec_summary["buyer_scope"] = {
+            "objective": validated.buyer_objective,
+            "rule_version": validated.rule_version,
+            "exclusion_rule_count": len(excluded_providers) + len(excluded_locations),
+            "excluded_with_signal": excluded_with_signal,
+        }
+
     caveats = (
         insights["rating_date_coverage"]["limitation"],
         "Rating freshness is measured against the generation date, separately from the source "
@@ -1033,6 +1112,13 @@ def generate_territory_opportunity_brief(
         "provider's quality, finances, or intent.",
         OGL_ATTRIBUTION + ".",
     )
+    if validated.has_buyer_rules:
+        caveats = (
+            *caveats[:-1],
+            "A CQC provider identifier identifies the registered provider. It is not evidence of "
+            "who holds purchasing authority; central and local buying centres need corroboration.",
+            caveats[-1],
+        )
     methodology = (
         f"Scope: {validated.kind.replace('_', ' ')} = {validated.name}. "
         f"Window: {window_start.isoformat()} to {window_end.isoformat()} inclusive "
@@ -1050,6 +1136,17 @@ def generate_territory_opportunity_brief(
         "Deduplication happens before the shortlist limit. Ties break by those same keys, so "
         "the same source data always yields the same ranking.",
     )
+
+    if validated.has_buyer_rules:
+        methodology = (
+            *methodology,
+            f"Buyer rules (version {validated.rule_version}): "
+            + (f"objective \"{validated.buyer_objective}\". " if validated.buyer_objective else "")
+            + f"{len(excluded_providers) + len(excluded_locations)} identifier-based exclusion(s) "
+            f"applied before ranking; {excluded_with_signal} location(s) with an in-window signal "
+            "were removed by them. The objective is a record of what you asked us to look for; it "
+            "does not change the scoring, which is the same for every buyer.",
+        )
 
     provenance = {
         "source_page": CQC_DATA_PAGE,
@@ -1251,6 +1348,7 @@ def brief_to_csv(brief: TerritoryBrief) -> str:
             "registration_metadata_gaps",
             "shortlist_notice",
             "licence",
+            *(("buyer_objective", "scope_rule_version") if brief.scope.has_buyer_rules else ()),
         ]
     )
     notice = brief.executive_summary.get("shortfall_notice") or ""
@@ -1287,6 +1385,11 @@ def brief_to_csv(brief: TerritoryBrief) -> str:
                 "; ".join(coverage_by_location.get(org.location_id, {}).get("registration_metadata_gaps", [])),
                 notice,
                 OGL_ATTRIBUTION,
+                *(
+                    (brief.scope.buyer_objective or "", brief.scope.rule_version)
+                    if brief.scope.has_buyer_rules
+                    else ()
+                ),
             ]
         )
     return buf.getvalue()

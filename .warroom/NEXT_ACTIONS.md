@@ -1,3 +1,8 @@
+## 2026-10-16 next single bounded action
+From a machine that can reach cqc.org.uk and the CQC API: capture what the poller's request returns (status, content type, hash, markup, robots.txt for /search), then decide replace, supplement or retire the report-index route (fix list S2, S4). In parallel, founder to approve a read-only production dry run of `tools/backfill_rating_change_dates.py` and name the sample buyer. Details and owner decisions: [IMPLEMENTATION_STATUS.md](../artifacts/product-research/2026-10-16/IMPLEMENTATION_STATUS.md). Older entries below are historical.
+
+---
+
 ## 2026-10-09 buying audit — next bounded work
 
 Merge only the independently reviewed fail-closed repair after required CI, using Henry’s standing merge authorization. Keep gates closed. Next engineering proof: durable reconciliation for outer-commit failure/process interruption plus orphan-upload cleanup policy. Next product proof: carry agreed criteria through outputs and supply each promised qualification question. Digest-specific terms need approval before a four-week delivery/recovery rehearsal. Assign actual staff owners and exercise authorized synthetic enquiry/payment/inbox/private-file/acceptance receipts. [Evidence and acceptance checklist](../artifacts/buying-audit/2026-10-09/BUYING_PROCESS.md). Older entries below are historical.
