@@ -7,7 +7,7 @@
 | Sale | Human-led sales may continue on verified, supported claims. Do not state unresolved location status or quality as fact. |
 | Payment | `NOT READY`: live health reports `checkoutReady=false`. This reconciliation did not change that gate. |
 | Fulfilment | `DISABLED`: live health reports delivery disabled. |
-| Operations | Persistent quarantine and per-ID safe failure logging are local/uncommitted; production still has only per-batch acknowledgement. |
+| Operations | Persistent quarantine and per-ID safe failure logging are committed in [PR #94](https://github.com/sapopo93/caregist/pull/94); production still has only per-batch acknowledgement pending independent review and migration. |
 
 See [the reconciliation run record](../artifacts/cqc-nightly/2026-10-18-reconciliation-run-39113995661.md) for source hash, run limitations and affected IDs. Historical dated entries below do not supersede this delta.
 

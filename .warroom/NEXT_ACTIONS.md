@@ -1,6 +1,6 @@
 ## 2026-10-18 next bounded action
 
-Review and validate the local persistent-quarantine migration/finalizer change, then take it through the repository's named review and migration workflow. After it is applied, verify the three IDs are recorded as unresolved exceptions and remain ACTIVE, and confirm the next reconciliation skips their detail calls while preserving identity checks. Ask CQC for the cause of the three HTTP 404s and for the identity/status behind `1-29608453477`; clear each exception only after authoritative evidence. Keep checkout/delivery gates as reported by live health; continue human-led sales only with verified claims. See [run evidence](../artifacts/cqc-nightly/2026-10-18-reconciliation-run-39113995661.md).
+Complete independent review of [PR #94](https://github.com/sapopo93/caregist/pull/94), then apply its migration through the repository's production migration workflow after the restore point is verified. Verify the three IDs are recorded as unresolved exceptions and remain ACTIVE, and confirm the next reconciliation skips their detail calls while preserving identity checks. Ask CQC for the cause of the three HTTP 404s and for the identity/status behind `1-29608453477`; clear each exception only after authoritative evidence. Keep checkout/delivery gates as reported by live health; continue human-led sales only with verified claims. See [run evidence](../artifacts/cqc-nightly/2026-10-18-reconciliation-run-39113995661.md).
 
 ## 2026-10-09 buying audit — next bounded work
 
