@@ -1,4 +1,4 @@
-# Optional Jev advisory router
+# Jev advisory router: LIVE CALLS DISABLED
 
 Jev supplies typed choices; it does not execute actions or approve any product gate.
 The router is a local development tool, separate from application dependencies.
@@ -30,9 +30,10 @@ Never commit credentials. The local environment and `.tmp/` logs are ignored.
 
 Dry-run validates inputs and displays the exact state and options without loading
 credentials, importing the SDK, making a paid call or writing a decision log.
-Omit `--dry-run` only when the user has authorized the paid call and disclosure.
-The task, context and option descriptions go to the third-party TypeSafe API.
-Use compact, authorized summaries without secrets, personal data or private drafts.
+Live calls are currently blocked in code regardless of API key availability.
+LIVE CALLS ARE DISABLED. UK-only data residency and processing have not been independently
+verified. The script must not send task, context or options to TypeSafe until this
+verification is complete and formally approved. Use --dry-run for local validation only.
 
 Live results contain a choice, confidence, worth-it judgment, usage and UTC time.
 The local log stores the task and result; treat it as private and disposable.

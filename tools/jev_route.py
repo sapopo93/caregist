@@ -64,6 +64,13 @@ def main() -> None:
         print(json.dumps({"mode": "dry-run", "state": state, "options": options}, indent=2))
         return
 
+    # Fail closed: TypeSafe's UK-only processing and residency have not been verified.
+    # Do not load credentials or transmit task/context/options to a third party.
+    sys.exit(
+        "Jev live calls are disabled: UK-only data residency and processing "
+        "have not been independently verified. Use --dry-run for local validation."
+    )
+
     load_key()
     try:
         from typesafe_sdk import Choice, Noul, TypeSafeClient
