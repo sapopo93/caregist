@@ -396,7 +396,57 @@ async def test_finalizer_records_acknowledged_unconfirmed_candidates_on_the_batc
         assert confirmation["unconfirmed_count"] == len(ROGUE_IDS)
         assert confirmation["expected_active_after"] == 102
         assert confirmation["active_after"] == 102
+        assert await async_conn.fetchval(
+            "SELECT COUNT(*) FROM reconciliation_quarantined_locations WHERE location_id = ANY($1)",
+            ROGUE_IDS,
+        ) == len(ROGUE_IDS)
         assert await _active_count(async_conn) == 102
+    finally:
+        await async_conn.close()
+
+
+async def test_finalizer_skips_persistently_quarantined_active_locations(
+    tmp_path, fresh_db, monkeypatch
+):
+    """A reviewed exception remains ACTIVE and no longer blocks later batches."""
+    batch_id = await _seed_rogue_candidates(
+        tmp_path, fresh_db, {ROGUE_IDS[0]: {"registrationStatus": "Registered"}}
+    )
+    async_conn = await asyncpg.connect(fresh_db)
+    try:
+        await async_conn.execute(
+            """
+            INSERT INTO reconciliation_quarantined_locations
+                (location_id, source_batch_id, reason, last_error)
+            VALUES ($1, $2, 'operator_acknowledged_unconfirmed', 'detail fetch failed (HTTP 404)')
+            """,
+            ROGUE_IDS[0],
+            batch_id,
+        )
+    finally:
+        await async_conn.close()
+
+    def unexpected_fetch(*_args):
+        raise AssertionError("quarantined location was fetched again")
+
+    monkeypatch.setattr("incremental_update.fetch_location_detail", unexpected_fetch)
+    assert _run_finalize(
+        fresh_db, batch_id, tmp_path, dry_run=False, api_key="integration-test-key"
+    ) == 0
+
+    async_conn = await asyncpg.connect(fresh_db)
+    try:
+        row = await async_conn.fetchrow(
+            "SELECT status, deactivation_confirmation FROM reconciliation_batches WHERE id = $1",
+            batch_id,
+        )
+        assert row["status"] == "completed"
+        confirmation = json.loads(row["deactivation_confirmation"])
+        assert confirmation["quarantined_ids"] == [ROGUE_IDS[0]]
+        assert confirmation["unconfirmed_ids"] == []
+        assert await async_conn.fetchval(
+            "SELECT UPPER(status) FROM care_providers WHERE id = $1", ROGUE_IDS[0]
+        ) == "ACTIVE"
     finally:
         await async_conn.close()
 

@@ -1118,6 +1118,7 @@ def _finalize_cursor(
     inactive_manifest_count=None,
     *,
     candidate_ids=(),
+    quarantined_ids=(),
     drop_active_ids=(),
     extra_active_ids=(),
 ):
@@ -1174,6 +1175,7 @@ def _finalize_cursor(
             if location_id not in set(drop_active_ids)
         ]
         ids.extend(str(location_id) for location_id in candidate_ids)
+        ids.extend(str(location_id) for location_id in quarantined_ids)
         if active_after is not None:
             if active_after < len(ids):
                 ids = ids[:active_after]
@@ -1189,7 +1191,9 @@ def _finalize_cursor(
         statement = " ".join(str(calls[-1].args[0]).split()).upper() if calls else ""
         if "RECONCILIATION_SHARDS" in statement:
             return shards
-        if "NOT (ID = ANY(%S))" in statement:
+        if "JOIN CARE_PROVIDERS P" in statement and "RECONCILIATION_QUARANTINED_LOCATIONS Q" in statement:
+            return [(str(location_id),) for location_id in quarantined_ids]
+        if "NOT EXISTS" in statement and "CARE_PROVIDERS P" in statement:
             return [(str(location_id),) for location_id in candidate_ids]
         if "SELECT ID::TEXT FROM CARE_PROVIDERS" in statement:
             return [(location_id,) for location_id in _verified_active_ids()]

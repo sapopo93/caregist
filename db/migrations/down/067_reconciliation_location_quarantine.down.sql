@@ -1,0 +1,1 @@
+DROP TABLE IF EXISTS reconciliation_quarantined_locations;

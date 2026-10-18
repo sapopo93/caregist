@@ -1,3 +1,16 @@
+## 2026-10-18 production delta
+
+| Stage | Current evidence |
+|---|---|
+| Collection | `PARTIAL`: authoritative batch [39113995661](https://github.com/sapopo93/caregist/actions/runs/39113995661) completed from the Oct 14 source, 57,110 locations; 57,109 detail successes, one unavailable, 66 confirmed deregistered, 55 confirmed registered, three acknowledged unconfirmed and still ACTIVE. |
+| Publication | `RUNNING`: live `/api/health/directory` reports database read/write and database available; live `/api/v1/health` reports active count 57,168. |
+| Sale | Human-led sales may continue on verified, supported claims. Do not state unresolved location status or quality as fact. |
+| Payment | `NOT READY`: live health reports `checkoutReady=false`. This reconciliation did not change that gate. |
+| Fulfilment | `DISABLED`: live health reports delivery disabled. |
+| Operations | Persistent quarantine and per-ID safe failure logging are local/uncommitted; production still has only per-batch acknowledgement. |
+
+See [the reconciliation run record](../artifacts/cqc-nightly/2026-10-18-reconciliation-run-39113995661.md) for source hash, run limitations and affected IDs. Historical dated entries below do not supersede this delta.
+
 ## 2026-10-09 buying audit — current dated evidence
 
 Production observed at 09:07 UTC: `3d3f3e42e95d3f1829387df19731eb819d93e993` (PR #84 merged). The historical claims below about unmerged/nonexistent fulfilment and earlier releases are not current. Buying remains PARTIAL: enquiry initiation works, source/commercial gates are closed, and complete paid operational delivery is unverified. Local repair branch has 1,400 backend/Postgres passes (two skips), 183 frontend passes, six browser scenarios and an independent bounded technical re-review. Commit/interruption/orphan cleanup, product criteria/qualification questions, Digest terms, deployable source and staff/merchant/inbox/file receipts remain gates. [The buying audit](../artifacts/buying-audit/2026-10-09/BUYING_PROCESS.md) is the dated evidence; it does not authorize activation.

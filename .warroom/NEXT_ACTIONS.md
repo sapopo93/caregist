@@ -1,3 +1,7 @@
+## 2026-10-18 next bounded action
+
+Review and validate the local persistent-quarantine migration/finalizer change, then take it through the repository's named review and migration workflow. After it is applied, verify the three IDs are recorded as unresolved exceptions and remain ACTIVE, and confirm the next reconciliation skips their detail calls while preserving identity checks. Ask CQC for the cause of the three HTTP 404s and for the identity/status behind `1-29608453477`; clear each exception only after authoritative evidence. Keep checkout/delivery gates as reported by live health; continue human-led sales only with verified claims. See [run evidence](../artifacts/cqc-nightly/2026-10-18-reconciliation-run-39113995661.md).
+
 ## 2026-10-09 buying audit — next bounded work
 
 Merge only the independently reviewed fail-closed repair after required CI, using Henry’s standing merge authorization. Keep gates closed. Next engineering proof: durable reconciliation for outer-commit failure/process interruption plus orphan-upload cleanup policy. Next product proof: carry agreed criteria through outputs and supply each promised qualification question. Digest-specific terms need approval before a four-week delivery/recovery rehearsal. Assign actual staff owners and exercise authorized synthetic enquiry/payment/inbox/private-file/acceptance receipts. [Evidence and acceptance checklist](../artifacts/buying-audit/2026-10-09/BUYING_PROCESS.md). Older entries below are historical.
