@@ -468,9 +468,9 @@ class Settings(BaseSettings):
     crm_transcription_compute_type: str = "int8"
     crm_transcription_cpu_threads: int = 4
     crm_transcription_timeout_seconds: int = 900
-    crm_ai_base_url: str = "https://api.deepseek.com/v1"
+    crm_ai_base_url: str = ""
     crm_ai_api_key: str = ""
-    crm_ai_model: str = "deepseek-v4-flash"
+    crm_ai_model: str = ""
     crm_ai_pseudonym_key: str = ""
     crm_ai_monthly_cap_usd: Decimal = Decimal("10.00")
     # Current DeepSeek V4 Flash cache-miss prices. These are configurable so a
@@ -573,8 +573,10 @@ class Settings(BaseSettings):
                 raise RuntimeError(
                     "FATAL: CRM transcription must use local small.en on CPU with int8."
                 )
-            if self.crm_ai_model != "deepseek-v4-flash":
-                raise RuntimeError("FATAL: CRM routine AI must use deepseek-v4-flash.")
+            raise RuntimeError(
+                "FATAL: External CRM AI is disabled until a provider is explicitly approved "
+                "for UK-only storage and processing. Cross-border data transfer is prohibited."
+            )
             ai_url = urlparse(self.crm_ai_base_url)
             if (
                 ai_url.scheme != "https"
