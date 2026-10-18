@@ -1,4 +1,4 @@
-"""Fail-closed redaction and advisory DeepSeek evaluation for the local worker."""
+"""Fail-closed redaction and externally disabled evaluation for the local worker."""
 
 from __future__ import annotations
 
@@ -375,7 +375,14 @@ CLAIM_EXPIRY_HEADROOM_MINUTES = 25
 async def evaluate_transcript(
     redacted: RedactedTranscript, *, user_id: str, intelligence_id: Any | None = None
 ) -> tuple[CallEvaluation, EvaluationUsage]:
-    """Send only a redacted transcript and retry malformed provider output."""
+    """Block external evaluation until UK-only processing is explicitly approved.
+
+    Redaction is not permission to disclose UK care-sector data to an unapproved
+    processor. This guard runs before constructing or sending any HTTP request.
+    """
+    raise RuntimeError(
+        "External CRM AI is disabled: UK-only storage and processing is required."
+    )
     system_prompt = (
         "You evaluate UK B2B sales calls for coaching. Return JSON only with exactly: "
         "summary, suggested_disposition, overall_qa_score, customer_sentiment, outcome, "
