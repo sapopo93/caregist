@@ -1,0 +1,21 @@
+{
+  "url": "https://www.caregist.co.uk/api/health/directory",
+  "status": 200,
+  "retrieved_at": "2026-10-11T06:48:28.931805+00:00",
+  "body": {
+    "status": "ok",
+    "checkedAt": "2026-10-11T06:48:28.902Z",
+    "release": {
+      "gitSha": "0fda3cac8b670ed3dddb31ac3c45644ca430e387"
+    },
+    "capabilities": {
+      "operatingMode": "database",
+      "readMode": "database",
+      "writeMode": "database",
+      "notificationMode": "email",
+      "fallbackDatasetAvailable": true,
+      "databaseAvailable": true,
+      "databaseReason": "ok"
+    }
+  }
+}

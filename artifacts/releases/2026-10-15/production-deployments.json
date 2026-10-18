@@ -1,0 +1,20 @@
+[
+  {
+    "product": "CareGist",
+    "component": "services",
+    "id": "dpl_GvNWgaCGLAQWAxe7WTT1V4F5zDXL",
+    "url": "https://caregist-3ttn4hfxv-henry-mlalazis-projects.vercel.app",
+    "aliases": [
+      "www.caregist.co.uk",
+      "caregist.vercel.app",
+      "caregist.co.uk",
+      "caregist-henry-mlalazis-projects.vercel.app"
+    ],
+    "status": "READY",
+    "target": "production",
+    "commit": "a1504b6b28c3c7c44e871208a849d6f08a577c6e",
+    "projectId": "prj_Kvd5x6BrA17ZCdLsaRCYaNKLdtBr",
+    "createdAt": 1792059533574,
+    "ready": 1792059589005
+  }
+]

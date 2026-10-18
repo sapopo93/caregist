@@ -1,5 +1,7 @@
 # CareGist first-sale offer: one registration factsheet
 
+> **15 October 2026 manual update:** Use the [current manual](manuals/SALES_GTM_MANUAL.md) for operating instructions, current offers and evidence limits. Older prices, approvals, feature-readiness claims and proposed dates below are dated context, not current authority. This document does not activate any commercial or outreach gate.
+
 Prepared 5 October 2026. Status: concrete offer for owner approval; no customer order, payment or acceptance is assumed.
 
 ## Customer offer

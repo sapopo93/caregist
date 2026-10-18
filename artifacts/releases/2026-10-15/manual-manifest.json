@@ -1,0 +1,38 @@
+{
+  "docs/manuals/SALES_GTM_MANUAL.md": {
+    "bytes": 7238,
+    "sha256": "0993477f09672c7d9b1f1a635179d1cde694e16fc94fd0273f6b7d600191e823"
+  },
+  "docs/manuals/TRAINING_MANUAL.md": {
+    "bytes": 7690,
+    "sha256": "65bdc77815d6239f069fe7da5f82fe12be6a0611dfccf450c12d474800a50bfe"
+  },
+  "docs/manuals/USER_MANUAL.md": {
+    "bytes": 6331,
+    "sha256": "6a36a7d80748f9abe506390a07b8adbe3cac6c31c5c198615f407db2c1fc8962"
+  },
+  "docs/manuals/CRM_MANUAL.md": {
+    "bytes": 5806,
+    "sha256": "05aa7a53de919d9a3ed05bbc61a559b5b223833360414f096015ab3ac00fd56c"
+  },
+  "docs/manuals/README.md": {
+    "bytes": 3812,
+    "sha256": "d8a03a5199ee3896bf86993bbd7994064f20ddae9e7e2ffa4e9d8422ef1ee03f"
+  },
+  "docs/manuals/OPERATIONS_MANUAL.md": {
+    "bytes": 8157,
+    "sha256": "4828d38d3fdf64986741e9ac3a390a011d3a8c1d187bc7188e392b7ee8a41583"
+  },
+  "docs/manuals/CareGist_Manuals.docx": {
+    "bytes": 53661,
+    "sha256": "2e52ac61168d41e6bdaf7148bc7c2775851150c7d6f5899319f25af060270675"
+  },
+  "docs/manuals/CareGist_Manuals.pdf": {
+    "bytes": 204295,
+    "sha256": "f3a8fb762e7dae0457e5359583a065e3bcfb51f078e43042a2c13fa3dbb0b50e"
+  },
+  "docs/manuals/build_manuals.py": {
+    "bytes": 6943,
+    "sha256": "5e76f348471acc2bfceec0991ce758012005cb74fef80f777b7b95150c980682"
+  }
+}

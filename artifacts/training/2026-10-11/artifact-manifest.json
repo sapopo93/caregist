@@ -1,0 +1,21 @@
+{
+  "date": "2026-10-11",
+  "pages": 19,
+  "figures": 3,
+  "text_items_verified_in_pdf": 352,
+  "out_of_page_text_bounds": 0,
+  "artifacts": {
+    "TRAINING.md": {
+      "bytes": 34118,
+      "sha256": "8f6cb7a9973eba31e2401cfcdf8bef9575f23d9a1dc71e0a7db9b9b77a6239e8"
+    },
+    "CareGist_Training_Sibongile_and_Henry.docx": {
+      "bytes": 228385,
+      "sha256": "24638394e77908ee5aaf432cb7f1ca9bbd5eae2446b78844eec0d31b5fe78dfe"
+    },
+    "CareGist_Training_Sibongile_and_Henry.pdf": {
+      "bytes": 423436,
+      "sha256": "ce2e14e9546c7da34485f023295373b5dda0603ecf7df34e0e8456811dec9294"
+    }
+  }
+}

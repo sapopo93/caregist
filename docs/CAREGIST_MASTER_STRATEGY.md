@@ -1,5 +1,7 @@
 # CareGist Master Strategy
 
+> **15 October 2026 manual update:** Use the [current manual](manuals/README.md) for operating instructions, current offers and evidence limits. Older prices, approvals, feature-readiness claims and proposed dates below are dated context, not current authority. This document does not activate any commercial or outreach gate.
+
 > **Catalogue authority correction — founder reaffirmed 2 October 2026:**
 > `deploy/stripe-price-manifest.json`, catalogue `2026-09-two-product`, governs
 > current offers: Territory Opportunity Brief £745 one-off, and Weekly Digest

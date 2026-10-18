@@ -1,0 +1,11 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.12.13, pytest-9.1.1, pluggy-1.6.0
+rootdir: /Users/user/CareGist
+configfile: pytest.ini
+plugins: cov-5.0.0, asyncio-1.4.0, anyio-4.14.2
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
+collected 41 items / 36 deselected / 5 selected
+
+tests/test_territory_brief.py .....                                      [100%]
+
+======================= 5 passed, 36 deselected in 0.12s =======================

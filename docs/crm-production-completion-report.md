@@ -1,5 +1,7 @@
 # CareGist lean UK CRM production completion report
 
+> **15 October 2026 manual update:** Use the [current manual](manuals/CRM_MANUAL.md) for operating instructions, current offers and evidence limits. Older prices, approvals, feature-readiness claims and proposed dates below are dated context, not current authority. This document does not activate any commercial or outreach gate.
+
 Date: 2026-08-13
 Build status: complete
 Go-live status: approved for a single-destination, call-only production pilot

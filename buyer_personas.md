@@ -1,5 +1,7 @@
 # Buyer Persona Dossiers
 
+> **15 October 2026 manual update:** Use the [current manual](docs/manuals/SALES_GTM_MANUAL.md) for operating instructions, current offers and evidence limits. Older prices, approvals, feature-readiness claims and proposed dates below are dated context, not current authority. This document does not activate any commercial or outreach gate.
+
 > **Superseded persona research — historical and non-operative.** The rankings,
 > packages, prices, targeting directives, forecasts, and outreach recommendations
 > below predate catalogue `2026-08` and are not current go-to-market authority.

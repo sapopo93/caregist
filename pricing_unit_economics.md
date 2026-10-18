@@ -1,5 +1,7 @@
 # CareGist Pricing & Unit Economics
 
+> **15 October 2026 manual update:** Use the [current manual](docs/manuals/SALES_GTM_MANUAL.md) for operating instructions, current offers and evidence limits. Older prices, approvals, feature-readiness claims and proposed dates below are dated context, not current authority. This document does not activate any commercial or outreach gate.
+
 > **Historical planning model — superseded and non-operative.** No price, tier,
 > entitlement, forecast, margin, discount, or sales instruction below this notice
 > is a current CareGist offer. The authoritative `2026-08` catalogue is Free

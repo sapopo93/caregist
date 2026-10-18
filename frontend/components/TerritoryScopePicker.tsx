@@ -104,14 +104,6 @@ export default function TerritoryScopePicker() {
         `Territory Opportunity Brief — ${scopeSummary}`,
       )}&body=${encodeURIComponent(enquiryText)}`
     : "";
-  const directoryHref = result
-    ? `/search?${new URLSearchParams({
-        region: result.scope.region,
-        opportunity: result.scope.buyerType,
-        ...(result.scope.serviceType ? { service_type: result.scope.serviceType } : {}),
-      })}`
-    : "";
-
   async function copyEnquiry() {
     try {
       await navigator.clipboard.writeText(enquiryText);
@@ -249,9 +241,6 @@ export default function TerritoryScopePicker() {
               </div>
             </dl>
 
-            <div className={styles.resultActions}>
-              <a href={directoryHref} className={styles.buttonOutline}>View matching providers for free</a>
-            </div>
             <div style={{ marginTop: 18 }}>
                 <a
                   href={mailtoHref}

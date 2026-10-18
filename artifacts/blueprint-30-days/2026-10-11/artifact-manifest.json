@@ -1,0 +1,22 @@
+{
+  "prepared_date": "2026-10-11",
+  "window": "2026-10-12 to 2026-11-10",
+  "document_review": "PASS WITH LIMITS; no operating activation",
+  "files": [
+    {
+      "name": "BLUEPRINT.md",
+      "sha256": "401247385d5c7ecb4c9d0d66cb8f5335792801bb813cfb8ab6410b931aafd82d",
+      "bytes": 39780
+    },
+    {
+      "name": "QUALITY_RECORD.md",
+      "sha256": "0a002eda936dfcc63e07e3b43bfbb325fa6e5312ffae37af527ef5955c1b239f",
+      "bytes": 3793
+    },
+    {
+      "name": "REVIEW.md",
+      "sha256": "fd0746dcc1c4f6c1060de0e58ed49df453ca6c6ae00bacd6506532abe9b04476",
+      "bytes": 5175
+    }
+  ]
+}
