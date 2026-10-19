@@ -424,6 +424,11 @@ class Settings(BaseSettings):
     # wording has explicit solicitor sign-off (its published Business Terms
     # currently describe a manual, cancellable, three-working-day service).
     territory_self_serve_checkout_enabled: bool = False
+    # Free, read-only Territory Brief preview (counts plus three dated example
+    # signals). It opens no checkout, delivery, export or lead gate, but it is a
+    # new public claim surface, so it stays off until its copy and numbers have
+    # had independent review (docs/territory-preview.md).
+    territory_preview_enabled: bool = False
     review_publication_enabled: bool = False
     # Independent signal-intelligence kill switches. Defaults are deliberately
     # fail-closed; workflows opt collectors into shadow mode explicitly.

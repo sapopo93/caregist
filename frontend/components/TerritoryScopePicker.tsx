@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import TerritorySignalPreview from "@/components/TerritorySignalPreview";
 import { trackEvent } from "@/lib/analytics";
 import { DEFAULT_SERVICE_TYPE_OPTIONS } from "@/lib/directory-constants";
 import {
@@ -248,6 +249,8 @@ export default function TerritoryScopePicker() {
                 <dd>{result.coverage.mostRecentObservation ?? "Not recorded"}</dd>
               </div>
             </dl>
+
+            <TerritorySignalPreview region={result.scope.region} serviceType={result.scope.serviceType} />
 
             <div className={styles.resultActions}>
               <a href={directoryHref} className={styles.buttonOutline}>View matching providers for free</a>
