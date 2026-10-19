@@ -77,7 +77,7 @@ Re-checked against a production-shaped Postgres fixture with CQC service labels,
 
 These need a reviewer who did not build it (AGENTS.md: a producing model cannot approve its own work):
 
-1. Founder approval of the panel copy as a public claim surface.
+1. ~~Founder approval of the panel copy as a public claim surface.~~ Approved by the founder on 19 October 2026, for the copy at commit `9fb6f98`. Any later copy change needs fresh approval.
 2. ~~Production read check.~~ Done on 19 October (see above).
 3. ~~Apply migration 067 in production.~~ Done on 19 October.
 4. ~~Re-run `EXPLAIN ANALYZE` on production after the taxonomy change.~~ Done: 32 to 85 ms per query, warm cache.
