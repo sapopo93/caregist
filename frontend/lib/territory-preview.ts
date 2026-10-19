@@ -37,6 +37,8 @@ export interface TerritoryPreview {
   examples: TerritoryPreviewExample[];
   brief: { fits: boolean; provisional: boolean; min_organisations: number; max_organisations: number; note: string };
   source: {
+    /** Plain-English qualification; null when source coverage is confirmed. */
+    notice: string | null;
     window_anchor: string;
     window_anchor_basis: string;
     freshness_status: string;
@@ -45,6 +47,8 @@ export interface TerritoryPreview {
     reconciled_at: string | null;
     freshness_message: string | null;
     basis: string;
+    licence: string;
+    licence_url: string;
   };
   caveats: string[];
 }
@@ -88,10 +92,11 @@ export function signalLabel(signal: PreviewSignal): string {
 
 const nf = new Intl.NumberFormat("en-GB");
 
+/** CQC service-type wording, phrased to follow "providers of". */
 const SERVICE_NOUNS: Record<string, string> = {
-  homecare: "homecare",
-  residential: "residential care",
-  nursing: "nursing care",
+  homecare: "domiciliary care",
+  residential: "care homes without nursing",
+  nursing: "care homes with nursing",
   supported_living: "supported living",
 };
 
@@ -108,16 +113,17 @@ function formatDate(iso: string): string {
 /** One headline sentence built only from counts the API could measure. */
 export function previewHeadline(p: TerritoryPreview): string {
   const noun = p.scope.service ? SERVICE_NOUNS[p.scope.service] : undefined;
-  const service = noun ? `${noun} ` : "";
-  const providers = `${nf.format(p.organisations)} ${service}provider${p.organisations === 1 ? "" : "s"}`;
+  const providers = `${nf.format(p.organisations)} provider${p.organisations === 1 ? "" : "s"}${noun ? ` of ${noun}` : ""}`;
   const regs = p.signals.new_registrations;
   const ratings = p.signals.rating_changes;
-  const regText = regs ? `${nf.format(regs)} new registration${regs === 1 ? "" : "s"}` : "no new registrations";
+  const regText = regs
+    ? `${nf.format(regs)} newly registered location${regs === 1 ? "" : "s"}`
+    : "no newly registered locations";
   const ratingCount = ratings.status === "unavailable" || ratings.count === null ? null : ratings.count;
   const ratingText =
     ratingCount === null ? "" : ` and ${ratings.status === "partial" ? "at least " : ""}${nf.format(ratingCount)} rating change${ratingCount === 1 ? "" : "s"}`;
-  const movement = !regs && ratingCount === 0 ? "no new registrations or rating changes" : `${regText}${ratingText}`;
-  return `Across ${providers} in ${p.scope.name}: ${movement} recorded in the ${p.window.days} days to ${formatDate(p.window.end)}.`;
+  const movement = !regs && ratingCount === 0 ? "no newly registered locations or rating changes" : `${regText}${ratingText}`;
+  return `Across ${providers} in ${p.scope.name}: ${movement} in the ${p.window.days} days to ${formatDate(p.window.end)}.`;
 }
 
 /** Shown whenever rating changes cannot be fully counted, so a missing count never reads as none. */
@@ -125,11 +131,10 @@ export function ratingNotice(p: TerritoryPreview): string | null {
   return p.signals.rating_changes.status === "available" ? null : (p.signals.rating_changes.note ?? null);
 }
 
-/** Shown whenever CQC source coverage is not confirmed. */
+/** Shown whenever CQC source coverage is not confirmed. The API writes the wording. */
 export function freshnessNotice(p: TerritoryPreview): string | null {
   if (p.source.coverage_confirmed) return null;
-  const published = p.source.source_published_at ? ` The latest CQC source was published ${formatDate(p.source.source_published_at.slice(0, 10))}.` : "";
-  return `Provisional: CQC source coverage cannot currently be confirmed (status: ${p.source.freshness_status}).${published} Counts may be incomplete or out of date.`;
+  return p.source.notice ?? "We can't currently confirm how up to date our copy of the CQC register is, so these figures are provisional and may be incomplete.";
 }
 
 /** The preview covers the whole region and service, not the coverage check's provider group. */
@@ -137,5 +142,5 @@ export const PREVIEW_SCOPE_NOTE =
   "This preview covers every provider in the region and service, not only the provider group checked above. It counts providers rather than locations, and leaves out locations whose CQC record is unconfirmed.";
 
 export function previewWindowLabel(p: TerritoryPreview): string {
-  return `${formatDate(p.window.start)} to ${formatDate(p.window.end)}, ending at the latest recorded registration`;
+  return `${formatDate(p.window.start)} to ${formatDate(p.window.end)} (the most recent registration we hold)`;
 }

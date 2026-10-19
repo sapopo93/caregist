@@ -90,7 +90,7 @@ def _conn(*, quarantine=True, scope_row=SCOPE_ROW, counts=COUNTS_DATED, regs=Non
     if territories is not None:
         conn.fetch = AsyncMock(return_value=territories)
     else:
-        conn.fetch = AsyncMock(side_effect=[regs or [], ratings or []])
+        conn.fetch = AsyncMock(side_effect=[regs or []])
 
     @asynccontextmanager
     async def get_connection():
@@ -143,7 +143,6 @@ def test_every_scope_query_excludes_unresolved_quarantine():
         q.scope_counts("region"),
         q.signal_counts("region"),
         q.new_registration_examples("region"),
-        q.rating_change_examples("local_authority"),
     ):
         assert "reconciliation_quarantined_locations" in sql
         assert "resolved_at IS NULL" in sql
@@ -170,7 +169,7 @@ async def test_service_filter_binds_canonical_aliases_not_display_labels():
     sql, name, aliases = conn.fetchrow.call_args_list[0].args
     assert name == "west midlands" and "west midlands" not in sql
     assert "domiciliary care service" in aliases
-    assert resp.json()["scope"]["service_label"] == "Home Care"
+    assert resp.json()["scope"]["service_label"] == "Domiciliary care service"
 
 
 # --- honest counts ----------------------------------------------------------
@@ -178,20 +177,49 @@ async def test_service_filter_binds_canonical_aliases_not_display_labels():
 
 async def test_totals_come_from_uncapped_aggregates_not_example_rows():
     regs = [e for e in EVENTS if e["event_type"] == "new_registration"]
-    ratings = [e for e in EVENTS if e["event_type"] == "rating_changed"]
-    conn, factory = _conn(regs=regs, ratings=ratings)
+    conn, factory = _conn(regs=regs)
     body = (await _get(WM_HOMECARE, factory)).json()
     assert body["signals"]["new_registrations"] == 900
     assert body["signals"]["rating_changes"] == {"status": "available", "count": 640, "undated": 0}
     assert body["signals"]["organisations_with_signals"] == 1200
     assert (body["organisations"], body["locations"]) == (4260, 5100)
     assert body["window"] == {"start": "2026-07-19", "end": "2026-10-16", "days": 90}
-    assert len(body["examples"]) == 3
-    assert {e["provider_id"] for e in body["examples"]} == {"P1", "P2", "P3"}
-    assert body["examples"][0]["source_url"] == "https://www.cqc.org.uk/location/1-004"
-    for sql in (q.new_registration_examples("region"), q.rating_change_examples("region")):
-        assert f"LIMIT {q.EXAMPLE_LIMIT}" in sql
+    assert [e["location_id"] for e in body["examples"]] == ["1-001", "1-003"]  # one per provider
+    assert body["examples"][0]["source_url"] == "https://www.cqc.org.uk/location/1-001"
+    assert f"LIMIT {q.EXAMPLE_LIMIT}" in q.new_registration_examples("region")
     assert "LIMIT" not in q.signal_counts("region")
+
+
+# --- founder decision, 19 Oct 2026: what may be named ------------------------
+
+
+async def test_rating_changes_are_counted_but_never_named():
+    conn, factory = _conn(regs=EVENTS[:1])
+    body = (await _get(WM_HOMECARE, factory)).json()
+    assert body["signals"]["rating_changes"]["count"] == 640
+    assert all(e["signal"] == "new_registration" for e in body["examples"])
+    assert conn.fetch.await_count == 1  # no rating-example query is run
+    assert not hasattr(q, "rating_change_examples")
+    assert any("Rating changes are counted but not named" in c for c in body["caveats"])
+
+
+def test_only_organisation_providers_can_be_named():
+    assert q.NAMED_OWNERSHIP_TYPES == ("Organisation", "NHS Body")
+    sql = q.new_registration_examples("region")
+    assert "cp.ownership_type IN ('Organisation', 'NHS Body')" in sql
+    for excluded in ("Individual", "Partnership", "Location"):
+        assert excluded not in sql
+    # The filter narrows named examples only; counts still include every provider type.
+    for counted in (q.scope_counts("region"), q.signal_counts("region")):
+        assert "ownership_type" not in counted
+
+
+def test_open_government_licence_attribution_is_returned():
+    body = _body()
+    assert body["source"]["licence"] == (
+        "Contains public sector information licensed under the Open Government Licence v3.0."
+    )
+    assert body["source"]["licence_url"].startswith("https://www.nationalarchives.gov.uk/doc/open-government-licence/")
 
 
 async def test_undated_rating_changes_are_unavailable_not_zero():
@@ -201,8 +229,17 @@ async def test_undated_rating_changes_are_unavailable_not_zero():
     ratings = body["signals"]["rating_changes"]
     assert ratings["status"] == "unavailable"
     assert ratings["count"] is None
-    assert any("cannot be counted" in c for c in body["caveats"])
+    assert any("aren't counted" in c for c in body["caveats"])
     assert all(e["signal"] == "new_registration" for e in body["examples"])
+
+
+def test_freshness_notices_are_plain_english_for_every_status():
+    from api.services.territory_preview import freshness_notice
+    assert freshness_notice("fresh") is None
+    for status in ("partial", "stale", "unknown", "something-new"):
+        text = freshness_notice(status)
+        assert text.endswith("so these figures are provisional and may be incomplete.")
+        assert status not in text
 
 
 def test_partially_dated_rating_changes_say_so():
@@ -210,6 +247,7 @@ def test_partially_dated_rating_changes_say_so():
     partial = rating_availability(5, 12)
     assert (partial["status"], partial["count"]) == ("partial", 5)
     assert "12 rating changes" in partial["note"]
+    assert "source" not in partial["note"]
 
 
 # --- freshness --------------------------------------------------------------
@@ -226,7 +264,10 @@ async def test_partial_freshness_qualifies_every_claim():
     assert "not a freshness guarantee" in src["window_anchor_basis"]
     assert body["brief"]["provisional"] is True
     assert "provisional" in body["brief"]["note"]
-    assert body["caveats"][0].startswith("CQC source coverage cannot currently be confirmed (status: partial)")
+    assert src["notice"] == (
+        "Our latest full check of the CQC register hasn't finished, so these figures are provisional and may be incomplete."
+    )
+    assert body["caveats"][0] == src["notice"]
 
 
 async def test_fresh_source_is_not_qualified():
@@ -234,7 +275,8 @@ async def test_fresh_source_is_not_qualified():
     body = (await _get(WM_HOMECARE, factory)).json()
     assert body["source"]["coverage_confirmed"] is True
     assert body["brief"]["provisional"] is False
-    assert not any("cannot currently be confirmed" in c for c in body["caveats"])
+    assert body["source"]["notice"] is None
+    assert not any("provisional" in c for c in body["caveats"])
 
 
 # --- endpoint behaviour -----------------------------------------------------
@@ -279,7 +321,7 @@ async def test_quarantine_change_bypasses_cached_preview():
     after_counts = {**COUNTS_DATED, "new_registrations": COUNTS_DATED["new_registrations"] - 1}
     conn.fetchval.side_effect = [True, "4:2026-10-19 09:00:00+00", WINDOW_END]
     conn.fetchrow.side_effect = [{**SCOPE_ROW, "locations": SCOPE_ROW["locations"] - 1}, after_counts]
-    conn.fetch.side_effect = [EVENTS[:1], []]
+    conn.fetch.side_effect = [EVENTS[:1]]
     second = (await _get(WM_HOMECARE, factory)).json()
     assert "1-Q" not in {e["location_id"] for e in second["examples"]}
     assert second["locations"] == SCOPE_ROW["locations"] - 1
@@ -312,7 +354,12 @@ async def test_territories_lists_regions_las_and_canonical_services():
     assert body["regions"] == [{"name": "West Midlands", "organisations": 4260}]
     assert body["local_authorities"] == [{"name": "Coventry", "organisations": 300}]
     assert [s["key"] for s in body["services"]] == ["homecare", "residential", "nursing", "supported_living"]
-    assert body["services"][0]["label"] == "Home Care"
+    assert [s["label"] for s in body["services"]] == [
+        "Domiciliary care service",
+        "Care home service without nursing",
+        "Care home service with nursing",
+        "Supported living service",
+    ]
 
 
 async def test_public_rate_limit_applies():
@@ -338,9 +385,9 @@ def test_examples_are_one_per_provider_and_mix_signal_types():
 
 
 def test_reasons_are_factual_dated_and_use_canonical_service_names():
-    assert reason_for(EVENTS[0], "home-care") == "Registered with CQC on 1 Oct 2026 · Home Care"
+    assert reason_for(EVENTS[0], "home-care") == "Registered with CQC on 1 Oct 2026 · Domiciliary care service"
     assert reason_for(EVENTS[3], None) == (
-        "CQC rating moved from Requires improvement to Good, report dated 30 Sep 2026 · Home Care"
+        "CQC rating moved from Requires improvement to Good, report dated 30 Sep 2026 · Domiciliary care service"
     )
 
 

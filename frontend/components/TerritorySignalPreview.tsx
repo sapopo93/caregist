@@ -59,14 +59,14 @@ export default function TerritorySignalPreview({ region, serviceType }: { region
   if (state.status === "loading") {
     return (
       <p className={styles.previewLoading} role="status">
-        Finding recent public signals in {region}…
+        Finding recent CQC changes in {region}…
       </p>
     );
   }
   if (state.status === "error") {
     return (
       <p className={styles.previewLoading} role="status">
-        Recent signals could not be loaded. The coverage check above is unaffected.
+        Recent CQC changes could not be loaded. The coverage check above is unaffected.
       </p>
     );
   }
@@ -76,10 +76,10 @@ export default function TerritorySignalPreview({ region, serviceType }: { region
   const freshness = freshnessNotice(preview);
   const ratings = ratingNotice(preview);
   // Caveats the notices above already state are not repeated in the list.
-  const caveats = preview.caveats.filter((c) => c !== ratings && !c.startsWith("CQC source coverage cannot"));
+  const caveats = preview.caveats.filter((c) => c !== ratings && c !== freshness);
   return (
     <section className={styles.preview} aria-labelledby="territory-preview-heading" data-testid="territory-preview">
-      <p className={styles.previewKicker}>Free preview · recent public signals</p>
+      <p className={styles.previewKicker}>Free preview · recent CQC changes</p>
       <h3 id="territory-preview-heading" className={styles.previewHeadline}>
         {previewHeadline(preview)}
       </h3>
@@ -122,8 +122,8 @@ export default function TerritorySignalPreview({ region, serviceType }: { region
       ) : (
         <p className={styles.resultDetail}>
           {ratings
-            ? "No new registrations are recorded for this scope in the window, and rating changes cannot be counted."
-            : "No new registrations or rating changes are recorded for this scope in the window."}{" "}
+            ? "No newly registered locations are recorded for this scope in the window, and rating changes cannot be counted yet."
+            : "No newly registered locations or rating changes are recorded for this scope in the window."}{" "}
           A Brief can still rank providers on their current record; we discuss that before any payment.
         </p>
       )}
@@ -135,6 +135,11 @@ export default function TerritorySignalPreview({ region, serviceType }: { region
         ))}
         <li>
           Window {previewWindowLabel(preview)}. {preview.source.basis}
+        </li>
+        <li>
+          <a href={preview.source.licence_url} target="_blank" rel="noopener noreferrer">
+            {preview.source.licence}
+          </a>
         </li>
       </ul>
     </section>

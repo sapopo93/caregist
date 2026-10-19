@@ -8,7 +8,7 @@ On `/pricing/territory`, after a buyer runs the existing coverage check, a panel
 
 - the number of distinct providers in the chosen region and care service
 - how many new registrations and dated rating changes are recorded in the 90 days to the latest recorded registration, plus the CQC source freshness status
-- three dated examples, one per provider, each with a factual reason and a link to its CQC record
+- up to three newly registered locations, one per organisation provider, each dated and linked to its CQC record (rating changes are counted, never named)
 - whether the scope has enough organisations for a 25 to 50 organisation Brief
 
 The aim is to let a buyer see real movement in their own territory before they enquire about the £745 Brief.
@@ -77,11 +77,11 @@ Re-checked against a production-shaped Postgres fixture with CQC service labels,
 
 These need a reviewer who did not build it (AGENTS.md: a producing model cannot approve its own work):
 
-1. ~~Founder approval of the panel copy as a public claim surface.~~ Approved by the founder on 19 October 2026, for the copy at commit `9fb6f98`. Any later copy change needs fresh approval.
+1. **Founder re-approval of the panel copy.** The copy at `9fb6f98` was approved on 19 October, then changed the same day to implement the naming decision and fix wording from a founder review: CQC service terms, plain-English provisional and rating notices, "newly registered locations", and the coverage check relabelled "Locations in scope". The new copy needs approval.
 2. ~~Production read check.~~ Done on 19 October (see above).
 3. ~~Apply migration 067 in production.~~ Done on 19 October.
 4. ~~Re-run `EXPLAIN ANALYZE` on production after the taxonomy change.~~ Done: 32 to 85 ms per query, warm cache.
-5. Whether showing named locations with a rating change on a public sales page is acceptable. While production rating events have no dates, no rating-change examples appear at all.
+5. ~~Named rating-change examples.~~ Founder decision, 19 October 2026: not on the public page. Named examples are new registrations only, and only for providers CQC records as an Organisation or NHS Body. Individuals, partnerships and unknown ownership types are never named. Rating changes are counted but not named, and belong in the private Brief. The panel shows the Open Government Licence attribution. Have the solicitor confirm the UK GDPR position on naming newly registered organisations.
 6. ~~A re-review against production by someone other than the author.~~ Done; the cache-key P2 it raised is fixed.
 
 Separate pre-existing issue, outside this PR: the existing coverage check on the same page (`getTerritoryScopeCoverage` in `frontend/lib/directory-db.ts`) does not exclude quarantined locations.

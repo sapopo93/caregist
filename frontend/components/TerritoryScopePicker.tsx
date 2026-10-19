@@ -241,7 +241,7 @@ export default function TerritoryScopePicker() {
             ) : null}
             <dl className={styles.dl}>
               <div>
-                <dt>Providers in scope</dt>
+                <dt>Locations in scope</dt>
                 <dd>{result.coverage.providerCount}</dd>
               </div>
               <div>

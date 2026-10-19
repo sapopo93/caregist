@@ -114,6 +114,12 @@ SELECT
 
 EXAMPLE_LIMIT = 20
 
+# Founder decision, 19 Oct 2026: named examples are new registrations only, and
+# only for providers CQC records as organisations. Individuals and partnerships
+# (often named after people) are never named on the public page; unknown or
+# missing ownership types are excluded by default. Counts are unaffected.
+NAMED_OWNERSHIP_TYPES = ("Organisation", "NHS Body")
+
 
 def new_registration_examples(column: str) -> str:
     return f"""
@@ -122,22 +128,7 @@ SELECT 'new_registration' AS event_type, cp.registration_date AS event_date,
        cp.id AS location_id, cp.provider_id, cp.name, cp.town, cp.service_types
 FROM care_providers cp
 WHERE {_scope_where(column)} AND cp.registration_date BETWEEN $3 AND $4
+  AND cp.ownership_type IN ({", ".join(f"'{t}'" for t in NAMED_OWNERSHIP_TYPES)})
 ORDER BY cp.registration_date DESC, cp.id
-LIMIT {EXAMPLE_LIMIT}
-"""
-
-
-def rating_change_examples(column: str) -> str:
-    """Only dated events can be examples; undated ones are reported as unavailable."""
-    return f"""
-SELECT 'rating_changed' AS event_type, e.effective_date AS event_date,
-       e.old_value #>> '{{}}' AS old_value, e.new_value #>> '{{}}' AS new_value,
-       cp.id AS location_id, cp.provider_id, cp.name, cp.town, cp.service_types
-FROM trusted_event_ledger e
-JOIN care_providers cp ON cp.id = e.location_id
-WHERE e.event_type = 'rating_changed'
-  AND e.effective_date BETWEEN $3 AND $4
-  AND {_scope_where(column)}
-ORDER BY e.effective_date DESC, cp.id
 LIMIT {EXAMPLE_LIMIT}
 """

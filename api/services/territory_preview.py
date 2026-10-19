@@ -1,4 +1,4 @@
-"""Free Territory Brief preview: factual counts and three dated example signals.
+"""Free Territory Brief preview: factual counts and up to three dated new registrations.
 
 This is deliberately not the Brief's ranking engine (``territory_brief.py``),
 which reads a full source edition and is far too heavy for a public request.
@@ -52,8 +52,20 @@ def _service_names() -> tuple[dict[str, str], dict[str, str]]:
     return by_slug, by_alias
 
 
+# CQC's own service-type wording for the four services the preview filters on.
+CQC_SERVICE_LABELS = {
+    "home-care": "Domiciliary care service",
+    "residential-care-homes": "Care home service without nursing",
+    "nursing-care-homes": "Care home service with nursing",
+    "supported-living": "Supported living service",
+}
+
+
 def service_display_name(slug: str | None) -> str | None:
-    return _service_names()[0].get(slug) if slug else None
+    """CQC's wording where we have it, else the taxonomy's canonical name."""
+    if not slug:
+        return None
+    return CQC_SERVICE_LABELS.get(slug) or _service_names()[0].get(slug)
 
 
 def _location_service(service_types: str | None, preferred_slug: str | None) -> str | None:
@@ -62,10 +74,14 @@ def _location_service(service_types: str | None, preferred_slug: str | None) -> 
     if preferred:
         return preferred
     by_alias = _service_names()[1]
+    slug_by_alias = {a.casefold().strip(): e["slug"] for e in taxonomy() for a in e["aliases"]}
     for raw in (service_types or "").split("|"):
-        name = by_alias.get(raw.casefold().strip())
-        if name:
-            return name
+        key = raw.casefold().strip()
+        slug = slug_by_alias.get(key)
+        if slug in CQC_SERVICE_LABELS:
+            return CQC_SERVICE_LABELS[slug]
+        if key in by_alias:
+            return by_alias[key]
     return None
 
 
@@ -114,19 +130,34 @@ def rating_availability(dated: int, undated: int) -> dict[str, Any]:
             "status": "unavailable",
             "count": None,
             "undated": undated,
-            "note": "Rating-change dates are not available from the source, so rating changes in this window cannot be counted.",
+            "note": "We can't yet date rating changes here, so they aren't counted.",
         }
     return {
         "status": "partial",
         "count": dated,
         "undated": undated,
-        "note": f"{undated:,} rating changes in this scope have no source date and are not counted.",
+        "note": f"We can't yet date {undated:,} rating changes here, so they aren't counted.",
     }
+
+
+_FRESHNESS_NOTICES = {
+    "partial": "Our latest full check of the CQC register hasn't finished",
+    "stale": "Our latest full check of the CQC register is out of date",
+}
+
+
+def freshness_notice(status: str) -> str | None:
+    """Plain-English qualification shown whenever source coverage is not confirmed."""
+    if status == "fresh":
+        return None
+    lead = _FRESHNESS_NOTICES.get(status, "We can't currently confirm how up to date our copy of the CQC register is")
+    return f"{lead}, so these figures are provisional and may be incomplete."
 
 
 def _source(freshness: dict[str, Any], window_end: date) -> dict[str, Any]:
     status = freshness.get("status") or "unknown"
     return {
+        "notice": freshness_notice(status),
         "window_anchor": window_end.isoformat(),
         "window_anchor_basis": "Newest CQC registration date recorded by CareGist. This is not a freshness guarantee.",
         "freshness_status": status,
@@ -135,6 +166,8 @@ def _source(freshness: dict[str, Any], window_end: date) -> dict[str, Any]:
         "reconciled_at": freshness.get("reconciledAt"),
         "freshness_message": freshness.get("message"),
         "basis": "Public CQC register records held by CareGist. CareGist is independent of CQC.",
+        "licence": "Contains public sector information licensed under the Open Government Licence v3.0.",
+        "licence_url": "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
     }
 
 
@@ -171,18 +204,15 @@ def build_preview(
     else:
         note = "Fewer than 25 distinct providers match. A Brief would need a wider scope; we confirm this before any payment."
     if not confirmed:
-        note += " Source coverage is not currently confirmed, so this is provisional."
+        note += " These figures are provisional."
 
     caveats = [
-        "Examples are the most recent recorded signals, not the Brief's ranked shortlist.",
+        "Examples are the most recent new registrations by organisation providers, not the Brief's ranked shortlist. "
+        "Rating changes are counted but not named, and providers registered as individuals or partnerships are not named.",
         "Providers to focus on, not leads ready to buy. Public records do not show need, budget or intent.",
     ]
     if not confirmed:
-        caveats.insert(
-            0,
-            f"CQC source coverage cannot currently be confirmed (status: {source['freshness_status']}). "
-            "Counts may be incomplete or out of date.",
-        )
+        caveats.insert(0, source["notice"])
     if ratings["status"] != "available":
         caveats.insert(0, ratings["note"])
 

@@ -107,8 +107,8 @@ async def preview(
             raise HTTPException(status_code=503, detail="Source dates are unavailable.")
         start, end = window_for(window_end)
         counts = dict(await conn.fetchrow(q.signal_counts(column), name, aliases, start, end))
+        # Rating changes are counted above but never named (founder decision, 19 Oct 2026).
         events = [dict(r) for r in await conn.fetch(q.new_registration_examples(column), name, aliases, start, end)]
-        events += [dict(r) for r in await conn.fetch(q.rating_change_examples(column), name, aliases, start, end)]
     scope = PreviewScope(
         kind=kind, name=scope_row["canonical_name"] or name, service_key=service, service_slug=slug,
     )
