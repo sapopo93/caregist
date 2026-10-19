@@ -252,7 +252,8 @@ describe("page contracts", () => {
 
     for (const source of sources) assert.match(source, /H-Kay Limited/);
     assert.doesNotMatch(combined, /Henry Mlalazi trading as CareGist/);
-    assert.doesNotMatch(combined, /Alerts Pro|Data Starter|Data Pro|Data Business|Extra Seat/);
+    // Whole tier names only: "Data Protection Act 2018" is legitimate legal wording.
+    assert.doesNotMatch(combined, /\b(?:Alerts Pro|Data Starter|Data Pro|Data Business|Extra Seat)\b/);
   });
 
   it("does not claim that browser storage contains an API key", () => {
