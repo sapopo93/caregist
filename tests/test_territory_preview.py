@@ -77,9 +77,15 @@ def _reset_state():
     router_mod._cache.clear()
 
 
+REV = "3:2026-10-18 01:06:48+00"
+
+
 def _conn(*, quarantine=True, scope_row=SCOPE_ROW, counts=COUNTS_DATED, regs=None, ratings=None, territories=None):
     conn = AsyncMock()
-    conn.fetchval = AsyncMock(side_effect=[quarantine, WINDOW_END])
+    if territories is not None:
+        conn.fetchval = AsyncMock(side_effect=[quarantine, REV] if quarantine else [False])
+    else:
+        conn.fetchval = AsyncMock(side_effect=[quarantine, REV, WINDOW_END] if quarantine else [False])
     conn.fetchrow = AsyncMock(side_effect=[scope_row, counts])
     if territories is not None:
         conn.fetch = AsyncMock(return_value=territories)
@@ -255,11 +261,45 @@ async def test_invalid_input_is_rejected_before_any_query(query):
 
 async def test_responses_are_cached_per_scope_and_source_version():
     conn, factory = _conn(regs=EVENTS[:3])
-    conn.fetchval.side_effect = [True, WINDOW_END, True]  # second call: quarantine check only
+    conn.fetchval.side_effect = [True, REV, WINDOW_END, True, REV]  # second call: guard + revision only
     first = await _get(WM_HOMECARE, factory)
     second = await _get(WM_HOMECARE, factory)
     assert first.json() == second.json()
     assert conn.fetchrow.await_count == 2  # scope + counts, once
+
+
+async def test_quarantine_change_bypasses_cached_preview():
+    """Regression (review 19 Oct): a newly quarantined location must not survive in a cached preview."""
+    before = [_event("new_registration", date(2026, 10, 10), "1-Q", "PQ"), *EVENTS[:1]]
+    conn, factory = _conn(regs=before)
+    first = (await _get(WM_HOMECARE, factory)).json()
+    assert "1-Q" in {e["location_id"] for e in first["examples"]}
+
+    # 1-Q is quarantined: the revision changes and the queries now exclude it.
+    after_counts = {**COUNTS_DATED, "new_registrations": COUNTS_DATED["new_registrations"] - 1}
+    conn.fetchval.side_effect = [True, "4:2026-10-19 09:00:00+00", WINDOW_END]
+    conn.fetchrow.side_effect = [{**SCOPE_ROW, "locations": SCOPE_ROW["locations"] - 1}, after_counts]
+    conn.fetch.side_effect = [EVENTS[:1], []]
+    second = (await _get(WM_HOMECARE, factory)).json()
+    assert "1-Q" not in {e["location_id"] for e in second["examples"]}
+    assert second["locations"] == SCOPE_ROW["locations"] - 1
+    assert second["signals"]["new_registrations"] == first["signals"]["new_registrations"] - 1
+
+
+async def test_territory_list_cache_follows_quarantine_revision():
+    rows = [{"kind": "region", "name": "West Midlands", "organisations": 4260}]
+    conn, factory = _conn(territories=rows)
+    conn.fetchval.side_effect = [True, REV, True, REV, True, "4:later"]
+    for _ in range(3):
+        assert (await _get("/api/v1/territory-preview/territories", factory)).status_code == 200
+    assert conn.fetch.await_count == 2  # cached once, re-read after the revision changed
+
+
+def test_quarantine_revision_tracks_new_updated_and_resolved_rows():
+    sql = q.QUARANTINE_REVISION
+    assert "resolved_at IS NULL" in sql
+    for column in ("created_at", "updated_at", "resolved_at"):
+        assert column in sql
 
 
 async def test_territories_lists_regions_las_and_canonical_services():

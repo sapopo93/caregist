@@ -48,21 +48,23 @@ def _require_enabled() -> None:
         raise HTTPException(status_code=404, detail="Not Found")
 
 
-async def _require_quarantine_table(conn) -> None:
+async def _quarantine_revision(conn) -> str:
+    """Fail closed without the quarantine table; otherwise return its revision for cache keys."""
     if not await conn.fetchval(q.QUARANTINE_TABLE_PRESENT):
         raise HTTPException(
             status_code=503,
             detail="Territory preview is unavailable until unconfirmed CQC locations can be excluded.",
         )
+    return await conn.fetchval(q.QUARANTINE_REVISION)
 
 
 @router.get("/territories", dependencies=[Depends(_require_enabled), Depends(check_public_rate_limit)])
 async def list_territories() -> dict:
-    cached = _cache_get(("territories",))
-    if cached is not None:
-        return cached
     async with get_connection() as conn:
-        await _require_quarantine_table(conn)
+        key = ("territories", await _quarantine_revision(conn))
+        cached = _cache_get(key)
+        if cached is not None:
+            return cached
         rows = await conn.fetch(q.TERRITORIES)
     regions = [{"name": r["name"], "organisations": r["organisations"]} for r in rows if r["kind"] == "region"]
     las = [{"name": r["name"], "organisations": r["organisations"]} for r in rows if r["kind"] == "local_authority"]
@@ -71,7 +73,7 @@ async def list_territories() -> dict:
         "local_authorities": las,
         "services": [{"key": k, "label": service_display_name(v)} for k, v in q.SERVICE_SLUGS.items()],
     }
-    _cache_put(("territories",), body)
+    _cache_put(key, body)
     return body
 
 
@@ -85,9 +87,12 @@ async def preview(
     slug = q.SERVICE_SLUGS[service] if service else None
     aliases = list(resolve_service_filter(slug)) if slug else None
     async with get_connection() as conn:
-        await _require_quarantine_table(conn)
+        quarantine_rev = await _quarantine_revision(conn)
         freshness = await get_cqc_freshness(conn)
-        key = (kind, name.casefold(), service, freshness.get("status"), freshness.get("reconciledAt"))
+        key = (
+            kind, name.casefold(), service,
+            freshness.get("status"), freshness.get("reconciledAt"), quarantine_rev,
+        )
         cached = _cache_get(key)
         if cached is not None:
             return cached

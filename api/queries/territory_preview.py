@@ -24,6 +24,14 @@ SERVICE_SLUGS = {
 
 QUARANTINE_TABLE_PRESENT = "SELECT to_regclass('public.reconciliation_quarantined_locations') IS NOT NULL"
 
+# Changes whenever a location is quarantined, re-quarantined (updated_at) or
+# resolved, so cached previews never outlive a quarantine decision.
+QUARANTINE_REVISION = """
+SELECT COUNT(*) FILTER (WHERE resolved_at IS NULL)::text || ':' ||
+       COALESCE(MAX(GREATEST(created_at, updated_at, COALESCE(resolved_at, created_at)))::text, '')
+FROM reconciliation_quarantined_locations
+"""
+
 
 def _not_quarantined(alias: str) -> str:
     return (
