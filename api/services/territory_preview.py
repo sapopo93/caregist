@@ -3,8 +3,16 @@
 This is deliberately not the Brief's ranking engine (``territory_brief.py``),
 which reads a full source edition and is far too heavy for a public request.
 The preview only reports what the live directory and event ledger record, and
-says so. Wording follows docs/manuals/SALES_GTM_MANUAL.md: organisations to
-investigate, never leads, need or intent.
+says so. Three rules keep it from overclaiming:
+
+* a count it cannot measure is reported as unavailable, never as zero
+  (production ``rating_changed`` events can lack a source date);
+* the window end is event recency, and CQC source freshness is reported
+  separately, qualifying every claim when it is not ``fresh``;
+* quarantined locations are excluded upstream by the queries.
+
+Wording follows docs/manuals/SALES_GTM_MANUAL.md: providers to focus on,
+never leads, need or intent.
 """
 
 from __future__ import annotations
@@ -12,6 +20,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date, timedelta
 from typing import Any, Iterable
+
+from api.service_taxonomy import taxonomy
 
 WINDOW_DAYS = 90
 EXAMPLE_COUNT = 3
@@ -25,45 +35,53 @@ class PreviewScope:
     kind: str
     name: str
     service_key: str | None
-    service_label: str | None
+    service_slug: str | None
 
 
-def window_for(as_of: date) -> tuple[date, date]:
-    return as_of - timedelta(days=WINDOW_DAYS - 1), as_of
+def window_for(window_end: date) -> tuple[date, date]:
+    return window_end - timedelta(days=WINDOW_DAYS - 1), window_end
 
 
 def _fmt(d: date) -> str:
     return f"{d.day} {d.strftime('%b %Y')}"
 
 
-def _weeks_before(event_date: date, as_of: date) -> str:
-    days = (as_of - event_date).days
-    if days < 7:
-        return "in the final week of the window"
-    weeks = days // 7
-    return f"{weeks} week{'s' if weeks != 1 else ''} before the data date"
+def _service_names() -> tuple[dict[str, str], dict[str, str]]:
+    by_slug = {e["slug"]: e["name"] for e in taxonomy()}
+    by_alias = {a.casefold().strip(): e["name"] for e in taxonomy() for a in e["aliases"]}
+    return by_slug, by_alias
 
 
-def _first_service(service_types: str | None, preferred: str | None) -> str | None:
-    services = [s.strip() for s in (service_types or "").split("|") if s.strip()]
-    if preferred and preferred in services:
+def service_display_name(slug: str | None) -> str | None:
+    return _service_names()[0].get(slug) if slug else None
+
+
+def _location_service(service_types: str | None, preferred_slug: str | None) -> str | None:
+    """Canonical service name for the row: the filtered service, else its first known one."""
+    preferred = service_display_name(preferred_slug)
+    if preferred:
         return preferred
-    return services[0] if services else None
+    by_alias = _service_names()[1]
+    for raw in (service_types or "").split("|"):
+        name = by_alias.get(raw.casefold().strip())
+        if name:
+            return name
+    return None
 
 
-def reason_for(event: dict[str, Any], as_of: date, preferred_service: str | None) -> str:
-    """One factual sentence; it never claims need, budget or intent to buy."""
+def reason_for(event: dict[str, Any], preferred_slug: str | None) -> str:
+    """One factual, dated sentence; it never claims need, budget or intent to buy."""
     when = event["event_date"]
-    service = _first_service(event.get("service_types"), preferred_service)
+    service = _location_service(event.get("service_types"), preferred_slug)
     suffix = f" · {service}" if service else ""
     if event["event_type"] == "new_registration":
-        return f"Registered with CQC on {_fmt(when)}, {_weeks_before(when, as_of)}{suffix}"
+        return f"Registered with CQC on {_fmt(when)}{suffix}"
     old, new = event.get("old_value") or "a previous rating", event.get("new_value") or "a new rating"
     return f"CQC rating moved from {old} to {new}, report dated {_fmt(when)}{suffix}"
 
 
 def pick_examples(events: Iterable[dict[str, Any]], limit: int = EXAMPLE_COUNT) -> list[dict[str, Any]]:
-    """Newest first, one per organisation, alternating signal types when both exist."""
+    """Newest first, one per provider, alternating signal types when both exist."""
     ordered = sorted(events, key=lambda e: (e["event_date"], str(e["location_id"])), reverse=True)
     by_type: dict[str, list[dict[str, Any]]] = {}
     for event in ordered:
@@ -87,18 +105,53 @@ def pick_examples(events: Iterable[dict[str, Any]], limit: int = EXAMPLE_COUNT) 
     return chosen
 
 
+def rating_availability(dated: int, undated: int) -> dict[str, Any]:
+    """Distinguish 'none recorded' from 'cannot be measured'."""
+    if undated == 0:
+        return {"status": "available", "count": dated, "undated": 0}
+    if dated == 0:
+        return {
+            "status": "unavailable",
+            "count": None,
+            "undated": undated,
+            "note": "Rating-change dates are not available from the source, so rating changes in this window cannot be counted.",
+        }
+    return {
+        "status": "partial",
+        "count": dated,
+        "undated": undated,
+        "note": f"{undated:,} rating changes in this scope have no source date and are not counted.",
+    }
+
+
+def _source(freshness: dict[str, Any], window_end: date) -> dict[str, Any]:
+    status = freshness.get("status") or "unknown"
+    return {
+        "window_anchor": window_end.isoformat(),
+        "window_anchor_basis": "Newest CQC registration date recorded by CareGist. This is not a freshness guarantee.",
+        "freshness_status": status,
+        "coverage_confirmed": status == "fresh",
+        "source_published_at": freshness.get("sourcePublishedAt"),
+        "reconciled_at": freshness.get("reconciledAt"),
+        "freshness_message": freshness.get("message"),
+        "basis": "Public CQC register records held by CareGist. CareGist is independent of CQC.",
+    }
+
+
 def build_preview(
     scope: PreviewScope,
     *,
     organisations: int,
     locations: int,
-    as_of: date,
+    window_end: date,
+    counts: dict[str, int],
     events: list[dict[str, Any]],
+    freshness: dict[str, Any],
 ) -> dict[str, Any]:
-    window_start, window_end = window_for(as_of)
-    new_regs = [e for e in events if e["event_type"] == "new_registration"]
-    ratings = [e for e in events if e["event_type"] == "rating_changed"]
-    signal_orgs = {str(e.get("provider_id") or e["location_id"]) for e in events}
+    window_start, _ = window_for(window_end)
+    source = _source(freshness, window_end)
+    confirmed = source["coverage_confirmed"]
+    ratings = rating_availability(counts["rating_changes_dated"], counts["rating_changes_undated"])
     examples = [
         {
             "location_name": e["name"],
@@ -107,45 +160,55 @@ def build_preview(
             "town": e.get("town"),
             "signal": e["event_type"],
             "event_date": e["event_date"].isoformat(),
-            "reason": reason_for(e, as_of, scope.service_label),
+            "reason": reason_for(e, scope.service_slug),
             "source_url": CQC_LOCATION_URL.format(location_id=e["location_id"]),
         }
         for e in pick_examples(events)
     ]
     fits = organisations >= BRIEF_MIN_ORGANISATIONS
+    if fits:
+        note = "Enough distinct providers for a 25 to 50 provider Brief, subject to the agreed scope."
+    else:
+        note = "Fewer than 25 distinct providers match. A Brief would need a wider scope; we confirm this before any payment."
+    if not confirmed:
+        note += " Source coverage is not currently confirmed, so this is provisional."
+
+    caveats = [
+        "Examples are the most recent recorded signals, not the Brief's ranked shortlist.",
+        "Providers to focus on, not leads ready to buy. Public records do not show need, budget or intent.",
+    ]
+    if not confirmed:
+        caveats.insert(
+            0,
+            f"CQC source coverage cannot currently be confirmed (status: {source['freshness_status']}). "
+            "Counts may be incomplete or out of date.",
+        )
+    if ratings["status"] != "available":
+        caveats.insert(0, ratings["note"])
+
     return {
         "scope": {
             "kind": scope.kind,
             "name": scope.name,
             "service": scope.service_key,
-            "service_label": scope.service_label,
+            "service_label": service_display_name(scope.service_slug),
         },
         "organisations": organisations,
         "locations": locations,
         "window": {"start": window_start.isoformat(), "end": window_end.isoformat(), "days": WINDOW_DAYS},
         "signals": {
-            "new_registrations": len(new_regs),
-            "rating_changes": len(ratings),
-            "organisations_with_signals": len(signal_orgs),
+            "new_registrations": counts["new_registrations"],
+            "rating_changes": ratings,
+            "organisations_with_signals": counts["organisations_with_signals"],
         },
         "examples": examples,
         "brief": {
             "fits": fits,
+            "provisional": not confirmed,
             "min_organisations": BRIEF_MIN_ORGANISATIONS,
             "max_organisations": BRIEF_MAX_ORGANISATIONS,
-            "note": (
-                "Enough distinct organisations for a 25 to 50 organisation Brief, subject to the agreed scope."
-                if fits
-                else "Fewer than 25 distinct organisations match. A Brief would need a wider scope; "
-                "we confirm this before any payment."
-            ),
+            "note": note,
         },
-        "source": {
-            "as_of": as_of.isoformat(),
-            "basis": "Public CQC register records held by CareGist. CareGist is independent of CQC.",
-        },
-        "caveats": [
-            "Examples are the most recent recorded signals, not the Brief's ranked shortlist.",
-            "Organisations to investigate, not leads ready to buy. Public records do not show need, budget or intent.",
-        ],
+        "source": source,
+        "caveats": caveats,
     }

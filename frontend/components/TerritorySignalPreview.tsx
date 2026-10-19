@@ -7,7 +7,9 @@ import {
   buildPreviewPath,
   isTerritoryPreviewEnabled,
   PREVIEW_SCOPE_NOTE,
+  freshnessNotice,
   previewHeadline,
+  ratingNotice,
   previewWindowLabel,
   signalLabel,
   type TerritoryPreview,
@@ -71,12 +73,26 @@ export default function TerritorySignalPreview({ region, serviceType }: { region
 
   if (state.status !== "ready") return null;
   const { preview } = state;
+  const freshness = freshnessNotice(preview);
+  const ratings = ratingNotice(preview);
+  // Caveats the notices above already state are not repeated in the list.
+  const caveats = preview.caveats.filter((c) => c !== ratings && !c.startsWith("CQC source coverage cannot"));
   return (
     <section className={styles.preview} aria-labelledby="territory-preview-heading" data-testid="territory-preview">
       <p className={styles.previewKicker}>Free preview · recent public signals</p>
       <h3 id="territory-preview-heading" className={styles.previewHeadline}>
         {previewHeadline(preview)}
       </h3>
+      {freshness ? (
+        <p className={styles.previewNotice} role="note" data-testid="territory-preview-freshness">
+          {freshness}
+        </p>
+      ) : null}
+      {ratings ? (
+        <p className={styles.previewNotice} role="note" data-testid="territory-preview-ratings">
+          {ratings}
+        </p>
+      ) : null}
       <p className={styles.resultDetail}>{PREVIEW_SCOPE_NOTE}</p>
 
       {preview.examples.length ? (
@@ -105,18 +121,20 @@ export default function TerritorySignalPreview({ region, serviceType }: { region
         </ol>
       ) : (
         <p className={styles.resultDetail}>
-          No new registrations or rating changes are recorded for this scope in the window. A Brief can still rank
-          organisations on their current record; we discuss that before any payment.
+          {ratings
+            ? "No new registrations are recorded for this scope in the window, and rating changes cannot be counted."
+            : "No new registrations or rating changes are recorded for this scope in the window."}{" "}
+          A Brief can still rank providers on their current record; we discuss that before any payment.
         </p>
       )}
 
       <p className={styles.previewFit}>{preview.brief.note}</p>
       <ul className={styles.previewCaveats}>
-        {preview.caveats.map((c) => (
+        {caveats.map((c) => (
           <li key={c}>{c}</li>
         ))}
         <li>
-          Window {previewWindowLabel(preview)}, anchored to the newest source date. {preview.source.basis}
+          Window {previewWindowLabel(preview)}. {preview.source.basis}
         </li>
       </ul>
     </section>

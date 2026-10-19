@@ -384,6 +384,16 @@
   font-size: 13px;
   color: var(--muted);
 }
+.previewNotice {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1px solid #f1dfb1;
+  background: #fffdf8;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--ink);
+}
 .previewKicker {
   margin: 0;
   font-size: 11px;

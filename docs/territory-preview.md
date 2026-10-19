@@ -1,14 +1,14 @@
 # Free Territory Brief preview
 
-Status: **prototype, off by default.** Built 19 October 2026 on branch `feature/territory-preview`. Not reviewed, not deployed, not approved for public use.
+Status: **prototype, off by default.** Built 19 October 2026 on branch `feature/territory-preview` (PR #96). An independent review on 19 October requested changes; the five findings are addressed below. Not re-reviewed, not deployed, not approved for public use.
 
 ## What it does
 
 On `/pricing/territory`, after a buyer runs the existing coverage check, a panel shows:
 
-- the number of distinct provider organisations in the chosen region and care service
-- how many new registrations and rating changes are recorded in the 90 days to the newest source date
-- three dated examples, one per organisation, each with a factual reason and a link to its CQC record
+- the number of distinct providers in the chosen region and care service
+- how many new registrations and dated rating changes are recorded in the 90 days to the latest recorded registration, plus the CQC source freshness status
+- three dated examples, one per provider, each with a factual reason and a link to its CQC record
 - whether the scope has enough organisations for a 25 to 50 organisation Brief
 
 The aim is to let a buyer see real movement in their own territory before they enquire about the £745 Brief.
@@ -36,13 +36,33 @@ Both must be on for anything to appear:
   - Both have no auth and use the public per-IP limit of 30 requests a minute.
 - Logic: `api/services/territory_preview.py`. SQL: `api/queries/territory_preview.py`. The scope column comes from a whitelist, and all values are bound parameters.
 - Frontend: `components/TerritorySignalPreview.tsx`, `lib/territory-preview.ts`, plus the panel inside `components/TerritoryScopePicker.tsx`.
-- Tests: `tests/test_territory_preview.py` (16) and `frontend/lib/territory-preview.test.ts` (6).
+- Tests: `tests/test_territory_preview.py` (26) and `frontend/lib/territory-preview.test.ts` (9).
 
-Data: new registrations come from `care_providers.registration_date`; rating changes come from `trusted_event_ledger` (`rating_changed`, joined on `location_id`). Only rows with `UPPER(status) = 'ACTIVE'` are counted. The 90-day window ends at the newest of those source dates, never at today's date, so a stale source cannot read as a quiet quarter.
+Data rules:
+
+- **Services** map to canonical slugs in `frontend/data/service-taxonomy.json` and are matched against every stored alias through `api.service_taxonomy`. For example, homecare matches both `Domiciliary care service` (production) and the legacy `Homecare Agencies`.
+- **Totals** come from uncapped aggregate queries. Only the example rows are limited (20 per signal type).
+- **New registrations** come from `care_providers.registration_date`.
+- **Rating changes** come from `trusted_event_ledger` (`rating_changed`). Events without an `effective_date` cannot be placed in the window, so they are reported as `unavailable` or `partial`, never as zero. In production, all 34,332 rating events had no date at review time.
+- **Window end** is the newest recorded registration date. This is event recency, not freshness. Source freshness comes from `get_cqc_freshness`. Any status other than `fresh` marks the whole response provisional and adds a visible notice.
+- **Exclusions:** only `UPPER(status) = 'ACTIVE'` rows count. Unresolved rows in `reconciliation_quarantined_locations` (migration 067, PR #94) are excluded from every count, example and the window anchor. If that table does not exist, both endpoints return 503.
+- **Caching:** responses are cached in process for 10 minutes, keyed by scope and the freshness status plus its reconciliation time.
 
 ## Local check (19 Oct 2026)
 
 Run against a scratch database seeded from `directory_providers.csv` (55,818 locations, newest registration 20 Feb 2026). West Midlands homecare returned 1,383 organisations and 27 new registrations; each query took about 250 ms without indexes. Rutland nursing returned 3 organisations, correctly marked as too small for a Brief. The three rating changes in that run were synthetic rows inserted only into the scratch database, so rating-change wording has not been seen against production ledger data.
+
+## Review findings, 19 October 2026
+
+| Finding | Fix |
+| --- | --- |
+| P1: service filters used display labels and matched zero production rows | Canonical taxonomy aliases |
+| P1: undated rating events produced a misleading zero | `unavailable`/`partial` state with a visible notice |
+| P1: event recency presented as source freshness | Real freshness status reported; claims qualified unless `fresh` |
+| P2: totals capped at 500 | Separate uncapped aggregate counts |
+| P2: unconfirmed locations included | Quarantine exclusion; fails closed without the table |
+
+Re-checked against a production-shaped Postgres fixture with CQC service labels, undated rating events, one quarantined location, one inactive location and no freshness tables. The page was also rendered in the browser. It has not been re-run against production.
 
 ## Before enabling
 
@@ -50,6 +70,9 @@ These need a reviewer who did not build it (AGENTS.md: a producing model cannot 
 
 1. Founder approval of the panel copy as a public claim surface.
 2. A production read check: counts against live `care_providers`, and the window anchor against current source freshness.
-3. Quarantined or unconfirmed locations. Once PR #94's migration is applied, decide whether quarantined IDs must be excluded from counts and examples.
-4. Query cost on production, with `EXPLAIN` on the region-level queries. Consider caching responses per scope for an hour.
-5. Whether showing named locations with a rating change on a public sales page is acceptable. The data is public CQC data, but the framing needs a decision.
+3. Apply migration 067 (PR #94) in production. The preview returns 503 until then.
+4. Re-run `EXPLAIN ANALYZE` on production after the taxonomy change. The alias match unnests `service_types` per row.
+5. Whether showing named locations with a rating change on a public sales page is acceptable. While production rating events have no dates, no rating-change examples appear at all.
+6. A re-review against production by someone other than the author.
+
+Separate pre-existing issue, outside this PR: the existing coverage check on the same page (`getTerritoryScopeCoverage` in `frontend/lib/directory-db.ts`) does not exclude quarantined locations.
