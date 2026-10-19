@@ -15,14 +15,15 @@ FPS = 30
 TOTAL = 1800 / FPS
 OUT = Path(__file__).resolve().parents[1] / "remotion" / "public" / "score.wav"
 
-CUTS = [0, 150, 270, 390, 750, 840, 990, 1380, 1590]  # frames, mirrors BEATS in Launch.tsx
+CUTS = [0, 150, 270, 420, 810, 900, 1020, 1380, 1590]  # frames, mirrors BEATS in Launch.tsx
 
 # (start_frame, chord as MIDI notes): D major -> B minor -> G major -> A -> D
+# Changes at the reveal, the Brief, the bridge, the Digest and the loop.
 CHORDS = [
     (0, [50, 57, 62, 66, 69]),
     (270, [47, 54, 59, 62, 66]),
-    (750, [43, 50, 55, 59, 62]),
-    (990, [45, 52, 57, 61, 64]),
+    (810, [43, 50, 55, 59, 62]),
+    (1020, [45, 52, 57, 61, 64]),
     (1380, [50, 57, 62, 66, 69, 74]),
 ]
 
@@ -60,8 +61,8 @@ def bell(t: np.ndarray, at: float, midi: float, gain: float) -> np.ndarray:
 
 
 def pulse(t: np.ndarray) -> np.ndarray:
-    """Soft heartbeat under the Digest beats (frames 270-750), 96 bpm."""
-    s, e = 270 / FPS, 750 / FPS
+    """Soft heartbeat under the Digest beats (frames 900-1380), 96 bpm."""
+    s, e = 900 / FPS, 1380 / FPS
     period = 60 / 96
     ph = np.mod(t - s, period)
     env = np.exp(-ph * 14) * ((t >= s) & (t < e))

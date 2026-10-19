@@ -14,22 +14,23 @@ import {
 import { C, SANS, SERIF, fontFaces } from "./theme";
 
 /*
- * Story: the Weekly Digest shows what changed in a region; that movement is the
- * reason to commission a Territory Opportunity Brief; the Brief's shortlist is
- * then kept current by the Digest. Product facts follow
+ * Story (founder review, 19 Oct 2026): the Territory Opportunity Brief turns a
+ * territory into a shortlist of providers to focus on; the Weekly Digest, shown
+ * by enquiry only while it is on sales hold, keeps that shortlist current; new
+ * movement leads to the next Brief. Product facts follow
  * docs/manuals/SALES_GTM_MANUAL.md (15 Oct 2026). Every sample row on screen is
- * fictional and labelled as illustrative.
+ * fictional and labelled as illustrative. Rating changes are never named.
  */
 
 // Beat timeline (frames @30fps). Map frames refer to renders/map.mp4.
 const BEATS = {
   reveal: { from: 0, dur: 150, map: 0 },
   question: { from: 150, dur: 120 },
-  digestMap: { from: 270, dur: 120, map: 150 },
-  digestUi: { from: 390, dur: 360 },
-  bridge: { from: 750, dur: 90 },
-  briefMap: { from: 840, dur: 150, map: 270 },
-  briefUi: { from: 990, dur: 390 },
+  briefMap: { from: 270, dur: 150, map: 270 },
+  briefUi: { from: 420, dur: 390 },
+  bridge: { from: 810, dur: 90 },
+  digestMap: { from: 900, dur: 120, map: 150 },
+  digestUi: { from: 1020, dur: 360 },
   loop: { from: 1380, dur: 210 },
   cta: { from: 1590, dur: 210 },
 };
@@ -99,12 +100,12 @@ const Reveal = () => {
         </Rise>
         <Rise delay={32}>
           <div style={{ fontFamily: SERIF, fontWeight: 700, fontSize: 84, color: C.parchment, lineHeight: 1.05, maxWidth: 900, marginTop: 18 }}>
-            Every registered care location in England.
+            Every CQC-registered location in England.
           </div>
         </Rise>
         <Rise delay={56}>
           <div style={{ fontFamily: SANS, fontSize: 32, color: "rgba(245,239,228,0.75)", marginTop: 22 }}>
-            55,000+ services on the public CQC register. Mapped.
+            55,000+ locations on the public CQC register, mapped.
           </div>
         </Rise>
       </AbsoluteFill>
@@ -172,8 +173,20 @@ const DigestMap = () => {
     <AbsoluteFill style={{ opacity: out }}>
       <MapClip startFrom={map} dur={dur} />
       <Vignette />
-      <ProductBadge step="Step one" name="Weekly Digest" line="See what changed in one region." color={C.amber} />
-      <div style={{ position: "absolute", left: 120, bottom: 100, display: "flex", gap: 40, alignItems: "center" }}>
+      <ProductBadge step="Step two · by enquiry" name="Weekly Digest" line="Keep track of what changes in your region." color={C.amber} />
+      <div
+        style={{
+          position: "absolute",
+          left: 100,
+          bottom: 84,
+          display: "flex",
+          gap: 40,
+          alignItems: "center",
+          padding: "16px 22px",
+          borderRadius: 14,
+          background: "rgba(20,16,13,0.78)",
+        }}
+      >
         <Rise delay={40} style={{ display: "flex", gap: 14, alignItems: "center" }}>
           <Dot color={C.amber} />
           <span style={{ fontFamily: SANS, fontSize: 26, color: C.parchment }}>New registrations</span>
@@ -183,7 +196,7 @@ const DigestMap = () => {
           <span style={{ fontFamily: SANS, fontSize: 26, color: C.parchment }}>Rating changes</span>
         </Rise>
         <Rise delay={64}>
-          <Fine>West Midlands shown · illustrative signals</Fine>
+          <Fine color="rgba(245,239,228,0.75)">West Midlands shown · illustrative signals</Fine>
         </Rise>
       </div>
     </AbsoluteFill>
@@ -191,27 +204,28 @@ const DigestMap = () => {
 };
 
 /* ---------- 4. Digest product UI ---------- */
-type Row = { tag: "New registration" | "Rating change"; name: string; place: string; detail: string };
+// New registrations only: rating changes are counted, never named, in public.
+type Row = { name: string; place: string; detail: string };
 const ISSUES: Row[][] = [
   [
-    { tag: "New registration", name: "Example Homecare Ltd", place: "Wolverhampton", detail: "Domiciliary care" },
-    { tag: "Rating change", name: "Sample Lodge Care Home", place: "Worcester", detail: "Requires improvement → Good" },
-    { tag: "New registration", name: "Illustrative Support Services", place: "Coventry", detail: "Supported living" },
+    { name: "Example Homecare Ltd", place: "Wolverhampton", detail: "Domiciliary care service" },
+    { name: "Illustrative Support Services", place: "Coventry", detail: "Supported living service" },
+    { name: "Sample Lodge Care Ltd", place: "Worcester", detail: "Care home service without nursing" },
   ],
   [
-    { tag: "Rating change", name: "Demo House Nursing Home", place: "Stoke-on-Trent", detail: "Good → Requires improvement" },
-    { tag: "New registration", name: "Placeholder Care Group", place: "Telford", detail: "Domiciliary care" },
-    { tag: "New registration", name: "Fictional Lane Care", place: "Hereford", detail: "Residential care" },
+    { name: "Placeholder Care Group", place: "Telford", detail: "Domiciliary care service" },
+    { name: "Fictional Lane Care Ltd", place: "Hereford", detail: "Care home service without nursing" },
+    { name: "Demo House Nursing Ltd", place: "Stoke-on-Trent", detail: "Care home service with nursing" },
   ],
   [
-    { tag: "New registration", name: "Sample Community Care", place: "Birmingham", detail: "Domiciliary care" },
-    { tag: "Rating change", name: "Example Court", place: "Walsall", detail: "Inadequate → Requires improvement" },
-    { tag: "New registration", name: "Mock Meadows Living", place: "Shrewsbury", detail: "Supported living" },
+    { name: "Sample Community Care", place: "Birmingham", detail: "Domiciliary care service" },
+    { name: "Mock Meadows Living", place: "Shrewsbury", detail: "Supported living service" },
+    { name: "Example Court Care Ltd", place: "Walsall", detail: "Care home service with nursing" },
   ],
   [
-    { tag: "Rating change", name: "Illustrative Grange", place: "Dudley", detail: "Requires improvement → Good" },
-    { tag: "New registration", name: "Test Street Homecare", place: "Solihull", detail: "Domiciliary care" },
-    { tag: "New registration", name: "Demo Valley Care", place: "Nuneaton", detail: "Residential care" },
+    { name: "Test Street Homecare", place: "Solihull", detail: "Domiciliary care service" },
+    { name: "Demo Valley Care Ltd", place: "Nuneaton", detail: "Care home service without nursing" },
+    { name: "Illustrative Grange Ltd", place: "Dudley", detail: "Supported living service" },
   ],
 ];
 
@@ -260,12 +274,11 @@ const DigestCard = () => {
         </div>
       </div>
       <div style={{ fontFamily: SANS, fontSize: 20, color: C.dusk, marginTop: 6 }}>
-        Issue {issue + 1} of 4 · each row links to its CQC source and date
+        Issue {issue + 1} of 4 · each row links to its CQC record and registration date
       </div>
       <div style={{ marginTop: 26, display: "flex", flexDirection: "column", gap: 14 }}>
         {ISSUES[issue].map((r, i) => {
           const p = interpolate(local - i * 8, [0, 16], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: ease });
-          const isNew = r.tag === "New registration";
           return (
             <div
               key={r.name}
@@ -289,13 +302,13 @@ const DigestCard = () => {
                   letterSpacing: 1.2,
                   textTransform: "uppercase",
                   color: C.cream,
-                  background: isNew ? C.amber : C.moss,
+                  background: C.amber,
                   padding: "6px 12px",
                   borderRadius: 8,
                   whiteSpace: "nowrap",
                 }}
               >
-                {r.tag}
+                New registration
               </div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontFamily: SANS, fontWeight: 600, fontSize: 24, color: C.charcoal }}>{r.name}</div>
@@ -307,7 +320,10 @@ const DigestCard = () => {
           );
         })}
       </div>
-      <div style={{ fontFamily: SANS, fontSize: 16, color: C.dusk, marginTop: 20, fontStyle: "italic" }}>
+      <div style={{ fontFamily: SANS, fontSize: 18, color: C.dusk, marginTop: 18 }}>
+        Published rating changes are listed with a link to the CQC report.
+      </div>
+      <div style={{ fontFamily: SANS, fontSize: 16, color: C.dusk, marginTop: 8, fontStyle: "italic" }}>
         Illustrative sample. Names are fictional, not live data.
       </div>
     </div>
@@ -342,19 +358,24 @@ const DigestUi = () => {
       <AbsoluteFill style={{ flexDirection: "row", alignItems: "center", padding: "0 120px", gap: 90 }}>
         <div style={{ flex: 1 }}>
           <Rise>
-            <Kicker>Weekly Digest</Kicker>
+            <Kicker>Weekly Digest · by enquiry</Kicker>
           </Rise>
           <Rise delay={8}>
             <div style={{ fontFamily: SERIF, fontWeight: 700, fontSize: 64, color: C.parchment, lineHeight: 1.1, margin: "16px 0 40px" }}>
-              Keep track of public changes, week by week.
+              Then keep your shortlist current, week by week.
             </div>
           </Rise>
           <FactList
             color={C.amber}
             start={30}
-            items={["One England region", "Four weekly digests", "New registrations and rating changes", "Source dates on every row"]}
+            items={[
+              "One England region",
+              "Four weekly digests",
+              "New registrations, each with its CQC registration date",
+              "Published rating changes, linked to the CQC report",
+            ]}
           />
-          <Price amount="£150" note="once · no automatic renewal" delay={110} color={C.amber} />
+          <Price amount="By enquiry" note="ask about availability" delay={110} color={C.amber} />
         </div>
         <DigestCard />
       </AbsoluteFill>
@@ -397,16 +418,16 @@ const Bridge = () => {
       <AbsoluteFill style={{ alignItems: "center", paddingTop: 230 }}>
         <Rise delay={2}>
           <div style={{ fontFamily: SERIF, fontWeight: 700, fontSize: 72, color: C.parchment, textAlign: "center" }}>
-            Seen movement in your region?
+            Got your shortlist?
           </div>
         </Rise>
         <Rise delay={22}>
           <div style={{ fontFamily: SERIF, fontWeight: 700, fontSize: 72, color: C.clay, textAlign: "center", marginTop: 6 }}>
-            Decide where to start.
+            Keep it current.
           </div>
         </Rise>
       </AbsoluteFill>
-      <Pill label="Weekly Digest" color={C.amber} x={-260 * slide} />
+      <Pill label="Territory Opportunity Brief" color={C.clay} x={-330 * slide} />
       <div
         style={{
           position: "absolute",
@@ -419,7 +440,7 @@ const Bridge = () => {
           opacity: arrow,
         }}
       />
-      <Pill label="Territory Brief" color={C.clay} x={260 * slide} opacity={slide} />
+      <Pill label="Weekly Digest" color={C.amber} x={250 * slide} opacity={slide} />
     </AbsoluteFill>
   );
 };
@@ -432,8 +453,8 @@ const BriefMap = () => {
     <AbsoluteFill style={{ opacity: out }}>
       <MapClip startFrom={map} dur={dur} />
       <Vignette />
-      <ProductBadge step="Step two" name="Territory Opportunity Brief" line="Decide which providers to focus on." color={C.clay} />
-      <div style={{ position: "absolute", left: 120, bottom: 100 }}>
+      <ProductBadge step="Step one" name="Territory Opportunity Brief" line="Decide which providers to focus on." color={C.clay} />
+      <div style={{ position: "absolute", left: 100, bottom: 84, padding: "16px 22px", borderRadius: 14, background: "rgba(20,16,13,0.78)" }}>
         <Rise delay={70}>
           <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
             <Dot color={C.clay} />
@@ -526,8 +547,8 @@ const BriefUi = () => {
           <Price amount="£745" note="once · fixed fee" delay={110} color={C.clay} />
         </div>
         <div style={{ display: "flex", gap: 26, alignItems: "flex-end" }}>
-          <FileCard ext="PDF" name="Territory brief" line="Scope, method, limitations and the shortlist" delay={40} color={C.clay} tilt={-4} />
-          <FileCard ext="CSV" name="Shortlist" line="Provider and location IDs, ready for your CRM" delay={56} color={C.moss} tilt={1} />
+          <FileCard ext="PDF" name="Territory Opportunity Brief" line="Scope, method, limitations and the shortlist" delay={40} color={C.clay} tilt={-4} />
+          <FileCard ext="CSV" name="Shortlist" line="Provider and location IDs, as a CSV" delay={56} color={C.moss} tilt={1} />
           <FileCard ext="MD" name="Source manifest" line="Sources, check dates and licence" delay={72} color={C.bark} tilt={5} />
         </div>
       </AbsoluteFill>
@@ -562,10 +583,10 @@ const Loop = () => {
           style={{
             fontFamily: SANS,
             fontWeight: 600,
-            fontSize: 34,
+            fontSize: 30,
             color: C.cream,
             background: color,
-            padding: "22px 40px",
+            padding: "20px 34px",
             borderRadius: 999,
             boxShadow: `0 0 70px ${color}77`,
             whiteSpace: "nowrap",
@@ -610,16 +631,16 @@ const Loop = () => {
         />
         <circle cx={cx + r * Math.cos(travel)} cy={cy + r * Math.sin(travel)} r={12} fill={C.parchment} opacity={dotOn} />
       </svg>
-      {node("Weekly Digest", "spot what changed", cx - r, cy, C.amber, 20)}
-      {node("Territory Brief", "decide where to start", cx + r, cy, C.clay, 34)}
+      {node("Territory Opportunity Brief", "decide where to start", cx - r, cy, C.clay, 20)}
+      {node("Weekly Digest", "keep it current", cx + r, cy, C.amber, 34)}
       <div style={{ position: "absolute", left: cx, top: cy - r - 52, transform: "translateX(-50%)" }}>
         <Rise delay={70}>
-          <Fine color={C.parchment} style={{ fontSize: 24 }}>movement → shortlist</Fine>
+          <Fine color={C.parchment} style={{ fontSize: 24 }}>shortlist → stay current</Fine>
         </Rise>
       </div>
       <div style={{ position: "absolute", left: cx, top: cy + r + 26, transform: "translateX(-50%)" }}>
         <Rise delay={90}>
-          <Fine color={C.parchment} style={{ fontSize: 24 }}>shortlist → stay current</Fine>
+          <Fine color={C.parchment} style={{ fontSize: 24 }}>new movement → next brief</Fine>
         </Rise>
       </div>
     </AbsoluteFill>
@@ -666,7 +687,7 @@ const Cta = () => {
           <Fine color={C.dusk} style={{ fontSize: 19, lineHeight: 1.5 }}>
             CareGist is independent of CQC and built from public CQC records. Shortlists are providers to focus on,
             <br />
-            not leads ready to buy. Published fees, no VAT charged; terms confirmed before any order.
+            not leads ready to buy. Brief fee as published; no VAT charged; terms confirmed before any order.
           </Fine>
         </Rise>
       </div>
