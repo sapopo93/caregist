@@ -432,12 +432,12 @@ const BriefMap = () => {
     <AbsoluteFill style={{ opacity: out }}>
       <MapClip startFrom={map} dur={dur} />
       <Vignette />
-      <ProductBadge step="Step two" name="Territory Opportunity Brief" line="Decide which accounts to investigate." color={C.clay} />
+      <ProductBadge step="Step two" name="Territory Opportunity Brief" line="Decide which providers to focus on." color={C.clay} />
       <div style={{ position: "absolute", left: 120, bottom: 100 }}>
         <Rise delay={70}>
           <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
             <Dot color={C.clay} />
-            <span style={{ fontFamily: SANS, fontSize: 26, color: C.parchment }}>A shortlist of 25–50 provider organisations</span>
+            <span style={{ fontFamily: SANS, fontSize: 26, color: C.parchment }}>A shortlist of 25–50 registered providers</span>
           </div>
         </Rise>
         <Rise delay={84}>
@@ -521,7 +521,7 @@ const BriefUi = () => {
           <FactList
             color={C.clay}
             start={30}
-            items={["Agreed territory and scope", "25–50 distinct provider organisations", "Why each one is included, with sources", "PDF, CSV and source manifest"]}
+            items={["Agreed territory and scope", "25–50 distinct registered providers", "Why each one is included, with sources", "PDF, CSV and source manifest"]}
           />
           <Price amount="£745" note="once · fixed fee" delay={110} color={C.clay} />
         </div>
@@ -664,7 +664,7 @@ const Cta = () => {
       <div style={{ position: "absolute", bottom: 56, left: 0, right: 0, textAlign: "center" }}>
         <Rise delay={96}>
           <Fine color={C.dusk} style={{ fontSize: 19, lineHeight: 1.5 }}>
-            CareGist is independent of CQC and built from public CQC records. Shortlists are organisations to investigate,
+            CareGist is independent of CQC and built from public CQC records. Shortlists are providers to focus on,
             <br />
             not leads ready to buy. Published fees, no VAT charged; terms confirmed before any order.
           </Fine>

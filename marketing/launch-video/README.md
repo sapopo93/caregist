@@ -2,7 +2,7 @@
 
 A 60-second, 1920×1080 launch film for the two current offers, showing how each leads to the next:
 
-**Weekly Digest** (spot what changed in a region) → **Territory Opportunity Brief** (decide which accounts to investigate) → back to the **Digest** (keep the shortlist current).
+**Weekly Digest** (spot what changed in a region) → **Territory Opportunity Brief** (decide which providers to focus on) → back to the **Digest** (keep the shortlist current).
 
 Product facts follow `docs/manuals/SALES_GTM_MANUAL.md` (15 Oct 2026). Every sample row on screen is fictional and labelled as illustrative.
 
