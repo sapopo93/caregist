@@ -40,7 +40,7 @@ retries. Match the payment to the email thread by buyer email and amount.
 
 ```bash
 EXPORT=.tmp/cqc-export-YYYYMMDD
-.venv/bin/python tools/generate_territory_opportunity_brief.py \
+.venv/bin/python -m tools.generate_territory_opportunity_brief \
   --kind local_authority --name "Birmingham" --window-days 90 --shortlist 30 \
   --locations-source $EXPORT/_locations_detail.ndjson \
   --providers-source $EXPORT/_providers_detail.ndjson \
@@ -48,6 +48,11 @@ EXPORT=.tmp/cqc-export-YYYYMMDD
   --generated-at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
   --out-dir .tmp/briefs/<buyer>
 ```
+
+Run it as a module (`-m`); running the file directly fails with `No module
+named 'api'`. The window ends on the newest CQC date in the export, so a partial
+or stale export silently shifts it: check the printed `window` ends within a few
+days of today and `considered` is not 0 before sending.
 
 Open the PDF and CSV, check the territory, shortlist count and dates, then email
 both files and the source manifest to the buyer. Record the delivery date in the
