@@ -26,6 +26,12 @@ run resumes from `checkpoint.json` with `--resume` if interrupted.
 | Written confirmation must state | territory (local authority or region), window days, shortlist size, delivery within ~3 working days | England region, buyer type, first delivery weekday |
 | Payment Link | `https://buy.stripe.com/bJe8wI7Xhd8YdYi2vl3AY04` (£745) | `https://buy.stripe.com/3cI8wIfpJ4Csg6qfi73AY01` (£150) |
 
+For a Brief, generate it (step 3a) **before** sending the link and confirm the
+shortlist reaches the 25 the pricing page promises. Birmingham on 20 Oct 2026 gave
+19 at 90 days and 30 at 180 days, so agree the window that delivers. The Brief
+covers every CQC-registered service type (GP, dental and healthcare as well as
+social care); agree that with the buyer.
+
 The written confirmation is the order form under v2.2. Keep it in the email
 thread with the buyer.
 
@@ -40,7 +46,7 @@ retries. Match the payment to the email thread by buyer email and amount.
 
 ```bash
 EXPORT=.tmp/cqc-export-YYYYMMDD
-.venv/bin/python tools/generate_territory_opportunity_brief.py \
+.venv/bin/python -m tools.generate_territory_opportunity_brief \
   --kind local_authority --name "Birmingham" --window-days 90 --shortlist 30 \
   --locations-source $EXPORT/_locations_detail.ndjson \
   --providers-source $EXPORT/_providers_detail.ndjson \
@@ -48,6 +54,11 @@ EXPORT=.tmp/cqc-export-YYYYMMDD
   --generated-at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
   --out-dir .tmp/briefs/<buyer>
 ```
+
+Run it as a module (`-m`); running the file directly fails with `No module
+named 'api'`. The window ends on the newest CQC date in the export, so a partial
+or stale export silently shifts it: check the printed `window` ends within a few
+days of today and `considered` is not 0 before sending.
 
 Open the PDF and CSV, check the territory, shortlist count and dates, then email
 both files and the source manifest to the buyer. Record the delivery date in the
@@ -69,8 +80,11 @@ DATABASE_URL=... .venv/bin/python -m tools.build_weekly_digest_pilot \
 ```
 
 New registrations come from production (read-only). Newly published ratings come
-from the export, because production's rating-publication data stopped on 20 Sep
-2026. The tool refuses an export retrieved on or before the window's last day.
+from the export's `currentRatings` report dates. As of 20 Oct 2026 CQC had
+published only 3 rating reports nationally since 1 Sep, so expect the ratings
+section to be empty or near-empty until CQC resumes; say so when agreeing the
+region. A region typically has a handful of new registrations a week (North West:
+4 in the week to 19 Oct). The tool refuses an export retrieved on or before the window's last day.
 Email the PDF and CSV. Issues 2–4 repeat with the next week-ending date and a
 fresh export.
 

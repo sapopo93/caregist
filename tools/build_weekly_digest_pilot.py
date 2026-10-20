@@ -10,9 +10,10 @@ Sources, kept separate and named in every output:
     evidence the new-registration feed serves.
   - Newly published ratings: a CQC API location-detail export
     (``extract_cqc.py`` -> ``_locations_detail.ndjson``). A location counts when
-    its current overall rating's report date falls in the window. Production
-    has no current rating-publication data (``rating_changes`` stopped on
-    2026-09-20), so the database is deliberately not used for ratings.
+    its current overall rating's report date falls in the window. The export is
+    the authoritative publication date; the database records changes, not
+    publication dates. CQC published very few ratings from September 2026, so
+    this section is often empty.
 
 The export must have been retrieved on or after the window's last day, or the
 ratings section could silently miss publications; the tool refuses that case.
