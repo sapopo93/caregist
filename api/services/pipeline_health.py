@@ -24,6 +24,10 @@ SOURCE_FRESHNESS_SLA = timedelta(days=8)
 # still fails when the last night slot is missed: the 00:00 run would then be 17.5
 # hours old by 18:00. Derived from the schedule, not guessed.
 SIGNAL_POLL_FRESHNESS_SLA = timedelta(hours=16)
+# A poll in progress does not make the collector stale. The poll job's own
+# budget is 45 minutes inside a 50-minute GitHub timeout; past that a
+# "running" row is a crashed or abandoned run and fails closed.
+SIGNAL_POLL_RUNNING_GRACE = timedelta(minutes=50)
 
 SHADOW_WINDOW = timedelta(days=7)
 NIGHTLY_POLLS = 4
@@ -253,6 +257,7 @@ async def get_pipeline_health(conn: asyncpg.Connection) -> dict[str, Any]:
 
     latest_signal_run = None
     poll_window = None
+    latest_completed_signal_run = None
     if pipeline_runs_exists:
         latest_signal_run = await conn.fetchrow(
             """
@@ -260,6 +265,17 @@ async def get_pipeline_health(conn: asyncpg.Connection) -> dict[str, Any]:
             FROM pipeline_runs
             WHERE run_type = 'signal_poll'
             ORDER BY COALESCE(completed_at, started_at) DESC NULLS LAST
+            LIMIT 1
+            """
+        )
+        latest_completed_signal_run = await conn.fetchrow(
+            """
+            SELECT completed_at
+            FROM pipeline_runs
+            WHERE run_type = 'signal_poll'
+              AND status = 'completed'
+              AND completed_at IS NOT NULL
+            ORDER BY completed_at DESC
             LIMIT 1
             """
         )
@@ -311,10 +327,24 @@ async def get_pipeline_health(conn: asyncpg.Connection) -> dict[str, Any]:
         latest_signal_run["started_at"] if latest_signal_run else None
     )
     signal_status = latest_signal_run["status"] if latest_signal_run else None
+    last_completed_at = _as_utc(
+        latest_completed_signal_run["completed_at"] if latest_completed_signal_run else None
+    )
+    poll_running_within_grace = bool(
+        signal_status == "running"
+        and signal_completed_at is None
+        and signal_started_at is not None
+        and now - SIGNAL_POLL_RUNNING_GRACE <= signal_started_at <= now
+    )
+    if signal_status == "completed":
+        freshness_basis = signal_completed_at
+    elif poll_running_within_grace:
+        freshness_basis = last_completed_at
+    else:
+        freshness_basis = None
     signal_poll_fresh = bool(
-        signal_status == "completed"
-        and signal_completed_at is not None
-        and signal_completed_at >= now - SIGNAL_POLL_FRESHNESS_SLA
+        freshness_basis is not None
+        and freshness_basis >= now - SIGNAL_POLL_FRESHNESS_SLA
     )
 
     total_polls = int(poll_window["total_polls"] or 0) if poll_window else 0
@@ -404,6 +434,7 @@ async def get_pipeline_health(conn: asyncpg.Connection) -> dict[str, Any]:
                     "latestStatus": signal_status,
                     "latestStartedAt": _as_iso(signal_started_at),
                     "latestCompletedAt": _as_iso(signal_completed_at),
+                    "lastSuccessfulCompletedAt": _as_iso(last_completed_at),
                     "error": latest_signal_run["error_message"] if latest_signal_run else None,
                     "slaMinutes": int(SIGNAL_POLL_FRESHNESS_SLA.total_seconds() // 60),
                 },
