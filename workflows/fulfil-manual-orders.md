@@ -26,6 +26,12 @@ run resumes from `checkpoint.json` with `--resume` if interrupted.
 | Written confirmation must state | territory (local authority or region), window days, shortlist size, delivery within ~3 working days | England region, buyer type, first delivery weekday |
 | Payment Link | `https://buy.stripe.com/bJe8wI7Xhd8YdYi2vl3AY04` (£745) | `https://buy.stripe.com/3cI8wIfpJ4Csg6qfi73AY01` (£150) |
 
+For a Brief, generate it (step 3a) **before** sending the link and confirm the
+shortlist reaches the 25 the pricing page promises. Birmingham on 20 Oct 2026 gave
+19 at 90 days and 30 at 180 days, so agree the window that delivers. The Brief
+covers every CQC-registered service type (GP, dental and healthcare as well as
+social care); agree that with the buyer.
+
 The written confirmation is the order form under v2.2. Keep it in the email
 thread with the buyer.
 
@@ -74,8 +80,11 @@ DATABASE_URL=... .venv/bin/python -m tools.build_weekly_digest_pilot \
 ```
 
 New registrations come from production (read-only). Newly published ratings come
-from the export, because production's rating-publication data stopped on 20 Sep
-2026. The tool refuses an export retrieved on or before the window's last day.
+from the export's `currentRatings` report dates. As of 20 Oct 2026 CQC had
+published only 3 rating reports nationally since 1 Sep, so expect the ratings
+section to be empty or near-empty until CQC resumes; say so when agreeing the
+region. A region typically has a handful of new registrations a week (North West:
+4 in the week to 19 Oct). The tool refuses an export retrieved on or before the window's last day.
 Email the PDF and CSV. Issues 2–4 repeat with the next week-ending date and a
 fresh export.
 

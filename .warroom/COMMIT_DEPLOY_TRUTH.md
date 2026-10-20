@@ -12,7 +12,7 @@ Commercial model: human-led. Scope agreed in writing, Stripe Payment Link sent b
 Live Stripe changes made by the agent with founder approval: product `prod_VCHYLNWRcvZgJd` renamed to "CareGist Weekly Digest pilot — 4 weekly digests"; product `prod_VESD16ql3keycy` (£745) description corrected to email delivery within about 3 working days after written scope confirmation (it previously claimed automatic delivery and carried stray text). No prices, links or webhooks were created or changed.
 
 Open, founder-owned: the £150 link `plink_1UBt3M4mijLHzRRkz4joD0We` still shows its stored line description "CareGist Radar pilot pack" (not editable; needs a new link); `tenderriskassurance.co.uk/api/webhooks` on the same Stripe account receives every `checkout.session.completed`; the CareGist webhook endpoint is disabled in Stripe (safe to re-enable now that #106 is live).
-Data finding: production rating-publication data is stale (`rating_changes` last detected 2026-09-20; no `last_published_rating_date` in the last 42 days). Weekly Digest ratings therefore come from a CQC API export, per the runbook.
+Data finding (corrected 08:50 BST): production rating data is not stale. A full CQC API pull (2026-10-20, 123,010 locations, 0 failures) shows CQC itself published only 3 rating reports nationally since 1 Sep 2026, so `rating_changes` and `last_published_rating_date` faithfully mirror upstream. Weekly Digest ratings sections will be near-empty until CQC resumes publishing.
 
 ---
 
