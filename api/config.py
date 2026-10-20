@@ -468,16 +468,16 @@ class Settings(BaseSettings):
     crm_transcription_compute_type: str = "int8"
     crm_transcription_cpu_threads: int = 4
     crm_transcription_timeout_seconds: int = 900
-    crm_ai_base_url: str = "https://api.deepseek.com/v1"
+    crm_ai_base_url: str = ""
     crm_ai_api_key: str = ""
-    crm_ai_model: str = "deepseek-v4-flash"
+    crm_ai_model: str = ""
     crm_ai_pseudonym_key: str = ""
     crm_ai_monthly_cap_usd: Decimal = Decimal("10.00")
-    # Current DeepSeek V4 Flash cache-miss prices. These are configurable so a
-    # price change can fail closed without a code release.
-    crm_ai_input_price_usd_per_million: Decimal = Decimal("0.14")
-    crm_ai_cache_hit_price_usd_per_million: Decimal = Decimal("0.0028")
-    crm_ai_output_price_usd_per_million: Decimal = Decimal("0.28")
+    # Token prices for a future approved provider. No provider is approved, so
+    # CRM AI cannot be enabled (see validation below).
+    crm_ai_input_price_usd_per_million: Decimal = Decimal("0")
+    crm_ai_cache_hit_price_usd_per_million: Decimal = Decimal("0")
+    crm_ai_output_price_usd_per_million: Decimal = Decimal("0")
     resend_webhook_secret: str = ""
     crm_allowed_test_numbers: str = ""
     twilio_account_sid: str = ""
@@ -554,48 +554,12 @@ class Settings(BaseSettings):
                 "RESEND_API_KEY, RESEND_WEBHOOK_SECRET, and CRM_EMAIL_SENDER_POSTAL_ADDRESS."
             )
         if self.crm_ai_enabled:
-            required_ai = {
-                "CRM_AI_API_KEY": self.crm_ai_api_key,
-                "CRM_AI_PSEUDONYM_KEY": self.crm_ai_pseudonym_key,
-            }
-            missing_ai = [name for name, value in required_ai.items() if not value]
-            if missing_ai:
-                raise RuntimeError("FATAL: CRM AI is enabled without " + ", ".join(missing_ai) + ".")
-            if not self.crm_recording_enabled:
-                raise RuntimeError("FATAL: CRM AI requires CRM_RECORDING_ENABLED.")
-            if len(self.crm_ai_pseudonym_key) < 32:
-                raise RuntimeError("FATAL: CRM_AI_PSEUDONYM_KEY must contain at least 32 characters.")
-            if (
-                self.crm_transcription_model != "small.en"
-                or self.crm_transcription_device != "cpu"
-                or self.crm_transcription_compute_type != "int8"
-            ):
-                raise RuntimeError(
-                    "FATAL: CRM transcription must use local small.en on CPU with int8."
-                )
-            if self.crm_ai_model != "deepseek-v4-flash":
-                raise RuntimeError("FATAL: CRM routine AI must use deepseek-v4-flash.")
-            ai_url = urlparse(self.crm_ai_base_url)
-            if (
-                ai_url.scheme != "https"
-                or ai_url.hostname != "api.deepseek.com"
-                or ai_url.username
-                or ai_url.password
-                or ai_url.query
-                or ai_url.fragment
-                or ai_url.path.rstrip("/") not in {"", "/v1"}
-            ):
-                raise RuntimeError(
-                    "FATAL: CRM_AI_BASE_URL must be the approved HTTPS DeepSeek API origin."
-                )
-            if self.crm_ai_monthly_cap_usd <= 0:
-                raise RuntimeError("FATAL: CRM_AI_MONTHLY_CAP_USD must be greater than zero.")
-            if (
-                self.crm_ai_input_price_usd_per_million <= 0
-                or self.crm_ai_cache_hit_price_usd_per_million <= 0
-                or self.crm_ai_output_price_usd_per_million <= 0
-            ):
-                raise RuntimeError("FATAL: CRM AI token prices must be greater than zero.")
+            # DeepSeek was removed on 19 Oct 2026 (UK GDPR: no adequacy decision for
+            # transfers to China). No replacement provider has been approved, so
+            # CRM AI must stay off until one is assessed and wired in.
+            raise RuntimeError(
+                "FATAL: CRM AI is disabled: no UK GDPR-approved AI provider is configured."
+            )
         if self.crm_calling_enabled:
             if not self.crm_enabled or not self.outbound_communications_enabled:
                 raise RuntimeError(
