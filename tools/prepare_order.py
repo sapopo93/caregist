@@ -49,6 +49,8 @@ SERVICE_TAXONOMY = REPO_ROOT / "frontend" / "data" / "service-taxonomy.json"
 
 FROM_ADDRESS = "outreach@caregist.co.uk"
 FROM_NAME = "CareGist"
+BRIEF_AMOUNT_PENCE = 74500
+DIGEST_AMOUNT_PENCE = 15000
 BRIEF_PAYMENT_LINK = "https://buy.stripe.com/bJe8wI7Xhd8YdYi2vl3AY04"
 DIGEST_PAYMENT_LINK = "https://buy.stripe.com/3cI8wIfpJ4Csg6qfi73AY01"
 TERMS_URL = "https://www.caregist.co.uk/terms"
@@ -155,6 +157,66 @@ def export_receipt(export_dir: Path) -> dict[str, Any]:
         raise CheckFailed("RECEIPT.json source_retrieved_at must include a timezone.")
     receipt["_retrieved"] = retrieved
     return receipt
+
+
+def _payment_from_sales_record(database_url: str, buyer_email: str, amount_pence: int) -> dict[str, Any] | None:
+    """A paid Payment Link sale recorded by the billing webhook (manual_sale_paid)."""
+    import asyncpg
+
+    async def query() -> dict[str, Any] | None:
+        conn = await asyncpg.connect(database_url)
+        try:
+            async with conn.transaction(readonly=True):
+                row = await conn.fetchrow(
+                    """
+                    SELECT created_at, meta->>'stripe_checkout_session_id' AS session
+                    FROM analytics_events
+                    WHERE event_type = 'manual_sale_paid'
+                      AND lower(email) = lower($1)
+                      AND (meta->>'amount_total')::int = $2
+                      AND meta->>'payment_status' = 'paid'
+                    ORDER BY created_at DESC
+                    LIMIT 1
+                    """,
+                    buyer_email.strip(),
+                    amount_pence,
+                )
+        finally:
+            await conn.close()
+        if row is None:
+            return None
+        return {"source": "CareGist sales record", "session": row["session"], "paid_at": row["created_at"].isoformat()}
+
+    return asyncio.run(query())
+
+
+def _payment_from_stripe(secret_key: str, buyer_email: str, amount_pence: int) -> dict[str, Any] | None:
+    """Read-only fallback in case the webhook missed the sale."""
+    import httpx
+
+    response = httpx.get(
+        "https://api.stripe.com/v1/checkout/sessions",
+        params={"customer_details[email]": buyer_email.strip(), "status": "complete", "limit": 20},
+        auth=(secret_key, ""),
+        timeout=30,
+    )
+    response.raise_for_status()
+    for session in response.json().get("data", []):
+        if session.get("payment_status") == "paid" and session.get("amount_total") == amount_pence:
+            paid_at = datetime.fromtimestamp(session["created"], tz=timezone.utc).isoformat()
+            return {"source": "Stripe", "session": session["id"], "paid_at": paid_at}
+    return None
+
+
+def find_payment(env: dict[str, str], buyer_email: str, amount_pence: int) -> dict[str, Any] | None:
+    """The buyer's paid sale for this amount, from CareGist's record or Stripe; else None."""
+    if env.get("DATABASE_URL"):
+        found = _payment_from_sales_record(env["DATABASE_URL"], buyer_email, amount_pence)
+        if found:
+            return found
+    if env.get("STRIPE_SECRET_KEY"):
+        return _payment_from_stripe(env["STRIPE_SECRET_KEY"], buyer_email, amount_pence)
+    return None
 
 
 def quoted_shortlist(order_root: Path) -> int | None:
@@ -531,11 +593,30 @@ def main(argv: list[str] | None = None) -> int:
     files: list[Path] = []
     summary: dict[str, Any] = {}
     checks = Checks()
+    payment: dict[str, Any] | None = None
+    if args.stage == "deliver":
+        # Nothing is prepared for delivery until the buyer has paid.
+        amount = BRIEF_AMOUNT_PENCE if args.product == "brief" else DIGEST_AMOUNT_PENCE
+        payment = find_payment(env, args.buyer_email, amount)
+        if payment is None:
+            checks.add(
+                "payment_received", False,
+                f"no paid £{amount // 100} sale found for {args.buyer_email} (CareGist sales record or Stripe)",
+            )
+        else:
+            checks.add(
+                "payment_received", True,
+                f"£{amount // 100} paid {payment['paid_at']} ({payment['source']}, {payment['session']})",
+            )
     try:
-        if args.product == "brief":
-            checks, summary, files = build_brief(args, env=env, order_dir=order_dir, now=now)
+        if args.stage == "deliver" and payment is None:
+            pass
+        elif args.product == "brief":
+            built, summary, files = build_brief(args, env=env, order_dir=order_dir, now=now)
+            checks.results.extend(built.results)
         elif args.stage == "deliver":
-            checks, summary, files = build_digest_issue(args, env=env, order_dir=order_dir, now=now)
+            built, summary, files = build_digest_issue(args, env=env, order_dir=order_dir, now=now)
+            checks.results.extend(built.results)
     except CheckFailed as exc:
         checks.add("inputs", False, str(exc))
 

@@ -12,6 +12,12 @@ checks below, and saves the email as a **draft in outreach@caregist.co.uk**. It
 never sends: open Drafts in Private Email, review, press Send. A failed check
 prints `NOT READY` with the reason and drafts nothing.
 
+Quotes never attach the product: the confirmation email carries only the scope,
+count, price and payment link. `deliver` refuses until the buyer has paid: it
+looks for a paid sale of the right amount (£745 Brief, £150 Digest) for the
+buyer's email in CareGist's sales record (`manual_sale_paid`), falling back to
+Stripe read-only, and drafts nothing otherwise. Use the email the buyer paid with.
+
 Checks: CQC export ≤ 8 days old; the scope has locations; the shortlist is not
 empty (Terms v2.2.1 promise up to 50 organisations, and the quote states the
 exact number, which is binding); every shortlisted entry has dated CQC evidence;
