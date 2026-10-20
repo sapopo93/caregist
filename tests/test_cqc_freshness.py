@@ -102,6 +102,60 @@ def test_newer_failed_attempt_fails_closed_without_leaking_error_details():
     assert "secret" not in str(result)
 
 
+def test_cancelled_duplicate_of_the_reconciled_snapshot_does_not_degrade_freshness():
+    # Production 18 Oct 2026: a duplicate dispatch read the same CSV, was
+    # cancelled at 2,000 locations, and ended before the original reconciled.
+    watermark = _run(
+        started_at=NOW - timedelta(hours=4),
+        reconciled_at=NOW - timedelta(minutes=10),
+        completed_at=NOW - timedelta(minutes=10),
+    )
+    duplicate = _run(
+        id=42,
+        status="failed",
+        started_at=NOW - timedelta(minutes=30),
+        completed_at=NOW - timedelta(minutes=15),
+        checked_count=2_000,
+        success_count=2_000,
+        counts_reconciled=False,
+        reconciled_at=None,
+    )
+
+    result = build_cqc_freshness(watermark, duplicate, now=NOW)
+
+    assert result["status"] == "fresh"
+    assert result["reason"] is None
+
+
+@pytest.mark.parametrize(
+    "overrides",
+    [
+        {"source_checksum_sha256": "b" * 64},
+        {"source_checksum_sha256": None},
+        {"completed_at": NOW - timedelta(minutes=5)},
+        {"completed_at": None, "status": "failed"},
+    ],
+)
+def test_failed_attempt_not_superseded_by_the_watermark_still_fails_closed(overrides):
+    watermark = _run(reconciled_at=NOW - timedelta(minutes=10))
+    attempt = _run(
+        id=42,
+        status="failed",
+        started_at=NOW - timedelta(minutes=30),
+        completed_at=NOW - timedelta(minutes=15),
+        checked_count=2_000,
+        success_count=2_000,
+        counts_reconciled=False,
+        reconciled_at=None,
+    )
+    attempt.update(overrides)
+
+    result = build_cqc_freshness(watermark, attempt, now=NOW)
+
+    assert result["status"] == "partial"
+    assert result["reason"] == "latest_authoritative_attempt_incomplete"
+
+
 def test_partial_attempt_without_a_watermark_does_not_claim_retrieval_time():
     partial = _run(
         status="running",
