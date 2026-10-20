@@ -4,6 +4,47 @@ Both products are sold human-led under Business Terms v2.2: scope agreed in
 writing, then a Stripe Payment Link sent by hand. Nothing is delivered
 automatically. Self-serve checkout stays closed.
 
+## Quick path: `tools/prepare_order.py`
+
+Each step is one command. It builds the deliverable for exactly the scope the
+buyer's coverage check counted (same directory query as the website), runs the
+checks below, and saves the email as a **draft in outreach@caregist.co.uk**. It
+never sends: open Drafts in Private Email, review, press Send. A failed check
+prints `NOT READY` with the reason and drafts nothing.
+
+Checks: CQC export ≤ 8 days old; the scope has locations; shortlist ≥ 25 (the
+pricing-page promise; `--allow-shortfall` only if the buyer agreed in writing);
+every shortlisted entry has dated CQC evidence; the evidence window is current.
+
+Copy the values from the enquiry email (Region, Buyer type, Service type,
+Providers in scope). Buyer types map to `--provider-group`: New registrations
+`new_90`, Inadequate providers `inadequate`, Requires Improvement
+`requires_improvement`, Not yet inspected `not_yet_inspected`, Stale inspections
+`stale_inspection`.
+
+```bash
+# Brief, after agreeing scope: confirmation + £745 link (keep the printed order ref)
+.venv/bin/python -m tools.prepare_order brief quote --region "North East" \
+  --provider-group not_yet_inspected --service-type "Homecare Agencies" \
+  --expected-count 1221 --buyer-email buyer@example.com --buyer-name "Sam" --company "Example Ltd"
+
+# Brief, after payment: rebuild, check, delivery draft with PDF, CSV and manifest
+.venv/bin/python -m tools.prepare_order brief deliver --order-ref TOB-... \
+  --region "North East" --provider-group not_yet_inspected --service-type "Homecare Agencies" \
+  --buyer-email buyer@example.com --buyer-name "Sam"
+
+# Weekly Digest: confirmation + £150 link, then one delivery per week
+.venv/bin/python -m tools.prepare_order digest quote --region "North West" \
+  --start-date 2026-10-26 --buyer-type "Recruiter" --buyer-email buyer@example.com
+.venv/bin/python -m tools.prepare_order digest deliver --order-ref WDP-... --region "North West" \
+  --week-ending 2026-10-25 --issue 1 --buyer-email buyer@example.com
+```
+
+Drafts need `OUTREACH_IMAP_PASSWORD` (the outreach@ mailbox password) in `.env`;
+add it yourself. Without it the command still writes `email.eml` in the order
+folder (`.tmp/orders/<ref>/`) for you to open. The sections below describe the
+same steps by hand.
+
 ## 0. Before the first sale, and every Monday
 
 Keep a CQC API export no older than 8 days (the source-freshness promise). A
