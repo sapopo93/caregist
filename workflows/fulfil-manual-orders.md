@@ -12,9 +12,12 @@ checks below, and saves the email as a **draft in outreach@caregist.co.uk**. It
 never sends: open Drafts in Private Email, review, press Send. A failed check
 prints `NOT READY` with the reason and drafts nothing.
 
-Checks: CQC export ≤ 8 days old; the scope has locations; shortlist ≥ 25 (the
-pricing-page promise; `--allow-shortfall` only if the buyer agreed in writing);
-every shortlisted entry has dated CQC evidence; the evidence window is current.
+Checks: CQC export ≤ 8 days old; the scope has locations; the shortlist is not
+empty (Terms v2.2.1 promise up to 50 organisations, and the quote states the
+exact number, which is binding); every shortlisted entry has dated CQC evidence;
+the evidence window is current. At delivery the Brief must contain at least the
+number quoted for the same order ref; if a data refresh reduced it, the command
+stops so you can agree the change with the buyer first.
 
 Copy the values from the enquiry email (Region, Buyer type, Service type,
 Providers in scope). Buyer types map to `--provider-group`: New registrations
@@ -67,11 +70,11 @@ run resumes from `checkpoint.json` with `--resume` if interrupted.
 | Written confirmation must state | territory (local authority or region), window days, shortlist size, delivery within ~3 working days | England region, buyer type, first delivery weekday |
 | Payment Link | `https://buy.stripe.com/bJe8wI7Xhd8YdYi2vl3AY04` (£745) | `https://buy.stripe.com/3cI8wIfpJ4Csg6qfi73AY01` (£150) |
 
-For a Brief, generate it (step 3a) **before** sending the link and confirm the
-shortlist reaches the 25 the pricing page promises. Birmingham on 20 Oct 2026 gave
-19 at 90 days and 30 at 180 days, so agree the window that delivers. The Brief
-covers every CQC-registered service type (GP, dental and healthcare as well as
-social care); agree that with the buyer.
+For a Brief, generate it **before** sending the link (the quote step does this)
+and state the exact shortlist size in the confirmation; the Brief promises up to
+50 organisations. Unless the buyer narrowed the service type, it covers every
+CQC-registered service type (GP, dental and healthcare as well as social care);
+agree that with the buyer.
 
 The written confirmation is the order form under v2.2. Keep it in the email
 thread with the buyer.

@@ -11,7 +11,7 @@ export default function TermsPage() {
   return (
     <main className="mx-auto max-w-3xl px-6 py-12">
       <h1 className="mb-2 text-3xl font-bold">Business Terms of Service</h1>
-      <p className="mb-8 text-sm text-dusk">Version 2.2 · In force from 20 October 2026</p>
+      <p className="mb-8 text-sm text-dusk">Version 2.2.1 · In force from 20 October 2026</p>
 
       <div className="prose prose-sm space-y-7 text-charcoal" style={{ fontFamily: "Lora" }}>
         <section>
@@ -36,7 +36,7 @@ export default function TermsPage() {
           <ul className="list-disc space-y-1 pl-6">
             <li><strong>Free Directory:</strong> provider search, profiles, source dates, and free correction or claim requests when verification intake is available.</li>
             <li><strong>Weekly Digest pilot:</strong> a one-off pilot of four weekly digests for one agreed England region. Each digest reports new registrations and newly published ratings in the agreed region, taken from CQC&apos;s published register, with the source edition date and the observation window stated. It is delivered by email and PDF. It is not a subscription, dashboard, API or alert service.</li>
-            <li><strong>Territory Opportunity Brief:</strong> a one-off, buyer-specific research pack for an agreed England territory. It includes a shortlist of 25 to 50 organisations, a CRM-ready CSV dataset, a three to five page executive brief, and source links and observation dates for the public CQC information used.</li>
+            <li><strong>Territory Opportunity Brief:</strong> a one-off, buyer-specific research pack for an agreed England territory. It includes a shortlist of up to 50 organisations (the exact number is confirmed in writing before payment), a CRM-ready CSV dataset, a three to five page executive brief, and source links and observation dates for the public CQC information used.</li>
             <li><strong>Radar Regional:</strong> one contracted England region, 2 users, 10 saved views, and 90 days of event export.</li>
             <li><strong>Radar National:</strong> all England, 5 users, 50 saved views or lists, 365 days of event export, and onboarding.</li>
             <li><strong>Intelligence Feed Pilot:</strong> a sales-assisted, contracted API and webhook pilot with a stated region, signal, and delivery scope.</li>

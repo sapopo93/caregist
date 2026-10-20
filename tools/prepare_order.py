@@ -1,6 +1,6 @@
 """Prepare a CareGist order for checking and sending.
 
-One command per step of the human-led sale (Business Terms v2.2):
+One command per step of the human-led sale (Business Terms v2.2.1):
 
   brief  quote    scope agreed by email -> build the Brief, check it, draft the
                   scope-confirmation email with the GBP 745 payment link
@@ -55,7 +55,7 @@ TERMS_URL = "https://www.caregist.co.uk/terms"
 BRIEF_PRICE = "£745 fixed fee. No VAT added."
 DIGEST_PRICE = "£150 for four weekly digests. No VAT added. No automatic renewal."
 SOURCE_MAX_AGE_DAYS = 8          # the documented source-freshness promise
-MIN_SHORTLIST = 25               # the pricing page promises 25-50 organisations
+MAX_SHORTLIST = 50               # Terms v2.2.1: up to 50, exact number confirmed before payment
 DELIVERY_WORKING_DAYS = 3
 
 REGIONS = (
@@ -155,6 +155,15 @@ def export_receipt(export_dir: Path) -> dict[str, Any]:
         raise CheckFailed("RECEIPT.json source_retrieved_at must include a timezone.")
     receipt["_retrieved"] = retrieved
     return receipt
+
+
+def quoted_shortlist(order_root: Path) -> int | None:
+    """The shortlist size promised in this order's most recent successful quote."""
+    for report in sorted(order_root.glob("quote-*/checks.json"), reverse=True):
+        data = json.loads(report.read_text(encoding="utf-8"))
+        if data.get("ok") and data.get("summary", {}).get("shortlisted") is not None:
+            return int(data["summary"]["shortlisted"])
+    return None
 
 
 def add_working_days(start: date, days: int) -> date:
@@ -290,19 +299,27 @@ def build_brief(args: argparse.Namespace, *, env: dict[str, str], order_dir: Pat
 
     brief = generate_territory_opportunity_brief(
         {"kind": "region", "name": args.region, "window_days": 90, "shortlist_target": args.shortlist},
-        PurchaseContext(order_reference=args.order_ref, generated_at=now, terms_version="2.2"),
+        PurchaseContext(order_reference=args.order_ref, generated_at=now, terms_version="2.2.1"),
         locations_source=export_dir / "_locations_detail.ndjson",
         providers_source=export_dir / "_providers_detail.ndjson",
         location_ids=ids,
         provider_group=args.provider_group,
     )
-    shortfall_ok = args.allow_shortfall and len(brief.shortlist) > 0
     checks.add(
-        "shortlist_minimum",
-        len(brief.shortlist) >= MIN_SHORTLIST or shortfall_ok,
-        f"{len(brief.shortlist)} organisations shortlisted (pricing page promises {MIN_SHORTLIST}-50)"
-        + ("; smaller shortlist agreed with the buyer (--allow-shortfall)" if shortfall_ok and len(brief.shortlist) < MIN_SHORTLIST else ""),
+        "shortlist_not_empty",
+        0 < len(brief.shortlist) <= MAX_SHORTLIST,
+        f"{len(brief.shortlist)} organisations shortlisted (terms: up to {MAX_SHORTLIST}, exact number stated in the quote)",
     )
+    if args.stage == "deliver":
+        quoted = quoted_shortlist(args.out_base / args.order_ref)
+        if quoted is None:
+            checks.add("matches_quote", False, "no successful quote found for this order ref; run 'quote' first or pass the quote's --order-ref")
+        else:
+            checks.add(
+                "matches_quote",
+                len(brief.shortlist) >= quoted,
+                f"quote promised {quoted} organisations; this build has {len(brief.shortlist)}",
+            )
     checks.add(
         "evidence_matches_scope",
         brief.considered_locations > 0 and brief.considered_locations <= max(len(ids), 1),
@@ -341,12 +358,12 @@ def brief_quote_email(args: argparse.Namespace, summary: dict[str, Any], now: da
 
 Thank you for your enquiry. I have checked the published CQC record for your scope and can confirm we can deliver it.
 
-Confirmed scope (this email is the order form under our Business Terms v2.2):
+Confirmed scope (this email is the order form under our Business Terms v2.2.1):
 - Territory: {summary['region']}
 - Provider group: {summary['provider_group']}
 - Service type: {summary['service_type']}
 - Organisations in scope: {summary['locations_in_scope']}
-- Ranked shortlist: {summary['shortlisted']} organisations, each with a stated reason and its CQC source
+- Ranked shortlist: {summary['shortlisted']} organisations (the exact number your Brief will contain), each with a stated reason and its CQC source
 - Source: CQC published register edition dated {summary['source_edition']}
 - Delivery: by email within {DELIVERY_WORKING_DAYS} working days of payment (if paid today, by {delivery.strftime('%A %d %B %Y')})
 
@@ -391,7 +408,7 @@ def digest_quote_email(args: argparse.Namespace) -> tuple[str, str]:
     subject = f"Your Weekly Digest pilot: {args.region}, starting {start.strftime('%d %B %Y')}"
     body = f"""Hi {args.buyer_name or 'there'},
 
-Thank you for your enquiry. Here is the confirmed Weekly Digest pilot (this email is the order form under our Business Terms v2.2):
+Thank you for your enquiry. Here is the confirmed Weekly Digest pilot (this email is the order form under our Business Terms v2.2.1):
 
 - Region: {args.region}
 - Buyer type: {args.buyer_type or 'as discussed'}
@@ -487,10 +504,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p.add_argument("--service-type", default=None, help="as chosen on the website, e.g. 'Homecare Agencies'")
     p.add_argument("--shortlist", type=int, default=30)
     p.add_argument("--expected-count", type=int, default=None, help="'Providers in scope' from the enquiry email")
-    p.add_argument(
-        "--allow-shortfall", action="store_true",
-        help="buyer has agreed in writing to fewer than 25 organisations; the email states the real number",
-    )
+
     # Digest
     p.add_argument("--buyer-type", default="")
     p.add_argument("--start-date", default=None, help="first digest date (quote)")

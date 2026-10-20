@@ -223,3 +223,21 @@ def test_digest_quote_lists_four_weekly_dates_and_the_150_link(tmp_path, monkeyp
     eml = next(tmp_path.rglob("email.eml")).read_text()
     assert po.DIGEST_PAYMENT_LINK in eml
     assert "Mon 26 Oct" in eml and "Mon 16 Nov" in eml
+
+
+def test_quoted_shortlist_reads_the_latest_successful_quote(tmp_path):
+    root = tmp_path / "TOB-1"
+    (root / "quote-20261020T100000Z").mkdir(parents=True)
+    (root / "quote-20261020T100000Z" / "checks.json").write_text(json.dumps({"ok": True, "summary": {"shortlisted": 19}}))
+    (root / "quote-20261020T110000Z").mkdir()
+    (root / "quote-20261020T110000Z" / "checks.json").write_text(json.dumps({"ok": False, "summary": {"shortlisted": 3}}))
+
+    assert po.quoted_shortlist(root) == 19
+    assert po.quoted_shortlist(tmp_path / "missing") is None
+
+
+def test_shortlist_promise_is_up_to_fifty_in_terms_and_tool():
+    terms = (REPO / "frontend" / "app" / "terms" / "page.tsx").read_text(encoding="utf-8")
+    assert "shortlist of up to 50 organisations" in terms
+    assert "25 to 50" not in terms
+    assert po.MAX_SHORTLIST == 50
