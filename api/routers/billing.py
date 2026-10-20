@@ -1842,6 +1842,50 @@ async def _handle_dataset_checkout_completed(conn, session: dict) -> None:
     )
 
 
+def _is_manual_payment_link_sale(session: dict, metadata: dict) -> bool:
+    """A sale through a founder-issued Stripe Payment Link.
+
+    These carry no CareGist order metadata: the scope was agreed by email and is
+    fulfilled by hand. Raising for them made Stripe retry each one for days and
+    risked the endpoint being disabled, while granting nothing.
+    """
+    return bool(
+        session.get("payment_link")
+        and not metadata.get("type")
+        and not metadata.get("user_id")
+    )
+
+
+async def _record_manual_payment_link_sale(conn, session: dict) -> None:
+    """Keep a durable record of the sale for fulfilment; grant no entitlement."""
+    details = session.get("customer_details") or {}
+    email = details.get("email") or session.get("customer_email")
+    meta = {
+        "stripe_checkout_session_id": session.get("id"),
+        "payment_link": session.get("payment_link"),
+        "payment_status": session.get("payment_status"),
+        "amount_total": session.get("amount_total"),
+        "currency": session.get("currency"),
+        "customer_name": details.get("name"),
+        "fulfilment": "manual",
+    }
+    await conn.execute(
+        """
+        INSERT INTO analytics_events (event_type, event_source, email, meta)
+        VALUES ('manual_sale_paid', 'stripe_payment_link', $1, $2::jsonb)
+        """,
+        email,
+        __import__("json").dumps(meta),
+    )
+    logger.info(
+        "Payment Link sale recorded for manual fulfilment: session=%s amount=%s %s status=%s",
+        session.get("id"),
+        session.get("amount_total"),
+        session.get("currency"),
+        session.get("payment_status"),
+    )
+
+
 async def _handle_checkout_completed(conn, session: dict) -> None:
     """Route completed checkout to B2B or provider profile handler.
 
@@ -1861,6 +1905,9 @@ async def _handle_checkout_completed(conn, session: dict) -> None:
             cfg=territory_brief_delivery.fulfilment_settings(),
             deps=territory_brief_delivery.fulfilment_deps(),
         )
+        return
+    if _is_manual_payment_link_sale(session, metadata):
+        await _record_manual_payment_link_sale(conn, session)
         return
     user_id = metadata.get("user_id")
     terms_version = metadata.get("terms_version")

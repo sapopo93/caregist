@@ -545,3 +545,55 @@ async def test_brief_failure_is_persisted_only_after_webhook_lock_is_released(mo
     with pytest.raises(TerritoryBriefGenerationError):
         await billing.stripe_webhook(_webhook_request())
     assert lifecycle == ["lock", "rollback", "release", "record"]
+
+
+class _RecordingConn:
+    def __init__(self):
+        self.executed: list[tuple] = []
+
+    async def execute(self, query, *args):
+        self.executed.append((query, args))
+        return "INSERT 0 1"
+
+    async def fetchrow(self, query, *args, **kwargs):  # pragma: no cover - must not be reached
+        raise AssertionError("a Payment Link sale must not look up B2B acceptance")
+
+
+@pytest.mark.asyncio
+async def test_payment_link_sale_is_recorded_for_manual_fulfilment_not_retried():
+    conn = _RecordingConn()
+
+    await billing._handle_checkout_completed(
+        conn,
+        {
+            "id": "cs_live_manual",
+            "payment_link": "plink_1UEkzy4mijLHzRRkWjk3pFVW",
+            "metadata": {},
+            "payment_status": "paid",
+            "amount_total": 74500,
+            "currency": "gbp",
+            "customer_details": {"email": "buyer@example.com", "name": "Buyer Ltd"},
+        },
+    )
+
+    [(query, args)] = conn.executed
+    assert "INSERT INTO analytics_events" in query
+    assert "'manual_sale_paid'" in query
+    assert args[0] == "buyer@example.com"
+    meta = __import__("json").loads(args[1])
+    assert meta["stripe_checkout_session_id"] == "cs_live_manual"
+    assert meta["amount_total"] == 74500
+    assert meta["fulfilment"] == "manual"
+
+
+@pytest.mark.asyncio
+async def test_payment_link_session_with_caregist_metadata_keeps_strict_checks():
+    with pytest.raises(RuntimeError, match="missing user_id"):
+        await billing._handle_checkout_completed(
+            _Conn(),
+            {
+                "payment_link": "plink_x",
+                "metadata": {"tier": "starter", "price_id": "price_starter", "type": "b2b"},
+                "subscription": "sub_123",
+            },
+        )
