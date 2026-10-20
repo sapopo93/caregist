@@ -164,6 +164,8 @@ async def test_provider_receives_only_redacted_text_and_retries_invalid_json(mon
         assert "Alice" not in serialized
         assert "memory-only-test-key" not in serialized
         assert "thinking" not in request["json"]
+        assert request["json"]["response_format"]["type"] == "json_schema"
+        assert request["json"]["response_format"]["json_schema"]["schema"] == crm_ai.evaluation_json_schema()
         assert request["json"]["model"] == "test-model"
         assert request["json"]["user"] == "c" * 64
 
@@ -444,17 +446,108 @@ def test_blocked_or_insecure_provider_urls_are_refused(base_url):
         crm_ai._assert_provider_allowed(base_url)
 
 
-def test_crm_ai_cannot_be_enabled_in_production():
+def _production_settings(**overrides):
     from api.config import Settings
 
-    with pytest.raises(RuntimeError, match="no UK GDPR-approved AI provider"):
-        Settings(
-            database_url="postgresql://prod",
-            api_master_key="master",
-            support_internal_token="support",
-            webhook_secret_key="webhook-key",
-            redis_url="rediss://redis.example.com:6380/0",
-            cors_origins="https://caregist.co.uk",
-            app_url="https://caregist.co.uk",
-            crm_ai_enabled=True,
-        ).validate_production()
+    return Settings(
+        database_url="postgresql://prod",
+        api_master_key="master",
+        support_internal_token="support",
+        webhook_secret_key="webhook-key",
+        redis_url="rediss://redis.example.com:6380/0",
+        cors_origins="https://caregist.co.uk",
+        app_url="https://caregist.co.uk",
+        crm_ai_enabled=True,
+        **overrides,
+    )
+
+
+@pytest.mark.parametrize(
+    "base_url",
+    ["", "https://api.deepseek.com/v1", "https://ai.example.com/v1", "http://192.168.1.20:11434/v1",
+     "http://user:pw@127.0.0.1:11434/v1"],
+)
+def test_crm_ai_refuses_any_non_local_provider_in_production(base_url):
+    with pytest.raises(RuntimeError, match="limited to a local model"):
+        _production_settings(crm_ai_base_url=base_url, crm_ai_model="gemma4:e4b").validate_production()
+
+
+@pytest.mark.parametrize(
+    "base_url", ["http://127.0.0.1:11434/v1", "http://localhost:11434/v1", "http://[::1]:11434/v1"]
+)
+def test_crm_ai_accepts_a_loopback_model_then_checks_remaining_gates(base_url):
+    # The URL gate passes; the next gate (pseudonym key) is what refuses.
+    with pytest.raises(RuntimeError, match="CRM_AI_PSEUDONYM_KEY"):
+        _production_settings(crm_ai_base_url=base_url, crm_ai_model="gemma4:e4b").validate_production()
+
+
+def test_crm_ai_requires_a_model_name():
+    with pytest.raises(RuntimeError, match="CRM_AI_MODEL"):
+        _production_settings(crm_ai_base_url="http://127.0.0.1:11434/v1").validate_production()
+
+
+@pytest.mark.parametrize("base_url", ["http://127.0.0.1:11434/v1", "http://localhost:11434", "http://[::1]:11434/v1"])
+def test_loopback_provider_is_allowed_and_named_local(base_url):
+    crm_ai._assert_provider_allowed(base_url)
+    assert crm_ai.provider_name(base_url) == "local"
+
+
+def test_evaluation_schema_is_strict_and_requires_every_field():
+    schema = crm_ai.evaluation_json_schema()
+    assert schema["additionalProperties"] is False
+    assert set(schema["required"]) == set(crm_ai.CallEvaluation.model_fields)
+    assert schema["properties"]["strengths"]["type"] == "array"
+    assert schema["properties"]["overall_qa_score"] == {"maximum": 100, "minimum": 0, "type": "integer"}
+    assert "title" not in str(schema)
+
+
+def test_placeholder_list_items_are_treated_as_empty():
+    payload = _valid_evaluation()
+    payload["compliance_flags"] = ["None", "n/a."]
+    payload["strengths"] = ["Clear opening", "N/A"]
+
+    evaluation = crm_ai.CallEvaluation.model_validate(payload)
+
+    assert evaluation.compliance_flags == []
+    assert evaluation.strengths == ["Clear opening"]
+
+
+@pytest.mark.asyncio
+async def test_local_provider_sends_no_empty_bearer_header_and_allows_slow_responses(monkeypatch):
+    seen = {}
+
+    class Client:
+        def __init__(self, *, timeout):
+            seen["timeout"] = timeout
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *exc):
+            return False
+
+        async def post(self, url, *, headers, json):
+            seen["url"], seen["headers"] = url, headers
+            return httpx.Response(
+                200,
+                json={"id": "r1", "choices": [{"message": {"content": __import__("json").dumps(_valid_evaluation())}}],
+                      "usage": {"prompt_tokens": 10, "completion_tokens": 5}},
+                request=httpx.Request("POST", url),
+            )
+
+    monkeypatch.setattr(crm_ai.httpx, "AsyncClient", Client)
+    monkeypatch.setattr(crm_ai.settings, "crm_ai_base_url", "http://127.0.0.1:11434/v1")
+    monkeypatch.setattr(crm_ai.settings, "crm_ai_api_key", "")
+    monkeypatch.setattr(crm_ai.settings, "crm_ai_model", "gemma4:e4b")
+
+    evaluation, _usage = await evaluate_transcript(
+        RedactedTranscript(
+            text="[0000.00] Agent: Hello.", counts={}, source_sha256="a" * 64, redacted_sha256="b" * 64
+        ),
+        user_id="c" * 64,
+    )
+
+    assert evaluation.suggested_disposition == "callback_requested"
+    assert seen["headers"] == {}
+    assert seen["timeout"] == 300
+    assert seen["url"] == "http://127.0.0.1:11434/v1/chat/completions"

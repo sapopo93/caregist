@@ -46,6 +46,10 @@ Disposition = Literal[
 ]
 
 
+# Local models sometimes fill an empty list with a placeholder string.
+_EMPTY_LIST_PLACEHOLDERS = frozenset({"none", "n/a", "na", "nil", "-", "no flags", "none identified"})
+
+
 class CallEvaluation(BaseModel):
     summary: str = Field(min_length=1, max_length=2000)
     suggested_disposition: Disposition
@@ -69,6 +73,8 @@ class CallEvaluation(BaseModel):
         cleaned: list[str] = []
         for value in values:
             item = value.strip()
+            if item.lower().rstrip(".") in _EMPTY_LIST_PLACEHOLDERS:
+                continue
             if not item or len(item) > 500:
                 raise ValueError("Evaluation list items must contain 1 to 500 characters.")
             cleaned.append(item)
@@ -212,20 +218,58 @@ def _redact_local_entities(text: str, counts: dict[str, int], *, required: bool)
 
 
 BLOCKED_PROVIDER_DOMAINS = ("deepseek.com",)
+LOOPBACK_HOSTS = frozenset({"127.0.0.1", "::1", "localhost"})
+
+
+def is_local_provider(base_url: str) -> bool:
+    """A model served on this machine: transcripts never leave it."""
+    parsed = urlparse(base_url)
+    return (
+        parsed.scheme in {"http", "https"}
+        and (parsed.hostname or "").lower() in LOOPBACK_HOSTS
+        and not parsed.username
+        and not parsed.password
+    )
 
 
 def _assert_provider_allowed(base_url: str) -> None:
-    """Refuse any outbound evaluation to a blocked or non-HTTPS provider."""
+    """Allow a loopback model or an HTTPS provider; refuse blocked hosts and plain-HTTP remotes."""
     parsed = urlparse(base_url)
     host = (parsed.hostname or "").lower()
-    if parsed.scheme != "https" or not host:
-        raise RuntimeError("CRM AI provider URL must be an approved HTTPS origin.")
     if any(host == domain or host.endswith("." + domain) for domain in BLOCKED_PROVIDER_DOMAINS):
         raise RuntimeError("CRM AI provider is blocked under UK GDPR transfer policy.")
+    if is_local_provider(base_url):
+        return
+    if parsed.scheme != "https" or not host:
+        raise RuntimeError("CRM AI provider URL must be an approved HTTPS origin.")
 
 
 def provider_name(base_url: str) -> str:
-    return "openai_compatible"
+    return "local" if is_local_provider(base_url) else "openai_compatible"
+
+
+@lru_cache(maxsize=1)
+def evaluation_json_schema() -> dict[str, Any]:
+    """CallEvaluation as a strict JSON schema for constrained decoding.
+
+    Every field is required and titles/defaults are dropped: with optional list
+    fields a local model returned prose strings where arrays belong.
+    """
+    schema = json.loads(json.dumps(CallEvaluation.model_json_schema()))
+
+    def strip(node: Any) -> None:
+        if isinstance(node, dict):
+            node.pop("title", None)
+            node.pop("default", None)
+            for value in node.values():
+                strip(value)
+        elif isinstance(node, list):
+            for value in node:
+                strip(value)
+
+    strip(schema)
+    schema["required"] = list(schema["properties"])
+    return schema
 
 
 def parse_evaluation_json(content: str) -> CallEvaluation:
@@ -400,7 +444,10 @@ async def evaluate_transcript(
         "strengths, coaching_actions, compliance_flags. suggested_disposition must be one of "
         "connected, no_answer, busy, voicemail, wrong_number, callback_requested, gatekeeper, "
         "qualified, not_interested, do_not_call, meeting_booked, sale_completed, call_dropped, "
-        "call_me_later, number_disconnected. "
+        "call_me_later, number_disconnected. overall_qa_score is an integer from 0 (poor) to "
+        "100 (excellent) rating the agent's call handling. customer_sentiment is one of positive, "
+        "neutral, negative, mixed, unknown. strengths, coaching_actions and compliance_flags are "
+        "arrays of short strings and may be empty. "
         "Use only spoken words for sentiment. Do not infer protected traits, health, emotion, "
         "lawfulness or employee intent. Flag uncertainty. Output is advisory and cannot alter CRM state."
     )
@@ -408,7 +455,10 @@ async def evaluate_transcript(
         "model": settings.crm_ai_model,
         "temperature": 0,
         "max_tokens": 1200,
-        "response_format": {"type": "json_object"},
+        "response_format": {
+            "type": "json_schema",
+            "json_schema": {"name": "call_evaluation", "strict": True, "schema": evaluation_json_schema()},
+        },
         "user": user_id,
         "messages": [
             {"role": "system", "content": system_prompt},
@@ -416,6 +466,12 @@ async def evaluate_transcript(
         ],
     }
     _assert_provider_allowed(settings.crm_ai_base_url)
+    # A local model needs no key (an empty "Bearer " header is invalid HTTP) and
+    # can take minutes on CPU, the first call also loading the model.
+    headers = (
+        {"Authorization": f"Bearer {settings.crm_ai_api_key}"} if settings.crm_ai_api_key else {}
+    )
+    request_timeout = 300 if is_local_provider(settings.crm_ai_base_url) else 120
     url = settings.crm_ai_base_url.rstrip("/") + "/chat/completions"
     last_error: Exception | None = None
     for attempt in range(MAX_EVALUATION_ATTEMPTS):
@@ -423,12 +479,8 @@ async def evaluate_transcript(
         response_payload: dict[str, Any] | None = None
         attempt_recorded = False
         try:
-            async with httpx.AsyncClient(timeout=120) as client:
-                response = await client.post(
-                    url,
-                    headers={"Authorization": f"Bearer {settings.crm_ai_api_key}"},
-                    json=payload,
-                )
+            async with httpx.AsyncClient(timeout=request_timeout) as client:
+                response = await client.post(url, headers=headers, json=payload)
                 response.raise_for_status()
             response_payload = response.json()
             usage_payload = response_payload.get("usage") or {}
