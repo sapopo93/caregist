@@ -12,6 +12,13 @@ from api.services import crm_ai
 from api.services.crm_ai import RedactedTranscript, evaluate_transcript, redact_transcript
 
 
+@pytest.fixture(autouse=True)
+def _test_provider_url(monkeypatch):
+    # No provider is approved, so the default base URL is empty; evaluation
+    # tests need a non-blocked HTTPS origin to reach the mocked client.
+    monkeypatch.setattr(crm_ai.settings, "crm_ai_base_url", "https://ai.example.invalid/v1")
+
+
 def _valid_evaluation() -> dict:
     return {
         "summary": "The contact requested a later conversation.",
@@ -87,7 +94,7 @@ def test_local_ner_redacts_uncued_lowercase_third_party_names():
 
 
 @pytest.mark.asyncio
-async def test_deepseek_receives_only_redacted_text_and_retries_invalid_json(monkeypatch):
+async def test_provider_receives_only_redacted_text_and_retries_invalid_json(monkeypatch):
     redacted = RedactedTranscript(
         text="[0000.00] Agent: Hello [REDACTED NAME].",
         counts={"known_name": 1},
@@ -139,7 +146,7 @@ async def test_deepseek_receives_only_redacted_text_and_retries_invalid_json(mon
     monkeypatch.setattr(crm_ai.httpx, "AsyncClient", Client)
     monkeypatch.setattr(crm_ai.asyncio, "sleep", no_wait)
     monkeypatch.setattr(crm_ai.settings, "crm_ai_api_key", "memory-only-test-key")
-    monkeypatch.setattr(crm_ai.settings, "crm_ai_model", "deepseek-v4-flash")
+    monkeypatch.setattr(crm_ai.settings, "crm_ai_model", "test-model")
     monkeypatch.setattr(crm_ai.settings, "crm_ai_input_price_usd_per_million", Decimal("0.14"))
     monkeypatch.setattr(crm_ai.settings, "crm_ai_cache_hit_price_usd_per_million", Decimal("0.0028"))
     monkeypatch.setattr(crm_ai.settings, "crm_ai_output_price_usd_per_million", Decimal("0.28"))
@@ -156,9 +163,9 @@ async def test_deepseek_receives_only_redacted_text_and_retries_invalid_json(mon
         serialized = json.dumps(request["json"])
         assert "Alice" not in serialized
         assert "memory-only-test-key" not in serialized
-        assert request["json"]["thinking"] == {"type": "disabled"}
-        assert request["json"]["model"] == "deepseek-v4-flash"
-        assert request["json"]["user_id"] == "c" * 64
+        assert "thinking" not in request["json"]
+        assert request["json"]["model"] == "test-model"
+        assert request["json"]["user"] == "c" * 64
 
 
 @pytest.mark.asyncio
@@ -426,3 +433,28 @@ async def test_job_failure_releases_unused_holds_but_keeps_ambiguous_charge(
             "ProviderUsagePersistenceError" if usage_persistence_failed else "RuntimeError"
         ), job["attempts"], expected)
     ]
+
+
+@pytest.mark.parametrize(
+    "base_url",
+    ["https://api.deepseek.com/v1", "https://eu.api.deepseek.com", "http://ai.example.invalid/v1", ""],
+)
+def test_blocked_or_insecure_provider_urls_are_refused(base_url):
+    with pytest.raises(RuntimeError):
+        crm_ai._assert_provider_allowed(base_url)
+
+
+def test_crm_ai_cannot_be_enabled_in_production():
+    from api.config import Settings
+
+    with pytest.raises(RuntimeError, match="no UK GDPR-approved AI provider"):
+        Settings(
+            database_url="postgresql://prod",
+            api_master_key="master",
+            support_internal_token="support",
+            webhook_secret_key="webhook-key",
+            redis_url="rediss://redis.example.com:6380/0",
+            cors_origins="https://caregist.co.uk",
+            app_url="https://caregist.co.uk",
+            crm_ai_enabled=True,
+        ).validate_production()

@@ -1,4 +1,8 @@
-"""Fail-closed redaction and advisory DeepSeek evaluation for the local worker."""
+"""Fail-closed redaction and advisory AI evaluation for the local worker.
+
+Disabled: DeepSeek was removed on 19 Oct 2026 and no replacement provider is approved
+(see api/config.py). The settings validator refuses CRM_AI_ENABLED=true.
+"""
 
 from __future__ import annotations
 
@@ -14,6 +18,7 @@ from functools import lru_cache
 from typing import Any, Literal
 
 import httpx
+from urllib.parse import urlparse
 from pydantic import BaseModel, Field, ValidationError, field_validator
 
 from api.config import settings
@@ -206,8 +211,21 @@ def _redact_local_entities(text: str, counts: dict[str, int], *, required: bool)
     return text
 
 
+BLOCKED_PROVIDER_DOMAINS = ("deepseek.com",)
+
+
+def _assert_provider_allowed(base_url: str) -> None:
+    """Refuse any outbound evaluation to a blocked or non-HTTPS provider."""
+    parsed = urlparse(base_url)
+    host = (parsed.hostname or "").lower()
+    if parsed.scheme != "https" or not host:
+        raise RuntimeError("CRM AI provider URL must be an approved HTTPS origin.")
+    if any(host == domain or host.endswith("." + domain) for domain in BLOCKED_PROVIDER_DOMAINS):
+        raise RuntimeError("CRM AI provider is blocked under UK GDPR transfer policy.")
+
+
 def provider_name(base_url: str) -> str:
-    return "deepseek" if "deepseek" in base_url.lower() else "openai_compatible"
+    return "openai_compatible"
 
 
 def parse_evaluation_json(content: str) -> CallEvaluation:
@@ -391,13 +409,13 @@ async def evaluate_transcript(
         "temperature": 0,
         "max_tokens": 1200,
         "response_format": {"type": "json_object"},
-        "thinking": {"type": "disabled"},
-        "user_id": user_id,
+        "user": user_id,
         "messages": [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": redacted.text},
         ],
     }
+    _assert_provider_allowed(settings.crm_ai_base_url)
     url = settings.crm_ai_base_url.rstrip("/") + "/chat/completions"
     last_error: Exception | None = None
     for attempt in range(MAX_EVALUATION_ATTEMPTS):
@@ -488,7 +506,7 @@ async def evaluate_transcript(
                     ) from persistence_exc
             if attempt < MAX_EVALUATION_ATTEMPTS - 1:
                 await asyncio.sleep(0.25 * (2**attempt))
-    raise RuntimeError("DeepSeek returned no valid schema-bound evaluation after three attempts.") from last_error
+    raise RuntimeError("The AI provider returned no valid schema-bound evaluation after three attempts.") from last_error
 
 
 async def _record_usage_attempt(
