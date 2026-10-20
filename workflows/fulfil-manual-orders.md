@@ -49,6 +49,24 @@ Providers in scope). Buyer types map to `--provider-group`: New registrations
   --week-ending 2026-10-25 --issue 1 --buyer-email buyer@example.com
 ```
 
+### Track every order
+
+```bash
+.venv/bin/python -m tools.orders            # refresh paid/sent and show the table
+.venv/bin/python -m tools.orders --csv orders.csv
+```
+
+One row per order ref: product, buyer, scope (with the quoted count), quote
+drafted/sent, paid date, deliveries sent (Digest shows n/4) and a status:
+`Quote drafted: not sent yet` → `Quote sent: awaiting payment` →
+`Paid: prepare delivery` → `Delivery drafted: press Send` → `Complete`.
+Every email subject ends with `(ref TOB-…)` or `(ref WDP-…)`, so replies and the
+Sent folder always show which order they belong to. Payment is checked live
+(CareGist sales record, then Stripe); "sent" is read from the outreach@ Sent
+folder. The ledger is `orders/ledger.sqlite` on this machine: it holds buyer
+emails, is git-ignored, and should be backed up with your other business files.
+Use the same `--order-ref` for every step of one order.
+
 Drafts need `OUTREACH_IMAP_PASSWORD` (the outreach@ mailbox password) in `.env`;
 add it yourself. Without it the command still writes `email.eml` in the order
 folder (`.tmp/orders/<ref>/`) for you to open. The sections below describe the

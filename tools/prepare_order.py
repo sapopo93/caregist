@@ -35,6 +35,7 @@ import imaplib
 import json
 import os
 import re
+import secrets
 import ssl
 import time
 from dataclasses import dataclass, field
@@ -239,7 +240,8 @@ def add_working_days(start: date, days: int) -> date:
 
 def new_order_ref(product: str) -> str:
     prefix = "TOB" if product == "brief" else "WDP"
-    return f"{prefix}-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}"
+    # A random suffix keeps refs unique when two orders are prepared in the same second.
+    return f"{prefix}-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}-{secrets.token_hex(2).upper()}"
 
 
 # --------------------------------------------------------------------------- #
@@ -415,7 +417,7 @@ def build_brief(args: argparse.Namespace, *, env: dict[str, str], order_dir: Pat
 
 def brief_quote_email(args: argparse.Namespace, summary: dict[str, Any], now: datetime) -> tuple[str, str]:
     delivery = add_working_days(now.date(), DELIVERY_WORKING_DAYS)
-    subject = f"Your Territory Opportunity Brief scope: {summary['region']} · {summary['provider_group']}"
+    subject = f"Your Territory Opportunity Brief scope: {summary['region']} · {summary['provider_group']} (ref {args.order_ref})"
     body = f"""Hi {args.buyer_name or 'there'},
 
 Thank you for your enquiry. I have checked the published CQC record for your scope and can confirm we can deliver it.
@@ -441,7 +443,7 @@ Best wishes,
 
 
 def brief_delivery_email(args: argparse.Namespace, summary: dict[str, Any]) -> tuple[str, str]:
-    subject = f"Your Territory Opportunity Brief: {summary['region']} · {summary['provider_group']}"
+    subject = f"Your Territory Opportunity Brief: {summary['region']} · {summary['provider_group']} (ref {args.order_ref})"
     body = f"""Hi {args.buyer_name or 'there'},
 
 Thank you for your order. Your Territory Opportunity Brief is attached:
@@ -467,7 +469,7 @@ Best wishes,
 def digest_quote_email(args: argparse.Namespace) -> tuple[str, str]:
     start = date.fromisoformat(args.start_date)
     issues = [start + timedelta(weeks=i) for i in range(4)]
-    subject = f"Your Weekly Digest pilot: {args.region}, starting {start.strftime('%d %B %Y')}"
+    subject = f"Your Weekly Digest pilot: {args.region}, starting {start.strftime('%d %B %Y')} (ref {args.order_ref})"
     body = f"""Hi {args.buyer_name or 'there'},
 
 Thank you for your enquiry. Here is the confirmed Weekly Digest pilot (this email is the order form under our Business Terms v2.2.1):
@@ -520,7 +522,7 @@ def build_digest_issue(args: argparse.Namespace, *, env: dict[str, str], order_d
 
 
 def digest_delivery_email(args: argparse.Namespace, summary: dict[str, Any]) -> tuple[str, str]:
-    subject = f"Your CareGist Weekly Digest: {args.region}, issue {args.issue} of 4"
+    subject = f"Your CareGist Weekly Digest: {args.region}, issue {args.issue} of 4 (ref {args.order_ref})"
     body = f"""Hi {args.buyer_name or 'there'},
 
 Issue {args.issue} of 4 of your Weekly Digest for {args.region} is attached (PDF and CSV), covering the week ending {args.week_ending}.
@@ -535,6 +537,48 @@ Best wishes,
 # --------------------------------------------------------------------------- #
 # CLI
 # --------------------------------------------------------------------------- #
+
+
+def record_in_ledger(
+    args: argparse.Namespace,
+    *,
+    summary: dict[str, Any],
+    message: EmailMessage,
+    draft: str,
+    order_dir: Path,
+    payment: dict[str, Any] | None,
+) -> None:
+    """Log the drafted email against its order in the local ledger (tools/orders.py)."""
+    from tools import order_ledger
+
+    if args.product == "brief":
+        scope = f"{args.region} · {summary.get('provider_group', args.provider_group)} · {args.service_type or 'All services'}"
+        scope_args = {"region": args.region, "provider_group": args.provider_group, "service_type": args.service_type}
+        amount = BRIEF_AMOUNT_PENCE
+        quoted = summary.get("shortlisted") if args.stage == "quote" else None
+    else:
+        scope = f"{args.region} · from {args.start_date}" if args.start_date else args.region
+        scope_args = {"region": args.region, "start_date": args.start_date, "buyer_type": args.buyer_type}
+        amount = DIGEST_AMOUNT_PENCE
+        quoted = None
+    order_ledger.record_email(
+        order_ref=args.order_ref,
+        product=args.product,
+        stage=args.stage,
+        buyer_email=args.buyer_email,
+        buyer_name=args.buyer_name,
+        company=args.company,
+        scope=scope,
+        scope_args=scope_args,
+        amount_pence=amount,
+        quoted_count=quoted,
+        message_id=str(message["Message-ID"]),
+        subject=str(message["Subject"]),
+        draft_location=draft,
+        folder=str(order_dir),
+        issue=args.issue if args.product == "digest" and args.stage == "deliver" else None,
+        payment=payment,
+    )
 
 
 def load_env() -> dict[str, str]:
@@ -658,6 +702,7 @@ def main(argv: list[str] | None = None) -> int:
     draft = "not saved (--no-draft)" if args.no_draft else save_draft(message, env=env)
     report["draft"] = draft
     (order_dir / "checks.json").write_text(json.dumps(report, indent=2, default=str) + "\n", encoding="utf-8")
+    record_in_ledger(args, summary=summary, message=message, draft=draft, order_dir=order_dir, payment=payment)
 
     print(f"READY: {args.order_ref} ({args.product} {args.stage})")
     for item in checks.results:
@@ -665,6 +710,7 @@ def main(argv: list[str] | None = None) -> int:
     print(f"Draft: {draft}")
     print(f"Folder: {order_dir}")
     print("Review the draft in outreach@caregist.co.uk, then press Send. Nothing has been sent.")
+    print("Track it with: .venv/bin/python -m tools.orders")
     return 0
 
 

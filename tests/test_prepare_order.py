@@ -12,6 +12,12 @@ from tools import prepare_order as po
 REPO = Path(__file__).resolve().parents[1]
 
 
+@pytest.fixture(autouse=True)
+def _isolated_ledger(monkeypatch, tmp_path):
+    # prepare_order records every drafted email; never touch the real ledger.
+    monkeypatch.setenv("CAREGIST_ORDER_LEDGER", str(tmp_path / "ledger.sqlite"))
+
+
 def test_opportunity_sql_matches_the_website_coverage_query_exactly():
     # The Brief must cover what the buyer was shown; any drift fails here.
     source = (REPO / "frontend" / "lib" / "directory-query-clauses.ts").read_text(encoding="utf-8")
