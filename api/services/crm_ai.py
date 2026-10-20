@@ -46,6 +46,10 @@ Disposition = Literal[
 ]
 
 
+# Local models sometimes fill an empty list with a placeholder string.
+_EMPTY_LIST_PLACEHOLDERS = frozenset({"none", "n/a", "na", "nil", "-", "no flags", "none identified"})
+
+
 class CallEvaluation(BaseModel):
     summary: str = Field(min_length=1, max_length=2000)
     suggested_disposition: Disposition
@@ -69,6 +73,8 @@ class CallEvaluation(BaseModel):
         cleaned: list[str] = []
         for value in values:
             item = value.strip()
+            if item.lower().rstrip(".") in _EMPTY_LIST_PLACEHOLDERS:
+                continue
             if not item or len(item) > 500:
                 raise ValueError("Evaluation list items must contain 1 to 500 characters.")
             cleaned.append(item)
@@ -89,13 +95,14 @@ class RedactedTranscript:
     counts: dict[str, int]
     source_sha256: str
     redacted_sha256: str
+    policy_version: str = "caregist-crm-redaction-v1"
 
     def evidence(self) -> dict[str, Any]:
         return {
             "counts": self.counts,
             "source_sha256": self.source_sha256,
             "redacted_sha256": self.redacted_sha256,
-            "policy_version": "caregist-crm-redaction-v1",
+            "policy_version": self.policy_version,
         }
 
 
@@ -115,7 +122,9 @@ POSTCODE_PATTERN = re.compile(
     r"(?i)\b(?:GIR ?0AA|(?:[A-PR-UWYZ][0-9][0-9A-HJKSTUW]?|"
     r"[A-PR-UWYZ][A-HK-Y][0-9][0-9ABEHMNPRV-Y]?) ?[0-9][ABD-HJLNP-UW-Z]{2})\b"
 )
-NI_PATTERN = re.compile(r"(?i)\b(?!BG|GB|NK|KN|TN|NT|ZZ)[A-CEGHJ-PR-TW-Z]{2}\s?\d{6}\s?[A-D]\b")
+NI_PATTERN = re.compile(
+    r"(?i)\b(?!BG|GB|NK|KN|TN|NT|ZZ)[A-CEGHJ-PR-TW-Z]{2}\s?(?:\d{2}\s?){3}[A-D]\b"
+)
 IDENTIFIER_PATTERN = re.compile(
     r"(?i)\b(?:nhs|national insurance|ni|account|case|customer|employee|patient|reference)"
     r"\s*(?:number|no\.?|id)?\s*(?:is|:|-)?\s*[A-Z0-9][A-Z0-9 /-]{4,30}\b"
@@ -144,6 +153,56 @@ SENSITIVE_PATTERN = re.compile(
     r"credit card|debit card|passport|driving licen[cs]e|date of birth|dob)\b"
 )
 PLACEHOLDER_PATTERN = re.compile(r"\[REDACTED [A-Z ]+\]")
+
+# Local-model profile. The transcript never leaves this machine, so the goal is
+# data minimisation that keeps the call's meaning: remove identifiers and
+# people's names, keep places, organisations, dates and ordinary capitalised
+# words. Each pattern below is narrower than its strict counterpart because the
+# strict one destroyed meaning on real calls ("don't contact us again" became a
+# name, "in case anything changes" an identifier, any line with "health" was
+# blanked in a care-sector business).
+LOCAL_IDENTIFIER_PATTERN = re.compile(
+    r"(?i)\b(?:nhs|national insurance|ni|account|case|customer|employee|patient|reference)"
+    r"\s*(?:number|no\.?|id)?\s*(?:is|:|-)?\s*(?=[A-Z0-9 /-]*\d)[A-Z0-9][A-Z0-9 /-]{4,30}\b"
+)
+# The lead-in is kept so the sentence still reads; only the name goes. Name words
+# after the first are case-sensitive so "speak to Sarah in finance" keeps "in".
+_LOCAL_NAME_WORD = r"[A-Za-z][A-Za-z'-]{1,50}"
+_LOCAL_EXTRA_NAME_WORD = r"(?-i:\s+(?!(?:From|At|Here|Speaking|Calling)\b)[A-Z][a-z'-]{1,50})"
+LOCAL_INTRODUCTION_NAME_PATTERN = re.compile(
+    r"(?i)(?P<lead>\b(?:my name is|my name's|i'm called|you're speaking (?:to|with)|"
+    r"(?:this|it) is (?=[a-z'-]+\s+(?:from|at|here|speaking|calling)\b)|"
+    r"(?:ask(?:ing)? for|speak(?:ing)? (?:to|with)) (?=(?-i:[A-Z])))\s*)"
+    rf"(?P<name>{_LOCAL_NAME_WORD}{_LOCAL_EXTRA_NAME_WORD}?)\b"
+)
+LOCAL_HONORIFIC_NAME_PATTERN = re.compile(
+    r"(?P<lead>\b(?:[Mm]r|[Mm]rs|[Mm]iss|[Mm]s|[Dd]r|[Pp]rofessor)\.?\s+)"
+    r"(?P<name>[A-Z][a-z'-]{1,50}(?:\s+[A-Z][a-z'-]{1,50})?)\b"
+)
+# Words that make up organisation names but are ordinary speech on their own:
+# "Meadow View Care" must not blank every later "care".
+LOCAL_ORG_WORDS = frozenset({
+    "care", "home", "homes", "house", "view", "court", "lodge", "hall", "manor", "park",
+    "services", "service", "health", "healthcare", "nursing", "residential", "group",
+    "limited", "ltd", "trust", "centre", "center", "the", "and", "of", "at", "uk", "plc",
+    "community", "support", "living", "partnership", "practice", "surgery", "clinic",
+})
+LOCAL_ALWAYS_SENSITIVE_PATTERN = re.compile(
+    r"(?i)\b(?:suicid(?:e|al)|self[- ]?harm|sexual orientation|criminal conviction|"
+    r"biometric|genetic|bank account|sort code|credit card|debit card|card number|passport|"
+    r"driving licen[cs]e|date of birth|dob)\b"
+)
+# Health and other special-category terms are business vocabulary in this sector
+# ("mental health services", "nursing"), so they only blank a line when the
+# speaker ties them to a person.
+LOCAL_PERSONAL_SENSITIVE_PATTERN = re.compile(
+    r"(?i)\b(?:i|i'm|i've|i've been|my|he|he's|she|she's|his|her|they're|their|"
+    r"my (?:husband|wife|partner|son|daughter|mum|mother|dad|father))\b[^.?!]{0,40}?\b"
+    r"(?:diagnos(?:is|ed)|medication|cancer|chemotherap(?:y|ies)|radiotherap(?:y|ies)|"
+    r"surgery|operation|depress(?:ed|ion)|anxiety|addiction|illness|ill|disabled|disabilit(?:y|ies)|"
+    r"pregnan(?:t|cy)|in hospital|religio(?:n|us)|ethnicity|trade union member)\b"
+)
+LOCAL_NER_PERSON_LABELS = frozenset({"PERSON"})
 LOCAL_NER_LABELS = frozenset({"PERSON", "ORG", "GPE", "LOC", "FAC", "NORP", "DATE"})
 
 
@@ -170,7 +229,13 @@ def _case_normalized(text: str) -> str:
     )
 
 
-def _local_entity_spans(text: str, *, required: bool) -> list[tuple[int, int]]:
+def _local_entity_spans(
+    text: str,
+    *,
+    required: bool,
+    labels: frozenset[str] = LOCAL_NER_LABELS,
+    proper_noun_sweep: bool = True,
+) -> list[tuple[int, int]]:
     if not required:
         return []
     model = _ner_model()
@@ -179,8 +244,10 @@ def _local_entity_spans(text: str, *, required: bool) -> list[tuple[int, int]]:
     for candidate in (analysis, _case_normalized(analysis)):
         document = model(candidate)
         for entity in document.ents:
-            if entity.label_ in LOCAL_NER_LABELS:
+            if entity.label_ in labels:
                 spans.add((entity.start_char, entity.end_char))
+        if not proper_noun_sweep:
+            continue
         # Entity labels are statistical and sometimes misclassify uncommon
         # names (for example as DATE) or omit a surname. Proper-noun tokens are
         # therefore independently sensitive and adjacent alphabetic tokens are
@@ -212,20 +279,58 @@ def _redact_local_entities(text: str, counts: dict[str, int], *, required: bool)
 
 
 BLOCKED_PROVIDER_DOMAINS = ("deepseek.com",)
+LOOPBACK_HOSTS = frozenset({"127.0.0.1", "::1", "localhost"})
+
+
+def is_local_provider(base_url: str) -> bool:
+    """A model served on this machine: transcripts never leave it."""
+    parsed = urlparse(base_url)
+    return (
+        parsed.scheme in {"http", "https"}
+        and (parsed.hostname or "").lower() in LOOPBACK_HOSTS
+        and not parsed.username
+        and not parsed.password
+    )
 
 
 def _assert_provider_allowed(base_url: str) -> None:
-    """Refuse any outbound evaluation to a blocked or non-HTTPS provider."""
+    """Allow a loopback model or an HTTPS provider; refuse blocked hosts and plain-HTTP remotes."""
     parsed = urlparse(base_url)
     host = (parsed.hostname or "").lower()
-    if parsed.scheme != "https" or not host:
-        raise RuntimeError("CRM AI provider URL must be an approved HTTPS origin.")
     if any(host == domain or host.endswith("." + domain) for domain in BLOCKED_PROVIDER_DOMAINS):
         raise RuntimeError("CRM AI provider is blocked under UK GDPR transfer policy.")
+    if is_local_provider(base_url):
+        return
+    if parsed.scheme != "https" or not host:
+        raise RuntimeError("CRM AI provider URL must be an approved HTTPS origin.")
 
 
 def provider_name(base_url: str) -> str:
-    return "openai_compatible"
+    return "local" if is_local_provider(base_url) else "openai_compatible"
+
+
+@lru_cache(maxsize=1)
+def evaluation_json_schema() -> dict[str, Any]:
+    """CallEvaluation as a strict JSON schema for constrained decoding.
+
+    Every field is required and titles/defaults are dropped: with optional list
+    fields a local model returned prose strings where arrays belong.
+    """
+    schema = json.loads(json.dumps(CallEvaluation.model_json_schema()))
+
+    def strip(node: Any) -> None:
+        if isinstance(node, dict):
+            node.pop("title", None)
+            node.pop("default", None)
+            for value in node.values():
+                strip(value)
+        elif isinstance(node, list):
+            for value in node:
+                strip(value)
+
+    strip(schema)
+    schema["required"] = list(schema["properties"])
+    return schema
 
 
 def parse_evaluation_json(content: str) -> CallEvaluation:
@@ -252,10 +357,23 @@ def _replace_pattern(
     return text
 
 
+RedactionProfile = Literal["strict", "local"]
+
+
 def redact_transcript(
-    transcript: str, *, known_entities: tuple[str, ...] = (), require_local_ner: bool = False
+    transcript: str,
+    *,
+    known_entities: tuple[str, ...] = (),
+    require_local_ner: bool = False,
+    profile: RedactionProfile = "strict",
 ) -> RedactedTranscript:
-    """Remove required personal/sensitive data and prove no known pattern remains."""
+    """Remove required personal/sensitive data and prove no known pattern remains.
+
+    ``strict`` is for any provider outside this machine. ``local`` is for a
+    loopback model: identifiers and people's names go, meaning stays.
+    """
+    if profile == "local":
+        return _redact_transcript_local(transcript, known_entities=known_entities)
     if not transcript.strip():
         raise RedactionError("An empty transcript cannot be sent externally.")
     if len(transcript) > 120_000:
@@ -356,6 +474,99 @@ def redact_transcript(
     )
 
 
+def _person_spans(text: str) -> list[tuple[int, int]]:
+    return _local_entity_spans(
+        text, required=True, labels=LOCAL_NER_PERSON_LABELS, proper_noun_sweep=False
+    )
+
+
+def _redact_transcript_local(
+    transcript: str, *, known_entities: tuple[str, ...] = ()
+) -> RedactedTranscript:
+    """Data minimisation for a model on this machine; fails closed like strict."""
+    if not transcript.strip():
+        raise RedactionError("An empty transcript cannot be evaluated.")
+    if len(transcript) > 120_000:
+        raise RedactionError("Transcript exceeds the approved processing limit.")
+
+    source_sha256 = hashlib.sha256(transcript.encode("utf-8")).hexdigest()
+    counts: dict[str, int] = {}
+    redacted = transcript
+    structured = (
+        (EMAIL_PATTERN, "[REDACTED EMAIL]", "email"),
+        (PHONE_PATTERN, "[REDACTED PHONE]", "phone"),
+        (POSTCODE_PATTERN, "[REDACTED POSTCODE]", "postcode"),
+        (NI_PATTERN, "[REDACTED IDENTIFIER]", "national_insurance"),
+        (LOCAL_IDENTIFIER_PATTERN, "[REDACTED IDENTIFIER]", "identifier"),
+    )
+    for pattern, replacement, category in structured:
+        redacted = _replace_pattern(redacted, pattern, replacement, counts, category)
+
+    for entity in sorted({item.strip() for item in known_entities if item.strip()}, key=len, reverse=True):
+        candidates = {entity}
+        if " " in entity:
+            candidates.update(
+                part
+                for part in re.split(r"\s+", entity)
+                if len(part) >= 2 and part.lower() not in LOCAL_ORG_WORDS
+            )
+        for candidate in sorted(candidates, key=len, reverse=True):
+            pattern = re.compile(rf"(?i)(?<!\w){re.escape(candidate)}(?!\w)")
+            redacted = _replace_pattern(redacted, pattern, "[REDACTED NAME]", counts, "known_name")
+
+    for pattern in (LOCAL_HONORIFIC_NAME_PATTERN, LOCAL_INTRODUCTION_NAME_PATTERN):
+        redacted = _replace_pattern(
+            redacted, pattern, r"\g<lead>[REDACTED NAME]", counts, "contextual_name"
+        )
+
+    safe_lines: list[str] = []
+    for line in redacted.splitlines():
+        prefix, content = (line.split(":", 1) if ":" in line else ("", line))
+        prefix = prefix + ":" if ":" in line else ""
+        if LOCAL_ALWAYS_SENSITIVE_PATTERN.search(content) or LOCAL_PERSONAL_SENSITIVE_PATTERN.search(content):
+            safe_lines.append(f"{prefix} [REDACTED SENSITIVE INFORMATION]")
+            counts["sensitive_line"] = counts.get("sensitive_line", 0) + 1
+            continue
+        spans = _person_spans(content)
+        for start, end in reversed(spans):
+            content = content[:start] + "[REDACTED NAME]" + content[end:]
+        if spans:
+            counts["person_name"] = counts.get("person_name", 0) + len(spans)
+        safe_lines.append(prefix + content)
+    redacted = "\n".join(safe_lines)
+
+    residual = (
+        EMAIL_PATTERN,
+        PHONE_PATTERN,
+        POSTCODE_PATTERN,
+        NI_PATTERN,
+        LOCAL_IDENTIFIER_PATTERN,
+        LOCAL_HONORIFIC_NAME_PATTERN,
+        LOCAL_INTRODUCTION_NAME_PATTERN,
+        LOCAL_ALWAYS_SENSITIVE_PATTERN,
+        LOCAL_PERSONAL_SENSITIVE_PATTERN,
+    )
+    if any(pattern.search(redacted) for pattern in residual):
+        raise RedactionError("Transcript redaction could not be proven complete.")
+    for line in redacted.splitlines():
+        content = line.split(":", 1)[1] if ":" in line else line
+        if _person_spans(content):
+            raise RedactionError("A person's name remains after redaction.")
+    for entity in known_entities:
+        if entity.strip() and re.search(rf"(?i)(?<!\w){re.escape(entity.strip())}(?!\w)", redacted):
+            raise RedactionError("A known CRM entity remains after redaction.")
+    if not redacted.strip():
+        raise RedactionError("Transcript contains no reviewable content after redaction.")
+
+    return RedactedTranscript(
+        text=redacted,
+        counts=counts,
+        source_sha256=source_sha256,
+        redacted_sha256=hashlib.sha256(redacted.encode("utf-8")).hexdigest(),
+        policy_version="caregist-crm-redaction-v2-local",
+    )
+
+
 def pseudonymous_user_id(call_session_id: Any) -> str:
     key = settings.crm_ai_pseudonym_key.encode("utf-8")
     if len(key) < 32:
@@ -400,7 +611,10 @@ async def evaluate_transcript(
         "strengths, coaching_actions, compliance_flags. suggested_disposition must be one of "
         "connected, no_answer, busy, voicemail, wrong_number, callback_requested, gatekeeper, "
         "qualified, not_interested, do_not_call, meeting_booked, sale_completed, call_dropped, "
-        "call_me_later, number_disconnected. "
+        "call_me_later, number_disconnected. overall_qa_score is an integer from 0 (poor) to "
+        "100 (excellent) rating the agent's call handling. customer_sentiment is one of positive, "
+        "neutral, negative, mixed, unknown. strengths, coaching_actions and compliance_flags are "
+        "arrays of short strings and may be empty. "
         "Use only spoken words for sentiment. Do not infer protected traits, health, emotion, "
         "lawfulness or employee intent. Flag uncertainty. Output is advisory and cannot alter CRM state."
     )
@@ -408,7 +622,10 @@ async def evaluate_transcript(
         "model": settings.crm_ai_model,
         "temperature": 0,
         "max_tokens": 1200,
-        "response_format": {"type": "json_object"},
+        "response_format": {
+            "type": "json_schema",
+            "json_schema": {"name": "call_evaluation", "strict": True, "schema": evaluation_json_schema()},
+        },
         "user": user_id,
         "messages": [
             {"role": "system", "content": system_prompt},
@@ -416,6 +633,12 @@ async def evaluate_transcript(
         ],
     }
     _assert_provider_allowed(settings.crm_ai_base_url)
+    # A local model needs no key (an empty "Bearer " header is invalid HTTP) and
+    # can take minutes on CPU, the first call also loading the model.
+    headers = (
+        {"Authorization": f"Bearer {settings.crm_ai_api_key}"} if settings.crm_ai_api_key else {}
+    )
+    request_timeout = 300 if is_local_provider(settings.crm_ai_base_url) else 120
     url = settings.crm_ai_base_url.rstrip("/") + "/chat/completions"
     last_error: Exception | None = None
     for attempt in range(MAX_EVALUATION_ATTEMPTS):
@@ -423,12 +646,8 @@ async def evaluate_transcript(
         response_payload: dict[str, Any] | None = None
         attempt_recorded = False
         try:
-            async with httpx.AsyncClient(timeout=120) as client:
-                response = await client.post(
-                    url,
-                    headers={"Authorization": f"Bearer {settings.crm_ai_api_key}"},
-                    json=payload,
-                )
+            async with httpx.AsyncClient(timeout=request_timeout) as client:
+                response = await client.post(url, headers=headers, json=payload)
                 response.raise_for_status()
             response_payload = response.json()
             usage_payload = response_payload.get("usage") or {}
@@ -678,7 +897,10 @@ async def process_ai_jobs(*, limit: int = 2) -> dict[str, int]:
                 if str(job.get(name) or "").strip()
             )
             redacted = redact_transcript(
-                transcript, known_entities=known_entities, require_local_ner=True
+                transcript,
+                known_entities=known_entities,
+                require_local_ner=True,
+                profile="local" if is_local_provider(settings.crm_ai_base_url) else "strict",
             )
             external_user_id = pseudonymous_user_id(job["call_session_id"])
             if not await _job_is_current(job):
