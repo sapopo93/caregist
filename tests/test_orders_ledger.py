@@ -134,3 +134,35 @@ def test_order_refs_are_unique_within_the_same_second():
     refs = {po.new_order_ref("brief") for _ in range(200)}
     assert len(refs) > 190
     assert all(r.startswith("TOB-") for r in refs)
+
+
+def _delivery_args(ref, message_id, **extra):
+    return dict(order_ref=ref, product="brief", stage="deliver", buyer_email="a@example.com", buyer_name="",
+                company="", scope="North East", scope_args={}, amount_pence=74500, quoted_count=None,
+                message_id=message_id, subject="s", draft_location="d", folder="f", **extra)
+
+
+def test_delivery_redraft_refused_when_original_was_sent_meanwhile(tmp_path):
+    path = tmp_path / "l.sqlite"
+    ledger.record_email(**{**_delivery_args("TOB-1", "<q@x>"), "stage": "quote"}, path=path)
+    ledger.record_email(**_delivery_args("TOB-1", "<d1@x>"), path=path)
+    with ledger.connect(path) as conn:
+        first = next(e for e in ledger.get_order(conn, "TOB-1")["emails"] if e["stage"] == "deliver")
+        # A refresh marks it sent after the redraft run's preflight read the ledger.
+        ledger.mark_sent(conn, "<d1@x>", "2026-10-20T12:00:00+00:00")
+    with pytest.raises(ledger.LedgerError, match="already sent"):
+        ledger.record_email(**_delivery_args("TOB-1", "<d2@x>"), supersede_email_id=first["id"], path=path)
+    with ledger.connect(path) as conn:
+        deliveries = [e for e in ledger.get_order(conn, "TOB-1")["emails"] if e["stage"] == "deliver"]
+    assert [e["message_id"] for e in deliveries] == ["<d1@x>"]
+
+
+def test_supersede_of_an_already_replaced_draft_is_refused(tmp_path):
+    path = tmp_path / "l.sqlite"
+    ledger.record_email(**{**_delivery_args("TOB-2", "<q1@x>"), "stage": "quote"}, path=path)
+    with ledger.connect(path) as conn:
+        (q1,) = ledger.get_order(conn, "TOB-2")["emails"]
+    ledger.record_email(**{**_delivery_args("TOB-2", "<q2@x>"), "stage": "quote"}, supersede_email_id=q1["id"], path=path)
+    with pytest.raises(ledger.LedgerError, match="sent or replaced"):
+        ledger.record_email(**{**_delivery_args("TOB-2", "<q3@x>"), "stage": "quote"},
+                            supersede_email_id=q1["id"], path=path)

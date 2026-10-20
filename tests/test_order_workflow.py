@@ -219,12 +219,47 @@ def test_failed_mailbox_save_leaves_no_phantom_draft(world, monkeypatch, capsys)
         raise OSError("mailbox down")
 
     monkeypatch.setattr(po, "save_draft", broken)
+    monkeypatch.setattr(po, "draft_exists", lambda message_id, *, env: False)
     assert run(world, "quote", "brief", "--region", "North East", "--provider-group", "new_90",
                "--buyer-email", "z@example.com") == 2
     assert "could not save the draft" in capsys.readouterr().out
     with ledger.connect() as conn:
         (o,) = ledger.orders_with_emails(conn)
     assert ledger.live(o["emails"], "quote") == []
+
+
+def test_draft_saved_despite_lost_reply_is_kept_and_tracked(world, monkeypatch, capsys):
+    def lost_reply(message, *, env):
+        raise OSError("connection reset after APPEND")
+
+    monkeypatch.setattr(po, "save_draft", lost_reply)
+    monkeypatch.setattr(po, "draft_exists", lambda message_id, *, env: True)
+    assert run(world, "quote", "brief", "--region", "North East", "--provider-group", "new_90",
+               "--buyer-email", "z@example.com") == 0
+    with ledger.connect() as conn:
+        (o,) = ledger.orders_with_emails(conn)
+    (live,) = ledger.live(o["emails"], "quote")
+    assert "confirmed after a connection error" in live["draft_location"]
+
+
+def test_uncertain_draft_blocks_a_plain_rerun(world, monkeypatch, capsys):
+    ref = quote_brief(world)
+    pay(world, "a@example.com", 74500)
+
+    def lost_reply(message, *, env):
+        raise OSError("connection reset after APPEND")
+
+    def cannot_tell(message_id, *, env):
+        raise OSError("mailbox unreachable")
+
+    monkeypatch.setattr(po, "save_draft", lost_reply)
+    monkeypatch.setattr(po, "draft_exists", cannot_tell)
+    assert run(world, "deliver", "--order-ref", ref) == 2
+    assert "may or may not be in outreach@ Drafts" in capsys.readouterr().out
+    # The possibly-saved draft stays tracked, so a plain re-run cannot add a second one.
+    assert len(ledger.live(order(ref)["emails"], "deliver")) == 1
+    assert run(world, "deliver", "--order-ref", ref) == 2
+    assert "already exists" in capsys.readouterr().out
 
 
 # ---- Weekly Digest: right issue, on time, exactly four ---------------------- #
@@ -266,6 +301,19 @@ def test_actions_list_every_open_step_and_payments_with_no_order(world, monkeypa
     assert f"{drafted}" in text and "Send the quote draft" in text
     assert f"{paid}" in text and f"prepare_order deliver --order-ref {paid}" in text
     assert "PAYMENT WITH NO ORDER" in text and "cs_orphan" in text
+
+
+def test_refund_found_on_first_refresh_is_not_counted_as_revenue(world, monkeypatch):
+    ref = quote_brief(world)
+    pay(world, "a@example.com", 74500, session="cs_refunded", order_ref=ref)
+    world["invalid"]["cs_refunded"] = "the payment has been refunded"
+    monkeypatch.setattr(orders, "find_sent", lambda env, pending: {})
+
+    orders.refresh({})
+
+    assert order(ref)["payment_problem"] == "the payment has been refunded"
+    t = orders.totals(orders.rows())
+    assert t["revenue_gbp"] == 0 and t["payment_problems"] == 1
 
 
 def test_paid_brief_becomes_overdue_after_three_working_days(world):

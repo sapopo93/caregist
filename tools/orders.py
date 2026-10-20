@@ -130,6 +130,11 @@ def refresh(env: dict[str, str], *, path: Path | None = None) -> tuple[list[str]
                 if payment:
                     ledger.record_payment(conn, order["order_ref"], payment)
                     claimed.add(payment["session"])
+                    # Validate now, not on the next refresh: a refunded or disputed
+                    # checkout still reports payment_status "paid".
+                    ledger.set_payment_problem(
+                        conn, order["order_ref"], po.payment_still_valid(env, payment["session"])
+                    )
             unmatched = [p for p in po.list_payments(env) if p["session"] not in claimed]
         except Exception as exc:  # network or DB unavailable: keep the last known state
             notes.append(f"Payment check unavailable ({type(exc).__name__}); showing last known state.")

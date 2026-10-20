@@ -435,6 +435,27 @@ def _drafts_mailbox(conn: imaplib.IMAP4_SSL) -> str:
     return "Drafts"
 
 
+def draft_exists(message_id: str, *, env: dict[str, str]) -> bool:
+    """Whether a draft with this Message-ID is in outreach@ Drafts. Raises if it cannot tell."""
+    host = env.get("OUTREACH_IMAP_HOST") or "mail.privateemail.com"
+    user = env.get("OUTREACH_IMAP_USER") or FROM_ADDRESS
+    conn = imaplib.IMAP4_SSL(host, 993, ssl_context=ssl.create_default_context())
+    try:
+        conn.login(user, env["OUTREACH_IMAP_PASSWORD"])
+        status, _ = conn.select(f'"{_drafts_mailbox(conn)}"', readonly=True)
+        if status != "OK":
+            raise RuntimeError("could not open the Drafts folder")
+        status, data = conn.search(None, "HEADER", "Message-ID", message_id)
+        if status != "OK":
+            raise RuntimeError("Drafts search failed")
+        return bool(data and data[0] and data[0].split())
+    finally:
+        try:
+            conn.logout()
+        except Exception:
+            pass
+
+
 def save_draft(message: EmailMessage, *, env: dict[str, str]) -> str:
     """Append the message to the outreach@ Drafts folder. Never sends."""
     password = env.get("OUTREACH_IMAP_PASSWORD") or ""
@@ -992,15 +1013,37 @@ def main(argv: list[str] | None = None) -> int:
         return _refuse(str(exc))
     try:
         draft = "not saved (--no-draft)" if args.no_draft else save_draft(message, env=env)
-    except Exception as exc:  # the mailbox refused: the ledger must not show a draft that does not exist
+    except Exception as exc:
+        # The server may have saved the draft even though the reply was lost. Look for
+        # it by Message-ID; only a definite "not there" frees the step for a re-run.
+        message_id = str(message["Message-ID"])
+        try:
+            saved = draft_exists(message_id, env=env)
+        except Exception:
+            saved = None
         with order_ledger.connect() as conn:
-            conn.execute(
-                "UPDATE order_emails SET superseded_at = ?, draft_location = ? WHERE message_id = ?",
-                (now.isoformat(timespec="seconds"), f"failed: {type(exc).__name__}", str(message["Message-ID"])),
-            )
-        return _refuse(f"could not save the draft to outreach@ ({type(exc).__name__}: {exc}). Nothing was drafted; re-run.")
-    with order_ledger.connect() as conn:
-        conn.execute("UPDATE order_emails SET draft_location = ? WHERE message_id = ?", (draft, str(message["Message-ID"])))
+            if saved:
+                conn.execute("UPDATE order_emails SET draft_location = ? WHERE message_id = ?",
+                             ("saved to outreach@ Drafts (confirmed after a connection error)", message_id))
+            elif saved is False:
+                conn.execute(
+                    "UPDATE order_emails SET superseded_at = ?, draft_location = ? WHERE message_id = ?",
+                    (now.isoformat(timespec="seconds"), f"failed: {type(exc).__name__}", message_id),
+                )
+            else:
+                conn.execute("UPDATE order_emails SET draft_location = ? WHERE message_id = ?",
+                             (f"uncertain: {type(exc).__name__}; check outreach@ Drafts", message_id))
+        if saved is False:
+            return _refuse(f"could not save the draft to outreach@ ({type(exc).__name__}: {exc}). Nothing was drafted; re-run.")
+        if saved is None:
+            print(f"NOT CONFIRMED: the draft may or may not be in outreach@ Drafts ({type(exc).__name__}).")
+            print(f"Look for subject \"{message['Subject']}\": if it is there, send it; "
+                  "only if it is not, re-run with --redraft.")
+            return 2
+        draft = "saved to outreach@ Drafts (confirmed after a connection error)"
+    else:
+        with order_ledger.connect() as conn:
+            conn.execute("UPDATE order_emails SET draft_location = ? WHERE message_id = ?", (draft, str(message["Message-ID"])))
     report["draft"] = draft
     (order_dir / "checks.json").write_text(json.dumps(report, indent=2, default=str) + "\n", encoding="utf-8")
 
