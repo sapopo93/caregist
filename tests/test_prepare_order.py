@@ -81,9 +81,9 @@ AS_OF = date(2026, 10, 16)
     [
         ("inadequate", _row("1-a", currentRatings={"overall": {"rating": "Inadequate", "reportDate": "2025-03-01"}}), "rating_current", "Current rating"),
         ("requires_improvement", _row("1-b", currentRatings={"overall": {"rating": "Requires improvement", "reportDate": "2024-05-01"}}), "rating_current", "Current rating"),
-        ("not_yet_inspected", _row("1-c", registrationDate="2026-02-01"), "not_yet_inspected", "Not yet inspected"),
-        ("stale_inspection", _row("1-d", lastInspection={"date": "2021-06-01"}), "stale_inspection", "Inspection overdue"),
-        ("stale_inspection", _row("1-e", registrationDate="2019-01-01"), "stale_inspection", "Inspection overdue"),
+        ("not_yet_inspected", _row("1-c", registrationDate="2026-02-01"), "not_yet_inspected", "No published rating"),
+        ("stale_inspection", _row("1-d", lastInspection={"date": "2021-06-01"}), "stale_inspection", "No recent inspection"),
+        ("stale_inspection", _row("1-e", registrationDate="2019-01-01"), "stale_inspection", "No recent inspection"),
     ],
 )
 def test_each_standing_group_has_dated_cited_evidence(group, row, event_type, signal):
@@ -129,7 +129,7 @@ def test_brief_covers_exactly_the_supplied_location_ids_with_group_evidence(tmp_
     )
 
     assert {o.location_id for o in brief.shortlist} == {"1-0", "1-1", "1-2"}
-    assert all(o.primary_signal == "Inspection overdue" for o in brief.shortlist)
+    assert all(o.primary_signal == "No recent inspection" for o in brief.shortlist)
     assert "Inspection older than 3 years" in brief.executive_summary["headline"]
     assert brief.executive_summary["provider_group"] == "Inspection older than 3 years"
 

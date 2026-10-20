@@ -193,8 +193,9 @@ def record_email(
         else:
             if existing["product"] != product or existing["buyer_email"].lower() != buyer_email.strip().lower():
                 raise LedgerError(f"{order_ref} belongs to {existing['buyer_email']} ({existing['product']}); not changed.")
-            if stage == "quote" and quoted_count is not None:
-                # A re-quote replaces the promise; the latest quote is binding.
+            if stage == "quote":
+                # A re-quote replaces the scope and promise; the latest quote is binding
+                # (Digest quotes carry no count, so the scope must still be replaced).
                 conn.execute(
                     "UPDATE orders SET quoted_count = ?, scope = ?, scope_json = ? WHERE order_ref = ?",
                     (quoted_count, scope, json.dumps(scope_args, sort_keys=True), order_ref),

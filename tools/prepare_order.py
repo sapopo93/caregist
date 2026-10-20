@@ -161,6 +161,21 @@ def export_receipt(export_dir: Path) -> dict[str, Any]:
 
 
 PRODUCT_AMOUNTS = (BRIEF_AMOUNT_PENCE, DIGEST_AMOUNT_PENCE)
+#: A sale counts only if it came through the product's own Payment Link, in GBP.
+#: The Stripe account is shared with another business, so amount alone is not enough.
+PRODUCT_PAYMENT_LINKS = {
+    BRIEF_AMOUNT_PENCE: "plink_1UEkzy4mijLHzRRkWjk3pFVW",
+    DIGEST_AMOUNT_PENCE: "plink_1UBt3M4mijLHzRRkz4joD0We",
+}
+CLOCK_SKEW = timedelta(minutes=2)
+
+
+def _is_product_sale(amount: Any, currency: Any, payment_link: Any) -> bool:
+    return (
+        amount in PRODUCT_PAYMENT_LINKS
+        and str(currency or "").lower() == "gbp"
+        and payment_link == PRODUCT_PAYMENT_LINKS[amount]
+    )
 
 
 def _payments_from_sales_record(
@@ -176,7 +191,8 @@ def _payments_from_sales_record(
                 rows = await conn.fetch(
                     """
                     SELECT created_at, email, (meta->>'amount_total')::int AS amount,
-                           meta->>'stripe_checkout_session_id' AS session
+                           meta->>'stripe_checkout_session_id' AS session,
+                           meta->>'currency' AS currency, meta->>'payment_link' AS payment_link
                     FROM analytics_events
                     WHERE event_type = 'manual_sale_paid'
                       AND meta->>'payment_status' = 'paid'
@@ -195,6 +211,7 @@ def _payments_from_sales_record(
             {"source": "CareGist sales record", "session": r["session"], "paid_at": r["created_at"].isoformat(),
              "email": r["email"], "amount": r["amount"]}
             for r in rows
+            if _is_product_sale(r["amount"], r["currency"], r["payment_link"])
         ]
 
     return asyncio.run(query())
@@ -218,7 +235,9 @@ def _payments_from_stripe(
     found = []
     for session in response.json().get("data", []):
         amount = session.get("amount_total")
-        if session.get("payment_status") != "paid" or amount not in PRODUCT_AMOUNTS:
+        if session.get("payment_status") != "paid" or not _is_product_sale(
+            amount, session.get("currency"), session.get("payment_link")
+        ):
             continue
         if amount_pence is not None and amount != amount_pence:
             continue
@@ -237,13 +256,15 @@ def list_payments(
 ) -> list[dict[str, Any]]:
     """Every paid product sale, de-duplicated by Stripe session, oldest first."""
     seen: dict[str, dict[str, Any]] = {}
-    if env.get("DATABASE_URL"):
-        for item in _payments_from_sales_record(env["DATABASE_URL"], buyer_email, amount_pence, since_days):
-            if item["session"]:
-                seen.setdefault(item["session"], item)
+    # Stripe is authoritative (its own payment time); CareGist's sales record is only
+    # a fallback when Stripe is unreachable or not configured.
     if env.get("STRIPE_SECRET_KEY"):
         for item in _payments_from_stripe(env["STRIPE_SECRET_KEY"], buyer_email, amount_pence, since_days):
             seen.setdefault(item["session"], item)
+    if env.get("DATABASE_URL") and not env.get("STRIPE_SECRET_KEY"):
+        for item in _payments_from_sales_record(env["DATABASE_URL"], buyer_email, amount_pence, since_days):
+            if item["session"]:
+                seen.setdefault(item["session"], item)
     return sorted(seen.values(), key=lambda item: item["paid_at"])
 
 
@@ -257,7 +278,7 @@ def find_payment(
 ) -> dict[str, Any] | None:
     """The buyer's oldest paid sale of this amount, made after the order existed and
     not already attached to another order."""
-    floor = datetime.fromisoformat(not_before) - timedelta(hours=1) if not_before else None
+    floor = datetime.fromisoformat(not_before) - CLOCK_SKEW if not_before else None
     for item in list_payments(env, buyer_email=buyer_email, amount_pence=amount_pence):
         if item["session"] in exclude_sessions:
             continue

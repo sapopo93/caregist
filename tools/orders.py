@@ -18,6 +18,8 @@ import csv
 import imaplib
 import ssl
 from datetime import date, datetime, timezone
+from email import message_from_bytes
+from email.header import decode_header, make_header
 from email.utils import parsedate_to_datetime
 from pathlib import Path
 from typing import Any
@@ -64,10 +66,12 @@ def find_sent(env: dict[str, str], pending: list[dict[str, Any]]) -> dict[str, s
                 status, header = conn.fetch(number, "(BODY.PEEK[HEADER.FIELDS (SUBJECT DATE)])")
                 if status != "OK" or not header or not isinstance(header[0], tuple):
                     continue
-                text = header[0][1].decode("utf-8", "replace")
-                # Match the step too, so a sent quote is not taken for a sent delivery.
-                if email_row["subject"].split(" (ref ")[0][:40] in " ".join(text.split()):
-                    date_line = next((ln for ln in text.splitlines() if ln.lower().startswith("date:")), "")
+                parsed = message_from_bytes(header[0][1])
+                sent_subject = " ".join(str(make_header(decode_header(parsed.get("Subject", "")))).split())
+                # The whole subject must match: ref, step and Digest issue number. Prefixes
+                # such as "Re:" or a shared opening would otherwise mark the wrong email sent.
+                if sent_subject == " ".join(email_row["subject"].split()):
+                    date_line = "Date: " + parsed.get("Date", "")
                     try:
                         sent = parsedate_to_datetime(date_line[5:].strip()).astimezone(timezone.utc).isoformat(timespec="seconds")
                     except (TypeError, ValueError):
