@@ -159,6 +159,25 @@ jobs:
           SUPPORT_INTERNAL_TOKEN: ci_test_support_token
         run: scripts/run_tests.sh tests/integration/ -v
 
+      - name: Territory Brief paid fulfilment (real Postgres)
+        # tests/test_territory_brief_pg_integration.py skips unless TB_PG_URL names
+        # a migrated database, so it never ran in CI and the paid path was unproven
+        # against the real schema. Build one from init.sql + every migration.
+        env:
+          PGPASSWORD: caregist
+          TB_PG_URL: postgresql://caregist:caregist@localhost:5432/territory_brief_itest
+          API_MASTER_KEY: ci_test_master_key
+          SUPPORT_INTERNAL_TOKEN: ci_test_support_token
+        run: |
+          psql --host localhost --username caregist --dbname postgres --set ON_ERROR_STOP=1 \
+            --command "CREATE DATABASE territory_brief_itest"
+          psql "$TB_PG_URL" --quiet --set ON_ERROR_STOP=1 --file db/init.sql
+          python db/apply_migrations.py --database-url "$TB_PG_URL"
+          set -o pipefail
+          pytest tests/test_territory_brief_pg_integration.py -v -rs | tee "$RUNNER_TEMP/tb.log"
+          # Refuse a silent skip: the test must have executed.
+          grep -q "1 passed" "$RUNNER_TEMP/tb.log"
+
   container-scan:
     name: Container images (build + vulnerability scan)
     runs-on: ubuntu-latest
