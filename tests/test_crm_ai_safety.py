@@ -551,3 +551,63 @@ async def test_local_provider_sends_no_empty_bearer_header_and_allows_slow_respo
     assert seen["headers"] == {}
     assert seen["timeout"] == 300
     assert seen["url"] == "http://127.0.0.1:11434/v1/chat/completions"
+
+
+def _local(raw, known=("Alice Jones", "Meadow View Care", "CareGist")):
+    return redact_transcript(raw, known_entities=known, require_local_ner=True, profile="local")
+
+
+def test_local_profile_keeps_the_meaning_strict_redaction_destroyed():
+    result = _local(
+        "[0000.00] Agent: hello, this is alice jones calling about care market data.\n"
+        "[0003.00] Agent: may i email a short sample in case anything changes?\n"
+        "[0006.00] Contact: no thank you, please don't contact us again.\n"
+        "[0009.00] Agent: We map new CQC registrations. Would a sample for Birmingham help on Thursday?\n"
+        "[0012.00] Contact: Our mental health services expanded in Leeds and we run three care homes."
+    )
+
+    assert "please don't contact us again" in result.text
+    assert "in case anything changes" in result.text
+    assert "care market data" in result.text
+    assert "CQC registrations" in result.text and "Birmingham" in result.text and "Thursday" in result.text
+    assert "mental health services expanded in Leeds" in result.text
+    assert "alice" not in result.text.lower()
+    assert result.policy_version == "caregist-crm-redaction-v2-local"
+    assert result.evidence()["policy_version"] == "caregist-crm-redaction-v2-local"
+
+
+def test_local_profile_still_removes_identifiers_names_and_personal_disclosures():
+    result = _local(
+        "[0000.00] Contact: My name is Priya Patel, I manage the home.\n"
+        "[0003.00] Contact: Sorry, I've been off sick, I was diagnosed with cancer last month.\n"
+        "[0006.00] Agent: Could you ask Dr Okafor to call me? Account number is AC 4471 2290.\n"
+        "[0009.00] Contact: Speak to Sarah in finance, sarah@carehome.co.uk, 07700 900123, LS1 4AP, AB 12 34 56 C.\n"
+        "[0012.00] Contact: thanks, tom will ring mrs okafor on monday."
+    )
+
+    text = result.text
+    for leaked in ("Priya", "Patel", "Okafor", "okafor", "Sarah", "sarah@", "07700", "LS1 4AP", "AB 12", "4471", "cancer", "tom "):
+        assert leaked not in text, leaked
+    assert "Speak to [REDACTED NAME] in finance" in text
+    assert "[REDACTED SENSITIVE INFORMATION]" in text
+    assert "on monday" in text
+
+
+def test_local_profile_does_not_split_organisation_words_into_names():
+    result = _local("[0000.00] Contact: we are meadow view care and we offer residential care.")
+
+    assert "offer residential care" in result.text
+    assert "meadow view care" not in result.text.lower()
+
+
+def test_local_profile_blanks_always_sensitive_terms_regardless_of_context():
+    result = _local("[0000.00] Contact: the invoice goes to our bank account, sort code is on the form.")
+
+    assert result.text.endswith("[REDACTED SENSITIVE INFORMATION]")
+
+
+def test_strict_profile_is_unchanged_by_default():
+    raw = "[0000.00] Contact: please don't contact us again in case anything changes."
+
+    assert "contact us again" not in redact_transcript(raw).text
+    assert redact_transcript(raw).policy_version == "caregist-crm-redaction-v1"
