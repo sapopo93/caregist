@@ -81,6 +81,7 @@ async def reconcile(database_url: str, *, fix: bool = False) -> dict:
             if page.has_more and not page.data:
                 raise RuntimeError("Stripe pagination ended before the complete listing")
             for sub in page.data:
+                sub = stripe_dict(sub)
                 identifier = sub.get("id")
                 if not identifier or identifier in stripe_subs or not isinstance(sub.get("status"), str):
                     raise RuntimeError("Stripe listing has missing or duplicate subscription identity")
@@ -119,7 +120,7 @@ async def reconcile(database_url: str, *, fix: bool = False) -> dict:
                     # Reconciliation may revoke, but cannot grant paid access
                     # from a subscription listing without contract acceptance.
                     if fix and stripe_status not in {"active", "trialing"}:
-                        authoritative = await asyncio.to_thread(stripe.Subscription.retrieve, stripe_id)
+                        authoritative = stripe_dict(await asyncio.to_thread(stripe.Subscription.retrieve, stripe_id))
                         current_status = authoritative.get("status")
                         if authoritative.get("id") != stripe_id or not isinstance(current_status, str):
                             raise RuntimeError("Stripe returned inconsistent subscription identity")
@@ -146,7 +147,7 @@ async def reconcile(database_url: str, *, fix: bool = False) -> dict:
                 # current status positively confirms loss of entitlement.
                 if fix:
                     try:
-                        authoritative = await asyncio.to_thread(stripe.Subscription.retrieve, stripe_id)
+                        authoritative = stripe_dict(await asyncio.to_thread(stripe.Subscription.retrieve, stripe_id))
                     except stripe.InvalidRequestError as exc:
                         if getattr(exc, "code", None) != "resource_missing":
                             raise
@@ -208,3 +209,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+from api.utils.stripe_compat import stripe_dict
