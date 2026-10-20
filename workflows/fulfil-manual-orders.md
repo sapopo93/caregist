@@ -94,11 +94,15 @@ Follow v2.2: full refund before the first digest; a proportional one-quarter
 refund or late delivery for a missed digest; refund through the Stripe
 dashboard.
 
-## Known constraints (2026-10-20)
+## Stripe state (2026-10-20, set with founder approval)
 
-- The CareGist Stripe webhook endpoint is disabled. Re-enable it only after the
-  `manual_sale_paid` change is deployed, or each Payment Link sale errors and
-  retries.
-- `tenderriskassurance.co.uk/api/webhooks` on the same Stripe account also
-  receives every `checkout.session.completed`, including CareGist buyers'
-  details. Filter or remove it.
+- Active Payment Links: £745 Brief (`bJe8wI…04`) and £150 Weekly Digest
+  (`3cI8wI…01`, checkout shows "CareGist Weekly Digest pilot — 4 weekly
+  digests"). The £895 combined link is deactivated.
+- The CareGist webhook (`/api/v1/billing/webhook`) is enabled; each sale is
+  recorded as `manual_sale_paid`. Confirm the first real sale appears there; if
+  it does not, the production `STRIPE_WEBHOOK_SECRET` does not match the
+  endpoint's signing secret.
+- The `tenderriskassurance.co.uk` webhook on the same Stripe account is
+  disabled, so CareGist buyers' details no longer go to it. That site no longer
+  receives payment events from this account.
