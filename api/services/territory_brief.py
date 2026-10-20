@@ -67,8 +67,8 @@ PROVIDER_GROUP_LABELS = {
     "new_90": "New registrations (last 90 days)",
     "inadequate": "Currently rated Inadequate",
     "requires_improvement": "Currently rated Requires improvement",
-    "not_yet_inspected": "Not yet inspected",
-    "stale_inspection": "Inspection older than 3 years",
+    "not_yet_inspected": "No published CQC rating",
+    "stale_inspection": "No inspection in the last 3 years, or none recorded",
 }
 
 
@@ -485,8 +485,8 @@ _SIGNAL_LABEL = {
     "rating_published": "New inspection report",
     "reactivated": "Returned from dormancy",
     "rating_current": "Current rating",
-    "not_yet_inspected": "Not yet inspected",
-    "stale_inspection": "Inspection overdue",
+    "not_yet_inspected": "No published rating",
+    "stale_inspection": "No recent inspection",
 }
 
 
@@ -530,6 +530,19 @@ def _recency_phrase(event_date: date, as_of: date) -> str:
     if age <= 120:
         return "within the last four months"
     return f"about {age // 30} months ago"
+
+
+def _age_phrase(then: date, as_of: date) -> str:
+    """Exact, plain age of a dated fact; never rounded up."""
+    days = (as_of - then).days
+    if days < 0:
+        return "after the source date"
+    if days < 31:
+        return f"{days} day{'s' if days != 1 else ''} ago"
+    months = days // 30
+    if months < 24:
+        return f"about {months} month{'s' if months != 1 else ''} ago"
+    return f"about {days // 365} years ago"
 
 
 def _reason(
@@ -619,23 +632,42 @@ def _reason(
                 f"before any contact."
             )
         elif ev.event_type == "not_yet_inspected":
-            parts.append(
-                f"Registered with CQC on {ev.effective_date.strftime('%d %b %Y')} and not yet "
-                f"inspected or rated ({_service_and_size(svc, beds)}). Its first inspection is "
-                f"still ahead; this does not establish supplier need or purchasing intent."
-            )
-        elif ev.event_type == "stale_inspection":
-            age_years = max((as_of - ev.effective_date).days // 365, 3)
-            if ev.old_value == "never_inspected":
+            # The group means "no published rating"; the record cannot show whether or
+            # when an inspection will happen, so the text claims neither.
+            if ev.old_value == "registration_date_missing":
                 parts.append(
-                    f"No CQC inspection recorded since registration on "
-                    f"{ev.effective_date.strftime('%d %b %Y')}, over {age_years} years ago."
+                    f"No published CQC rating on record ({_service_and_size(svc, beds)}), and the "
+                    f"source does not record a registration date. Check the CQC page before contact."
                 )
             else:
                 parts.append(
-                    f"Last CQC inspection on {ev.effective_date.strftime('%d %b %Y')}, about "
-                    f"{age_years} years before the source date, so a re-inspection may be due. "
-                    f"CQC sets its own schedule; this is not a prediction of timing."
+                    f"No published CQC rating on record; registered with CQC on "
+                    f"{ev.effective_date.strftime('%d %b %Y')} ({_age_phrase(ev.effective_date, as_of)}). "
+                    f"The record does not show a completed rated inspection ({_service_and_size(svc, beds)}); "
+                    f"check the CQC page before contact. This does not establish supplier need or purchasing intent."
+                )
+        elif ev.event_type == "stale_inspection":
+            if ev.old_value == "registration_date_missing":
+                parts.append(
+                    "No CQC inspection date and no registration date are recorded in the source. "
+                    "Check the CQC page before contact."
+                )
+            elif ev.old_value == "never_inspected":
+                recent = (as_of - ev.effective_date).days < 3 * 365
+                parts.append(
+                    f"No CQC inspection date recorded; registered on "
+                    f"{ev.effective_date.strftime('%d %b %Y')} ({_age_phrase(ev.effective_date, as_of)})."
+                    + (
+                        " It is in this group because the 'stale inspections' filter includes every "
+                        "location without a recorded inspection date, not because an inspection is overdue."
+                        if recent else ""
+                    )
+                )
+            else:
+                parts.append(
+                    f"Last CQC inspection on {ev.effective_date.strftime('%d %b %Y')}, "
+                    f"{_age_phrase(ev.effective_date, as_of)} before the source date, so a re-inspection "
+                    f"may be due. CQC sets its own schedule; this is not a prediction of timing."
                 )
 
     if provider_cluster >= 2:
@@ -938,11 +970,11 @@ def _provider_group_event(row: dict[str, Any], group: str, *, as_of: date) -> Or
         return OrgEvent(
             event_type="not_yet_inspected",
             effective_date=registered or as_of,
-            old_value=None,
-            new_value="Not yet inspected",
+            old_value=None if registered else "registration_date_missing",
+            new_value="No published rating",
             detail=(
-                f"Registered {registered.isoformat()}; no CQC inspection rating published"
-                if registered else "No CQC inspection rating published"
+                f"Registered {registered.isoformat()}; no published CQC rating"
+                if registered else "No published CQC rating; registration date not recorded"
             ),
             source_url=url,
             source_field="location.currentRatings/lastInspection",
@@ -961,7 +993,7 @@ def _provider_group_event(row: dict[str, Any], group: str, *, as_of: date) -> Or
         return OrgEvent(
             event_type="stale_inspection",
             effective_date=registered or as_of,
-            old_value="never_inspected",
+            old_value="never_inspected" if registered else "registration_date_missing",
             new_value=None,
             detail=(
                 f"No CQC inspection recorded since registration on {registered.isoformat()}"
@@ -1362,9 +1394,9 @@ def _executive_summary(
     if by_type.get("rating_current"):
         movement.append(f"{by_type['rating_current']} location(s) with the selected current rating")
     if by_type.get("not_yet_inspected"):
-        movement.append(f"{by_type['not_yet_inspected']} location(s) not yet inspected")
+        movement.append(f"{by_type['not_yet_inspected']} location(s) with no published rating")
     if by_type.get("stale_inspection"):
-        movement.append(f"{by_type['stale_inspection']} location(s) with an inspection over 3 years old")
+        movement.append(f"{by_type['stale_inspection']} location(s) with no inspection in the last 3 years or none recorded")
     return {
         "provider_group": PROVIDER_GROUP_LABELS.get(provider_group) if provider_group else None,
         "territory": scope.name,

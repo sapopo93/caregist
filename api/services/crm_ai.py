@@ -96,6 +96,9 @@ class RedactedTranscript:
     source_sha256: str
     redacted_sha256: str
     policy_version: str = "caregist-crm-redaction-v1"
+    #: Detected in the contact's original words before redaction, which can blank
+    #: a line that also mentions health (e.g. "don't call again, I have cancer").
+    do_not_contact: bool = False
 
     def evidence(self) -> dict[str, Any]:
         return {
@@ -353,9 +356,16 @@ def _contact_lines(transcript: str) -> list[str]:
     ]
 
 
-def apply_compliance_rules(evaluation: CallEvaluation, transcript: str) -> CallEvaluation:
+def detect_do_not_contact(transcript: str) -> bool:
+    """A do-not-contact request in the contact's own lines (run on the source text)."""
+    return any(DO_NOT_CONTACT_PATTERN.search(line) for line in _contact_lines(transcript))
+
+
+def apply_compliance_rules(
+    evaluation: CallEvaluation, transcript: str, *, detected_before_redaction: bool = False
+) -> CallEvaluation:
     """Guarantee a do-not-contact flag whatever the model returned."""
-    requested = any(DO_NOT_CONTACT_PATTERN.search(line) for line in _contact_lines(transcript))
+    requested = detected_before_redaction or detect_do_not_contact(transcript)
     if not (requested or evaluation.suggested_disposition == "do_not_call"):
         return evaluation
     flags = list(evaluation.compliance_flags)
@@ -505,6 +515,7 @@ def redact_transcript(
         counts=counts,
         source_sha256=source_sha256,
         redacted_sha256=hashlib.sha256(redacted.encode("utf-8")).hexdigest(),
+        do_not_contact=detect_do_not_contact(transcript),
     )
 
 
@@ -598,6 +609,7 @@ def _redact_transcript_local(
         source_sha256=source_sha256,
         redacted_sha256=hashlib.sha256(redacted.encode("utf-8")).hexdigest(),
         policy_version="caregist-crm-redaction-v2-local",
+        do_not_contact=detect_do_not_contact(transcript),
     )
 
 
@@ -683,7 +695,11 @@ async def evaluate_transcript(
         response_payload: dict[str, Any] | None = None
         attempt_recorded = False
         try:
-            async with httpx.AsyncClient(timeout=request_timeout) as client:
+            # trust_env=False: a loopback model must never be reached through a proxy
+            # from the environment, or "local" transcripts could leave the machine.
+            async with httpx.AsyncClient(
+                timeout=request_timeout, trust_env=not is_local_provider(settings.crm_ai_base_url)
+            ) as client:
                 response = await client.post(url, headers=headers, json=payload)
                 response.raise_for_status()
             response_payload = response.json()
@@ -701,7 +717,9 @@ async def evaluate_transcript(
             if choice.get("finish_reason") not in {"stop", None}:
                 raise ValueError("Evaluation response was truncated.")
             evaluation = apply_compliance_rules(
-                parse_evaluation_json(choice["message"]["content"]), redacted.text
+                parse_evaluation_json(choice["message"]["content"]),
+                redacted.text,
+                detected_before_redaction=redacted.do_not_contact,
             )
             if input_tokens <= 0 or output_tokens <= 0:
                 raise ValueError("Evaluation response omitted token usage.")

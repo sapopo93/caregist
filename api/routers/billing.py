@@ -1859,11 +1859,25 @@ def _is_manual_payment_link_sale(session: dict, metadata: dict) -> bool:
 
 
 async def _record_manual_payment_link_sale(conn, session: dict) -> None:
-    """Keep a durable record of the sale for fulfilment; grant no entitlement."""
+    """Keep one durable record per paid sale for fulfilment; grant no entitlement.
+
+    Only a paid session is recorded: a completed-but-unpaid session (delayed
+    payment methods) is recorded when checkout.session.async_payment_succeeded
+    arrives. The insert is skipped if the session is already recorded, so the two
+    events (or a replay) never produce two sales.
+    """
+    if session.get("payment_status") != "paid":
+        logger.info(
+            "Payment Link checkout not yet paid; not recorded: session=%s status=%s",
+            session.get("id"),
+            session.get("payment_status"),
+        )
+        return
     details = session.get("customer_details") or {}
     email = details.get("email") or session.get("customer_email")
     meta = {
         "stripe_checkout_session_id": session.get("id"),
+        "client_reference_id": session.get("client_reference_id"),
         "payment_link": session.get("payment_link"),
         "payment_status": session.get("payment_status"),
         "amount_total": session.get("amount_total"),
@@ -1871,20 +1885,29 @@ async def _record_manual_payment_link_sale(conn, session: dict) -> None:
         "customer_name": details.get("name"),
         "fulfilment": "manual",
     }
+    # Serialise per checkout session for the rest of this transaction, so two events
+    # for the same session (completed + async_payment_succeeded, or a replay) cannot
+    # both pass the NOT EXISTS check concurrently.
+    await conn.execute("SELECT pg_advisory_xact_lock(hashtext($1))", f"manual_sale:{session.get('id')}")
     await conn.execute(
         """
         INSERT INTO analytics_events (event_type, event_source, email, meta)
-        VALUES ('manual_sale_paid', 'stripe_payment_link', $1, $2::jsonb)
+        SELECT 'manual_sale_paid', 'stripe_payment_link', $1, $2::jsonb
+        WHERE NOT EXISTS (
+            SELECT 1 FROM analytics_events
+            WHERE event_type = 'manual_sale_paid'
+              AND meta->>'stripe_checkout_session_id' = $3
+        )
         """,
         email,
         __import__("json").dumps(meta),
+        session.get("id"),
     )
     logger.info(
-        "Payment Link sale recorded for manual fulfilment: session=%s amount=%s %s status=%s",
+        "Payment Link sale recorded for manual fulfilment: session=%s amount=%s %s",
         session.get("id"),
         session.get("amount_total"),
         session.get("currency"),
-        session.get("payment_status"),
     )
 
 

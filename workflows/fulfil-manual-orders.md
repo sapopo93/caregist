@@ -4,73 +4,56 @@ Both products are sold human-led under Business Terms v2.2: scope agreed in
 writing, then a Stripe Payment Link sent by hand. Nothing is delivered
 automatically. Self-serve checkout stays closed.
 
-## Quick path: `tools/prepare_order.py`
+## Quick path (run from ~/CareGist-orders)
 
-Each step is one command. It builds the deliverable for exactly the scope the
-buyer's coverage check counted (same directory query as the website), runs the
-checks below, and saves the email as a **draft in outreach@caregist.co.uk**. It
-never sends: open Drafts in Private Email, review, press Send. A failed check
-prints `NOT READY` with the reason and drafts nothing.
+Three commands run the whole business. Every rule below is enforced by the
+tools, so a step done wrongly is refused with a plain reason, never half-done.
 
-Quotes never attach the product: the confirmation email carries only the scope,
-count, price and payment link. `deliver` refuses until the buyer has paid: it
-looks for a paid sale of the right amount (£745 Brief, £150 Digest) for the
-buyer's email in CareGist's sales record (`manual_sale_paid`), falling back to
-Stripe read-only, and drafts nothing otherwise. Use the email the buyer paid with.
+```bash
+# 1. After agreeing scope by email: build, check, and draft the quote (no files attached)
+.venv/bin/python -m tools.prepare_order quote brief --region "North East" \
+  --provider-group not_yet_inspected --service-type "Homecare Agencies" \
+  --buyer-email buyer@example.com --buyer-name "Sam" --company "Example Ltd"
+.venv/bin/python -m tools.prepare_order quote digest --region "North West" \
+  --start-date 2026-10-26 --buyer-type "Recruiter" --buyer-email buyer@example.com
 
-Checks: CQC export ≤ 8 days old; the scope has locations; the shortlist is not
-empty (Terms v2.2.1 promise up to 50 organisations, and the quote states the
-exact number, which is binding); every shortlisted entry has dated CQC evidence;
-the evidence window is current. At delivery the Brief must contain at least the
-number quoted for the same order ref; if a data refresh reduced it, the command
-stops so you can agree the change with the buyer first.
+# 2. See everything, and what to do next (copy the command it shows)
+.venv/bin/python -m tools.orders            # add --report to write orders/reports/*.md and .csv
 
-Copy the values from the enquiry email (Region, Buyer type, Service type,
-Providers in scope). Buyer types map to `--provider-group`: New registrations
+# 3. After payment: the order ref is the only input
+.venv/bin/python -m tools.prepare_order deliver --order-ref TOB-20261020-152156-D3F0
+```
+
+Buyer types from the enquiry map to `--provider-group`: New registrations
 `new_90`, Inadequate providers `inadequate`, Requires Improvement
-`requires_improvement`, Not yet inspected `not_yet_inspected`, Stale inspections
+`requires_improvement`, No published rating `not_yet_inspected`, No recent inspection
 `stale_inspection`.
 
-```bash
-# Brief, after agreeing scope: confirmation + £745 link (keep the printed order ref)
-.venv/bin/python -m tools.prepare_order brief quote --region "North East" \
-  --provider-group not_yet_inspected --service-type "Homecare Agencies" \
-  --expected-count 1221 --buyer-email buyer@example.com --buyer-name "Sam" --company "Example Ltd"
+### What the tools guarantee
 
-# Brief, after payment: rebuild, check, delivery draft with PDF, CSV and manifest
-.venv/bin/python -m tools.prepare_order brief deliver --order-ref TOB-... \
-  --region "North East" --provider-group not_yet_inspected --service-type "Homecare Agencies" \
-  --buyer-email buyer@example.com --buyer-name "Sam"
+- **Right order:** `deliver` takes only `--order-ref`; buyer, scope and the
+  quoted count come from the order record (typing any of them is refused).
+  Every subject ends with `(ref …)`; check To and ref, then press Send.
+- **Paid first:** `deliver` needs a paid sale of the right amount (£745 / £150)
+  from that buyer, made after the order existed. One Stripe payment can belong
+  to one order only.
+- **No duplicates:** a second open order for the same buyer and product needs
+  `--order-ref` (change it) or `--new-order` (genuinely separate). An unsent
+  draft is never duplicated; `--redraft` replaces it only if you deleted it,
+  and never after the email was sent. A paid order's scope cannot change.
+- **Digest issues:** the next issue number and its week are worked out from
+  the start date; an issue cannot be prepared before its day, and never twice.
+- **Nothing missed:** `tools.orders` lists ACTION NEEDED: quotes not sent,
+  paid orders to deliver (due 3 working days after payment, OVERDUE after),
+  digest issues due, drafts waiting for Send, quotes to follow up after 7 days,
+  and any **payment with no order**.
+- **Counts and report:** totals (orders, quoted not paid, paid and revenue,
+  delivered in full, outstanding, overdue) and `--report` sections Bought /
+  Not bought yet / Delivered in full, plus a CSV of every order.
 
-# Weekly Digest: confirmation + £150 link, then one delivery per week
-.venv/bin/python -m tools.prepare_order digest quote --region "North West" \
-  --start-date 2026-10-26 --buyer-type "Recruiter" --buyer-email buyer@example.com
-.venv/bin/python -m tools.prepare_order digest deliver --order-ref WDP-... --region "North West" \
-  --week-ending 2026-10-25 --issue 1 --buyer-email buyer@example.com
-```
-
-### Track every order
-
-```bash
-.venv/bin/python -m tools.orders            # refresh paid/sent and show the table
-.venv/bin/python -m tools.orders --csv orders.csv
-```
-
-One row per order ref: product, buyer, scope (with the quoted count), quote
-drafted/sent, paid date, deliveries sent (Digest shows n/4) and a status:
-`Quote drafted: not sent yet` → `Quote sent: awaiting payment` →
-`Paid: prepare delivery` → `Delivery drafted: press Send` → `Complete`.
-Every email subject ends with `(ref TOB-…)` or `(ref WDP-…)`, so replies and the
-Sent folder always show which order they belong to. Payment is checked live
-(CareGist sales record, then Stripe); "sent" is read from the outreach@ Sent
-folder. The ledger is `orders/ledger.sqlite` on this machine: it holds buyer
-emails, is git-ignored, and should be backed up with your other business files.
-Use the same `--order-ref` for every step of one order.
-
-Drafts need `OUTREACH_IMAP_PASSWORD` (the outreach@ mailbox password) in `.env`;
-add it yourself. Without it the command still writes `email.eml` in the order
-folder (`.tmp/orders/<ref>/`) for you to open. The sections below describe the
-same steps by hand.
+The ledger is `orders/ledger.sqlite` (buyer emails; git-ignored; back it up).
+Drafts reach outreach@ only with `OUTREACH_IMAP_PASSWORD` in `.env`; without it,
+open `email.eml` from the order folder. "Sent" status also needs it.
 
 ## 0. Before the first sale, and every Monday
 

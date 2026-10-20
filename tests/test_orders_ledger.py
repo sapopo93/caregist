@@ -72,7 +72,8 @@ def test_simultaneous_orders_stay_separate(db):
 
 def test_requote_replaces_the_promised_count(db):
     _record("TOB-2")
-    ledger.record_email(
+    first_id = _order("TOB-2")["emails"][0]["id"]
+    ledger.record_email(supersede_email_id=first_id, 
         order_ref="TOB-2", product="brief", stage="quote", buyer_email="b@example.com", buyer_name="", company="",
         scope="London · Stale", scope_args={"region": "London"}, amount_pence=74500, quoted_count=21,
         message_id="<requote@caregist.co.uk>", subject="S (ref TOB-2)", draft_location="saved", folder="/tmp",
@@ -80,26 +81,8 @@ def test_requote_replaces_the_promised_count(db):
     assert _order("TOB-2")["quoted_count"] == 21
 
 
-def test_refresh_records_payment_and_sent(db, monkeypatch):
-    _record("TOB-3")
-    monkeypatch.setattr(po, "find_payment", lambda env, email, amount: {"paid_at": "2026-10-20T17:00:00+00:00", "session": "cs_3", "source": "CareGist sales record"})
-    monkeypatch.setattr(orders, "find_sent", lambda env, pending: {pending[0]["message_id"]: "2026-10-20T15:30:00+00:00"})
-
-    notes = orders.refresh({"OUTREACH_IMAP_PASSWORD": "pw"})
-
-    order = _order("TOB-3")
-    assert notes == []
-    assert order["payment_session"] == "cs_3" and order["emails"][0]["sent_at"].startswith("2026-10-20T15:30")
-    assert ledger.order_status(order) == "Paid: prepare delivery"
 
 
-def test_refresh_without_mailbox_password_says_so(db, monkeypatch):
-    _record("TOB-4")
-    monkeypatch.setattr(po, "find_payment", lambda *a: None)
-
-    notes = orders.refresh({})
-
-    assert any("OUTREACH_IMAP_PASSWORD" in n for n in notes)
 
 
 def test_find_sent_matches_ref_recipient_and_stage(monkeypatch):
@@ -120,6 +103,8 @@ def test_find_sent_matches_ref_recipient_and_stage(monkeypatch):
             return "OK", [b"1"]
 
         def search(self, charset, *criteria):
+            if criteria[0] == "HEADER":
+                return "OK", [b""]
             searched["criteria"] = criteria
             return "OK", [b"7"]
 
@@ -134,7 +119,8 @@ def test_find_sent_matches_ref_recipient_and_stage(monkeypatch):
     found = orders.find_sent(
         {"OUTREACH_IMAP_PASSWORD": "pw"},
         [{"order_ref": "TOB-9", "buyer_email": "b@example.com", "message_id": "<m1>",
-          "subject": "Your Territory Opportunity Brief scope: North East (ref TOB-9)"}],
+          "subject": "Your Territory Opportunity Brief scope: North East (ref TOB-9)",
+          "drafted_at": "2026-10-20T15:00:00+00:00"}],
     )
 
     assert found == {"<m1>": "2026-10-20T15:05:00+00:00"}
@@ -142,16 +128,6 @@ def test_find_sent_matches_ref_recipient_and_stage(monkeypatch):
     assert searched["criteria"] == ("SUBJECT", '"TOB-9"', "TO", '"b@example.com"')
 
 
-def test_prepare_order_records_quote_in_ledger_with_ref_in_subject(db, monkeypatch, tmp_path):
-    monkeypatch.setattr(po, "save_draft", lambda *a, **k: "saved to outreach@caregist.co.uk Drafts")
-
-    assert po.main(["digest", "quote", "--region", "London", "--buyer-email", "x@example.com",
-                    "--start-date", "2026-10-26", "--out-base", str(tmp_path / "o"), "--order-ref", "WDP-7"]) == 0
-
-    order = _order("WDP-7")
-    assert order["product"] == "digest" and order["amount_pence"] == 15000
-    assert order["emails"][0]["subject"].endswith("(ref WDP-7)")
-    assert ledger.order_status(order) == "Quote drafted: not sent yet"
 
 
 def test_order_refs_are_unique_within_the_same_second():

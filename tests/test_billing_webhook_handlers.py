@@ -576,7 +576,8 @@ async def test_payment_link_sale_is_recorded_for_manual_fulfilment_not_retried()
         },
     )
 
-    [(query, args)] = conn.executed
+    (lock_query, _), (query, args) = conn.executed
+    assert "pg_advisory_xact_lock" in lock_query
     assert "INSERT INTO analytics_events" in query
     assert "'manual_sale_paid'" in query
     assert args[0] == "buyer@example.com"

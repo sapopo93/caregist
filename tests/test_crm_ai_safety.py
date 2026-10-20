@@ -517,8 +517,9 @@ async def test_local_provider_sends_no_empty_bearer_header_and_allows_slow_respo
     seen = {}
 
     class Client:
-        def __init__(self, *, timeout):
+        def __init__(self, *, timeout, trust_env=True):
             seen["timeout"] = timeout
+            seen["trust_env"] = trust_env
 
         async def __aenter__(self):
             return self
@@ -550,6 +551,7 @@ async def test_local_provider_sends_no_empty_bearer_header_and_allows_slow_respo
     assert evaluation.suggested_disposition == "callback_requested"
     assert seen["headers"] == {}
     assert seen["timeout"] == 300
+    assert seen["trust_env"] is False  # never via an environment proxy
     assert seen["url"] == "http://127.0.0.1:11434/v1/chat/completions"
 
 
