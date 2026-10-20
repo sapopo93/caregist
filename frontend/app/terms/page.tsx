@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { TERRITORY_BRIEF_PRICE_GBP } from "@/lib/territory-scope";
+import { TERRITORY_BRIEF_PRICE_GBP, WEEKLY_DIGEST_PILOT_PRICE_GBP } from "@/lib/territory-scope";
 
 export const metadata: Metadata = {
   title: "Business Terms of Service | CareGist",
@@ -11,7 +11,7 @@ export default function TermsPage() {
   return (
     <main className="mx-auto max-w-3xl px-6 py-12">
       <h1 className="mb-2 text-3xl font-bold">Business Terms of Service</h1>
-      <p className="mb-8 text-sm text-dusk">Version 2.1 · In force from 9 September 2026</p>
+      <p className="mb-8 text-sm text-dusk">Version 2.2 · In force from 20 October 2026</p>
 
       <div className="prose prose-sm space-y-7 text-charcoal" style={{ fontFamily: "Lora" }}>
         <section>
@@ -35,6 +35,7 @@ export default function TermsPage() {
           <h2 className="mb-3 mt-8 text-xl font-bold text-bark">1. Products and scope</h2>
           <ul className="list-disc space-y-1 pl-6">
             <li><strong>Free Directory:</strong> provider search, profiles, source dates, and free correction or claim requests when verification intake is available.</li>
+            <li><strong>Weekly Digest pilot:</strong> a one-off pilot of four weekly digests for one agreed England region. Each digest reports new registrations and newly published ratings in the agreed region, taken from CQC&apos;s published register, with the source edition date and the observation window stated. It is delivered by email and PDF. It is not a subscription, dashboard, API or alert service.</li>
             <li><strong>Territory Opportunity Brief:</strong> a one-off, buyer-specific research pack for an agreed England territory. It includes a shortlist of 25 to 50 organisations, a CRM-ready CSV dataset, a three to five page executive brief, and source links and observation dates for the public CQC information used.</li>
             <li><strong>Radar Regional:</strong> one contracted England region, 2 users, 10 saved views, and 90 days of event export.</li>
             <li><strong>Radar National:</strong> all England, 5 users, 50 saved views or lists, 365 days of event export, and onboarding.</li>
@@ -51,6 +52,11 @@ export default function TermsPage() {
             the territory, buyer criteria and factual selection criteria. It is the order
             form for that purchase and prevails where it differs from a general statement
             on this site.
+          </p>
+          <p className="mt-2">
+            For a Weekly Digest pilot, the written confirmation of region, buyer type and
+            first delivery date is the order form for that purchase and prevails where it
+            differs from a general statement on this site.
           </p>
         </section>
 
@@ -140,6 +146,16 @@ export default function TermsPage() {
             scope, CareGist will offer a revised delivery date or a full refund if the
             parties do not agree an alternative scope.
           </p>
+          <p>
+            The Weekly Digest pilot costs <strong>£{WEEKLY_DIGEST_PILOT_PRICE_GBP}</strong> for four weekly digests. CareGist confirms
+            the region, the start date and the source path before it sends an invoice or payment link.
+            Payment is due in full before the first digest. The buyer may cancel by email before the first
+            digest is sent and receive a full refund. After the first digest is sent, the fee for digests
+            already delivered is non-refundable, except where CareGist fails to deliver an agreed digest.
+            If CareGist does not deliver an agreed digest within the agreed week, it will deliver it late
+            or refund a proportional one-quarter of the pilot fee for that digest, at the buyer&apos;s choice. The pilot does not renew automatically
+            and ends after the fourth digest.
+          </p>
         </section>
 
         <section>
@@ -157,6 +173,13 @@ export default function TermsPage() {
             target is not a guaranteed service level. If a material source issue affects
             the agreed scope, CareGist will notify the buyer and apply the remedy in
             section 6.
+          </p>
+          <p>
+            The delivery target for each Weekly Digest is the agreed weekday of each of four
+            consecutive weeks from the agreed start date. The target is not a guaranteed service
+            level. A digest reflects the most recent CQC register edition CareGist has reconciled,
+            which may be earlier than the delivery date. A digest is not a live feed, and it does
+            not state or imply vacancies, budgets or buying intent.
           </p>
           <p>
             CareGist may pause a collector, signal type, explanation, outbound delivery,
