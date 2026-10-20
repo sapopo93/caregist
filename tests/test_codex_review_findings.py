@@ -6,6 +6,7 @@ Each test reproduces a finding with the reviewer's own example and pins the fix.
 from __future__ import annotations
 
 import json
+from types import SimpleNamespace
 from datetime import date, datetime, timedelta, timezone
 
 import pytest
@@ -451,3 +452,21 @@ def test_refund_after_payment_shows_as_a_payment_problem_and_leaves_revenue(monk
     assert table[0]["Status"] == "Payment problem: the payment has been refunded"
     assert t["paid"] == 0 and t["revenue_gbp"] == 0 and t["payment_problems"] == 1
     assert any("Do not deliver" in item for item in orders.actions(table, []))
+
+
+def test_sent_copy_keeping_the_draft_date_is_matched(monkeypatch, tmp_path):
+    """A client that replaces Message-ID but keeps the draft's Date must still match."""
+    from tools import order_ledger as ledger
+
+    monkeypatch.setenv("CAREGIST_ORDER_LEDGER", str(tmp_path / "l.sqlite"))
+    message = po.build_email(to="b@example.com", subject="Your Brief (ref TOB-7)", body="x")
+    args = SimpleNamespace(order_ref="TOB-7", product="brief", stage="quote", buyer_email="b@example.com",
+                           buyer_name="", company="", issue=None, region="North East",
+                           provider_group="new_90", service_type=None, new_order=False, supersede=None)
+    po.record_in_ledger(args, summary={"shortlisted": 30}, message=message, draft="d", order_dir=tmp_path, payment=None)
+    with ledger.connect() as conn:
+        (row,) = ledger.get_order(conn, "TOB-7")["emails"]
+    monkeypatch.setattr(orders.imaplib, "IMAP4_SSL", _imap_returning(
+        f"Subject: {message['Subject']}\r\nDate: {message['Date']}\r\n\r\n".encode()))
+    pending = [{**row, "buyer_email": "b@example.com"}]
+    assert row["message_id"] in orders.find_sent({"OUTREACH_IMAP_PASSWORD": "pw"}, pending)

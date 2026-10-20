@@ -192,6 +192,7 @@ def record_email(
     payment: dict[str, Any] | None = None,
     supersede_email_id: int | None = None,
     allow_new_order: bool = False,
+    drafted_at: str | None = None,
     path: Path | None = None,
 ) -> None:
     """Create the order on first sight and log this drafted email against it.
@@ -272,7 +273,7 @@ def record_email(
                                           draft_location, folder)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """,
-                (order_ref, stage, issue, message_id, subject, _now(), draft_location, folder),
+                (order_ref, stage, issue, message_id, subject, drafted_at or _now(), draft_location, folder),
             )
         except sqlite3.IntegrityError as exc:
             raise LedgerError(

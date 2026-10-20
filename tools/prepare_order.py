@@ -41,7 +41,7 @@ import time
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta, timezone
 from email.message import EmailMessage
-from email.utils import formatdate, make_msgid
+from email.utils import formatdate, make_msgid, parsedate_to_datetime
 from pathlib import Path
 from typing import Any
 
@@ -722,6 +722,9 @@ def record_in_ledger(
         quoted_count=quoted,
         message_id=str(message["Message-ID"]),
         subject=str(message["Subject"]),
+        # The email's own Date header: a mail client that keeps it on Send produces a
+        # sent copy dated exactly this, so "sent at or after drafted" still matches.
+        drafted_at=parsedate_to_datetime(str(message["Date"])).astimezone(timezone.utc).isoformat(timespec="microseconds"),
         draft_location=draft,
         folder=str(order_dir),
         issue=args.issue if args.product == "digest" and args.stage == "deliver" else None,
