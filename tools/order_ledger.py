@@ -330,6 +330,15 @@ def next_action(order: dict[str, Any], today: date) -> dict[str, Any]:
                 "due": None, "overdue": False, "action": True}
     if is_complete(order):
         return {"status": "Complete", "next": "-", "due": None, "overdue": False, "action": False}
+    uncertain = [e for e in pending_delivery + [q for q in quotes if not q["sent_at"]]
+                 if str(e.get("draft_location") or "").startswith("uncertain")]
+    if uncertain:
+        e = uncertain[0]
+        redo = (f"{deliver_cmd} --redraft" if e["stage"] == "deliver"
+                else f"re-run the quote with --order-ref {ref} --redraft")
+        return {"status": f"{e['stage'].capitalize()} draft not confirmed in outreach@",
+                "next": f"Look in outreach@ Drafts for \"{e['subject']}\": send it if there; if not, {redo}",
+                "due": None, "overdue": False, "action": True}
     if pending_delivery:
         due = None
         if order["paid_at"]:

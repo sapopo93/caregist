@@ -108,6 +108,14 @@ def find_sent(env: dict[str, str], pending: list[dict[str, Any]]) -> dict[str, s
     return found
 
 
+def _payment_problem(env: dict[str, str], session: str) -> str | None:
+    """Why this payment cannot be relied on, or None. Fails closed: an unchecked payment is a problem."""
+    try:
+        return po.payment_still_valid(env, session)
+    except Exception as exc:
+        return f"payment could not be re-checked ({type(exc).__name__}); refresh again before sending anything"
+
+
 def refresh(env: dict[str, str], *, path: Path | None = None) -> tuple[list[str], list[dict[str, Any]]]:
     """Update paid and sent status. Returns (notes, payments that match no order)."""
     notes: list[str] = []
@@ -118,10 +126,8 @@ def refresh(env: dict[str, str], *, path: Path | None = None) -> tuple[list[str]
         try:
             for order in sorted(orders, key=lambda o: o["created_at"]):
                 if order["paid_at"]:
-                    if order["payment_session"] and env.get("STRIPE_SECRET_KEY"):
-                        ledger.set_payment_problem(
-                            conn, order["order_ref"], po.payment_still_valid(env, order["payment_session"])
-                        )
+                    if order["payment_session"]:
+                        ledger.set_payment_problem(conn, order["order_ref"], _payment_problem(env, order["payment_session"]))
                     continue
                 payment = po.find_payment(
                     env, order["buyer_email"], order["amount_pence"], order_ref=order["order_ref"],
@@ -132,9 +138,7 @@ def refresh(env: dict[str, str], *, path: Path | None = None) -> tuple[list[str]
                     claimed.add(payment["session"])
                     # Validate now, not on the next refresh: a refunded or disputed
                     # checkout still reports payment_status "paid".
-                    ledger.set_payment_problem(
-                        conn, order["order_ref"], po.payment_still_valid(env, payment["session"])
-                    )
+                    ledger.set_payment_problem(conn, order["order_ref"], _payment_problem(env, payment["session"]))
             unmatched = [p for p in po.list_payments(env) if p["session"] not in claimed]
         except Exception as exc:  # network or DB unavailable: keep the last known state
             notes.append(f"Payment check unavailable ({type(exc).__name__}); showing last known state.")

@@ -437,6 +437,8 @@ def _drafts_mailbox(conn: imaplib.IMAP4_SSL) -> str:
 
 def draft_exists(message_id: str, *, env: dict[str, str]) -> bool:
     """Whether a draft with this Message-ID is in outreach@ Drafts. Raises if it cannot tell."""
+    if not env.get("OUTREACH_IMAP_PASSWORD"):
+        raise RuntimeError("OUTREACH_IMAP_PASSWORD is not set, so outreach@ Drafts cannot be checked")
     host = env.get("OUTREACH_IMAP_HOST") or "mail.privateemail.com"
     user = env.get("OUTREACH_IMAP_USER") or FROM_ADDRESS
     conn = imaplib.IMAP4_SSL(host, 993, ssl_context=ssl.create_default_context())
@@ -460,7 +462,7 @@ def save_draft(message: EmailMessage, *, env: dict[str, str]) -> str:
     """Append the message to the outreach@ Drafts folder. Never sends."""
     password = env.get("OUTREACH_IMAP_PASSWORD") or ""
     if not password:
-        return "not saved to Private Email (OUTREACH_IMAP_PASSWORD not set); open the .eml file instead"
+        raise RuntimeError("OUTREACH_IMAP_PASSWORD is not set")
     host = env.get("OUTREACH_IMAP_HOST") or "mail.privateemail.com"
     user = env.get("OUTREACH_IMAP_USER") or FROM_ADDRESS
     conn = imaplib.IMAP4_SSL(host, 993, ssl_context=ssl.create_default_context())
@@ -877,7 +879,29 @@ def _load_for_delivery(args: argparse.Namespace, today: date) -> str | None:
             f"a delivery draft for {args.order_ref} already exists (drafted {unsent_draft['drafted_at'][:16]}). "
             "Send it from outreach@ Drafts. Only if you deleted it, re-run with --redraft."
         )
+    if unsent_draft:
+        refusal = _replaceable(unsent_draft, order["buyer_email"])
+        if refusal:
+            return refusal
     args.supersede = unsent_draft["id"] if unsent_draft else None
+    return None
+
+
+def _replaceable(email_row: dict[str, Any], buyer_email: str) -> str | None:
+    """None if the old draft is provably gone (not in Drafts, not sent); otherwise why not."""
+    from tools.orders import find_sent
+
+    env = load_env()
+    try:
+        in_drafts = draft_exists(email_row["message_id"], env=env)
+        sent = find_sent(env, [{**email_row, "buyer_email": buyer_email}])
+    except Exception as exc:
+        return f"could not confirm the earlier draft is gone ({type(exc).__name__}: {exc}); nothing replaced."
+    if sent:
+        return "the earlier draft has been sent; run tools.orders to record it. Nothing replaced."
+    if in_drafts:
+        return (f"the earlier draft is still in outreach@ Drafts (\"{email_row['subject']}\"). "
+                "Send it, or delete it and re-run with --redraft.")
     return None
 
 
@@ -905,6 +929,10 @@ def _check_new_quote(args: argparse.Namespace) -> str | None:
             if unsent and not args.redraft:
                 return (f"an unsent quote draft for {args.order_ref} exists (drafted {unsent[-1]['drafted_at'][:16]}). "
                         "Send or delete it; to replace a deleted draft re-run with --redraft.")
+            if unsent:
+                refusal = _replaceable(unsent[-1], order["buyer_email"])
+                if refusal:
+                    return refusal
             args.supersede = unsent[-1]["id"] if unsent else None
             return None
         open_orders = order_ledger.open_orders_for(conn, args.buyer_email, args.product)
@@ -925,6 +953,8 @@ def main(argv: list[str] | None = None) -> int:
     now = datetime.now(timezone.utc)
     args.supersede = None
 
+    if not args.no_draft and not env.get("OUTREACH_IMAP_PASSWORD"):
+        return _refuse("OUTREACH_IMAP_PASSWORD is not set in .env, so the draft cannot be saved to outreach@.")
     refusal = _load_for_delivery(args, now.date()) if args.stage == "deliver" else _check_new_quote(args)
     if refusal:
         return _refuse(refusal)
@@ -1007,12 +1037,16 @@ def main(argv: list[str] | None = None) -> int:
     message = build_email(to=args.buyer_email, subject=subject, body=body, attachments=attachments)
     eml = order_dir / "email.eml"
     eml.write_bytes(message.as_bytes())
+    if args.no_draft:
+        # A dry run: nothing goes to outreach@ and nothing is recorded as an order or a draft.
+        print(f"DRY RUN: {args.order_ref}. Email written to {eml}; nothing saved to outreach@ or recorded.")
+        return 0
     try:
         record_in_ledger(args, summary=summary, message=message, draft="pending", order_dir=order_dir, payment=payment)
     except order_ledger.LedgerError as exc:
         return _refuse(str(exc))
     try:
-        draft = "not saved (--no-draft)" if args.no_draft else save_draft(message, env=env)
+        draft = save_draft(message, env=env)
     except Exception as exc:
         # The server may have saved the draft even though the reply was lost. Look for
         # it by Message-ID; only a definite "not there" frees the step for a re-run.
