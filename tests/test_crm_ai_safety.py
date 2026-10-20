@@ -611,3 +611,53 @@ def test_strict_profile_is_unchanged_by_default():
 
     assert "contact us again" not in redact_transcript(raw).text
     assert redact_transcript(raw).policy_version == "caregist-crm-redaction-v1"
+
+
+def _evaluation(**overrides):
+    payload = _valid_evaluation()
+    payload.update(overrides)
+    return crm_ai.CallEvaluation.model_validate(payload)
+
+
+@pytest.mark.parametrize(
+    "said",
+    ["please don't contact us again", "stop calling this number", "take us off your list",
+     "remove me from your database", "do not ring here", "unsubscribe us"],
+)
+def test_contact_do_not_contact_request_is_always_flagged(said):
+    evaluation = _evaluation(suggested_disposition="not_interested", compliance_flags=[])
+    transcript = f"[0000.00] Agent: hello.\n[0002.00] Contact: no thanks, {said}."
+
+    result = crm_ai.apply_compliance_rules(evaluation, transcript)
+
+    assert result.suggested_disposition == "do_not_call"
+    assert result.compliance_flags[0] == crm_ai.DO_NOT_CONTACT_FLAG
+
+
+def test_agent_saying_the_phrase_does_not_trigger_the_rule():
+    evaluation = _evaluation(suggested_disposition="callback_requested")
+    transcript = "[0000.00] Agent: if you'd rather I don't contact you again, just say.\n[0002.00] Contact: no, call me Tuesday."
+
+    assert crm_ai.apply_compliance_rules(evaluation, transcript) == evaluation
+
+
+def test_model_do_not_call_without_a_flag_gets_one_and_existing_flags_are_kept():
+    evaluation = _evaluation(suggested_disposition="do_not_call", compliance_flags=["Agent did not give company name"])
+
+    result = crm_ai.apply_compliance_rules(evaluation, "[0000.00] Contact: we're not interested.")
+
+    assert result.compliance_flags == [crm_ai.DO_NOT_CONTACT_FLAG, "Agent did not give company name"]
+
+
+def test_existing_do_not_contact_flag_is_not_duplicated():
+    evaluation = _evaluation(suggested_disposition="do_not_call", compliance_flags=["Contact asked to be removed from the list"])
+
+    result = crm_ai.apply_compliance_rules(evaluation, "[0000.00] Contact: take us off your list.")
+
+    assert result.compliance_flags == ["Contact asked to be removed from the list"]
+
+
+def test_ordinary_call_is_unchanged():
+    evaluation = _evaluation()
+
+    assert crm_ai.apply_compliance_rules(evaluation, "[0000.00] Contact: Tuesday works.") is evaluation

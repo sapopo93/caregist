@@ -333,6 +333,40 @@ def evaluation_json_schema() -> dict[str, Any]:
     return schema
 
 
+# A do-not-contact request must be honoured (PECR), so it is detected
+# deterministically from what the contact said rather than left to the model.
+DO_NOT_CONTACT_PATTERN = re.compile(
+    r"(?i)\b(?:do not|don't|dont|never)\s+(?:call|contact|phone|ring|email)\b"
+    r"|\bstop\s+(?:calling|contacting|ringing|emailing)\b"
+    r"|\b(?:remove|take)\s+(?:me|us|our (?:number|details))\s+(?:off|from)\b"
+    r"|\b(?:off|from)\s+your\s+(?:list|database|system)\b"
+    r"|\bunsubscribe\b"
+)
+DO_NOT_CONTACT_FLAG = "Do-not-contact request: the contact asked not to be contacted again; suppress this number."
+
+
+def _contact_lines(transcript: str) -> list[str]:
+    return [
+        line.split(":", 1)[1]
+        for line in transcript.splitlines()
+        if ":" in line and re.search(r"(?i)\bcontact\s*:", line.split(":", 1)[0] + ":")
+    ]
+
+
+def apply_compliance_rules(evaluation: CallEvaluation, transcript: str) -> CallEvaluation:
+    """Guarantee a do-not-contact flag whatever the model returned."""
+    requested = any(DO_NOT_CONTACT_PATTERN.search(line) for line in _contact_lines(transcript))
+    if not (requested or evaluation.suggested_disposition == "do_not_call"):
+        return evaluation
+    flags = list(evaluation.compliance_flags)
+    if not any(re.search(r"(?i)not to be (?:called|contacted)|do[- ]not[- ](?:call|contact)|remov", f) for f in flags):
+        flags = [DO_NOT_CONTACT_FLAG, *flags][:10]
+    update: dict[str, Any] = {"compliance_flags": flags}
+    if requested and evaluation.suggested_disposition != "do_not_call":
+        update["suggested_disposition"] = "do_not_call"
+    return evaluation.model_copy(update=update)
+
+
 def parse_evaluation_json(content: str) -> CallEvaluation:
     candidate = content.strip()
     if not candidate:
@@ -614,7 +648,10 @@ async def evaluate_transcript(
         "call_me_later, number_disconnected. overall_qa_score is an integer from 0 (poor) to "
         "100 (excellent) rating the agent's call handling. customer_sentiment is one of positive, "
         "neutral, negative, mixed, unknown. strengths, coaching_actions and compliance_flags are "
-        "arrays of short strings and may be empty. "
+        "arrays of short strings and may be empty. compliance_flags must record, when they occur: "
+        "the contact asking not to be called or contacted again or to be removed from a list; "
+        "the agent continuing to pitch after a clear refusal; the agent not giving their name or "
+        "company. "
         "Use only spoken words for sentiment. Do not infer protected traits, health, emotion, "
         "lawfulness or employee intent. Flag uncertainty. Output is advisory and cannot alter CRM state."
     )
@@ -663,7 +700,9 @@ async def evaluate_transcript(
             choice = response_payload["choices"][0]
             if choice.get("finish_reason") not in {"stop", None}:
                 raise ValueError("Evaluation response was truncated.")
-            evaluation = parse_evaluation_json(choice["message"]["content"])
+            evaluation = apply_compliance_rules(
+                parse_evaluation_json(choice["message"]["content"]), redacted.text
+            )
             if input_tokens <= 0 or output_tokens <= 0:
                 raise ValueError("Evaluation response omitted token usage.")
             if intelligence_id is not None:
