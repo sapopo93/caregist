@@ -72,7 +72,8 @@ def test_simultaneous_orders_stay_separate(db):
 
 def test_requote_replaces_the_promised_count(db):
     _record("TOB-2")
-    ledger.record_email(
+    first_id = _order("TOB-2")["emails"][0]["id"]
+    ledger.record_email(supersede_email_id=first_id, 
         order_ref="TOB-2", product="brief", stage="quote", buyer_email="b@example.com", buyer_name="", company="",
         scope="London · Stale", scope_args={"region": "London"}, amount_pence=74500, quoted_count=21,
         message_id="<requote@caregist.co.uk>", subject="S (ref TOB-2)", draft_location="saved", folder="/tmp",
@@ -116,7 +117,8 @@ def test_find_sent_matches_ref_recipient_and_stage(monkeypatch):
     found = orders.find_sent(
         {"OUTREACH_IMAP_PASSWORD": "pw"},
         [{"order_ref": "TOB-9", "buyer_email": "b@example.com", "message_id": "<m1>",
-          "subject": "Your Territory Opportunity Brief scope: North East (ref TOB-9)"}],
+          "subject": "Your Territory Opportunity Brief scope: North East (ref TOB-9)",
+          "drafted_at": "2026-10-20T15:00:00+00:00"}],
     )
 
     assert found == {"<m1>": "2026-10-20T15:05:00+00:00"}

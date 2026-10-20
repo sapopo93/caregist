@@ -26,7 +26,7 @@ tools, so a step done wrongly is refused with a plain reason, never half-done.
 
 Buyer types from the enquiry map to `--provider-group`: New registrations
 `new_90`, Inadequate providers `inadequate`, Requires Improvement
-`requires_improvement`, Not yet inspected `not_yet_inspected`, Stale inspections
+`requires_improvement`, No published rating `not_yet_inspected`, No recent inspection
 `stale_inspection`.
 
 ### What the tools guarantee

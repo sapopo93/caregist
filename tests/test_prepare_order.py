@@ -130,8 +130,8 @@ def test_brief_covers_exactly_the_supplied_location_ids_with_group_evidence(tmp_
 
     assert {o.location_id for o in brief.shortlist} == {"1-0", "1-1", "1-2"}
     assert all(o.primary_signal == "No recent inspection" for o in brief.shortlist)
-    assert "Inspection older than 3 years" in brief.executive_summary["headline"]
-    assert brief.executive_summary["provider_group"] == "Inspection older than 3 years"
+    assert "No inspection in the last 3 years, or none recorded" in brief.executive_summary["headline"]
+    assert brief.executive_summary["provider_group"] == "No inspection in the last 3 years, or none recorded"
 
 
 def test_unknown_provider_group_is_refused(tmp_path):

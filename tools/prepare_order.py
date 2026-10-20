@@ -178,10 +178,17 @@ def _is_product_sale(amount: Any, currency: Any, payment_link: Any) -> bool:
     )
 
 
+STRIPE_MAX_PAGES = 30           # 3,000 sessions per lookup; far beyond current volume
+
+
 def _payments_from_sales_record(
     database_url: str, buyer_email: str | None, amount_pence: int | None, since_days: int
 ) -> list[dict[str, Any]]:
-    """Paid Payment Link sales recorded by the billing webhook (manual_sale_paid), oldest first."""
+    """Paid Payment Link sales recorded by the billing webhook (manual_sale_paid), oldest first.
+
+    Only used when Stripe is not configured: its time is when the webhook recorded the
+    sale, not when the buyer paid.
+    """
     import asyncpg
 
     async def query() -> list[dict[str, Any]]:
@@ -192,7 +199,8 @@ def _payments_from_sales_record(
                     """
                     SELECT created_at, email, (meta->>'amount_total')::int AS amount,
                            meta->>'stripe_checkout_session_id' AS session,
-                           meta->>'currency' AS currency, meta->>'payment_link' AS payment_link
+                           meta->>'currency' AS currency, meta->>'payment_link' AS payment_link,
+                           meta->>'client_reference_id' AS order_ref
                     FROM analytics_events
                     WHERE event_type = 'manual_sale_paid'
                       AND meta->>'payment_status' = 'paid'
@@ -209,7 +217,7 @@ def _payments_from_sales_record(
             await conn.close()
         return [
             {"source": "CareGist sales record", "session": r["session"], "paid_at": r["created_at"].isoformat(),
-             "email": r["email"], "amount": r["amount"]}
+             "email": r["email"], "amount": r["amount"], "order_ref": r["order_ref"] or None}
             for r in rows
             if _is_product_sale(r["amount"], r["currency"], r["payment_link"])
         ]
@@ -220,7 +228,12 @@ def _payments_from_sales_record(
 def _payments_from_stripe(
     secret_key: str, buyer_email: str | None, amount_pence: int | None, since_days: int
 ) -> list[dict[str, Any]]:
-    """Read-only fallback in case the webhook missed a sale, oldest first."""
+    """Paid product sales from Stripe, oldest first, following pagination.
+
+    ``paid_at`` is the checkout session's creation time (when the buyer opened the
+    payment page). Orders are bound by ``client_reference_id``, so this time only
+    matters for payments made through a link without an order reference.
+    """
     import httpx
 
     params: dict[str, Any] = {
@@ -230,38 +243,50 @@ def _payments_from_stripe(
     }
     if buyer_email:
         params["customer_details[email]"] = buyer_email.strip()
-    response = httpx.get("https://api.stripe.com/v1/checkout/sessions", params=params, auth=(secret_key, ""), timeout=30)
-    response.raise_for_status()
     found = []
-    for session in response.json().get("data", []):
-        amount = session.get("amount_total")
-        if session.get("payment_status") != "paid" or not _is_product_sale(
-            amount, session.get("currency"), session.get("payment_link")
-        ):
-            continue
-        if amount_pence is not None and amount != amount_pence:
-            continue
-        found.append({
-            "source": "Stripe",
-            "session": session["id"],
-            "paid_at": datetime.fromtimestamp(session["created"], tz=timezone.utc).isoformat(),
-            "email": (session.get("customer_details") or {}).get("email") or "",
-            "amount": amount,
-        })
+    for _page in range(STRIPE_MAX_PAGES):
+        response = httpx.get("https://api.stripe.com/v1/checkout/sessions", params=params, auth=(secret_key, ""), timeout=30)
+        response.raise_for_status()
+        body = response.json()
+        sessions = body.get("data", [])
+        for session in sessions:
+            amount = session.get("amount_total")
+            if session.get("payment_status") != "paid" or not _is_product_sale(
+                amount, session.get("currency"), session.get("payment_link")
+            ):
+                continue
+            if amount_pence is not None and amount != amount_pence:
+                continue
+            found.append({
+                "source": "Stripe",
+                "session": session["id"],
+                "paid_at": datetime.fromtimestamp(session["created"], tz=timezone.utc).isoformat(),
+                "email": (session.get("customer_details") or {}).get("email") or "",
+                "amount": amount,
+                "order_ref": session.get("client_reference_id") or None,
+            })
+        if not body.get("has_more") or not sessions:
+            break
+        params["starting_after"] = sessions[-1]["id"]
+    else:
+        raise RuntimeError(f"Stripe returned more than {STRIPE_MAX_PAGES * 100} sessions; narrow the lookup")
     return sorted(found, key=lambda item: item["paid_at"])
 
 
 def list_payments(
-    env: dict[str, str], *, buyer_email: str | None = None, amount_pence: int | None = None, since_days: int = 180
+    env: dict[str, str], *, buyer_email: str | None = None, amount_pence: int | None = None, since_days: int = 365
 ) -> list[dict[str, Any]]:
-    """Every paid product sale, de-duplicated by Stripe session, oldest first."""
+    """Every paid product sale, de-duplicated by Stripe session, oldest first.
+
+    Stripe is authoritative. When a Stripe key is configured and Stripe fails, the
+    error propagates and the caller refuses (fail closed); CareGist's sales record
+    is used only when no Stripe key is configured.
+    """
     seen: dict[str, dict[str, Any]] = {}
-    # Stripe is authoritative (its own payment time); CareGist's sales record is only
-    # a fallback when Stripe is unreachable or not configured.
     if env.get("STRIPE_SECRET_KEY"):
         for item in _payments_from_stripe(env["STRIPE_SECRET_KEY"], buyer_email, amount_pence, since_days):
             seen.setdefault(item["session"], item)
-    if env.get("DATABASE_URL") and not env.get("STRIPE_SECRET_KEY"):
+    elif env.get("DATABASE_URL"):
         for item in _payments_from_sales_record(env["DATABASE_URL"], buyer_email, amount_pence, since_days):
             if item["session"]:
                 seen.setdefault(item["session"], item)
@@ -273,19 +298,63 @@ def find_payment(
     buyer_email: str,
     amount_pence: int,
     *,
+    order_ref: str | None = None,
     exclude_sessions: frozenset[str] | set[str] = frozenset(),
     not_before: str | None = None,
 ) -> dict[str, Any] | None:
-    """The buyer's oldest paid sale of this amount, made after the order existed and
-    not already attached to another order."""
+    """The payment for this order.
+
+    1. A paid sale whose client_reference_id is this order ref (from the quote's
+       link) belongs to this order, whatever email the buyer paid with.
+    2. Otherwise only a sale with *no* order reference can be used: same buyer email
+       and amount, made after the order existed, not attached to another order.
+    A sale carrying another order's reference is never used.
+    """
+    if order_ref:
+        for item in list_payments(env, amount_pence=amount_pence):
+            if item.get("order_ref") == order_ref and item["session"] not in exclude_sessions:
+                return item
     floor = datetime.fromisoformat(not_before) - CLOCK_SKEW if not_before else None
     for item in list_payments(env, buyer_email=buyer_email, amount_pence=amount_pence):
-        if item["session"] in exclude_sessions:
+        if item.get("order_ref") or item["session"] in exclude_sessions:
             continue
         if floor and datetime.fromisoformat(item["paid_at"]) < floor:
             continue
         return item
     return None
+
+
+def payment_still_valid(env: dict[str, str], session_id: str) -> str | None:
+    """None if the payment still stands; otherwise why not (refund, dispute, unpaid).
+
+    Fails closed: without Stripe the payment cannot be re-checked.
+    """
+    if not env.get("STRIPE_SECRET_KEY"):
+        return "Stripe is not configured, so the payment cannot be re-checked before delivery"
+    import httpx
+
+    response = httpx.get(
+        f"https://api.stripe.com/v1/checkout/sessions/{session_id}",
+        params={"expand[]": "payment_intent.latest_charge"},
+        auth=(env["STRIPE_SECRET_KEY"], ""),
+        timeout=30,
+    )
+    response.raise_for_status()
+    session = response.json()
+    if session.get("payment_status") != "paid":
+        return f"the checkout is no longer paid ({session.get('payment_status')})"
+    charge = ((session.get("payment_intent") or {}).get("latest_charge")) or {}
+    if charge.get("refunded") or int(charge.get("amount_refunded") or 0) > 0:
+        return "the payment has been refunded"
+    if charge.get("disputed"):
+        return "the payment is disputed"
+    return None
+
+
+def payment_link_for(amount_pence: int, order_ref: str) -> str:
+    """The product's Payment Link carrying the order ref, so Stripe records which order was paid."""
+    base = BRIEF_PAYMENT_LINK if amount_pence == BRIEF_AMOUNT_PENCE else DIGEST_PAYMENT_LINK
+    return f"{base}?client_reference_id={order_ref}"
 
 
 from tools.order_ledger import add_working_days  # noqa: E402  (shared with the ledger)
@@ -486,7 +555,7 @@ Confirmed scope (this email is the order form under our Business Terms v2.2.1):
 
 Price: {BRIEF_PRICE}
 
-To place the order, pay here: {BRIEF_PAYMENT_LINK}
+To place the order, pay here: {payment_link_for(BRIEF_AMOUNT_PENCE, args.order_ref)}
 
 Our terms are at {TERMS_URL}. If you would like to change the scope before paying, just reply to this email.
 
@@ -535,7 +604,7 @@ Thank you for your enquiry. Here is the confirmed Weekly Digest pilot (this emai
 Price: {DIGEST_PRICE}
 Payment is due before the first digest. You can cancel by email before the first digest for a full refund.
 
-To place the order, pay here: {DIGEST_PAYMENT_LINK}
+To place the order, pay here: {payment_link_for(DIGEST_AMOUNT_PENCE, args.order_ref)}
 
 Our terms are at {TERMS_URL}. Reply to this email if you would like to change anything first.
 
@@ -800,6 +869,13 @@ def _check_new_quote(args: argparse.Namespace) -> str | None:
                 return f"{args.order_ref} belongs to {order['buyer_email']} ({order['product']}); check the ref."
             if order["paid_at"]:
                 return f"{args.order_ref} is already paid; its scope cannot be changed by a new quote."
+            try:
+                paid_now = find_payment(load_env(), order["buyer_email"], order["amount_pence"],
+                                        order_ref=order["order_ref"], not_before=order["created_at"])
+            except Exception as exc:
+                return f"could not check whether {args.order_ref} is paid ({type(exc).__name__}); try again."
+            if paid_now:
+                return f"{args.order_ref} has been paid ({paid_now['session']}); its scope cannot be changed."
             unsent = [e for e in order_ledger.live(order["emails"], "quote") if not e["sent_at"]]
             if unsent and not args.redraft:
                 return (f"an unsent quote draft for {args.order_ref} exists (drafted {unsent[-1]['drafted_at'][:16]}). "
@@ -840,17 +916,25 @@ def main(argv: list[str] | None = None) -> int:
         # no other order has claimed.
         amount = BRIEF_AMOUNT_PENCE if args.product == "brief" else DIGEST_AMOUNT_PENCE
         order = args.order
-        if order["paid_at"]:
-            payment = {"paid_at": order["paid_at"], "session": order["payment_session"], "source": order["payment_source"]}
-        else:
-            payment = find_payment(env, args.buyer_email, amount, exclude_sessions=args.claimed,
-                                   not_before=order["created_at"])
-        if payment is None:
+        try:
+            if order["paid_at"]:
+                payment = {"paid_at": order["paid_at"], "session": order["payment_session"], "source": order["payment_source"]}
+            else:
+                payment = find_payment(env, args.buyer_email, amount, order_ref=args.order_ref,
+                                       exclude_sessions=args.claimed, not_before=order["created_at"])
+            problem = payment_still_valid(env, payment["session"]) if payment else None
+        except Exception as exc:  # Stripe or the database unreachable: never deliver on a guess
+            payment, problem = None, None
+            checks.add("payment_received", False, f"payment could not be checked ({type(exc).__name__}); try again")
+        if payment is None and not checks.results:
             checks.add("payment_received", False,
-                       f"no unclaimed paid £{amount // 100} sale found for {args.buyer_email} (CareGist sales record or Stripe)")
-        else:
+                       f"no paid £{amount // 100} sale found for {args.order_ref} ({args.buyer_email})")
+        elif payment is not None and problem:
+            checks.add("payment_received", False, f"{payment['session']}: {problem}")
+            payment = None
+        elif payment is not None:
             checks.add("payment_received", True,
-                       f"£{amount // 100} paid {payment['paid_at']} ({payment['source']}, {payment['session']})")
+                       f"£{amount // 100} paid {payment['paid_at'][:16]} ({payment['source']}, {payment['session']})")
     try:
         if args.stage == "deliver" and payment is None:
             pass

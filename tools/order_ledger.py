@@ -58,6 +58,10 @@ CREATE TABLE IF NOT EXISTS order_emails (
     superseded_at   TEXT                    -- replaced by a later draft; ignored
 );
 CREATE INDEX IF NOT EXISTS order_emails_ref ON order_emails(order_ref);
+-- One live unsent draft per order step: a second concurrent run cannot add another.
+CREATE UNIQUE INDEX IF NOT EXISTS order_emails_one_open_draft
+    ON order_emails(order_ref, stage, COALESCE(issue, 0))
+    WHERE superseded_at IS NULL AND sent_at IS NULL;
 """
 
 
@@ -193,6 +197,8 @@ def record_email(
         else:
             if existing["product"] != product or existing["buyer_email"].lower() != buyer_email.strip().lower():
                 raise LedgerError(f"{order_ref} belongs to {existing['buyer_email']} ({existing['product']}); not changed.")
+            if stage == "quote" and existing["paid_at"]:
+                raise LedgerError(f"{order_ref} is paid; its scope cannot be changed by a new quote.")
             if stage == "quote":
                 # A re-quote replaces the scope and promise; the latest quote is binding
                 # (Digest quotes carry no count, so the scope must still be replaced).
@@ -207,14 +213,20 @@ def record_email(
             )
         if payment:
             record_payment(conn, order_ref, payment)
-        conn.execute(
-            """
-            INSERT INTO order_emails (order_ref, stage, issue, message_id, subject, drafted_at,
-                                      draft_location, folder)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            (order_ref, stage, issue, message_id, subject, _now(), draft_location, folder),
-        )
+        try:
+            conn.execute(
+                """
+                INSERT INTO order_emails (order_ref, stage, issue, message_id, subject, drafted_at,
+                                          draft_location, folder)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (order_ref, stage, issue, message_id, subject, _now(), draft_location, folder),
+            )
+        except sqlite3.IntegrityError as exc:
+            conn.rollback()
+            raise LedgerError(
+                f"{order_ref} already has an unsent {stage} draft; send or delete it first (or use --redraft)."
+            ) from exc
 
 
 def record_payment(conn: sqlite3.Connection, order_ref: str, payment: dict[str, Any]) -> None:
@@ -262,8 +274,15 @@ def next_action(order: dict[str, Any], today: date) -> dict[str, Any]:
     if is_complete(order):
         return {"status": "Complete", "next": "-", "due": None, "overdue": False, "action": False}
     if pending_delivery:
+        due = None
+        if order["paid_at"]:
+            paid = date.fromisoformat(order["paid_at"][:10])
+            if order["product"] == "brief":
+                due = add_working_days(paid, DELIVERY_WORKING_DAYS)
+            else:
+                due = digest_issue_due(order, pending_delivery[0]["issue"] or 1) or paid
         return {"status": "Delivery drafted: press Send", "next": f"Send the draft in outreach@ Drafts (ref {ref})",
-                "due": None, "overdue": False, "action": True}
+                "due": due, "overdue": bool(due and today > due), "action": True}
     if order["paid_at"]:
         paid = date.fromisoformat(order["paid_at"][:10])
         if order["product"] == "brief":

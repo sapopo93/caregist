@@ -96,8 +96,10 @@ def test_sent_digest_issue_one_does_not_mark_issue_two(monkeypatch):
 
     monkeypatch.setattr(orders.imaplib, "IMAP4_SSL", FakeImap)
     pending = [
-        {"order_ref": "WDP-1", "buyer_email": "d@example.com", "message_id": "<i1>", "subject": issue1},
-        {"order_ref": "WDP-1", "buyer_email": "d@example.com", "message_id": "<i2>", "subject": issue2},
+        {"order_ref": "WDP-1", "buyer_email": "d@example.com", "message_id": "<i1>", "subject": issue1,
+         "drafted_at": "2026-10-26T08:00:00+00:00"},
+        {"order_ref": "WDP-1", "buyer_email": "d@example.com", "message_id": "<i2>", "subject": issue2,
+         "drafted_at": "2026-10-26T08:00:00+00:00"},
     ]
 
     found = orders.find_sent({"OUTREACH_IMAP_PASSWORD": "pw"}, pending)
@@ -114,9 +116,11 @@ def test_digest_requote_replaces_the_recorded_scope(monkeypatch, tmp_path):
     ledger.record_email(**common, scope="North West · from 2026-10-26",
                         scope_args={"region": "North West", "start_date": "2026-10-26"},
                         message_id="<q1>", subject="S1 (ref WDP-2)")
+    with ledger.connect() as conn:
+        first_id = ledger.get_order(conn, "WDP-2")["emails"][0]["id"]
     ledger.record_email(**common, scope="London · from 2026-11-02",
                         scope_args={"region": "London", "start_date": "2026-11-02"},
-                        message_id="<q2>", subject="S2 (ref WDP-2)")
+                        message_id="<q2>", subject="S2 (ref WDP-2)", supersede_email_id=first_id)
 
     with ledger.connect() as conn:
         order = ledger.get_order(conn, "WDP-2")
@@ -222,6 +226,90 @@ async def test_paid_session_is_recorded_once_per_session():
         "id": "cs_p", "payment_status": "paid", "payment_link": "plink", "amount_total": 74500,
         "currency": "gbp", "customer_details": {"email": "b@example.com"},
     })
-    [(query, args)] = conn.calls
+    (lock_query, lock_args), (query, args) = conn.calls
+    assert "pg_advisory_xact_lock" in lock_query and lock_args == ("manual_sale:cs_p",)
     assert "WHERE NOT EXISTS" in query and "stripe_checkout_session_id' = $3" in query
     assert args[2] == "cs_p" and json.loads(args[1])["payment_status"] == "paid"
+
+
+# ---- Second review ----------------------------------------------------------- #
+
+
+def _imap_returning(raw_header: bytes):
+    class FakeImap:
+        def __init__(self, *a, **k):
+            pass
+
+        def login(self, *a):
+            pass
+
+        def list(self):
+            return "OK", [b'(\\Sent) "/" "Sent"']
+
+        def select(self, *a, **k):
+            return "OK", [b"1"]
+
+        def search(self, *a):
+            return "OK", [b"5"]
+
+        def fetch(self, number, query):
+            return "OK", [(b"5", raw_header)]
+
+        def logout(self):
+            pass
+
+    return FakeImap
+
+
+def _pending(subject, drafted_at="2026-10-20T12:00:00+00:00"):
+    return [{"order_ref": "TOB-1", "buyer_email": "b@example.com", "message_id": "<m>",
+             "subject": subject, "drafted_at": drafted_at}]
+
+
+def test_unreadable_subject_charset_is_skipped_not_fatal(monkeypatch):
+    monkeypatch.setattr(orders.imaplib, "IMAP4_SSL", _imap_returning(
+        b"Subject: =?x-unknown-charset?q?Hello?=\r\nDate: Tue, 20 Oct 2026 13:00:00 +0000\r\n\r\n"))
+    assert orders.find_sent({"OUTREACH_IMAP_PASSWORD": "pw"}, _pending("Hello (ref TOB-1)")) == {}
+
+
+def test_an_email_sent_before_this_draft_does_not_mark_it_sent(monkeypatch):
+    subject = "Your Territory Opportunity Brief scope: North East (ref TOB-1)"
+    monkeypatch.setattr(orders.imaplib, "IMAP4_SSL", _imap_returning(
+        f"Subject: {subject}\r\nDate: Tue, 20 Oct 2026 09:00:00 +0000\r\n\r\n".encode()))
+    assert orders.find_sent({"OUTREACH_IMAP_PASSWORD": "pw"}, _pending(subject)) == {}
+
+
+def test_stripe_lookup_follows_every_page(monkeypatch):
+    pages = [
+        {"data": [_stripe_session(id="cs_a")], "has_more": True},
+        {"data": [_stripe_session(id="cs_b", client_reference_id="TOB-9")], "has_more": False},
+    ]
+    seen_params = []
+
+    class Response:
+        def __init__(self, body):
+            self.body = body
+
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return self.body
+
+    def fake_get(url, params, auth, timeout):
+        seen_params.append(dict(params))
+        return Response(pages[len(seen_params) - 1])
+
+    monkeypatch.setattr("httpx.get", fake_get)
+    found = po._payments_from_stripe("sk_test_dummy", None, 74500, 30)
+
+    assert [f["session"] for f in found] == ["cs_a", "cs_b"]
+    assert seen_params[1]["starting_after"] == "cs_a"
+    assert found[1]["order_ref"] == "TOB-9"
+
+
+def test_payment_links_match_the_published_manifest():
+    manifest = json.loads((po.REPO_ROOT / "deploy" / "stripe-price-manifest.json").read_text())
+    brief = manifest["products"]["territory-opportunity-brief"]["payment_link"]
+    assert brief["id"] == po.PRODUCT_PAYMENT_LINKS[po.BRIEF_AMOUNT_PENCE]
+    assert brief["url"] == po.BRIEF_PAYMENT_LINK

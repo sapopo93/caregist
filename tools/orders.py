@@ -66,17 +66,23 @@ def find_sent(env: dict[str, str], pending: list[dict[str, Any]]) -> dict[str, s
                 status, header = conn.fetch(number, "(BODY.PEEK[HEADER.FIELDS (SUBJECT DATE)])")
                 if status != "OK" or not header or not isinstance(header[0], tuple):
                     continue
-                parsed = message_from_bytes(header[0][1])
-                sent_subject = " ".join(str(make_header(decode_header(parsed.get("Subject", "")))).split())
+                try:
+                    parsed = message_from_bytes(header[0][1])
+                    sent_subject = " ".join(str(make_header(decode_header(parsed.get("Subject", "")))).split())
+                except (LookupError, UnicodeError, ValueError):
+                    continue  # unreadable header: never mark anything sent from it
                 # The whole subject must match: ref, step and Digest issue number. Prefixes
                 # such as "Re:" or a shared opening would otherwise mark the wrong email sent.
                 if sent_subject == " ".join(email_row["subject"].split()):
                     date_line = "Date: " + parsed.get("Date", "")
                     try:
-                        sent = parsedate_to_datetime(date_line[5:].strip()).astimezone(timezone.utc).isoformat(timespec="seconds")
+                        sent_dt = parsedate_to_datetime(date_line[5:].strip()).astimezone(timezone.utc)
                     except (TypeError, ValueError):
-                        sent = datetime.now(timezone.utc).isoformat(timespec="seconds")
-                    found[email_row["message_id"]] = sent
+                        continue  # undated: cannot prove it was sent after this draft
+                    # An older email with the same subject (before a replacement draft) does not count.
+                    if sent_dt < datetime.fromisoformat(email_row["drafted_at"]) - po.CLOCK_SKEW:
+                        continue
+                    found[email_row["message_id"]] = sent_dt.isoformat(timespec="seconds")
                     break
     finally:
         try:
@@ -98,7 +104,7 @@ def refresh(env: dict[str, str], *, path: Path | None = None) -> tuple[list[str]
                 if order["paid_at"]:
                     continue
                 payment = po.find_payment(
-                    env, order["buyer_email"], order["amount_pence"],
+                    env, order["buyer_email"], order["amount_pence"], order_ref=order["order_ref"],
                     exclude_sessions=claimed, not_before=order["created_at"],
                 )
                 if payment:
@@ -180,8 +186,9 @@ def actions(table: list[dict[str, str]], unmatched: list[dict[str, Any]]) -> lis
         flag = "OVERDUE " if "OVERDUE" in row["Due"] else ""
         items.append(f"{flag}{row['Ref']} {row['Buyer']}: {row['Status']} -> {row['Next step']}")
     for payment in unmatched:
+        ref_note = f" for order ref {payment['order_ref']}" if payment.get("order_ref") else ""
         items.append(
-            f"PAYMENT WITH NO ORDER: £{payment['amount'] // 100} from {payment['email'] or 'unknown'} "
+            f"PAYMENT WITH NO ORDER: £{payment['amount'] // 100} from {payment['email'] or 'unknown'}{ref_note} "
             f"on {payment['paid_at'][:10]} ({payment['session']}). Find the enquiry, then quote it "
             f"(prepare_order quote ...) so the payment attaches, or refund it in Stripe."
         )

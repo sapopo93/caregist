@@ -67,8 +67,8 @@ PROVIDER_GROUP_LABELS = {
     "new_90": "New registrations (last 90 days)",
     "inadequate": "Currently rated Inadequate",
     "requires_improvement": "Currently rated Requires improvement",
-    "not_yet_inspected": "Not yet inspected",
-    "stale_inspection": "Inspection older than 3 years",
+    "not_yet_inspected": "No published CQC rating",
+    "stale_inspection": "No inspection in the last 3 years, or none recorded",
 }
 
 

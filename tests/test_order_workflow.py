@@ -22,7 +22,7 @@ TODAY = datetime.now(timezone.utc).date()
 def world(monkeypatch, tmp_path):
     """Isolated ledger, fake mailbox, fake payments and fake pack builders."""
     monkeypatch.setenv("CAREGIST_ORDER_LEDGER", str(tmp_path / "ledger.sqlite"))
-    state = {"payments": [], "drafts": [], "built": []}
+    state = {"payments": [], "drafts": [], "built": [], "invalid": {}}
 
     def list_payments(env, *, buyer_email=None, amount_pence=None, since_days=180):
         found = [
@@ -58,6 +58,7 @@ def world(monkeypatch, tmp_path):
         return checks, {"new_registrations": 4, "ratings_published": 0}, [pdf]
 
     monkeypatch.setattr(po, "list_payments", list_payments)
+    monkeypatch.setattr(po, "payment_still_valid", lambda env, session: state["invalid"].get(session))
     monkeypatch.setattr(po, "save_draft", save_draft)
     monkeypatch.setattr(po, "build_brief", build_brief)
     monkeypatch.setattr(po, "build_digest_issue", build_digest_issue)
@@ -70,11 +71,12 @@ def run(world, *argv):
     return po.main([*argv, "--out-base", str(world["out"])])
 
 
-def pay(world, email, amount, *, when=None, session=None):
+def pay(world, email, amount, *, when=None, session=None, order_ref=None):
     world["payments"].append({
         "email": email, "amount": amount, "source": "Stripe",
         "session": session or f"cs_{len(world['payments']) + 1}",
         "paid_at": (when or datetime.now(timezone.utc)).isoformat(),
+        "order_ref": order_ref,
     })
 
 
@@ -147,7 +149,7 @@ def test_one_payment_cannot_pay_for_two_orders(world, capsys):
 
     assert run(world, "deliver", "--order-ref", first) == 0
     assert run(world, "deliver", "--order-ref", second) == 2
-    assert "no unclaimed paid £745" in capsys.readouterr().out
+    assert f"no paid £745 sale found for {second}" in capsys.readouterr().out
     assert order(first)["payment_session"] == "cs_only" and order(second)["paid_at"] is None
 
 
@@ -311,3 +313,97 @@ def test_order_folder_and_eml_exist_for_every_draft(world):
     ref = quote_brief(world)
     emls = list(Path(world["out"]).rglob("email.eml"))
     assert len(emls) == 1 and ref in str(emls[0])
+
+
+
+# ---- Second independent review ---------------------------------------------- #
+
+
+def test_quote_link_carries_the_order_ref(world):
+    ref = quote_brief(world)
+    with ledger.connect() as conn:
+        folder = ledger.get_order(conn, ref)["emails"][0]["folder"]
+    import email
+    import email.policy
+
+    message = email.message_from_bytes((Path(folder) / "email.eml").read_bytes(), policy=email.policy.default)
+    assert f"{po.BRIEF_PAYMENT_LINK}?client_reference_id={ref}" in message.get_body(("plain",)).get_content()
+
+
+def test_payment_bound_to_an_order_ref_goes_to_that_order_even_with_another_email(world):
+    first = quote_brief(world, "a@example.com")
+    second = quote_brief(world, "a@example.com", "--new-order")
+    # The buyer pays for the SECOND order first, from a different email address.
+    pay(world, "accounts@a-ltd.example", 74500, session="cs_for_second", order_ref=second)
+
+    assert run(world, "deliver", "--order-ref", first) == 2   # not taken by the first order
+    assert run(world, "deliver", "--order-ref", second) == 0
+    assert order(second)["payment_session"] == "cs_for_second"
+
+
+def test_a_payment_bound_to_another_ref_is_never_used(world):
+    ref = quote_brief(world, "a@example.com")
+    pay(world, "a@example.com", 74500, order_ref="TOB-SOMEONE-ELSE")
+    assert run(world, "deliver", "--order-ref", ref) == 2
+
+
+def test_refunded_payment_blocks_delivery(world, capsys):
+    ref = quote_brief(world)
+    pay(world, "a@example.com", 74500, session="cs_refunded", order_ref=ref)
+    world["invalid"]["cs_refunded"] = "the payment has been refunded"
+
+    assert run(world, "deliver", "--order-ref", ref) == 2
+    assert "refunded" in capsys.readouterr().out
+
+
+def test_unreachable_payment_check_refuses_delivery(world, monkeypatch, capsys):
+    ref = quote_brief(world)
+
+    def down(*a, **k):
+        raise OSError("stripe unreachable")
+
+    monkeypatch.setattr(po, "list_payments", down)
+    assert run(world, "deliver", "--order-ref", ref) == 2
+    assert "could not be checked" in capsys.readouterr().out
+
+
+def test_ledger_refuses_scope_change_of_a_paid_order_inside_the_transaction(world):
+    ref = quote_brief(world)
+    with ledger.connect() as conn:
+        ledger.record_payment(conn, ref, {"paid_at": "2026-10-20", "session": "cs_p", "source": "Stripe"})
+    with pytest.raises(ledger.LedgerError):
+        ledger.record_email(
+            order_ref=ref, product="brief", stage="quote", buyer_email="a@example.com", buyer_name="", company="",
+            scope="London", scope_args={"region": "London"}, amount_pence=74500, quoted_count=10,
+            message_id="<late>", subject="S (ref x)", draft_location="saved", folder="/tmp",
+        )
+    assert order(ref)["scope_args"]["region"] == "North East"
+
+
+def test_requote_is_refused_when_stripe_shows_it_paid_but_ledger_does_not_yet(world, capsys):
+    ref = quote_brief(world)
+    pay(world, "a@example.com", 74500, order_ref=ref)
+    assert run(world, "quote", "brief", "--region", "London", "--provider-group", "new_90",
+               "--buyer-email", "a@example.com", "--order-ref", ref, "--redraft") == 2
+    assert "has been paid" in capsys.readouterr().out
+
+
+def test_ledger_allows_only_one_unsent_draft_per_step(world):
+    ref = quote_brief(world)
+    with pytest.raises(ledger.LedgerError):
+        ledger.record_email(
+            order_ref=ref, product="brief", stage="quote", buyer_email="a@example.com", buyer_name="", company="",
+            scope="North East", scope_args={"region": "North East"}, amount_pence=74500, quoted_count=30,
+            message_id="<concurrent>", subject="S (ref x)", draft_location="saved", folder="/tmp",
+        )
+
+
+def test_drafted_unsent_delivery_keeps_its_due_date_and_overdue_flag(world):
+    ref = quote_brief(world)
+    pay(world, "a@example.com", 74500, order_ref=ref)
+    assert run(world, "deliver", "--order-ref", ref) == 0
+    with ledger.connect() as conn:
+        conn.execute("UPDATE orders SET paid_at = '2026-10-01T10:00:00+00:00' WHERE order_ref = ?", (ref,))
+    action = ledger.next_action(order(ref), date(2026, 10, 20))
+    assert action["status"] == "Delivery drafted: press Send"
+    assert action["due"] == date(2026, 10, 6) and action["overdue"]

@@ -53,14 +53,14 @@ export const DIRECTORY_OPPORTUNITY_OPTIONS = [
   },
   {
     value: "not_yet_inspected",
-    label: "Not yet inspected",
-    shortLabel: "Not yet inspected",
+    label: "No published CQC rating",
+    shortLabel: "No published rating",
     audience: "Suppliers targeting early-stage provider setup",
   },
   {
     value: "stale_inspection",
-    label: "Inspection older than 3 years",
-    shortLabel: "Stale inspections",
+    label: "No inspection in the last 3 years, or none recorded",
+    shortLabel: "No recent inspection",
     audience: "Analysts and monitoring teams looking for overdue movement",
   },
 ] as const;

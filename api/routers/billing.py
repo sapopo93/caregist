@@ -1877,6 +1877,7 @@ async def _record_manual_payment_link_sale(conn, session: dict) -> None:
     email = details.get("email") or session.get("customer_email")
     meta = {
         "stripe_checkout_session_id": session.get("id"),
+        "client_reference_id": session.get("client_reference_id"),
         "payment_link": session.get("payment_link"),
         "payment_status": session.get("payment_status"),
         "amount_total": session.get("amount_total"),
@@ -1884,6 +1885,10 @@ async def _record_manual_payment_link_sale(conn, session: dict) -> None:
         "customer_name": details.get("name"),
         "fulfilment": "manual",
     }
+    # Serialise per checkout session for the rest of this transaction, so two events
+    # for the same session (completed + async_payment_succeeded, or a replay) cannot
+    # both pass the NOT EXISTS check concurrently.
+    await conn.execute("SELECT pg_advisory_xact_lock(hashtext($1))", f"manual_sale:{session.get('id')}")
     await conn.execute(
         """
         INSERT INTO analytics_events (event_type, event_source, email, meta)
