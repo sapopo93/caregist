@@ -65,7 +65,7 @@ def world(monkeypatch, tmp_path):
     monkeypatch.setattr(po, "load_env", lambda: {"OUTREACH_IMAP_PASSWORD": "test-only"})
     # By default an earlier draft is gone from Drafts and unsent, so --redraft may replace it.
     monkeypatch.setattr(po, "draft_exists", lambda message_id, *, env: False)
-    monkeypatch.setattr(orders, "find_sent", lambda env, pending: {})
+    monkeypatch.setattr(orders, "find_sent", lambda env, pending, **kwargs: {})
     state["out"] = tmp_path / "orders"
     return state
 
@@ -279,7 +279,7 @@ def test_redraft_refused_when_the_earlier_draft_was_sent(world, monkeypatch, cap
     ref = quote_brief(world)
     pay(world, "a@example.com", 74500)
     assert run(world, "deliver", "--order-ref", ref) == 0
-    monkeypatch.setattr(orders, "find_sent", lambda env, pending: {pending[0]["message_id"]: "2026-10-20T12:00:00"})
+    monkeypatch.setattr(orders, "find_sent", lambda env, pending, **kwargs: {pending[0]["message_id"]: "2026-10-20T12:00:00"})
     assert run(world, "deliver", "--order-ref", ref, "--redraft") == 2
     assert "has been sent" in capsys.readouterr().out
 
@@ -359,7 +359,7 @@ def test_actions_list_every_open_step_and_payments_with_no_order(world, monkeypa
     paid = quote_brief(world, "b@example.com")
     pay(world, "b@example.com", 74500)
     pay(world, "stranger@example.com", 15000, session="cs_orphan")
-    monkeypatch.setattr(orders, "find_sent", lambda env, pending: {})
+    monkeypatch.setattr(orders, "find_sent", lambda env, pending, **kwargs: {})
 
     notes, unmatched = orders.refresh({})
     todo = orders.actions(orders.rows(), unmatched)
@@ -374,7 +374,7 @@ def test_refund_found_on_first_refresh_is_not_counted_as_revenue(world, monkeypa
     ref = quote_brief(world)
     pay(world, "a@example.com", 74500, session="cs_refunded", order_ref=ref)
     world["invalid"]["cs_refunded"] = "the payment has been refunded"
-    monkeypatch.setattr(orders, "find_sent", lambda env, pending: {})
+    monkeypatch.setattr(orders, "find_sent", lambda env, pending, **kwargs: {})
 
     orders.refresh({})
 
@@ -400,7 +400,7 @@ def test_totals_and_report_show_bought_not_bought_and_delivered(world, tmp_path,
     assert run(world, "deliver", "--order-ref", delivered) == 0
     mark_all_sent(delivered)
     not_bought = quote_brief(world, "b@example.com")
-    monkeypatch.setattr(orders, "find_sent", lambda env, pending: {})
+    monkeypatch.setattr(orders, "find_sent", lambda env, pending, **kwargs: {})
     orders.refresh({})
 
     table = orders.rows()

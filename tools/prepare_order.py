@@ -894,7 +894,7 @@ def _replaceable(email_row: dict[str, Any], buyer_email: str) -> str | None:
     env = load_env()
     try:
         in_drafts = draft_exists(email_row["message_id"], env=env)
-        sent = find_sent(env, [{**email_row, "buyer_email": buyer_email}])
+        sent = find_sent(env, [{**email_row, "buyer_email": buyer_email}], strict=True)
     except Exception as exc:
         return f"could not confirm the earlier draft is gone ({type(exc).__name__}: {exc}); nothing replaced."
     if sent:

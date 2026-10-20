@@ -45,10 +45,23 @@ def _sent_mailbox(conn: imaplib.IMAP4_SSL) -> str:
     return "Sent"
 
 
-def find_sent(env: dict[str, str], pending: list[dict[str, Any]]) -> dict[str, str]:
-    """message_id -> sent time, for drafted emails now found in the Sent folder."""
+def find_sent(env: dict[str, str], pending: list[dict[str, Any]], *, strict: bool = False) -> dict[str, str]:
+    """message_id -> sent time, for drafted emails now found in the Sent folder.
+
+    strict=True is for decisions that must prove an email was *not* sent: any
+    search or fetch the server does not answer cleanly raises instead of being
+    read as "not sent".
+    """
+
+    def unsure(why: str) -> None:
+        if strict:
+            raise RuntimeError(f"Sent folder could not be checked: {why}")
+
     password = env.get("OUTREACH_IMAP_PASSWORD") or ""
-    if not password or not pending:
+    if not password:
+        unsure("OUTREACH_IMAP_PASSWORD is not set")
+        return {}
+    if not pending:
         return {}
     conn = imaplib.IMAP4_SSL(
         env.get("OUTREACH_IMAP_HOST") or "mail.privateemail.com", 993, ssl_context=ssl.create_default_context()
@@ -56,13 +69,19 @@ def find_sent(env: dict[str, str], pending: list[dict[str, Any]]) -> dict[str, s
     found: dict[str, str] = {}
     try:
         conn.login(env.get("OUTREACH_IMAP_USER") or po.FROM_ADDRESS, password)
-        conn.select(_sent_mailbox(conn), readonly=True)
+        status, _ = conn.select(_sent_mailbox(conn), readonly=True)
+        if status != "OK":
+            unsure("could not open the Sent folder")
+            return {}
         for email_row in pending:
             ref = email_row["order_ref"]
             drafted = datetime.fromisoformat(email_row["drafted_at"])
             # 1. Exact: the drafted message's own Message-ID, when the mailbox keeps it on Send.
             status, data = conn.search(None, "HEADER", "Message-ID", f'"{email_row["message_id"]}"')
-            if status == "OK" and data and data[0]:
+            if status != "OK":
+                unsure("Message-ID search failed")
+                continue
+            if data and data[0]:
                 status, header = conn.fetch(data[0].split()[0], "(BODY.PEEK[HEADER.FIELDS (DATE)])")
                 when = None
                 if status == "OK" and header and isinstance(header[0], tuple):
@@ -74,16 +93,21 @@ def find_sent(env: dict[str, str], pending: list[dict[str, Any]]) -> dict[str, s
                 continue
             # 2. Otherwise the whole subject, same recipient, sent after this draft existed.
             status, data = conn.search(None, "SUBJECT", f'"{ref}"', "TO", f'"{email_row["buyer_email"]}"')
-            if status != "OK" or not data or not data[0]:
+            if status != "OK":
+                unsure("subject search failed")
+                continue
+            if not data or not data[0]:
                 continue
             for number in data[0].split():
                 status, header = conn.fetch(number, "(BODY.PEEK[HEADER.FIELDS (SUBJECT DATE)])")
                 if status != "OK" or not header or not isinstance(header[0], tuple):
+                    unsure("header fetch failed")
                     continue
                 try:
                     parsed = message_from_bytes(header[0][1])
                     sent_subject = " ".join(str(make_header(decode_header(parsed.get("Subject", "")))).split())
                 except (LookupError, UnicodeError, ValueError):
+                    unsure("unreadable candidate header")
                     continue  # unreadable header: never mark anything sent from it
                 # The whole subject must match: ref, step and Digest issue number. Prefixes
                 # such as "Re:" or a shared opening would otherwise mark the wrong email sent.
@@ -92,11 +116,13 @@ def find_sent(env: dict[str, str], pending: list[dict[str, Any]]) -> dict[str, s
                     try:
                         sent_dt = parsedate_to_datetime(date_line[5:].strip()).astimezone(timezone.utc)
                     except (TypeError, ValueError):
+                        unsure("matching subject has no usable date")
                         continue  # undated: cannot prove it was sent after this draft
                     # Anything sent before this draft existed (e.g. an earlier, replaced draft
                     # with the same subject) does not count. No tolerance: a late clock can
                     # only leave an email showing "press Send", never mark one sent wrongly.
                     if sent_dt < drafted:
+                        unsure("matching subject predates the ledger draft; it may retain its original Date")
                         continue
                     found[email_row["message_id"]] = sent_dt.isoformat(timespec="seconds")
                     break
