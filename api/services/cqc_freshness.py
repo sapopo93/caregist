@@ -144,9 +144,34 @@ def _newer_incomplete_attempt(
         return False
     if _in_progress_within_grace(latest_attempt, now=now):
         return False
+    if _superseded_by_watermark(watermark, latest_attempt):
+        return False
     return bool(
         _value(latest_attempt, "status") != "completed"
         or not _complete_evidence(latest_attempt)
+    )
+
+
+def _superseded_by_watermark(
+    watermark: Mapping[str, Any],
+    latest_attempt: Mapping[str, Any],
+) -> bool:
+    """True when an unfinished attempt read the exact snapshot the watermark
+    later reconciled, and ended before that reconciliation completed.
+
+    A duplicate run cancelled while the original was still finishing carries
+    no newer evidence; letting it outrank the watermark would report a fully
+    reconciled snapshot as incomplete until the next scheduled run.
+    """
+    checksum = _value(latest_attempt, "source_checksum_sha256")
+    ended = _utc(_value(latest_attempt, "completed_at"))
+    reconciled = _utc(_value(watermark, "reconciled_at"))
+    return bool(
+        checksum
+        and checksum == _value(watermark, "source_checksum_sha256")
+        and ended is not None
+        and reconciled is not None
+        and ended <= reconciled
     )
 
 
