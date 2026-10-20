@@ -1,7 +1,8 @@
 """Fail-closed redaction and advisory AI evaluation for the local worker.
 
-Disabled: DeepSeek was removed on 19 Oct 2026 and no replacement provider is approved
-(see api/config.py). The settings validator refuses CRM_AI_ENABLED=true.
+DeepSeek was removed on 19 Oct 2026. The only approved provider is a model served
+on the worker's own machine (Ollama on loopback, e.g. gemma4:e4b); the settings
+validator in api/config.py refuses CRM_AI_ENABLED=true with any other base URL.
 """
 
 from __future__ import annotations
