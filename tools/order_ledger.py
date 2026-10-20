@@ -223,6 +223,12 @@ def record_email(
                 raise LedgerError(f"{order_ref} belongs to {existing['buyer_email']} ({existing['product']}); not changed.")
             if stage == "quote" and existing["paid_at"]:
                 raise LedgerError(f"{order_ref} is paid; its scope cannot be changed by a new quote.")
+            if stage == "quote" and conn.execute(
+                "SELECT 1 FROM order_emails WHERE order_ref = ? AND stage = 'quote' AND sent_at IS NOT NULL",
+                (order_ref,),
+            ).fetchone():
+                # The buyer may pay the sent quote's link at any time; its scope must stay what they saw.
+                raise LedgerError(f"a quote for {order_ref} has been sent; its scope is fixed. Quote a new order instead.")
             if stage == "quote":
                 # A re-quote replaces the scope and promise; the latest quote is binding
                 # (Digest quotes carry no count, so the scope must still be replaced).

@@ -166,3 +166,12 @@ def test_supersede_of_an_already_replaced_draft_is_refused(tmp_path):
     with pytest.raises(ledger.LedgerError, match="sent or replaced"):
         ledger.record_email(**{**_delivery_args("TOB-2", "<q3@x>"), "stage": "quote"},
                             supersede_email_id=q1["id"], path=path)
+
+
+def test_ledger_refuses_requote_after_quote_sent(tmp_path):
+    path = tmp_path / "l.sqlite"
+    ledger.record_email(**{**_delivery_args("TOB-3", "<q1@x>"), "stage": "quote"}, path=path)
+    with ledger.connect(path) as conn:
+        ledger.mark_sent(conn, "<q1@x>", "2026-10-20T12:00:00+00:00")
+    with pytest.raises(ledger.LedgerError, match="has been sent"):
+        ledger.record_email(**{**_delivery_args("TOB-3", "<q2@x>"), "stage": "quote", "scope": "London"}, path=path)
