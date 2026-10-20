@@ -39,8 +39,11 @@ Buyer types from the enquiry map to `--provider-group`: New registrations
   to one order only.
 - **No duplicates:** a second open order for the same buyer and product needs
   `--order-ref` (change it) or `--new-order` (genuinely separate). An unsent
-  draft is never duplicated; `--redraft` replaces it only if you deleted it,
-  and never after the email was sent. A paid order's scope cannot change.
+  draft is never duplicated; `--redraft` replaces it only after checking
+  outreach@ that the old draft is gone from Drafts and was never sent. If
+  saving a draft errors and outreach@ cannot be checked, the order shows
+  "draft not confirmed": look in Drafts before using `--redraft`. A paid
+  order's scope cannot change.
 - **Digest issues:** the next issue number and its week are worked out from
   the start date; an issue cannot be prepared before its day, and never twice.
 - **Nothing missed:** `tools.orders` lists ACTION NEEDED: quotes not sent,
@@ -52,8 +55,10 @@ Buyer types from the enquiry map to `--provider-group`: New registrations
   Not bought yet / Delivered in full, plus a CSV of every order.
 
 The ledger is `orders/ledger.sqlite` (buyer emails; git-ignored; back it up).
-Drafts reach outreach@ only with `OUTREACH_IMAP_PASSWORD` in `.env`; without it,
-open `email.eml` from the order folder. "Sent" status also needs it.
+`OUTREACH_IMAP_PASSWORD` must be in `.env`: without it nothing is quoted or
+delivered (nothing is recorded either). `--no-draft` is a dry run that writes
+`email.eml` only and records no order. A payment that cannot be re-checked with
+Stripe shows as a payment problem: do not send until a refresh clears it.
 
 ## 0. Before the first sale, and every Monday
 

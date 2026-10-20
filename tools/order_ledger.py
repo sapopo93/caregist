@@ -234,11 +234,29 @@ def record_email(
                 ).rowcount
                 if updated != 1:
                     raise LedgerError(f"{order_ref} is paid; its scope cannot be changed by a new quote.")
+        if stage == "deliver":
+            # Checked inside the write lock: a refresh may have marked the delivery
+            # sent after the caller's preflight read the ledger.
+            already_sent = conn.execute(
+                "SELECT 1 FROM order_emails WHERE order_ref = ? AND stage = 'deliver' "
+                "AND COALESCE(issue, 0) = COALESCE(?, 0) AND sent_at IS NOT NULL",
+                (order_ref, issue),
+            ).fetchone()
+            if already_sent:
+                raise LedgerError(
+                    f"{order_ref} delivery{'' if issue is None else f' issue {issue}'} was already sent; not drafted again."
+                )
         if supersede_email_id is not None:
-            conn.execute(
-                "UPDATE order_emails SET superseded_at = ? WHERE id = ? AND order_ref = ? AND sent_at IS NULL",
+            replaced = conn.execute(
+                "UPDATE order_emails SET superseded_at = ? "
+                "WHERE id = ? AND order_ref = ? AND sent_at IS NULL AND superseded_at IS NULL",
                 (_now(), supersede_email_id, order_ref),
-            )
+            ).rowcount
+            if replaced != 1:
+                raise LedgerError(
+                    f"the {stage} draft being replaced for {order_ref} has been sent or replaced since this run "
+                    "started; run tools.orders and check before drafting again."
+                )
         if payment:
             record_payment(conn, order_ref, payment)
         try:
@@ -312,6 +330,16 @@ def next_action(order: dict[str, Any], today: date) -> dict[str, Any]:
                 "due": None, "overdue": False, "action": True}
     if is_complete(order):
         return {"status": "Complete", "next": "-", "due": None, "overdue": False, "action": False}
+    uncertain = [e for e in pending_delivery + [q for q in quotes if not q["sent_at"]]
+                 # "pending": the run stopped before the mailbox answered.
+                 if str(e.get("draft_location") or "").startswith(("uncertain", "pending"))]
+    if uncertain:
+        e = uncertain[0]
+        redo = (f"{deliver_cmd} --redraft" if e["stage"] == "deliver"
+                else f"re-run the quote with --order-ref {ref} --redraft")
+        return {"status": f"{e['stage'].capitalize()} draft not confirmed in outreach@",
+                "next": f"Look in outreach@ Drafts for \"{e['subject']}\": send it if there; if not, {redo}",
+                "due": None, "overdue": False, "action": True}
     if pending_delivery:
         due = None
         if order["paid_at"]:

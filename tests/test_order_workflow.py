@@ -62,7 +62,10 @@ def world(monkeypatch, tmp_path):
     monkeypatch.setattr(po, "save_draft", save_draft)
     monkeypatch.setattr(po, "build_brief", build_brief)
     monkeypatch.setattr(po, "build_digest_issue", build_digest_issue)
-    monkeypatch.setattr(po, "load_env", lambda: {})
+    monkeypatch.setattr(po, "load_env", lambda: {"OUTREACH_IMAP_PASSWORD": "test-only"})
+    # By default an earlier draft is gone from Drafts and unsent, so --redraft may replace it.
+    monkeypatch.setattr(po, "draft_exists", lambda message_id, *, env: False)
+    monkeypatch.setattr(orders, "find_sent", lambda env, pending, **kwargs: {})
     state["out"] = tmp_path / "orders"
     return state
 
@@ -219,12 +222,111 @@ def test_failed_mailbox_save_leaves_no_phantom_draft(world, monkeypatch, capsys)
         raise OSError("mailbox down")
 
     monkeypatch.setattr(po, "save_draft", broken)
+    monkeypatch.setattr(po, "draft_exists", lambda message_id, *, env: False)
     assert run(world, "quote", "brief", "--region", "North East", "--provider-group", "new_90",
                "--buyer-email", "z@example.com") == 2
     assert "could not save the draft" in capsys.readouterr().out
     with ledger.connect() as conn:
         (o,) = ledger.orders_with_emails(conn)
     assert ledger.live(o["emails"], "quote") == []
+
+
+def test_draft_saved_despite_lost_reply_is_kept_and_tracked(world, monkeypatch, capsys):
+    def lost_reply(message, *, env):
+        raise OSError("connection reset after APPEND")
+
+    monkeypatch.setattr(po, "save_draft", lost_reply)
+    monkeypatch.setattr(po, "draft_exists", lambda message_id, *, env: True)
+    assert run(world, "quote", "brief", "--region", "North East", "--provider-group", "new_90",
+               "--buyer-email", "z@example.com") == 0
+    with ledger.connect() as conn:
+        (o,) = ledger.orders_with_emails(conn)
+    (live,) = ledger.live(o["emails"], "quote")
+    assert "confirmed after a connection error" in live["draft_location"]
+
+
+def test_uncertain_draft_blocks_a_plain_rerun(world, monkeypatch, capsys):
+    ref = quote_brief(world)
+    pay(world, "a@example.com", 74500)
+
+    def lost_reply(message, *, env):
+        raise OSError("connection reset after APPEND")
+
+    def cannot_tell(message_id, *, env):
+        raise OSError("mailbox unreachable")
+
+    monkeypatch.setattr(po, "save_draft", lost_reply)
+    monkeypatch.setattr(po, "draft_exists", cannot_tell)
+    assert run(world, "deliver", "--order-ref", ref) == 2
+    assert "may or may not be in outreach@ Drafts" in capsys.readouterr().out
+    # The possibly-saved draft stays tracked, so a plain re-run cannot add a second one.
+    assert len(ledger.live(order(ref)["emails"], "deliver")) == 1
+    assert run(world, "deliver", "--order-ref", ref) == 2
+    assert "already exists" in capsys.readouterr().out
+
+
+def test_redraft_refused_while_the_earlier_draft_is_still_in_drafts(world, monkeypatch, capsys):
+    ref = quote_brief(world)
+    pay(world, "a@example.com", 74500)
+    assert run(world, "deliver", "--order-ref", ref) == 0
+    monkeypatch.setattr(po, "draft_exists", lambda message_id, *, env: True)
+    assert run(world, "deliver", "--order-ref", ref, "--redraft") == 2
+    assert "still in outreach@ Drafts" in capsys.readouterr().out
+    assert len(ledger.live(order(ref)["emails"], "deliver")) == 1
+
+
+def test_redraft_refused_when_the_earlier_draft_was_sent(world, monkeypatch, capsys):
+    ref = quote_brief(world)
+    pay(world, "a@example.com", 74500)
+    assert run(world, "deliver", "--order-ref", ref) == 0
+    monkeypatch.setattr(orders, "find_sent", lambda env, pending, **kwargs: {pending[0]["message_id"]: "2026-10-20T12:00:00"})
+    assert run(world, "deliver", "--order-ref", ref, "--redraft") == 2
+    assert "has been sent" in capsys.readouterr().out
+
+
+def test_redraft_refused_when_drafts_cannot_be_checked(world, monkeypatch, capsys):
+    ref = quote_brief(world)
+    pay(world, "a@example.com", 74500)
+    assert run(world, "deliver", "--order-ref", ref) == 0
+
+    def down(message_id, *, env):
+        raise OSError("mailbox unreachable")
+
+    monkeypatch.setattr(po, "draft_exists", down)
+    assert run(world, "deliver", "--order-ref", ref, "--redraft") == 2
+    assert "could not confirm the earlier draft is gone" in capsys.readouterr().out
+
+
+def test_uncertain_draft_is_shown_as_needing_a_check(world, monkeypatch):
+    ref = quote_brief(world)
+    pay(world, "a@example.com", 74500)
+    monkeypatch.setattr(po, "save_draft", lambda message, *, env: (_ for _ in ()).throw(OSError("reset")))
+    monkeypatch.setattr(po, "draft_exists", lambda message_id, *, env: (_ for _ in ()).throw(OSError("down")))
+    assert run(world, "deliver", "--order-ref", ref) == 2
+    action = ledger.next_action(order(ref), TODAY)
+    assert action["status"] == "Deliver draft not confirmed in outreach@"
+    assert "--redraft" in action["next"]
+
+
+def test_dry_run_records_no_order(world, capsys):
+    assert run(world, "quote", "brief", "--region", "North East", "--provider-group", "new_90",
+               "--buyer-email", "dry@example.com", "--no-draft") == 0
+    assert "DRY RUN" in capsys.readouterr().out
+    with ledger.connect() as conn:
+        assert ledger.orders_with_emails(conn) == []
+
+
+def test_payment_that_cannot_be_rechecked_is_a_problem(world, monkeypatch):
+    ref = quote_brief(world)
+    pay(world, "a@example.com", 74500, order_ref=ref)
+
+    def stripe_down(env, session):
+        raise OSError("stripe unreachable")
+
+    monkeypatch.setattr(po, "payment_still_valid", stripe_down)
+    orders.refresh({})
+    assert "could not be re-checked" in order(ref)["payment_problem"]
+    assert orders.totals(orders.rows())["revenue_gbp"] == 0
 
 
 # ---- Weekly Digest: right issue, on time, exactly four ---------------------- #
@@ -257,7 +359,7 @@ def test_actions_list_every_open_step_and_payments_with_no_order(world, monkeypa
     paid = quote_brief(world, "b@example.com")
     pay(world, "b@example.com", 74500)
     pay(world, "stranger@example.com", 15000, session="cs_orphan")
-    monkeypatch.setattr(orders, "find_sent", lambda env, pending: {})
+    monkeypatch.setattr(orders, "find_sent", lambda env, pending, **kwargs: {})
 
     notes, unmatched = orders.refresh({})
     todo = orders.actions(orders.rows(), unmatched)
@@ -266,6 +368,19 @@ def test_actions_list_every_open_step_and_payments_with_no_order(world, monkeypa
     assert f"{drafted}" in text and "Send the quote draft" in text
     assert f"{paid}" in text and f"prepare_order deliver --order-ref {paid}" in text
     assert "PAYMENT WITH NO ORDER" in text and "cs_orphan" in text
+
+
+def test_refund_found_on_first_refresh_is_not_counted_as_revenue(world, monkeypatch):
+    ref = quote_brief(world)
+    pay(world, "a@example.com", 74500, session="cs_refunded", order_ref=ref)
+    world["invalid"]["cs_refunded"] = "the payment has been refunded"
+    monkeypatch.setattr(orders, "find_sent", lambda env, pending, **kwargs: {})
+
+    orders.refresh({})
+
+    assert order(ref)["payment_problem"] == "the payment has been refunded"
+    t = orders.totals(orders.rows())
+    assert t["revenue_gbp"] == 0 and t["payment_problems"] == 1
 
 
 def test_paid_brief_becomes_overdue_after_three_working_days(world):
@@ -285,7 +400,7 @@ def test_totals_and_report_show_bought_not_bought_and_delivered(world, tmp_path,
     assert run(world, "deliver", "--order-ref", delivered) == 0
     mark_all_sent(delivered)
     not_bought = quote_brief(world, "b@example.com")
-    monkeypatch.setattr(orders, "find_sent", lambda env, pending: {})
+    monkeypatch.setattr(orders, "find_sent", lambda env, pending, **kwargs: {})
     orders.refresh({})
 
     table = orders.rows()
@@ -407,3 +522,33 @@ def test_drafted_unsent_delivery_keeps_its_due_date_and_overdue_flag(world):
     action = ledger.next_action(order(ref), date(2026, 10, 20))
     assert action["status"] == "Delivery drafted: press Send"
     assert action["due"] == date(2026, 10, 6) and action["overdue"]
+
+
+def test_one_failed_payment_lookup_does_not_stop_rechecks_of_other_orders(world, monkeypatch):
+    unpaid = quote_brief(world, "a@example.com")
+    paid = quote_brief(world, "b@example.com")
+    pay(world, "b@example.com", 74500, session="cs_b", order_ref=paid)
+    with ledger.connect() as conn:
+        ledger.record_payment(conn, paid, world["payments"][0])
+    world["invalid"]["cs_b"] = "the payment has been refunded"
+    real_find = po.find_payment
+
+    def flaky(env, email, amount, **kw):
+        if kw.get("order_ref") == unpaid:
+            raise OSError("stripe timeout")
+        return real_find(env, email, amount, **kw)
+
+    monkeypatch.setattr(po, "find_payment", flaky)
+    notes, _ = orders.refresh({})
+    assert any(unpaid in n for n in notes)
+    assert order(paid)["payment_problem"] == "the payment has been refunded"
+
+
+def test_draft_left_pending_by_a_crash_is_not_shown_as_press_send(world):
+    ref = quote_brief(world)
+    pay(world, "a@example.com", 74500)
+    assert run(world, "deliver", "--order-ref", ref) == 0
+    with ledger.connect() as conn:
+        conn.execute("UPDATE order_emails SET draft_location = 'pending' WHERE stage = 'deliver'")
+    action = ledger.next_action(order(ref), TODAY)
+    assert action["status"] == "Deliver draft not confirmed in outreach@"

@@ -159,9 +159,20 @@ def test_without_a_password_nothing_touches_the_mailbox(monkeypatch):
         raise AssertionError("IMAP must not be used without a password")
 
     monkeypatch.setattr(po.imaplib, "IMAP4_SSL", boom)
-    result = po.save_draft(po.build_email(to="b@example.com", subject="S", body="B"), env={})
+    with pytest.raises(RuntimeError, match="OUTREACH_IMAP_PASSWORD"):
+        po.save_draft(po.build_email(to="b@example.com", subject="S", body="B"), env={})
 
-    assert "OUTREACH_IMAP_PASSWORD not set" in result
+
+def test_without_a_password_no_order_or_draft_is_recorded(monkeypatch, tmp_path, capsys):
+    monkeypatch.setenv("CAREGIST_ORDER_LEDGER", str(tmp_path / "ledger.sqlite"))
+    monkeypatch.setattr(po, "load_env", lambda: {})
+    monkeypatch.setattr(po, "build_brief", lambda *a, **k: pytest.fail("must not build"))
+    code = po.main(["quote", "brief", "--region", "North East", "--provider-group", "new_90",
+                    "--buyer-email", "b@example.com", "--out-base", str(tmp_path)])
+    assert code == 2 and "OUTREACH_IMAP_PASSWORD is not set" in capsys.readouterr().out
+    from tools import order_ledger
+    with order_ledger.connect() as conn:
+        assert order_ledger.orders_with_emails(conn) == []
 
 
 def test_draft_is_appended_to_drafts_and_never_sent(monkeypatch):
@@ -207,6 +218,7 @@ def test_failed_checks_draft_nothing(monkeypatch, tmp_path, capsys):
 
     monkeypatch.setattr(po, "build_brief", failing_brief)
     monkeypatch.setattr(po, "save_draft", lambda *a, **k: pytest.fail("must not draft"))
+    monkeypatch.setattr(po, "load_env", lambda: {"OUTREACH_IMAP_PASSWORD": "test-only"})
 
     code = po.main([
         "brief", "quote", "--region", "North East", "--provider-group", "requires_improvement",
