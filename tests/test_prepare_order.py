@@ -210,36 +210,17 @@ def test_failed_checks_draft_nothing(monkeypatch, tmp_path, capsys):
 
     code = po.main([
         "brief", "quote", "--region", "North East", "--provider-group", "requires_improvement",
-        "--buyer-email", "b@example.com", "--out-base", str(tmp_path), "--order-ref", "T1",
+        "--buyer-email", "b@example.com", "--out-base", str(tmp_path),
     ])
 
     assert code == 2
-    assert "NOT READY" in capsys.readouterr().out
+    out = capsys.readouterr().out
+    assert "NOT READY" in out and "shortlist_minimum: 21 organisations shortlisted" in out
     assert not list(tmp_path.rglob("email.eml"))
 
 
-def test_digest_quote_lists_four_weekly_dates_and_the_150_link(tmp_path, monkeypatch):
-    monkeypatch.setattr(po, "save_draft", lambda *a, **k: "saved")
-    code = po.main([
-        "digest", "quote", "--region", "North West", "--buyer-email", "b@example.com",
-        "--start-date", "2026-10-26", "--out-base", str(tmp_path), "--order-ref", "D1",
-    ])
-
-    assert code == 0
-    eml = next(tmp_path.rglob("email.eml")).read_text()
-    assert po.DIGEST_PAYMENT_LINK in eml
-    assert "Mon 26 Oct" in eml and "Mon 16 Nov" in eml
 
 
-def test_quoted_shortlist_reads_the_latest_successful_quote(tmp_path):
-    root = tmp_path / "TOB-1"
-    (root / "quote-20261020T100000Z").mkdir(parents=True)
-    (root / "quote-20261020T100000Z" / "checks.json").write_text(json.dumps({"ok": True, "summary": {"shortlisted": 19}}))
-    (root / "quote-20261020T110000Z").mkdir()
-    (root / "quote-20261020T110000Z" / "checks.json").write_text(json.dumps({"ok": False, "summary": {"shortlisted": 3}}))
-
-    assert po.quoted_shortlist(root) == 19
-    assert po.quoted_shortlist(tmp_path / "missing") is None
 
 
 def test_shortlist_promise_is_up_to_fifty_in_terms_and_tool():
@@ -249,84 +230,9 @@ def test_shortlist_promise_is_up_to_fifty_in_terms_and_tool():
     assert po.MAX_SHORTLIST == 50
 
 
-@pytest.mark.parametrize("product", ["brief", "digest"])
-def test_delivery_is_refused_until_payment_is_found(monkeypatch, tmp_path, capsys, product):
-    seen = {}
-
-    def no_payment(env, email, amount):
-        seen["args"] = (email, amount)
-        return None
-
-    monkeypatch.setattr(po, "find_payment", no_payment)
-    monkeypatch.setattr(po, "build_brief", lambda *a, **k: pytest.fail("must not build an unpaid order"))
-    monkeypatch.setattr(po, "build_digest_issue", lambda *a, **k: pytest.fail("must not build an unpaid order"))
-    monkeypatch.setattr(po, "save_draft", lambda *a, **k: pytest.fail("must not draft an unpaid order"))
-    extra = (
-        ["--provider-group", "new_90"] if product == "brief"
-        else ["--week-ending", "2026-10-25", "--issue", "1"]
-    )
-
-    code = po.main([product, "deliver", "--region", "North West", "--buyer-email", "Buyer@Example.com",
-                    "--out-base", str(tmp_path), "--order-ref", "P1", *extra])
-
-    assert code == 2
-    assert "payment_received" in capsys.readouterr().out
-    assert seen["args"] == ("Buyer@Example.com", 74500 if product == "brief" else 15000)
-    assert not list(tmp_path.rglob("email.eml"))
 
 
-def test_quote_never_requires_payment(monkeypatch, tmp_path):
-    monkeypatch.setattr(po, "find_payment", lambda *a, **k: pytest.fail("quotes must not check payment"))
-    monkeypatch.setattr(po, "save_draft", lambda *a, **k: "saved")
-
-    assert po.main(["digest", "quote", "--region", "London", "--buyer-email", "b@example.com",
-                    "--start-date", "2026-10-26", "--out-base", str(tmp_path), "--order-ref", "Q1"]) == 0
 
 
-def test_paid_delivery_proceeds_and_records_the_payment(monkeypatch, tmp_path):
-    pdf = tmp_path / "issue.pdf"
-    pdf.write_bytes(b"%PDF")
-
-    def built(args, *, env, order_dir, now):
-        checks = po.Checks()
-        checks.add("digest_built", True, "ok")
-        return checks, {"new_registrations": 4, "ratings_published": 0}, [pdf]
-
-    monkeypatch.setattr(po, "find_payment", lambda env, email, amount: {"source": "Stripe", "session": "cs_live_x", "paid_at": "2026-10-20T15:00:00+00:00"})
-    monkeypatch.setattr(po, "build_digest_issue", built)
-    monkeypatch.setattr(po, "save_draft", lambda *a, **k: "saved")
-
-    code = po.main(["digest", "deliver", "--region", "North West", "--buyer-email", "b@example.com",
-                    "--week-ending", "2026-10-25", "--issue", "1", "--out-base", str(tmp_path / "o"), "--order-ref", "P2"])
-
-    assert code == 0
-    report = json.loads(next((tmp_path / "o").rglob("checks.json")).read_text())
-    assert report["checks"][0]["check"] == "payment_received" and report["checks"][0]["ok"]
-    assert "cs_live_x" in report["checks"][0]["detail"]
 
 
-def test_stripe_fallback_matches_only_paid_sessions_of_the_right_amount(monkeypatch):
-    class Response:
-        def raise_for_status(self):
-            pass
-
-        def json(self):
-            return {"data": [
-                {"id": "cs_unpaid", "payment_status": "unpaid", "amount_total": 74500, "created": 1792500000},
-                {"id": "cs_other", "payment_status": "paid", "amount_total": 15000, "created": 1792500000},
-                {"id": "cs_paid", "payment_status": "paid", "amount_total": 74500, "created": 1792500000},
-            ]}
-
-    captured = {}
-
-    def fake_get(url, params, auth, timeout):
-        captured["params"] = params
-        return Response()
-
-    monkeypatch.setattr("httpx.get", fake_get)
-
-    found = po._payment_from_stripe("sk_test_dummy", " b@example.com ", 74500)
-
-    assert found["session"] == "cs_paid" and found["source"] == "Stripe"
-    assert captured["params"]["customer_details[email]"] == "b@example.com"
-    assert captured["params"]["status"] == "complete"

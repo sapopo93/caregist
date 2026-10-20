@@ -160,82 +160,114 @@ def export_receipt(export_dir: Path) -> dict[str, Any]:
     return receipt
 
 
-def _payment_from_sales_record(database_url: str, buyer_email: str, amount_pence: int) -> dict[str, Any] | None:
-    """A paid Payment Link sale recorded by the billing webhook (manual_sale_paid)."""
+PRODUCT_AMOUNTS = (BRIEF_AMOUNT_PENCE, DIGEST_AMOUNT_PENCE)
+
+
+def _payments_from_sales_record(
+    database_url: str, buyer_email: str | None, amount_pence: int | None, since_days: int
+) -> list[dict[str, Any]]:
+    """Paid Payment Link sales recorded by the billing webhook (manual_sale_paid), oldest first."""
     import asyncpg
 
-    async def query() -> dict[str, Any] | None:
+    async def query() -> list[dict[str, Any]]:
         conn = await asyncpg.connect(database_url)
         try:
             async with conn.transaction(readonly=True):
-                row = await conn.fetchrow(
+                rows = await conn.fetch(
                     """
-                    SELECT created_at, meta->>'stripe_checkout_session_id' AS session
+                    SELECT created_at, email, (meta->>'amount_total')::int AS amount,
+                           meta->>'stripe_checkout_session_id' AS session
                     FROM analytics_events
                     WHERE event_type = 'manual_sale_paid'
-                      AND lower(email) = lower($1)
-                      AND (meta->>'amount_total')::int = $2
                       AND meta->>'payment_status' = 'paid'
-                    ORDER BY created_at DESC
-                    LIMIT 1
+                      AND created_at >= NOW() - make_interval(days => $3)
+                      AND ($1::text IS NULL OR lower(email) = lower($1))
+                      AND ($2::int IS NULL OR (meta->>'amount_total')::int = $2)
+                    ORDER BY created_at ASC
                     """,
-                    buyer_email.strip(),
+                    buyer_email.strip() if buyer_email else None,
                     amount_pence,
+                    since_days,
                 )
         finally:
             await conn.close()
-        if row is None:
-            return None
-        return {"source": "CareGist sales record", "session": row["session"], "paid_at": row["created_at"].isoformat()}
+        return [
+            {"source": "CareGist sales record", "session": r["session"], "paid_at": r["created_at"].isoformat(),
+             "email": r["email"], "amount": r["amount"]}
+            for r in rows
+        ]
 
     return asyncio.run(query())
 
 
-def _payment_from_stripe(secret_key: str, buyer_email: str, amount_pence: int) -> dict[str, Any] | None:
-    """Read-only fallback in case the webhook missed the sale."""
+def _payments_from_stripe(
+    secret_key: str, buyer_email: str | None, amount_pence: int | None, since_days: int
+) -> list[dict[str, Any]]:
+    """Read-only fallback in case the webhook missed a sale, oldest first."""
     import httpx
 
-    response = httpx.get(
-        "https://api.stripe.com/v1/checkout/sessions",
-        params={"customer_details[email]": buyer_email.strip(), "status": "complete", "limit": 20},
-        auth=(secret_key, ""),
-        timeout=30,
-    )
+    params: dict[str, Any] = {
+        "status": "complete",
+        "limit": 100,
+        "created[gte]": int((datetime.now(timezone.utc) - timedelta(days=since_days)).timestamp()),
+    }
+    if buyer_email:
+        params["customer_details[email]"] = buyer_email.strip()
+    response = httpx.get("https://api.stripe.com/v1/checkout/sessions", params=params, auth=(secret_key, ""), timeout=30)
     response.raise_for_status()
+    found = []
     for session in response.json().get("data", []):
-        if session.get("payment_status") == "paid" and session.get("amount_total") == amount_pence:
-            paid_at = datetime.fromtimestamp(session["created"], tz=timezone.utc).isoformat()
-            return {"source": "Stripe", "session": session["id"], "paid_at": paid_at}
-    return None
+        amount = session.get("amount_total")
+        if session.get("payment_status") != "paid" or amount not in PRODUCT_AMOUNTS:
+            continue
+        if amount_pence is not None and amount != amount_pence:
+            continue
+        found.append({
+            "source": "Stripe",
+            "session": session["id"],
+            "paid_at": datetime.fromtimestamp(session["created"], tz=timezone.utc).isoformat(),
+            "email": (session.get("customer_details") or {}).get("email") or "",
+            "amount": amount,
+        })
+    return sorted(found, key=lambda item: item["paid_at"])
 
 
-def find_payment(env: dict[str, str], buyer_email: str, amount_pence: int) -> dict[str, Any] | None:
-    """The buyer's paid sale for this amount, from CareGist's record or Stripe; else None."""
+def list_payments(
+    env: dict[str, str], *, buyer_email: str | None = None, amount_pence: int | None = None, since_days: int = 180
+) -> list[dict[str, Any]]:
+    """Every paid product sale, de-duplicated by Stripe session, oldest first."""
+    seen: dict[str, dict[str, Any]] = {}
     if env.get("DATABASE_URL"):
-        found = _payment_from_sales_record(env["DATABASE_URL"], buyer_email, amount_pence)
-        if found:
-            return found
+        for item in _payments_from_sales_record(env["DATABASE_URL"], buyer_email, amount_pence, since_days):
+            if item["session"]:
+                seen.setdefault(item["session"], item)
     if env.get("STRIPE_SECRET_KEY"):
-        return _payment_from_stripe(env["STRIPE_SECRET_KEY"], buyer_email, amount_pence)
+        for item in _payments_from_stripe(env["STRIPE_SECRET_KEY"], buyer_email, amount_pence, since_days):
+            seen.setdefault(item["session"], item)
+    return sorted(seen.values(), key=lambda item: item["paid_at"])
+
+
+def find_payment(
+    env: dict[str, str],
+    buyer_email: str,
+    amount_pence: int,
+    *,
+    exclude_sessions: frozenset[str] | set[str] = frozenset(),
+    not_before: str | None = None,
+) -> dict[str, Any] | None:
+    """The buyer's oldest paid sale of this amount, made after the order existed and
+    not already attached to another order."""
+    floor = datetime.fromisoformat(not_before) - timedelta(hours=1) if not_before else None
+    for item in list_payments(env, buyer_email=buyer_email, amount_pence=amount_pence):
+        if item["session"] in exclude_sessions:
+            continue
+        if floor and datetime.fromisoformat(item["paid_at"]) < floor:
+            continue
+        return item
     return None
 
 
-def quoted_shortlist(order_root: Path) -> int | None:
-    """The shortlist size promised in this order's most recent successful quote."""
-    for report in sorted(order_root.glob("quote-*/checks.json"), reverse=True):
-        data = json.loads(report.read_text(encoding="utf-8"))
-        if data.get("ok") and data.get("summary", {}).get("shortlisted") is not None:
-            return int(data["summary"]["shortlisted"])
-    return None
-
-
-def add_working_days(start: date, days: int) -> date:
-    current = start
-    while days > 0:
-        current += timedelta(days=1)
-        if current.weekday() < 5:
-            days -= 1
-    return current
+from tools.order_ledger import add_working_days  # noqa: E402  (shared with the ledger)
 
 
 def new_order_ref(product: str) -> str:
@@ -375,9 +407,9 @@ def build_brief(args: argparse.Namespace, *, env: dict[str, str], order_dir: Pat
         f"{len(brief.shortlist)} organisations shortlisted (terms: up to {MAX_SHORTLIST}, exact number stated in the quote)",
     )
     if args.stage == "deliver":
-        quoted = quoted_shortlist(args.out_base / args.order_ref)
+        quoted = getattr(args, "quoted_count", None)
         if quoted is None:
-            checks.add("matches_quote", False, "no successful quote found for this order ref; run 'quote' first or pass the quote's --order-ref")
+            checks.add("matches_quote", False, "the order has no recorded quote; quote it first")
         else:
             checks.add(
                 "matches_quote",
@@ -578,6 +610,7 @@ def record_in_ledger(
         folder=str(order_dir),
         issue=args.issue if args.product == "digest" and args.stage == "deliver" else None,
         payment=payment,
+        supersede_email_id=getattr(args, "supersede", None),
     )
 
 
@@ -593,44 +626,187 @@ def load_env() -> dict[str, str]:
     return env
 
 
+USAGE = """
+  Quote (after agreeing scope by email):
+    prepare_order quote brief  --region R --provider-group G [--service-type S] --buyer-email E [--buyer-name N] [--company C]
+    prepare_order quote digest --region R --start-date YYYY-MM-DD --buyer-email E [--buyer-type T] [--buyer-name N] [--company C]
+  Deliver (after payment; everything else comes from the order record):
+    prepare_order deliver --order-ref REF
+"""
+
+DELIVER_FORBIDDEN = (
+    "region", "buyer_email", "buyer_name", "company", "provider_group", "service_type",
+    "start_date", "buyer_type", "week_ending", "issue", "expected_count",
+)
+
+
+def _normalise_argv(argv: list[str]) -> list[str]:
+    """Accept 'quote brief', 'brief quote' and 'deliver' (product read from the order)."""
+    if len(argv) >= 2 and argv[0] in ("brief", "digest") and argv[1] in ("quote", "deliver"):
+        return [argv[1], argv[0], *argv[2:]]
+    if argv and argv[0] == "deliver" and (len(argv) < 2 or argv[1] not in ("brief", "digest")):
+        return ["deliver", "auto", *argv[1:]]
+    return argv
+
+
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    p.add_argument("product", choices=("brief", "digest"))
+    import sys
+
+    argv = _normalise_argv(list(sys.argv[1:] if argv is None else argv))
+    p = argparse.ArgumentParser(description=__doc__.splitlines()[0], usage=USAGE)
     p.add_argument("stage", choices=("quote", "deliver"))
-    p.add_argument("--region", required=True, choices=REGIONS)
-    p.add_argument("--buyer-email", required=True)
-    p.add_argument("--buyer-name", default="")
-    p.add_argument("--company", default="")
-    p.add_argument("--order-ref", default=None, help="reuse the quote's reference when delivering")
+    p.add_argument("product", choices=("brief", "digest", "auto"))
+    p.add_argument("--order-ref", default=None, help="deliver: the order's reference; quote: re-quote that order")
+    p.add_argument("--region", default=None, choices=REGIONS)
+    p.add_argument("--buyer-email", default=None)
+    p.add_argument("--buyer-name", default=None)
+    p.add_argument("--company", default=None)
     p.add_argument("--export-dir", type=Path, default=None)
     p.add_argument("--out-base", type=Path, default=REPO_ROOT / ".tmp" / "orders")
     p.add_argument("--no-draft", action="store_true", help="write the .eml only")
+    p.add_argument("--redraft", action="store_true", help="replace an unsent draft for this step")
+    p.add_argument("--new-order", action="store_true", help="the buyer genuinely wants a second, separate order")
     # Brief
-    p.add_argument("--provider-group", choices=tuple(OPPORTUNITY_SQL))
+    p.add_argument("--provider-group", default=None, choices=tuple(OPPORTUNITY_SQL))
     p.add_argument("--service-type", default=None, help="as chosen on the website, e.g. 'Homecare Agencies'")
     p.add_argument("--shortlist", type=int, default=30)
     p.add_argument("--expected-count", type=int, default=None, help="'Providers in scope' from the enquiry email")
-
     # Digest
-    p.add_argument("--buyer-type", default="")
-    p.add_argument("--start-date", default=None, help="first digest date (quote)")
-    p.add_argument("--week-ending", default=None, help="last day of the week covered (deliver)")
-    p.add_argument("--issue", type=int, choices=(1, 2, 3, 4), default=None)
+    p.add_argument("--buyer-type", default=None)
+    p.add_argument("--start-date", default=None, help="first digest date")
+    p.add_argument("--week-ending", default=None)
+    p.add_argument("--issue", type=int, default=None)
     args = p.parse_args(argv)
+
+    if args.stage == "deliver":
+        if not args.order_ref:
+            p.error("deliver needs --order-ref (see: .venv/bin/python -m tools.orders)")
+        typed = [name for name in DELIVER_FORBIDDEN if getattr(args, name) not in (None, "")]
+        if typed:
+            flags = ", ".join("--" + name.replace("_", "-") for name in typed)
+            p.error(f"deliver takes only --order-ref; remove {flags}. The scope and buyer come from the order record.")
+        return args
+
+    if args.product == "auto":
+        p.error("quote needs a product: quote brief ... or quote digest ...")
+    if not args.region or not args.buyer_email:
+        p.error("quote needs --region and --buyer-email")
+    if "@" not in args.buyer_email or " " in args.buyer_email.strip():
+        p.error(f"--buyer-email {args.buyer_email!r} is not an email address")
     if args.product == "brief" and not args.provider_group:
-        p.error("brief needs --provider-group")
-    if args.product == "digest" and args.stage == "quote" and not args.start_date:
-        p.error("digest quote needs --start-date")
-    if args.product == "digest" and args.stage == "deliver" and not (args.week_ending and args.issue):
-        p.error("digest deliver needs --week-ending and --issue")
-    args.order_ref = args.order_ref or new_order_ref(args.product)
+        p.error("quote brief needs --provider-group")
+    if args.product == "digest":
+        if not args.start_date:
+            p.error("quote digest needs --start-date")
+        try:
+            date.fromisoformat(args.start_date)
+        except ValueError:
+            p.error("--start-date must be YYYY-MM-DD")
+    args.buyer_name = args.buyer_name or ""
+    args.company = args.company or ""
+    args.buyer_type = args.buyer_type or ""
     return args
 
 
+def _refuse(message: str) -> int:
+    print(f"NOT READY: {message}")
+    print("Nothing was built or drafted.")
+    return 2
+
+
+def _load_for_delivery(args: argparse.Namespace, today: date) -> str | None:
+    """Fill args from the order record. Returns a refusal message, or None."""
+    from tools import order_ledger
+
+    with order_ledger.connect() as conn:
+        order = order_ledger.get_order(conn, args.order_ref)
+        if order is None:
+            return f"there is no order {args.order_ref!r}. Copy the ref from: .venv/bin/python -m tools.orders"
+        args.claimed = order_ledger.claimed_sessions(conn) - ({order["payment_session"]} if order["payment_session"] else set())
+    args.order = order
+    args.product = order["product"]
+    args.order_ref = order["order_ref"]
+    args.buyer_email = order["buyer_email"]
+    args.buyer_name = order["buyer_name"] or ""
+    args.company = order["company"] or ""
+    scope = order["scope_args"]
+    args.region = scope.get("region")
+    if not order_ledger.live(order["emails"], "quote"):
+        return f"{args.order_ref} has no quote on record; quote it first."
+    if order_ledger.is_complete(order):
+        return f"{args.order_ref} is already fully delivered ({order_ledger.order_status(order, today)})."
+
+    deliveries = order_ledger.live(order["emails"], "deliver")
+    if args.product == "brief":
+        args.provider_group = scope.get("provider_group")
+        args.service_type = scope.get("service_type")
+        args.quoted_count = order["quoted_count"]
+        args.issue = None
+        current = deliveries
+    else:
+        args.start_date = scope.get("start_date")
+        args.buyer_type = scope.get("buyer_type") or ""
+        unsent = [e for e in deliveries if not e["sent_at"]]
+        args.issue = unsent[0]["issue"] if unsent else len(order_ledger.sent_issues(order)) + 1
+        due = order_ledger.digest_issue_due(order, args.issue)
+        if due and today < due:
+            return f"issue {args.issue} of {args.order_ref} is not due until {due.isoformat()}."
+        args.week_ending = ((due or today) - timedelta(days=1)).isoformat()
+        current = [e for e in deliveries if (e["issue"] or 1) == args.issue]
+
+    if any(e["sent_at"] for e in current):
+        return f"{args.order_ref} delivery{'' if args.issue is None else f' issue {args.issue}'} was already sent."
+    unsent_draft = next((e for e in current if not e["sent_at"]), None)
+    if unsent_draft and not args.redraft:
+        return (
+            f"a delivery draft for {args.order_ref} already exists (drafted {unsent_draft['drafted_at'][:16]}). "
+            "Send it from outreach@ Drafts. Only if you deleted it, re-run with --redraft."
+        )
+    args.supersede = unsent_draft["id"] if unsent_draft else None
+    return None
+
+
+def _check_new_quote(args: argparse.Namespace) -> str | None:
+    """Stop accidental duplicate orders and duplicate quote drafts."""
+    from tools import order_ledger
+
+    with order_ledger.connect() as conn:
+        if args.order_ref:
+            order = order_ledger.get_order(conn, args.order_ref)
+            if order is None:
+                return f"there is no order {args.order_ref!r} to re-quote; leave out --order-ref for a new order."
+            if order["product"] != args.product or order["buyer_email"].lower() != args.buyer_email.strip().lower():
+                return f"{args.order_ref} belongs to {order['buyer_email']} ({order['product']}); check the ref."
+            if order["paid_at"]:
+                return f"{args.order_ref} is already paid; its scope cannot be changed by a new quote."
+            unsent = [e for e in order_ledger.live(order["emails"], "quote") if not e["sent_at"]]
+            if unsent and not args.redraft:
+                return (f"an unsent quote draft for {args.order_ref} exists (drafted {unsent[-1]['drafted_at'][:16]}). "
+                        "Send or delete it; to replace a deleted draft re-run with --redraft.")
+            args.supersede = unsent[-1]["id"] if unsent else None
+            return None
+        open_orders = order_ledger.open_orders_for(conn, args.buyer_email, args.product)
+    if open_orders and not args.new_order:
+        refs = ", ".join(f"{o['order_ref']} ({order_ledger.order_status(o)})" for o in open_orders)
+        return (f"{args.buyer_email} already has an open {args.product} order: {refs}. "
+                "To change it: add --order-ref <that ref>. For a genuinely separate order: add --new-order.")
+    args.order_ref = new_order_ref(args.product)
+    args.supersede = None
+    return None
+
+
 def main(argv: list[str] | None = None) -> int:
+    from tools import order_ledger
+
     args = parse_args(argv)
     env = load_env()
     now = datetime.now(timezone.utc)
+    args.supersede = None
+
+    refusal = _load_for_delivery(args, now.date()) if args.stage == "deliver" else _check_new_quote(args)
+    if refusal:
+        return _refuse(refusal)
+
     order_dir = args.out_base / args.order_ref / f"{args.stage}-{now.strftime('%Y%m%dT%H%M%SZ')}"
     order_dir.mkdir(parents=True, exist_ok=True)
 
@@ -639,19 +815,21 @@ def main(argv: list[str] | None = None) -> int:
     checks = Checks()
     payment: dict[str, Any] | None = None
     if args.stage == "deliver":
-        # Nothing is prepared for delivery until the buyer has paid.
+        # Nothing is prepared for delivery until this order is paid, by a payment
+        # no other order has claimed.
         amount = BRIEF_AMOUNT_PENCE if args.product == "brief" else DIGEST_AMOUNT_PENCE
-        payment = find_payment(env, args.buyer_email, amount)
-        if payment is None:
-            checks.add(
-                "payment_received", False,
-                f"no paid £{amount // 100} sale found for {args.buyer_email} (CareGist sales record or Stripe)",
-            )
+        order = args.order
+        if order["paid_at"]:
+            payment = {"paid_at": order["paid_at"], "session": order["payment_session"], "source": order["payment_source"]}
         else:
-            checks.add(
-                "payment_received", True,
-                f"£{amount // 100} paid {payment['paid_at']} ({payment['source']}, {payment['session']})",
-            )
+            payment = find_payment(env, args.buyer_email, amount, exclude_sessions=args.claimed,
+                                   not_before=order["created_at"])
+        if payment is None:
+            checks.add("payment_received", False,
+                       f"no unclaimed paid £{amount // 100} sale found for {args.buyer_email} (CareGist sales record or Stripe)")
+        else:
+            checks.add("payment_received", True,
+                       f"£{amount // 100} paid {payment['paid_at']} ({payment['source']}, {payment['session']})")
     try:
         if args.stage == "deliver" and payment is None:
             pass
@@ -699,17 +877,31 @@ def main(argv: list[str] | None = None) -> int:
     message = build_email(to=args.buyer_email, subject=subject, body=body, attachments=attachments)
     eml = order_dir / "email.eml"
     eml.write_bytes(message.as_bytes())
-    draft = "not saved (--no-draft)" if args.no_draft else save_draft(message, env=env)
+    try:
+        record_in_ledger(args, summary=summary, message=message, draft="pending", order_dir=order_dir, payment=payment)
+    except order_ledger.LedgerError as exc:
+        return _refuse(str(exc))
+    try:
+        draft = "not saved (--no-draft)" if args.no_draft else save_draft(message, env=env)
+    except Exception as exc:  # the mailbox refused: the ledger must not show a draft that does not exist
+        with order_ledger.connect() as conn:
+            conn.execute(
+                "UPDATE order_emails SET superseded_at = ?, draft_location = ? WHERE message_id = ?",
+                (now.isoformat(timespec="seconds"), f"failed: {type(exc).__name__}", str(message["Message-ID"])),
+            )
+        return _refuse(f"could not save the draft to outreach@ ({type(exc).__name__}: {exc}). Nothing was drafted; re-run.")
+    with order_ledger.connect() as conn:
+        conn.execute("UPDATE order_emails SET draft_location = ? WHERE message_id = ?", (draft, str(message["Message-ID"])))
     report["draft"] = draft
     (order_dir / "checks.json").write_text(json.dumps(report, indent=2, default=str) + "\n", encoding="utf-8")
-    record_in_ledger(args, summary=summary, message=message, draft=draft, order_dir=order_dir, payment=payment)
 
-    print(f"READY: {args.order_ref} ({args.product} {args.stage})")
+    print(f"READY: {args.order_ref} ({args.product} {args.stage}{'' if not args.issue else f', issue {args.issue} of 4'})")
+    print(f"  To: {args.buyer_email}")
     for item in checks.results:
         print(f"  ok  {item['check']}: {item['detail']}")
     print(f"Draft: {draft}")
     print(f"Folder: {order_dir}")
-    print("Review the draft in outreach@caregist.co.uk, then press Send. Nothing has been sent.")
+    print("Check the To address and the ref in the subject, then press Send in outreach@. Nothing has been sent.")
     print("Track it with: .venv/bin/python -m tools.orders")
     return 0
 
