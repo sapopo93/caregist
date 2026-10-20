@@ -597,3 +597,92 @@ async def test_payment_link_session_with_caregist_metadata_keeps_strict_checks()
                 "subscription": "sub_123",
             },
         )
+
+
+def _signed_request(payload: bytes, secret: str) -> Request:
+    """A request signed exactly as Stripe signs webhooks, for the real SDK path."""
+    import hashlib
+    import hmac
+    import time
+
+    timestamp = int(time.time())
+    signature = hmac.new(secret.encode(), f"{timestamp}.".encode() + payload, hashlib.sha256).hexdigest()
+
+    async def receive():
+        return {"type": "http.request", "body": payload, "more_body": False}
+
+    return Request(
+        {
+            "type": "http",
+            "method": "POST",
+            "path": "/api/v1/billing/webhook",
+            "headers": [(b"stripe-signature", f"t={timestamp},v1={signature}".encode())],
+            "query_string": b"",
+        },
+        receive,
+    )
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("event_type", "session", "expected_sql"),
+    [
+        # Production 20 Oct 2026: stripe-python 15 made this raise
+        # "'get' is a dict method, but a Session is not a dict".
+        ("checkout.session.expired", {"id": "cs_live_expired", "object": "checkout.session"}, "SET status = 'expired'"),
+        (
+            "checkout.session.completed",
+            {
+                "id": "cs_live_paid",
+                "object": "checkout.session",
+                "payment_link": "plink_1UBt3M4mijLHzRRkz4joD0We",
+                "metadata": {},
+                "payment_status": "paid",
+                "amount_total": 15000,
+                "currency": "gbp",
+                "customer_details": {"email": "buyer@example.com", "name": "Buyer Ltd"},
+            },
+            "'manual_sale_paid'",
+        ),
+    ],
+)
+async def test_real_stripe_sdk_event_objects_are_handled(monkeypatch, event_type, session, expected_sql):
+    import json
+
+    conn = _WebhookConn()
+
+    @asynccontextmanager
+    async def mock_get_connection():
+        yield conn
+
+    secret = "whsec_dummy"
+    payload = json.dumps(
+        {"id": f"evt_{event_type}", "object": "event", "type": event_type, "data": {"object": session}}
+    ).encode()
+    monkeypatch.setattr(billing.settings, "stripe_secret_key", "sk_test_dummy")
+    monkeypatch.setattr(billing.settings, "stripe_webhook_secret", secret)
+    monkeypatch.setattr(billing, "get_connection", mock_get_connection)
+
+    result = await billing.stripe_webhook(_signed_request(payload, secret))
+
+    assert result == {"status": "ok"}
+    assert any(expected_sql in str(args[0]) for args in conn.executed_queries)
+
+
+def test_stripe_dict_converts_real_sdk_objects_recursively():
+    import stripe
+
+    from api.utils.stripe_compat import stripe_dict
+
+    obj = stripe.checkout.Session.construct_from(
+        {"id": "cs_1", "metadata": {"type": "x"}, "line_items": {"data": [{"price": {"id": "price_1"}}]}},
+        "sk_test",
+    )
+    with pytest.raises(AttributeError):
+        obj.get("id")
+
+    plain = stripe_dict(obj)
+
+    assert plain.get("metadata").get("type") == "x"
+    assert plain["line_items"]["data"][0]["price"]["id"] == "price_1"
+    assert type(plain) is dict
