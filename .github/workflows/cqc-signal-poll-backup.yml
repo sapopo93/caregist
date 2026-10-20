@@ -10,7 +10,10 @@ name: CQC signal poll (backup slots)
 # cadence tooling derives its expectation from that file.
 on:
   schedule:
-    - cron: "37 19,22,1,4 * * *"
+    # Hourly through the night window (18:37-04:37 UTC). With only ~57% of
+    # slots executing, 4 backups still gave ~32 polls/week against the 42
+    # needed for an 8-day sweep; 11 slots give ~60. Concurrency serialises them.
+    - cron: "37 18,19,20,21,22,23,0,1,2,3,4 * * *"
 
 permissions:
   contents: read
