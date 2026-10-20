@@ -343,7 +343,10 @@ def payment_still_valid(env: dict[str, str], session_id: str) -> str | None:
     session = response.json()
     if session.get("payment_status") != "paid":
         return f"the checkout is no longer paid ({session.get('payment_status')})"
-    charge = ((session.get("payment_intent") or {}).get("latest_charge")) or {}
+    intent = session.get("payment_intent")
+    charge = intent.get("latest_charge") if isinstance(intent, dict) else None
+    if not isinstance(charge, dict) or "refunded" not in charge or "amount_refunded" not in charge:
+        return "Stripe returned no charge for this payment, so refunds and disputes cannot be ruled out"
     if charge.get("refunded") or int(charge.get("amount_refunded") or 0) > 0:
         return "the payment has been refunded"
     if charge.get("disputed"):
@@ -701,6 +704,7 @@ def record_in_ledger(
         issue=args.issue if args.product == "digest" and args.stage == "deliver" else None,
         payment=payment,
         supersede_email_id=getattr(args, "supersede", None),
+        allow_new_order=bool(getattr(args, "new_order", False)),
     )
 
 

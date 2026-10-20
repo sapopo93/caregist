@@ -293,7 +293,7 @@ def test_totals_and_report_show_bought_not_bought_and_delivered(world, tmp_path,
     md, csv_path = orders.write_report(table, orders.actions(table, []), [], out_dir=tmp_path / "reports")
 
     assert t == {"orders": 2, "quoted_not_paid": 1, "paid": 1, "complete": 1,
-                 "paid_awaiting_delivery": 0, "revenue_gbp": 745, "overdue": 0}
+                 "paid_awaiting_delivery": 0, "revenue_gbp": 745, "overdue": 0, "payment_problems": 0}
     report = md.read_text()
     assert "## Bought (1)" in report and "## Not bought yet (1)" in report and "## Delivered in full (1)" in report
     assert delivered in report and not_bought in report

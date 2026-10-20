@@ -40,7 +40,8 @@ CREATE TABLE IF NOT EXISTS orders (
     created_at      TEXT NOT NULL,
     paid_at         TEXT,
     payment_session TEXT,
-    payment_source  TEXT
+    payment_source  TEXT,
+    payment_problem TEXT                    -- refunded / disputed / unverifiable, from Stripe
 );
 CREATE UNIQUE INDEX IF NOT EXISTS orders_one_order_per_payment
     ON orders(payment_session) WHERE payment_session IS NOT NULL;
@@ -77,15 +78,26 @@ def ledger_path() -> Path:
 def connect(path: Path | None = None) -> Iterator[sqlite3.Connection]:
     target = path or ledger_path()
     target.parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(target)
+    # Explicit transactions: everything done through one connect() runs inside a
+    # single BEGIN IMMEDIATE (write-locked) transaction, so checks and writes are
+    # atomic even if two commands run at the same moment.
+    conn = sqlite3.connect(target, timeout=30, isolation_level=None)
     conn.row_factory = sqlite3.Row
     try:
-        columns = {row[1] for row in conn.execute("PRAGMA table_info(order_emails)")}
-        if columns and "superseded_at" not in columns:
-            conn.execute("ALTER TABLE order_emails ADD COLUMN superseded_at TEXT")
+        for table, column in (("order_emails", "superseded_at"), ("orders", "payment_problem")):
+            columns = {row[1] for row in conn.execute(f"PRAGMA table_info({table})")}
+            if columns and column not in columns:
+                conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} TEXT")
         conn.executescript(SCHEMA)
-        yield conn
-        conn.commit()
+        conn.execute("BEGIN IMMEDIATE")
+        try:
+            yield conn
+        except BaseException:
+            if conn.in_transaction:
+                conn.execute("ROLLBACK")
+            raise
+        if conn.in_transaction:
+            conn.execute("COMMIT")
     finally:
         conn.close()
 
@@ -179,11 +191,23 @@ def record_email(
     issue: int | None = None,
     payment: dict[str, Any] | None = None,
     supersede_email_id: int | None = None,
+    allow_new_order: bool = False,
     path: Path | None = None,
 ) -> None:
-    """Create the order on first sight and log this drafted email against it."""
+    """Create the order on first sight and log this drafted email against it.
+
+    Runs in one write-locked transaction: the open-order and paid checks below see
+    exactly what this write will change.
+    """
     with connect(path) as conn:
         existing = get_order(conn, order_ref)
+        if existing is None and stage == "quote" and not allow_new_order:
+            open_orders = open_orders_for(conn, buyer_email, product)
+            if open_orders:
+                raise LedgerError(
+                    f"{buyer_email} already has an open {product} order "
+                    f"({', '.join(o['order_ref'] for o in open_orders)}); use --order-ref or --new-order."
+                )
         if existing is None:
             conn.execute(
                 """
@@ -202,10 +226,14 @@ def record_email(
             if stage == "quote":
                 # A re-quote replaces the scope and promise; the latest quote is binding
                 # (Digest quotes carry no count, so the scope must still be replaced).
-                conn.execute(
-                    "UPDATE orders SET quoted_count = ?, scope = ?, scope_json = ? WHERE order_ref = ?",
+                # "paid_at IS NULL" makes the paid guard part of the write itself.
+                updated = conn.execute(
+                    "UPDATE orders SET quoted_count = ?, scope = ?, scope_json = ? "
+                    "WHERE order_ref = ? AND paid_at IS NULL",
                     (quoted_count, scope, json.dumps(scope_args, sort_keys=True), order_ref),
-                )
+                ).rowcount
+                if updated != 1:
+                    raise LedgerError(f"{order_ref} is paid; its scope cannot be changed by a new quote.")
         if supersede_email_id is not None:
             conn.execute(
                 "UPDATE order_emails SET superseded_at = ? WHERE id = ? AND order_ref = ? AND sent_at IS NULL",
@@ -223,7 +251,6 @@ def record_email(
                 (order_ref, stage, issue, message_id, subject, _now(), draft_location, folder),
             )
         except sqlite3.IntegrityError as exc:
-            conn.rollback()
             raise LedgerError(
                 f"{order_ref} already has an unsent {stage} draft; send or delete it first (or use --redraft)."
             ) from exc
@@ -244,6 +271,10 @@ def record_payment(conn: sqlite3.Connection, order_ref: str, payment: dict[str, 
         """,
         (payment["paid_at"], session, payment.get("source"), order_ref),
     )
+
+
+def set_payment_problem(conn: sqlite3.Connection, order_ref: str, problem: str | None) -> None:
+    conn.execute("UPDATE orders SET payment_problem = ? WHERE order_ref = ?", (problem, order_ref))
 
 
 def mark_sent(conn: sqlite3.Connection, message_id: str, sent_at: str) -> None:
@@ -271,6 +302,14 @@ def next_action(order: dict[str, Any], today: date) -> dict[str, Any]:
     deliveries = live(order["emails"], "deliver")
     pending_delivery = [e for e in deliveries if not e["sent_at"]]
 
+    problem = order.get("payment_problem")
+    if problem and is_complete(order):
+        return {"status": f"Complete, then payment problem: {problem}", "next": "Check Stripe",
+                "due": None, "overdue": False, "action": True}
+    if problem:
+        return {"status": f"Payment problem: {problem}",
+                "next": f"Do not deliver. Delete any draft for ref {ref} in outreach@ Drafts and check Stripe",
+                "due": None, "overdue": False, "action": True}
     if is_complete(order):
         return {"status": "Complete", "next": "-", "due": None, "overdue": False, "action": False}
     if pending_delivery:

@@ -85,8 +85,8 @@ def test_sent_digest_issue_one_does_not_mark_issue_two(monkeypatch):
         def select(self, *a, **k):
             return "OK", [b"1"]
 
-        def search(self, *a):
-            return "OK", [b"5"]
+        def search(self, charset, *criteria):
+            return ("OK", [b""]) if criteria[0] == "HEADER" else ("OK", [b"5"])
 
         def fetch(self, number, query):
             return "OK", [(b"5", f"Subject: {encoded}\r\nDate: Mon, 26 Oct 2026 09:00:00 +0000\r\n\r\n".encode())]
@@ -249,8 +249,8 @@ def _imap_returning(raw_header: bytes):
         def select(self, *a, **k):
             return "OK", [b"1"]
 
-        def search(self, *a):
-            return "OK", [b"5"]
+        def search(self, charset, *criteria):
+            return ("OK", [b""]) if criteria[0] == "HEADER" else ("OK", [b"5"])
 
         def fetch(self, number, query):
             return "OK", [(b"5", raw_header)]
@@ -313,3 +313,141 @@ def test_payment_links_match_the_published_manifest():
     brief = manifest["products"]["territory-opportunity-brief"]["payment_link"]
     assert brief["id"] == po.PRODUCT_PAYMENT_LINKS[po.BRIEF_AMOUNT_PENCE]
     assert brief["url"] == po.BRIEF_PAYMENT_LINK
+
+
+# ---- Final review ------------------------------------------------------------ #
+
+
+def _quote_row(ref="TOB-F", email="f@example.com", **extra):
+    base = dict(order_ref=ref, product="brief", stage="quote", buyer_email=email, buyer_name="", company="",
+                scope="North East", scope_args={"region": "North East"}, amount_pence=74500, quoted_count=30,
+                message_id=f"<{ref}-q-{len(extra)}>", subject=f"S (ref {ref})", draft_location="saved", folder="/tmp")
+    base.update(extra)
+    return base
+
+
+def test_ledger_steps_run_in_one_write_locked_transaction(monkeypatch, tmp_path):
+    monkeypatch.setenv("CAREGIST_ORDER_LEDGER", str(tmp_path / "l.sqlite"))
+    with ledger.connect() as conn:
+        assert conn.in_transaction  # BEGIN IMMEDIATE taken before any read
+
+
+def test_paid_guard_holds_even_if_the_earlier_read_was_stale(monkeypatch, tmp_path):
+    monkeypatch.setenv("CAREGIST_ORDER_LEDGER", str(tmp_path / "l.sqlite"))
+    ledger.record_email(**_quote_row())
+    with ledger.connect() as conn:
+        first_id = ledger.get_order(conn, "TOB-F")["emails"][0]["id"]
+        ledger.record_payment(conn, "TOB-F", {"paid_at": "2026-10-20", "session": "cs_f", "source": "Stripe"})
+    real_get = ledger.get_order
+
+    def stale(conn, ref):  # the read misses the payment that committed in between
+        order = real_get(conn, ref)
+        return {**order, "paid_at": None} if order else order
+
+    monkeypatch.setattr(ledger, "get_order", stale)
+    with pytest.raises(ledger.LedgerError):
+        ledger.record_email(**_quote_row(scope_args={"region": "London"}, message_id="<late>", supersede_email_id=first_id))
+    monkeypatch.setattr(ledger, "get_order", real_get)
+    with ledger.connect() as conn:
+        assert ledger.get_order(conn, "TOB-F")["scope_args"] == {"region": "North East"}
+
+
+def test_a_second_new_order_for_the_same_buyer_is_refused_inside_the_ledger(monkeypatch, tmp_path):
+    # Simulates two quote runs that both passed the preflight check.
+    monkeypatch.setenv("CAREGIST_ORDER_LEDGER", str(tmp_path / "l.sqlite"))
+    ledger.record_email(**_quote_row(ref="TOB-1"))
+    with pytest.raises(ledger.LedgerError):
+        ledger.record_email(**_quote_row(ref="TOB-2", message_id="<two>"))
+    ledger.record_email(**_quote_row(ref="TOB-3", message_id="<three>"), allow_new_order=True)
+
+
+def test_email_sent_one_minute_before_the_replacement_draft_is_not_counted(monkeypatch):
+    subject = "Your Territory Opportunity Brief scope: North East (ref TOB-1)"
+    monkeypatch.setattr(orders.imaplib, "IMAP4_SSL", _imap_returning(
+        f"Subject: {subject}\r\nDate: Tue, 20 Oct 2026 12:00:00 +0000\r\n\r\n".encode()))
+    assert orders.find_sent({"OUTREACH_IMAP_PASSWORD": "pw"},
+                            _pending(subject, drafted_at="2026-10-20T12:01:00+00:00")) == {}
+
+
+def test_message_id_match_is_exact_and_preferred(monkeypatch):
+    class FakeImap:
+        def __init__(self, *a, **k):
+            pass
+
+        def login(self, *a):
+            pass
+
+        def list(self):
+            return "OK", [b'(\\Sent) "/" "Sent"']
+
+        def select(self, *a, **k):
+            return "OK", [b"1"]
+
+        def search(self, charset, *criteria):
+            return ("OK", [b"9"]) if criteria[:2] == ("HEADER", "Message-ID") else ("OK", [b""])
+
+        def fetch(self, number, query):
+            return "OK", [(b"9", b"Date: Tue, 20 Oct 2026 12:05:00 +0000\r\n\r\n")]
+
+        def logout(self):
+            pass
+
+    monkeypatch.setattr(orders.imaplib, "IMAP4_SSL", FakeImap)
+    assert orders.find_sent({"OUTREACH_IMAP_PASSWORD": "pw"}, _pending("anything (ref TOB-1)")) == {
+        "<m>": "2026-10-20T12:05:00+00:00"}
+
+
+@pytest.mark.parametrize(
+    "session",
+    [
+        {"payment_status": "paid", "payment_intent": None},
+        {"payment_status": "paid", "payment_intent": "pi_not_expanded"},
+        {"payment_status": "paid", "payment_intent": {"latest_charge": None}},
+        {"payment_status": "paid", "payment_intent": {"latest_charge": {"id": "ch_1"}}},
+    ],
+)
+def test_missing_charge_evidence_fails_closed(monkeypatch, session):
+    class Response:
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return session
+
+    monkeypatch.setattr("httpx.get", lambda *a, **k: Response())
+    assert "cannot be ruled out" in po.payment_still_valid({"STRIPE_SECRET_KEY": "sk_test_dummy"}, "cs_x")
+
+
+def test_valid_charge_passes_and_refund_fails(monkeypatch):
+    def respond(charge):
+        class Response:
+            def raise_for_status(self):
+                pass
+
+            def json(self):
+                return {"payment_status": "paid", "payment_intent": {"latest_charge": charge}}
+
+        return lambda *a, **k: Response()
+
+    monkeypatch.setattr("httpx.get", respond({"refunded": False, "amount_refunded": 0, "disputed": False}))
+    assert po.payment_still_valid({"STRIPE_SECRET_KEY": "sk_test_dummy"}, "cs_ok") is None
+    monkeypatch.setattr("httpx.get", respond({"refunded": False, "amount_refunded": 5000, "disputed": False}))
+    assert "refunded" in po.payment_still_valid({"STRIPE_SECRET_KEY": "sk_test_dummy"}, "cs_part")
+
+
+def test_refund_after_payment_shows_as_a_payment_problem_and_leaves_revenue(monkeypatch, tmp_path):
+    monkeypatch.setenv("CAREGIST_ORDER_LEDGER", str(tmp_path / "l.sqlite"))
+    ledger.record_email(**_quote_row())
+    with ledger.connect() as conn:
+        ledger.record_payment(conn, "TOB-F", {"paid_at": "2026-10-20T10:00:00+00:00", "session": "cs_r", "source": "Stripe"})
+    monkeypatch.setattr(po, "list_payments", lambda env, **k: [])
+    monkeypatch.setattr(po, "payment_still_valid", lambda env, session: "the payment has been refunded")
+    monkeypatch.setattr(orders, "find_sent", lambda env, pending: {})
+
+    orders.refresh({"STRIPE_SECRET_KEY": "sk_test_dummy"})
+    table = orders.rows()
+    t = orders.totals(table)
+
+    assert table[0]["Status"] == "Payment problem: the payment has been refunded"
+    assert t["paid"] == 0 and t["revenue_gbp"] == 0 and t["payment_problems"] == 1
+    assert any("Do not deliver" in item for item in orders.actions(table, []))

@@ -103,6 +103,8 @@ def test_find_sent_matches_ref_recipient_and_stage(monkeypatch):
             return "OK", [b"1"]
 
         def search(self, charset, *criteria):
+            if criteria[0] == "HEADER":
+                return "OK", [b""]
             searched["criteria"] = criteria
             return "OK", [b"7"]
 

@@ -59,6 +59,20 @@ def find_sent(env: dict[str, str], pending: list[dict[str, Any]]) -> dict[str, s
         conn.select(_sent_mailbox(conn), readonly=True)
         for email_row in pending:
             ref = email_row["order_ref"]
+            drafted = datetime.fromisoformat(email_row["drafted_at"])
+            # 1. Exact: the drafted message's own Message-ID, when the mailbox keeps it on Send.
+            status, data = conn.search(None, "HEADER", "Message-ID", f'"{email_row["message_id"]}"')
+            if status == "OK" and data and data[0]:
+                status, header = conn.fetch(data[0].split()[0], "(BODY.PEEK[HEADER.FIELDS (DATE)])")
+                when = None
+                if status == "OK" and header and isinstance(header[0], tuple):
+                    try:
+                        when = parsedate_to_datetime(message_from_bytes(header[0][1]).get("Date", "")).astimezone(timezone.utc)
+                    except (TypeError, ValueError, LookupError, UnicodeError):
+                        when = None
+                found[email_row["message_id"]] = (when or datetime.now(timezone.utc)).isoformat(timespec="seconds")
+                continue
+            # 2. Otherwise the whole subject, same recipient, sent after this draft existed.
             status, data = conn.search(None, "SUBJECT", f'"{ref}"', "TO", f'"{email_row["buyer_email"]}"')
             if status != "OK" or not data or not data[0]:
                 continue
@@ -79,8 +93,10 @@ def find_sent(env: dict[str, str], pending: list[dict[str, Any]]) -> dict[str, s
                         sent_dt = parsedate_to_datetime(date_line[5:].strip()).astimezone(timezone.utc)
                     except (TypeError, ValueError):
                         continue  # undated: cannot prove it was sent after this draft
-                    # An older email with the same subject (before a replacement draft) does not count.
-                    if sent_dt < datetime.fromisoformat(email_row["drafted_at"]) - po.CLOCK_SKEW:
+                    # Anything sent before this draft existed (e.g. an earlier, replaced draft
+                    # with the same subject) does not count. No tolerance: a late clock can
+                    # only leave an email showing "press Send", never mark one sent wrongly.
+                    if sent_dt < drafted:
                         continue
                     found[email_row["message_id"]] = sent_dt.isoformat(timespec="seconds")
                     break
@@ -102,6 +118,10 @@ def refresh(env: dict[str, str], *, path: Path | None = None) -> tuple[list[str]
         try:
             for order in sorted(orders, key=lambda o: o["created_at"]):
                 if order["paid_at"]:
+                    if order["payment_session"] and env.get("STRIPE_SECRET_KEY"):
+                        ledger.set_payment_problem(
+                            conn, order["order_ref"], po.payment_still_valid(env, order["payment_session"])
+                        )
                     continue
                 payment = po.find_payment(
                     env, order["buyer_email"], order["amount_pence"], order_ref=order["order_ref"],
@@ -165,7 +185,8 @@ def rows(today: date | None = None, *, path: Path | None = None) -> list[dict[st
 
 
 def totals(table: list[dict[str, str]]) -> dict[str, Any]:
-    paid = [r for r in table if r["Paid"] != "-"]
+    problems = [r for r in table if "payment problem" in r["Status"].lower()]
+    paid = [r for r in table if r["Paid"] != "-" and r not in problems]
     revenue = sum(745 if r["Product"].startswith("Brief") else 150 for r in paid)
     return {
         "orders": len(table),
@@ -175,6 +196,7 @@ def totals(table: list[dict[str, str]]) -> dict[str, Any]:
         "paid_awaiting_delivery": sum(1 for r in paid if r["Status"] != "Complete"),
         "revenue_gbp": revenue,
         "overdue": sum(1 for r in table if "OVERDUE" in r["Due"]),
+        "payment_problems": len(problems),
     }
 
 
@@ -207,7 +229,7 @@ def show(table: list[dict[str, str]], todo: list[str], notes: list[str]) -> None
     t = totals(table)
     print(f"ORDERS {t['orders']} | quoted, not paid {t['quoted_not_paid']} | paid {t['paid']} "
           f"(£{t['revenue_gbp']}) | delivered in full {t['complete']} | paid awaiting delivery "
-          f"{t['paid_awaiting_delivery']} | overdue {t['overdue']}")
+          f"{t['paid_awaiting_delivery']} | overdue {t['overdue']} | payment problems {t['payment_problems']}")
     print()
     print("ACTION NEEDED" if todo else "ACTION NEEDED: nothing. Every order is up to date.")
     for item in todo:
@@ -249,6 +271,7 @@ def write_report(table: list[dict[str, str]], todo: list[str], notes: list[str],
         f"- Not bought yet (quoted only): **{t['quoted_not_paid']}**",
         f"- Delivered in full: **{t['complete']}**",
         f"- Paid, delivery outstanding: **{t['paid_awaiting_delivery']}** (overdue: {t['overdue']})",
+        f"- Payment problems (refunded, disputed or unverifiable; not in revenue): **{t['payment_problems']}**",
         "",
         "## Action needed",
         "",
