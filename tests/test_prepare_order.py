@@ -12,6 +12,12 @@ from tools import prepare_order as po
 REPO = Path(__file__).resolve().parents[1]
 
 
+@pytest.fixture(autouse=True)
+def _isolated_ledger(monkeypatch, tmp_path):
+    # prepare_order records every drafted email; never touch the real ledger.
+    monkeypatch.setenv("CAREGIST_ORDER_LEDGER", str(tmp_path / "ledger.sqlite"))
+
+
 def test_opportunity_sql_matches_the_website_coverage_query_exactly():
     # The Brief must cover what the buyer was shown; any drift fails here.
     source = (REPO / "frontend" / "lib" / "directory-query-clauses.ts").read_text(encoding="utf-8")
@@ -241,3 +247,86 @@ def test_shortlist_promise_is_up_to_fifty_in_terms_and_tool():
     assert "shortlist of up to 50 organisations" in terms
     assert "25 to 50" not in terms
     assert po.MAX_SHORTLIST == 50
+
+
+@pytest.mark.parametrize("product", ["brief", "digest"])
+def test_delivery_is_refused_until_payment_is_found(monkeypatch, tmp_path, capsys, product):
+    seen = {}
+
+    def no_payment(env, email, amount):
+        seen["args"] = (email, amount)
+        return None
+
+    monkeypatch.setattr(po, "find_payment", no_payment)
+    monkeypatch.setattr(po, "build_brief", lambda *a, **k: pytest.fail("must not build an unpaid order"))
+    monkeypatch.setattr(po, "build_digest_issue", lambda *a, **k: pytest.fail("must not build an unpaid order"))
+    monkeypatch.setattr(po, "save_draft", lambda *a, **k: pytest.fail("must not draft an unpaid order"))
+    extra = (
+        ["--provider-group", "new_90"] if product == "brief"
+        else ["--week-ending", "2026-10-25", "--issue", "1"]
+    )
+
+    code = po.main([product, "deliver", "--region", "North West", "--buyer-email", "Buyer@Example.com",
+                    "--out-base", str(tmp_path), "--order-ref", "P1", *extra])
+
+    assert code == 2
+    assert "payment_received" in capsys.readouterr().out
+    assert seen["args"] == ("Buyer@Example.com", 74500 if product == "brief" else 15000)
+    assert not list(tmp_path.rglob("email.eml"))
+
+
+def test_quote_never_requires_payment(monkeypatch, tmp_path):
+    monkeypatch.setattr(po, "find_payment", lambda *a, **k: pytest.fail("quotes must not check payment"))
+    monkeypatch.setattr(po, "save_draft", lambda *a, **k: "saved")
+
+    assert po.main(["digest", "quote", "--region", "London", "--buyer-email", "b@example.com",
+                    "--start-date", "2026-10-26", "--out-base", str(tmp_path), "--order-ref", "Q1"]) == 0
+
+
+def test_paid_delivery_proceeds_and_records_the_payment(monkeypatch, tmp_path):
+    pdf = tmp_path / "issue.pdf"
+    pdf.write_bytes(b"%PDF")
+
+    def built(args, *, env, order_dir, now):
+        checks = po.Checks()
+        checks.add("digest_built", True, "ok")
+        return checks, {"new_registrations": 4, "ratings_published": 0}, [pdf]
+
+    monkeypatch.setattr(po, "find_payment", lambda env, email, amount: {"source": "Stripe", "session": "cs_live_x", "paid_at": "2026-10-20T15:00:00+00:00"})
+    monkeypatch.setattr(po, "build_digest_issue", built)
+    monkeypatch.setattr(po, "save_draft", lambda *a, **k: "saved")
+
+    code = po.main(["digest", "deliver", "--region", "North West", "--buyer-email", "b@example.com",
+                    "--week-ending", "2026-10-25", "--issue", "1", "--out-base", str(tmp_path / "o"), "--order-ref", "P2"])
+
+    assert code == 0
+    report = json.loads(next((tmp_path / "o").rglob("checks.json")).read_text())
+    assert report["checks"][0]["check"] == "payment_received" and report["checks"][0]["ok"]
+    assert "cs_live_x" in report["checks"][0]["detail"]
+
+
+def test_stripe_fallback_matches_only_paid_sessions_of_the_right_amount(monkeypatch):
+    class Response:
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {"data": [
+                {"id": "cs_unpaid", "payment_status": "unpaid", "amount_total": 74500, "created": 1792500000},
+                {"id": "cs_other", "payment_status": "paid", "amount_total": 15000, "created": 1792500000},
+                {"id": "cs_paid", "payment_status": "paid", "amount_total": 74500, "created": 1792500000},
+            ]}
+
+    captured = {}
+
+    def fake_get(url, params, auth, timeout):
+        captured["params"] = params
+        return Response()
+
+    monkeypatch.setattr("httpx.get", fake_get)
+
+    found = po._payment_from_stripe("sk_test_dummy", " b@example.com ", 74500)
+
+    assert found["session"] == "cs_paid" and found["source"] == "Stripe"
+    assert captured["params"]["customer_details[email]"] == "b@example.com"
+    assert captured["params"]["status"] == "complete"

@@ -35,6 +35,7 @@ import imaplib
 import json
 import os
 import re
+import secrets
 import ssl
 import time
 from dataclasses import dataclass, field
@@ -49,6 +50,8 @@ SERVICE_TAXONOMY = REPO_ROOT / "frontend" / "data" / "service-taxonomy.json"
 
 FROM_ADDRESS = "outreach@caregist.co.uk"
 FROM_NAME = "CareGist"
+BRIEF_AMOUNT_PENCE = 74500
+DIGEST_AMOUNT_PENCE = 15000
 BRIEF_PAYMENT_LINK = "https://buy.stripe.com/bJe8wI7Xhd8YdYi2vl3AY04"
 DIGEST_PAYMENT_LINK = "https://buy.stripe.com/3cI8wIfpJ4Csg6qfi73AY01"
 TERMS_URL = "https://www.caregist.co.uk/terms"
@@ -157,6 +160,66 @@ def export_receipt(export_dir: Path) -> dict[str, Any]:
     return receipt
 
 
+def _payment_from_sales_record(database_url: str, buyer_email: str, amount_pence: int) -> dict[str, Any] | None:
+    """A paid Payment Link sale recorded by the billing webhook (manual_sale_paid)."""
+    import asyncpg
+
+    async def query() -> dict[str, Any] | None:
+        conn = await asyncpg.connect(database_url)
+        try:
+            async with conn.transaction(readonly=True):
+                row = await conn.fetchrow(
+                    """
+                    SELECT created_at, meta->>'stripe_checkout_session_id' AS session
+                    FROM analytics_events
+                    WHERE event_type = 'manual_sale_paid'
+                      AND lower(email) = lower($1)
+                      AND (meta->>'amount_total')::int = $2
+                      AND meta->>'payment_status' = 'paid'
+                    ORDER BY created_at DESC
+                    LIMIT 1
+                    """,
+                    buyer_email.strip(),
+                    amount_pence,
+                )
+        finally:
+            await conn.close()
+        if row is None:
+            return None
+        return {"source": "CareGist sales record", "session": row["session"], "paid_at": row["created_at"].isoformat()}
+
+    return asyncio.run(query())
+
+
+def _payment_from_stripe(secret_key: str, buyer_email: str, amount_pence: int) -> dict[str, Any] | None:
+    """Read-only fallback in case the webhook missed the sale."""
+    import httpx
+
+    response = httpx.get(
+        "https://api.stripe.com/v1/checkout/sessions",
+        params={"customer_details[email]": buyer_email.strip(), "status": "complete", "limit": 20},
+        auth=(secret_key, ""),
+        timeout=30,
+    )
+    response.raise_for_status()
+    for session in response.json().get("data", []):
+        if session.get("payment_status") == "paid" and session.get("amount_total") == amount_pence:
+            paid_at = datetime.fromtimestamp(session["created"], tz=timezone.utc).isoformat()
+            return {"source": "Stripe", "session": session["id"], "paid_at": paid_at}
+    return None
+
+
+def find_payment(env: dict[str, str], buyer_email: str, amount_pence: int) -> dict[str, Any] | None:
+    """The buyer's paid sale for this amount, from CareGist's record or Stripe; else None."""
+    if env.get("DATABASE_URL"):
+        found = _payment_from_sales_record(env["DATABASE_URL"], buyer_email, amount_pence)
+        if found:
+            return found
+    if env.get("STRIPE_SECRET_KEY"):
+        return _payment_from_stripe(env["STRIPE_SECRET_KEY"], buyer_email, amount_pence)
+    return None
+
+
 def quoted_shortlist(order_root: Path) -> int | None:
     """The shortlist size promised in this order's most recent successful quote."""
     for report in sorted(order_root.glob("quote-*/checks.json"), reverse=True):
@@ -177,7 +240,8 @@ def add_working_days(start: date, days: int) -> date:
 
 def new_order_ref(product: str) -> str:
     prefix = "TOB" if product == "brief" else "WDP"
-    return f"{prefix}-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}"
+    # A random suffix keeps refs unique when two orders are prepared in the same second.
+    return f"{prefix}-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}-{secrets.token_hex(2).upper()}"
 
 
 # --------------------------------------------------------------------------- #
@@ -353,7 +417,7 @@ def build_brief(args: argparse.Namespace, *, env: dict[str, str], order_dir: Pat
 
 def brief_quote_email(args: argparse.Namespace, summary: dict[str, Any], now: datetime) -> tuple[str, str]:
     delivery = add_working_days(now.date(), DELIVERY_WORKING_DAYS)
-    subject = f"Your Territory Opportunity Brief scope: {summary['region']} · {summary['provider_group']}"
+    subject = f"Your Territory Opportunity Brief scope: {summary['region']} · {summary['provider_group']} (ref {args.order_ref})"
     body = f"""Hi {args.buyer_name or 'there'},
 
 Thank you for your enquiry. I have checked the published CQC record for your scope and can confirm we can deliver it.
@@ -379,7 +443,7 @@ Best wishes,
 
 
 def brief_delivery_email(args: argparse.Namespace, summary: dict[str, Any]) -> tuple[str, str]:
-    subject = f"Your Territory Opportunity Brief: {summary['region']} · {summary['provider_group']}"
+    subject = f"Your Territory Opportunity Brief: {summary['region']} · {summary['provider_group']} (ref {args.order_ref})"
     body = f"""Hi {args.buyer_name or 'there'},
 
 Thank you for your order. Your Territory Opportunity Brief is attached:
@@ -405,7 +469,7 @@ Best wishes,
 def digest_quote_email(args: argparse.Namespace) -> tuple[str, str]:
     start = date.fromisoformat(args.start_date)
     issues = [start + timedelta(weeks=i) for i in range(4)]
-    subject = f"Your Weekly Digest pilot: {args.region}, starting {start.strftime('%d %B %Y')}"
+    subject = f"Your Weekly Digest pilot: {args.region}, starting {start.strftime('%d %B %Y')} (ref {args.order_ref})"
     body = f"""Hi {args.buyer_name or 'there'},
 
 Thank you for your enquiry. Here is the confirmed Weekly Digest pilot (this email is the order form under our Business Terms v2.2.1):
@@ -458,7 +522,7 @@ def build_digest_issue(args: argparse.Namespace, *, env: dict[str, str], order_d
 
 
 def digest_delivery_email(args: argparse.Namespace, summary: dict[str, Any]) -> tuple[str, str]:
-    subject = f"Your CareGist Weekly Digest: {args.region}, issue {args.issue} of 4"
+    subject = f"Your CareGist Weekly Digest: {args.region}, issue {args.issue} of 4 (ref {args.order_ref})"
     body = f"""Hi {args.buyer_name or 'there'},
 
 Issue {args.issue} of 4 of your Weekly Digest for {args.region} is attached (PDF and CSV), covering the week ending {args.week_ending}.
@@ -473,6 +537,48 @@ Best wishes,
 # --------------------------------------------------------------------------- #
 # CLI
 # --------------------------------------------------------------------------- #
+
+
+def record_in_ledger(
+    args: argparse.Namespace,
+    *,
+    summary: dict[str, Any],
+    message: EmailMessage,
+    draft: str,
+    order_dir: Path,
+    payment: dict[str, Any] | None,
+) -> None:
+    """Log the drafted email against its order in the local ledger (tools/orders.py)."""
+    from tools import order_ledger
+
+    if args.product == "brief":
+        scope = f"{args.region} · {summary.get('provider_group', args.provider_group)} · {args.service_type or 'All services'}"
+        scope_args = {"region": args.region, "provider_group": args.provider_group, "service_type": args.service_type}
+        amount = BRIEF_AMOUNT_PENCE
+        quoted = summary.get("shortlisted") if args.stage == "quote" else None
+    else:
+        scope = f"{args.region} · from {args.start_date}" if args.start_date else args.region
+        scope_args = {"region": args.region, "start_date": args.start_date, "buyer_type": args.buyer_type}
+        amount = DIGEST_AMOUNT_PENCE
+        quoted = None
+    order_ledger.record_email(
+        order_ref=args.order_ref,
+        product=args.product,
+        stage=args.stage,
+        buyer_email=args.buyer_email,
+        buyer_name=args.buyer_name,
+        company=args.company,
+        scope=scope,
+        scope_args=scope_args,
+        amount_pence=amount,
+        quoted_count=quoted,
+        message_id=str(message["Message-ID"]),
+        subject=str(message["Subject"]),
+        draft_location=draft,
+        folder=str(order_dir),
+        issue=args.issue if args.product == "digest" and args.stage == "deliver" else None,
+        payment=payment,
+    )
 
 
 def load_env() -> dict[str, str]:
@@ -531,11 +637,30 @@ def main(argv: list[str] | None = None) -> int:
     files: list[Path] = []
     summary: dict[str, Any] = {}
     checks = Checks()
+    payment: dict[str, Any] | None = None
+    if args.stage == "deliver":
+        # Nothing is prepared for delivery until the buyer has paid.
+        amount = BRIEF_AMOUNT_PENCE if args.product == "brief" else DIGEST_AMOUNT_PENCE
+        payment = find_payment(env, args.buyer_email, amount)
+        if payment is None:
+            checks.add(
+                "payment_received", False,
+                f"no paid £{amount // 100} sale found for {args.buyer_email} (CareGist sales record or Stripe)",
+            )
+        else:
+            checks.add(
+                "payment_received", True,
+                f"£{amount // 100} paid {payment['paid_at']} ({payment['source']}, {payment['session']})",
+            )
     try:
-        if args.product == "brief":
-            checks, summary, files = build_brief(args, env=env, order_dir=order_dir, now=now)
+        if args.stage == "deliver" and payment is None:
+            pass
+        elif args.product == "brief":
+            built, summary, files = build_brief(args, env=env, order_dir=order_dir, now=now)
+            checks.results.extend(built.results)
         elif args.stage == "deliver":
-            checks, summary, files = build_digest_issue(args, env=env, order_dir=order_dir, now=now)
+            built, summary, files = build_digest_issue(args, env=env, order_dir=order_dir, now=now)
+            checks.results.extend(built.results)
     except CheckFailed as exc:
         checks.add("inputs", False, str(exc))
 
@@ -577,6 +702,7 @@ def main(argv: list[str] | None = None) -> int:
     draft = "not saved (--no-draft)" if args.no_draft else save_draft(message, env=env)
     report["draft"] = draft
     (order_dir / "checks.json").write_text(json.dumps(report, indent=2, default=str) + "\n", encoding="utf-8")
+    record_in_ledger(args, summary=summary, message=message, draft=draft, order_dir=order_dir, payment=payment)
 
     print(f"READY: {args.order_ref} ({args.product} {args.stage})")
     for item in checks.results:
@@ -584,6 +710,7 @@ def main(argv: list[str] | None = None) -> int:
     print(f"Draft: {draft}")
     print(f"Folder: {order_dir}")
     print("Review the draft in outreach@caregist.co.uk, then press Send. Nothing has been sent.")
+    print("Track it with: .venv/bin/python -m tools.orders")
     return 0
 
 

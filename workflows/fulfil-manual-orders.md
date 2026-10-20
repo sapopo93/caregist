@@ -12,6 +12,12 @@ checks below, and saves the email as a **draft in outreach@caregist.co.uk**. It
 never sends: open Drafts in Private Email, review, press Send. A failed check
 prints `NOT READY` with the reason and drafts nothing.
 
+Quotes never attach the product: the confirmation email carries only the scope,
+count, price and payment link. `deliver` refuses until the buyer has paid: it
+looks for a paid sale of the right amount (£745 Brief, £150 Digest) for the
+buyer's email in CareGist's sales record (`manual_sale_paid`), falling back to
+Stripe read-only, and drafts nothing otherwise. Use the email the buyer paid with.
+
 Checks: CQC export ≤ 8 days old; the scope has locations; the shortlist is not
 empty (Terms v2.2.1 promise up to 50 organisations, and the quote states the
 exact number, which is binding); every shortlisted entry has dated CQC evidence;
@@ -42,6 +48,24 @@ Providers in scope). Buyer types map to `--provider-group`: New registrations
 .venv/bin/python -m tools.prepare_order digest deliver --order-ref WDP-... --region "North West" \
   --week-ending 2026-10-25 --issue 1 --buyer-email buyer@example.com
 ```
+
+### Track every order
+
+```bash
+.venv/bin/python -m tools.orders            # refresh paid/sent and show the table
+.venv/bin/python -m tools.orders --csv orders.csv
+```
+
+One row per order ref: product, buyer, scope (with the quoted count), quote
+drafted/sent, paid date, deliveries sent (Digest shows n/4) and a status:
+`Quote drafted: not sent yet` → `Quote sent: awaiting payment` →
+`Paid: prepare delivery` → `Delivery drafted: press Send` → `Complete`.
+Every email subject ends with `(ref TOB-…)` or `(ref WDP-…)`, so replies and the
+Sent folder always show which order they belong to. Payment is checked live
+(CareGist sales record, then Stripe); "sent" is read from the outreach@ Sent
+folder. The ledger is `orders/ledger.sqlite` on this machine: it holds buyer
+emails, is git-ignored, and should be backed up with your other business files.
+Use the same `--order-ref` for every step of one order.
 
 Drafts need `OUTREACH_IMAP_PASSWORD` (the outreach@ mailbox password) in `.env`;
 add it yourself. Without it the command still writes `email.eml` in the order
