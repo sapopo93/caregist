@@ -522,3 +522,33 @@ def test_drafted_unsent_delivery_keeps_its_due_date_and_overdue_flag(world):
     action = ledger.next_action(order(ref), date(2026, 10, 20))
     assert action["status"] == "Delivery drafted: press Send"
     assert action["due"] == date(2026, 10, 6) and action["overdue"]
+
+
+def test_one_failed_payment_lookup_does_not_stop_rechecks_of_other_orders(world, monkeypatch):
+    unpaid = quote_brief(world, "a@example.com")
+    paid = quote_brief(world, "b@example.com")
+    pay(world, "b@example.com", 74500, session="cs_b", order_ref=paid)
+    with ledger.connect() as conn:
+        ledger.record_payment(conn, paid, world["payments"][0])
+    world["invalid"]["cs_b"] = "the payment has been refunded"
+    real_find = po.find_payment
+
+    def flaky(env, email, amount, **kw):
+        if kw.get("order_ref") == unpaid:
+            raise OSError("stripe timeout")
+        return real_find(env, email, amount, **kw)
+
+    monkeypatch.setattr(po, "find_payment", flaky)
+    notes, _ = orders.refresh({})
+    assert any(unpaid in n for n in notes)
+    assert order(paid)["payment_problem"] == "the payment has been refunded"
+
+
+def test_draft_left_pending_by_a_crash_is_not_shown_as_press_send(world):
+    ref = quote_brief(world)
+    pay(world, "a@example.com", 74500)
+    assert run(world, "deliver", "--order-ref", ref) == 0
+    with ledger.connect() as conn:
+        conn.execute("UPDATE order_emails SET draft_location = 'pending' WHERE stage = 'deliver'")
+    action = ledger.next_action(order(ref), TODAY)
+    assert action["status"] == "Deliver draft not confirmed in outreach@"

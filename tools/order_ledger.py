@@ -331,7 +331,8 @@ def next_action(order: dict[str, Any], today: date) -> dict[str, Any]:
     if is_complete(order):
         return {"status": "Complete", "next": "-", "due": None, "overdue": False, "action": False}
     uncertain = [e for e in pending_delivery + [q for q in quotes if not q["sent_at"]]
-                 if str(e.get("draft_location") or "").startswith("uncertain")]
+                 # "pending": the run stopped before the mailbox answered.
+                 if str(e.get("draft_location") or "").startswith(("uncertain", "pending"))]
     if uncertain:
         e = uncertain[0]
         redo = (f"{deliver_cmd} --redraft" if e["stage"] == "deliver"

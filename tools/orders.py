@@ -155,10 +155,14 @@ def refresh(env: dict[str, str], *, path: Path | None = None) -> tuple[list[str]
                     if order["payment_session"]:
                         ledger.set_payment_problem(conn, order["order_ref"], _payment_problem(env, order["payment_session"]))
                     continue
-                payment = po.find_payment(
-                    env, order["buyer_email"], order["amount_pence"], order_ref=order["order_ref"],
-                    exclude_sessions=claimed, not_before=order["created_at"],
-                )
+                try:
+                    payment = po.find_payment(
+                        env, order["buyer_email"], order["amount_pence"], order_ref=order["order_ref"],
+                        exclude_sessions=claimed, not_before=order["created_at"],
+                    )
+                except Exception as exc:  # this order only: every other order is still checked
+                    notes.append(f"{order['order_ref']}: payment lookup failed ({type(exc).__name__}); refresh again.")
+                    continue
                 if payment:
                     ledger.record_payment(conn, order["order_ref"], payment)
                     claimed.add(payment["session"])
