@@ -597,3 +597,35 @@ def test_sent_quote_scope_cannot_be_changed(world, capsys):
     # A different scope is a separate order with its own ref and payment link.
     assert run(world, "quote", "brief", "--region", "London", "--provider-group", "new_90",
                "--buyer-email", "a@example.com", "--new-order") == 0
+
+
+def test_delivery_builds_exactly_the_quoted_number(world, monkeypatch):
+    ref = quote_brief(world, "a@example.com", "--shortlist", "50")
+    with ledger.connect() as conn:
+        conn.execute("UPDATE orders SET quoted_count = 50 WHERE order_ref = ?", (ref,))
+    pay(world, "a@example.com", 74500)
+    seen = {}
+    real_build = po.build_brief
+
+    def capture(args, **kw):
+        seen["shortlist"] = args.shortlist
+        return real_build(args, **kw)
+
+    monkeypatch.setattr(po, "build_brief", capture)
+    run(world, "deliver", "--order-ref", ref)
+    assert seen["shortlist"] == 50
+
+
+def test_a_second_concurrent_run_is_refused(world, capsys):
+    import fcntl
+
+    lock_path = ledger.ledger_path().with_suffix(".lock")
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(lock_path, "w") as held:
+        fcntl.flock(held, fcntl.LOCK_EX)
+        assert run(world, "quote", "brief", "--region", "North East", "--provider-group", "new_90",
+                   "--buyer-email", "c@example.com") == 2
+        fcntl.flock(held, fcntl.LOCK_UN)
+    assert "another prepare_order run is in progress" in capsys.readouterr().out
+    with ledger.connect() as conn:
+        assert ledger.orders_with_emails(conn) == []

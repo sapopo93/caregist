@@ -529,8 +529,8 @@ def build_brief(args: argparse.Namespace, *, env: dict[str, str], order_dir: Pat
         else:
             checks.add(
                 "matches_quote",
-                len(brief.shortlist) >= quoted,
-                f"quote promised {quoted} organisations; this build has {len(brief.shortlist)}",
+                len(brief.shortlist) == quoted,
+                f"quote promised exactly {quoted} organisations; this build has {len(brief.shortlist)}",
             )
     checks.add(
         "evidence_matches_scope",
@@ -858,6 +858,8 @@ def _load_for_delivery(args: argparse.Namespace, today: date) -> str | None:
         args.provider_group = scope.get("provider_group")
         args.service_type = scope.get("service_type")
         args.quoted_count = order["quoted_count"]
+        if order["quoted_count"]:
+            args.shortlist = order["quoted_count"]  # the exact number the quote promised
         args.issue = None
         current = deliveries
     else:
@@ -949,6 +951,26 @@ def _check_new_quote(args: argparse.Namespace) -> str | None:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """One order run at a time: a second run while another is mid-save could
+    replace its draft and leave two drafts in outreach@."""
+    import fcntl
+
+    from tools import order_ledger
+
+    lock_path = order_ledger.ledger_path().with_suffix(".lock")
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(lock_path, "w") as lock:
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            return _refuse("another prepare_order run is in progress; wait for it to finish, then re-run.")
+        try:
+            return _main(argv)
+        finally:
+            fcntl.flock(lock, fcntl.LOCK_UN)
+
+
+def _main(argv: list[str] | None = None) -> int:
     from tools import order_ledger
 
     args = parse_args(argv)
