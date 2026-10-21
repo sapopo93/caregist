@@ -923,8 +923,9 @@ async def _send_reset_email(email: str, reset_token: str) -> None:
 
     from_email = settings.enquiry_from_email or "noreply@caregist.co.uk"
     body = (
-        f"Your CareGist password reset token is: {reset_token}\n\n"
-        f"This token expires in 15 minutes. If you didn't request this, ignore this email.\n\n"
+        f"Your CareGist password reset code is:\n\n{reset_token}\n\n"
+        f"Copy the whole code and paste it into the reset page. It expires in 15 minutes.\n"
+        f"If you didn't request this, ignore this email.\n\n"
         f"— The CareGist Team"
     )
 

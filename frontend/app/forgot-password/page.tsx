@@ -48,7 +48,7 @@ export default function ForgotPasswordPage() {
       const res = await fetch("/api/v1/auth/reset-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, token: code, new_password: newPassword }),
+        body: JSON.stringify({ email, token: code.trim(), new_password: newPassword }),
       });
 
       const data = await res.json().catch(() => ({}));
@@ -72,7 +72,7 @@ export default function ForgotPasswordPage() {
       <p className="text-dusk text-center mb-8">
         {step === 1
           ? "Enter your email. If it is registered and email delivery is available, reset instructions will be sent."
-          : "If your email is registered and email delivery is available, check your inbox for a 6-digit code."}
+          : "If your email is registered and email delivery is available, check your inbox for a reset code and paste it below. It expires in 15 minutes."}
       </p>
 
       {error && (
@@ -106,29 +106,29 @@ export default function ForgotPasswordPage() {
       ) : (
         <form onSubmit={handleResetPassword} className="space-y-4">
           <div>
-            <label htmlFor="code" className="block text-sm font-medium text-bark mb-1">6-digit code</label>
+            <label htmlFor="code" className="block text-sm font-medium text-bark mb-1">Reset code</label>
             <input
               id="code"
               type="text"
               autoComplete="one-time-code"
-              inputMode="numeric"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
               required
-              maxLength={6}
-              pattern="\d{6}"
               value={code}
               onChange={(e) => setCode(e.target.value)}
-              placeholder="000000"
-              className="w-full px-4 py-3 rounded-lg border border-stone bg-cream focus:ring-2 focus:ring-clay focus:outline-none text-center text-2xl tracking-widest"
+              placeholder="Paste the code from the email"
+              className="w-full px-4 py-3 rounded-lg border border-stone bg-cream focus:ring-2 focus:ring-clay focus:outline-none font-mono text-sm"
             />
           </div>
           <div>
-            <label htmlFor="new-password" className="block text-sm font-medium text-bark mb-1">New password</label>
+            <label htmlFor="new-password" className="block text-sm font-medium text-bark mb-1">New password (at least 12 characters)</label>
             <input
               id="new-password"
               type="password"
               autoComplete="new-password"
               required
-              minLength={8}
+              minLength={12}
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               className="w-full px-4 py-3 rounded-lg border border-stone bg-cream focus:ring-2 focus:ring-clay focus:outline-none"
