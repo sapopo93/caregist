@@ -425,14 +425,29 @@ def build_email(*, to: str, subject: str, body: str, attachments: list[Path] = (
     return message
 
 
-def _drafts_mailbox(conn: imaplib.IMAP4_SSL) -> str:
+_LIST_LINE = re.compile(r'^\((?P<flags>[^)]*)\)\s+(?:"(?:[^"\\]|\\.)*"|NIL)\s+(?P<name>.+)$', re.IGNORECASE)
+
+
+def special_mailbox(conn: imaplib.IMAP4_SSL, flag: str, default: str) -> str:
+    """The mailbox carrying a special-use flag (e.g. \\Drafts), from LIST.
+
+    Handles both quoted ("Drafts") and unquoted (Drafts) names; Private Email
+    returns them unquoted.
+    """
     status, folders = conn.list()
     if status == "OK":
         for raw in folders or []:
-            line = raw.decode("utf-8", "replace")
-            if "\\Drafts" in line:
-                return line.rsplit(' "', 1)[-1].strip('"') if ' "' in line else line.split()[-1]
-    return "Drafts"
+            match = _LIST_LINE.match(raw.decode("utf-8", "replace").strip())
+            if match and flag.lower() in match["flags"].lower().split():
+                name = match["name"].strip()
+                if len(name) >= 2 and name[0] == name[-1] == '"':
+                    name = name[1:-1].replace('\\"', '"').replace("\\\\", "\\")
+                return name
+    return default
+
+
+def _drafts_mailbox(conn: imaplib.IMAP4_SSL) -> str:
+    return special_mailbox(conn, "\\Drafts", "Drafts")
 
 
 def draft_exists(message_id: str, *, env: dict[str, str]) -> bool:
