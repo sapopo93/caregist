@@ -192,6 +192,7 @@ def record_email(
     payment: dict[str, Any] | None = None,
     supersede_email_id: int | None = None,
     allow_new_order: bool = False,
+    drafted_at: str | None = None,
     path: Path | None = None,
 ) -> None:
     """Create the order on first sight and log this drafted email against it.
@@ -223,6 +224,12 @@ def record_email(
                 raise LedgerError(f"{order_ref} belongs to {existing['buyer_email']} ({existing['product']}); not changed.")
             if stage == "quote" and existing["paid_at"]:
                 raise LedgerError(f"{order_ref} is paid; its scope cannot be changed by a new quote.")
+            if stage == "quote" and conn.execute(
+                "SELECT 1 FROM order_emails WHERE order_ref = ? AND stage = 'quote' AND sent_at IS NOT NULL",
+                (order_ref,),
+            ).fetchone():
+                # The buyer may pay the sent quote's link at any time; its scope must stay what they saw.
+                raise LedgerError(f"a quote for {order_ref} has been sent; its scope is fixed. Quote a new order instead.")
             if stage == "quote":
                 # A re-quote replaces the scope and promise; the latest quote is binding
                 # (Digest quotes carry no count, so the scope must still be replaced).
@@ -266,7 +273,7 @@ def record_email(
                                           draft_location, folder)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """,
-                (order_ref, stage, issue, message_id, subject, _now(), draft_location, folder),
+                (order_ref, stage, issue, message_id, subject, drafted_at or _now(), draft_location, folder),
             )
         except sqlite3.IntegrityError as exc:
             raise LedgerError(

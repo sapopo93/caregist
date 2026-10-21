@@ -42,8 +42,9 @@ Buyer types from the enquiry map to `--provider-group`: New registrations
   draft is never duplicated; `--redraft` replaces it only after checking
   outreach@ that the old draft is gone from Drafts and was never sent. If
   saving a draft errors and outreach@ cannot be checked, the order shows
-  "draft not confirmed": look in Drafts before using `--redraft`. A paid
-  order's scope cannot change.
+  "draft not confirmed": look in Drafts before using `--redraft`. Once a
+  quote has been sent its scope is fixed (the buyer may pay that link at any
+  time); a different scope is a new order with `--new-order`.
 - **Digest issues:** the next issue number and its week are worked out from
   the start date; an issue cannot be prepared before its day, and never twice.
 - **Nothing missed:** `tools.orders` lists ACTION NEEDED: quotes not sent,

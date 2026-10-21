@@ -552,3 +552,80 @@ def test_draft_left_pending_by_a_crash_is_not_shown_as_press_send(world):
         conn.execute("UPDATE order_emails SET draft_location = 'pending' WHERE stage = 'deliver'")
     action = ledger.next_action(order(ref), TODAY)
     assert action["status"] == "Deliver draft not confirmed in outreach@"
+
+
+def _lost_reply(message, *, env):
+    raise OSError("connection reset after APPEND")
+
+
+def test_lost_reply_draft_already_sent_is_recorded_not_freed(world, monkeypatch, capsys):
+    ref = quote_brief(world)
+    pay(world, "a@example.com", 74500)
+    monkeypatch.setattr(po, "save_draft", _lost_reply)
+    monkeypatch.setattr(po, "draft_exists", lambda message_id, *, env: False)
+    monkeypatch.setattr(orders, "find_sent",
+                        lambda env, pending, strict=False: {pending[0]["message_id"]: "2026-10-20T12:00:00+00:00"})
+    assert run(world, "deliver", "--order-ref", ref) == 0
+    assert "ALREADY SENT" in capsys.readouterr().out
+    (delivery,) = ledger.live(order(ref)["emails"], "deliver")
+    assert delivery["sent_at"]
+    assert run(world, "deliver", "--order-ref", ref, "--redraft") == 2
+
+
+def test_lost_reply_with_sent_folder_unreadable_stays_tracked(world, monkeypatch, capsys):
+    ref = quote_brief(world)
+    pay(world, "a@example.com", 74500)
+
+    def sent_unreadable(env, pending, strict=False):
+        raise RuntimeError("Sent folder could not be checked")
+
+    monkeypatch.setattr(po, "save_draft", _lost_reply)
+    monkeypatch.setattr(po, "draft_exists", lambda message_id, *, env: False)
+    monkeypatch.setattr(orders, "find_sent", sent_unreadable)
+    assert run(world, "deliver", "--order-ref", ref) == 2
+    assert "NOT CONFIRMED" in capsys.readouterr().out
+    assert len(ledger.live(order(ref)["emails"], "deliver")) == 1
+
+
+def test_sent_quote_scope_cannot_be_changed(world, capsys):
+    ref = quote_brief(world)
+    mark_all_sent(ref)
+    assert run(world, "quote", "brief", "--region", "London", "--provider-group", "new_90",
+               "--buyer-email", "a@example.com", "--order-ref", ref, "--redraft") == 2
+    assert "has been sent" in capsys.readouterr().out
+    assert order(ref)["scope"].startswith("North East")
+    # A different scope is a separate order with its own ref and payment link.
+    assert run(world, "quote", "brief", "--region", "London", "--provider-group", "new_90",
+               "--buyer-email", "a@example.com", "--new-order") == 0
+
+
+def test_delivery_builds_exactly_the_quoted_number(world, monkeypatch):
+    ref = quote_brief(world, "a@example.com", "--shortlist", "50")
+    with ledger.connect() as conn:
+        conn.execute("UPDATE orders SET quoted_count = 50 WHERE order_ref = ?", (ref,))
+    pay(world, "a@example.com", 74500)
+    seen = {}
+    real_build = po.build_brief
+
+    def capture(args, **kw):
+        seen["shortlist"] = args.shortlist
+        return real_build(args, **kw)
+
+    monkeypatch.setattr(po, "build_brief", capture)
+    run(world, "deliver", "--order-ref", ref)
+    assert seen["shortlist"] == 50
+
+
+def test_a_second_concurrent_run_is_refused(world, capsys):
+    import fcntl
+
+    lock_path = ledger.ledger_path().with_suffix(".lock")
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(lock_path, "w") as held:
+        fcntl.flock(held, fcntl.LOCK_EX)
+        assert run(world, "quote", "brief", "--region", "North East", "--provider-group", "new_90",
+                   "--buyer-email", "c@example.com") == 2
+        fcntl.flock(held, fcntl.LOCK_UN)
+    assert "another prepare_order run is in progress" in capsys.readouterr().out
+    with ledger.connect() as conn:
+        assert ledger.orders_with_emails(conn) == []

@@ -41,7 +41,7 @@ import time
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta, timezone
 from email.message import EmailMessage
-from email.utils import formatdate, make_msgid
+from email.utils import formatdate, make_msgid, parsedate_to_datetime
 from pathlib import Path
 from typing import Any
 
@@ -529,8 +529,8 @@ def build_brief(args: argparse.Namespace, *, env: dict[str, str], order_dir: Pat
         else:
             checks.add(
                 "matches_quote",
-                len(brief.shortlist) >= quoted,
-                f"quote promised {quoted} organisations; this build has {len(brief.shortlist)}",
+                len(brief.shortlist) == quoted,
+                f"quote promised exactly {quoted} organisations; this build has {len(brief.shortlist)}",
             )
     checks.add(
         "evidence_matches_scope",
@@ -722,6 +722,9 @@ def record_in_ledger(
         quoted_count=quoted,
         message_id=str(message["Message-ID"]),
         subject=str(message["Subject"]),
+        # The email's own Date header: a mail client that keeps it on Send produces a
+        # sent copy dated exactly this, so "sent at or after drafted" still matches.
+        drafted_at=parsedate_to_datetime(str(message["Date"])).astimezone(timezone.utc).isoformat(timespec="microseconds"),
         draft_location=draft,
         folder=str(order_dir),
         issue=args.issue if args.product == "digest" and args.stage == "deliver" else None,
@@ -858,6 +861,8 @@ def _load_for_delivery(args: argparse.Namespace, today: date) -> str | None:
         args.provider_group = scope.get("provider_group")
         args.service_type = scope.get("service_type")
         args.quoted_count = order["quoted_count"]
+        if order["quoted_count"]:
+            args.shortlist = order["quoted_count"]  # the exact number the quote promised
         args.issue = None
         current = deliveries
     else:
@@ -925,6 +930,9 @@ def _check_new_quote(args: argparse.Namespace) -> str | None:
                 return f"could not check whether {args.order_ref} is paid ({type(exc).__name__}); try again."
             if paid_now:
                 return f"{args.order_ref} has been paid ({paid_now['session']}); its scope cannot be changed."
+            if any(e["sent_at"] for e in order["emails"] if e["stage"] == "quote"):
+                return (f"a quote for {args.order_ref} has been sent, so its scope and payment link are fixed. "
+                        "For a different scope, quote a new order with --new-order (leave out --order-ref).")
             unsent = [e for e in order_ledger.live(order["emails"], "quote") if not e["sent_at"]]
             if unsent and not args.redraft:
                 return (f"an unsent quote draft for {args.order_ref} exists (drafted {unsent[-1]['drafted_at'][:16]}). "
@@ -946,6 +954,26 @@ def _check_new_quote(args: argparse.Namespace) -> str | None:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """One order run at a time: a second run while another is mid-save could
+    replace its draft and leave two drafts in outreach@."""
+    import fcntl
+
+    from tools import order_ledger
+
+    lock_path = order_ledger.ledger_path().with_suffix(".lock")
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(lock_path, "w") as lock:
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            return _refuse("another prepare_order run is in progress; wait for it to finish, then re-run.")
+        try:
+            return _main(argv)
+        finally:
+            fcntl.flock(lock, fcntl.LOCK_UN)
+
+
+def _main(argv: list[str] | None = None) -> int:
     from tools import order_ledger
 
     args = parse_args(argv)
@@ -1048,11 +1076,25 @@ def main(argv: list[str] | None = None) -> int:
     try:
         draft = save_draft(message, env=env)
     except Exception as exc:
-        # The server may have saved the draft even though the reply was lost. Look for
-        # it by Message-ID; only a definite "not there" frees the step for a re-run.
+        # The server may have saved the draft even though the reply was lost, and it
+        # may even have been sent since. Only "not in Drafts and not in Sent" frees
+        # the step for a re-run; anything unclear keeps it tracked.
+        from tools.orders import find_sent
+
         message_id = str(message["Message-ID"])
         try:
             saved = draft_exists(message_id, env=env)
+            if saved is False:
+                with order_ledger.connect() as conn:
+                    row = conn.execute("SELECT * FROM order_emails WHERE message_id = ?", (message_id,)).fetchone()
+                    columns = [c[0] for c in conn.execute("SELECT * FROM order_emails LIMIT 0").description]
+                sent = find_sent(env, [{**dict(zip(columns, row, strict=True)), "buyer_email": args.buyer_email}], strict=True)
+                if sent:
+                    with order_ledger.connect() as conn:
+                        order_ledger.mark_sent(conn, message_id, sent[message_id])
+                    print(f"ALREADY SENT: the {args.stage} email for {args.order_ref} was saved and has been sent; "
+                          "recorded as sent. Nothing more to do for this step.")
+                    return 0
         except Exception:
             saved = None
         with order_ledger.connect() as conn:
