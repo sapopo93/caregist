@@ -69,11 +69,25 @@ export default function ForgotPasswordPage() {
   return (
     <div className="max-w-md mx-auto px-6 py-16">
       <h1 className="text-3xl font-bold text-center mb-2">Reset your password</h1>
-      <p className="text-dusk text-center mb-8">
-        {step === 1
-          ? "Enter your email. If it is registered and email delivery is available, reset instructions will be sent."
-          : "If your email is registered and email delivery is available, check your inbox for a reset code and paste it below. It expires in 15 minutes."}
-      </p>
+      {step === 1 ? (
+        <p className="text-dusk text-center mb-8">
+          Enter the email you use to log in. We will email you a reset code.
+        </p>
+      ) : (
+        <div className="bg-cream border border-stone rounded-lg p-4 mb-6 text-sm text-bark">
+          <p className="font-medium mb-2">Check your email (including spam) for a message from CareGist.</p>
+          <ol className="list-decimal pl-5 space-y-1">
+            <li>Copy the whole reset code from the email. It is one long line with no spaces.</li>
+            <li>Paste it into the <strong>Reset code</strong> box below.</li>
+            <li>Choose a new password of at least 12 characters.</li>
+            <li>Press <strong>Reset Password</strong>, then log in with your new password.</li>
+          </ol>
+          <p className="mt-2 text-dusk">
+            The code expires after 15 minutes. If you asked for more than one code, use the newest email.
+            No email after a few minutes? <button type="button" onClick={() => { setStep(1); setCode(""); setError(""); }} className="underline">Send a new code</button>.
+          </p>
+        </div>
+      )}
 
       {error && (
         <div className="bg-cream border border-alert rounded-lg p-3 mb-4 text-sm text-alert">
