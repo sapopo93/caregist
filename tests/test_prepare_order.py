@@ -248,3 +248,36 @@ def test_shortlist_promise_is_up_to_fifty_in_terms_and_tool():
 
 
 
+
+
+class _ListOnly:
+    def __init__(self, lines):
+        self.lines = lines
+
+    def list(self):
+        return "OK", self.lines
+
+
+PRIVATE_EMAIL_LIST = [
+    b'(\\HasNoChildren \\UnMarked \\Archive) "/" Archive',
+    b'(\\HasNoChildren \\UnMarked \\Sent) "/" Sent',
+    b'(\\HasNoChildren \\Marked \\Trash) "/" Trash',
+    b'(\\HasNoChildren \\UnMarked \\Drafts) "/" Drafts',
+    b'(\\HasNoChildren) "/" INBOX',
+]
+
+
+def test_special_mailbox_reads_private_email_unquoted_names():
+    conn = _ListOnly(PRIVATE_EMAIL_LIST)
+    assert po.special_mailbox(conn, "\\Drafts", "x") == "Drafts"
+    assert po.special_mailbox(conn, "\\Sent", "x") == "Sent"
+
+
+def test_special_mailbox_reads_quoted_names_with_spaces():
+    conn = _ListOnly([b'(\\HasNoChildren \\Drafts) "." "Draft Messages"', b'(\\Sent) NIL "Sent Items"'])
+    assert po.special_mailbox(conn, "\\Drafts", "x") == "Draft Messages"
+    assert po.special_mailbox(conn, "\\Sent", "x") == "Sent Items"
+
+
+def test_special_mailbox_falls_back_when_no_flag():
+    assert po.special_mailbox(_ListOnly([b'(\\HasNoChildren) "/" INBOX']), "\\Drafts", "Drafts") == "Drafts"

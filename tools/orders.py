@@ -36,13 +36,7 @@ REPORT_DIR = ledger.REPO_ROOT / "orders" / "reports"
 
 
 def _sent_mailbox(conn: imaplib.IMAP4_SSL) -> str:
-    status, folders = conn.list()
-    if status == "OK":
-        for raw in folders or []:
-            line = raw.decode("utf-8", "replace")
-            if "\\Sent" in line:
-                return line.rsplit(' "', 1)[-1].strip('"') if ' "' in line else line.split()[-1]
-    return "Sent"
+    return po.special_mailbox(conn, "\\Sent", "Sent")
 
 
 def find_sent(env: dict[str, str], pending: list[dict[str, Any]], *, strict: bool = False) -> dict[str, str]:
