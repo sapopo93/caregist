@@ -1,3 +1,33 @@
+## 2026-10-20 06:50 BST — human-led launch release
+
+Authoritative release: `c5b92a6793f9f3ad0e1e5e41101caf93e93d4bb0` on GitHub main; production backend `/api/v1/version` and frontend `/api/health/directory` both serve it. Supersedes `b2e3fe6` below.
+Merged under founder authorization after every PR check passed:
+[#104](https://github.com/sapopo93/caregist/pull/104) (paid-path real-Postgres test now runs in CI, confirmed `1 passed`; manual Freshness Watchdog dispatch skips the migration job unless a restore point is asserted),
+[#105](https://github.com/sapopo93/caregist/pull/105) (Business Terms v2.2 published, founder-approved, in force 20 Oct 2026),
+[#106](https://github.com/sapopo93/caregist/pull/106) (Payment Link sales recorded as `manual_sale_paid` instead of erroring; `tools/build_weekly_digest_pilot.py`; `workflows/fulfil-manual-orders.md`).
+Exact-main CI, Schema Drift and Production Smoke PASS on `c5b92a6`; live health `healthy`, no failing checks.
+
+Commercial model: human-led. Scope agreed in writing, Stripe Payment Link sent by hand, fulfilled by hand. Self-serve checkout and delivery gates remain closed (checkoutReady=false, deliveryEnabled=false).
+
+Live Stripe changes made by the agent with founder approval: product `prod_VCHYLNWRcvZgJd` renamed to "CareGist Weekly Digest pilot — 4 weekly digests"; product `prod_VESD16ql3keycy` (£745) description corrected to email delivery within about 3 working days after written scope confirmation (it previously claimed automatic delivery and carried stray text). No prices, links or webhooks were created or changed.
+
+Stripe follow-up (20 Oct, founder-approved, done by the agent): the £150 checkout page was checked live and shows "CareGist Weekly Digest pilot — 4 weekly digests" (the "Radar pilot pack" text exists only in the link's stored API line description; no new link needed); £895 combined link `plink_1UIpr94mijLHzRRkDEWL3zYD` deactivated; CareGist webhook `we_1TLKZI4mijLHzRRkzoD75vqv` re-enabled (endpoint answers 400 "Invalid webhook signature" to unsigned requests, so a secret is configured; the first real event proves it matches); `tenderriskassurance.co.uk` webhook `we_1TPJWF4mijLHzRRkwlkiXym0` disabled. Later releases: #108 local Gemma CRM scoring (`6191091`), #109 do-not-contact flagging (`479a0bd`), both with CI, Schema Drift and Production Smoke PASS.
+Data finding (corrected 08:50 BST): production rating data is not stale. A full CQC API pull (2026-10-20, 123,010 locations, 0 failures) shows CQC itself published only 3 rating reports nationally since 1 Sep 2026, so `rating_changes` and `last_published_rating_date` faithfully mirror upstream. Weekly Digest ratings sections will be near-empty until CQC resumes publishing.
+
+---
+
+## 2026-10-20 06:10 BST — DeepSeek removal and health fixes released
+
+Authoritative release: `b2e3fe6266642915b8520098dece8898d5d62911` (supersedes `37ad274` from earlier the same morning) on GitHub main. Production backend `/api/v1/version` and frontend `/api/health/directory` both serve it.
+Merged under founder authorization in this session: [#100](https://github.com/sapopo93/caregist/pull/100) (DeepSeek removed from CRM AI; AI refuses to enable until an approved provider is wired in), [#101](https://github.com/sapopo93/caregist/pull/101) (11 nightly backup poll slots), [#102](https://github.com/sapopo93/caregist/pull/102) (a cancelled duplicate reconciliation of an already reconciled snapshot no longer degrades health).
+Exact-main CI, Schema Drift and Production Smoke also PASSED on `37ad274`. Every PR check passed before its merge.
+Live `/api/v1/health` after release: source `fresh`, checkoutReady=false, deliveryEnabled=false, crm ai_enabled=false.
+Local evidence: full pytest 1,336 PASS / 1 SKIP; `tests/test_territory_brief_pg_integration.py` PASS against a disposable PostgreSQL 17 + PostGIS 3.6 with init.sql and all 64 migrations from `37ad274` (#103 adds no migration) (CI still skips it: no TB_PG_URL).
+Then merged [#103](https://github.com/sapopo93/caregist/pull/103) (a poll in progress within its 50-minute limit no longer degrades health). Exact-main CI, Schema Drift and Production Smoke PASS on `b2e3fe6`; live health `healthy`, no failing checks, feed_fresh=true.
+No commercial gate, live Stripe object, production data or migration was changed. Local uncommitted Territory Brief source-edition work (migration 066) is not deployed.
+
+---
+
 ## 2026-10-09 — current completion audit (PARTIAL)
 
 Current read-only release: `59310ecc100119d6d775d70e62db758882bf5b8f` on GitHub main and both public services. PR #82 is merged. This dated observation supersedes older release/operational claims below; it does not approve commercial gates. Source reconciliation is stale/incomplete, checkout and delivery are closed. Repair branch `codex/completion-20261009` integrates PR #83 and corrects independently reproduced queue/CSV/shortfall defects. See [the audit](../artifacts/completion/2026-10-09/AUDIT.md) and [33-PR inventory](../artifacts/completion/2026-10-09/PR_INVENTORY.md) for raw evidence, actual checks, uncommitted preservation and remaining work. Grok/DeepSeek provider failures leave the prescribed independent gates uncompleted. Historical entries below are archives, not a new action list.

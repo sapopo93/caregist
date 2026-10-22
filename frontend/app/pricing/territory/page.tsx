@@ -90,11 +90,11 @@ export default function TerritoryScopePage() {
           </article>
           <article className={styles.card}>
             <div className={styles.num}>02</div>
-            <h3>25–50 organisations</h3>
+            <h3>Up to 50 organisations</h3>
             <p>
               A shortlist selected against your agreed criteria. Every entry carries a
               published fact, reason for inclusion, qualification question and stated
-              uncertainty.
+              uncertainty. The exact number is confirmed in writing before you pay.
             </p>
           </article>
           <article className={styles.card}>

@@ -53,6 +53,7 @@ def test_fresh_result_uses_only_persisted_authoritative_evidence():
         "coveragePercentage": 100.0,
         "successCount": 56_742,
         "failureCount": 0,
+        "quarantinedLocationCount": 0,
         "countsReconciled": True,
         "checksumSha256": "a" * 64,
         "latestAttempt": {
@@ -100,6 +101,60 @@ def test_newer_failed_attempt_fails_closed_without_leaking_error_details():
     assert result["latestAttempt"]["status"] == "failed"
     assert result["latestAttempt"]["coveragePercentage"] == pytest.approx(0.2109)
     assert "secret" not in str(result)
+
+
+def test_cancelled_duplicate_of_the_reconciled_snapshot_does_not_degrade_freshness():
+    # Production 18 Oct 2026: a duplicate dispatch read the same CSV, was
+    # cancelled at 2,000 locations, and ended before the original reconciled.
+    watermark = _run(
+        started_at=NOW - timedelta(hours=4),
+        reconciled_at=NOW - timedelta(minutes=10),
+        completed_at=NOW - timedelta(minutes=10),
+    )
+    duplicate = _run(
+        id=42,
+        status="failed",
+        started_at=NOW - timedelta(minutes=30),
+        completed_at=NOW - timedelta(minutes=15),
+        checked_count=2_000,
+        success_count=2_000,
+        counts_reconciled=False,
+        reconciled_at=None,
+    )
+
+    result = build_cqc_freshness(watermark, duplicate, now=NOW)
+
+    assert result["status"] == "fresh"
+    assert result["reason"] is None
+
+
+@pytest.mark.parametrize(
+    "overrides",
+    [
+        {"source_checksum_sha256": "b" * 64},
+        {"source_checksum_sha256": None},
+        {"completed_at": NOW - timedelta(minutes=5)},
+        {"completed_at": None, "status": "failed"},
+    ],
+)
+def test_failed_attempt_not_superseded_by_the_watermark_still_fails_closed(overrides):
+    watermark = _run(reconciled_at=NOW - timedelta(minutes=10))
+    attempt = _run(
+        id=42,
+        status="failed",
+        started_at=NOW - timedelta(minutes=30),
+        completed_at=NOW - timedelta(minutes=15),
+        checked_count=2_000,
+        success_count=2_000,
+        counts_reconciled=False,
+        reconciled_at=None,
+    )
+    attempt.update(overrides)
+
+    result = build_cqc_freshness(watermark, attempt, now=NOW)
+
+    assert result["status"] == "partial"
+    assert result["reason"] == "latest_authoritative_attempt_incomplete"
 
 
 def test_partial_attempt_without_a_watermark_does_not_claim_retrieval_time():
@@ -150,11 +205,12 @@ def test_missing_and_incomplete_evidence_are_unknown():
 
 
 class FreshnessConnection:
-    def __init__(self, *, schema_ready=True, watermark=None, attempt=None):
+    def __init__(self, *, schema_ready=True, watermark=None, attempt=None, quarantined_count=0):
         self.schema_ready = schema_ready
         self.watermark = watermark
         self.attempt = attempt
         self.queries = []
+        self.quarantined_count = quarantined_count
 
     @asynccontextmanager
     async def transaction(self, **options):
@@ -163,6 +219,8 @@ class FreshnessConnection:
 
     async def fetchval(self, query, *args):
         self.queries.append(query)
+        if "SELECT count(*) FROM reconciliation_quarantined_locations" in query:
+            return self.quarantined_count
         assert args[0] == "pipeline_runs"
         return self.schema_ready
 
@@ -171,6 +229,19 @@ class FreshnessConnection:
         if "counts_reconciled = TRUE" in query:
             return self.watermark
         return self.attempt
+
+
+@pytest.mark.asyncio
+async def test_persistent_quarantine_prevents_a_false_fresh_claim():
+    row = _run()
+    conn = FreshnessConnection(watermark=row, attempt=row, quarantined_count=3)
+    result = await get_cqc_freshness(conn, now=NOW)
+    assert result["status"] == "partial"
+    assert result["reason"] == "unresolved_quarantined_locations"
+    assert result["quarantinedLocationCount"] == 3
+    assert result["countsReconciled"] is True
+    assert "3 locations remain quarantined" in result["message"]
+    assert "completed without collection errors" not in result["message"]
 
 
 @pytest.mark.asyncio
@@ -186,7 +257,8 @@ async def test_query_selects_only_completed_reconciled_authoritative_watermark()
     assert "counts_reconciled = TRUE" in conn.queries[1]
     assert "reconciled_at IS NOT NULL" in conn.queries[1]
     assert "source_retrieved_at IS NOT NULL" in conn.queries[1]
-    assert "care_providers" not in " ".join(conn.queries)
+    assert "care_providers" not in " ".join(conn.queries[:3])
+    assert "q.resolved_at IS NULL" in conn.queries[3]
 
 
 @pytest.mark.asyncio

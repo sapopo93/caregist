@@ -185,3 +185,6 @@ artifacts/real-product/
 artifacts/ebay-*.png
 artifacts/**/rendered*/
 artifacts/**/pdf-bounds.html
+
+# Local order ledger (buyer emails); never committed.
+orders/

@@ -144,9 +144,34 @@ def _newer_incomplete_attempt(
         return False
     if _in_progress_within_grace(latest_attempt, now=now):
         return False
+    if _superseded_by_watermark(watermark, latest_attempt):
+        return False
     return bool(
         _value(latest_attempt, "status") != "completed"
         or not _complete_evidence(latest_attempt)
+    )
+
+
+def _superseded_by_watermark(
+    watermark: Mapping[str, Any],
+    latest_attempt: Mapping[str, Any],
+) -> bool:
+    """True when an unfinished attempt read the exact snapshot the watermark
+    later reconciled, and ended before that reconciliation completed.
+
+    A duplicate run cancelled while the original was still finishing carries
+    no newer evidence; letting it outrank the watermark would report a fully
+    reconciled snapshot as incomplete until the next scheduled run.
+    """
+    checksum = _value(latest_attempt, "source_checksum_sha256")
+    ended = _utc(_value(latest_attempt, "completed_at"))
+    reconciled = _utc(_value(watermark, "reconciled_at"))
+    return bool(
+        checksum
+        and checksum == _value(watermark, "source_checksum_sha256")
+        and ended is not None
+        and reconciled is not None
+        and ended <= reconciled
     )
 
 
@@ -181,6 +206,7 @@ def build_cqc_freshness(
     *,
     now: datetime,
     schema_ready: bool = True,
+    quarantined_count: int = 0,
 ) -> dict[str, Any]:
     """Build a public, aggregate-only result from persisted run evidence."""
     if not schema_ready:
@@ -250,6 +276,7 @@ def build_cqc_freshness(
         "countsReconciled": bool(_value(watermark, "counts_reconciled")),
         "checksumSha256": _value(watermark, "source_checksum_sha256"),
         "latestAttempt": latest_summary,
+        "quarantinedLocationCount": quarantined_count,
     }
 
     if _newer_incomplete_attempt(watermark, latest_attempt, now=_utc(now)):
@@ -286,6 +313,18 @@ def build_cqc_freshness(
             ),
         }
 
+    if quarantined_count:
+        return {
+            "status": "partial",
+            **common,
+            "reason": "unresolved_quarantined_locations",
+            "message": (
+                f"The last reconciled CQC retrieval was {_display_utc(retrieved_at)}. "
+                f"{quarantined_count:,} locations remain quarantined pending source verification. "
+                "Reconciled counts do not establish that these locations have been verified."
+            ),
+        }
+
     unavailable = detail_unavailable_evidence(watermark) if failure else {}
     exception_fields = {
         "detailUnavailableIds": unavailable["detailUnavailableIds"],
@@ -319,6 +358,7 @@ async def get_cqc_freshness(
         await conn.fetchval(
             """
             SELECT COUNT(*) = $3
+              AND to_regclass('public.reconciliation_quarantined_locations') IS NOT NULL
             FROM information_schema.columns
             WHERE table_schema = 'public'
               AND table_name = $1
@@ -358,8 +398,14 @@ async def get_cqc_freshness(
             LIMIT 1
             """
         )
+        quarantined_count = await conn.fetchval(
+            """SELECT count(*) FROM reconciliation_quarantined_locations q
+               JOIN care_providers p ON p.id::text = q.location_id
+               WHERE q.resolved_at IS NULL AND UPPER(p.status) = 'ACTIVE'"""
+        )
     return build_cqc_freshness(
         watermark,
         latest_attempt,
         now=now or datetime.now(UTC),
+        quarantined_count=quarantined_count,
     )

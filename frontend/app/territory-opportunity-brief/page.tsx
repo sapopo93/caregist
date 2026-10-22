@@ -5,11 +5,11 @@ import { TERRITORY_BRIEF_PRICE_GBP } from "@/lib/territory-scope";
 
 export const metadata: Metadata = {
   title: "Territory Opportunity Brief | CareGist",
-  description: `A buyer-specific shortlist of 25 to 50 care organisations, a CRM-ready dataset and a concise executive brief for £${TERRITORY_BRIEF_PRICE_GBP}.`,
+  description: `A buyer-specific shortlist of up to 50 care organisations, a CRM-ready dataset and a concise executive brief for £${TERRITORY_BRIEF_PRICE_GBP}.`,
 };
 
 const deliverables = [
-  "A buyer-specific shortlist of 25 to 50 care organisations in an agreed England territory.",
+  "A buyer-specific shortlist of up to 50 care organisations in an agreed England territory.",
   "A CRM-ready CSV dataset covering the agreed shortlist and the fields available from the checked public sources.",
   "A three to five page executive brief explaining the agreed selection criteria and the factual reasons each organisation was included.",
   "Source links and observation dates for the public CQC information used in the brief.",
@@ -22,7 +22,7 @@ const boundaries = [
 ];
 
 const workRemoved = [
-  ["Find the relevant organisations", "A buyer-specific 25 to 50 organisation shortlist for the agreed territory."],
+  ["Find the relevant organisations", "A buyer-specific shortlist of up to 50 organisations for the agreed territory, with the exact number confirmed before you pay."],
   ["Decide why each one belongs", "A stated factual reason for each organisation against the agreed criteria."],
   ["Prepare a usable working file", "A CRM-ready CSV dataset."],
   ["Trace information back to source", "Public CQC source links and observation dates carried into the pack."],

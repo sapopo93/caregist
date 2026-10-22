@@ -28,6 +28,7 @@ from api.database import get_connection
 from api.services import territory_brief_delivery, territory_brief_fulfilment
 from api.services.pipeline_health import get_pipeline_health
 from api.utils.audit import actor_from_auth, write_audit_log
+from api.utils.stripe_compat import stripe_dict
 
 logger = logging.getLogger("caregist.billing")
 router = APIRouter(prefix="/api/v1/billing", tags=["billing"])
@@ -925,7 +926,7 @@ async def create_checkout(
                 status_code=409,
                 detail="Your legacy subscription remains unchanged. Contact support for a controlled Radar migration.",
             )
-        subscription = stripe.Subscription.retrieve(subscription_id)
+        subscription = stripe_dict(stripe.Subscription.retrieve(subscription_id))
         if subscription.get("customer") != user.get("stripe_customer_id"):
             raise HTTPException(
                 status_code=409,
@@ -1024,7 +1025,7 @@ async def create_checkout(
 
         changed_subscription = subscription
         if updated_items:
-            changed_subscription = stripe.Subscription.modify(
+            changed_subscription = stripe_dict(stripe.Subscription.modify(
                 subscription_id,
                 items=updated_items,
                 proration_behavior="always_invoice",
@@ -1037,7 +1038,7 @@ async def create_checkout(
                     "seat_price_id": settings.stripe_price_pro_seat if extra_seats else "",
                 },
                 idempotency_key=f"caregist-subscription-change-{operation['id']}",
-            )
+            ))
         changed_status, changed_price_id, changed_tier, changed_extra_seats = _b2b_subscription_state(
             changed_subscription,
             known_price_id=configured_base_price_id or source_price_id,
@@ -1396,7 +1397,7 @@ async def get_checkout_session_status(
         raise HTTPException(status_code=404, detail="Checkout session was not found for this account.")
 
     try:
-        session = stripe.checkout.Session.retrieve(session_id)
+        session = stripe_dict(stripe.checkout.Session.retrieve(session_id))
     except stripe.InvalidRequestError as exc:
         raise HTTPException(
             status_code=404,
@@ -1469,7 +1470,7 @@ async def cancel_subscription(_auth: dict = Depends(validate_billing_identity)) 
     if not subscription or not subscription["stripe_subscription_id"]:
         raise HTTPException(status_code=404, detail="No cancellable paid subscription was found.")
     subscription_id = subscription["stripe_subscription_id"]
-    stripe_subscription = stripe.Subscription.retrieve(subscription_id)
+    stripe_subscription = stripe_dict(stripe.Subscription.retrieve(subscription_id))
     if stripe_subscription.get("customer") != subscription["stripe_customer_id"]:
         raise HTTPException(status_code=409, detail="Stripe subscription ownership could not be verified.")
     if stripe_subscription.get("status") in {"canceled", "incomplete_expired"}:
@@ -1490,11 +1491,11 @@ async def cancel_subscription(_auth: dict = Depends(validate_billing_identity)) 
         }
 
     idempotency_key = f"caregist-cancel-{user_id}-{subscription_id}"
-    stripe_subscription = stripe.Subscription.modify(
+    stripe_subscription = stripe_dict(stripe.Subscription.modify(
         subscription_id,
         cancel_at_period_end=True,
         idempotency_key=idempotency_key,
-    )
+    ))
     period_end = _stripe_period_end(stripe_subscription.get("current_period_end"))
     async with get_connection() as conn:
         async with conn.transaction():
@@ -1576,6 +1577,7 @@ async def stripe_webhook(request: Request) -> dict:
         logger.error("Webhook signature failed: %s", e)
         raise HTTPException(status_code=400, detail="Invalid webhook signature.")
 
+    event = stripe_dict(event)
     event_id = event["id"]
     event_type = event["type"]
     data = event["data"]["object"]
@@ -1632,7 +1634,7 @@ async def stripe_webhook(request: Request) -> dict:
                     subscription_id = data.get("id")
                     if not subscription_id:
                         raise RuntimeError("customer.subscription.updated missing subscription id")
-                    authoritative = stripe.Subscription.retrieve(subscription_id)
+                    authoritative = stripe_dict(stripe.Subscription.retrieve(subscription_id))
                     await _handle_subscription_updated(conn, authoritative)
                 elif event_type == "customer.subscription.deleted":
                     await _handle_subscription_deleted(conn, data)
@@ -1660,7 +1662,7 @@ async def _handle_dataset_checkout_completed(conn, session: dict) -> None:
     session_id = session.get("id")
     if not session_id:
         raise RuntimeError("full-dataset checkout missing session id")
-    authoritative = stripe.checkout.Session.retrieve(session_id, expand=["line_items"])
+    authoritative = stripe_dict(stripe.checkout.Session.retrieve(session_id, expand=["line_items"]))
     metadata = authoritative.get("metadata", {})
     order_id = metadata.get("order_id")
     artifact_id = metadata.get("artifact_id")
@@ -1842,6 +1844,73 @@ async def _handle_dataset_checkout_completed(conn, session: dict) -> None:
     )
 
 
+def _is_manual_payment_link_sale(session: dict, metadata: dict) -> bool:
+    """A sale through a founder-issued Stripe Payment Link.
+
+    These carry no CareGist order metadata: the scope was agreed by email and is
+    fulfilled by hand. Raising for them made Stripe retry each one for days and
+    risked the endpoint being disabled, while granting nothing.
+    """
+    return bool(
+        session.get("payment_link")
+        and not metadata.get("type")
+        and not metadata.get("user_id")
+    )
+
+
+async def _record_manual_payment_link_sale(conn, session: dict) -> None:
+    """Keep one durable record per paid sale for fulfilment; grant no entitlement.
+
+    Only a paid session is recorded: a completed-but-unpaid session (delayed
+    payment methods) is recorded when checkout.session.async_payment_succeeded
+    arrives. The insert is skipped if the session is already recorded, so the two
+    events (or a replay) never produce two sales.
+    """
+    if session.get("payment_status") != "paid":
+        logger.info(
+            "Payment Link checkout not yet paid; not recorded: session=%s status=%s",
+            session.get("id"),
+            session.get("payment_status"),
+        )
+        return
+    details = session.get("customer_details") or {}
+    email = details.get("email") or session.get("customer_email")
+    meta = {
+        "stripe_checkout_session_id": session.get("id"),
+        "client_reference_id": session.get("client_reference_id"),
+        "payment_link": session.get("payment_link"),
+        "payment_status": session.get("payment_status"),
+        "amount_total": session.get("amount_total"),
+        "currency": session.get("currency"),
+        "customer_name": details.get("name"),
+        "fulfilment": "manual",
+    }
+    # Serialise per checkout session for the rest of this transaction, so two events
+    # for the same session (completed + async_payment_succeeded, or a replay) cannot
+    # both pass the NOT EXISTS check concurrently.
+    await conn.execute("SELECT pg_advisory_xact_lock(hashtext($1))", f"manual_sale:{session.get('id')}")
+    await conn.execute(
+        """
+        INSERT INTO analytics_events (event_type, event_source, email, meta)
+        SELECT 'manual_sale_paid', 'stripe_payment_link', $1, $2::jsonb
+        WHERE NOT EXISTS (
+            SELECT 1 FROM analytics_events
+            WHERE event_type = 'manual_sale_paid'
+              AND meta->>'stripe_checkout_session_id' = $3
+        )
+        """,
+        email,
+        __import__("json").dumps(meta),
+        session.get("id"),
+    )
+    logger.info(
+        "Payment Link sale recorded for manual fulfilment: session=%s amount=%s %s",
+        session.get("id"),
+        session.get("amount_total"),
+        session.get("currency"),
+    )
+
+
 async def _handle_checkout_completed(conn, session: dict) -> None:
     """Route completed checkout to B2B or provider profile handler.
 
@@ -1861,6 +1930,9 @@ async def _handle_checkout_completed(conn, session: dict) -> None:
             cfg=territory_brief_delivery.fulfilment_settings(),
             deps=territory_brief_delivery.fulfilment_deps(),
         )
+        return
+    if _is_manual_payment_link_sale(session, metadata):
+        await _record_manual_payment_link_sale(conn, session)
         return
     user_id = metadata.get("user_id")
     terms_version = metadata.get("terms_version")
@@ -1901,7 +1973,7 @@ async def _handle_checkout_completed(conn, session: dict) -> None:
     if not subscription_id:
         raise RuntimeError("checkout.session.completed missing subscription id")
 
-    authoritative = stripe.Subscription.retrieve(subscription_id)
+    authoritative = stripe_dict(stripe.Subscription.retrieve(subscription_id))
     if authoritative.get("customer") != customer_id:
         raise RuntimeError("checkout.session.completed subscription customer mismatch")
     status, actual_price_id, actual_tier, actual_extra_seats = _b2b_subscription_state(
@@ -2187,7 +2259,7 @@ async def _handle_refund(conn, charge: dict) -> None:
         charge_id_for_refund = charge.get("charge")
         if not charge_id_for_refund:
             raise RuntimeError("charge.refund.updated missing charge reference")
-        charge = stripe.Charge.retrieve(charge_id_for_refund)
+        charge = stripe_dict(stripe.Charge.retrieve(charge_id_for_refund))
 
     charge_id = charge.get("id")
     if not charge_id:
