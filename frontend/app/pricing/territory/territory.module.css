@@ -364,7 +364,6 @@
   }
 }
 
-.resultActions { margin-top: 12px; }
 .emailFallback { margin-top: 18px; }
 .emailFallback summary { cursor: pointer; text-decoration: underline; }
 .emailFallback .label { display: block; margin-top: 14px; }

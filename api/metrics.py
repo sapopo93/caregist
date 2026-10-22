@@ -65,7 +65,7 @@ if _ENABLED:
     )
     CRM_AI_MONTHLY_SPEND_USD = Gauge(
         "caregist_crm_ai_monthly_spend_usd",
-        "Recorded DeepSeek usage cost in the current UTC month.",
+        "Recorded CRM AI provider usage cost in the current UTC month.",
     )
     CRM_RETENTION_EXPIRED_BACKLOG = Gauge(
         "caregist_crm_retention_expired_backlog",

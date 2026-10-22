@@ -60,6 +60,17 @@ MAX_SHORTLIST = 50
 DEFAULT_SHORTLIST = 30
 DEFAULT_WINDOW_DAYS = 90
 
+#: The provider groups a buyer picks on /pricing/territory. Membership is decided
+#: by the directory query the coverage check uses (see tools/prepare_order.py),
+#: so the Brief covers exactly the organisations the buyer was shown.
+PROVIDER_GROUP_LABELS = {
+    "new_90": "New registrations (last 90 days)",
+    "inadequate": "Currently rated Inadequate",
+    "requires_improvement": "Currently rated Requires improvement",
+    "not_yet_inspected": "No published CQC rating",
+    "stale_inspection": "No inspection in the last 3 years, or none recorded",
+}
+
 
 class ScopeError(ValueError):
     """Raised when a buyer-supplied scope is missing, malformed, or unknown."""
@@ -394,6 +405,9 @@ _BASE_WEIGHT = {
     "rating_changed": 34.0,
     "rating_published": 14.0,
     "reactivated": 20.0,
+    "rating_current": 40.0,
+    "not_yet_inspected": 30.0,
+    "stale_inspection": 30.0,
 }
 
 
@@ -470,11 +484,17 @@ _SIGNAL_LABEL = {
     "rating_changed": "Rating change",
     "rating_published": "New inspection report",
     "reactivated": "Returned from dormancy",
+    "rating_current": "Current rating",
+    "not_yet_inspected": "No published rating",
+    "stale_inspection": "No recent inspection",
 }
 
 
 def _primary_signal(events: list[OrgEvent]) -> str:
-    order = ["rating_changed", "new_registration", "rating_published", "reactivated"]
+    order = [
+        "rating_changed", "rating_current", "new_registration", "stale_inspection",
+        "not_yet_inspected", "rating_published", "reactivated",
+    ]
     for kind in order:
         if any(e.event_type == kind for e in events):
             return _SIGNAL_LABEL[kind]
@@ -510,6 +530,19 @@ def _recency_phrase(event_date: date, as_of: date) -> str:
     if age <= 120:
         return "within the last four months"
     return f"about {age // 30} months ago"
+
+
+def _age_phrase(then: date, as_of: date) -> str:
+    """Exact, plain age of a dated fact; never rounded up."""
+    days = (as_of - then).days
+    if days < 0:
+        return "after the source date"
+    if days < 31:
+        return f"{days} day{'s' if days != 1 else ''} ago"
+    months = days // 30
+    if months < 24:
+        return f"about {months} month{'s' if months != 1 else ''} ago"
+    return f"about {days // 365} years ago"
 
 
 def _reason(
@@ -586,6 +619,57 @@ def _reason(
             f"(current rating {ev.new_value}). Verify its age and supporting evidence before contact."
         )
 
+    for ev in events:
+        if ev.event_type == "rating_current":
+            dated = (
+                f"in the report published {ev.effective_date.strftime('%d %b %Y')}"
+                if "date not recorded" not in ev.detail
+                else "(report date not recorded in the source)"
+            )
+            parts.append(
+                f"Currently rated {ev.new_value} overall by CQC {dated}. This is the published "
+                f"overall rating, not a statement about the service today; read the report "
+                f"before any contact."
+            )
+        elif ev.event_type == "not_yet_inspected":
+            # The group means "no published rating"; the record cannot show whether or
+            # when an inspection will happen, so the text claims neither.
+            if ev.old_value == "registration_date_missing":
+                parts.append(
+                    f"No published CQC rating on record ({_service_and_size(svc, beds)}), and the "
+                    f"source does not record a registration date. Check the CQC page before contact."
+                )
+            else:
+                parts.append(
+                    f"No published CQC rating on record; registered with CQC on "
+                    f"{ev.effective_date.strftime('%d %b %Y')} ({_age_phrase(ev.effective_date, as_of)}). "
+                    f"The record does not show a completed rated inspection ({_service_and_size(svc, beds)}); "
+                    f"check the CQC page before contact. This does not establish supplier need or purchasing intent."
+                )
+        elif ev.event_type == "stale_inspection":
+            if ev.old_value == "registration_date_missing":
+                parts.append(
+                    "No CQC inspection date and no registration date are recorded in the source. "
+                    "Check the CQC page before contact."
+                )
+            elif ev.old_value == "never_inspected":
+                recent = (as_of - ev.effective_date).days < 3 * 365
+                parts.append(
+                    f"No CQC inspection date recorded; registered on "
+                    f"{ev.effective_date.strftime('%d %b %Y')} ({_age_phrase(ev.effective_date, as_of)})."
+                    + (
+                        " It is in this group because the 'stale inspections' filter includes every "
+                        "location without a recorded inspection date, not because an inspection is overdue."
+                        if recent else ""
+                    )
+                )
+            else:
+                parts.append(
+                    f"Last CQC inspection on {ev.effective_date.strftime('%d %b %Y')}, "
+                    f"{_age_phrase(ev.effective_date, as_of)} before the source date, so a re-inspection "
+                    f"may be due. CQC sets its own schedule; this is not a prediction of timing."
+                )
+
     if provider_cluster >= 2:
         parts.append(
             f"The provider behind this location has {provider_cluster} locations moving in "
@@ -628,6 +712,17 @@ _QUALIFICATION_QUESTIONS = {
     _SIGNAL_LABEL["reactivated"]: (
         "Is this service planning to restart operations, and who is responsible for "
         "choosing suppliers?"
+    ),
+    _SIGNAL_LABEL["rating_current"]: (
+        "What has this service changed since its last published rating, and who leads its "
+        "improvement plan?"
+    ),
+    _SIGNAL_LABEL["not_yet_inspected"]: (
+        "Who is preparing this service for its first CQC inspection, and which suppliers has "
+        "it not yet chosen?"
+    ),
+    _SIGNAL_LABEL["stale_inspection"]: (
+        "How is this service preparing for its next CQC inspection, and who owns that work?"
     ),
 }
 
@@ -673,6 +768,18 @@ _COMPLIANCE_QUESTIONS = {
     _SIGNAL_LABEL["rating_published"]: (
         "Which areas did the published report raise, and who is leading the service's "
         "response to them?"
+    ),
+    _SIGNAL_LABEL["rating_current"]: (
+        "Which areas did the latest report raise, and has the service arranged a governance "
+        "audit, mock inspection or training before re-inspection?"
+    ),
+    _SIGNAL_LABEL["not_yet_inspected"]: (
+        "Who is preparing this service for its first CQC inspection, and has it arranged a "
+        "governance audit or mock inspection yet?"
+    ),
+    _SIGNAL_LABEL["stale_inspection"]: (
+        "When did the service last review itself against CQC's current assessment framework, "
+        "and who would lead preparation for re-inspection?"
     ),
 }
 _COMPLIANCE_DEFAULT = (
@@ -830,12 +937,82 @@ def _next_actions(insights: dict[str, Any], ranked: list[RankedOrganisation], sc
 # --------------------------------------------------------------------------- #
 
 
+def _provider_group_event(row: dict[str, Any], group: str, *, as_of: date) -> OrgEvent | None:
+    """The documented state that puts a location in the buyer's provider group.
+
+    Window events only cover recent movement; a group such as "currently rated
+    Inadequate" is a standing state, so each member carries it as evidence.
+    """
+    location_id = str(row.get("locationId") or "").strip()
+    url = CQC_PROFILE_URL.format(location_id=location_id) if location_id else CQC_DATA_PAGE
+    registered = _parse_date(row.get("registrationDate"))
+    last_inspection = _parse_date((row.get("lastInspection") or {}).get("date"))
+    if group in ("inadequate", "requires_improvement"):
+        rating, report_date = _current_rating_evidence(row)
+        if not rating:
+            return None
+        effective = report_date or last_inspection
+        detail = (
+            f"Current overall rating {rating} (report {effective.isoformat()})"
+            if effective
+            else f"Current overall rating {rating} (report date not recorded in source)"
+        )
+        return OrgEvent(
+            event_type="rating_current",
+            effective_date=effective or as_of,
+            old_value=None,
+            new_value=rating,
+            detail=detail,
+            source_url=url,
+            source_field="location.currentRatings.overall",
+        )
+    if group == "not_yet_inspected":
+        return OrgEvent(
+            event_type="not_yet_inspected",
+            effective_date=registered or as_of,
+            old_value=None if registered else "registration_date_missing",
+            new_value="No published rating",
+            detail=(
+                f"Registered {registered.isoformat()}; no published CQC rating"
+                if registered else "No published CQC rating; registration date not recorded"
+            ),
+            source_url=url,
+            source_field="location.currentRatings/lastInspection",
+        )
+    if group == "stale_inspection":
+        if last_inspection:
+            return OrgEvent(
+                event_type="stale_inspection",
+                effective_date=last_inspection,
+                old_value=last_inspection.isoformat(),
+                new_value=None,
+                detail=f"Last CQC inspection {last_inspection.isoformat()}",
+                source_url=url,
+                source_field="location.lastInspection.date",
+            )
+        return OrgEvent(
+            event_type="stale_inspection",
+            effective_date=registered or as_of,
+            old_value="never_inspected" if registered else "registration_date_missing",
+            new_value=None,
+            detail=(
+                f"No CQC inspection recorded since registration on {registered.isoformat()}"
+                if registered else "No CQC inspection recorded"
+            ),
+            source_url=url,
+            source_field="location.lastInspection",
+        )
+    return None
+
+
 def generate_territory_opportunity_brief(
     scope: dict[str, Any] | TerritoryScope,
     purchase_context: PurchaseContext,
     *,
     locations_source: str | Path,
     providers_source: str | Path,
+    location_ids: Iterable[str] | None = None,
+    provider_group: str | None = None,
 ) -> TerritoryBrief:
     """Generate a complete Territory Opportunity Brief.
 
@@ -843,7 +1020,17 @@ def generate_territory_opportunity_brief(
     :class:`TerritoryScope`; it is always validated against the source data.
     Raises :class:`ScopeError` for an invalid/unknown scope and
     :class:`FileNotFoundError` for a missing snapshot.
+
+    ``location_ids`` restricts the Brief to an exact set (the organisations the
+    buyer's coverage check counted). ``provider_group`` adds each member's
+    documented group state as evidence so standing groups are not empty.
     """
+    if provider_group is not None and provider_group not in PROVIDER_GROUP_LABELS:
+        raise ScopeError(f"unknown provider group {provider_group!r}")
+    allowed_ids = (
+        {str(item).strip() for item in location_ids if str(item).strip()}
+        if location_ids is not None else None
+    )
     locations_path = Path(locations_source)
     providers_path = Path(providers_source)
     if not locations_path.exists():
@@ -867,6 +1054,10 @@ def generate_territory_opportunity_brief(
 
     # First pass: provider cluster counts within scope.
     scoped_rows = [row for row in location_rows if _in_scope(row, validated)]
+    if allowed_ids is not None:
+        scoped_rows = [
+            row for row in scoped_rows if str(row.get("locationId") or "").strip() in allowed_ids
+        ]
     territory_locations = len(scoped_rows)
     generated_on = purchase_context.generated_at.astimezone(timezone.utc).date()
     coverage = _evidence_coverage(
@@ -883,6 +1074,10 @@ def generate_territory_opportunity_brief(
         events = _location_events(
             row, window_start=window_start, window_end=window_end, as_of=as_of
         )
+        if provider_group and provider_group != "new_90":
+            state = _provider_group_event(row, provider_group, as_of=as_of)
+            if state is not None:
+                events = [*events, state]
         if events:
             provider_id = str(row.get("providerId") or "").strip()
             provider_event_locations[provider_id] += 1
@@ -1005,6 +1200,7 @@ def generate_territory_opportunity_brief(
     actions = _next_actions(insights, list(shortlist), validated)
 
     exec_summary = _executive_summary(
+        provider_group=provider_group,
         scope=validated,
         as_of=as_of,
         generated_on=generated_on,
@@ -1033,8 +1229,14 @@ def generate_territory_opportunity_brief(
         "provider's quality, finances, or intent.",
         OGL_ATTRIBUTION + ".",
     )
+    group_note = (
+        f" Provider group: {PROVIDER_GROUP_LABELS[provider_group]}, taken from the same "
+        f"directory query as the coverage check; each member carries its documented group "
+        f"state as evidence."
+        if provider_group else ""
+    )
     methodology = (
-        f"Scope: {validated.kind.replace('_', ' ')} = {validated.name}. "
+        f"Scope: {validated.kind.replace('_', ' ')} = {validated.name}.{group_note} "
         f"Window: {window_start.isoformat()} to {window_end.isoformat()} inclusive "
         f"({validated.window_days} days), anchored to the newest source date.",
         "Supported events: new CQC registration in-window (excluding dormant locations); overall "
@@ -1154,6 +1356,7 @@ def _latest_source_date(rows: list[dict[str, Any]]) -> date | None:
 
 def _executive_summary(
     *,
+    provider_group: str | None = None,
     scope: TerritoryScope,
     as_of: date,
     generated_on: date,
@@ -1169,11 +1372,18 @@ def _executive_summary(
         f"{o.organisation_name} ({o.location_name}) - {o.primary_signal.lower()}"
         for o in shortlist[:3]
     ]
-    headline = (
-        f"{considered} location(s) in {scope.name} show a supported opportunity signal in the "
-        f"{scope.window_days}-day window ending {window_end.strftime('%d %b %Y')}; "
-        f"{len(shortlist)} are shortlisted and ranked."
-    )
+    if provider_group and provider_group != "new_90":
+        headline = (
+            f"{considered} location(s) in {scope.name} are in the provider group "
+            f"'{PROVIDER_GROUP_LABELS[provider_group]}' on the source edition dated "
+            f"{as_of.strftime('%d %b %Y')}; {len(shortlist)} are shortlisted and ranked."
+        )
+    else:
+        headline = (
+            f"{considered} location(s) in {scope.name} show a supported opportunity signal in the "
+            f"{scope.window_days}-day window ending {window_end.strftime('%d %b %Y')}; "
+            f"{len(shortlist)} are shortlisted and ranked."
+        )
     movement = []
     if by_type.get("new_registration"):
         movement.append(f"{by_type['new_registration']} new registration(s)")
@@ -1181,7 +1391,14 @@ def _executive_summary(
         movement.append(f"{by_type['rating_changed']} rating change(s)")
     if by_type.get("rating_published"):
         movement.append(f"{by_type['rating_published']} new inspection report(s)")
+    if by_type.get("rating_current"):
+        movement.append(f"{by_type['rating_current']} location(s) with the selected current rating")
+    if by_type.get("not_yet_inspected"):
+        movement.append(f"{by_type['not_yet_inspected']} location(s) with no published rating")
+    if by_type.get("stale_inspection"):
+        movement.append(f"{by_type['stale_inspection']} location(s) with no inspection in the last 3 years or none recorded")
     return {
+        "provider_group": PROVIDER_GROUP_LABELS.get(provider_group) if provider_group else None,
         "territory": scope.name,
         "territory_kind": scope.kind.replace("_", " "),
         "date_generated": generated_on.isoformat(),

@@ -6,7 +6,7 @@ delivery path calls the service function directly, not this script.
 
 Example
 -------
-    python3 tools/generate_territory_opportunity_brief.py \\
+    python3 -m tools.generate_territory_opportunity_brief \\
         --kind local_authority --name "Isle of Wight" \\
         --locations-source _locations_detail.ndjson \\
         --providers-source _providers_detail.ndjson \\

@@ -33,8 +33,9 @@ describe("pricing page — final catalogue regression", () => {
   });
 
   it("routes one-offs to scoping and keeps continuing products gated", () => {
-    assert.match(ctaSrc, /mailto:outreach@caregist\.co\.uk/);
-    assert.match(ctaSrc, /ONE_OFF_CONTACT/);
+    assert.match(ctaSrc, /\/pricing\/weekly-digest\/enquiry\?region=/);
+    assert.doesNotMatch(ctaSrc, /mailto:outreach@caregist\.co\.uk/);
+    assert.ok(ctaSrc.indexOf('if (tierKey === "weekly-digest")') < ctaSrc.indexOf("async function handleUpgrade"));
     assert.match(ctaSrc, /GATED_TIERS/);
     assert.ok(
       ctaSrc.indexOf("GATED_TIERS.has(tierKey)") < ctaSrc.indexOf("if (!targetTier)"),
