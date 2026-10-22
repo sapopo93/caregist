@@ -10,6 +10,7 @@ touches overall_rating, which keeps mirroring the CQC API.
 from __future__ import annotations
 
 import argparse
+import csv
 import hashlib
 import os
 import sys
@@ -78,6 +79,7 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("ods", type=Path)
     ap.add_argument("--apply", action="store_true", help="write file_* columns")
+    ap.add_argument("--report", type=Path, help="write a per-location CSV of every API-vs-file disagreement")
     args = ap.parse_args(argv)
 
     sha = hashlib.sha256(args.ods.read_bytes()).hexdigest()
@@ -95,12 +97,22 @@ def main(argv=None) -> int:
         cur.execute("SELECT id, status, coalesce(overall_rating,'') FROM care_providers")
         db = {i: (s, r) for i, s, r in cur.fetchall()}
         outcome = Counter()
-        for lid, (rating, _) in ratings.items():
+        report = []
+        for lid, (rating, pub) in ratings.items():
             if lid not in db:
                 outcome["not_in_db"] += 1
                 continue
             status, api = db[lid]
-            outcome[(status, "agrees" if api == rating else "api_blank" if not api else "api_differs")] += 1
+            kind = "agrees" if api == rating else "api_blank" if not api else "api_differs"
+            outcome[(status, kind)] += 1
+            if kind != "agrees":
+                report.append([lid, status, api, rating, pub, kind])
+        if args.report:
+            with args.report.open("w", newline="") as fh:
+                w = csv.writer(fh)
+                w.writerow(["location_id", "status", "api_rating", "file_rating", "file_publication_date", "difference"])
+                w.writerows(sorted(report))
+            print(f"wrote {len(report)} disagreements to {args.report}")
         for k, v in sorted(outcome.items(), key=lambda kv: str(kv[0])):
             print(" ", k, v)
         if not args.apply:

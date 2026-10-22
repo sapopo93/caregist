@@ -12,6 +12,7 @@ interface Provider {
   county: string;
   postcode: string;
   overall_rating: string;
+  rating_source?: string | null;
   service_types: string;
   phone: string;
   number_of_beds: number | null;
@@ -54,6 +55,9 @@ export default function ProviderCard({ provider }: { provider: Provider }) {
           </div>
         </div>
         <p className="text-dusk text-sm mb-1">{location} {provider.postcode}</p>
+        {provider.rating_source === "cqc_file" && (
+          <p className="text-xs text-dusk mb-1">Rating per CQC&apos;s published ratings file (1 Oct 2026)</p>
+        )}
         {services && <p className="text-dusk text-sm mb-2">{services}</p>}
         <div className="flex gap-3 text-sm text-dusk items-center flex-wrap">
           {provider.phone && <span>{provider.phone}</span>}

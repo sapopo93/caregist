@@ -1,7 +1,25 @@
 import type { DirectoryOpportunity } from "./directory-constants.ts";
 
+/**
+ * Reconciled overall rating: the CQC API rating when it is a real published
+ * rating, otherwise the rating in CQC's published ratings file (migration 068,
+ * tools/import_cqc_latest_ratings.py), otherwise whatever the API stored.
+ * The API wins when both exist: it is the live feed.
+ */
+export const RECONCILED_RATING_SQL = `(CASE
+    WHEN lower(btrim(overall_rating)) IN ('outstanding', 'good', 'requires improvement', 'inadequate') THEN overall_rating
+    WHEN file_overall_rating IS NOT NULL THEN file_overall_rating
+    ELSE overall_rating
+  END)`;
+
+/** 'cqc_file' when the displayed rating came from the ratings file, else null. */
+export const RATING_SOURCE_SQL = `(CASE
+    WHEN lower(btrim(overall_rating)) IN ('outstanding', 'good', 'requires improvement', 'inadequate') THEN NULL
+    WHEN file_overall_rating IS NOT NULL THEN 'cqc_file'
+  END)`;
+
 export const NO_PUBLISHED_RATING_CLAUSE =
-  "lower(btrim(overall_rating)) = 'no published rating'";
+  `lower(btrim(${RECONCILED_RATING_SQL})) = 'no published rating'`;
 
 export function isNoPublishedRating(value: string | null | undefined) {
   return (value ?? "").trim().toLowerCase() === "no published rating";
@@ -12,11 +30,11 @@ export function buildOpportunityClause(opportunity: DirectoryOpportunity | "") {
     case "new_90":
       return "registration_date >= CURRENT_DATE - INTERVAL '90 days'";
     case "inadequate":
-      return "overall_rating = 'Inadequate'";
+      return `${RECONCILED_RATING_SQL} = 'Inadequate'`;
     case "requires_improvement":
-      return "lower(btrim(overall_rating)) = 'requires improvement'";
+      return `lower(btrim(${RECONCILED_RATING_SQL})) = 'requires improvement'`;
     case "not_yet_inspected":
-      return "lower(btrim(coalesce(overall_rating, ''))) IN ('', 'not yet inspected', 'no published rating')";
+      return `lower(btrim(coalesce(${RECONCILED_RATING_SQL}, ''))) IN ('', 'not yet inspected', 'no published rating')`;
     case "stale_inspection":
       return "(last_inspection_date IS NULL OR last_inspection_date < CURRENT_DATE - INTERVAL '3 years')";
     default:
@@ -42,5 +60,5 @@ export function buildDirectoryTextSearchClause(
 }
 
 export function buildRatingClause(paramIndex: number) {
-  return `lower(btrim(overall_rating)) = lower(btrim($${paramIndex}))`;
+  return `lower(btrim(${RECONCILED_RATING_SQL})) = lower(btrim($${paramIndex}))`;
 }

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import {
+  RECONCILED_RATING_SQL,
   buildDirectoryTextSearchClause,
   buildOpportunityClause,
   buildRatingClause,
@@ -13,17 +14,17 @@ describe("directory query clauses", () => {
   it("matches the stored Requires improvement casing without depending on case", () => {
     const clause = buildOpportunityClause("requires_improvement");
 
-    assert.match(clause, /lower\(btrim\(overall_rating\)\)/);
+    assert.match(clause, /lower\(btrim\(\(CASE/);
     assert.match(clause, /'requires improvement'/);
   });
 
   it("treats every unpublished rating representation as not yet inspected", () => {
     const clause = buildOpportunityClause("not_yet_inspected");
 
-    assert.match(clause, /coalesce\(overall_rating, ''\)/);
+    assert.match(clause, /coalesce\(\(CASE/);
     assert.match(clause, /'not yet inspected'/);
     assert.match(clause, /'no published rating'/);
-    assert.doesNotMatch(clause, /good|outstanding/i);
+    assert.doesNotMatch(clause.replace(RECONCILED_RATING_SQL, ""), /good|outstanding/i);
   });
 
   it("keeps the exact no-published-rating token separate from missing data", () => {
@@ -34,7 +35,7 @@ describe("directory query clauses", () => {
     assert.equal(isNoPublishedRating(null), false);
     assert.equal(
       NO_PUBLISHED_RATING_CLAUSE,
-      "lower(btrim(overall_rating)) = 'no published rating'",
+      `lower(btrim(${RECONCILED_RATING_SQL})) = 'no published rating'`,
     );
   });
 
@@ -48,7 +49,7 @@ describe("directory query clauses", () => {
   it("matches explicit rating filters without relying on display casing", () => {
     assert.equal(
       buildRatingClause(4),
-      "lower(btrim(overall_rating)) = lower(btrim($4))",
+      `lower(btrim(${RECONCILED_RATING_SQL})) = lower(btrim($4))`,
     );
   });
 });
