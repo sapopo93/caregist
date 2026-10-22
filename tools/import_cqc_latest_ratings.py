@@ -10,7 +10,6 @@ touches overall_rating, which keeps mirroring the CQC API.
 from __future__ import annotations
 
 import argparse
-import csv
 import hashlib
 import os
 import sys
