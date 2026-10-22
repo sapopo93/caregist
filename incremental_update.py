@@ -2538,7 +2538,7 @@ def _finalize_batch(args: argparse.Namespace, conn, cur) -> int:
                     "restartable": False,
                     # Per-batch record of how candidate deactivations were
                     # classified from the live API before any write.
-                    "deactivationConfirmation": deactivation_summary,
+                    "deactivationConfirmation": deactivation_record,
                 }
             ),
             pipeline_run_id,
@@ -2560,7 +2560,8 @@ def _finalize_batch(args: argparse.Namespace, conn, cur) -> int:
         f"deactivation candidates={deactivation_summary['candidates']} "
         f"confirmed deregistered={deactivation_summary[CLASSIFICATION_DEREGISTERED]}, "
         f"kept active: registered={deactivation_summary[CLASSIFICATION_REGISTERED]} "
-        f"unconfirmed={deactivation_summary[CLASSIFICATION_UNCONFIRMED]}"
+        f"unconfirmed={deactivation_summary[CLASSIFICATION_UNCONFIRMED]}, "
+        f"quarantined={len(deactivation_record['quarantined_ids'])}"
     )
     return 0
 

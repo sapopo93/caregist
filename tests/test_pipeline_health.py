@@ -60,6 +60,8 @@ class HealthConnection:
         yield
 
     async def fetchval(self, query: str, *args):
+        if "FROM reconciliation_quarantined_locations" in query:
+            return 0
         if "information_schema.tables" in query:
             return args[0] in self.tables
         if "information_schema.columns" in query:

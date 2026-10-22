@@ -53,6 +53,7 @@ def test_fresh_result_uses_only_persisted_authoritative_evidence():
         "coveragePercentage": 100.0,
         "successCount": 56_742,
         "failureCount": 0,
+        "quarantinedLocationCount": 0,
         "countsReconciled": True,
         "checksumSha256": "a" * 64,
         "latestAttempt": {
@@ -204,11 +205,12 @@ def test_missing_and_incomplete_evidence_are_unknown():
 
 
 class FreshnessConnection:
-    def __init__(self, *, schema_ready=True, watermark=None, attempt=None):
+    def __init__(self, *, schema_ready=True, watermark=None, attempt=None, quarantined_count=0):
         self.schema_ready = schema_ready
         self.watermark = watermark
         self.attempt = attempt
         self.queries = []
+        self.quarantined_count = quarantined_count
 
     @asynccontextmanager
     async def transaction(self, **options):
@@ -217,6 +219,8 @@ class FreshnessConnection:
 
     async def fetchval(self, query, *args):
         self.queries.append(query)
+        if "SELECT count(*) FROM reconciliation_quarantined_locations" in query:
+            return self.quarantined_count
         assert args[0] == "pipeline_runs"
         return self.schema_ready
 
@@ -225,6 +229,19 @@ class FreshnessConnection:
         if "counts_reconciled = TRUE" in query:
             return self.watermark
         return self.attempt
+
+
+@pytest.mark.asyncio
+async def test_persistent_quarantine_prevents_a_false_fresh_claim():
+    row = _run()
+    conn = FreshnessConnection(watermark=row, attempt=row, quarantined_count=3)
+    result = await get_cqc_freshness(conn, now=NOW)
+    assert result["status"] == "partial"
+    assert result["reason"] == "unresolved_quarantined_locations"
+    assert result["quarantinedLocationCount"] == 3
+    assert result["countsReconciled"] is True
+    assert "3 locations remain quarantined" in result["message"]
+    assert "completed without collection errors" not in result["message"]
 
 
 @pytest.mark.asyncio
@@ -240,7 +257,8 @@ async def test_query_selects_only_completed_reconciled_authoritative_watermark()
     assert "counts_reconciled = TRUE" in conn.queries[1]
     assert "reconciled_at IS NOT NULL" in conn.queries[1]
     assert "source_retrieved_at IS NOT NULL" in conn.queries[1]
-    assert "care_providers" not in " ".join(conn.queries)
+    assert "care_providers" not in " ".join(conn.queries[:3])
+    assert "q.resolved_at IS NULL" in conn.queries[3]
 
 
 @pytest.mark.asyncio
