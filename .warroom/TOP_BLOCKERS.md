@@ -1,3 +1,14 @@
+## 2026-10-22 quarantine release preparation
+
+Production read-only verification confirms migration 067 is already applied, with three unresolved quarantined location IDs and 59,382 stored location rows. `db/apply_migrations.py --target production --check` reports no pending migrations for this release candidate. No production migration or source-row mutation was performed. Current-main integration adds persistent quarantine to pipeline evidence/logs and keeps source freshness partial while quarantined ACTIVE records remain; Data Status exposes their count. Local finalizer tests include resolved, manifest-present, inactive, missing-provider and missing-schema cases. Deployment and preview activation still require the exact candidate's CI and independent review. This supersedes older statements below that migration 067 was unapplied; commercial gates remain closed.
+
+## 2026-10-18 current blockers
+
+1. Durable quarantine for the three HTTP-404 location records is committed in [PR #94](https://github.com/sapopo93/caregist/pull/94), but is not deployed/applied; until then a future finalizer can query them again. The run that just completed logged only the unconfirmed count.
+2. One manifest location had unavailable detail. Production source health is therefore `partial` despite reconciled counts and a 100% location-ID coverage count.
+3. Checkout is still not ready and delivery is disabled. Human-led sales must use claims backed by verified source evidence; unresolved identities/statuses must be omitted.
+4. Independent Grok retest and DeepSeek challenge are not evidenced for this run; producer success alone is not a green release gate.
+
 ## 2026-10-09 buying audit — current blockers
 
 1. Product promises are not proven by the dormant generator: selected provider/service criteria and per-entry qualification questions need fulfilment evidence.

@@ -850,13 +850,20 @@ def confirm_deactivation_candidates(
         try:
             detail = fetch(base_url, api_key, location_id)
         except Exception as exc:  # noqa: BLE001 - one unconfirmed id must not abort the batch
+            # Preserve only the HTTP status when the transport error exposes
+            # one. Never copy upstream response bodies, URLs, or credentials
+            # into the reconciliation log or durable quarantine record.
+            status_match = re.search(r"\bstatus\s*[=:]\s*(\d{3})\b", str(exc), re.IGNORECASE)
+            failure = type(exc).__name__
+            if status_match:
+                failure += f", HTTP {status_match.group(1)}"
             decisions.append(
                 DeactivationDecision(
                     str(location_id),
                     DEACTIVATION_KEEP,
                     CLASSIFICATION_UNCONFIRMED,
                     None,
-                    f"detail fetch failed ({type(exc).__name__}); not deactivated",
+                    f"detail fetch failed ({failure}); not deactivated",
                 )
             )
             continue
@@ -2216,7 +2223,30 @@ def _finalize_batch(args: argparse.Namespace, conn, cur) -> int:
             raise ChangesFetchError("Batch finalization refused: same-date source checksum conflicts with the watermark.")
 
     cur.execute(
-        "SELECT id FROM care_providers WHERE UPPER(status) = 'ACTIVE' AND NOT (id = ANY(%s)) ORDER BY id",
+        """
+        SELECT q.location_id
+        FROM reconciliation_quarantined_locations q
+        JOIN care_providers p ON p.id::text = q.location_id
+        WHERE q.resolved_at IS NULL
+          AND UPPER(p.status) = 'ACTIVE'
+          AND NOT (p.id = ANY(%s))
+        ORDER BY q.location_id
+        """,
+        (ids,),
+    )
+    quarantined_ids = [str(row[0]) for row in cur.fetchall()]
+    cur.execute(
+        """
+        SELECT p.id::text
+        FROM care_providers p
+        WHERE UPPER(p.status) = 'ACTIVE'
+          AND NOT (p.id = ANY(%s))
+          AND NOT EXISTS (
+              SELECT 1 FROM reconciliation_quarantined_locations q
+              WHERE q.location_id = p.id::text AND q.resolved_at IS NULL
+          )
+        ORDER BY p.id
+        """,
         (ids,),
     )
     candidate_deactivation_ids = [str(row[0]) for row in cur.fetchall()]
@@ -2237,6 +2267,13 @@ def _finalize_batch(args: argparse.Namespace, conn, cur) -> int:
     deactivation_summary = summarise_deactivation_decisions(decisions)
     deactivation_ids = [decision.location_id for decision in decisions if decision.deactivates]
     unconfirmed_ids = list(deactivation_summary["unconfirmed_ids"])
+    for decision in decisions:
+        if decision.classification == CLASSIFICATION_UNCONFIRMED:
+            _progress(f"  unconfirmed location {decision.location_id}: {decision.detail}")
+    # Operator-acknowledged unconfirmed candidates become durable exceptions.
+    # They remain ACTIVE and are explicitly carried into the identity check on
+    # later runs, so one broken source detail endpoint cannot block the whole
+    # directory forever. Only the current manual acknowledgement can add rows.
     # FIX 3: only ids the live API affirmatively confirmed as still REGISTERED
     # may complete the expectation. A candidate whose status was missing,
     # non-string, malformed, unfamiliar ("Suspended") or unreadable (API error)
@@ -2259,6 +2296,23 @@ def _finalize_batch(args: argparse.Namespace, conn, cur) -> int:
                 "unconfirmed and finalize anyway."
             )
         acknowledged_unconfirmed = len(unconfirmed_ids)
+        for decision in decisions:
+            if decision.classification != CLASSIFICATION_UNCONFIRMED:
+                continue
+            cur.execute(
+                """
+                INSERT INTO reconciliation_quarantined_locations
+                    (location_id, source_batch_id, reason, last_error, updated_at)
+                VALUES (%s, %s, 'operator_acknowledged_unconfirmed', %s, NOW())
+                ON CONFLICT (location_id) DO UPDATE SET
+                    source_batch_id = EXCLUDED.source_batch_id,
+                    reason = EXCLUDED.reason,
+                    last_error = EXCLUDED.last_error,
+                    updated_at = NOW(),
+                    resolved_at = NULL
+                """,
+                (decision.location_id, str(batch_id), decision.detail),
+            )
     # Every ACTIVE row after this transaction must be accounted for by exactly
     # one of: a manifest location, an API-confirmed still-registered candidate,
     # or an unconfirmed candidate the operator explicitly acknowledged (recorded
@@ -2273,10 +2327,12 @@ def _finalize_batch(args: argparse.Namespace, conn, cur) -> int:
     # real divergence through — the failure mode this guard exists to catch.
     expected_active = (
         active_manifest_covered
+        + len(quarantined_ids)
         + confirmed_still_registered
         + acknowledged_unconfirmed
     )
     expected_active_ids = set(active_manifest_ids)
+    expected_active_ids.update(quarantined_ids)
     expected_active_ids.update(deactivation_summary["confirmed_still_registered_ids"])
     if acknowledged_unconfirmed:
         expected_active_ids.update(unconfirmed_ids)
@@ -2419,6 +2475,7 @@ def _finalize_batch(args: argparse.Namespace, conn, cur) -> int:
         # active locations the batch could not confirm.
         "unconfirmed_count": len(unconfirmed_ids),
         "unconfirmed_ids": unconfirmed_ids,
+        "quarantined_ids": quarantined_ids + unconfirmed_ids,
         "acknowledged": bool(acknowledged_unconfirmed),
         "expected_active_after": expected_active,
         "active_after": active_after,
@@ -2481,7 +2538,7 @@ def _finalize_batch(args: argparse.Namespace, conn, cur) -> int:
                     "restartable": False,
                     # Per-batch record of how candidate deactivations were
                     # classified from the live API before any write.
-                    "deactivationConfirmation": deactivation_summary,
+                    "deactivationConfirmation": deactivation_record,
                 }
             ),
             pipeline_run_id,
@@ -2503,7 +2560,8 @@ def _finalize_batch(args: argparse.Namespace, conn, cur) -> int:
         f"deactivation candidates={deactivation_summary['candidates']} "
         f"confirmed deregistered={deactivation_summary[CLASSIFICATION_DEREGISTERED]}, "
         f"kept active: registered={deactivation_summary[CLASSIFICATION_REGISTERED]} "
-        f"unconfirmed={deactivation_summary[CLASSIFICATION_UNCONFIRMED]}"
+        f"unconfirmed={deactivation_summary[CLASSIFICATION_UNCONFIRMED]}, "
+        f"quarantined={len(deactivation_record['quarantined_ids'])}"
     )
     return 0
 

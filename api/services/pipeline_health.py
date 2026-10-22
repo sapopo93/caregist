@@ -397,6 +397,7 @@ async def get_pipeline_health(conn: asyncpg.Connection) -> dict[str, Any]:
         "activeLocationCount": active_location_count,
         "countsReconciled": counts_reconciled,
         "freshnessStatus": authoritative_freshness["status"],
+        "quarantinedLocationCount": authoritative_freshness.get("quarantinedLocationCount"),
         "reason": authoritative_freshness["reason"],
         "ageHours": round(source_age.total_seconds() / 3600, 1) if source_age else None,
         "slaHours": int(SOURCE_FRESHNESS_SLA.total_seconds() // 3600),

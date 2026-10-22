@@ -396,7 +396,63 @@ async def test_finalizer_records_acknowledged_unconfirmed_candidates_on_the_batc
         assert confirmation["unconfirmed_count"] == len(ROGUE_IDS)
         assert confirmation["expected_active_after"] == 102
         assert confirmation["active_after"] == 102
+        assert await async_conn.fetchval(
+            "SELECT COUNT(*) FROM reconciliation_quarantined_locations WHERE location_id = ANY($1)",
+            ROGUE_IDS,
+        ) == len(ROGUE_IDS)
         assert await _active_count(async_conn) == 102
+    finally:
+        await async_conn.close()
+
+
+async def test_finalizer_skips_persistently_quarantined_active_locations(
+    tmp_path, fresh_db, monkeypatch
+):
+    """A reviewed exception remains ACTIVE and no longer blocks later batches."""
+    batch_id = await _seed_rogue_candidates(
+        tmp_path, fresh_db, {ROGUE_IDS[0]: {"registrationStatus": "Registered"}}
+    )
+    async_conn = await asyncpg.connect(fresh_db)
+    try:
+        await async_conn.execute(
+            """
+            INSERT INTO reconciliation_quarantined_locations
+                (location_id, source_batch_id, reason, last_error)
+            VALUES ($1, $2, 'operator_acknowledged_unconfirmed', 'detail fetch failed (HTTP 404)')
+            """,
+            ROGUE_IDS[0],
+            batch_id,
+        )
+    finally:
+        await async_conn.close()
+
+    def unexpected_fetch(*_args):
+        raise AssertionError("quarantined location was fetched again")
+
+    monkeypatch.setattr("incremental_update.fetch_location_detail", unexpected_fetch)
+    assert _run_finalize(
+        fresh_db, batch_id, tmp_path, dry_run=False, api_key="integration-test-key"
+    ) == 0
+
+    async_conn = await asyncpg.connect(fresh_db)
+    try:
+        row = await async_conn.fetchrow(
+            "SELECT status, deactivation_confirmation FROM reconciliation_batches WHERE id = $1",
+            batch_id,
+        )
+        assert row["status"] == "completed"
+        confirmation = json.loads(row["deactivation_confirmation"])
+        assert confirmation["quarantined_ids"] == [ROGUE_IDS[0]]
+        assert confirmation["unconfirmed_ids"] == []
+        checkpoint = await async_conn.fetchval(
+            "SELECT p.checkpoint_state FROM pipeline_runs p JOIN reconciliation_batches b ON b.pipeline_run_id=p.id WHERE b.id=$1",
+            batch_id,
+        )
+        checkpoint = json.loads(checkpoint) if isinstance(checkpoint, str) else checkpoint
+        assert checkpoint["deactivationConfirmation"]["quarantined_ids"] == [ROGUE_IDS[0]]
+        assert await async_conn.fetchval(
+            "SELECT UPPER(status) FROM care_providers WHERE id = $1", ROGUE_IDS[0]
+        ) == "ACTIVE"
     finally:
         await async_conn.close()
 
@@ -673,3 +729,45 @@ async def test_finalizer_records_identity_verification_on_the_success_path(
         assert await _active_count(async_conn) == 101
     finally:
         await async_conn.close()
+
+
+@pytest.mark.parametrize("case", ["resolved", "in_manifest", "inactive", "missing"])
+async def test_quarantine_only_exempts_missing_active_unresolved_locations(tmp_path, fresh_db, monkeypatch, case):
+    payloads = {ROGUE_IDS[0]: {"registrationStatus": "Deregistered"}}
+    batch_id = await _seed_rogue_candidates(tmp_path, fresh_db, payloads)
+    conn = await asyncpg.connect(fresh_db)
+    try:
+        location_id = MANIFEST_IDS[0] if case == "in_manifest" else "1-not-in-db" if case == "missing" else ROGUE_IDS[0]
+        await conn.execute(
+            "INSERT INTO reconciliation_quarantined_locations (location_id,reason,last_error,resolved_at) VALUES ($1,'test','synthetic', CASE WHEN $2 THEN NOW() END)",
+            location_id, case == "resolved",
+        )
+        if case == "inactive":
+            await conn.execute("UPDATE care_providers SET status='INACTIVE' WHERE id=$1", location_id)
+    finally:
+        await conn.close()
+    monkeypatch.setattr("incremental_update.fetch_location_detail", _detail_fetcher(payloads))
+    assert _run_finalize(fresh_db, batch_id, tmp_path, dry_run=False, api_key="integration-test-key") == 0
+    conn = await asyncpg.connect(fresh_db)
+    try:
+        assert await _active_count(conn) == 100
+        record = await conn.fetchval("SELECT deactivation_confirmation FROM reconciliation_batches WHERE id=$1", batch_id)
+        assert json.loads(record)["quarantined_ids"] == []
+    finally:
+        await conn.close()
+
+
+async def test_finalizer_refuses_when_quarantine_schema_is_missing(tmp_path, fresh_db):
+    batch_id = await _seed_rogue_candidates(tmp_path, fresh_db, {})
+    conn = await asyncpg.connect(fresh_db)
+    try:
+        await conn.execute("DROP TABLE reconciliation_quarantined_locations")
+    finally:
+        await conn.close()
+    with pytest.raises(psycopg2.errors.UndefinedTable):
+        _run_finalize(fresh_db, batch_id, tmp_path, dry_run=False, api_key="integration-test-key")
+    conn = await asyncpg.connect(fresh_db)
+    try:
+        assert await conn.fetchval("SELECT status FROM reconciliation_batches WHERE id=$1", batch_id) != "completed"
+    finally:
+        await conn.close()
