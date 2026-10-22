@@ -14,42 +14,42 @@
       "lookup_key": "territory_opportunity_brief_gbp_oneoff_v2",
       "sale_channel": "self-serve-gated",
       "status": "live_price_verified_fulfilment_blocked",
-      "status_note": "Read-only Stripe API verification on 2026-09-12 confirms an active GBP 745 one-time live Price and Product. The expected lookup_key above is NOT set on the live Price (observed null). No GBP 745 test Product/Price exists in the complete test catalogue listing. The active Payment Link has no scope fields, order metadata or terms acceptance and is not wired to automated Brief fulfilment. It enables automatic tax and disables invoice creation, so the final buyer total and invoice promise require verification. Keep self-serve checkout closed until approved terms, source readiness, delivery and end-to-end release gates pass. Superseded Product and Price active states are recorded separately below; archiving a Product did not archive its Prices.",
+      "status_note": "Founder-authorised Stripe correction verified 2026-09-13: active test and live GBP 745 one-time Prices use the v2 lookup key. H-Kay Limited is not VAT registered; final price GBP 745, no automatic tax. All recorded erroneous GBP 795 Prices are inactive. The live Payment Link remains a manual payment route without automated scope/order binding. Keep automated checkout closed pending source readiness, terms, full delivery testing and independent review. This revised manifest awaits approval of its exact digest.",
       "payment_link": {
         "url": "https://buy.stripe.com/bJe8wI7Xhd8YdYi2vl3AY04",
         "confirmed": "2026-09-12",
         "verified_display": "Territory Opportunity Brief £745.00",
         "id": "plink_1UEkzy4mijLHzRRkWjk3pFVW",
-        "api_checked_at": "2026-09-12T09:01:51.186586+00:00",
+        "api_checked_at": "2026-09-13",
         "active": true,
         "livemode": true,
         "price_id": "price_1UDzJP4mijLHzRRkfYJG3OZZ",
         "quantity": 1,
         "terms_of_service": "none",
         "invoice_creation_enabled": false,
-        "automatic_tax_enabled": true,
+        "automatic_tax_enabled": false,
         "order_metadata_present": false,
         "scope_fields_present": false
       },
       "superseded_prices": [
         {
           "unit_amount": 79500,
-          "reason": "Erroneous GBP 795 launch price. API verification 2026-09-12: live Product archived but live Price active; test Product and Price both active. Not proven fully deactivated.",
+          "reason": "Erroneous GBP 795 price; Product, Price and Payment Link verified inactive on 2026-09-13.",
           "test": {
             "product_id": "prod_VE89BnRzZPq0Qq",
             "price_id": "price_1UDft34mijLHzRRklUMJR6F2",
-            "product_active": true,
-            "price_active": true,
+            "product_active": false,
+            "price_active": false,
             "payment_link": {
               "id": "plink_1UDjtS4mijLHzRRkX9usxmyr",
-              "active": true
+              "active": false
             }
           },
           "live": {
             "product_id": "prod_VE7HY2DdEmrb8C",
             "price_id": "price_1UDf2t4mijLHzRRkRqbNA1rd",
             "product_active": false,
-            "price_active": true,
+            "price_active": false,
             "payment_link": {
               "id": "plink_1UDjiX4mijLHzRRk9XSMklME",
               "active": false
@@ -58,12 +58,12 @@
         },
         {
           "unit_amount": 79500,
-          "reason": "Third duplicate recovered from complete live Product listing on 2026-09-12. Product archived; Price still active.",
+          "reason": "Erroneous GBP 795 price; Product, Price and Payment Link verified inactive on 2026-09-13.",
           "live": {
             "product_id": "prod_VE1CdaKNxE0yVP",
             "price_id": "price_1UDZAQ4mijLHzRRkvwXjtaQK",
             "product_active": false,
-            "price_active": true,
+            "price_active": false,
             "payment_link": {
               "id": "plink_1UDZBR4mijLHzRRkdm966UHK",
               "active": false
@@ -73,13 +73,13 @@
       ],
       "stripe": {
         "test": {
-          "product_id": null,
-          "price_id": null
+          "product_id": "prod_VFgg1p9PhKCIS4",
+          "price_id": "price_1UFBJE4mijLHzRRkqw0jLNPW"
         },
         "live": {
           "product_id": "prod_VESD16ql3keycy",
           "price_id": "price_1UDzJP4mijLHzRRkfYJG3OZZ",
-          "observed_lookup_key": null
+          "observed_lookup_key": "territory_opportunity_brief_gbp_oneoff_v2"
         }
       }
     }
