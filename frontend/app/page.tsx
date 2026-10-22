@@ -74,7 +74,12 @@ export default async function HomePage() {
     getDirectoryOpportunityStats(),
   ]);
 
-  const getStat = (key: StatKey) => formatCount(Number(stats[key] ?? 0));
+  const apiInadequate = Number(stats.inadequate ?? 0);
+  const fileInadequate = Number(stats.inadequateInCqcFile ?? 0);
+  const getStat = (key: StatKey) =>
+    key === "inadequate" && fileInadequate > apiInadequate
+      ? formatCount(fileInadequate)
+      : formatCount(Number(stats[key] ?? 0));
 
   return (
     <div className="bg-parchment">
@@ -123,6 +128,13 @@ export default async function HomePage() {
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-clay">{item.label}</p>
                 <p className="mt-3 text-4xl font-extrabold text-bark">{getStat(item.valueKey)}</p>
                 <p className="mt-2 text-sm leading-6 text-dusk">{item.note}</p>
+                {item.valueKey === "inadequate" && fileInadequate > apiInadequate ? (
+                  <p className="mt-2 text-xs leading-5 text-dusk">
+                    Per CQC&apos;s published ratings file (1 October 2026). CQC&apos;s public API currently returns a
+                    rating for only {formatCount(apiInadequate)} of these locations, so API-based counts understate it.
+                    Some CQC views show a higher figure that we have not been able to reproduce.
+                  </p>
+                ) : null}
               </Link>
             ))}
           </div>
