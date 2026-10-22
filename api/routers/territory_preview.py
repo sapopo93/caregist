@@ -60,7 +60,7 @@ async def _quarantine_revision(conn) -> str:
 
 @router.get("/territories", dependencies=[Depends(_require_enabled), Depends(check_public_rate_limit)])
 async def list_territories() -> dict:
-    async with get_connection() as conn:
+    async with get_connection() as conn, conn.transaction(isolation="repeatable_read", readonly=True):
         key = ("territories", await _quarantine_revision(conn))
         cached = _cache_get(key)
         if cached is not None:
@@ -86,7 +86,7 @@ async def preview(
     column = q.SCOPE_COLUMNS[kind]
     slug = q.SERVICE_SLUGS[service] if service else None
     aliases = list(resolve_service_filter(slug)) if slug else None
-    async with get_connection() as conn:
+    async with get_connection() as conn, conn.transaction(isolation="repeatable_read", readonly=True):
         quarantine_rev = await _quarantine_revision(conn)
         freshness = await get_cqc_freshness(conn)
         key = (

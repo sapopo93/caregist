@@ -150,7 +150,7 @@ export function evaluateTerritoryCoverage(
   const canCheckout = false;
 
   const headline = `${providerCount} matching ${label} in ${scope.region}.`;
-  let detail = `The published CQC record currently contains ${providerCount} active providers matching the selected scope.`;
+  let detail = `The published CQC record currently contains ${providerCount} active locations matching the selected scope.`;
   if (verdict === "ready") {
     detail += " Contact us to review the scope and available evidence before agreeing a brief.";
   } else if (verdict === "partial") {

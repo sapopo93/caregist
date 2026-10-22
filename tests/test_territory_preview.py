@@ -82,6 +82,11 @@ REV = "3:2026-10-18 01:06:48+00"
 
 def _conn(*, quarantine=True, scope_row=SCOPE_ROW, counts=COUNTS_DATED, regs=None, ratings=None, territories=None):
     conn = AsyncMock()
+    @asynccontextmanager
+    async def transaction(**kwargs):
+        assert kwargs == {"isolation": "repeatable_read", "readonly": True}
+        yield
+    conn.transaction = transaction
     if territories is not None:
         conn.fetchval = AsyncMock(side_effect=[quarantine, REV] if quarantine else [False])
     else:
@@ -265,7 +270,7 @@ async def test_partial_freshness_qualifies_every_claim():
     assert body["brief"]["provisional"] is True
     assert "provisional" in body["brief"]["note"]
     assert src["notice"] == (
-        "Our latest full check of the CQC register hasn't finished, so these figures are provisional and may be incomplete."
+        "Our copy of the CQC register still has incomplete or unconfirmed source evidence, so these figures are provisional and may be incomplete."
     )
     assert body["caveats"][0] == src["notice"]
 
@@ -401,9 +406,11 @@ def _body(**kw):
     return build_preview(scope, **args)
 
 
-def test_small_territory_says_it_does_not_fit_before_payment():
+def test_small_territory_requires_review_instead_of_an_unconditional_minimum():
     body = _body(organisations=12, locations=20, events=[])
-    assert body["brief"]["fits"] is False
+    assert body["brief"]["fits"] is None
+    assert body["brief"]["min_organisations"] is None
+    assert "exact shortlist size" in body["brief"]["note"]
     assert "before any payment" in body["brief"]["note"]
     assert body["examples"] == []
 

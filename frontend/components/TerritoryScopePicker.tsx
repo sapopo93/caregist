@@ -95,7 +95,7 @@ export default function TerritoryScopePicker() {
         `Region: ${result.scope.region}`,
         `Buyer type: ${selectedBuyer?.label ?? result.scope.buyerType}`,
         `Service type: ${result.scope.serviceType || "All"}`,
-        `Providers in scope: ${result.coverage.providerCount}`,
+        `Locations in scope: ${result.coverage.providerCount}`,
         `Coverage verdict: ${result.coverage.verdict}`,
         `Advertised brief price: £${TERRITORY_BRIEF_PRICE_GBP}. Please confirm suitability and any custom scope before work starts.`,
       ].join("\n")
@@ -215,11 +215,8 @@ export default function TerritoryScopePicker() {
           >
             <p className={styles.scopeSummary}>{scopeSummary}</p>
             <p className={styles.resultDetail}>
-              {result.coverage.providerCount < 12
-                ? "Too few matching organisations for the proposed brief. Try another region or remove the service filter."
-                : result.coverage.providerCount < 25
-                  ? "This scope has fewer than 25 matching organisations. A review is needed to establish whether a smaller brief is suitable."
-                  : "This count is a starting point for reviewing your scope. It does not verify a ranked shortlist or confirm delivery availability."}
+              This is a count of matching locations. A provider may have several locations.
+              We confirm suitability and the exact number of distinct providers in the Brief before any payment.
             </p>
             {result.coverage.stale ? (
               <p

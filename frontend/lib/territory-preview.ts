@@ -35,7 +35,7 @@ export interface TerritoryPreview {
   window: { start: string; end: string; days: number };
   signals: { new_registrations: number; rating_changes: RatingChanges; organisations_with_signals: number };
   examples: TerritoryPreviewExample[];
-  brief: { fits: boolean; provisional: boolean; min_organisations: number; max_organisations: number; note: string };
+  brief: { fits: boolean | null; provisional: boolean; min_organisations: number | null; max_organisations: number; note: string };
   source: {
     /** Plain-English qualification; null when source coverage is confirmed. */
     notice: string | null;

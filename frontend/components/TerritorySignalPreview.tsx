@@ -36,6 +36,10 @@ export default function TerritorySignalPreview({ region, serviceType }: { region
   useEffect(() => {
     if (!path) return;
     const controller = new AbortController();
+    const timeout = setTimeout(() => {
+      controller.abort();
+      setState({ status: "error" });
+    }, 15000);
     setState({ status: "loading" });
     fetch(path, { signal: controller.signal })
       .then(async (res) => {
@@ -51,8 +55,12 @@ export default function TerritorySignalPreview({ region, serviceType }: { region
       })
       .catch((err: unknown) => {
         if ((err as Error)?.name !== "AbortError") setState({ status: "error" });
-      });
-    return () => controller.abort();
+      })
+      .finally(() => clearTimeout(timeout));
+    return () => {
+      clearTimeout(timeout);
+      controller.abort();
+    };
   }, [path, region, serviceType]);
 
   if (!path || state.status === "idle" || state.status === "off") return null;
@@ -121,10 +129,8 @@ export default function TerritorySignalPreview({ region, serviceType }: { region
         </ol>
       ) : (
         <p className={styles.resultDetail}>
-          {ratings
-            ? "No newly registered locations are recorded for this scope in the window, and rating changes cannot be counted yet."
-            : "No newly registered locations or rating changes are recorded for this scope in the window."}{" "}
-          A Brief can still rank providers on their current record; we discuss that before any payment.
+          There are no public new-registration examples to show for this scope in the window.
+          Counts above may include records that cannot be named here. We discuss Brief suitability before any payment.
         </p>
       )}
 

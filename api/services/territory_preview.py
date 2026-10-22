@@ -25,7 +25,6 @@ from api.service_taxonomy import taxonomy
 
 WINDOW_DAYS = 90
 EXAMPLE_COUNT = 3
-BRIEF_MIN_ORGANISATIONS = 25
 BRIEF_MAX_ORGANISATIONS = 50
 CQC_LOCATION_URL = "https://www.cqc.org.uk/location/{location_id}"
 
@@ -141,7 +140,7 @@ def rating_availability(dated: int, undated: int) -> dict[str, Any]:
 
 
 _FRESHNESS_NOTICES = {
-    "partial": "Our latest full check of the CQC register hasn't finished",
+    "partial": "Our copy of the CQC register still has incomplete or unconfirmed source evidence",
     "stale": "Our latest full check of the CQC register is out of date",
 }
 
@@ -198,11 +197,10 @@ def build_preview(
         }
         for e in pick_examples(events)
     ]
-    fits = organisations >= BRIEF_MIN_ORGANISATIONS
-    if fits:
-        note = "Enough distinct providers for a 25 to 50 provider Brief, subject to the agreed scope."
+    if organisations:
+        note = "A Brief can include up to 50 providers. We confirm suitability and the exact shortlist size before any payment."
     else:
-        note = "Fewer than 25 distinct providers match. A Brief would need a wider scope; we confirm this before any payment."
+        note = "No distinct providers match. We need to review or widen the scope before any payment."
     if not confirmed:
         note += " These figures are provisional."
 
@@ -233,9 +231,9 @@ def build_preview(
         },
         "examples": examples,
         "brief": {
-            "fits": fits,
+            "fits": None if organisations else False,
             "provisional": not confirmed,
-            "min_organisations": BRIEF_MIN_ORGANISATIONS,
+            "min_organisations": None,
             "max_organisations": BRIEF_MAX_ORGANISATIONS,
             "note": note,
         },
