@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { trackEvent } from "@/lib/analytics";
 import { PLAN_PRIMARY_CTA } from "@/lib/caregist-config";
+import { DEFAULT_REGION_OPTIONS } from "@/lib/directory-constants";
 
 const TIER_RANK: Record<string, number> = {
   free: 0,
@@ -16,15 +17,6 @@ const TIER_RANK: Record<string, number> = {
   starter: 0,
   pro: 0,
   business: 0,
-};
-
-const ONE_OFF_CONTACT: Record<string, { subject: string }> = {
-  "territory-opportunity-brief": {
-    subject: "Territory Opportunity Brief sample request",
-  },
-  "weekly-digest": {
-    subject: "Weekly Digest request",
-  },
 };
 
 const GATED_TIERS = new Set([
@@ -62,6 +54,7 @@ export default function PricingCTA({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [businessUseConfirmed, setBusinessUseConfirmed] = useState(false);
+  const [digestRegion, setDigestRegion] = useState("");
 
   useEffect(() => {
     const stored = localStorage.getItem("caregist_user");
@@ -92,18 +85,35 @@ export default function PricingCTA({
     );
   }
 
-  const oneOffContact = ONE_OFF_CONTACT[tierKey];
-  if (oneOffContact) {
+  if (tierKey === "weekly-digest") {
     return (
       <div>
-        <Link
-          href={`mailto:outreach@caregist.co.uk?subject=${encodeURIComponent(oneOffContact.subject)}&body=${encodeURIComponent("Please review availability for the £150 four-week Weekly Digest pilot. This is an enquiry, not an order.\n\nEngland region:\nProvider group:\nPreferred start date:")}`}
+        <label htmlFor="digest-region" className="mb-2 block text-sm font-medium text-bark">
+          Which England region would you like covered?
+        </label>
+        <select
+          id="digest-region"
+          value={digestRegion}
+          onChange={(event) => setDigestRegion(event.target.value)}
+          aria-describedby="digest-region-help"
+          className="mb-2 block w-full max-w-md rounded-lg border border-stone bg-cream px-3 py-3 text-bark focus:outline-none focus:ring-2 focus:ring-clay"
+        >
+          <option value="">Choose an England region</option>
+          {DEFAULT_REGION_OPTIONS.map((region) => (
+            <option key={region} value={region}>{region}</option>
+          ))}
+        </select>
+        <p id="digest-region-help" className="mb-4 text-sm text-dusk">
+          The £150 pilot covers one region for four weeks. Choose a region, then continue to prepare your enquiry. We confirm availability before any payment.
+        </p>
+        {digestRegion ? <Link
+          href={`/pricing/weekly-digest/enquiry?region=${encodeURIComponent(digestRegion)}`}
           className="cta-primary"
           onClick={() => void trackEvent("one_off_scope_click", "pricing_card", { tier: tierKey })}
         >
           {ctaLabel}
-        </Link>
-        <p className="mt-3 text-sm text-dusk">No email app? Email <strong>outreach@caregist.co.uk</strong> from your webmail with your England region, provider group and preferred start date. We confirm availability before any payment.</p>
+        </Link> : <button disabled className="cta-primary opacity-50">{ctaLabel}</button>}
+        <p className="mt-3 text-sm text-dusk">The next page lets you copy your enquiry into webmail or open your email app. This is an enquiry, not an order.</p>
       </div>
     );
   }
