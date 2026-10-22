@@ -41,7 +41,16 @@ _TSVECTOR = """to_tsvector('english',
 # The guard fails closed: a NULL state renders nothing. Every projection, filter,
 # sort key and facet below is built from these constants, so there is one
 # definition of "the rating this row may publish".
-SERVED_RATING = "CASE WHEN rating_state = 'rated' THEN overall_rating END"
+#
+# Reconciliation (migration 068): when the API published no current rating for a
+# row but CQC's own published ratings file lists one, that file rating is served
+# -- the API still wins whenever it has a rating. ``file_overall_rating`` only
+# ever holds a published-vocabulary value copied verbatim from the file by
+# tools/import_cqc_latest_ratings.py, so nothing is inferred.
+SERVED_RATING = (
+    "CASE WHEN rating_state = 'rated' THEN overall_rating "
+    "WHEN file_overall_rating IS NOT NULL THEN file_overall_rating END"
+)
 SERVED_RATING_COLUMN = f"{SERVED_RATING} AS overall_rating"
 
 # The companion of SERVED_RATING: *why* no rating is rendered.
@@ -54,7 +63,10 @@ SERVED_RATING_COLUMN = f"{SERVED_RATING} AS overall_rating"
 # already recorded per row; this exposes it rather than re-deriving or inventing
 # it, and it is NULL exactly when a rating IS served, so the two fields are
 # never both populated and never both empty.
-SERVED_RATING_ABSENCE = "CASE WHEN rating_state = 'rated' THEN NULL ELSE rating_state END"
+SERVED_RATING_ABSENCE = (
+    "CASE WHEN rating_state = 'rated' OR file_overall_rating IS NOT NULL "
+    "THEN NULL ELSE rating_state END"
+)
 SERVED_RATING_ABSENCE_COLUMN = f"{SERVED_RATING_ABSENCE} AS rating_absence_reason"
 SERVED_RATING_NORMALISED = f"LOWER(BTRIM({SERVED_RATING}))"
 #: The published vocabulary, taken from the module the ingestion classifier and
