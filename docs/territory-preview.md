@@ -1,87 +1,34 @@
-# Free Territory Brief preview
+# Free territory preview
 
-Status: **prototype, off by default.** Built 19 October 2026 on branch `feature/territory-preview` (PR #96). An independent review on 19 October requested changes; the five findings are addressed below. Not re-reviewed, not deployed, not approved for public use.
+The public, read-only preview on `/pricing/territory` reports distinct providers, registered locations and recorded movement for the selected region and service. It appears after the coverage check. It covers all providers in that region/service, not only the provider group selected above, and says so beside the counts.
 
-## What it does
+## Evidence and wording
 
-On `/pricing/territory`, after a buyer runs the existing coverage check, a panel shows:
+- Counts use active CQC directory locations. Distinct providers are counted separately from locations. Coverage/enquiry wording consistently identifies location counts.
+- The inclusive 90-day window ends at the most recent non-future, non-quarantined active registration recorded in the directory. This is a global event-date anchor, not a claim of fresh collection.
+- Source freshness is shown separately. Incomplete or unconfirmed source evidence makes all preview figures provisional. Undated rating events are unavailable/partial, never silently zero.
+- Public examples are new registrations only, up to three distinct providers. Only `Organisation` and `NHS Body` ownership types may be named. Individuals, partnerships, missing/unknown types and unresolved quarantine are excluded. An empty examples list does not mean no registrations occurred.
+- A preview does not establish shortlist suitability. The Brief includes up to 50 providers, with exact quantity and suitability confirmed before payment. `brief.fits` is null when a nonempty scope still needs review; there is no unconditional 25-provider minimum.
+- Examples are not ranked recommendations, leads or evidence of buying intent. Official CQC links and Open Government Licence attribution are included.
 
-- the number of distinct providers in the chosen region and care service
-- how many new registrations and dated rating changes are recorded in the 90 days to the latest recorded registration, plus the CQC source freshness status
-- up to three newly registered locations, one per organisation provider, each dated and linked to its CQC record (rating changes are counted, never named)
-- whether the scope has enough organisations for a 25 to 50 organisation Brief
+## Data consistency and gates
 
-The aim is to let a buyer see real movement in their own territory before they enquire about the £745 Brief.
+`TERRITORY_PREVIEW_ENABLED` controls both API routes. It defaults false; off returns 404 before source queries. `NEXT_PUBLIC_TERRITORY_PREVIEW_ENABLED` controls the frontend and requires a rebuild. Both are needed for the public panel. These switches do not enable checkout, delivery, export, claims, collectors or lead capture.
 
-## What it does not do
+API routes are rate-limited public GETs at `/api/v1/territory-preview` and `/territories`. Geography columns come from an enum; names and shared-taxonomy service aliases are bound parameters. Missing quarantine schema fails closed. All source reads use one repeatable-read, read-only transaction. Cache keys include scope, freshness, reconciliation time and quarantine revision; a request reflects its database snapshot, and subsequent snapshots see changed quarantine. A request concurrent with a newly committed decision may still reflect its earlier snapshot. Cache lifetime is at most ten minutes.
 
-- It opens no checkout, payment, delivery, export, lead or claim path. The enquiry and payment controls on the page are unchanged.
-- It is not the Brief's ranking engine (`api/services/territory_brief.py`). Examples are the most recent recorded signals, and the panel says so.
-- It does not claim need, budget, intent or "leads". Wording follows `docs/manuals/SALES_GTM_MANUAL.md`.
+The browser request times out after 15 seconds with a visible unavailable message. Re-running the coverage check retries. Selection changes clear/unmount the old panel and abort its request.
 
-## Switches
+## Verification, 22 October 2026
 
-Both must be on for anything to appear:
+User authorized release of quarantine handling followed by the preview. Quarantine PR94 was independently reviewed, CI checked and deployed first. Its migration was already present in production; no migration or source-row write was performed.
 
-| Where | Setting | Default | Effect when off |
-| --- | --- | --- | --- |
-| API | `TERRITORY_PREVIEW_ENABLED` (`settings.territory_preview_enabled`) | `false` | Both routes return 404 and run no query |
-| Frontend | `NEXT_PUBLIC_TERRITORY_PREVIEW_ENABLED` | unset | The panel renders nothing and makes no request |
+Local tests cover flag-off/no-query, missing schema, input validation, aliases, undated and mixed rating events, quarantine cache invalidation and public copy. A disposable-Postgres integration test executes the real SQL against multi-location providers, an individual, an inactive location and a quarantined location; counts, naming exclusion, provider deduplication and quarantine resolution are checked.
 
-## Code
+Read-only production SQL on 22 October: West Midlands homecare had 1,413 distinct providers, 1,616 locations and 21 new registrations in 23 July–20 October; London nursing 229 providers, 393 locations and 11 registrations; Rutland nursing three providers/locations and no registrations. Undated rating events were reported unavailable. Aggregate queries took 42–64 ms on a warm connection. These are dated observations, not contractual quantities. All 97 recent West Midlands registrations across services had blank ownership type, so naming remains withheld; do not fill this gap by assuming organisation status.
 
-- API: `api/routers/territory_preview.py`
-  - `GET /api/v1/territory-preview?kind=region|local_authority&name=…&service=homecare|residential|nursing|supported_living`
-  - `GET /api/v1/territory-preview/territories`
-  - Both have no auth and use the public per-IP limit of 30 requests a minute.
-- Logic: `api/services/territory_preview.py`. SQL: `api/queries/territory_preview.py`. The scope column comes from a whitelist, and all values are bound parameters.
-- Frontend: `components/TerritorySignalPreview.tsx`, `lib/territory-preview.ts`, plus the panel inside `components/TerritoryScopePicker.tsx`.
-- Tests: `tests/test_territory_preview.py` (29) and `frontend/lib/territory-preview.test.ts` (9).
+Backend unit suite: 1,541 passed / one skipped (outside integration suite). Frontend: 192 passed. Production build with frontend preview enabled passed. Independent final candidate review, hosting preview, live browser and exact-release smoke receipts are recorded in the release artifact; local passes alone do not establish production completion.
 
-Data rules:
+## Remaining boundaries
 
-- **Services** map to canonical slugs in `frontend/data/service-taxonomy.json` and are matched against every stored alias through `api.service_taxonomy`. For example, homecare matches both `Domiciliary care service` (production) and the legacy `Homecare Agencies`.
-- **Totals** come from uncapped aggregate queries. Only the example rows are limited (20 per signal type).
-- **New registrations** come from `care_providers.registration_date`.
-- **Rating changes** come from `trusted_event_ledger` (`rating_changed`). Events without an `effective_date` cannot be placed in the window, so they are reported as `unavailable` or `partial`, never as zero. In production, all 34,332 rating events had no date at review time.
-- **Window end** is the newest recorded registration date. This is event recency, not freshness. Source freshness comes from `get_cqc_freshness`. Any status other than `fresh` marks the whole response provisional and adds a visible notice.
-- **Exclusions:** only `UPPER(status) = 'ACTIVE'` rows count. Unresolved rows in `reconciliation_quarantined_locations` (migration 067, PR #94) are excluded from every count, example and the window anchor. If that table does not exist, both endpoints return 503.
-- **Caching:** responses are cached in process for 10 minutes. The key covers the scope, the freshness status and reconciliation time, and a quarantine revision (unresolved count plus the latest created, updated or resolved time). A quarantine decision therefore takes effect on the next request, not after the cache expires.
-
-## Local check (19 Oct 2026)
-
-Run against a scratch database seeded from `directory_providers.csv` (55,818 locations, newest registration 20 Feb 2026). West Midlands homecare returned 1,383 organisations and 27 new registrations; each query took about 250 ms without indexes. Rutland nursing returned 3 organisations, correctly marked as too small for a Brief. The three rating changes in that run were synthetic rows inserted only into the scratch database, so rating-change wording has not been seen against production ledger data.
-
-## Review findings, 19 October 2026
-
-| Finding | Fix |
-| --- | --- |
-| P1: service filters used display labels and matched zero production rows | Canonical taxonomy aliases |
-| P1: undated rating events produced a misleading zero | `unavailable`/`partial` state with a visible notice |
-| P1: event recency presented as source freshness | Real freshness status reported; claims qualified unless `fresh` |
-| P2: totals capped at 500 | Separate uncapped aggregate counts |
-| P2: unconfirmed locations included | Quarantine exclusion; fails closed without the table |
-
-Re-checked against a production-shaped Postgres fixture with CQC service labels, undated rating events, one quarantined location, one inactive location and no freshness tables. The page was also rendered in the browser. It has not been re-run against production.
-
-## Production re-review, 19 October 2026
-
-- Migration 067 was applied to staging and then production, after a Neon recovery checkpoint. Three IDs are quarantined. Provider totals were unchanged: 59,349 total and 57,159 active.
-- A read-only check against production returned 200, three registration examples and no quarantined examples.
-- West Midlands homecare: 1,411 providers, 1,614 locations and 21 registrations. Its 905 undated rating changes show as unavailable.
-- The window ran from 19 July to 16 October. Freshness was PARTIAL, so the wording was provisional.
-- `EXPLAIN ANALYZE` took 32 to 85 ms per query across three scopes, measured on a warm cache.
-- One P2 remained: the cache key ignored quarantine changes. Fixed by adding the quarantine revision to every cache key, with regression tests and a real-Postgres check of the revision query.
-
-## Before enabling
-
-These need a reviewer who did not build it (AGENTS.md: a producing model cannot approve its own work):
-
-1. **Founder re-approval of the panel copy.** The copy at `9fb6f98` was approved on 19 October, then changed the same day to implement the naming decision and fix wording from a founder review: CQC service terms, plain-English provisional and rating notices, "newly registered locations", and the coverage check relabelled "Locations in scope". The new copy needs approval.
-2. ~~Production read check.~~ Done on 19 October (see above).
-3. ~~Apply migration 067 in production.~~ Done on 19 October.
-4. ~~Re-run `EXPLAIN ANALYZE` on production after the taxonomy change.~~ Done: 32 to 85 ms per query, warm cache.
-5. ~~Named rating-change examples.~~ Founder decision, 19 October 2026: not on the public page. Named examples are new registrations only, and only for providers CQC records as an Organisation or NHS Body. Individuals, partnerships and unknown ownership types are never named. Rating changes are counted but not named, and belong in the private Brief. The panel shows the Open Government Licence attribution. Have the solicitor confirm the UK GDPR position on naming newly registered organisations.
-6. ~~A re-review against production by someone other than the author.~~ Done; the cache-key P2 it raised is fixed.
-
-Separate pre-existing issue, outside this PR: the existing coverage check on the same page (`getTerritoryScopeCoverage` in `frontend/lib/directory-db.ts`) does not exclude quarantined locations.
+Production source freshness is still partial and checkout/delivery remain closed. Manual sales materials and the separate database-source prototype need their own reconciliation with current main. The legacy coverage query still has its own counting/filtering behaviour; this preview explicitly distinguishes its broader region/service scope and quarantine exclusions. No legal approval is asserted by displaying official organisation records.
