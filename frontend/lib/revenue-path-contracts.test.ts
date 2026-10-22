@@ -79,8 +79,11 @@ describe("revenue path contracts", () => {
   it("keeps one-off requests out of signup and keeps roadmap products non-purchasable", () => {
     const pricingCta = source("components/PricingCTA.tsx");
 
-    assert.match(pricingCta, /ONE_OFF_CONTACT/);
-    assert.match(pricingCta, /mailto:outreach@caregist\.co\.uk/);
+    assert.match(pricingCta, /\/pricing\/weekly-digest\/enquiry\?region=/);
+    assert.ok(pricingCta.indexOf('if (tierKey === "weekly-digest")') < pricingCta.indexOf("async function handleUpgrade"));
+    const enquiry = source("components/WeeklyDigestEnquiry.tsx");
+    assert.match(enquiry, /Nothing is submitted by this page/);
+    assert.match(enquiry, /This does not place an order or take payment/);
     assert.match(pricingCta, /GATED_TIERS\.has\(tierKey\)/);
     assert.match(pricingCta, /No purchase or paid checkout is available/);
   });
