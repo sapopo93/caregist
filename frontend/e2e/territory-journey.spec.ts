@@ -11,7 +11,7 @@ test("coverage enquiry clears obsolete selections and recovers from errors", asy
   });
   await page.goto("/pricing");
   await page.getByRole("region", { name: "CareGist products" }).getByRole("link", { name: "Check your territory" }).click();
-  await expect(page.getByRole("heading", { name: "See how many organisations match your scope" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "See how many care locations match your scope" })).toBeVisible();
   const check = page.getByRole("button", { name: "Check this territory" });
   await expect(check).toBeDisabled();
   await page.locator("#territory-region").selectOption({ index: 1 });

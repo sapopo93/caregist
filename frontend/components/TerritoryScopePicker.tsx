@@ -119,7 +119,7 @@ export default function TerritoryScopePicker() {
       <h3>Choose your territory</h3>
       <p className={styles.checkLead}>
         Pick a region and the organisations you sell to. We check the published CQC record for
-        matching organisations. This check is free and does not place an order.
+        matching locations. This check is free and does not place an order.
       </p>
 
       <div className={styles.fieldGrid}>
