@@ -27,7 +27,7 @@ Local tests cover flag-off/no-query, missing schema, input validation, aliases, 
 
 Read-only production SQL on 22 October: West Midlands homecare had 1,413 distinct providers, 1,616 locations and 21 new registrations in 23 July–20 October; London nursing 229 providers, 393 locations and 11 registrations; Rutland nursing three providers/locations and no registrations. Undated rating events were reported unavailable. Aggregate queries took 42–64 ms on a warm connection. These are dated observations, not contractual quantities. All 97 recent West Midlands registrations across services had blank ownership type, so naming remains withheld; do not fill this gap by assuming organisation status.
 
-Backend unit suite: 1,541 passed / one skipped (outside integration suite). Frontend: 192 passed. Production build with frontend preview enabled passed. Independent final candidate review, hosting preview, live browser and exact-release smoke receipts are recorded in the release artifact; local passes alone do not establish production completion.
+Backend unit suite: 1,541 passed / one skipped (outside integration suite). Frontend: 192 passed. Production build with frontend preview enabled passed. Independent final candidate review and hosting preview checks have passed. Live browser and exact-release production smoke receipts remain pending until deployment; the final release artifact must distinguish each observation. Local passes alone do not establish production completion.
 
 ## Remaining boundaries
 
