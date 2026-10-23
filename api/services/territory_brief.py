@@ -1013,6 +1013,7 @@ def generate_territory_opportunity_brief(
     providers_source: str | Path,
     location_ids: Iterable[str] | None = None,
     provider_group: str | None = None,
+    file_ratings: dict[str, tuple[str, date | None]] | None = None,
 ) -> TerritoryBrief:
     """Generate a complete Territory Opportunity Brief.
 
@@ -1024,6 +1025,11 @@ def generate_territory_opportunity_brief(
     ``location_ids`` restricts the Brief to an exact set (the organisations the
     buyer's coverage check counted). ``provider_group`` adds each member's
     documented group state as evidence so standing groups are not empty.
+
+    ``file_ratings`` maps a location id to (overall rating, publication date) from
+    CQC's published ratings file. It fills only locations whose register row carries
+    no current overall rating, so the Brief agrees with the coverage check instead of
+    reporting a false "no published rating".
     """
     if provider_group is not None and provider_group not in PROVIDER_GROUP_LABELS:
         raise ScopeError(f"unknown provider group {provider_group!r}")
@@ -1040,6 +1046,20 @@ def generate_territory_opportunity_brief(
 
     provider_names = load_provider_names(providers_path)
     location_rows = list(_load_ndjson(locations_path))
+    file_filled = 0
+    if file_ratings:
+        for i, row in enumerate(location_rows):
+            hit = file_ratings.get(str(row.get("locationId") or "").strip())
+            if hit and not _current_rating_evidence(row)[0]:
+                rating, published = hit
+                location_rows[i] = {
+                    **row,
+                    "currentRatings": {
+                        "overall": {"rating": rating},
+                        "reportDate": published.isoformat() if published else None,
+                    },
+                }
+                file_filled += 1
 
     catalogue = known_territories(location_rows)
     validated = validate_scope(scope, catalogue)
@@ -1229,6 +1249,12 @@ def generate_territory_opportunity_brief(
         "provider's quality, finances, or intent.",
         OGL_ATTRIBUTION + ".",
     )
+    if file_filled:
+        caveats = (
+            f"{file_filled} location(s) in the register edition carry no current rating; their "
+            "overall rating is taken from CQC's published latest-ratings file instead.",
+            *caveats,
+        )
     group_note = (
         f" Provider group: {PROVIDER_GROUP_LABELS[provider_group]}, taken from the same "
         f"directory query as the coverage check; each member carries its documented group "

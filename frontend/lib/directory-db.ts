@@ -576,7 +576,8 @@ export async function getDirectoryProvider(slugOrId: string): Promise<DirectoryP
           local_authority,
           phone,
           website,
-          overall_rating,
+          ${RECONCILED_RATING_SQL} AS overall_rating,
+          ${RATING_SOURCE_SQL} AS rating_source,
           registration_date::text AS registration_date,
           rating_safe,
           rating_effective,
@@ -721,7 +722,7 @@ export async function listProvidersForExport(scope: DirectoryExportScope): Promi
           specialisms,
           phone,
           website,
-          overall_rating,
+          ${RECONCILED_RATING_SQL} AS overall_rating,
           registration_date::text AS registration_date,
           inspection_report_url
         FROM care_providers

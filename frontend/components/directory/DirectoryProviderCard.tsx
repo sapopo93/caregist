@@ -69,6 +69,9 @@ export default function DirectoryProviderCard({ provider, returnTo }: { provider
           Rating per CQC&apos;s published ratings file (1 Oct 2026); not yet returned by CQC&apos;s API.
         </p>
       )}
+      {provider.rating_source === "cqc_file_disputed" && (
+        <p className="mt-2 text-xs text-dusk">CQC&apos;s ratings file lists a rating for this location, but CQC&apos;s own page no longer shows it, so none is displayed.</p>
+      )}
 
       {services.length > 0 && (
         <div className="mt-4 flex flex-wrap gap-2">

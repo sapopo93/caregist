@@ -123,13 +123,18 @@ def main(argv=None) -> int:
             if lid in db:
                 cur.execute(
                     """UPDATE care_providers SET file_overall_rating=%s, file_overall_rating_date=%s,
+                              site_check_rating = CASE WHEN file_rating_source_sha256 IS NOT DISTINCT FROM %s
+                                                       THEN site_check_rating END,
+                              site_check_at = CASE WHEN file_rating_source_sha256 IS NOT DISTINCT FROM %s
+                                                   THEN site_check_at END,
                               file_rating_source=%s, file_rating_source_sha256=%s WHERE id=%s""",
-                    (rating, parse_date(pub), args.ods.name, sha, lid),
+                    (rating, parse_date(pub), sha, sha, args.ods.name, sha, lid),
                 )
                 n += cur.rowcount
         # Rows stamped by an earlier file but absent from this one lose the stale claim.
         cur.execute(
             """UPDATE care_providers SET file_overall_rating=NULL, file_overall_rating_date=NULL,
+                      site_check_rating=NULL, site_check_at=NULL,
                       file_rating_source=NULL, file_rating_source_sha256=NULL
                 WHERE file_rating_source_sha256 IS NOT NULL AND file_rating_source_sha256 <> %s""",
             (sha,),
