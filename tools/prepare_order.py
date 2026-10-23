@@ -149,6 +149,23 @@ async def fetch_scope_location_ids(database_url: str, region: str, provider_grou
         await conn.close()
 
 
+async def fetch_file_ratings(database_url: str, ids: list[str]) -> dict[str, tuple[str, date | None]]:
+    """Overall ratings from CQC's published ratings file (migration 068) for these locations."""
+    import asyncpg
+
+    conn = await asyncpg.connect(database_url)
+    try:
+        async with conn.transaction(readonly=True):
+            rows = await conn.fetch(
+                "SELECT id, file_overall_rating, file_overall_rating_date FROM care_providers "
+                "WHERE id = ANY($1::text[]) AND file_overall_rating IS NOT NULL",
+                ids,
+            )
+    finally:
+        await conn.close()
+    return {r["id"]: (r["file_overall_rating"], r["file_overall_rating_date"]) for r in rows}
+
+
 def latest_export(base: Path) -> Path:
     candidates = sorted(
         (p for p in base.glob("cqc-export-*-final") if (p / "RECEIPT.json").exists()),
@@ -534,6 +551,7 @@ def build_brief(args: argparse.Namespace, *, env: dict[str, str], order_dir: Pat
         detail += f" (buyer's enquiry said {args.expected_count})"
     checks.add("scope_has_locations", bool(ids), detail)
 
+    file_ratings = asyncio.run(fetch_file_ratings(env["DATABASE_URL"], ids)) if ids else {}
     brief = generate_territory_opportunity_brief(
         {"kind": "region", "name": args.region, "window_days": 90, "shortlist_target": args.shortlist},
         PurchaseContext(order_reference=args.order_ref, generated_at=now, terms_version="2.2.1"),
@@ -541,6 +559,7 @@ def build_brief(args: argparse.Namespace, *, env: dict[str, str], order_dir: Pat
         providers_source=export_dir / "_providers_detail.ndjson",
         location_ids=ids,
         provider_group=args.provider_group,
+        file_ratings=file_ratings,
     )
     checks.add(
         "shortlist_not_empty",
