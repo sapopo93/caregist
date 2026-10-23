@@ -109,6 +109,9 @@ export default async function ProviderPage({ params, searchParams }: { params: P
                 Rating per CQC&apos;s published ratings file (1 Oct 2026); not yet returned by CQC&apos;s API.
               </p>
             )}
+            {provider.rating_source === "cqc_file_disputed" && (
+              <p className="max-w-xs text-right text-xs text-dusk">CQC&apos;s ratings file lists a rating for this location, but CQC&apos;s own page no longer shows it, so none is displayed.</p>
+            )}
           </div>
         </div>
 

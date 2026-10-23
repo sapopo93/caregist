@@ -49,7 +49,7 @@ _TSVECTOR = """to_tsvector('english',
 # tools/import_cqc_latest_ratings.py, so nothing is inferred.
 SERVED_RATING = (
     "CASE WHEN rating_state = 'rated' THEN overall_rating "
-    "WHEN file_overall_rating IS NOT NULL THEN file_overall_rating END"
+    "WHEN file_overall_rating IS NOT NULL AND (site_check_rating IS NULL OR site_check_rating = file_overall_rating) THEN file_overall_rating END"
 )
 SERVED_RATING_COLUMN = f"{SERVED_RATING} AS overall_rating"
 
@@ -64,7 +64,7 @@ SERVED_RATING_COLUMN = f"{SERVED_RATING} AS overall_rating"
 # it, and it is NULL exactly when a rating IS served, so the two fields are
 # never both populated and never both empty.
 SERVED_RATING_ABSENCE = (
-    "CASE WHEN rating_state = 'rated' OR file_overall_rating IS NOT NULL "
+    "CASE WHEN rating_state = 'rated' OR (file_overall_rating IS NOT NULL AND (site_check_rating IS NULL OR site_check_rating = file_overall_rating)) "
     "THEN NULL ELSE rating_state END"
 )
 SERVED_RATING_ABSENCE_COLUMN = f"{SERVED_RATING_ABSENCE} AS rating_absence_reason"

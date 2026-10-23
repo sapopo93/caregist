@@ -75,7 +75,7 @@ REGIONS = (
 # sold a smaller list than the one CQC's own website shows.
 RECONCILED_RATING_SQL = """(CASE
     WHEN lower(btrim(overall_rating)) IN ('outstanding', 'good', 'requires improvement', 'inadequate') THEN overall_rating
-    WHEN file_overall_rating IS NOT NULL THEN file_overall_rating
+    WHEN file_overall_rating IS NOT NULL AND (site_check_rating IS NULL OR site_check_rating = file_overall_rating) THEN file_overall_rating
     ELSE overall_rating
   END)"""
 
@@ -158,7 +158,8 @@ async def fetch_file_ratings(database_url: str, ids: list[str]) -> dict[str, tup
         async with conn.transaction(readonly=True):
             rows = await conn.fetch(
                 "SELECT id, file_overall_rating, file_overall_rating_date FROM care_providers "
-                "WHERE id = ANY($1::text[]) AND file_overall_rating IS NOT NULL",
+                "WHERE id = ANY($1::text[]) AND file_overall_rating IS NOT NULL "
+                "AND (site_check_rating IS NULL OR site_check_rating = file_overall_rating)",
                 ids,
             )
     finally:
