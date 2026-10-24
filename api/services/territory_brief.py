@@ -1156,6 +1156,7 @@ def generate_territory_opportunity_brief(
     providers_source: str | Path,
     location_ids: Iterable[str] | None = None,
     provider_group: str | None = None,
+    file_ratings: dict[str, tuple[str, date | None]] | None = None,
     rating_evidence: Mapping[str, RatingEvidence] | None = None,
     website_observations: Mapping[str, RatingEvidence] | None = None,
 ) -> TerritoryBrief:
@@ -1170,6 +1171,11 @@ def generate_territory_opportunity_brief(
     buyer's coverage check counted). ``provider_group`` adds each member's
     documented group state as evidence so standing groups are not empty.
 
+    ``file_ratings`` maps a location id to (overall rating, publication date) from
+    CQC's published ratings file. It fills only locations whose register row carries
+    no current overall rating, so the Brief agrees with the coverage check instead of
+    reporting a false "no published rating".
+
     ``rating_evidence`` (ratings-file :class:`RatingEvidence` keyed by CQC
     location id) and optionally ``website_observations`` switch the Brief to the
     resolved rating contract: every rating shown, counted or used for a
@@ -1181,9 +1187,15 @@ def generate_territory_opportunity_brief(
     be :class:`RatingEvidence` with ``source == "cqc_ratings_file"``; the
     ``(rating, date)`` tuples of the earlier API-else-file fill are rejected.
     With neither argument the Brief behaves exactly as before.
+
+    The two are alternatives, never combined: ``file_ratings`` is the legacy
+    (flag-off) API-else-file fill from PR #123, ``rating_evidence`` the resolved
+    contract (flag-on). Passing both raises ``ValueError``.
     """
     if provider_group is not None and provider_group not in PROVIDER_GROUP_LABELS:
         raise ScopeError(f"unknown provider group {provider_group!r}")
+    if file_ratings is not None and (rating_evidence is not None or website_observations is not None):
+        raise ValueError("pass file_ratings (legacy fill) or rating_evidence (resolved contract), not both")
     allowed_ids = (
         {str(item).strip() for item in location_ids if str(item).strip()}
         if location_ids is not None else None
@@ -1197,6 +1209,20 @@ def generate_territory_opportunity_brief(
 
     provider_names = load_provider_names(providers_path)
     location_rows = list(_load_ndjson(locations_path))
+    file_filled = 0
+    if file_ratings:
+        for i, row in enumerate(location_rows):
+            hit = file_ratings.get(str(row.get("locationId") or "").strip())
+            if hit and not _current_rating_evidence(row)[0]:
+                rating, published = hit
+                location_rows[i] = {
+                    **row,
+                    "currentRatings": {
+                        "overall": {"rating": rating},
+                        "reportDate": published.isoformat() if published else None,
+                    },
+                }
+                file_filled += 1
 
     catalogue = known_territories(location_rows)
     validated = validate_scope(scope, catalogue)
@@ -1439,6 +1465,12 @@ def generate_territory_opportunity_brief(
             "with conflicting evidence are shown without a rating; "
             f"{len(rating_resolution['inherited'])} inherited rating(s) are labelled and never "
             "treated as current inspections. A ratings-file value is never reported as a rating change.",
+            *caveats,
+        )
+    if file_filled:
+        caveats = (
+            f"{file_filled} location(s) in the register edition carry no current rating; their "
+            "overall rating is taken from CQC's published latest-ratings file instead.",
             *caveats,
         )
     group_note = (

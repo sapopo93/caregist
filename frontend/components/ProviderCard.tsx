@@ -58,6 +58,9 @@ export default function ProviderCard({ provider }: { provider: Provider }) {
         {provider.rating_source === "cqc_file" && (
           <p className="text-xs text-dusk mb-1">Rating per CQC&apos;s published ratings file (1 Oct 2026)</p>
         )}
+        {provider.rating_source === "cqc_file_disputed" && (
+          <p className="text-xs text-dusk mb-1">CQC&apos;s ratings file lists a rating for this location, but CQC&apos;s own page no longer shows it, so none is displayed.</p>
+        )}
         {services && <p className="text-dusk text-sm mb-2">{services}</p>}
         <div className="flex gap-3 text-sm text-dusk items-center flex-wrap">
           {provider.phone && <span>{provider.phone}</span>}
