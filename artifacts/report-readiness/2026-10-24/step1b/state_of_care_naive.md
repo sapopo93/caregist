@@ -4,14 +4,14 @@ Closure logic: **naive**. Reference values as supplied in .warroom/REPORT_READIN
 
 | Metric | CQC reference | cqc_register_apr | caregist_now | caregist_apr | caregist_db_now |
 |---|---:|---:|---:|---:|---:|
-| care_homes | - | 14702 | 14756 | 14692 | 14898 |
+| care_homes | - | 14382 | 14756 | 14692 | 14898 |
 | homecare | 13500 | 13507 (+7) | 13605 (+105) | 13574 (+74) | 14489 (+989) |
 | supported_living | 4500 | 4574 (+74) | 4808 (+308) | 4794 (+294) | 5068 (+568) |
-| large_home_share_of_homes | 0.23 | 0.2432 (+0.0132) | 0.2509 (+0.0209) | 0.245 (+0.015) | 0.2499 (+0.0199) |
-| large_home_share_of_beds | 0.7 | 0.5216 (-0.1784) | 0.5315 (-0.1685) | 0.5241 (-0.1759) | 0.5315 (-0.1685) |
+| large_home_share_of_homes | 0.23 | 0.2287 (-0.0013) | 0.2509 (+0.0209) | 0.245 (+0.015) | 0.2499 (+0.0199) |
+| large_home_share_of_beds | 0.7 | 0.5006 (-0.1994) | 0.5315 (-0.1685) | 0.5241 (-0.1759) | 0.5315 (-0.1685) |
 | care_homes_1-10 | - | 4145 | 4118 | 4139 | 4201 |
-| care_homes_11-49 | - | 6979 | 6933 | 6951 | 6972 |
-| care_homes_50+ | - | 3575 | 3702 | 3599 | 3722 |
+| care_homes_11-49 | - | 6946 | 6933 | 6951 | 6972 |
+| care_homes_50+ | - | 3288 | 3702 | 3599 | 3722 |
 | care_homes_unknown | - | 3 | 3 | 3 | 3 |
 
 Gap in brackets = column value minus CQC reference.

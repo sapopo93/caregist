@@ -3,6 +3,7 @@ from datetime import date
 from tools.state_of_care_benchmark import (
     Service,
     band,
+    is_dual_secondary,
     measures,
     movement,
     naive_classifier,
@@ -72,3 +73,9 @@ def test_movement_counts_only_confirmed_closures():
     )["care_homes"]
     assert classified["confirmed_closures"] == 1
     assert classified["endings_by_class"] == {"confirmed_closure": 1, "re_registration": 1}
+
+
+def test_dual_registration_keeps_only_the_primary_line():
+    assert is_dual_secondary("Dual Registration", "N")
+    assert not is_dual_secondary("Dual Registration", "Y")
+    assert not is_dual_secondary("", "")

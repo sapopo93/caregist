@@ -131,6 +131,12 @@ def registered_at(row: dict, as_at: date) -> bool:
     return bool(end and end > as_at)
 
 
+def is_dual_secondary(dual_registered: str, primary_flag: str) -> bool:
+    """CQC marks each dual-registered line 'Dual Registration' and flags the one
+    to keep for provision counts with Primary ID = 'Y'; the other line is dropped."""
+    return bool(dual_registered.strip()) and primary_flag.strip().upper() != "Y"
+
+
 def load_hsca(path: Path) -> tuple[list[Service], dict]:
     rows = iter_sheet_rows(path, "HSCA_Active_Locations")
     header = next(rows)
@@ -139,8 +145,7 @@ def load_hsca(path: Path) -> tuple[list[Service], dict]:
     for r in rows:
         r = r + [""] * (len(header) - len(r))
         lid = r[col["Location ID"]]
-        primary = r[col["Primary ID (Dual registration locations)"]].strip()
-        if r[col["Location Dual Registered"]].strip().upper() == "Y" and primary and primary != lid:
+        if is_dual_secondary(r[col["Location Dual Registered"]], r[col["Primary ID (Dual registration locations)"]]):
             dual_dropped += 1
             continue
         out.append(Service(

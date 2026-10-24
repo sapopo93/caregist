@@ -8,8 +8,8 @@
   "as_at_reconstruction": "2026-04-01",
   "hsca_ods": "/Users/user/CareGist/cqc_active_locations_20260401.ods",
   "hsca_sha256": "de48010ff09bf670c4009bf98ae679ba2c0211e1bffa6c23f2a56b134e1e3eac",
-  "rows_kept": 56695,
-  "dual_registration_lines_dropped": 0
+  "rows_kept": 56375,
+  "dual_registration_lines_dropped": 320
  },
  "limitations": [
   "caregist_apr applies dormancy as at the export date; a service dormant in April but active by October (or the reverse) is misclassified.",
@@ -19,24 +19,24 @@
  ],
  "columns": {
   "cqc_register_apr": {
-   "care_homes": 14702,
+   "care_homes": 14382,
    "homecare": 13507,
    "supported_living": 4574,
    "care_homes_by_band": {
     "1-10": 4145,
-    "11-49": 6979,
-    "50+": 3575,
+    "11-49": 6946,
+    "50+": 3288,
     "unknown": 3
    },
    "beds_by_band": {
     "1-10": 25255,
-    "11-49": 203233,
-    "50+": 249126,
+    "11-49": 201883,
+    "50+": 227688,
     "unknown": 0
    },
-   "care_home_beds": 477614,
-   "large_home_share_of_homes": 0.2432,
-   "large_home_share_of_beds": 0.5216
+   "care_home_beds": 454826,
+   "large_home_share_of_homes": 0.2287,
+   "large_home_share_of_beds": 0.5006
   },
   "caregist_now": {
    "care_homes": 14756,
@@ -103,7 +103,7 @@
   {
    "metric": "care_homes",
    "cqc_reference": null,
-   "cqc_register_apr": 14702,
+   "cqc_register_apr": 14382,
    "cqc_register_apr_gap_vs_reference": null,
    "caregist_now": 14756,
    "caregist_now_gap_vs_reference": null,
@@ -139,8 +139,8 @@
   {
    "metric": "large_home_share_of_homes",
    "cqc_reference": 0.23,
-   "cqc_register_apr": 0.2432,
-   "cqc_register_apr_gap_vs_reference": 0.0132,
+   "cqc_register_apr": 0.2287,
+   "cqc_register_apr_gap_vs_reference": -0.0013,
    "caregist_now": 0.2509,
    "caregist_now_gap_vs_reference": 0.0209,
    "caregist_apr": 0.245,
@@ -151,8 +151,8 @@
   {
    "metric": "large_home_share_of_beds",
    "cqc_reference": 0.7,
-   "cqc_register_apr": 0.5216,
-   "cqc_register_apr_gap_vs_reference": -0.1784,
+   "cqc_register_apr": 0.5006,
+   "cqc_register_apr_gap_vs_reference": -0.1994,
    "caregist_now": 0.5315,
    "caregist_now_gap_vs_reference": -0.1685,
    "caregist_apr": 0.5241,
@@ -171,7 +171,7 @@
   {
    "metric": "care_homes_11-49",
    "cqc_reference": null,
-   "cqc_register_apr": 6979,
+   "cqc_register_apr": 6946,
    "caregist_now": 6933,
    "caregist_apr": 6951,
    "caregist_db_now": 6972
@@ -179,7 +179,7 @@
   {
    "metric": "care_homes_50+",
    "cqc_reference": null,
-   "cqc_register_apr": 3575,
+   "cqc_register_apr": 3288,
    "caregist_now": 3702,
    "caregist_apr": 3599,
    "caregist_db_now": 3722
