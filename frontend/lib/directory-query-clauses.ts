@@ -44,3 +44,18 @@ export function buildDirectoryTextSearchClause(
 export function buildRatingClause(paramIndex: number) {
   return `lower(btrim(overall_rating)) = lower(btrim($${paramIndex}))`;
 }
+
+/**
+ * Excludes CQC locations held in reconciliation_quarantined_locations
+ * (migration 067) while unresolved. Quarantined rows stay ACTIVE but must not
+ * enter public claims. There is deliberately no to_regclass guard: if the table
+ * is missing the query errors, so callers that surface the error fail closed.
+ */
+export function buildNotQuarantinedClause(table = "care_providers") {
+  return `NOT EXISTS (
+        SELECT 1
+        FROM reconciliation_quarantined_locations q
+        WHERE q.location_id = ${table}.id
+          AND q.resolved_at IS NULL
+      )`;
+}
