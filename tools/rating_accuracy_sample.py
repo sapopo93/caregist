@@ -225,7 +225,7 @@ def main(argv=None) -> int:
     with conn.cursor() as cur:
         cur.execute(DB_SQL)
         cols = [c.name for c in cur.description]
-        db_rows = {r[0]: dict(zip(cols, r)) for r in cur.fetchall()}
+        db_rows = {r[0]: dict(zip(cols, r, strict=True)) for r in cur.fetchall()}
         cur.execute(QUARANTINE_SQL)
         quarantined = {r[0] for r in cur.fetchall()}
     snapshot_at = datetime.now(timezone.utc).isoformat(timespec="seconds")

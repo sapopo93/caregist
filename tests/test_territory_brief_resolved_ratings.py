@@ -172,7 +172,7 @@ def test_pdf_csv_and_json_agree_on_the_same_resolution(tmp_path):
     data = brief.to_json()
     rows = list(csv.DictReader(io.StringIO(brief_to_csv(brief))))
     assert len(rows) == len(brief.shortlist)
-    for row, org in zip(rows, data["shortlist"]):
+    for row, org in zip(rows, data["shortlist"], strict=True):
         res = data["rating_resolution"]["by_location"][row["cqc_location_id"]]
         assert org["rating_resolution"] == res
         assert row["current_rating"] == (res["value"] or "")
