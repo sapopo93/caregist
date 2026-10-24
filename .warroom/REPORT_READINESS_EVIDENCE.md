@@ -1,6 +1,6 @@
 # Report readiness — evidence packet, 24 Oct 2026
 
-**Verdict: steps 1–5 are implemented and tested locally, and every new output is behind a flag that defaults to off. Nothing is merged, deployed or gate-approved.** This is the producing model's evidence. Under AGENTS.md the producer cannot approve its own work, so independent review from an approved provider is still required. DeepSeek is prohibited.
+**Verdict: steps 1–5 are implemented and tested locally, and every new output is behind a flag that defaults to off. Nothing is merged, deployed or gate-approved. The 25 Oct independent review returned CHANGES REQUIRED; its six findings are addressed below (see "Response to independent review"), and the result needs a repeat review.** This is the producing model's evidence. Under AGENTS.md the producer cannot approve its own work, so independent review from an approved provider is still required. DeepSeek is prohibited.
 
 Brief: [.warroom/REPORT_READINESS_BRIEF.md](REPORT_READINESS_BRIEF.md) (lives in the main checkout; it is not on this branch).
 
@@ -129,24 +129,24 @@ There is a deliberate trade-off. Irchester 170 and Check House have the same dat
 - The CSV gains 10 `rating_*` columns; JSON gains `rating_resolution`.
 - Rating groups (Inadequate / Requires improvement) admit only `current` values equal to the group, and every exclusion is listed.
 - A file value never creates a `rating_changed` event.
-- Sample: `step2/fixture_territory_brief_ri.{pdf,csv,json}`. In it, PDF, CSV and JSON agree on one edition and hash (test `test_pdf_csv_and_json_agree_on_the_same_resolution`).
+- Sample: `step2/fixture_territory_brief_ri.{pdf,csv,json}`: 8 shortlisted, all current Requires improvement group members. PDF, CSV and JSON agree on one edition and hash (test `test_pdf_csv_and_json_agree_on_the_same_resolution`).
 
 Not wired: the paid generation path in `territory_brief_delivery.py` (delivery code was out of scope) and the public coverage query in `frontend/`. Nothing in production passes file ratings, so the live Brief is unchanged. Open PR #123 (`fix/brief-reconciled-ratings`) makes an overlapping API-else-file change. This contract replaces that precedence, so review the two together.
 
 ## Step 3 — confirmed closures vs re-registrations
 
-`api/services/registration_endings.py` uses CQC `relationships` from both sides, plus dormancy, plus an unlinked look-alike rule (same name and postcode registered within 120 days → unresolved). Per-location output: `step3/registration_endings_12m.csv` (3,489 endings, 17 Oct 2025 to 16 Oct 2026).
+`api/services/registration_endings.py` uses CQC `relationships` from both sides, plus dormancy, plus an unlinked look-alike rule (same name and postcode registered within 120 days → unresolved). Per-location output: `step3/registration_endings_12m.csv` (endings from 21 Oct 2025 to 20 Oct 2026, the export's retrieval date).
 
 | Care homes, 12 months | Count |
 |---|---:|
-| Registrations | 1,001 |
-| Registration endings (previously all counted as closures) | 835 |
-| → confirmed closures | **250** |
-| → re-registration / ownership change / location move | 509 |
+| Registrations | 998 |
+| Registration endings (previously all counted as closures) | 832 |
+| → confirmed closures | **248** |
+| → re-registration / ownership change / location move | 508 |
 | → dormant | 51 |
 | → unresolved | 25 |
 
-Homecare: 1,027 endings → 442 confirmed closures, 455 dormant, 120 re-registrations and 10 unresolved. Step 1b was re-run with this logic (`state_of_care_classified.*`); the naive output is kept alongside it for comparison.
+Homecare: 1,018 endings → 440 confirmed closures, 451 dormant, 117 re-registrations and 10 unresolved. (Before review finding 6 the window ended on the newest registration date, 16 Oct; it now ends on the 20 Oct retrieval date.) Step 1b was re-run with this logic (`state_of_care_classified.*`); the naive output is kept alongside it for comparison.
 
 ## Step 4 — P4 competitor scan
 
@@ -174,10 +174,10 @@ North West base (SQL: ACTIVE, care home service, 11–49 places) = **1,055**. An
 
 | Bucket | Count |
 |---|---:|
-| Listed (current Requires improvement or Inadequate) | **232** |
-| Current Good | 628 |
+| Listed (current Requires improvement or Inadequate) | **231** |
+| Current Good | 626 |
 | Current Outstanding | 20 |
-| Inherited (excluded) | 133 |
+| Inherited (excluded) | 136 |
 | No published Well-led rating | 42 |
 | Unresolved | 0 |
 | CQC-deregistered | 0 |
@@ -208,3 +208,32 @@ The buckets sum to the SQL base. `care_providers.rating_well_led` is **empty for
 No production data, schema, gate, merge or deployment was changed. This packet does not approve any named gate.
 
 Final full-suite run after all commits (2026-10-24, worktree, DATABASE_URL unset): **1,637 passed, 137 skipped, 0 failed** (`pytest -q`).
+
+
+## Response to independent review, 25 Oct 2026
+
+Review: `artifacts/reviews/2026-10-25-pr125-pr123/REVIEW.md` (main checkout). Verdict **CHANGES REQUIRED**. Each finding's reproduction is now a regression test.
+
+| # | Finding | Change | Test |
+|---|---|---|---|
+| 1 | Unresolved rating leaked through API rating events into narrative/evidence | `_align_rating_events`: `rating_published` and the `rating_changed` into the API's latest value are kept only if the resolution is `current` with that value. Earlier dated moves stay as history. | `test_review_finding_1_unresolved_in_window_rating_is_never_asserted`, `..._superseded_api_change_is_dropped_but_history_kept` |
+| 2 | PR #123's caller cannot use PR #125's contract; textual conflict | PR #125 renames its argument to `rating_evidence` and type-checks it: tuples are rejected, and an empty mapping is an explicit opt-in that needs the flag. Integration branch `integration/pr125-pr123` (head `12bada8`) merges PR #123 and keeps both contracts as alternatives: `file_ratings` is PR #123's fill (flag off), `rating_evidence` is the resolver (flag on), and passing both is refused. `prepare_order.build_brief` chooses by `RESOLVED_RATING_CONTRACT_ENABLED` and loads file evidence with hash plus migration-069 page checks as observations. | `test_review_finding_2_tuple_shape_and_empty_mapping_contract`; on the integration branch, `tests/test_prepare_order_rating_contract.py` (both flag states × empty/populated, plus env-on/settings-off fails closed) |
+| 3 | Inherited flag lost depending on evidence order | Ties use a fixed channel order; inherited if any tied same-value evidence is inherited | `test_review_finding_3_inherited_flag_survives_any_evidence_order`, `test_same_value_same_date_choice_is_order_independent` |
+| 4 | Stale page observation overrides a later rating | An observation decides only if every competing value is dated on or before it; otherwise it is weighed by publication date, and an undated competitor makes the result unresolved | `test_review_finding_4_stale_page_observation_does_not_override_later_rating`, `test_observation_with_undated_competitor_is_unresolved` |
+| 5 | Rating groups admitted eventful non-members (NEAD) | Under the resolved contract, rating groups drop non-matching locations before any event is considered. The fixture Brief now shortlists 8 of 8 members. | `test_review_finding_5_eventful_non_members_are_excluded` (unrated and unresolved) |
+| 6 | Movement window ended on newest registration | `tools/report_sources.export_cutoff` uses the explicit retrieval date or `RECEIPT.json`, and refuses a cutoff earlier than the data. Used by the competitor scan and the benchmark. | `test_review_finding_6_movement_cutoff_is_the_export_date` |
+
+Also fixed: the repository ignores `*.csv`, so the CSV outputs were missing from the PR. They are now force-added.
+
+Effect on outputs (all regenerated 24/25 Oct, same inputs):
+- P12 North West is 231 listed (was 232) and 136 inherited (was 133), because finding 3 reclassified three rows. It still reconciles to 1,055.
+- The three scans are unchanged.
+- The step 1a sample was re-drawn against a later database read; `sample.json` records the pools.
+
+**Integration finding the review predicted, now shown by test:** with the flag on, the resolver can only *narrow* the scope returned by the public coverage query, which is still API-first. A location like St Stephens (older API Good, newer file Requires improvement) is never offered to a Requires-improvement Brief. One contract across coverage, preparation and reports therefore still needs the frontend `RECONCILED_RATING_SQL` and backend `SERVED_RATING` moved onto the same rule. That is not done here.
+
+Residual risk in the integration branch: `prepare_order` reads the flag from its environment, and the generator then imports `api.config.settings`. In a shell with production `DATABASE_URL`, that import runs production validation, so a flag-on run fails closed unless the full production config is present.
+
+Tests after the fixes: PR #125 branch **1,647 passed, 137 skipped, 0 failed**; integration branch **1,659 passed, 137 skipped, 0 failed**; ruff clean on both.
+
+Still NOT VERIFIED (unchanged from the review): live CQC page checks, the 20 registration-ending spot-checks, State of Care publication values, fresh-database re-derivation of the 51 deregistrations, and deployed flag values.
