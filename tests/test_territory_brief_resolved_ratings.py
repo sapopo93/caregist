@@ -69,7 +69,7 @@ def _snapshot(tmp_path):
 
 def _brief(tmp_path, group, *, resolved=True, website=None):
     loc, prov = _snapshot(tmp_path)
-    kwargs = {"file_ratings": _file_ratings(), "website_observations": website} if resolved else {}
+    kwargs = {"rating_evidence": _file_ratings(), "website_observations": website} if resolved else {}
     with patch("api.config.settings.resolved_rating_contract_enabled", True):
         return generate_territory_opportunity_brief(
             {"kind": "local_authority", "name": "Testershire", "window_days": 90}, CONTEXT,
@@ -95,7 +95,7 @@ def test_flag_off_refuses_resolved_inputs(tmp_path):
     with pytest.raises(RuntimeError, match="resolved rating contract is disabled"):
         generate_territory_opportunity_brief(
             {"kind": "local_authority", "name": "Testershire"}, CONTEXT,
-            locations_source=loc, providers_source=prov, file_ratings=_file_ratings(),
+            locations_source=loc, providers_source=prov, rating_evidence=_file_ratings(),
         )
 
 
@@ -118,11 +118,12 @@ def test_ri_group_uses_resolved_current_ratings_only(tmp_path):
     brief = _brief(tmp_path, "requires_improvement")
     members = {o.location_id for o in _group_members(brief)}
     assert members == RI_FILE | OLDER_API_CONFLICTS
-    # The only other shortlisted location is an in-window new registration with no rating.
-    others = [o for o in brief.shortlist if o.location_id not in members]
-    assert [(o.location_id, o.current_rating, o.primary_signal) for o in others] == [
-        ("1-29650851551", None, "New CQC registration")
-    ]
+    # Every shortlisted location is a group member: NEAD (unrated, registered in
+    # the window) is excluded even though it has a new-registration event.
+    assert {o.location_id for o in brief.shortlist} == members
+    assert brief.considered_locations == len(members)
+    excluded_ids = {e["location_id"] for e in brief.rating_resolution["scope_exclusions"]}
+    assert "1-29650851551" in excluded_ids and not (excluded_ids & members)
     for o in _group_members(brief):
         assert o.current_rating == "Requires improvement"
         assert o.rating_resolution["status"] == "current"
@@ -195,3 +196,79 @@ def test_resolved_brief_is_deterministic(tmp_path):
     b = _brief(tmp_path, "requires_improvement")
     assert render_brief_pdf(a) == render_brief_pdf(b)
     assert brief_to_csv(a) == brief_to_csv(b)
+
+
+# --------------------------------------------------------------------------- #
+# Independent review 2026-10-25 (artifacts/reviews/2026-10-25-pr125-pr123)
+# --------------------------------------------------------------------------- #
+
+
+def _single(tmp_path, row, evidence, *, group=None, flag=True):
+    loc = tmp_path / "one.ndjson"
+    prov = tmp_path / "one-prov.ndjson"
+    loc.write_text(json.dumps(row) + "\n")
+    prov.write_text(json.dumps({"providerId": row["providerId"], "name": "P Ltd"}) + "\n")
+    with patch("api.config.settings.resolved_rating_contract_enabled", flag):
+        return generate_territory_opportunity_brief(
+            {"kind": "local_authority", "name": "Testershire", "window_days": 90}, CONTEXT,
+            locations_source=loc, providers_source=prov, provider_group=group, rating_evidence=evidence,
+        )
+
+
+def _conflict_row(lid="test-unresolved", **kw):
+    row = {"locationId": lid, "name": "Conflict Home", "providerId": "P-" + lid,
+           "localAuthority": "Testershire", "region": "", "registrationDate": "2020-01-01",
+           "registrationStatus": "Registered", "dormancy": "N", "numberOfBeds": 30, "postalCode": "TE1 1ST",
+           "gacServiceTypes": [{"description": "Care home service without nursing"}],
+           "currentRatings": {"overall": {"rating": "Good", "reportDate": "2026-10-01"}, "reportDate": "2026-10-01"},
+           "historicRatings": []}
+    row.update(kw)
+    return row
+
+
+def _file(lid, value, day):
+    return {lid: RatingEvidence(source=SOURCE_FILE, value=value, publication_date=day,
+                                source_sha256=SHA, edition_date=EDITION)}
+
+
+def test_review_finding_1_unresolved_in_window_rating_is_never_asserted(tmp_path):
+    brief = _single(tmp_path, _conflict_row(), _file("test-unresolved", "Inadequate", date(2026, 10, 1)))
+    assert brief.rating_resolution["by_location"]["test-unresolved"]["status"] == "unresolved"
+    data = json.dumps(brief.to_json())
+    assert "current rating Good" not in data and '"new_value": "Good"' not in data
+    assert "Good" not in brief_to_csv(brief).split("\n", 1)[1]
+    assert b"rating Good" not in _pdf_text(render_brief_pdf(brief))
+
+
+def test_review_finding_1_superseded_api_change_is_dropped_but_history_kept(tmp_path):
+    row = _conflict_row(
+        currentRatings={"overall": {"rating": "Good", "reportDate": "2026-09-01"}, "reportDate": "2026-09-01"},
+        historicRatings=[{"overall": {"rating": "Inadequate"}, "reportDate": "2026-08-15"},
+                         {"overall": {"rating": "Requires improvement"}, "reportDate": "2026-08-01"}],
+    )
+    brief = _single(tmp_path, row, _file("test-unresolved", "Requires improvement", date(2026, 10, 10)))
+    org = brief.shortlist[0]
+    changes = [(e["old_value"], e["new_value"]) for e in org.evidence if e["event_type"] == "rating_changed"]
+    assert changes == [("Requires improvement", "Inadequate")]  # dated history kept; Inadequate->Good dropped
+    assert org.current_rating == "Requires improvement"
+
+
+def test_review_finding_2_tuple_shape_and_empty_mapping_contract(tmp_path):
+    with pytest.raises(TypeError, match="must be RatingEvidence"):
+        _single(tmp_path, _conflict_row(), {"test-unresolved": ("Inadequate", date(2026, 10, 1))})
+    with pytest.raises(RuntimeError, match="disabled"):
+        _single(tmp_path, _conflict_row(), {}, flag=False)
+    empty = _single(tmp_path, _conflict_row(), {})  # explicit opt-in with no file evidence
+    assert empty.rating_resolution["by_location"]["test-unresolved"]["status"] == "current"
+
+
+@pytest.mark.parametrize("lid,row_kw,evidence", [
+    ("unrated", {"currentRatings": {}, "registrationDate": "2026-09-01"}, {}),
+    ("conflicted", {"registrationDate": "2026-09-01"}, "conflict"),
+])
+def test_review_finding_5_eventful_non_members_are_excluded(tmp_path, lid, row_kw, evidence):
+    if evidence == "conflict":
+        evidence = _file(lid, "Inadequate", date(2026, 10, 1))
+    brief = _single(tmp_path, _conflict_row(lid, **row_kw), evidence, group="requires_improvement")
+    assert brief.shortlist == ()
+    assert [e["location_id"] for e in brief.rating_resolution["scope_exclusions"]] == [lid]

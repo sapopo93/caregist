@@ -139,3 +139,22 @@ def test_directory_rows_cqc_has_deregistered_are_excluded_and_named():
                  [_exp("gone", registrationStatus="Deregistered", deregistrationDate="2026-10-14")])
     assert [c.location_id for c in scan.competitors] == ["a"]
     assert scan.excluded_deregistered == ("gone",)
+
+
+def test_review_finding_6_movement_cutoff_is_the_export_date(tmp_path):
+    from tools.report_sources import export_cutoff
+
+    export = tmp_path / "_locations_detail.ndjson"
+    export.write_text("")
+    rows = [_exp("old", registrationDate="2026-09-01"),
+            _exp("late", registrationStatus="Deregistered", deregistrationDate="2026-10-19")]
+    (tmp_path / "RECEIPT.json").write_text('{"source_retrieved_at": "2026-10-20T07:41:27+00:00"}')
+    cutoff = export_cutoff(export, None, rows)
+    assert cutoff == date(2026, 10, 20)  # not the newest registration (2026-09-01)
+    mv = _scan([], rows, export_window_end=cutoff).movement
+    assert mv.confirmed_closures == ("late",)
+    with pytest.raises(SystemExit, match="after its stated cutoff"):
+        export_cutoff(export, "2026-10-18", rows)
+    (tmp_path / "RECEIPT.json").unlink()
+    with pytest.raises(SystemExit, match="cutoff unknown"):
+        export_cutoff(export, None, rows)

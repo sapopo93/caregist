@@ -1070,6 +1070,39 @@ def _resolved_group_event(resolved: ResolvedRating, group: str, *, url: str) -> 
     )
 
 
+def _check_evidence_mapping(mapping: Mapping[str, Any] | None, source: str, name: str) -> None:
+    for key, value in (mapping or {}).items():
+        if not isinstance(value, RatingEvidence) or value.source != source:
+            raise TypeError(
+                f"{name}[{key!r}] must be RatingEvidence with source={source!r}, got {type(value).__name__}"
+            )
+
+
+def _align_rating_events(
+    events: list[OrgEvent], resolved: ResolvedRating, row: dict[str, Any]
+) -> list[OrgEvent]:
+    """Keep API rating events consistent with the resolved rating.
+
+    ``rating_published`` and the ``rating_changed`` into the API's latest value
+    both assert that value as the current rating. They are kept only when the
+    resolution is ``current`` with that same value; otherwise (unresolved,
+    inherited, none, or a newer different value) they are dropped so a disputed
+    or superseded value never reaches the narrative, evidence or exports.
+    Earlier in-window movements stay as dated historical facts.
+    """
+    sequence = _rating_sequence(row)
+    if not sequence:
+        return events
+    latest_date = sequence[-1][0]
+    kept = []
+    for e in events:
+        asserts_current = e.event_type in ("rating_published", "rating_changed") and e.effective_date == latest_date
+        if asserts_current and not (resolved.is_current and resolved.value == canonical_rating(e.new_value)):
+            continue
+        kept.append(e)
+    return kept
+
+
 def resolve_row_rating(
     row: dict[str, Any],
     file_rating: RatingEvidence | None,
@@ -1123,7 +1156,7 @@ def generate_territory_opportunity_brief(
     providers_source: str | Path,
     location_ids: Iterable[str] | None = None,
     provider_group: str | None = None,
-    file_ratings: Mapping[str, RatingEvidence] | None = None,
+    rating_evidence: Mapping[str, RatingEvidence] | None = None,
     website_observations: Mapping[str, RatingEvidence] | None = None,
 ) -> TerritoryBrief:
     """Generate a complete Territory Opportunity Brief.
@@ -1137,11 +1170,17 @@ def generate_territory_opportunity_brief(
     buyer's coverage check counted). ``provider_group`` adds each member's
     documented group state as evidence so standing groups are not empty.
 
-    ``file_ratings`` (and optionally ``website_observations``), keyed by CQC
-    location id, switch the Brief to the resolved rating contract: every rating
-    shown, counted or used for a rating-based group comes from
-    :func:`api.services.rating_resolver.resolve_rating`. Requires
-    ``settings.resolved_rating_contract_enabled``; off by default.
+    ``rating_evidence`` (ratings-file :class:`RatingEvidence` keyed by CQC
+    location id) and optionally ``website_observations`` switch the Brief to the
+    resolved rating contract: every rating shown, counted or used for a
+    rating-based group comes from
+    :func:`api.services.rating_resolver.resolve_rating`. Passing either -- even
+    an empty mapping -- is an explicit opt-in and requires
+    ``settings.resolved_rating_contract_enabled`` (off by default); with the
+    flag off the call is refused rather than silently falling back. Values must
+    be :class:`RatingEvidence` with ``source == "cqc_ratings_file"``; the
+    ``(rating, date)`` tuples of the earlier API-else-file fill are rejected.
+    With neither argument the Brief behaves exactly as before.
     """
     if provider_group is not None and provider_group not in PROVIDER_GROUP_LABELS:
         raise ScopeError(f"unknown provider group {provider_group!r}")
@@ -1176,7 +1215,7 @@ def generate_territory_opportunity_brief(
         scoped_rows = [
             row for row in scoped_rows if str(row.get("locationId") or "").strip() in allowed_ids
         ]
-    resolving = file_ratings is not None or website_observations is not None
+    resolving = rating_evidence is not None or website_observations is not None
     if resolving:
         from api.config import settings
 
@@ -1184,12 +1223,14 @@ def generate_territory_opportunity_brief(
             raise RuntimeError(
                 "resolved rating contract is disabled (RESOLVED_RATING_CONTRACT_ENABLED=false)"
             )
+        _check_evidence_mapping(rating_evidence, SOURCE_FILE, "rating_evidence")
+        _check_evidence_mapping(website_observations, "cqc_website", "website_observations")
         scoped_rows = [
             {
                 **row,
                 "_resolved_rating": resolve_row_rating(
                     row,
-                    (file_ratings or {}).get(str(row.get("locationId") or "").strip()),
+                    (rating_evidence or {}).get(str(row.get("locationId") or "").strip()),
                     (website_observations or {}).get(str(row.get("locationId") or "").strip()),
                 ),
             }
@@ -1209,9 +1250,20 @@ def generate_territory_opportunity_brief(
     provider_event_locations: Counter[str] = Counter()
     per_row_events: list[tuple[dict[str, Any], list[OrgEvent]]] = []
     for row in scoped_rows:
+        resolved_row = row.get("_resolved_rating")
+        if (
+            isinstance(resolved_row, ResolvedRating)
+            and provider_group in _GROUP_RATING
+            and not (resolved_row.is_current and resolved_row.value == _GROUP_RATING[provider_group])
+        ):
+            # A rating-based group admits only matching current ratings; other
+            # signals cannot bring a non-member back in (listed in scope_exclusions).
+            continue
         events = _location_events(
             row, window_start=window_start, window_end=window_end, as_of=as_of
         )
+        if isinstance(resolved_row, ResolvedRating):
+            events = _align_rating_events(events, resolved_row, row)
         if provider_group and provider_group != "new_90":
             state = _provider_group_event(row, provider_group, as_of=as_of)
             if state is not None:

@@ -134,6 +134,29 @@ def report_database_url() -> str:
     return url
 
 
+def export_cutoff(export_path: str | Path, explicit: str | None, rows: Iterable[dict[str, Any]]) -> date:
+    """The date an export covers up to: its retrieval date, not its newest event.
+
+    ``explicit`` wins; otherwise ``RECEIPT.json`` beside the export supplies
+    ``source_retrieved_at``. Refuses a cutoff earlier than any registration or
+    deregistration date in the data, which would mean the label is wrong.
+    """
+    cutoff = parse_day(explicit) if explicit else None
+    if cutoff is None:
+        receipt = Path(export_path).with_name("RECEIPT.json")
+        if receipt.exists():
+            cutoff = parse_day(json.loads(receipt.read_text()).get("source_retrieved_at"))
+    if cutoff is None:
+        raise SystemExit("export cutoff unknown: pass the export retrieval date or keep RECEIPT.json beside it")
+    newest = max(
+        (d for r in rows for d in (parse_day(r.get("registrationDate")), parse_day(r.get("deregistrationDate"))) if d),
+        default=None,
+    )
+    if newest and newest > cutoff:
+        raise SystemExit(f"export contains events dated {newest} after its stated cutoff {cutoff}")
+    return cutoff
+
+
 def readonly_connection():
     import psycopg2
 

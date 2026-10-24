@@ -37,7 +37,7 @@ from pathlib import Path
 from typing import Callable, Iterable
 
 from tools.import_cqc_latest_ratings import iter_sheet_rows
-from tools.report_sources import iter_export, parse_day, readonly_connection, sha256_file
+from tools.report_sources import export_cutoff, iter_export, parse_day, readonly_connection, sha256_file
 
 #: Published State of Care 2025/26 values supplied in the brief. ``None`` means
 #: the brief gives no figure for that measure.
@@ -249,11 +249,7 @@ def comparison_table(columns: dict[str, dict]) -> list[dict]:
 def run(args, classify: EndingClassifier, closure_logic: str) -> dict:
     as_at = parse_day(args.as_at)
     export_rows = list(iter_export(args.export))
-    newest_registration = max(
-        (parse_day(r.get("registrationDate")) for r in export_rows if r.get("registrationDate")),
-        default=None,
-    )
-    window_end = parse_day(args.window_end) or newest_registration
+    window_end = export_cutoff(args.export, args.window_end, export_rows)
     now = [service_from_export(r) for r in export_rows if r.get("registrationStatus") == "Registered"]
     apr = [service_from_export(r) for r in export_rows if registered_at(r, as_at)]
     columns = {"caregist_now": measures(now), "caregist_apr": measures(apr)}
@@ -320,7 +316,8 @@ def main(argv=None, classify: EndingClassifier | None = None) -> int:
     ap.add_argument("--hsca-ods", type=Path)
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--as-at", default="2026-04-01")
-    ap.add_argument("--window-end", help="end of the 12-month movement window (default: newest registration date)")
+    ap.add_argument("--window-end", help="end of the 12-month movement window (default: the export's "
+                    "retrieval date from RECEIPT.json)")
     ap.add_argument("--closure-logic", choices=("naive", "classified"), default="classified")
     ap.add_argument("--no-db", action="store_true")
     args = ap.parse_args(argv)

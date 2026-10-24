@@ -175,6 +175,43 @@ def _newer_than_edition(ev: RatingEvidence, file_edition: date | None) -> bool:
     return bool(file_edition and ev.publication_date and ev.publication_date > file_edition)
 
 
+#: Deterministic tie-break between channels that publish the same value on the
+#: same date, so evidence order never changes the result.
+_SOURCE_ORDER = {SOURCE_FILE: 0, SOURCE_API: 1, SOURCE_WEBSITE: 2}
+
+
+def _pick_newest(candidates: list[RatingEvidence], registration_date: date | None) -> tuple[RatingEvidence, bool]:
+    """Newest dated candidate (order-independent) and whether it is inherited.
+
+    Inheritance is reconciled across every candidate that publishes the same
+    value on the same date: if any of them is flagged inherited or predates the
+    registration, the result is inherited. Conflicting metadata resolves to the
+    conservative answer.
+    """
+    dated = [e for e in candidates if e.publication_date]
+    pool = dated or candidates
+    newest = max((e.publication_date for e in dated), default=None)
+    tied = [e for e in pool if e.publication_date == newest] if dated else pool
+    chosen = min(tied, key=lambda e: (_SOURCE_ORDER.get(e.source, 9), e.source))
+    same = [e for e in tied if e.value == chosen.value]
+    return chosen, any(_is_inherited(e, registration_date) for e in same)
+
+
+def _observation_applies(obs: RatingEvidence, others: list[RatingEvidence]) -> bool:
+    """A page observation decides only if it postdates every competing value.
+
+    Every candidate with a different value must be dated on or before the
+    observation day; otherwise the observation may be stale (a later rating was
+    published after it) or the timing cannot be established.
+    """
+    for e in others:
+        if e.value == obs.value:
+            continue
+        if e.publication_date is None or e.publication_date > obs.observed_on:
+            return False
+    return True
+
+
 def resolve_rating(
     evidence: Iterable[RatingEvidence],
     *,
@@ -188,12 +225,16 @@ def resolve_rating(
     1. Only published values (Outstanding/Good/Requires improvement/Inadequate)
        are candidates. Sentinels and blanks are kept in ``evidence`` but never
        chosen.
-    2. A dated CQC website observation is CQC's own latest statement: the most
-       recently observed one decides the value, and its inherited flag decides
-       the status.
+    2. A dated CQC website observation is CQC's own statement at that time: the
+       most recently observed one decides the value and its inherited flag the
+       status, but only when every competing value is dated on or before the
+       observation. Otherwise it is weighed by its publication date like any
+       other candidate.
     3. No candidate -> ``none``.
-    4. All candidates agree -> the most recently published one is chosen;
-       ``inherited`` if it predates the registration or is flagged inherited.
+    4. All candidates agree -> the most recently published one is chosen
+       (ties broken by a fixed channel order); ``inherited`` if any candidate
+       with that value and date predates the registration or is flagged
+       inherited.
     5. Candidates disagree:
        * any undated candidate -> ``unresolved``;
        * an inherited candidate contradicted by a non-inherited one ->
@@ -223,17 +264,19 @@ def resolve_rating(
     observations = [e for e in candidates if e.source == SOURCE_WEBSITE and e.observed_on]
     if observations:
         chosen = max(observations, key=lambda e: (e.observed_on, e.publication_date or date.min))
-        status = INHERITED if _is_inherited(chosen, registration_date) else CURRENT
-        return result(status, chosen, "CQC location page observation decides the current value")
+        others = [e for e in candidates if e.source != SOURCE_WEBSITE]
+        if _observation_applies(chosen, others):
+            status = INHERITED if _is_inherited(chosen, registration_date) else CURRENT
+            return result(status, chosen, "CQC location page observation decides the current value")
+        candidates = others + [chosen]
 
     if not candidates:
         return result(NONE, None, "No channel publishes a rating value")
 
     values = {e.value for e in candidates}
     if len(values) == 1:
-        dated = [e for e in candidates if e.publication_date]
-        chosen = max(dated, key=lambda e: e.publication_date) if dated else candidates[0]
-        if _is_inherited(chosen, registration_date):
+        chosen, inherited = _pick_newest(candidates, registration_date)
+        if inherited:
             return result(INHERITED, chosen, "Published before this registration or flagged inherited")
         return result(CURRENT, chosen, "All channels agree")
 
@@ -253,9 +296,8 @@ def resolve_rating(
     if len(at_newest) > 1:
         return result(UNRESOLVED, None, "Different values share the newest publication date")
 
-    chosen = next(e for e in candidates if e.publication_date == newest)
-    status = INHERITED if _is_inherited(chosen, registration_date) else CURRENT
-    return result(status, chosen, "Most recently published value across channels")
+    chosen, inherited = _pick_newest(candidates, registration_date)
+    return result(INHERITED if inherited else CURRENT, chosen, "Most recently published value across channels")
 
 
 def evidence_from_provider_row(row: dict[str, Any], *, file_edition_date: date | None) -> list[RatingEvidence]:

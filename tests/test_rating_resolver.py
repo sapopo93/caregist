@@ -233,3 +233,43 @@ def test_evidence_from_provider_row_reads_migration_068_columns():
     r = resolve_rating(evidence_from_provider_row(row, file_edition_date=FILE_EDITION),
                        registration_date=row["registration_date"])
     assert (r.value, r.source, r.to_dict()["file_sha256"]) == ("Requires improvement", SOURCE_FILE, "abc")
+
+
+
+# Independent review 2026-10-25, findings 3 and 4.
+
+def test_review_finding_3_inherited_flag_survives_any_evidence_order():
+    api = RatingEvidence(source=SOURCE_API, value="Requires improvement", publication_date=date(2024, 1, 1))
+    file = RatingEvidence(source=SOURCE_FILE, value="Requires improvement", publication_date=date(2024, 1, 1),
+                          inherited_flag=True)
+    for ev in ([api, file], [file, api]):
+        r = resolve_rating(ev, registration_date=date(2020, 1, 1))
+        assert (r.status, r.source) == (INHERITED, SOURCE_FILE)
+        assert not r.is_current
+
+
+def test_same_value_same_date_choice_is_order_independent():
+    api = RatingEvidence(source=SOURCE_API, value="Good", publication_date=date(2025, 1, 1))
+    file = RatingEvidence(source=SOURCE_FILE, value="Good", publication_date=date(2025, 1, 1))
+    a = resolve_rating([api, file], registration_date=None)
+    b = resolve_rating([file, api], registration_date=None)
+    assert (a.status, a.source) == (b.status, b.source) == (CURRENT, SOURCE_FILE)
+
+
+def test_review_finding_4_stale_page_observation_does_not_override_later_rating():
+    ev = [
+        RatingEvidence(source=SOURCE_API, value="Inadequate", publication_date=date(2025, 1, 1)),
+        RatingEvidence(source=SOURCE_WEBSITE, value="Good", publication_date=date(2023, 1, 1),
+                       observed_on=date(2023, 2, 1)),
+    ]
+    r = resolve_rating(ev, registration_date=None)
+    assert (r.status, r.value, r.source) == (CURRENT, "Inadequate", SOURCE_API)
+
+
+def test_observation_with_undated_competitor_is_unresolved():
+    ev = [
+        RatingEvidence(source=SOURCE_API, value="Inadequate", publication_date=None),
+        RatingEvidence(source=SOURCE_WEBSITE, value="Good", publication_date=date(2025, 1, 1),
+                       observed_on=date(2025, 2, 1)),
+    ]
+    assert resolve_rating(ev, registration_date=None).status == UNRESOLVED

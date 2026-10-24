@@ -34,7 +34,7 @@ from api.services.competitor_scan import (
     scan_to_csv,
     validate_inputs,
 )
-from tools.report_sources import iter_export, parse_day, report_database_url
+from tools.report_sources import export_cutoff, iter_export, parse_day, report_database_url
 
 
 async def _fetch(conn, postcode: str, radius: float, service_type: str):
@@ -58,7 +58,7 @@ async def _run(args) -> int:
         pc, radius, stype = spec.split(":")
         scans.append(validate_inputs(pc, float(radius), stype))
     export_rows = list(iter_export(args.export))
-    window_end = max(parse_day(r.get("registrationDate")) or parse_day("1900-01-01") for r in export_rows)
+    window_end = export_cutoff(args.export, args.export_retrieved, export_rows)
     conn = await asyncpg.connect(report_database_url())
     try:
         async with conn.transaction(readonly=True):
