@@ -1,0 +1,69 @@
+{
+ "region": "North West",
+ "directory_read_at": "2026-10-24T22:37:17+00:00",
+ "sql_base_count": 1055,
+ "sql_stored_well_led_below_good": 0,
+ "list_rows": 232,
+ "buckets": {
+  "current_good": 628,
+  "current_outstanding": 20,
+  "inherited": 133,
+  "listed": 232,
+  "none": 42
+ },
+ "bucket_total": 1055,
+ "reconciles": true,
+ "base_with_api_well_led": 756,
+ "base_with_file_well_led": 991,
+ "ratings_file_ambiguous_well_led_skipped": 0,
+ "ratings_file_sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+ "ratings_file_edition_date": "2026-10-02",
+ "cqc_export": "/Users/user/CareGist/.tmp/cqc-export-20261020-final/_locations_detail.ndjson",
+ "sql_base_counts_all_regions": [
+  {
+   "region": "East",
+   "base_count": 682,
+   "stored_well_led_below_good": 0
+  },
+  {
+   "region": "East Midlands",
+   "base_count": 765,
+   "stored_well_led_below_good": 0
+  },
+  {
+   "region": "London",
+   "base_count": 419,
+   "stored_well_led_below_good": 0
+  },
+  {
+   "region": "North East",
+   "base_count": 331,
+   "stored_well_led_below_good": 0
+  },
+  {
+   "region": "North West",
+   "base_count": 1055,
+   "stored_well_led_below_good": 0
+  },
+  {
+   "region": "South East",
+   "base_count": 1257,
+   "stored_well_led_below_good": 0
+  },
+  {
+   "region": "South West",
+   "base_count": 983,
+   "stored_well_led_below_good": 0
+  },
+  {
+   "region": "West Midlands",
+   "base_count": 725,
+   "stored_well_led_below_good": 0
+  },
+  {
+   "region": "Yorkshire & Humberside",
+   "base_count": 755,
+   "stored_well_led_below_good": 0
+  }
+ ]
+}
