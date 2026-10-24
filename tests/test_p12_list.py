@@ -85,3 +85,14 @@ def test_csv_wording_is_factual_and_carries_dates():
 def test_empty_region_writes_header_only():
     result = _build([], {}, {})
     assert p12_to_csv(result).count("\n") == 1
+
+
+def test_cqc_deregistered_rows_are_bucketed_not_listed():
+    with patch("api.config.settings.p12_list_enabled", True):
+        result = build_p12_list(
+            region="North West", base_rows=[_base("0"), _base("gone")],
+            api_well_led={"0": ("Inadequate", date(2025, 3, 1)), "gone": ("Inadequate", date(2025, 3, 1))},
+            file_well_led={}, file_edition_date=None, file_sha256=None, cqc_deregistered=frozenset({"gone"}),
+        )
+    assert [r["cqc_location_id"] for r in result.rows] == ["0"]
+    assert result.reconciliation == {"cqc_deregistered": 1, "listed": 1}

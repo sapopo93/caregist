@@ -142,6 +142,8 @@ class CompetitorScan:
     movement: Movement
     data_as_at: dict[str, str]
     rating_counts: dict[str, int] = field(default_factory=dict)
+    #: Directory-ACTIVE locations the CQC export already shows as deregistered.
+    excluded_deregistered: tuple[str, ...] = ()
 
 
 def build_competitor_scan(
@@ -159,8 +161,14 @@ def build_competitor_scan(
 ) -> CompetitorScan:
     ensure_enabled()
     postcode, radius_km, service_type = validate_inputs(postcode, radius_km, service_type)
-    competitors = []
+    deregistered = {
+        str(r.get("locationId")) for r in export_rows if r.get("registrationStatus") == "Deregistered"
+    }
+    competitors, excluded = [], []
     for row in directory_rows:
+        if row["id"] in deregistered:
+            excluded.append(row["id"])
+            continue
         resolved = resolve_rating(
             evidence_from_provider_row(row, file_edition_date=file_edition_date),
             registration_date=row.get("registration_date"),
@@ -202,6 +210,7 @@ def build_competitor_scan(
         origin_method=origin_method, competitors=tuple(competitors), movement=movement,
         data_as_at=dict(data_as_at),
         rating_counts=dict(sorted(Counter(_count_key(c.rating) for c in competitors).items())),
+        excluded_deregistered=tuple(sorted(excluded)),
     )
 
 
@@ -267,6 +276,11 @@ def render_scan_pdf(scan: CompetitorScan) -> bytes:
         ("Registrations, 12 months", f"{len(mv.registrations)} ({mv.window_start.isoformat()} to {mv.window_end.isoformat()})"),
         ("Confirmed closures, 12 months", str(len(mv.confirmed_closures))),
         ("Other registration endings", ", ".join(f"{k.replace('_', ' ')}: {v}" for k, v in mv.other_endings.items()) or "none"),
+        ("Excluded as deregistered", (
+            f"{len(scan.excluded_deregistered)}: CQC's export shows these as deregistered although the "
+            f"directory still lists them ({', '.join(scan.excluded_deregistered)})"
+            if scan.excluded_deregistered else "none"
+        )),
     ])
     pdf.paragraph(
         "Closures count only confirmed closures: re-registrations and ownership changes that CQC "

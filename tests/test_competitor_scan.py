@@ -132,3 +132,10 @@ def test_pdf_carries_as_at_dates_licence_and_independence_statement():
     assert b"Open Government Licence v3.0" in text
     assert INDEPENDENCE_STATEMENT[:40].encode() in text
     assert render_scan_pdf(scan) == pdf  # deterministic
+
+
+def test_directory_rows_cqc_has_deregistered_are_excluded_and_named():
+    scan = _scan([_dir_row("a", 0.4), _dir_row("gone", 0.5)],
+                 [_exp("gone", registrationStatus="Deregistered", deregistrationDate="2026-10-14")])
+    assert [c.location_id for c in scan.competitors] == ["a"]
+    assert scan.excluded_deregistered == ("gone",)

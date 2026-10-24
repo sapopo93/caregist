@@ -87,7 +87,8 @@ async def _run(args) -> int:
             "origin_method": method, "services": len(scan.competitors), "rating_counts": scan.rating_counts,
             "registrations_12m": len(scan.movement.registrations),
             "confirmed_closures_12m": len(scan.movement.confirmed_closures),
-            "other_endings_12m": scan.movement.other_endings, "files": [f"{stem}.pdf", f"{stem}.csv"],
+            "other_endings_12m": scan.movement.other_endings,
+            "excluded_deregistered": list(scan.excluded_deregistered), "files": [f"{stem}.pdf", f"{stem}.csv"],
             "directory_read_at": read_at,
         })
     (args.out / "manifest.json").write_text(json.dumps(manifest, indent=1))

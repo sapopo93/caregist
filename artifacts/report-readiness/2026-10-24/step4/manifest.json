@@ -19,11 +19,12 @@
   "registrations_12m": 2,
   "confirmed_closures_12m": 3,
   "other_endings_12m": {},
+  "excluded_deregistered": [],
   "files": [
    "competitor_scan_BS66BH_care_home_5km.pdf",
    "competitor_scan_BS66BH_care_home_5km.csv"
   ],
-  "directory_read_at": "2026-10-24T22:35:35+00:00"
+  "directory_read_at": "2026-10-24T22:40:02+00:00"
  },
  {
   "postcode": "LS9 6BT",
@@ -47,11 +48,12 @@
    "dormant": 5,
    "re_registration": 1
   },
+  "excluded_deregistered": [],
   "files": [
    "competitor_scan_LS96BT_homecare_5km.pdf",
    "competitor_scan_LS96BT_homecare_5km.csv"
   ],
-  "directory_read_at": "2026-10-24T22:35:35+00:00"
+  "directory_read_at": "2026-10-24T22:40:02+00:00"
  },
  {
   "postcode": "NR7 0RF",
@@ -76,10 +78,11 @@
    "dormant": 1,
    "re_registration": 3
   },
+  "excluded_deregistered": [],
   "files": [
    "competitor_scan_NR70RF_care_home_10km.pdf",
    "competitor_scan_NR70RF_care_home_10km.csv"
   ],
-  "directory_read_at": "2026-10-24T22:35:35+00:00"
+  "directory_read_at": "2026-10-24T22:40:02+00:00"
  }
 ]

@@ -63,10 +63,12 @@ def main(argv=None) -> int:
 
     read_at, base, counts = asyncio.run(_read(args.region))
     ids = {r["id"] for r in base}
-    api = {}
+    api, deregistered = {}, set()
     for row in iter_export(args.export):
         if row.get("locationId") in ids:
             api[row["locationId"]] = export_current_rating(row, DOMAIN)
+            if row.get("registrationStatus") == "Deregistered":
+                deregistered.add(row["locationId"])
     file_ratings, ambiguous = load_ratings_file(args.ratings_ods, (DOMAIN,))
     file_well_led = {
         lid: FileDomainRating(v[DOMAIN].rating, v[DOMAIN].publication_date, v[DOMAIN].inherited)
@@ -76,6 +78,7 @@ def main(argv=None) -> int:
     result = build_p12_list(
         region=args.region, base_rows=base, api_well_led=api, file_well_led=file_well_led,
         file_edition_date=parse_day(args.file_edition_date), file_sha256=sha,
+        cqc_deregistered=frozenset(deregistered),
     )
     sql_base = next((c for c in counts if c["region"] == args.region), None)
     reconciliation = {

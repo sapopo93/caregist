@@ -81,12 +81,18 @@ def build_p12_list(
     file_well_led: Mapping[str, FileDomainRating],
     file_edition_date: date | None,
     file_sha256: str | None,
+    cqc_deregistered: frozenset[str] = frozenset(),
 ) -> P12Result:
+    """``cqc_deregistered``: ids the CQC export shows as deregistered; they are
+    counted in the ``cqc_deregistered`` bucket and never listed."""
     ensure_enabled()
     rows, buckets = [], Counter()
     base = list(base_rows)
     for row in base:
         lid = row["id"]
+        if lid in cqc_deregistered:
+            buckets["cqc_deregistered"] += 1
+            continue
         api_raw, api_date = api_well_led.get(lid, (None, None))
         evidence = [RatingEvidence(source=SOURCE_API, value=canonical_rating(api_raw),
                                    publication_date=api_date, raw_value=api_raw)]
