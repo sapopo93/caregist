@@ -16,72 +16,11 @@
  "as_of_date": "2026-09-10",
  "window_start": "2026-06-13",
  "window_end": "2026-09-10",
- "considered_locations": 9,
+ "considered_locations": 8,
  "territory_locations": 30,
  "shortlist": [
   {
    "rank": 1,
-   "organisation_name": "NEAD Support Ltd - Remote Clinical Service Ltd",
-   "location_name": "NEAD Support Ltd - Remote Clinical Service",
-   "location_id": "1-29650851551",
-   "provider_id": "P-1-29650851551",
-   "local_authority": "Testershire",
-   "region": "Test Region",
-   "postcode": "TE1 1ST",
-   "service_types": [
-    "Care home service without nursing"
-   ],
-   "number_of_beds": 30,
-   "current_rating": null,
-   "primary_signal": "New CQC registration",
-   "most_recent_event_date": "2026-09-10",
-   "score": 55.4,
-   "score_breakdown": {
-    "new_registration@2026-09-10": 50.4,
-    "size_factor": 5.0
-   },
-   "reason": "Newly registered with CQC on 10 Sep 2026 (care home service without nursing, 30 beds) in the last two months, so onboarding decisions are still open. This is a first-time registration signal in Testershire; it does not establish supplier need or purchasing intent, and no inspection history is available yet.",
-   "evidence": [
-    {
-     "event_type": "new_registration",
-     "effective_date": "2026-09-10",
-     "old_value": null,
-     "new_value": "Registered",
-     "detail": "CQC registration recorded 2026-09-10",
-     "source_field": "location.registrationDate",
-     "source_url": "https://www.cqc.org.uk/location/1-29650851551",
-     "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data"
-    }
-   ],
-   "qualification_question": "Who is responsible for choosing suppliers for this newly registered service, and when does it expect to start operating?",
-   "buyer_questions": {
-    "recruitment": "How many care staff does this service plan to employ, how many are in post now, and when do its first packages or contracts start? Are those packages council-funded or already confirmed?",
-    "compliance": "Who is preparing this service for its first CQC inspection, and has it arranged a governance audit, mock inspection or safeguarding training yet?",
-    "software": "What does this service use for care records today (paper, spreadsheets or a digital system), is that system on the NHS assured supplier list for digital social care records, how many users does it have, and when is the contract up for renewal?"
-   },
-   "rating_resolution": {
-    "domain": "overall",
-    "status": "none",
-    "value": null,
-    "source": null,
-    "publication_date": null,
-    "reason": "No channel publishes a rating value",
-    "newer_than_file_edition": false,
-    "api_value": null,
-    "api_raw_value": null,
-    "api_publication_date": null,
-    "file_value": null,
-    "file_publication_date": null,
-    "file_inherited_flag": null,
-    "file_sha256": null,
-    "file_edition_date": null,
-    "website_value": null,
-    "website_publication_date": null,
-    "website_observed_on": null
-   }
-  },
-  {
-   "rank": 2,
    "organisation_name": "Eskdale House Supported Living Service Ltd",
    "location_name": "Eskdale House Supported Living Service",
    "location_id": "1-27003473742",
@@ -142,7 +81,7 @@
    }
   },
   {
-   "rank": 3,
+   "rank": 2,
    "organisation_name": "St Stephens Nursing Home Ltd",
    "location_name": "St Stephens Nursing Home",
    "location_id": "1-152721284",
@@ -203,7 +142,7 @@
    }
   },
   {
-   "rank": 4,
+   "rank": 3,
    "organisation_name": "Angel Home Care Service Private Limited Ltd",
    "location_name": "Angel Home Care Service Private Limited",
    "location_id": "1-407665280",
@@ -264,7 +203,7 @@
    }
   },
   {
-   "rank": 5,
+   "rank": 4,
    "organisation_name": "Althorp Grange Ltd",
    "location_name": "Althorp Grange",
    "location_id": "1-390976877",
@@ -325,7 +264,7 @@
    }
   },
   {
-   "rank": 6,
+   "rank": 5,
    "organisation_name": "Lucketts Farm Ltd",
    "location_name": "Lucketts Farm",
    "location_id": "1-2352094536",
@@ -386,7 +325,7 @@
    }
   },
   {
-   "rank": 7,
+   "rank": 6,
    "organisation_name": "Nomira Care Ltd Ltd",
    "location_name": "Nomira Care Ltd",
    "location_id": "1-13937101349",
@@ -447,7 +386,7 @@
    }
   },
   {
-   "rank": 8,
+   "rank": 7,
    "organisation_name": "Rose Court Care Home Ltd",
    "location_name": "Rose Court Care Home",
    "location_id": "1-15297949474",
@@ -508,7 +447,7 @@
    }
   },
   {
-   "rank": 9,
+   "rank": 8,
    "organisation_name": "The Chesser Surgery Ltd",
    "location_name": "The Chesser Surgery",
    "location_id": "1-552527797",
@@ -577,42 +516,41 @@
   "source_edition": "2026-09-10",
   "window": "2026-06-13 to 2026-09-10",
   "territory_locations_in_source": 30,
-  "opportunity_set_size": 9,
-  "shortlisted": 9,
-  "headline": "9 location(s) in Testershire are in the provider group 'Currently rated Requires improvement' on the source edition dated 10 Sep 2026; 9 are shortlisted and ranked.",
-  "movement_summary": "1 new registration(s), 8 location(s) with the selected current rating",
+  "opportunity_set_size": 8,
+  "shortlisted": 8,
+  "headline": "8 location(s) in Testershire are in the provider group 'Currently rated Requires improvement' on the source edition dated 10 Sep 2026; 8 are shortlisted and ranked.",
+  "movement_summary": "8 location(s) with the selected current rating",
   "strongest_opportunities": [
-   "NEAD Support Ltd - Remote Clinical Service Ltd (NEAD Support Ltd - Remote Clinical Service) - new cqc registration",
    "Eskdale House Supported Living Service Ltd (Eskdale House Supported Living Service) - current rating",
-   "St Stephens Nursing Home Ltd (St Stephens Nursing Home) - current rating"
+   "St Stephens Nursing Home Ltd (St Stephens Nursing Home) - current rating",
+   "Angel Home Care Service Private Limited Ltd (Angel Home Care Service Private Limited) - current rating"
   ],
   "limitations": "Reflects the published CQC register edition, not a live lookup; opportunity signals show where to look first, not provider quality or intent.",
-  "shortfall_notice": "Shortfall: this territory has 9 organisation(s) with a supported signal in the window, fewer than the requested shortlist of 30. All of them are included; none have been added to make up the number."
+  "shortfall_notice": "Shortfall: this territory has 8 organisation(s) with a supported signal in the window, fewer than the requested shortlist of 30. All of them are included; none have been added to make up the number."
  },
  "territory_insights": {
   "events_by_type": {
-   "new_registration": 1,
    "rating_current": 8
   },
   "rating_moves": {
    "declines": 0,
    "improvements": 0
   },
-  "new_beds_entering_market": 30,
+  "new_beds_entering_market": 0,
   "activity_by_sub_area": [
    {
     "area": "Test Region",
-    "events": 9
+    "events": 8
    }
   ],
   "service_type_mix": [
    {
     "service_type": "Care home service without nursing",
-    "organisations": 9
+    "organisations": 8
    }
   ],
   "most_active_providers": [],
-  "shortlist_size": 9,
+  "shortlist_size": 8,
   "rating_date_coverage": {
    "undated_locations": 0,
    "recent_rating_changes_available": true,
@@ -620,7 +558,6 @@
   }
  },
  "next_actions": [
-  "Review the 1 newly registered location(s) first. The registration date is a research signal only; verify the current record and any explicit supplier need before considering contact. The shortlist links each CQC record.",
   "Verify each organisation's current status on the linked CQC page before outreach - this brief reflects the published register edition, not a live lookup."
  ],
  "methodology_notes": [

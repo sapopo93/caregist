@@ -4,7 +4,7 @@
  "sources": {
   "export": "/Users/user/CareGist/.tmp/cqc-export-20261020-final/_locations_detail.ndjson",
   "export_sha256": "60f19f8f5e6504a7437206025a3e50c65061ad95ebce3cbb698b80c2feb8fc76",
-  "export_window_end": "2026-10-16",
+  "export_window_end": "2026-10-20",
   "as_at_reconstruction": "2026-04-01",
   "hsca_ods": "/Users/user/CareGist/cqc_active_locations_20260401.ods",
   "hsca_sha256": "de48010ff09bf670c4009bf98ae679ba2c0211e1bffa6c23f2a56b134e1e3eac",
@@ -79,22 +79,22 @@
    "large_home_share_of_beds": 0.5241
   },
   "caregist_db_now": {
-   "care_homes": 14898,
-   "homecare": 14489,
+   "care_homes": 14896,
+   "homecare": 14488,
    "supported_living": 5068,
    "care_homes_by_band": {
-    "1-10": 4201,
+    "1-10": 4199,
     "11-49": 6972,
     "50+": 3722,
     "unknown": 3
    },
    "beds_by_band": {
-    "1-10": 25452,
+    "1-10": 25445,
     "11-49": 203223,
     "50+": 259425,
     "unknown": 0
    },
-   "care_home_beds": 488100,
+   "care_home_beds": 488093,
    "large_home_share_of_homes": 0.2499,
    "large_home_share_of_beds": 0.5315
   }
@@ -109,7 +109,7 @@
    "caregist_now_gap_vs_reference": null,
    "caregist_apr": 14692,
    "caregist_apr_gap_vs_reference": null,
-   "caregist_db_now": 14898,
+   "caregist_db_now": 14896,
    "caregist_db_now_gap_vs_reference": null
   },
   {
@@ -121,8 +121,8 @@
    "caregist_now_gap_vs_reference": 105,
    "caregist_apr": 13574,
    "caregist_apr_gap_vs_reference": 74,
-   "caregist_db_now": 14489,
-   "caregist_db_now_gap_vs_reference": 989
+   "caregist_db_now": 14488,
+   "caregist_db_now_gap_vs_reference": 988
   },
   {
    "metric": "supported_living",
@@ -166,7 +166,7 @@
    "cqc_register_apr": 4145,
    "caregist_now": 4118,
    "caregist_apr": 4139,
-   "caregist_db_now": 4201
+   "caregist_db_now": 4199
   },
   {
    "metric": "care_homes_11-49",
@@ -196,31 +196,31 @@
  "movement_12_months": {
   "care_homes": {
    "window": [
-    "2025-10-17",
-    "2026-10-16"
+    "2025-10-21",
+    "2026-10-20"
    ],
-   "registrations": 1001,
-   "registration_endings": 835,
-   "confirmed_closures": 250,
+   "registrations": 998,
+   "registration_endings": 832,
+   "confirmed_closures": 248,
    "endings_by_class": {
-    "confirmed_closure": 250,
+    "confirmed_closure": 248,
     "dormant": 51,
-    "re_registration": 509,
+    "re_registration": 508,
     "unresolved": 25
    }
   },
   "homecare": {
    "window": [
-    "2025-10-17",
-    "2026-10-16"
+    "2025-10-21",
+    "2026-10-20"
    ],
-   "registrations": 938,
-   "registration_endings": 1027,
-   "confirmed_closures": 442,
+   "registrations": 930,
+   "registration_endings": 1018,
+   "confirmed_closures": 440,
    "endings_by_class": {
-    "confirmed_closure": 442,
-    "dormant": 455,
-    "re_registration": 120,
+    "confirmed_closure": 440,
+    "dormant": 451,
+    "re_registration": 117,
     "unresolved": 10
    }
   }

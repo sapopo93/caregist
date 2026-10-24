@@ -1,14 +1,14 @@
 {
  "region": "North West",
- "directory_read_at": "2026-10-24T22:40:07+00:00",
+ "directory_read_at": "2026-10-24T23:52:26+00:00",
  "sql_base_count": 1055,
  "sql_stored_well_led_below_good": 0,
- "list_rows": 232,
+ "list_rows": 231,
  "buckets": {
-  "current_good": 628,
+  "current_good": 626,
   "current_outstanding": 20,
-  "inherited": 133,
-  "listed": 232,
+  "inherited": 136,
+  "listed": 231,
   "none": 42
  },
  "bucket_total": 1055,
