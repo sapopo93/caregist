@@ -121,12 +121,22 @@ def export_current_rating(row: dict[str, Any], domain: str = "Overall") -> tuple
     return None, None
 
 
+def report_database_url() -> str:
+    """``REPORT_DATABASE_URL``, else ``DATABASE_URL``.
+
+    The separate name lets a reviewer point these read-only tools at the live
+    directory without ``api.config`` treating the process as a production API
+    (which would demand every production secret just to read a flag).
+    """
+    url = os.environ.get("REPORT_DATABASE_URL") or os.environ.get("DATABASE_URL")
+    if not url:
+        raise SystemExit("REPORT_DATABASE_URL (or DATABASE_URL) is not set")
+    return url
+
+
 def readonly_connection():
     import psycopg2
 
-    url = os.environ.get("DATABASE_URL")
-    if not url:
-        raise SystemExit("DATABASE_URL is not set")
-    conn = psycopg2.connect(url)
+    conn = psycopg2.connect(report_database_url())
     conn.set_session(readonly=True)
     return conn
