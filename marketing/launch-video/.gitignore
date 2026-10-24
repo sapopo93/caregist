@@ -1,0 +1,8 @@
+renders/
+remotion/node_modules/
+remotion/public/map.mp4
+remotion/public/score.wav
+remotion/public/broll-*.mp4
+blender/*.blend
+blender/*.blend1
+data/points.json
