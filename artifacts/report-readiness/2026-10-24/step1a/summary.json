@@ -1,0 +1,76 @@
+{
+ "by_stratum": {
+  "conflict_2026_10_22": {
+   "date_match": 7,
+   "n": 7,
+   "pool": 7,
+   "rating_match": 7,
+   "status_match": 7,
+   "with_discrepancy": 5
+  },
+  "deregistration": {
+   "date_match": 19,
+   "n": 19,
+   "pool": 51,
+   "rating_match": 19,
+   "status_match": 0,
+   "with_discrepancy": 19
+  },
+  "downgrade": {
+   "date_match": 19,
+   "n": 19,
+   "pool": 2252,
+   "rating_match": 19,
+   "status_match": 19,
+   "with_discrepancy": 0
+  },
+  "file_only": {
+   "date_match": 18,
+   "n": 18,
+   "pool": 5628,
+   "rating_match": 17,
+   "status_match": 18,
+   "with_discrepancy": 1
+  },
+  "re_registration": {
+   "date_match": 19,
+   "n": 19,
+   "pool": 15079,
+   "rating_match": 19,
+   "status_match": 19,
+   "with_discrepancy": 0
+  },
+  "unrated": {
+   "date_match": 18,
+   "n": 18,
+   "pool": 18531,
+   "rating_match": 18,
+   "status_match": 18,
+   "with_discrepancy": 0
+  }
+ },
+ "cqc_export": "/Users/user/CareGist/.tmp/cqc-export-20261020-final/_locations_detail.ndjson",
+ "cqc_export_sha256": "60f19f8f5e6504a7437206025a3e50c65061ad95ebce3cbb698b80c2feb8fc76",
+ "database_snapshot_read_at": "2026-10-24T22:22:22+00:00",
+ "generated_at": "2026-10-24T22:22:22+00:00",
+ "ratings_file": "/Users/user/CareGist/artifacts/rating-audit/2026-10-22/source/ratings.ods",
+ "ratings_file_ambiguous_skipped": 0,
+ "ratings_file_edition_date": "2026-10-02",
+ "ratings_file_sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+ "root_cause_counts": {
+  "precedence_api_over_newer_file": 5,
+  "rating_caregist_blank": 1,
+  "served_differs_from_resolved": 3,
+  "served_value_unresolved": 2,
+  "status_deregistration_unreconciled": 19
+ },
+ "sample_size": 100,
+ "totals": {
+  "date_match": 100,
+  "rating_match": 99,
+  "served_differs_from_resolved_cqc": 3,
+  "served_value_unresolved": 2,
+  "status_match": 81,
+  "with_discrepancy": 25
+ }
+}

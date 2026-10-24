@@ -1,0 +1,228 @@
+{
+ "closure_logic": "classified",
+ "reference_note": "Reference values as supplied in .warroom/REPORT_READINESS_BRIEF.md: ~13,500 homecare (Apr 2026), >4,500 supported living, large homes 23% of care homes holding 70% of beds. Not independently re-checked against the State of Care publication in this run.",
+ "sources": {
+  "export": "/Users/user/CareGist/.tmp/cqc-export-20261020-final/_locations_detail.ndjson",
+  "export_sha256": "60f19f8f5e6504a7437206025a3e50c65061ad95ebce3cbb698b80c2feb8fc76",
+  "export_window_end": "2026-10-16",
+  "as_at_reconstruction": "2026-04-01",
+  "hsca_ods": "/Users/user/CareGist/cqc_active_locations_20260401.ods",
+  "hsca_sha256": "de48010ff09bf670c4009bf98ae679ba2c0211e1bffa6c23f2a56b134e1e3eac",
+  "rows_kept": 56695,
+  "dual_registration_lines_dropped": 0
+ },
+ "limitations": [
+  "caregist_apr applies dormancy as at the export date; a service dormant in April but active by October (or the reverse) is misclassified.",
+  "caregist_db_now cannot exclude dormant services: care_providers stores no dormancy flag.",
+  "CareGist columns do not reduce dual registrations; only cqc_register_apr applies CQC's Primary ID rule.",
+  "No earlier CareGist snapshot than the 20 Oct 2026 export is held, so April values are a reconstruction from registration/deregistration dates, not a stored snapshot."
+ ],
+ "columns": {
+  "cqc_register_apr": {
+   "care_homes": 14702,
+   "homecare": 13507,
+   "supported_living": 4574,
+   "care_homes_by_band": {
+    "1-10": 4145,
+    "11-49": 6979,
+    "50+": 3575,
+    "unknown": 3
+   },
+   "beds_by_band": {
+    "1-10": 25255,
+    "11-49": 203233,
+    "50+": 249126,
+    "unknown": 0
+   },
+   "care_home_beds": 477614,
+   "large_home_share_of_homes": 0.2432,
+   "large_home_share_of_beds": 0.5216
+  },
+  "caregist_now": {
+   "care_homes": 14756,
+   "homecare": 13605,
+   "supported_living": 4808,
+   "care_homes_by_band": {
+    "1-10": 4118,
+    "11-49": 6933,
+    "50+": 3702,
+    "unknown": 3
+   },
+   "beds_by_band": {
+    "1-10": 25112,
+    "11-49": 202231,
+    "50+": 257938,
+    "unknown": 0
+   },
+   "care_home_beds": 485281,
+   "large_home_share_of_homes": 0.2509,
+   "large_home_share_of_beds": 0.5315
+  },
+  "caregist_apr": {
+   "care_homes": 14692,
+   "homecare": 13574,
+   "supported_living": 4794,
+   "care_homes_by_band": {
+    "1-10": 4139,
+    "11-49": 6951,
+    "50+": 3599,
+    "unknown": 3
+   },
+   "beds_by_band": {
+    "1-10": 25272,
+    "11-49": 202604,
+    "50+": 250943,
+    "unknown": 0
+   },
+   "care_home_beds": 478819,
+   "large_home_share_of_homes": 0.245,
+   "large_home_share_of_beds": 0.5241
+  },
+  "caregist_db_now": {
+   "care_homes": 14898,
+   "homecare": 14489,
+   "supported_living": 5068,
+   "care_homes_by_band": {
+    "1-10": 4201,
+    "11-49": 6972,
+    "50+": 3722,
+    "unknown": 3
+   },
+   "beds_by_band": {
+    "1-10": 25452,
+    "11-49": 203223,
+    "50+": 259425,
+    "unknown": 0
+   },
+   "care_home_beds": 488100,
+   "large_home_share_of_homes": 0.2499,
+   "large_home_share_of_beds": 0.5315
+  }
+ },
+ "comparison": [
+  {
+   "metric": "care_homes",
+   "cqc_reference": null,
+   "cqc_register_apr": 14702,
+   "cqc_register_apr_gap_vs_reference": null,
+   "caregist_now": 14756,
+   "caregist_now_gap_vs_reference": null,
+   "caregist_apr": 14692,
+   "caregist_apr_gap_vs_reference": null,
+   "caregist_db_now": 14898,
+   "caregist_db_now_gap_vs_reference": null
+  },
+  {
+   "metric": "homecare",
+   "cqc_reference": 13500,
+   "cqc_register_apr": 13507,
+   "cqc_register_apr_gap_vs_reference": 7,
+   "caregist_now": 13605,
+   "caregist_now_gap_vs_reference": 105,
+   "caregist_apr": 13574,
+   "caregist_apr_gap_vs_reference": 74,
+   "caregist_db_now": 14489,
+   "caregist_db_now_gap_vs_reference": 989
+  },
+  {
+   "metric": "supported_living",
+   "cqc_reference": 4500,
+   "cqc_register_apr": 4574,
+   "cqc_register_apr_gap_vs_reference": 74,
+   "caregist_now": 4808,
+   "caregist_now_gap_vs_reference": 308,
+   "caregist_apr": 4794,
+   "caregist_apr_gap_vs_reference": 294,
+   "caregist_db_now": 5068,
+   "caregist_db_now_gap_vs_reference": 568
+  },
+  {
+   "metric": "large_home_share_of_homes",
+   "cqc_reference": 0.23,
+   "cqc_register_apr": 0.2432,
+   "cqc_register_apr_gap_vs_reference": 0.0132,
+   "caregist_now": 0.2509,
+   "caregist_now_gap_vs_reference": 0.0209,
+   "caregist_apr": 0.245,
+   "caregist_apr_gap_vs_reference": 0.015,
+   "caregist_db_now": 0.2499,
+   "caregist_db_now_gap_vs_reference": 0.0199
+  },
+  {
+   "metric": "large_home_share_of_beds",
+   "cqc_reference": 0.7,
+   "cqc_register_apr": 0.5216,
+   "cqc_register_apr_gap_vs_reference": -0.1784,
+   "caregist_now": 0.5315,
+   "caregist_now_gap_vs_reference": -0.1685,
+   "caregist_apr": 0.5241,
+   "caregist_apr_gap_vs_reference": -0.1759,
+   "caregist_db_now": 0.5315,
+   "caregist_db_now_gap_vs_reference": -0.1685
+  },
+  {
+   "metric": "care_homes_1-10",
+   "cqc_reference": null,
+   "cqc_register_apr": 4145,
+   "caregist_now": 4118,
+   "caregist_apr": 4139,
+   "caregist_db_now": 4201
+  },
+  {
+   "metric": "care_homes_11-49",
+   "cqc_reference": null,
+   "cqc_register_apr": 6979,
+   "caregist_now": 6933,
+   "caregist_apr": 6951,
+   "caregist_db_now": 6972
+  },
+  {
+   "metric": "care_homes_50+",
+   "cqc_reference": null,
+   "cqc_register_apr": 3575,
+   "caregist_now": 3702,
+   "caregist_apr": 3599,
+   "caregist_db_now": 3722
+  },
+  {
+   "metric": "care_homes_unknown",
+   "cqc_reference": null,
+   "cqc_register_apr": 3,
+   "caregist_now": 3,
+   "caregist_apr": 3,
+   "caregist_db_now": 3
+  }
+ ],
+ "movement_12_months": {
+  "care_homes": {
+   "window": [
+    "2025-10-17",
+    "2026-10-16"
+   ],
+   "registrations": 1001,
+   "registration_endings": 835,
+   "confirmed_closures": 250,
+   "endings_by_class": {
+    "confirmed_closure": 250,
+    "dormant": 51,
+    "re_registration": 509,
+    "unresolved": 25
+   }
+  },
+  "homecare": {
+   "window": [
+    "2025-10-17",
+    "2026-10-16"
+   ],
+   "registrations": 938,
+   "registration_endings": 1027,
+   "confirmed_closures": 442,
+   "endings_by_class": {
+    "confirmed_closure": 442,
+    "dormant": 455,
+    "re_registration": 120,
+    "unresolved": 10
+   }
+  }
+ }
+}
