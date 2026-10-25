@@ -336,6 +336,19 @@ def resolve_rating(
 
     if observations:
         latest_day = max(o.observed_on for o in observations)
+        latest_values = {o.value for o in observations if o.observed_on == latest_day}
+        if len(latest_values) > 1 and any(
+            e.source != SOURCE_WEBSITE and e.publication_date and e.publication_date > latest_day
+            for e in candidates
+        ):
+            # A later publication supersedes the page conflict, just as it
+            # supersedes a negative page check. Keep the checks as evidence;
+            # reconcile the published channels normally, including conflicts.
+            candidates = [e for e in candidates if e.source != SOURCE_WEBSITE]
+            observations = []
+
+    if observations:
+        latest_day = max(o.observed_on for o in observations)
         latest = [o for o in observations if o.observed_on == latest_day]
         if len({o.value for o in latest}) > 1:
             # Nothing orders same-day observations against each other.
