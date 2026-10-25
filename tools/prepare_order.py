@@ -176,10 +176,13 @@ async def fetch_rating_evidence(database_url: str, ids: list[str]) -> tuple[dict
     """Ratings-file evidence and CQC page checks for the resolved rating contract.
 
     Returns ``(rating_evidence, website_observations)`` of
-    :class:`api.services.rating_resolver.RatingEvidence`. A page check of
-    ``'none'`` (the page showed no rating) withholds the file value, as the
-    legacy fill does; a page check with a rating becomes a dated observation
-    that the resolver weighs against the API and file values.
+    :class:`api.services.rating_resolver.RatingEvidence`. Every page check
+    becomes a dated observation the resolver weighs against the API and file
+    values: one showing a rating can confirm or contradict them, and one showing
+    ``'none'`` (no rating on the page) is kept with ``value=None`` so the
+    resolver can mark the rating unresolved instead of the check disappearing.
+    The file value is always kept as evidence; withholding is the resolver's
+    decision, not the loader's.
     """
     import asyncpg
 
@@ -200,8 +203,6 @@ async def fetch_rating_evidence(database_url: str, ids: list[str]) -> tuple[dict
     observations: dict[str, Any] = {}
     for r in rows:
         checked = (r["site_check_rating"] or "").strip()
-        if checked.casefold() == "none":
-            continue
         evidence[r["id"]] = RatingEvidence(
             source=SOURCE_FILE, value=canonical_rating(r["file_overall_rating"]),
             publication_date=r["file_overall_rating_date"], source_sha256=r["file_rating_source_sha256"],

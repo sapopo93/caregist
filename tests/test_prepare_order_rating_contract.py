@@ -129,3 +129,94 @@ def test_flag_on_populated_uses_resolved_contract(tmp_path):
 def test_env_on_but_settings_off_fails_closed(tmp_path):
     with pytest.raises(RuntimeError, match="disabled"):
         _run(tmp_path, env_flag=True, settings_flag=False, populated=True)
+
+
+# --------------------------------------------------------------------------- #
+# Repeat review 2026-10-25 (PR #127): N1 and N2 through the real loader.
+# Only the asyncpg connection and the coverage lookup are stubbed.
+# --------------------------------------------------------------------------- #
+
+
+class _Txn:
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, *exc):
+        return False
+
+
+class _Conn:
+    def __init__(self, rows):
+        self.rows = rows
+
+    def transaction(self, readonly=False):
+        assert readonly
+        return _Txn()
+
+    async def fetch(self, _sql, ids):
+        return [r for r in self.rows if r["id"] in ids]
+
+    async def close(self):
+        pass
+
+
+def _db_row(site_check=None):
+    return {"id": "x", "file_overall_rating": "Requires improvement",
+            "file_overall_rating_date": date(2024, 1, 1), "file_rating_source_sha256": "abc",
+            "site_check_rating": site_check,
+            "site_check_at": datetime(2026, 10, 23, tzinfo=timezone.utc) if site_check else None}
+
+
+def _run_real_loader(tmp_path, site_check, *, api_report="2024-01-01"):
+    import asyncpg
+
+    rows = [_row("x", "Requires improvement", api_report),
+            {**_row("later"), "registrationDate": "2026-10-20"}]  # realistic newest date, out of scope
+    d = tmp_path / "cqc-export-20261020-final"
+    d.mkdir()
+    (d / "_locations_detail.ndjson").write_text("\n".join(json.dumps(r) for r in rows) + "\n")
+    (d / "_providers_detail.ndjson").write_text(
+        "\n".join(json.dumps({"providerId": r["providerId"], "name": f"Provider {r['locationId']}"}) for r in rows) + "\n")
+    (d / "RECEIPT.json").write_text(json.dumps({"source_retrieved_at": "2026-10-24T07:41:27+00:00"}))
+    order_dir = tmp_path / "order"
+    order_dir.mkdir()
+
+    async def connect(*_a, **_k):
+        return _Conn([_db_row(site_check)])
+
+    async def ids(*_a):
+        return ["x"]
+
+    env = {"DATABASE_URL": "postgresql://stub", "RESOLVED_RATING_CONTRACT_ENABLED": "true"}
+    with patch.object(asyncpg, "connect", connect), patch.object(po, "fetch_scope_location_ids", ids), \
+         patch("api.config.settings.resolved_rating_contract_enabled", True):
+        _, _, files = po.build_brief(_args(d), env=env, order_dir=order_dir, now=NOW)
+    return json.loads(next(f for f in files if f.name.endswith("source-manifest.json")).read_text())
+
+
+def test_n1_agreeing_page_check_keeps_membership_and_publication_date(tmp_path):
+    for check, sub in ((None, "plain"), ("Requires improvement", "checked")):
+        (tmp_path / sub).mkdir()
+        m = _run_real_loader(tmp_path / sub, check)
+        assert _members(m) == {"x"}
+        res = m["rating_resolution"]["by_location"]["x"]
+        assert (res["status"], res["publication_date"]) == ("current", "2024-01-01")
+        assert res["website_observed_on"] == ("2026-10-23" if check else None)
+
+
+def test_n2_none_page_check_is_kept_and_withholds_the_rating(tmp_path):
+    m = _run_real_loader(tmp_path, "none")
+    res = m["rating_resolution"]["by_location"]["x"]
+    assert res["status"] == "unresolved" and res["value"] is None
+    assert (res["website_raw_value"], res["website_observed_on"]) == ("none", "2026-10-23")
+    assert res["file_value"] == "Requires improvement"  # file evidence retained
+    assert "agree" not in res["reason"]
+    assert _members(m) == set()
+    assert [e["location_id"] for e in m["rating_resolution"]["scope_exclusions"]] == ["x"]
+
+
+def test_n2_rating_published_after_none_check_is_current(tmp_path):
+    m = _run_real_loader(tmp_path, "none", api_report="2026-10-24")
+    res = m["rating_resolution"]["by_location"]["x"]
+    assert (res["status"], res["source"], res["publication_date"]) == ("current", "cqc_api", "2026-10-24")
+    assert res["website_raw_value"] == "none"
