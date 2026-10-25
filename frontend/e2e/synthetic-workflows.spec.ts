@@ -118,7 +118,7 @@ test("password reset does not claim email delivery when the provider is unavaila
   await page.getByLabel("Email", { exact: true }).fill("unknown-reset@example.com");
   await page.getByRole("button", { name: "Send Reset Code", exact: true }).click();
   await expect(page.getByText(/if your email is registered and email delivery is available/i)).toBeVisible();
-  await expect(page.getByLabel("6-digit code", { exact: true })).toBeVisible();
+  await expect(page.getByLabel("Reset code", { exact: true })).toBeVisible();
 });
 
 test("login as a synthetic workspace owner, create a CRM task, and browse the manager report", async ({ page }) => {

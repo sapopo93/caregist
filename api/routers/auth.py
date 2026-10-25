@@ -922,10 +922,23 @@ async def _send_reset_email(email: str, reset_token: str) -> None:
     import httpx
 
     from_email = settings.enquiry_from_email or "noreply@caregist.co.uk"
+    reset_page = f"{settings.app_url.rstrip('/')}/forgot-password"
     body = (
-        f"Your CareGist password reset token is: {reset_token}\n\n"
-        f"This token expires in 15 minutes. If you didn't request this, ignore this email.\n\n"
-        f"— The CareGist Team"
+        "You asked to reset your CareGist password.\n\n"
+        "Your reset code:\n\n"
+        f"{reset_token}\n\n"
+        "How to use it:\n"
+        "1. Go back to the reset page you were on. If you closed it, open "
+        f"{reset_page}, enter your email and press \"Send Reset Code\" (this sends a new code).\n"
+        "2. Copy the whole code above. It is one long line of letters, numbers, - and _ "
+        "with no spaces. Double-click it to select it all.\n"
+        "3. Paste it into the \"Reset code\" box.\n"
+        "4. Type a new password of at least 12 characters, then press \"Reset Password\".\n"
+        "5. Log in with your new password.\n\n"
+        "The code works once and expires 15 minutes after this email was sent. "
+        "Asking for another code cancels this one, so always use the newest email.\n\n"
+        "If you did not ask for this, ignore this email; your password has not changed.\n\n"
+        "— The CareGist Team"
     )
 
     try:

@@ -1,3 +1,6 @@
 -r requirements-api.txt
 faster-whisper==1.2.1
 spacy==3.8.7
+# preshed 3.0.14 breaks loading en_core_web_sm 3.8.0 under spaCy 3.8.7
+# (OverflowError in Tokenizer._flush_specials). Lift once spaCy supports it.
+preshed==3.0.13

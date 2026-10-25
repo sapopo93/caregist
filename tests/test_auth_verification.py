@@ -695,3 +695,42 @@ async def test_reset_password_rejects_when_no_outstanding_token():
         "attempts = attempts + 1" in call.args[0]
         for call in conn.execute.await_args_list
     )
+
+
+@pytest.mark.asyncio
+async def test_reset_email_contains_whole_code_and_matching_steps():
+    from api.routers import auth as auth_router
+
+    token = "Ab3_-" + "x" * 38
+    sent = {}
+
+    class FakeResponse:
+        status_code = 200
+
+        def raise_for_status(self):
+            return None
+
+    class FakeClient:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *exc):
+            return False
+
+        async def post(self, url, headers=None, json=None, **kwargs):
+            sent.update(json)
+            return FakeResponse()
+
+    with patch.object(auth_router.settings, "resend_api_key", "re_test"), \
+         patch.object(auth_router.settings, "app_url", "https://www.caregist.co.uk"), \
+         patch("httpx.AsyncClient", lambda *a, **k: FakeClient()):
+        await auth_router._send_reset_email("alice@example.com", token)
+
+    body = sent["text"]
+    assert f"\n{token}\n" in body  # the whole code, alone on its own line
+    assert "https://www.caregist.co.uk/forgot-password" in body
+    assert "at least 12 characters" in body
+    # The email names the page's real button labels.
+    page = open("frontend/app/forgot-password/page.tsx").read()
+    for label in ("Send Reset Code", "Reset Password", "Reset code"):
+        assert label in body and label in page
