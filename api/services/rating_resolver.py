@@ -135,7 +135,11 @@ class ResolvedRating:
         file = self.evidence_for(SOURCE_FILE)
         website = max(
             (e for e in self.evidence if e.source == SOURCE_WEBSITE),
-            key=lambda e: (e.observed_on or date.min, e.raw_value or e.value or ""), default=None,
+            key=lambda e: (
+                e.observed_on or date.min, e.publication_date or date.min, e.raw_value or e.value or "",
+                str(e.inherited_flag),
+            ),
+            default=None,
         )
         return {
             "domain": self.domain,
@@ -241,7 +245,8 @@ def resolve_rating(
        ``unresolved``. When it confirms or restates a dated API/file value,
        that value's source and date are kept and inheritance is reconciled
        across all of it; an absent page flag never clears an inherited file
-       flag, only an explicit one does. Otherwise it is weighed by its
+       flag or an earlier page's explicit flag on the same rating and
+       publication, only an explicit flag does. Otherwise it is weighed by its
        publication date like any other candidate.
     4. No candidate -> ``none``.
     5. All candidates agree -> the most recently published one is chosen
@@ -303,6 +308,22 @@ def resolve_rating(
         elif any(o.inherited_flag is False for o in latest) and chosen.inherited_flag is None:
             chosen = RatingEvidence(**{**chosen.__dict__, "inherited_flag": False})
         others = [e for e in candidates if e.source != SOURCE_WEBSITE]
+        if chosen.inherited_flag is None:
+            # A silent later check cannot clear an earlier explicit flag on the
+            # same rating and publication: carry the most recent explicit one.
+            effective = chosen.publication_date or max(
+                (e.publication_date for e in others if e.value == chosen.value and e.publication_date),
+                default=None,
+            )
+            earlier = [
+                o for o in observations
+                if o.observed_on < latest_day and o.value == chosen.value and o.inherited_flag is not None
+                and (o.publication_date is None or effective is None or o.publication_date == effective)
+            ]
+            if earlier:
+                latest_flagged = max(earlier, key=lambda o: o.observed_on)
+                flags = {o.inherited_flag for o in earlier if o.observed_on == latest_flagged.observed_on}
+                chosen = RatingEvidence(**{**chosen.__dict__, "inherited_flag": True in flags})
         if _observation_applies(chosen, others):
             note = f"CQC location page observed {chosen.observed_on.isoformat()}"
             confirming = [e for e in others if e.value == chosen.value and e.publication_date]

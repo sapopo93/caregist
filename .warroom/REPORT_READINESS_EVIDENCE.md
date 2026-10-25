@@ -259,3 +259,19 @@ The third review confirmed N1 and N2 were resolved, and found two resolver-input
 |---|---|---|---|
 | T1 | Two page checks on the same day showing different ratings resolved by input order | Page checks on the latest observation day that disagree now give **unresolved**, whatever the input order. Reporting of the latest observation is deterministic. | `test_t1_same_day_disagreeing_page_checks_are_unresolved_in_any_order`, `test_t1_same_day_positive_and_negative_still_unresolved`, `test_t1_clearly_later_page_check_decides` |
 | T2 | A page check restating a known publication date cleared an explicit inherited file flag | A page check that confirms or restates a dated API/file value keeps that value's source and date. Inheritance is reconciled across all of it; an absent page flag never clears it, and only an explicit page flag does. | `test_t2_page_restating_date_keeps_explicit_file_inheritance` (both page-date forms), `test_t2_explicit_page_flag_can_establish_current_registration`, `test_t2_page_with_newer_earned_rating_is_current`, `test_t2_brief_membership_does_not_depend_on_page_restating_the_date` (generator and CSV, both forms) |
+
+## Response to fourth review of PR #127 (Codex), 25 Oct 2026
+
+Review: `artifacts/reviews/2026-10-25-pr127-fourth/REVIEW.md` (main checkout). T1, T2, N1, N2 and the original six were rechecked as fixed. Two multi-observation resolver inputs remained; neither is produced by today's one-observation loader.
+
+| # | Finding | Change | Tests |
+|---|---|---|---|
+| F1 (P2) | A later page check with no flag cleared an earlier page's explicit inherited flag | A later silent check inherits the most recent explicit flag from earlier checks on the same rating and publication. Only an explicit later flag, or a newer earned publication, changes the status. | `test_f1_later_silent_check_keeps_earlier_explicit_inheritance` (dated and undated, all permutations), `test_f1_later_explicit_false_clears_inheritance`, `test_f1_newer_earned_publication_is_not_held_by_an_old_flag`, `test_f1_group_eligibility_follows_resolution` |
+| F2 (P3) | Serialized website publication date depended on input order | Serialization breaks ties the same way as the resolver (publication date, then raw text and flag) | `test_f2_serialized_provenance_is_order_independent` (different publication dates; different raw text) |
+
+The reviewer's `adversarial-repro.py` was re-run against the fix:
+- `later_silent_page` → inherited, no group event;
+- `metadata_permutation` → both orders serialize 2025-01-01;
+- `inherited_then_silent` → inherited in all 120 permutations;
+- the 15,120-resolution matrix still shows 0 order-unstable pairs and 0 invented dates;
+- the `explicit_clear` control stays current.

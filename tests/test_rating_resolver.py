@@ -387,3 +387,60 @@ def test_t2_page_with_newer_earned_rating_is_current():
     ev = _inherited_ri() + [_page("Good", publication_date=date(2026, 9, 1))]
     r = resolve_rating(ev, registration_date=date(2020, 1, 1))
     assert (r.status, r.value, r.source) == (CURRENT, "Good", SOURCE_WEBSITE)
+
+
+# Fourth review 2026-10-25 (PR #127, Codex), findings F1 and F2.
+import itertools  # noqa: E402
+
+
+def _api_file_ri():
+    return [RatingEvidence(source=SOURCE_API, value="Requires improvement", publication_date=date(2024, 1, 1)),
+            RatingEvidence(source=SOURCE_FILE, value="Requires improvement", publication_date=date(2024, 1, 1))]
+
+
+@pytest.mark.parametrize("silent_date", [None, date(2024, 1, 1)])
+def test_f1_later_silent_check_keeps_earlier_explicit_inheritance(silent_date):
+    explicit = _page("Requires improvement", date(2026, 10, 22), publication_date=date(2024, 1, 1),
+                     inherited_flag=True)
+    silent = _page("Requires improvement", date(2026, 10, 23), publication_date=silent_date)
+    for ev in itertools.permutations(_api_file_ri() + [explicit, silent]):
+        r = resolve_rating(list(ev), registration_date=date(2020, 1, 1))
+        assert r.status == INHERITED and not r.is_current
+
+
+def test_f1_later_explicit_false_clears_inheritance():
+    explicit = _page("Requires improvement", date(2026, 10, 22), publication_date=date(2024, 1, 1),
+                     inherited_flag=True)
+    cleared = _page("Requires improvement", date(2026, 10, 23), inherited_flag=False)
+    r = resolve_rating(_api_file_ri() + [explicit, cleared], registration_date=date(2020, 1, 1))
+    assert r.status == CURRENT
+
+
+def test_f1_newer_earned_publication_is_not_held_by_an_old_flag():
+    explicit = _page("Requires improvement", date(2026, 1, 1), publication_date=date(2024, 1, 1),
+                     inherited_flag=True)
+    newer = _page("Requires improvement", date(2026, 10, 23), publication_date=date(2026, 9, 1))
+    r = resolve_rating(_api_file_ri() + [explicit, newer], registration_date=date(2020, 1, 1))
+    assert (r.status, r.publication_date) == (CURRENT, date(2026, 9, 1))
+
+
+def test_f1_group_eligibility_follows_resolution():
+    from api.services.territory_brief import _resolved_group_event
+
+    explicit = _page("Requires improvement", date(2026, 10, 22), publication_date=date(2024, 1, 1),
+                     inherited_flag=True)
+    silent = _page("Requires improvement", date(2026, 10, 23))
+    r = resolve_rating(_api_file_ri() + [explicit, silent], registration_date=date(2020, 1, 1))
+    assert _resolved_group_event(r, "requires_improvement", url="https://www.cqc.org.uk/location/x") is None
+
+
+@pytest.mark.parametrize("pair", [
+    ({"publication_date": date(2024, 1, 1)}, {"publication_date": date(2025, 1, 1)}),
+    ({"raw_value": "Requires improvement"}, {"raw_value": "requires improvement"}),
+])
+def test_f2_serialized_provenance_is_order_independent(pair):
+    api = RatingEvidence(source=SOURCE_API, value="Requires improvement", publication_date=date(2024, 1, 1))
+    a, b = (_page("Requires improvement", **kw) for kw in pair)
+    one = resolve_rating([api, a, b], registration_date=None).to_dict()
+    two = resolve_rating([api, b, a], registration_date=None).to_dict()
+    assert one == two
