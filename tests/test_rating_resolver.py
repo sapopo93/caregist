@@ -273,3 +273,61 @@ def test_observation_with_undated_competitor_is_unresolved():
                        observed_on=date(2025, 2, 1)),
     ]
     assert resolve_rating(ev, registration_date=None).status == UNRESOLVED
+
+
+# Repeat review 2026-10-25 (PR #127), findings N1 and N2.
+
+def _ri(source, day, **kw):
+    return RatingEvidence(source=source, value="Requires improvement", publication_date=day, **kw)
+
+
+def test_n1_agreeing_page_check_keeps_dated_source():
+    ev = [_ri(SOURCE_API, date(2024, 1, 1)), _ri(SOURCE_FILE, date(2024, 1, 1)),
+          RatingEvidence(source=SOURCE_WEBSITE, value="Requires improvement", observed_on=date(2026, 10, 23))]
+    r = resolve_rating(ev, registration_date=date(2020, 1, 1))
+    assert (r.status, r.source, r.publication_date) == (CURRENT, SOURCE_FILE, date(2024, 1, 1))
+    assert r.reason.startswith("Confirmed by CQC location page observed 2026-10-23")
+    assert r.to_dict()["website_observed_on"] == "2026-10-23"
+
+
+def test_n1_disagreeing_undated_page_check_never_invents_a_date():
+    ev = [_ri(SOURCE_API, date(2024, 1, 1)),
+          RatingEvidence(source=SOURCE_WEBSITE, value="Good", observed_on=date(2026, 10, 23))]
+    r = resolve_rating(ev, registration_date=None)
+    assert (r.value, r.source, r.publication_date) == ("Good", SOURCE_WEBSITE, None)
+
+
+def _absent(day):
+    return RatingEvidence(source=SOURCE_WEBSITE, value=None, observed_on=day, raw_value="none")
+
+
+def test_n2_later_no_rating_page_check_makes_result_unresolved():
+    ev = [_ri(SOURCE_API, date(2024, 1, 1)), _ri(SOURCE_FILE, date(2024, 1, 1)), _absent(date(2026, 10, 23))]
+    r = resolve_rating(ev, registration_date=date(2020, 1, 1))
+    assert r.status == UNRESOLVED and not r.displayable
+    out = r.to_dict()
+    assert (out["website_raw_value"], out["website_observed_on"]) == ("none", "2026-10-23")
+    assert "showed no rating" in r.reason and "agree" not in r.reason
+
+
+def test_n2_rating_published_after_the_check_supersedes_it():
+    ev = [_ri(SOURCE_API, date(2026, 10, 24)), _absent(date(2026, 10, 23))]
+    r = resolve_rating(ev, registration_date=None)
+    assert (r.status, r.value, r.source) == (CURRENT, "Requires improvement", SOURCE_API)
+    assert r.to_dict()["website_raw_value"] == "none"  # kept as evidence
+
+
+def test_n2_undated_value_against_absence_is_unresolved():
+    ev = [_ri(SOURCE_API, None), _absent(date(2026, 10, 23))]
+    assert resolve_rating(ev, registration_date=None).status == UNRESOLVED
+
+
+def test_n2_later_positive_page_check_overrides_earlier_absence():
+    ev = [_ri(SOURCE_API, date(2024, 1, 1)), _absent(date(2026, 1, 1)),
+          RatingEvidence(source=SOURCE_WEBSITE, value="Requires improvement", observed_on=date(2026, 10, 23))]
+    r = resolve_rating(ev, registration_date=None)
+    assert (r.status, r.source) == (CURRENT, SOURCE_API)
+
+
+def test_absence_alone_is_none():
+    assert resolve_rating([_absent(date(2026, 10, 23))], registration_date=None).status == NONE

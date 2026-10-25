@@ -133,7 +133,10 @@ class ResolvedRating:
     def to_dict(self) -> dict[str, Any]:
         api = self.evidence_for(SOURCE_API)
         file = self.evidence_for(SOURCE_FILE)
-        website = self.evidence_for(SOURCE_WEBSITE)
+        website = max(
+            (e for e in self.evidence if e.source == SOURCE_WEBSITE),
+            key=lambda e: e.observed_on or date.min, default=None,
+        )
         return {
             "domain": self.domain,
             "status": self.status,
@@ -154,6 +157,7 @@ class ResolvedRating:
             "file_sha256": file.source_sha256 if file else None,
             "file_edition_date": _iso(file.edition_date) if file else None,
             "website_value": website.value if website else None,
+            "website_raw_value": website.raw_value if website else None,
             "website_publication_date": _iso(website.publication_date) if website else None,
             "website_observed_on": _iso(website.observed_on) if website else None,
         }
@@ -225,17 +229,23 @@ def resolve_rating(
     1. Only published values (Outstanding/Good/Requires improvement/Inadequate)
        are candidates. Sentinels and blanks are kept in ``evidence`` but never
        chosen.
-    2. A dated CQC website observation is CQC's own statement at that time: the
-       most recently observed one decides the value and its inherited flag the
-       status, but only when every competing value is dated on or before the
-       observation. Otherwise it is weighed by its publication date like any
-       other candidate.
-    3. No candidate -> ``none``.
-    4. All candidates agree -> the most recently published one is chosen
+    2. A dated CQC page observation showing *no* rating (``value=None``) makes
+       the result ``unresolved`` unless a rating was published after it (then it
+       is stale and kept only as evidence) or a later page observation shows a
+       rating. An undated published value cannot be placed against it, so it
+       is also ``unresolved``.
+    3. A dated CQC page observation showing a rating is CQC's statement at that
+       time: the most recently observed one decides the value and its inherited
+       flag the status, but only when every competing value is dated on or
+       before the observation. When it confirms a dated API/file value, that
+       value's source and publication date are kept. Otherwise it is weighed by
+       its publication date like any other candidate.
+    4. No candidate -> ``none``.
+    5. All candidates agree -> the most recently published one is chosen
        (ties broken by a fixed channel order); ``inherited`` if any candidate
        with that value and date predates the registration or is flagged
        inherited.
-    5. Candidates disagree:
+    6. Candidates disagree:
        * any undated candidate -> ``unresolved``;
        * an inherited candidate contradicted by a non-inherited one ->
          ``unresolved`` (the page may still show the inherited rating);
@@ -262,12 +272,33 @@ def resolve_rating(
     candidates = [e for e in items if e.value is not None]
 
     observations = [e for e in candidates if e.source == SOURCE_WEBSITE and e.observed_on]
+    absences = [e for e in items if e.source == SOURCE_WEBSITE and e.value is None and e.observed_on]
+    if absences and candidates:
+        absent = max(absences, key=lambda e: e.observed_on)
+        if not any(o.observed_on > absent.observed_on for o in observations):
+            published = [e.publication_date for e in candidates if e.source != SOURCE_WEBSITE]
+            if not published or None in published or max(published) <= absent.observed_on:
+                return result(
+                    UNRESOLVED, None,
+                    f"CQC location page observed {absent.observed_on.isoformat()} showed no rating, "
+                    "after every published value",
+                )
+            # A rating published after the page check supersedes it; the check stays in evidence.
+
     if observations:
         chosen = max(observations, key=lambda e: (e.observed_on, e.publication_date or date.min))
         others = [e for e in candidates if e.source != SOURCE_WEBSITE]
         if _observation_applies(chosen, others):
+            note = f"CQC location page observed {chosen.observed_on.isoformat()}"
+            confirming = [e for e in others if e.value == chosen.value and e.publication_date]
+            if chosen.publication_date is None and confirming:
+                # The page confirms a dated published value: keep that value's
+                # source and publication date rather than discarding them.
+                picked, inherited = _pick_newest(confirming, registration_date)
+                inherited = inherited or bool(chosen.inherited_flag)
+                return result(INHERITED if inherited else CURRENT, picked, f"Confirmed by {note}")
             status = INHERITED if _is_inherited(chosen, registration_date) else CURRENT
-            return result(status, chosen, "CQC location page observation decides the current value")
+            return result(status, chosen, f"{note} decides the current value")
         candidates = others + [chosen]
 
     if not candidates:
