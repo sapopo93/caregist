@@ -47,9 +47,16 @@ _TSVECTOR = """to_tsvector('english',
 # -- the API still wins whenever it has a rating. ``file_overall_rating`` only
 # ever holds a published-vocabulary value copied verbatim from the file by
 # tools/import_cqc_latest_ratings.py, so nothing is inferred.
+#
+# A file rating is served only while CQC's own page has not been seen to
+# contradict it (migration 069, tools/verify_file_ratings_against_site.py).
+FILE_RATING_SERVABLE = (
+    "file_overall_rating IS NOT NULL AND "
+    "(site_check_rating IS NULL OR site_check_rating = file_overall_rating)"
+)
 SERVED_RATING = (
     "CASE WHEN rating_state = 'rated' THEN overall_rating "
-    "WHEN file_overall_rating IS NOT NULL AND (site_check_rating IS NULL OR site_check_rating = file_overall_rating) THEN file_overall_rating END"
+    f"WHEN {FILE_RATING_SERVABLE} THEN file_overall_rating END"
 )
 SERVED_RATING_COLUMN = f"{SERVED_RATING} AS overall_rating"
 
@@ -64,10 +71,28 @@ SERVED_RATING_COLUMN = f"{SERVED_RATING} AS overall_rating"
 # it, and it is NULL exactly when a rating IS served, so the two fields are
 # never both populated and never both empty.
 SERVED_RATING_ABSENCE = (
-    "CASE WHEN rating_state = 'rated' OR (file_overall_rating IS NOT NULL AND (site_check_rating IS NULL OR site_check_rating = file_overall_rating)) "
+    f"CASE WHEN rating_state = 'rated' OR ({FILE_RATING_SERVABLE}) "
     "THEN NULL ELSE rating_state END"
 )
 SERVED_RATING_ABSENCE_COLUMN = f"{SERVED_RATING_ABSENCE} AS rating_absence_reason"
+
+# Where the served rating came from, so a client can label it: NULL for the API
+# rating, 'cqc_file' for a rating served from CQC's published ratings file, and
+# 'cqc_file_disputed' for a file rating withheld because CQC's own page no longer
+# showed it. ``rating_source_date`` is the date CQC published a file-served
+# rating, read from the row so no label hardcodes a file edition.
+RATING_SOURCE = (
+    "CASE WHEN rating_state = 'rated' THEN NULL "
+    f"WHEN {FILE_RATING_SERVABLE} THEN 'cqc_file' "
+    "WHEN file_overall_rating IS NOT NULL THEN 'cqc_file_disputed' END"
+)
+RATING_SOURCE_DATE = (
+    "CASE WHEN rating_state = 'rated' THEN NULL "
+    f"WHEN {FILE_RATING_SERVABLE} THEN file_overall_rating_date END"
+)
+RATING_SOURCE_COLUMNS = (
+    f"{RATING_SOURCE} AS rating_source, {RATING_SOURCE_DATE} AS rating_source_date"
+)
 SERVED_RATING_NORMALISED = f"LOWER(BTRIM({SERVED_RATING}))"
 #: The published vocabulary, taken from the module the ingestion classifier and
 #: migration 061 both use, so a rating filter can only ever match a rating this
@@ -79,7 +104,7 @@ SERVED_RATING_IS_PUBLISHED = "{} IN ({})".format(
 
 SEARCH_SELECT = f"""
 SELECT id, provider_id, name, slug, type, status, town, county, postcode,
-       region, local_authority, {SERVED_RATING_COLUMN}, {SERVED_RATING_ABSENCE_COLUMN}, service_types, specialisms,
+       region, local_authority, {SERVED_RATING_COLUMN}, {SERVED_RATING_ABSENCE_COLUMN}, {RATING_SOURCE_COLUMNS}, service_types, specialisms,
        number_of_beds, data_completeness_score, data_completeness_tier, latitude, longitude, phone,
        is_claimed, profile_tier, review_count, avg_review_rating
 FROM care_providers
@@ -88,7 +113,7 @@ FROM care_providers
 # Ranked search select — adds ts_rank for relevance sorting
 SEARCH_SELECT_RANKED = f"""
 SELECT id, provider_id, name, slug, type, status, town, county, postcode,
-       region, local_authority, {SERVED_RATING_COLUMN}, {SERVED_RATING_ABSENCE_COLUMN}, service_types, specialisms,
+       region, local_authority, {SERVED_RATING_COLUMN}, {SERVED_RATING_ABSENCE_COLUMN}, {RATING_SOURCE_COLUMNS}, service_types, specialisms,
        number_of_beds, data_completeness_score, data_completeness_tier, latitude, longitude, phone,
        is_claimed, profile_tier, review_count, avg_review_rating,
        ts_rank({_TSVECTOR}, plainto_tsquery('english', coalesce($1, ''))) AS rank
@@ -247,7 +272,7 @@ LIMIT 1
 
 NEARBY_QUERY = f"""
 SELECT id, provider_id, name, slug, type, status, town, county, postcode,
-       region, {SERVED_RATING_COLUMN}, {SERVED_RATING_ABSENCE_COLUMN}, service_types, specialisms, number_of_beds,
+       region, {SERVED_RATING_COLUMN}, {SERVED_RATING_ABSENCE_COLUMN}, {RATING_SOURCE_COLUMNS}, service_types, specialisms, number_of_beds,
        data_completeness_score, data_completeness_tier, latitude, longitude, phone,
        ST_Distance(geom::geography, ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography) / 1000.0 AS distance_km
 FROM care_providers

@@ -23,6 +23,12 @@ export const RATING_SOURCE_SQL = `(CASE
     WHEN file_overall_rating IS NOT NULL THEN 'cqc_file_disputed'
   END)`;
 
+/** The date CQC published a rating served from the ratings file, else null. */
+export const RATING_SOURCE_DATE_SQL = `(CASE
+    WHEN lower(btrim(overall_rating)) IN ('outstanding', 'good', 'requires improvement', 'inadequate') THEN NULL
+    WHEN file_overall_rating IS NOT NULL AND (site_check_rating IS NULL OR site_check_rating = file_overall_rating) THEN file_overall_rating_date::text
+  END)`;
+
 export const NO_PUBLISHED_RATING_CLAUSE =
   `lower(btrim(${RECONCILED_RATING_SQL})) = 'no published rating'`;
 
