@@ -408,12 +408,21 @@ def test_f1_later_silent_check_keeps_earlier_explicit_inheritance(silent_date):
         assert r.status == INHERITED and not r.is_current
 
 
-def test_f1_later_explicit_false_clears_inheritance():
+def test_f1_later_explicit_false_for_the_same_publication_clears_inheritance():
+    explicit = _page("Requires improvement", date(2026, 10, 22), publication_date=date(2024, 1, 1),
+                     inherited_flag=True)
+    cleared = _page("Requires improvement", date(2026, 10, 23), publication_date=date(2024, 1, 1),
+                    inherited_flag=False)
+    r = resolve_rating(_api_file_ri() + [explicit, cleared], registration_date=date(2020, 1, 1))
+    assert r.status == CURRENT
+
+
+def test_g1_undated_false_cannot_clear_an_explicit_inherited_flag():
     explicit = _page("Requires improvement", date(2026, 10, 22), publication_date=date(2024, 1, 1),
                      inherited_flag=True)
     cleared = _page("Requires improvement", date(2026, 10, 23), inherited_flag=False)
     r = resolve_rating(_api_file_ri() + [explicit, cleared], registration_date=date(2020, 1, 1))
-    assert r.status == CURRENT
+    assert r.status == INHERITED
 
 
 def test_f1_newer_earned_publication_is_not_held_by_an_old_flag():
@@ -444,3 +453,45 @@ def test_f2_serialized_provenance_is_order_independent(pair):
     one = resolve_rating([api, a, b], registration_date=None).to_dict()
     two = resolve_rating([api, b, a], registration_date=None).to_dict()
     assert one == two
+
+
+
+# Fifth review 2026-10-25 (PR #127, Codex), finding G1: page inheritance flags
+# count only for the publication they describe.
+
+def _cross(file_flag, page_flag, *, silent=True):
+    ev = [RatingEvidence(source=SOURCE_API, value="Requires improvement", publication_date=date(2024, 1, 1)),
+          RatingEvidence(source=SOURCE_FILE, value="Requires improvement", publication_date=date(2025, 1, 1),
+                         inherited_flag=file_flag),
+          _page("Requires improvement", date(2026, 10, 21), publication_date=date(2024, 1, 1),
+                inherited_flag=page_flag)]
+    if silent:
+        ev.append(_page("Requires improvement", date(2026, 10, 23), publication_date=date(2024, 1, 1)))
+    return ev
+
+
+@pytest.mark.parametrize("silent", [True, False])
+def test_g1_old_publication_false_does_not_clear_newer_inherited(silent):
+    for ev in itertools.permutations(_cross(True, False, silent=silent)):
+        r = resolve_rating(list(ev), registration_date=date(2020, 1, 1))
+        assert (r.status, r.source, r.publication_date) == (INHERITED, SOURCE_FILE, date(2025, 1, 1))
+
+
+@pytest.mark.parametrize("silent", [True, False])
+def test_g1_old_publication_true_does_not_block_newer_earned(silent):
+    for ev in itertools.permutations(_cross(False, True, silent=silent)):
+        r = resolve_rating(list(ev), registration_date=date(2020, 1, 1))
+        assert (r.status, r.publication_date) == (CURRENT, date(2025, 1, 1))
+
+
+def test_g1_undated_true_page_is_conservatively_inherited():
+    ev = [RatingEvidence(source=SOURCE_FILE, value="Requires improvement", publication_date=date(2025, 1, 1)),
+          _page("Requires improvement", inherited_flag=True)]
+    assert resolve_rating(ev, registration_date=date(2020, 1, 1)).status == INHERITED
+
+
+def test_g1_group_event_never_admits_the_inherited_newer_publication():
+    from api.services.territory_brief import _resolved_group_event
+
+    r = resolve_rating(_cross(True, False, silent=False), registration_date=date(2020, 1, 1))
+    assert _resolved_group_event(r, "requires_improvement", url="https://www.cqc.org.uk/location/x") is None

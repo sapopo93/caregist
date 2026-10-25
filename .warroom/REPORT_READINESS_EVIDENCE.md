@@ -275,3 +275,35 @@ The reviewer's `adversarial-repro.py` was re-run against the fix:
 - `inherited_then_silent` → inherited in all 120 permutations;
 - the 15,120-resolution matrix still shows 0 order-unstable pairs and 0 invented dates;
 - the `explicit_clear` control stays current.
+
+## Response to fifth review of PR #127 (Codex), 25 Oct 2026
+
+Review: `artifacts/reviews/2026-10-25-pr127-fifth/REVIEW.md` (main checkout). F1/F2 and every earlier finding were rechecked as fixed. One new P2 remained.
+
+**G1: a page flag about an older publication changed the status of a newer one.** Example: file Requires improvement 2025 marked inherited, API 2024, page 2024 marked not inherited. The newer inherited 2025 rating was shown as current in the narrative, PDF, CSV and JSON. The reverse case wrongly held back a newer earned rating.
+
+Change: the new `_page_inheritance` helper takes a page flag into account only for the publication it describes:
+- a page flag counts only when the page states the same publication date;
+- an undated "inherited" is applied conservatively;
+- an undated "not inherited" clears nothing;
+- the most recent relevant observation wins, with "inherited" winning a same-day tie;
+- in the confirming path, the flag applies only if that publication is the one selected.
+
+One earlier test changed meaning. `test_f1_later_explicit_false_clears_inheritance` relied on an undated "not inherited" clearing an explicit flag. It is now `test_f1_later_explicit_false_for_the_same_publication_clears_inheritance` (dated, same publication). The new `test_g1_undated_false_cannot_clear_an_explicit_inherited_flag` asserts the conservative result.
+
+Tests:
+- `test_g1_old_publication_false_does_not_clear_newer_inherited` and `test_g1_old_publication_true_does_not_block_newer_earned` (both with and without the silent check, all permutations);
+- `test_g1_undated_true_page_is_conservatively_inherited`;
+- `test_g1_group_event_never_admits_the_inherited_newer_publication`;
+- `test_g1_brief_outputs_never_assert_inherited_newer_publication_as_current` (real generator; PDF/CSV/JSON).
+
+The reviewer's `fifth-probes.py` and `cross-publication-artifact-repro.py` were re-run against the fix:
+
+| Case | Before | After |
+|---|---|---|
+| `carried_false_crosses_publication` | current | **inherited** |
+| `old_true_blocks_new_earned` | inherited | **current** |
+| `single_old_false_crosses_publication` | current | **inherited** |
+| `explicit_false_control` | current | current (unchanged) |
+
+The 174,960 and 8,586-resolution matrices still show 0 unstable serializations and 0 invented dates. Both cross-publication artifact sets now shortlist nobody.
