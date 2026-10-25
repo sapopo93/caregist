@@ -575,3 +575,23 @@ def test_i1_superseded_page_conflict_does_not_hide_published_channel_conflict():
           RatingEvidence(SOURCE_FILE, "Good", date(2026, 10, 24)), _page("Good"), _page("Inadequate")]
     for perm in itertools.permutations(ev):
         assert resolve_rating(perm, registration_date=None).status == UNRESOLVED
+
+
+@pytest.mark.parametrize("pages", [
+    [("Good", None)],
+    [("Good", date(2024, 1, 1))],
+    [("Good", None), ("Inadequate", None)],
+    [("Good", None), ("Good", None)],
+    [("Good", None), ("Inadequate", date(2024, 1, 1))],
+])
+def test_i1_any_number_of_page_checks_before_a_later_publication_are_superseded(pages):
+    """Producer follow-up to Codex's I1 fix: one stale undated page check must not be
+    stricter than two conflicting ones; every page check predating the newest
+    publication is evidence only."""
+    ev = [RatingEvidence(SOURCE_API, "Requires improvement", date(2026, 10, 24))] + [
+        _page(v, publication_date=p) for v, p in pages]
+    results = set()
+    for perm in itertools.permutations(ev):
+        r = resolve_rating(list(perm), registration_date=date(2020, 1, 1))
+        results.add((r.status, r.value, r.publication_date, len(r.evidence)))
+    assert results == {(CURRENT, "Requires improvement", date(2026, 10, 24), len(ev))}

@@ -335,14 +335,14 @@ def resolve_rating(
             # A rating published after the page check supersedes it; the check stays in evidence.
 
     if observations:
-        latest_day = max(o.observed_on for o in observations)
-        latest_values = {o.value for o in observations if o.observed_on == latest_day}
-        if len(latest_values) > 1 and any(
-            e.source != SOURCE_WEBSITE and e.publication_date and e.publication_date > latest_day
-            for e in candidates
-        ):
-            # A later publication supersedes the page conflict, just as it
-            # supersedes a negative page check. Keep the checks as evidence;
+        newest_published = max(
+            (e.publication_date for e in candidates if e.source != SOURCE_WEBSITE and e.publication_date),
+            default=None,
+        )
+        if newest_published and newest_published > max(o.observed_on for o in observations):
+            # Every page check predates the newest API/file publication, so none
+            # of them can speak to it -- whether they agree, conflict or are one
+            # of many. As with a negative check, keep them as evidence and
             # reconcile the published channels normally, including conflicts.
             candidates = [e for e in candidates if e.source != SOURCE_WEBSITE]
             observations = []
