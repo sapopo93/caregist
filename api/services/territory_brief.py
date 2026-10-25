@@ -1041,12 +1041,33 @@ def generate_territory_opportunity_brief(
     provider_names = load_provider_names(providers_path)
     location_rows = list(_load_ndjson(locations_path))
 
+    return generate_brief_from_rows(
+        scope, purchase_context, location_rows=location_rows,
+        provider_names=provider_names, locations_label=locations_path.name,
+        providers_label=providers_path.name, allowed_ids=allowed_ids,
+        provider_group=provider_group,
+    )
+
+
+def generate_brief_from_rows(
+    scope: dict[str, Any] | TerritoryScope,
+    purchase_context: PurchaseContext,
+    *,
+    location_rows: list[dict[str, Any]],
+    provider_names: dict[str, str],
+    locations_label: str,
+    providers_label: str,
+    source_as_of: date | None = None,
+    allowed_ids: set[str] | None = None,
+    provider_group: str | None = None,
+) -> TerritoryBrief:
+    """Shared deterministic engine for file and durable database editions."""
     catalogue = known_territories(location_rows)
     validated = validate_scope(scope, catalogue)
 
     # Anchor the window to the newest source date in the snapshot so output is
     # reproducible and never claims to be more current than the data.
-    as_of = _latest_source_date(location_rows)
+    as_of = source_as_of or _latest_source_date(location_rows)
     if as_of is None:
         raise ScopeError("source snapshot has no usable dates; cannot define a window")
     window_end = as_of
@@ -1255,8 +1276,8 @@ def generate_territory_opportunity_brief(
 
     provenance = {
         "source_page": CQC_DATA_PAGE,
-        "locations_snapshot": locations_path.name,
-        "providers_snapshot": providers_path.name,
+        "locations_snapshot": locations_label,
+        "providers_snapshot": providers_label,
         "snapshot_edition_date": as_of.isoformat(),
         "generator": "api.services.territory_brief.generate_territory_opportunity_brief",
         "generated_at": purchase_context.generated_at.astimezone(timezone.utc).isoformat(),
