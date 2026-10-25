@@ -495,3 +495,46 @@ def test_g1_group_event_never_admits_the_inherited_newer_publication():
 
     r = resolve_rating(_cross(True, False, silent=False), registration_date=date(2020, 1, 1))
     assert _resolved_group_event(r, "requires_improvement", url="https://www.cqc.org.uk/location/x") is None
+
+
+# Sixth review 2026-10-25 (PR #127, Codex): H1 flags are read for the selected
+# publication; H2 a "not inherited" flag cannot override pre-registration dates.
+
+def _h1(file_flag, page_flag, *, page_pub=date(2025, 1, 1)):
+    return [RatingEvidence(source=SOURCE_API, value="Requires improvement", publication_date=date(2024, 1, 1)),
+            RatingEvidence(source=SOURCE_FILE, value="Requires improvement", publication_date=date(2025, 1, 1),
+                           inherited_flag=file_flag),
+            _page("Requires improvement", date(2026, 10, 21), publication_date=page_pub, inherited_flag=page_flag),
+            _page("Requires improvement", date(2026, 10, 23), publication_date=date(2024, 1, 1))]
+
+
+@pytest.mark.parametrize("file_flag,page_flag,page_pub,expected", [
+    (False, True, date(2025, 1, 1), INHERITED),   # selected-publication True survives later old silent page
+    (True, False, date(2025, 1, 1), CURRENT),     # selected-publication False survives too
+    (None, True, None, INHERITED),                # undated True stays conservative
+])
+def test_h1_selected_publication_flag_survives_later_page_about_older_publication(
+        file_flag, page_flag, page_pub, expected):
+    for ev in itertools.permutations(_h1(file_flag, page_flag, page_pub=page_pub)):
+        r = resolve_rating(list(ev), registration_date=date(2020, 1, 1))
+        assert (r.status, r.publication_date) == (expected, date(2025, 1, 1))
+
+
+@pytest.mark.parametrize("file_flag", [True, None])
+@pytest.mark.parametrize("api_value", ["Requires improvement", None])
+def test_h2_false_flag_cannot_make_a_pre_registration_rating_current(file_flag, api_value):
+    ev = [RatingEvidence(source=SOURCE_FILE, value="Requires improvement", publication_date=date(2024, 1, 1),
+                         inherited_flag=file_flag),
+          _page("Requires improvement", publication_date=date(2024, 1, 1), inherited_flag=False)]
+    if api_value:
+        ev.append(RatingEvidence(source=SOURCE_API, value=api_value, publication_date=date(2024, 1, 1)))
+    for perm in itertools.permutations(ev):
+        r = resolve_rating(list(perm), registration_date=date(2025, 6, 1))
+        assert r.status == INHERITED and not r.is_current
+
+
+def test_h2_dated_clearance_still_works_on_or_after_registration():
+    ev = [RatingEvidence(source=SOURCE_FILE, value="Requires improvement", publication_date=date(2024, 1, 1),
+                         inherited_flag=True),
+          _page("Requires improvement", publication_date=date(2024, 1, 1), inherited_flag=False)]
+    assert resolve_rating(ev, registration_date=date(2024, 1, 1)).status == CURRENT
