@@ -307,3 +307,22 @@ The reviewer's `fifth-probes.py` and `cross-publication-artifact-repro.py` were 
 | `explicit_false_control` | current | current (unchanged) |
 
 The 174,960 and 8,586-resolution matrices still show 0 unstable serializations and 0 invented dates. Both cross-publication artifact sets now shortlist nobody.
+
+## Response to sixth review of PR #127 (Codex), 25 Oct 2026
+
+Review: `artifacts/reviews/2026-10-25-pr127-sixth/REVIEW.md` (main checkout). G1 and all earlier findings were rechecked as fixed. The reviewer judged the undated-"not inherited" policy defensible. There were two new P2 findings.
+
+| # | Finding | Change | Tests |
+|---|---|---|---|
+| H1 | Page flags were read for the latest page's publication, so a later page about an older publication dropped a flag about the publication finally selected | The confirming path selects the API/file publication first, then calls `_page_inheritance` for that publication. The newer-page path reads flags for the page's own publication. | `test_h1_selected_publication_flag_survives_later_page_about_older_publication` (True, False and undated-True variants, all permutations) |
+| H2 | A dated page "not inherited" made a rating published before the current registration current (shown as current in the PDF, CSV and JSON) | New `_apply_page_flag`: page "inherited" always applies; page "not inherited" clears inheritance only for a publication on or after registration. | `test_h2_false_flag_cannot_make_a_pre_registration_rating_current` (file flag True/None × API agree/absent, all permutations), `test_h2_dated_clearance_still_works_on_or_after_registration`, `test_h2_brief_never_calls_a_pre_registration_rating_current` (real generator; PDF/CSV/JSON) |
+
+The reviewer's `sixth-probes.py`, `pre-registration-artifact-repro.py`, `fifth-probes.py` and `cross-publication-artifact-repro.py` were re-run against the fix:
+- `selected_publication_flag_then_old_page_True`: current → **inherited**;
+- `..._False`: inherited → **current**;
+- `undated_true_then_old_page`: current → **inherited**;
+- `pre_registration_false`: current → **inherited**;
+- the selected-publication oracle goes from 144 mismatches to **0** across 864 resolutions;
+- the fifth-round cases are unchanged (correct);
+- the 174,960 and 8,586-resolution matrices are still stable with no invented dates;
+- the pre-registration PDF/CSV/JSON now shortlist nobody.
