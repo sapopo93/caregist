@@ -237,3 +237,16 @@ Residual risk in the integration branch: `prepare_order` reads the flag from its
 Tests after the fixes: PR #125 branch **1,647 passed, 137 skipped, 0 failed**; integration branch **1,659 passed, 137 skipped, 0 failed**; ruff clean on both.
 
 Still NOT VERIFIED (unchanged from the review): live CQC page checks, the 20 registration-ending spot-checks, State of Care publication values, fresh-database re-derivation of the 51 deregistrations, and deployed flag values.
+
+## Response to repeat review of PR #127, 25 Oct 2026
+
+The repeat review (independent OpenAI reviewer agent, frozen head `624a8a7`) found the six original findings resolved for their reproduced cases. It returned **CHANGES REQUIRED** for two new page-check cases in the real preparation path.
+
+| # | Finding | Change | Tests |
+|---|---|---|---|
+| N1 | A page check agreeing with dated API/file values replaced them with an undated website value, dropping a valid Requires-improvement group member | When an applicable page observation confirms a dated API/file value, the resolver keeps that value's source and publication date. The reason is "Confirmed by CQC location page observed DATE", and the observation stays in evidence. A disagreeing undated check still decides the value but never gets an invented date, so it cannot be a dated group member. | `test_n1_agreeing_page_check_keeps_dated_source`, `test_n1_disagreeing_undated_page_check_never_invents_a_date`; on the integration branch, `test_n1_agreeing_page_check_keeps_membership_and_publication_date` (real loader and `build_brief`, with and without the check) |
+| N2 | A page check of `none` was dropped by the loader, so output said "All channels agree" with no website evidence | The loader keeps every page check; `none` becomes a dated `value=None` observation, and the file value is always kept. The resolver rule: a no-rating observation makes the result **unresolved** unless a rating was published after it (then the check is stale and kept as evidence only) or a later page check shows a rating. An undated published value against it is unresolved. `to_dict` now carries `website_raw_value` and reports the latest observation. | `test_n2_later_no_rating_page_check_makes_result_unresolved`, `test_n2_rating_published_after_the_check_supersedes_it`, `test_n2_undated_value_against_absence_is_unresolved`, `test_n2_later_positive_page_check_overrides_earlier_absence`, `test_absence_alone_is_none`; on the integration branch, `test_n2_none_page_check_is_kept_and_withholds_the_rating` and `test_n2_rating_published_after_none_check_is_current` (real loader) |
+
+The saved report outputs carry no page checks, so they are unchanged. Tests: PR #125 branch **1,654 passed, 137 skipped, 0 failed**; integration branch **1,669 passed, 137 skipped, 0 failed**; ruff clean on both.
+
+The disclosed gaps are unchanged: public coverage and search precedence, the unwired delivery path, the 51 unreconciled deregistrations, dual registrations, the unstored inherited flag, and the list of NOT VERIFIED checks.
