@@ -11,6 +11,7 @@ from tools.report_watchdog_verdicts import (
     FRESH,
     MONITOR_FAILED,
     MONITOR_OK,
+    PARTIAL,
     STALE,
     UNKNOWN,
     build_report,
@@ -26,7 +27,8 @@ def _write(tmp_path, payload):
 
 def test_healthy_monitor_with_stale_source_is_not_reported_fresh(tmp_path):
     """The core property: a monitor that ran fine does not make data fresh."""
-    path = _write(tmp_path, {"status": "degraded", "readiness_ok": True, "source_fresh": False})
+    path = _write(tmp_path, {"status": "degraded", "readiness_ok": True, "source_fresh": False,
+                             "source": {"freshnessStatus": "stale"}})
     report = build_report("failure", load_snapshot(path))
 
     assert report["monitor_execution"]["verdict"] == MONITOR_OK
@@ -108,7 +110,7 @@ async def test_reporter_reads_a_real_monitor_snapshot_end_to_end(tmp_path):
     report = build_report("success", load_snapshot(path))
 
     assert report["monitor_execution"]["verdict"] == MONITOR_OK
-    assert report["source_data_freshness"]["verdict"] in (FRESH, STALE)
+    assert report["source_data_freshness"]["verdict"] in (FRESH, STALE, PARTIAL)
     assert report["source_data_freshness"]["verdict"] != UNKNOWN
 
 
@@ -116,3 +118,32 @@ def test_monitor_prints_the_snapshot_as_json():
     """The tee'd stdout must be the JSON snapshot, not formatted prose."""
     source = Path("tools/check_new_registration_pipeline.py").read_text(encoding="utf-8")
     assert "print(json.dumps(snapshot, indent=2))" in source
+
+
+@pytest.mark.parametrize("reason,expected", [
+    ("unresolved_quarantined_locations", "quarantined"),
+    ("latest_authoritative_attempt_incomplete", "did not complete"),
+])
+def test_in_sla_partial_source_is_not_misreported_as_expired(reason, expected):
+    # The 25 Oct production snapshot was 172h old against a 192h SLA,
+    # but the reporter called it outside the SLA solely because source_fresh=False.
+    snapshot = {"status": "degraded", "freshness_ok": False, "source_fresh": False,
+                "source": {"freshnessStatus": "partial", "reason": reason,
+                           "ageHours": 172.0, "slaHours": 192,
+                           "quarantinedLocationCount": 3}}
+    report = build_report("failure", snapshot)
+    assert report["monitor_execution"]["verdict"] == MONITOR_OK
+    assert report["source_data_freshness"]["verdict"] == PARTIAL
+    assert expected in report["source_data_freshness"]["reason"]
+    assert "outside" not in report["source_data_freshness"]["reason"]
+    assert report["pipeline_status"] == "degraded"
+    assert report["source_data_freshness"]["source_detail"] == snapshot["source"]
+
+
+@pytest.mark.parametrize("snapshot", [
+    {"source_fresh": False},
+    {"source_fresh": False, "source": {"freshnessStatus": "unknown"}},
+    {"source_fresh": True, "source": {"freshnessStatus": "partial"}},
+])
+def test_missing_or_conflicting_source_status_does_not_invent_a_verdict(snapshot):
+    assert build_report("failure", snapshot)["source_data_freshness"]["verdict"] == UNKNOWN
