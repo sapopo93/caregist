@@ -123,6 +123,13 @@ export default async function HomePage() {
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-clay">{item.label}</p>
                 <p className="mt-3 text-4xl font-extrabold text-bark">{getStat(item.valueKey)}</p>
                 <p className="mt-2 text-sm leading-6 text-dusk">{item.note}</p>
+                {item.valueKey === "inadequate" && Number(stats.inadequateInCqcFile) > Number(stats.inadequate) ? (
+                  <p className="mt-2 text-xs leading-5 text-dusk">
+                    CQC&apos;s public API currently returns a rating for this many. CQC&apos;s own published ratings file
+                    lists {formatCount(Number(stats.inadequateInCqcFile))} active locations as Inadequate; the API
+                    omits the rest, so this figure understates CQC&apos;s.
+                  </p>
+                ) : null}
               </Link>
             ))}
           </div>
