@@ -2,6 +2,16 @@
 
 Production read-only verification confirms migration 067 is already applied, with three unresolved quarantined location IDs and 59,382 stored location rows. `db/apply_migrations.py --target production --check` reports no pending migrations for this release candidate. No production migration or source-row mutation was performed. Current-main integration adds persistent quarantine to pipeline evidence/logs and keeps source freshness partial while quarantined ACTIVE records remain; Data Status exposes their count. Local finalizer tests include resolved, manifest-present, inactive, missing-provider and missing-schema cases. Deployment and preview activation still require the exact candidate's CI and independent review. This supersedes older statements below that migration 067 was unapplied; commercial gates remain closed.
 
+## 2026-10-22 rating audit blockers — current bounded evidence
+
+1. Brief rating contents have no file-rating input at deployed c50d07e. The exact deployed reader returns no rating on all 20 saved file-backed API fixtures even when file fields are present alongside the payload.
+2. Four API/file conflicts select old API ratings despite newer website/file evidence: 1-152721284, 1-22160036426, 1-390976877, 1-552527797. Wholesale API-first precedence is not evidence of current accuracy.
+3. Current/inherited status unresolved for 1-16491295796 and 1-19886383752; 1-125730630 has a newer 13 Oct website rating. Do not silently choose a source or claim a verified current inspection.
+4. File cutoff/provenance label needs verification: label says 1 Oct; ODS metadata and CQC download label say 2 Oct (not proof of data cutoff). Stripe Projects' named production-db lacks the rating column while existing .env database matches all 30 public samples; hosting target mapping is not independently established.
+5. Independent approved-provider challenge and complete customer Brief acceptance remain pending. All named commercial gates remain unchanged. DeepSeek is prohibited under current AGENTS.md.
+
+[Evidence and denominators](../artifacts/rating-audit/2026-10-22/REPORT.md). Do not repeat the closed PR #122 label fix.
+
 ## 2026-10-18 current blockers
 
 1. Durable quarantine for the three HTTP-404 location records is committed in [PR #94](https://github.com/sapopo93/caregist/pull/94), but is not deployed/applied; until then a future finalizer can query them again. The run that just completed logged only the unconfirmed count.
