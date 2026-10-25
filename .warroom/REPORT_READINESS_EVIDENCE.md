@@ -250,3 +250,12 @@ The repeat review (independent OpenAI reviewer agent, frozen head `624a8a7`) fou
 The saved report outputs carry no page checks, so they are unchanged. Tests: PR #125 branch **1,654 passed, 137 skipped, 0 failed**; integration branch **1,669 passed, 137 skipped, 0 failed**; ruff clean on both.
 
 The disclosed gaps are unchanged: public coverage and search precedence, the unwired delivery path, the 51 unreconciled deregistrations, dual registrations, the unstored inherited flag, and the list of NOT VERIFIED checks.
+
+## Response to third review of PR #127, 25 Oct 2026
+
+The third review confirmed N1 and N2 were resolved, and found two resolver-input cases. Neither is produced by the current migration-069 loader.
+
+| # | Finding | Change | Tests |
+|---|---|---|---|
+| T1 | Two page checks on the same day showing different ratings resolved by input order | Page checks on the latest observation day that disagree now give **unresolved**, whatever the input order. Reporting of the latest observation is deterministic. | `test_t1_same_day_disagreeing_page_checks_are_unresolved_in_any_order`, `test_t1_same_day_positive_and_negative_still_unresolved`, `test_t1_clearly_later_page_check_decides` |
+| T2 | A page check restating a known publication date cleared an explicit inherited file flag | A page check that confirms or restates a dated API/file value keeps that value's source and date. Inheritance is reconciled across all of it; an absent page flag never clears it, and only an explicit page flag does. | `test_t2_page_restating_date_keeps_explicit_file_inheritance` (both page-date forms), `test_t2_explicit_page_flag_can_establish_current_registration`, `test_t2_page_with_newer_earned_rating_is_current`, `test_t2_brief_membership_does_not_depend_on_page_restating_the_date` (generator and CSV, both forms) |

@@ -135,7 +135,7 @@ class ResolvedRating:
         file = self.evidence_for(SOURCE_FILE)
         website = max(
             (e for e in self.evidence if e.source == SOURCE_WEBSITE),
-            key=lambda e: e.observed_on or date.min, default=None,
+            key=lambda e: (e.observed_on or date.min, e.raw_value or e.value or ""), default=None,
         )
         return {
             "domain": self.domain,
@@ -237,9 +237,12 @@ def resolve_rating(
     3. A dated CQC page observation showing a rating is CQC's statement at that
        time: the most recently observed one decides the value and its inherited
        flag the status, but only when every competing value is dated on or
-       before the observation. When it confirms a dated API/file value, that
-       value's source and publication date are kept. Otherwise it is weighed by
-       its publication date like any other candidate.
+       before the observation. Same-day observations that disagree are
+       ``unresolved``. When it confirms or restates a dated API/file value,
+       that value's source and date are kept and inheritance is reconciled
+       across all of it; an absent page flag never clears an inherited file
+       flag, only an explicit one does. Otherwise it is weighed by its
+       publication date like any other candidate.
     4. No candidate -> ``none``.
     5. All candidates agree -> the most recently published one is chosen
        (ties broken by a fixed channel order); ``inherited`` if any candidate
@@ -286,16 +289,31 @@ def resolve_rating(
             # A rating published after the page check supersedes it; the check stays in evidence.
 
     if observations:
-        chosen = max(observations, key=lambda e: (e.observed_on, e.publication_date or date.min))
+        latest_day = max(o.observed_on for o in observations)
+        latest = [o for o in observations if o.observed_on == latest_day]
+        if len({o.value for o in latest}) > 1:
+            # Nothing orders same-day observations against each other.
+            return result(
+                UNRESOLVED, None,
+                f"CQC location page observations on {latest_day.isoformat()} show different ratings",
+            )
+        chosen = max(latest, key=lambda e: (e.publication_date or date.min, _SOURCE_ORDER.get(e.source, 9)))
+        if any(o.inherited_flag for o in latest):
+            chosen = RatingEvidence(**{**chosen.__dict__, "inherited_flag": True})
+        elif any(o.inherited_flag is False for o in latest) and chosen.inherited_flag is None:
+            chosen = RatingEvidence(**{**chosen.__dict__, "inherited_flag": False})
         others = [e for e in candidates if e.source != SOURCE_WEBSITE]
         if _observation_applies(chosen, others):
             note = f"CQC location page observed {chosen.observed_on.isoformat()}"
             confirming = [e for e in others if e.value == chosen.value and e.publication_date]
-            if chosen.publication_date is None and confirming:
-                # The page confirms a dated published value: keep that value's
-                # source and publication date rather than discarding them.
+            newest_confirmed = max((e.publication_date for e in confirming), default=None)
+            if confirming and (chosen.publication_date is None or chosen.publication_date <= newest_confirmed):
+                # The page confirms (or restates) a dated published value: keep
+                # that value's source and date. Inheritance is reconciled across
+                # all of it; only an explicit page flag can settle the question.
                 picked, inherited = _pick_newest(confirming, registration_date)
-                inherited = inherited or bool(chosen.inherited_flag)
+                if chosen.inherited_flag is not None:
+                    inherited = chosen.inherited_flag
                 return result(INHERITED if inherited else CURRENT, picked, f"Confirmed by {note}")
             status = INHERITED if _is_inherited(chosen, registration_date) else CURRENT
             return result(status, chosen, f"{note} decides the current value")
