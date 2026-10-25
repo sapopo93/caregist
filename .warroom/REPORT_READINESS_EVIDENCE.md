@@ -370,3 +370,29 @@ Codex's fix is commit `b57a455`, cherry-picked with its authorship as `63e6bcb`.
 Tests are in the entry below.
 
 Tests after the eighth-round fix: PR #125 branch **1,729 passed, 137 skipped, 0 failed**; integration branch **1,744 passed, 137 skipped, 0 failed**; ruff clean on both. Codex's sandboxed full runs (1,672 passed, 72 failed) fail only at its no-database guard. Codex's fix is its own work; this producer check is the independent review of it.
+
+## Ninth round of PR #127: Codex review, 25 Oct 2026 — PASS within scope
+
+Review: `artifacts/reviews/2026-10-25-pr127-ninth/REVIEW.md` (main checkout). Frozen integration head `954e66de05afcf4a43d350e04a74a3b69728d56e`.
+
+**Verdict: PASS within the rating-resolution scope.** No new findings, no fix commits, and an empty patch range.
+
+What Codex did:
+- Challenged the J1 pre-pass with new independent expectation ledgers: 405 cases / 8,262 permutations on the stale-page path and 48 cases / 2,772 permutations on the confirming/deciding paths. Zero semantic, serialization, group-eligibility or evidence mismatches.
+- Re-ran its round-5 to round-8 scripts with expected results.
+- Checked the four J1 PDF/CSV/JSON packs. The unresolved packs omit the location and disclose the conflict; the clearance control includes it.
+
+Results: focused tests 149 passed; full suite in its sandbox 1,672 passed, 137 skipped, 72 failed (all at its no-database guard, the same set as round eight); ruff clean.
+
+Independence: the J1 fix (`63e6bcb`) is Codex-authored. Codex's own re-review of it does not count as different-model approval. The producer check recorded in the eighth-round section is the different-model review of J1. Every other change was written by Claude and has now had Codex review.
+
+This PASS covers the technical resolver contract only. It passes no commercial, source, delivery or release gate.
+
+The disclosed gaps remain open:
+- the public coverage and search SQL still use API-first precedence;
+- paid delivery is not wired to the resolver;
+- 51 CQC-deregistered rows are still ACTIVE;
+- dual registrations are not merged;
+- the ratings file's inherited flag is not stored;
+- the State of Care reference values are unverified;
+- the production loader does not supply multiple, dated or flagged page observations.
