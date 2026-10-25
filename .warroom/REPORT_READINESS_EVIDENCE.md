@@ -368,3 +368,5 @@ Codex's fix is commit `b57a455`, cherry-picked with its authorship as `63e6bcb`.
 - With no page checks, the pre-pass reproduces the existing date-based classification.
 
 Tests are in the entry below.
+
+Tests after the eighth-round fix: PR #125 branch **1,729 passed, 137 skipped, 0 failed**; integration branch **1,744 passed, 137 skipped, 0 failed**; ruff clean on both. Codex's sandboxed full runs (1,672 passed, 72 failed) fail only at its no-database guard. Codex's fix is its own work; this producer check is the independent review of it.
