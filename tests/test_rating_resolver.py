@@ -538,3 +538,60 @@ def test_h2_dated_clearance_still_works_on_or_after_registration():
                          inherited_flag=True),
           _page("Requires improvement", publication_date=date(2024, 1, 1), inherited_flag=False)]
     assert resolve_rating(ev, registration_date=date(2024, 1, 1)).status == CURRENT
+
+
+# Seventh review: a same-day page conflict cannot veto a later publication.
+@pytest.mark.parametrize("page_publication", [None, date(2024, 1, 1)])
+@pytest.mark.parametrize("with_absence", [False, True])
+@pytest.mark.parametrize("inherited", [False, True])
+def test_i1_later_publication_supersedes_stale_page_conflict(page_publication, with_absence, inherited):
+    from api.services.territory_brief import _resolved_group_event
+
+    ev = [RatingEvidence(SOURCE_API, "Requires improvement", date(2026, 10, 24), inherited_flag=inherited),
+          _page("Good", publication_date=page_publication, inherited_flag=True),
+          _page("Inadequate", publication_date=page_publication, inherited_flag=False)]
+    if with_absence:
+        ev.append(_page(None))
+    serialized = []
+    for perm in itertools.permutations(ev):
+        r = resolve_rating(perm, registration_date=date(2020, 1, 1))
+        assert (r.status, r.value, r.publication_date) == (
+            INHERITED if inherited else CURRENT, "Requires improvement", date(2026, 10, 24))
+        assert len(r.evidence) == len(ev)
+        assert bool(_resolved_group_event(r, "requires_improvement", url="fixture")) is not inherited
+        serialized.append(r.to_dict())
+    assert all(s == serialized[0] for s in serialized)
+
+
+@pytest.mark.parametrize("publication", [None, date(2026, 10, 23), date(2026, 10, 22)])
+def test_i1_page_conflict_still_blocks_undated_same_day_or_older_publication(publication):
+    ev = [RatingEvidence(SOURCE_API, "Requires improvement", publication), _page("Good"), _page("Inadequate")]
+    for perm in itertools.permutations(ev):
+        assert resolve_rating(perm, registration_date=None).status == UNRESOLVED
+
+
+def test_i1_superseded_page_conflict_does_not_hide_published_channel_conflict():
+    ev = [RatingEvidence(SOURCE_API, "Requires improvement", date(2026, 10, 24)),
+          RatingEvidence(SOURCE_FILE, "Good", date(2026, 10, 24)), _page("Good"), _page("Inadequate")]
+    for perm in itertools.permutations(ev):
+        assert resolve_rating(perm, registration_date=None).status == UNRESOLVED
+
+
+@pytest.mark.parametrize("pages", [
+    [("Good", None)],
+    [("Good", date(2024, 1, 1))],
+    [("Good", None), ("Inadequate", None)],
+    [("Good", None), ("Good", None)],
+    [("Good", None), ("Inadequate", date(2024, 1, 1))],
+])
+def test_i1_any_number_of_page_checks_before_a_later_publication_are_superseded(pages):
+    """Producer follow-up to Codex's I1 fix: one stale undated page check must not be
+    stricter than two conflicting ones; every page check predating the newest
+    publication is evidence only."""
+    ev = [RatingEvidence(SOURCE_API, "Requires improvement", date(2026, 10, 24))] + [
+        _page(v, publication_date=p) for v, p in pages]
+    results = set()
+    for perm in itertools.permutations(ev):
+        r = resolve_rating(list(perm), registration_date=date(2020, 1, 1))
+        results.add((r.status, r.value, r.publication_date, len(r.evidence)))
+    assert results == {(CURRENT, "Requires improvement", date(2026, 10, 24), len(ev))}
