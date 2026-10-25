@@ -39,7 +39,7 @@ which value is current, not when it changed.
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 from datetime import date
 from typing import Any, Iterable
 
@@ -210,7 +210,8 @@ def _page_inheritance(observations: list[RatingEvidence], value: str | None, pub
 
     Only flags that describe that publication count: an explicit flag on a page
     stating the same publication date, or -- conservatively -- an undated page
-    saying ``inherited``. An undated ``not inherited`` cannot clear anything,
+    saying ``inherited`` observed on or after the publication. An undated
+    ``not inherited`` cannot clear anything,
     because nothing ties it to this publication. The most recently observed
     relevant flag wins; ``inherited`` wins a same-day tie. ``None`` when no page
     says anything about this publication.
@@ -219,7 +220,8 @@ def _page_inheritance(observations: list[RatingEvidence], value: str | None, pub
         o for o in observations
         if o.value == value and o.inherited_flag is not None and (
             (publication is not None and o.publication_date == publication)
-            or (o.publication_date is None and o.inherited_flag is True)
+            or (o.publication_date is None and o.inherited_flag is True
+                and (publication is None or o.observed_on >= publication))
         )
     ]
     if not relevant:
@@ -334,6 +336,19 @@ def resolve_rating(
                 )
             # A rating published after the page check supersedes it; the check stays in evidence.
 
+    # A page can be stale for deciding a later value while still describing
+    # inheritance of an older publication that remains in the reconciliation.
+    # Apply publication-scoped metadata before reducing page value candidates;
+    # keep the original evidence unchanged for provenance.
+    candidates = [
+        replace(e, inherited_flag=_apply_page_flag(
+            _is_inherited(e, registration_date),
+            _page_inheritance(observations, e.value, e.publication_date),
+            e.publication_date, registration_date,
+        )) if e.source != SOURCE_WEBSITE else e
+        for e in candidates
+    ]
+
     if observations:
         newest_published = max(
             (e.publication_date for e in candidates if e.source != SOURCE_WEBSITE and e.publication_date),
@@ -341,9 +356,8 @@ def resolve_rating(
         )
         if newest_published and newest_published > max(o.observed_on for o in observations):
             # Every page check predates the newest API/file publication, so none
-            # of them can speak to it -- whether they agree, conflict or are one
-            # of many. As with a negative check, keep them as evidence and
-            # reconcile the published channels normally, including conflicts.
+            # can decide its value. Keep the checks as evidence and reconcile
+            # the published channels with the publication-scoped flags above.
             candidates = [e for e in candidates if e.source != SOURCE_WEBSITE]
             observations = []
 
