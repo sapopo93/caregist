@@ -331,3 +331,59 @@ def test_n2_later_positive_page_check_overrides_earlier_absence():
 
 def test_absence_alone_is_none():
     assert resolve_rating([_absent(date(2026, 10, 23))], registration_date=None).status == NONE
+
+
+# Third review 2026-10-25 (PR #127), findings T1 and T2.
+
+def _page(value, day=date(2026, 10, 23), **kw):
+    return RatingEvidence(source=SOURCE_WEBSITE, value=value, observed_on=day, **kw)
+
+
+def test_t1_same_day_disagreeing_page_checks_are_unresolved_in_any_order():
+    api = RatingEvidence(source=SOURCE_API, value="Good", publication_date=date(2024, 1, 1))
+    good, ri = _page("Good"), _page("Requires improvement")
+    for ev in ([api, good, ri], [api, ri, good]):
+        r = resolve_rating(ev, registration_date=None)
+        assert r.status == UNRESOLVED and "show different ratings" in r.reason
+        assert r.to_dict()["website_value"] == "Requires improvement"  # deterministic reporting
+
+
+def test_t1_same_day_positive_and_negative_still_unresolved():
+    api = RatingEvidence(source=SOURCE_API, value="Good", publication_date=date(2024, 1, 1))
+    for ev in ([api, _page("Good"), _page(None)], [api, _page(None), _page("Good")]):
+        assert resolve_rating(ev, registration_date=None).status == UNRESOLVED
+
+
+def test_t1_clearly_later_page_check_decides():
+    api = RatingEvidence(source=SOURCE_API, value="Good", publication_date=date(2024, 1, 1))
+    ev = [api, _page("Requires improvement", date(2026, 10, 1)), _page("Good", date(2026, 10, 23))]
+    r = resolve_rating(ev, registration_date=None)
+    assert (r.status, r.value, r.source) == (CURRENT, "Good", SOURCE_API)
+
+
+def _inherited_ri():
+    return [
+        RatingEvidence(source=SOURCE_API, value="Requires improvement", publication_date=date(2024, 1, 1)),
+        RatingEvidence(source=SOURCE_FILE, value="Requires improvement", publication_date=date(2024, 1, 1),
+                       inherited_flag=True),
+    ]
+
+
+@pytest.mark.parametrize("page_date", [None, date(2024, 1, 1)])
+def test_t2_page_restating_date_keeps_explicit_file_inheritance(page_date):
+    ev = _inherited_ri() + [_page("Requires improvement", publication_date=page_date)]
+    r = resolve_rating(ev, registration_date=date(2020, 1, 1))
+    assert (r.status, r.source, r.publication_date) == (INHERITED, SOURCE_FILE, date(2024, 1, 1))
+    assert not r.is_current
+
+
+def test_t2_explicit_page_flag_can_establish_current_registration():
+    ev = _inherited_ri() + [_page("Requires improvement", publication_date=date(2024, 1, 1), inherited_flag=False)]
+    r = resolve_rating(ev, registration_date=date(2020, 1, 1))
+    assert (r.status, r.source) == (CURRENT, SOURCE_FILE)
+
+
+def test_t2_page_with_newer_earned_rating_is_current():
+    ev = _inherited_ri() + [_page("Good", publication_date=date(2026, 9, 1))]
+    r = resolve_rating(ev, registration_date=date(2020, 1, 1))
+    assert (r.status, r.value, r.source) == (CURRENT, "Good", SOURCE_WEBSITE)

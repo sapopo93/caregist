@@ -272,3 +272,26 @@ def test_review_finding_5_eventful_non_members_are_excluded(tmp_path, lid, row_k
     brief = _single(tmp_path, _conflict_row(lid, **row_kw), evidence, group="requires_improvement")
     assert brief.shortlist == ()
     assert [e["location_id"] for e in brief.rating_resolution["scope_exclusions"]] == [lid]
+
+
+@pytest.mark.parametrize("page_date", [None, date(2024, 1, 1)])
+def test_t2_brief_membership_does_not_depend_on_page_restating_the_date(tmp_path, page_date):
+    row = _conflict_row("inh", currentRatings={
+        "overall": {"rating": "Requires improvement", "reportDate": "2024-01-01"}, "reportDate": "2024-01-01"})
+    loc, prov = tmp_path / "l.ndjson", tmp_path / "p.ndjson"
+    loc.write_text(json.dumps(row) + "\n")
+    prov.write_text(json.dumps({"providerId": row["providerId"], "name": "P Ltd"}) + "\n")
+    evidence = {"inh": RatingEvidence(source=SOURCE_FILE, value="Requires improvement",
+                                      publication_date=date(2024, 1, 1), inherited_flag=True,
+                                      source_sha256=SHA, edition_date=EDITION)}
+    page = {"inh": RatingEvidence(source=SOURCE_WEBSITE, value="Requires improvement",
+                                  publication_date=page_date, observed_on=date(2026, 10, 23))}
+    with patch("api.config.settings.resolved_rating_contract_enabled", True):
+        brief = generate_territory_opportunity_brief(
+            {"kind": "local_authority", "name": "Testershire", "window_days": 90}, CONTEXT,
+            locations_source=loc, providers_source=prov, location_ids=["inh"],
+            provider_group="requires_improvement", rating_evidence=evidence, website_observations=page,
+        )
+    assert brief.shortlist == ()
+    assert brief.rating_resolution["by_location"]["inh"]["status"] == "inherited"
+    assert brief_to_csv(brief).count("\n") == 1
