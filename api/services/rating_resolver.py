@@ -205,6 +205,29 @@ def _pick_newest(candidates: list[RatingEvidence], registration_date: date | Non
     return chosen, any(_is_inherited(e, registration_date) for e in same)
 
 
+def _page_inheritance(observations: list[RatingEvidence], value: str | None, publication: date | None) -> bool | None:
+    """The page's inheritance verdict for one rating value and publication.
+
+    Only flags that describe that publication count: an explicit flag on a page
+    stating the same publication date, or -- conservatively -- an undated page
+    saying ``inherited``. An undated ``not inherited`` cannot clear anything,
+    because nothing ties it to this publication. The most recently observed
+    relevant flag wins; ``inherited`` wins a same-day tie. ``None`` when no page
+    says anything about this publication.
+    """
+    relevant = [
+        o for o in observations
+        if o.value == value and o.inherited_flag is not None and (
+            (publication is not None and o.publication_date == publication)
+            or (o.publication_date is None and o.inherited_flag is True)
+        )
+    ]
+    if not relevant:
+        return None
+    last = max(o.observed_on for o in relevant)
+    return True in {o.inherited_flag for o in relevant if o.observed_on == last}
+
+
 def _observation_applies(obs: RatingEvidence, others: list[RatingEvidence]) -> bool:
     """A page observation decides only if it postdates every competing value.
 
@@ -303,27 +326,17 @@ def resolve_rating(
                 f"CQC location page observations on {latest_day.isoformat()} show different ratings",
             )
         chosen = max(latest, key=lambda e: (e.publication_date or date.min, _SOURCE_ORDER.get(e.source, 9)))
-        if any(o.inherited_flag for o in latest):
-            chosen = RatingEvidence(**{**chosen.__dict__, "inherited_flag": True})
-        elif any(o.inherited_flag is False for o in latest) and chosen.inherited_flag is None:
-            chosen = RatingEvidence(**{**chosen.__dict__, "inherited_flag": False})
         others = [e for e in candidates if e.source != SOURCE_WEBSITE]
-        if chosen.inherited_flag is None:
-            # A silent later check cannot clear an earlier explicit flag on the
-            # same rating and publication: carry the most recent explicit one.
-            effective = chosen.publication_date or max(
-                (e.publication_date for e in others if e.value == chosen.value and e.publication_date),
-                default=None,
-            )
-            earlier = [
-                o for o in observations
-                if o.observed_on < latest_day and o.value == chosen.value and o.inherited_flag is not None
-                and (o.publication_date is None or effective is None or o.publication_date == effective)
-            ]
-            if earlier:
-                latest_flagged = max(earlier, key=lambda o: o.observed_on)
-                flags = {o.inherited_flag for o in earlier if o.observed_on == latest_flagged.observed_on}
-                chosen = RatingEvidence(**{**chosen.__dict__, "inherited_flag": True in flags})
+        # The publication the page is about: its own date, else the newest
+        # dated API/file value it confirms.
+        effective = chosen.publication_date or max(
+            (e.publication_date for e in others if e.value == chosen.value and e.publication_date),
+            default=None,
+        )
+        chosen = RatingEvidence(**{
+            **chosen.__dict__,
+            "inherited_flag": _page_inheritance(observations, chosen.value, effective),
+        })
         if _observation_applies(chosen, others):
             note = f"CQC location page observed {chosen.observed_on.isoformat()}"
             confirming = [e for e in others if e.value == chosen.value and e.publication_date]
@@ -331,9 +344,9 @@ def resolve_rating(
             if confirming and (chosen.publication_date is None or chosen.publication_date <= newest_confirmed):
                 # The page confirms (or restates) a dated published value: keep
                 # that value's source and date. Inheritance is reconciled across
-                # all of it; only an explicit page flag can settle the question.
+                # it; a page flag counts only for the publication it describes.
                 picked, inherited = _pick_newest(confirming, registration_date)
-                if chosen.inherited_flag is not None:
+                if chosen.inherited_flag is not None and effective == picked.publication_date:
                     inherited = chosen.inherited_flag
                 return result(INHERITED if inherited else CURRENT, picked, f"Confirmed by {note}")
             status = INHERITED if _is_inherited(chosen, registration_date) else CURRENT

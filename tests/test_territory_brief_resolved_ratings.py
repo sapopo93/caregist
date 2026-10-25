@@ -295,3 +295,29 @@ def test_t2_brief_membership_does_not_depend_on_page_restating_the_date(tmp_path
     assert brief.shortlist == ()
     assert brief.rating_resolution["by_location"]["inh"]["status"] == "inherited"
     assert brief_to_csv(brief).count("\n") == 1
+
+
+
+def test_g1_brief_outputs_never_assert_inherited_newer_publication_as_current(tmp_path):
+    """Fifth review: file RI 2025 inherited, API RI 2024, page RI 2024 explicitly not inherited."""
+    row = _conflict_row("x", currentRatings={
+        "overall": {"rating": "Requires improvement", "reportDate": "2024-01-01"}, "reportDate": "2024-01-01"})
+    loc, prov = tmp_path / "l.ndjson", tmp_path / "p.ndjson"
+    loc.write_text(json.dumps(row) + "\n")
+    prov.write_text(json.dumps({"providerId": row["providerId"], "name": "P Ltd"}) + "\n")
+    evidence = {"x": RatingEvidence(source=SOURCE_FILE, value="Requires improvement",
+                                    publication_date=date(2025, 1, 1), inherited_flag=True,
+                                    source_sha256=SHA, edition_date=EDITION)}
+    page = {"x": RatingEvidence(source=SOURCE_WEBSITE, value="Requires improvement",
+                                publication_date=date(2024, 1, 1), inherited_flag=False,
+                                observed_on=date(2026, 10, 23))}
+    with patch("api.config.settings.resolved_rating_contract_enabled", True):
+        brief = generate_territory_opportunity_brief(
+            {"kind": "local_authority", "name": "Testershire", "window_days": 90}, CONTEXT,
+            locations_source=loc, providers_source=prov, location_ids=["x"],
+            provider_group="requires_improvement", rating_evidence=evidence, website_observations=page,
+        )
+    assert brief.shortlist == ()
+    assert brief.rating_resolution["by_location"]["x"]["status"] == "inherited"
+    assert brief_to_csv(brief).count("\n") == 1
+    assert b"Currently rated Requires improvement overall" not in _pdf_text(render_brief_pdf(brief))
