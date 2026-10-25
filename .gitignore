@@ -192,12 +192,8 @@ orders/
 # Machine-local Projects bindings; shared project resource state stays versioned.
 .projects/state.local.json
 
-# Generated nightly state and caches (curated historical evidence remains tracked).
-artifacts/cqc-nightly/????-??-??-report.json
-artifacts/cqc-nightly/????-??-??-report.md
-artifacts/cqc-nightly/cache/attested-causes.json
-artifacts/cqc-nightly/cache/divergent-db-active.json
-artifacts/cqc-nightly/cache/source-inactive-vs-db.json
+# Nightly reports and cited caches remain versioned: the auditor requires
+# retrievable, tracked evidence. Only private working artifacts are ignored below.
 
 # Private working evidence, unsent commercial drafts and generated marketing assets.
 artifacts/rating-audit/
