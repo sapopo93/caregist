@@ -49,8 +49,10 @@ def test_row_projections_carry_the_reason(query):
 
 def test_sql_returns_null_reason_only_for_a_rated_row():
     # The two fields are complementary: never both populated, never both empty.
+    # (a rating filled from CQC's published ratings file also has no absence.)
     assert SERVED_RATING_ABSENCE == (
-        "CASE WHEN rating_state = 'rated' THEN NULL ELSE rating_state END"
+        "CASE WHEN rating_state = 'rated' OR file_overall_rating IS NOT NULL "
+        "THEN NULL ELSE rating_state END"
     )
 
 

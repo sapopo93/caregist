@@ -64,6 +64,11 @@ export default function DirectoryProviderCard({ provider, returnTo }: { provider
           </div>
         </div>
       </div>
+      {provider.rating_source === "cqc_file" && (
+        <p className="mt-2 text-xs text-dusk">
+          Rating per CQC&apos;s published ratings file (1 Oct 2026); not yet returned by CQC&apos;s API.
+        </p>
+      )}
 
       {services.length > 0 && (
         <div className="mt-4 flex flex-wrap gap-2">

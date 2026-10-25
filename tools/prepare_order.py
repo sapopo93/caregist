@@ -69,11 +69,21 @@ REGIONS = (
 # Copied verbatim from frontend/lib/directory-query-clauses.ts so the Brief covers
 # exactly what the coverage check counted. tests/test_prepare_order.py fails if
 # the two ever drift apart.
+#
+# Ratings are reconciled: the API rating when it is a real published rating,
+# otherwise CQC's published ratings file (migration 068), so a buyer is never
+# sold a smaller list than the one CQC's own website shows.
+RECONCILED_RATING_SQL = """(CASE
+    WHEN lower(btrim(overall_rating)) IN ('outstanding', 'good', 'requires improvement', 'inadequate') THEN overall_rating
+    WHEN file_overall_rating IS NOT NULL THEN file_overall_rating
+    ELSE overall_rating
+  END)"""
+
 OPPORTUNITY_SQL = {
     "new_90": "registration_date >= CURRENT_DATE - INTERVAL '90 days'",
-    "inadequate": "overall_rating = 'Inadequate'",
-    "requires_improvement": "lower(btrim(overall_rating)) = 'requires improvement'",
-    "not_yet_inspected": "lower(btrim(coalesce(overall_rating, ''))) IN ('', 'not yet inspected', 'no published rating')",
+    "inadequate": f"{RECONCILED_RATING_SQL} = 'Inadequate'",
+    "requires_improvement": f"lower(btrim({RECONCILED_RATING_SQL})) = 'requires improvement'",
+    "not_yet_inspected": f"lower(btrim(coalesce({RECONCILED_RATING_SQL}, ''))) IN ('', 'not yet inspected', 'no published rating')",
     "stale_inspection": "(last_inspection_date IS NULL OR last_inspection_date < CURRENT_DATE - INTERVAL '3 years')",
 }
 

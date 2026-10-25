@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from datetime import date, datetime, timezone
 from pathlib import Path
 
@@ -21,9 +22,14 @@ def _isolated_ledger(monkeypatch, tmp_path):
 def test_opportunity_sql_matches_the_website_coverage_query_exactly():
     # The Brief must cover what the buyer was shown; any drift fails here.
     source = (REPO / "frontend" / "lib" / "directory-query-clauses.ts").read_text(encoding="utf-8")
+    # The reconciled-rating expression itself must be identical on both sides.
+    ts_expr = re.search(r"RECONCILED_RATING_SQL = `(.*?)`;", source, re.S).group(1)
+    assert ts_expr == po.RECONCILED_RATING_SQL
     for group, sql in po.OPPORTUNITY_SQL.items():
         assert f'case "{group}":' in source, group
-        assert f'return "{sql}";' in source, group
+        as_ts = sql.replace(po.RECONCILED_RATING_SQL, "${RECONCILED_RATING_SQL}")
+        quoted = f'return "{sql}";' if as_ts == sql else f"return `{as_ts}`;"
+        assert quoted in source, group
 
 
 def test_opportunity_groups_match_the_brief_generator_and_the_site():
