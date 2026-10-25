@@ -326,3 +326,21 @@ The reviewer's `sixth-probes.py`, `pre-registration-artifact-repro.py`, `fifth-p
 - the fifth-round cases are unchanged (correct);
 - the 174,960 and 8,586-resolution matrices are still stable with no invented dates;
 - the pre-registration PDF/CSV/JSON now shortlist nobody.
+
+## Seventh round of PR #127: Codex review and fix, producer check, 25 Oct 2026
+
+Review: `artifacts/reviews/2026-10-25-pr127-seventh/REVIEW.md` (main checkout). Codex confirmed H1/H2 fixed at `a0bf046`.
+
+**I1 (P2), found and fixed by Codex.** Two conflicting page checks made on the same day blocked a rating that CQC published the following day.
+
+Codex's fix: commit `3d8a83a`, cherry-picked with its authorship intact as `a65379d`. It adds 12 tests and changes no existing expectation.
+
+**Producer check of Codex's fix (Codex wrote it, so it needed separate review).** The fix superseded only *conflicting* page checks. A single undated page check from before the later publication was still `unresolved`, so adding a second, contradicting check made the result *more* confident.
+
+The follow-up commit generalises Codex's principle: when the newest API/file publication postdates every page check, the page checks are kept as evidence only, and the published channels are reconciled normally. This covers one check or many, agreeing or conflicting.
+
+New test: `test_i1_any_number_of_page_checks_before_a_later_publication_are_superseded` (5 shapes, all permutations, evidence retained).
+
+Codex's seventh-, sixth- and fifth-round probes and its adversarial matrix give byte-identical results on the generalised fix and on Codex's fix. The only behaviour change is the single-stale-check case.
+
+The generalisation is producer work and needs independent review.
