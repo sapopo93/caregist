@@ -140,15 +140,18 @@ Radar is what makes £10k/mo survivable: 34 × £299 = £10,166 **recurring**,
 versus 10 one-off reviews that must be re-sold every month.
 
 ## 6. HERMES ARCHITECTURE
+
+> **19 Oct 2026:** DeepSeek is prohibited across H-Kay systems (UK GDPR transfer risk). Routes that used it are paused until an approved provider is chosen.
+
 ```
 07:00 daily → Chief of Staff → gpt-5.6-luna → CRM read → call brief for today's
               20 screened contacts → self-check vs CQC record → Telegram
 hourly     → Feed cycle (live)  → no LLM     → CQC API   → trusted_event_ledger
              → health check → Radar delivery
-daily 18:00→ Pipeline auditor  → deepseek-v4-flash → SQL → stage-change digest
+daily 18:00→ Pipeline auditor  → PROVIDER-TBD (DeepSeek removed) → SQL → stage-change digest
              → flags deals untouched >5 days → Telegram
 weekly     → Waste audit (live)→ gpt-5.6-luna → repo+logs → Telegram
-on failure → Watchdog          → deepseek-v4-flash → health+cron state
+on failure → Watchdog          → PROVIDER-TBD (DeepSeek removed) → health+cron state
              → alert if checkoutReady flips false → Telegram
 ```
 
@@ -159,12 +162,12 @@ codex is rate-limited (41× `HTTP 429: usage limit reached`). Route to what runs
 
 | Tier | Task | Primary | Fallback | Escalate when |
 |---|---|---|---|---|
-| 1 | CRM updates, extraction, classification, list filtering | `deepseek-v4-flash` (deepseek) | `grok-4.6` | never |
-| 2 | Call briefs, lead research, outreach copy, digests | `grok-4.6` (xai-oauth) | `deepseek-v4-flash` | output contradicts the CQC record |
+| 1 | CRM updates, extraction, classification, list filtering | PROVIDER-TBD (DeepSeek removed) | `grok-4.6` | never |
+| 2 | Call briefs, lead research, outreach copy, digests | `grok-4.6` (xai-oauth) | none (DeepSeek removed) | output contradicts the CQC record |
 | 3 | Offer/pricing decisions, difficult code, QA of customer-facing output | `gpt-5.6-sol` (openai-codex) | `grok-4.6` | £-affecting or customer-visible |
 | 4 | Escalation only | `gpt-5.6-sol` reasoning=high | — | tiers 1–3 disagree, or >£1k at stake |
 
-Cost priority: tier 1 is ~90% of volume and must stay on deepseek. **Change
+Cost priority: tier 1 is ~90% of volume and needs an approved provider; DeepSeek is prohibited. **Change
 `model.default` from `gpt-5.6-sol` to `grok-4.6`** so the 429 storm stops
 killing cron runs.
 
