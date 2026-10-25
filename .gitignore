@@ -188,3 +188,28 @@ artifacts/**/pdf-bounds.html
 
 # Local order ledger (buyer emails); never committed.
 orders/
+
+# Machine-local Projects bindings; shared project resource state stays versioned.
+.projects/state.local.json
+
+# Generated nightly state and caches (curated historical evidence remains tracked).
+artifacts/cqc-nightly/????-??-??-report.json
+artifacts/cqc-nightly/????-??-??-report.md
+artifacts/cqc-nightly/cache/attested-causes.json
+artifacts/cqc-nightly/cache/divergent-db-active.json
+artifacts/cqc-nightly/cache/source-inactive-vs-db.json
+
+# Private working evidence, unsent commercial drafts and generated marketing assets.
+artifacts/rating-audit/
+artifacts/recovery/
+artifacts/reviews/
+artifacts/product-research/2026-10-16/
+artifacts/releases/2026-10-16-button-removal/
+artifacts/releases/2026-10-16-pr90/
+artifacts/releases/2026-10-22-quarantine-preview/
+artifacts/releases/2026-10-22-weekly-digest-enquiry.*
+caregist-persona/
+marketing/
+docs/customer-pack/enquiry-email-drafts-*.md
+docs/customer-pack/outreach-campaign-20-targets.md
+docs/terms-*-draft-FOR-SOLICITOR-*.md
