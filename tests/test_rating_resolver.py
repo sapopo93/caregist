@@ -595,3 +595,54 @@ def test_i1_any_number_of_page_checks_before_a_later_publication_are_superseded(
         r = resolve_rating(list(perm), registration_date=date(2020, 1, 1))
         results.add((r.status, r.value, r.publication_date, len(r.evidence)))
     assert results == {(CURRENT, "Requires improvement", date(2026, 10, 24), len(ev))}
+
+
+@pytest.mark.parametrize("flag", [True, False])
+@pytest.mark.parametrize("page_publication", [None, date(2024, 1, 1)])
+@pytest.mark.parametrize("extra_page", [None, "silent", "absence", "conflict"])
+def test_j1_stale_pages_keep_flags_for_older_published_candidates(flag, page_publication, extra_page):
+    from itertools import permutations
+    import json
+    from api.services.territory_brief import _resolved_group_event
+
+    ev = [RatingEvidence(SOURCE_API, "Good", date(2024, 1, 1), inherited_flag=not flag),
+          RatingEvidence(SOURCE_FILE, "Requires improvement", date(2026, 10, 24)),
+          _page("Good", date(2026, 10, 22), publication_date=page_publication, inherited_flag=flag)]
+    if extra_page:
+        ev.append(_page({"silent": "Good", "absence": None, "conflict": "Inadequate"}[extra_page]))
+    # Undated False cannot clear a dated source annotation. True describes the
+    # older publication conservatively, but cannot annotate the future one.
+    expected = UNRESOLVED if flag or page_publication is None else CURRENT
+    serializations = set()
+    for p in permutations(ev):
+        r = resolve_rating(p, registration_date=date(2020, 1, 1))
+        assert r.status == expected
+        assert bool(_resolved_group_event(r, "requires_improvement", url="fixture")) == (expected == CURRENT)
+        assert r.evidence == p
+        serializations.add(json.dumps(r.to_dict(), sort_keys=True))
+    assert len(serializations) == 1
+
+
+@pytest.mark.parametrize("flag", [True, False])
+def test_j1_stale_undated_flag_cannot_annotate_future_publication(flag):
+    ev = [RatingEvidence(SOURCE_FILE, "Requires improvement", date(2026, 10, 24), inherited_flag=not flag),
+          _page("Requires improvement", date(2026, 10, 23), inherited_flag=flag)]
+    r = resolve_rating(ev, registration_date=date(2020, 1, 1))
+    assert r.status == (CURRENT if flag else INHERITED)
+
+
+@pytest.mark.parametrize("observed", [date(2026, 10, 23), date(2026, 10, 24), date(2026, 10, 25)])
+def test_j1_mixed_page_chronology_preserves_selected_publication_flag(observed):
+    from itertools import permutations
+    import json
+
+    ev = [RatingEvidence(SOURCE_API, "Good", date(2024, 1, 1)),
+          RatingEvidence(SOURCE_FILE, "Requires improvement", date(2026, 10, 24)),
+          _page("Good", date(2026, 10, 22), publication_date=date(2024, 1, 1), inherited_flag=True),
+          _page("Good", observed, publication_date=date(2024, 1, 1))]
+    serializations = set()
+    for p in permutations(ev):
+        r = resolve_rating(p, registration_date=date(2020, 1, 1))
+        assert r.status == (UNRESOLVED if observed < date(2026, 10, 24) else INHERITED)
+        serializations.add(json.dumps(r.to_dict(), sort_keys=True))
+    assert len(serializations) == 1

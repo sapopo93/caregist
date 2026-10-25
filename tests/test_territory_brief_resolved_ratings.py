@@ -345,3 +345,40 @@ def test_h2_brief_never_calls_a_pre_registration_rating_current(tmp_path):
     assert brief.rating_resolution["by_location"]["x"]["status"] == "inherited"
     assert brief_to_csv(brief).count("\n") == 1
     assert b"Currently rated Requires improvement overall" not in _pdf_text(render_brief_pdf(brief))
+
+
+@pytest.mark.parametrize("flag", [True, False])
+@pytest.mark.parametrize("page_publication", [None, date(2024, 1, 1)])
+def test_j1_brief_stale_page_metadata_still_reconciles_older_publication(tmp_path, flag, page_publication):
+    row = _conflict_row("x", currentRatings={
+        "overall": {"rating": "Requires improvement", "reportDate": "2026-10-24"},
+        "reportDate": "2026-10-24"})
+    loc, prov = tmp_path / "l.ndjson", tmp_path / "p.ndjson"
+    loc.write_text(json.dumps(row) + "\n")
+    prov.write_text(json.dumps({"providerId": row["providerId"], "name": "P Ltd"}) + "\n")
+    evidence = {"x": RatingEvidence(SOURCE_FILE, "Good", date(2024, 1, 1), inherited_flag=not flag,
+                                    source_sha256=SHA, edition_date=EDITION)}
+    page = {"x": RatingEvidence(SOURCE_WEBSITE, "Good", page_publication, inherited_flag=flag,
+                                observed_on=date(2026, 10, 23))}
+    with patch("api.config.settings.resolved_rating_contract_enabled", True):
+        brief = generate_territory_opportunity_brief(
+            {"kind": "local_authority", "name": "Testershire", "window_days": 90}, CONTEXT,
+            locations_source=loc, providers_source=prov, location_ids=["x"],
+            provider_group="requires_improvement", rating_evidence=evidence, website_observations=page,
+        )
+    expected = "unresolved" if flag or page_publication is None else "current"
+    data = brief.to_json()
+    assert data["rating_resolution"]["by_location"]["x"]["status"] == expected
+    assert data["rating_resolution"]["by_location"]["x"]["website_observed_on"] == "2026-10-23"
+    rows = list(csv.DictReader(io.StringIO(brief_to_csv(brief))))
+    text = _pdf_text(render_brief_pdf(brief))
+    if expected == "unresolved":
+        assert brief.shortlist == () and rows == [] and data["shortlist"] == []
+        assert b"Currently rated Requires improvement overall" not in text
+        assert "Currently rated Requires improvement overall" not in json.dumps(data)
+        assert b"x" in text and b"Ratings not shown because the evidence conflicts" in text
+    else:
+        assert [o.location_id for o in brief.shortlist] == ["x"]
+        assert rows[0]["rating_status"] == "current"
+        assert rows[0]["current_rating"] == "Requires improvement"
+        assert b"Currently rated Requires improvement overall" in text

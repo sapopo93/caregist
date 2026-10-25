@@ -344,3 +344,27 @@ New test: `test_i1_any_number_of_page_checks_before_a_later_publication_are_supe
 Codex's seventh-, sixth- and fifth-round probes and its adversarial matrix give byte-identical results on the generalised fix and on Codex's fix. The only behaviour change is the single-stale-check case.
 
 The generalisation is producer work and needs independent review.
+
+## Eighth round of PR #127: Codex review and fix, producer check, 25 Oct 2026
+
+Review: `artifacts/reviews/2026-10-25-pr127-eighth/REVIEW.md` (main checkout). Codex confirmed I1, H1/H2, G1, F1/F2, T1/T2, N1/N2 and the original six still hold.
+
+**Codex verdict on the producer follow-up `2b63757`: CHANGES REQUIRED.** The one-vs-many consistency correction was judged justified. Discarding *all* page metadata was not: a page check made before the newest publication can still carry an inheritance flag about an older publication that stays in the reconciliation.
+
+**J1 (P2), found and fixed by Codex.** A stale page's inheritance flag for an older publication was lost.
+- Example: API Good 2024 with an explicit inherited page flag, and file Requires improvement 2026-10-24. This resolved current instead of unresolved.
+- The inverse case (a dated "not inherited" for the older publication) was wrongly unresolved.
+- The defect reached Brief narrative, PDF, CSV and JSON through optional `website_observations`.
+
+Codex's fix is commit `b57a455`, cherry-picked with its authorship as `63e6bcb`.
+- Page flags are applied to each API/file publication they describe before stale page values are set aside; the original evidence stays untouched for provenance.
+- An undated "inherited" flag cannot attach to a publication dated after the page was observed.
+- It adds 25 parameterised tests, including a Brief-level PDF/CSV/JSON test, and changes no existing expectation.
+
+**Producer check of Codex's fix:**
+- The patch was read: it uses existing publication scoping, registration chronology and conservative tie rules, and the resolver stays pure.
+- Codex's fifth-, sixth- and seventh-round probes and its adversarial matrix give byte-identical output before and after the fix.
+- Codex's eighth-round probes give the expected results.
+- With no page checks, the pre-pass reproduces the existing date-based classification.
+
+Tests are in the entry below.
