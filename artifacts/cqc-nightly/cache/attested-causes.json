@@ -1,0 +1,36 @@
+{
+  "batches": {
+    "393331bf-006d-4831-8989-43474ff4b28e": {
+      "at": "2026-10-10T18:02:08Z",
+      "candidates_checked": 1,
+      "line": "refused: 1 deactivation candidate(s) could not be confirmed as deregistered against the live CQC API (unconfirmed ids: 1-29608453477). They remain ACTIVE and are NOT counted as expected; re-run with --acknowledge-unconfirmed-deactivations to record them as explicitly unconfirmed and finalize anyway.",
+      "run_id": 38074151748,
+      "source": "gh run view 38074151748 --log",
+      "status": "attested"
+    },
+    "5f785a10-8284-4f9e-a054-6be48bd5b943": {
+      "at": "2026-09-20T18:26:02Z",
+      "candidates_checked": 2,
+      "line": "6, 1-10313682742, 1-10364404870, 1-106909122, 1-10752924714, 1-1165881913, 1-118415328, 1-119186248, 1-13051020982, 1-130582680, ...). They remain ACTIVE and are NOT counted as expected; re-run with --acknowledge-unconfirmed-deactivations to record them as explicitly unconfirmed and finalize anyway.",
+      "run_id": 35529037973,
+      "source": "gh run view 35529037973 --log",
+      "status": "attested"
+    },
+    "66b53f7f-2fba-4079-abb6-9b33bacbd684": {
+      "at": "2026-09-13T11:10:46Z",
+      "candidates_checked": 1,
+      "line": "finalize\tUNKNOWN STEP\t2026-09-13T15:59:20.6352240Z Reconciliation finalize failed: Batch finalization refused: 1 manifest locations are not active.",
+      "run_id": 34753758031,
+      "source": "gh run view 34753758031 --log",
+      "status": "attested"
+    },
+    "7fb63b00-218f-4629-9684-8281d24b21b7": {
+      "at": "2026-10-11T08:51:38Z",
+      "candidates_checked": 1,
+      "line": "refused: 1 deactivation candidate(s) could not be confirmed as deregistered against the live CQC API (unconfirmed ids: 1-29608453477). They remain ACTIVE and are NOT counted as expected; re-run with --acknowledge-unconfirmed-deactivations to record them as explicitly unconfirmed and finalize anyway.",
+      "run_id": 38126298550,
+      "source": "gh run view 38126298550 --log",
+      "status": "attested"
+    }
+  }
+}
