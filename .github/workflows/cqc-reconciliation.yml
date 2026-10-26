@@ -170,6 +170,17 @@ jobs:
           with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
               output.write(f"batch_id={batch}\nresume={resume}\n")
           PY
+      - name: Validate resume source lineage before database writes
+        if: steps.batch.outputs.resume == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_RUN_ID: ${{ inputs.resume_run_id }}
+          RELEASE_SHA: ${{ github.sha }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          python tools/validate_cqc_resume_lineage.py \
+            --source-run-id "$SOURCE_RUN_ID" --release-sha "$RELEASE_SHA" \
+            --repository "$REPOSITORY"
       - name: Project per-shard runtime using SELECT only
         if: steps.batch.outputs.resume == 'false'
         env:

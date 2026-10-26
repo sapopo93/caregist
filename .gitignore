@@ -188,3 +188,24 @@ artifacts/**/pdf-bounds.html
 
 # Local order ledger (buyer emails); never committed.
 orders/
+
+# Machine-local Projects bindings; shared project resource state stays versioned.
+.projects/state.local.json
+
+# Nightly reports and cited caches remain versioned: the auditor requires
+# retrievable, tracked evidence. Only private working artifacts are ignored below.
+
+# Private working evidence, unsent commercial drafts and generated marketing assets.
+artifacts/rating-audit/
+artifacts/recovery/
+artifacts/reviews/
+artifacts/product-research/2026-10-16/
+artifacts/releases/2026-10-16-button-removal/
+artifacts/releases/2026-10-16-pr90/
+artifacts/releases/2026-10-22-quarantine-preview/
+artifacts/releases/2026-10-22-weekly-digest-enquiry.*
+caregist-persona/
+marketing/
+docs/customer-pack/enquiry-email-drafts-*.md
+docs/customer-pack/outreach-campaign-20-targets.md
+docs/terms-*-draft-FOR-SOLICITOR-*.md

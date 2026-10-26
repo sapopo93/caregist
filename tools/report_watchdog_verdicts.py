@@ -19,6 +19,7 @@ MONITOR_FAILED = "FAILED"
 
 FRESH = "FRESH"
 STALE = "STALE"
+PARTIAL = "PARTIAL"
 UNKNOWN = "UNKNOWN"
 
 
@@ -51,10 +52,26 @@ def freshness_verdict(snapshot: dict | None) -> tuple[str, str]:
         return UNKNOWN, "monitor produced no snapshot; source freshness was not measured"
 
     source_fresh = snapshot.get("source_fresh")
+    source = snapshot.get("source")
+    source = source if isinstance(source, dict) else {}
+    status = source.get("freshnessStatus")
+    reason = source.get("reason")
+    if source_fresh is True and status not in (None, "fresh"):
+        return UNKNOWN, "source_fresh disagrees with the detailed source status"
     if source_fresh is True:
         return FRESH, "reconciled CQC source watermark is inside its SLA"
     if source_fresh is False:
-        return STALE, "reconciled CQC source watermark is outside its SLA"
+        if status == "partial":
+            reasons = {
+                "unresolved_quarantined_locations": "locations remain quarantined pending source verification",
+                "latest_authoritative_attempt_incomplete": "the latest authoritative attempt did not complete and reconcile",
+            }
+            return PARTIAL, reasons.get(reason, "authoritative source reconciliation is partial")
+        if status == "unknown":
+            return UNKNOWN, "authoritative source freshness evidence is incomplete or unavailable"
+        if status == "stale":
+            return STALE, "reconciled CQC source watermark is outside its SLA"
+        return UNKNOWN, "source freshness gate did not pass; no recognised detailed source status was supplied"
     return UNKNOWN, "snapshot did not report source_fresh"
 
 
