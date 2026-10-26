@@ -28,13 +28,13 @@ export const PRICING_LADDER: PricingTier[] = [
     priceNote: "One-off · no subscription · check territory coverage",
     recommended: true,
     includes: [
-      "CRM-import-ready territory dataset",
-      "Ranked shortlist of up to 50 priority organisations, each with a stated reason (exact number confirmed before you pay)",
+      "CSV of the shortlist with a source manifest (we check your CRM field mapping before promising an import)",
+      "Shortlist of up to 50 organisations to investigate, each with the factual reason it was included (exact number confirmed before you pay)",
       "3–5 page brief on territory size, market structure, notable movements, and recommended approach",
       "Observation dates carried through the deliverable",
     ],
     limit: "Check matching organisations online, then email your scope. We confirm suitability, availability and delivery before any payment.",
-    pricingLogic: "Choose the accounts worth approaching next and see the evidence behind each priority.",
+    pricingLogic: "Choose which organisations to investigate next and see the source evidence behind each one.",
   },
   {
     tier: "Free Directory",
