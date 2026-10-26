@@ -34,6 +34,7 @@ import {
   RATING_SOURCE_DATE_SQL,
   RATING_SOURCE_SQL,
   RECONCILED_RATING_SQL,
+  buildNotQuarantinedClause,
   buildOpportunityClause,
   buildRatingClause,
 } from "./directory-query-clauses.ts";
@@ -499,8 +500,10 @@ export interface TerritoryScopeCoverageRow {
 /**
  * Count the active providers in a territory scope and report the freshest
  * observation date in that set. Powers the self-serve coverage gate on the
- * Territory Opportunity Brief. Throws when the directory database is
- * unavailable — the caller decides how to fail.
+ * Territory Opportunity Brief. Unresolved quarantined locations are excluded,
+ * matching the territory preview. Throws when the directory database is
+ * unavailable or the quarantine table is missing — the caller decides how to
+ * fail (the coverage route returns 503).
  */
 export async function getTerritoryScopeCoverage(scope: {
   region: string;
@@ -516,6 +519,7 @@ export async function getTerritoryScopeCoverage(scope: {
     rating: "",
     opportunity: scope.opportunity ?? "",
   });
+  clauses.push(buildNotQuarantinedClause());
 
   const result = await getSql().query<{
     provider_count: number;
