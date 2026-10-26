@@ -2060,6 +2060,44 @@ def _summarise_ids(ids: list[str], limit: int = 10) -> str:
     return shown
 
 
+FINALIZE_LOCK_ATTEMPTS = 30
+FINALIZE_LOCK_PAUSE_S = 25.0
+
+
+def _lock_care_providers_for_finalize(
+    cur,
+    *,
+    attempts: int = FINALIZE_LOCK_ATTEMPTS,
+    pause_s: float = FINALIZE_LOCK_PAUSE_S,
+    sleep: Callable[[float], None] = time.sleep,
+) -> None:
+    """Take the finalize table lock, waiting at most 5s at a time.
+
+    Each attempt is bounded by ``lock_timeout = '5s'`` so no live write to
+    care_providers queues behind the finalize for longer than that (see the
+    comment at the call site). A single failed attempt used to abandon the
+    whole batch: on 26 Oct 2026 a finalize at 22:54 UTC lost its batch to an
+    hourly CQC signal poll holding the table. Attempts now run inside a
+    savepoint, so the advisory shard locks already taken stay held, and the
+    finalize retries with a pause between attempts (about 15 minutes in all,
+    inside the 60-minute job) before giving up exactly as before.
+    """
+    cur.execute("SET LOCAL lock_timeout = '5s'")
+    for attempt in range(1, attempts + 1):
+        cur.execute("SAVEPOINT finalize_table_lock")
+        try:
+            cur.execute("LOCK TABLE care_providers IN SHARE ROW EXCLUSIVE MODE")
+        except psycopg2.errors.LockNotAvailable:
+            cur.execute("ROLLBACK TO SAVEPOINT finalize_table_lock")
+            if attempt == attempts:
+                raise
+            _progress(f"finalize: table busy (attempt {attempt}/{attempts}); retrying in {pause_s:.0f}s")
+            sleep(pause_s)
+            continue
+        cur.execute("RELEASE SAVEPOINT finalize_table_lock")
+        return
+
+
 def _finalize_batch(args: argparse.Namespace, conn, cur) -> int:
     batch_id = _parse_batch_id(args.batch_id)
     manifest = load_snapshot_manifest(_require_manifest_path(args.snapshot_manifest))
@@ -2410,8 +2448,7 @@ def _finalize_batch(args: argparse.Namespace, conn, cur) -> int:
     # guard already treats as safe, and the one abort-incomplete handles -- in
     # preference to holding the live estate's writes hostage to a nightly batch.
     _progress("finalize: taking table lock")
-    cur.execute("SET LOCAL lock_timeout = '5s'")
-    cur.execute("LOCK TABLE care_providers IN SHARE ROW EXCLUSIVE MODE")
+    _lock_care_providers_for_finalize(cur)
     cur.execute(
         "SELECT id::text FROM care_providers WHERE UPPER(status) = 'ACTIVE' ORDER BY id"
     )
