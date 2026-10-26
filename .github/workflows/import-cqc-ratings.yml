@@ -35,8 +35,11 @@ on:
 permissions:
   contents: read
 
+# Shares the CQC reconciliation's group: both bulk-update care_providers, and
+# running together deadlocked three reconciliation shards on 26 Oct 2026. They
+# now queue behind each other instead.
 concurrency:
-  group: import-cqc-ratings
+  group: cqc-reconciliation-production
   cancel-in-progress: false
 
 jobs:
