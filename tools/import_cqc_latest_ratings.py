@@ -17,6 +17,7 @@ import argparse
 import hashlib
 import os
 import sys
+import time
 import zipfile
 from collections import Counter
 from datetime import date, datetime
@@ -76,6 +77,61 @@ def parse_date(text: str):
         return datetime.strptime(text, "%d/%m/%Y").date()
     except ValueError:
         return None
+
+
+APPLY_ATTEMPTS = 5
+
+
+def apply_with_retry(conn, rows, edition, sha, source_name, attempts=APPLY_ATTEMPTS, sleep=time.sleep):
+    """Apply the file in one transaction, retrying if Postgres aborts it as a deadlock.
+
+    Other jobs (the CQC reconciliation) update care_providers too, so two bulk
+    writers can deadlock; Postgres then aborts one transaction whole. Rows are
+    locked in id order to make that rare, and an aborted attempt is rolled back
+    and retried with backoff. Nothing partial is ever committed.
+    """
+    import psycopg2
+    from psycopg2.extras import execute_values
+
+    for attempt in range(1, attempts + 1):
+        try:
+            with conn, conn.cursor() as cur:
+                cur.execute("CREATE TEMP TABLE incoming_ratings (id text PRIMARY KEY, rating text, published date) ON COMMIT DROP")
+                execute_values(cur, "INSERT INTO incoming_ratings (id, rating, published) VALUES %s", rows, page_size=5000)
+                cur.execute(
+                    "SELECT 1 FROM care_providers WHERE id IN (SELECT id FROM incoming_ratings) "
+                    "OR (file_rating_source_sha256 IS NOT NULL AND file_rating_source_sha256 <> %s) "
+                    "ORDER BY id FOR UPDATE",
+                    (sha,),
+                )
+                cur.execute(
+                    """UPDATE care_providers cp SET file_overall_rating=i.rating, file_overall_rating_date=i.published,
+                              file_rating_edition_date=%s,
+                              site_check_rating = CASE WHEN cp.file_rating_source_sha256 IS NOT DISTINCT FROM %s
+                                                       THEN cp.site_check_rating END,
+                              site_check_at = CASE WHEN cp.file_rating_source_sha256 IS NOT DISTINCT FROM %s
+                                                   THEN cp.site_check_at END,
+                              file_rating_source=%s, file_rating_source_sha256=%s
+                         FROM incoming_ratings i WHERE cp.id = i.id""",
+                    (edition, sha, sha, source_name, sha),
+                )
+                n = cur.rowcount
+                # Rows stamped by an earlier file but absent from this one lose the stale claim.
+                cur.execute(
+                    """UPDATE care_providers SET file_overall_rating=NULL, file_overall_rating_date=NULL,
+                              file_rating_edition_date=NULL, site_check_rating=NULL, site_check_at=NULL,
+                              file_rating_source=NULL, file_rating_source_sha256=NULL
+                        WHERE file_rating_source_sha256 IS NOT NULL AND file_rating_source_sha256 <> %s""",
+                    (sha,),
+                )
+                return n, cur.rowcount
+        except psycopg2.errors.DeadlockDetected:
+            if attempt == attempts:
+                raise
+            wait = 15 * attempt
+            print(f"deadlock with another writer (attempt {attempt}/{attempts}); rolled back, retrying in {wait}s")
+            sleep(wait)
+    raise AssertionError("unreachable")
 
 
 def edition_is_newer(edition: date | None, held: date | None) -> bool:
@@ -140,38 +196,9 @@ def main(argv=None) -> int:
         if not args.apply:
             print("dry run: nothing written (use --apply)")
             return 0
-        # One set-based UPDATE: a row-by-row loop is ~32,000 network round trips
-        # and outran the 30-minute job limit, so nothing was ever committed.
-        from psycopg2.extras import execute_values
-
-        cur.execute("CREATE TEMP TABLE incoming_ratings (id text PRIMARY KEY, rating text, published date) ON COMMIT DROP")
-        execute_values(
-            cur,
-            "INSERT INTO incoming_ratings (id, rating, published) VALUES %s",
-            [(lid, rating, parse_date(pub)) for lid, (rating, pub) in ratings.items() if lid in db],
-            page_size=5000,
-        )
-        cur.execute(
-            """UPDATE care_providers cp SET file_overall_rating=i.rating, file_overall_rating_date=i.published,
-                      file_rating_edition_date=%s,
-                      site_check_rating = CASE WHEN cp.file_rating_source_sha256 IS NOT DISTINCT FROM %s
-                                               THEN cp.site_check_rating END,
-                      site_check_at = CASE WHEN cp.file_rating_source_sha256 IS NOT DISTINCT FROM %s
-                                           THEN cp.site_check_at END,
-                      file_rating_source=%s, file_rating_source_sha256=%s
-                 FROM incoming_ratings i WHERE cp.id = i.id""",
-            (args.edition_date, sha, sha, args.ods.name, sha),
-        )
-        n = cur.rowcount
-        # Rows stamped by an earlier file but absent from this one lose the stale claim.
-        cur.execute(
-            """UPDATE care_providers SET file_overall_rating=NULL, file_overall_rating_date=NULL,
-                      file_rating_edition_date=NULL, site_check_rating=NULL, site_check_at=NULL,
-                      file_rating_source=NULL, file_rating_source_sha256=NULL
-                WHERE file_rating_source_sha256 IS NOT NULL AND file_rating_source_sha256 <> %s""",
-            (sha,),
-        )
-        print(f"applied: {n} rows updated, {cur.rowcount} stale cleared")
+    rows = [(lid, rating, parse_date(pub)) for lid, (rating, pub) in ratings.items() if lid in db]
+    n, cleared = apply_with_retry(conn, rows, args.edition_date, sha, args.ods.name)
+    print(f"applied: {n} rows updated, {cleared} stale cleared")
     return 0
 
 
