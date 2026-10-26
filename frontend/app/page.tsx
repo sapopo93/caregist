@@ -11,7 +11,7 @@ import { getDirectoryFilterOptions, getDirectoryOpportunityStats } from "@/lib/d
 export const metadata: Metadata = {
   title: "CareGist | Evidence-linked CQC Signal Intelligence",
   description:
-    "Discover CQC-registered services for free, buy the Weekly Digest for one England region, or commission a Territory Opportunity Brief on the accounts worth approaching next.",
+    "Discover CQC-registered services for free, buy the Weekly Digest for one England region, or commission a Territory Opportunity Brief on which organisations to investigate next.",
 };
 
 type StatKey = keyof Awaited<ReturnType<typeof getDirectoryOpportunityStats>>;
@@ -177,7 +177,7 @@ export default async function HomePage() {
             <h2 className="mt-3 text-3xl font-bold text-bark">Two products, both built on the published record</h2>
             <p className="mt-3 text-sm leading-6 text-dusk">
               CareGist sells two products: a weekly digest of movement in one England region,
-              and a one-off brief on the accounts worth approaching in a territory.
+              and a one-off brief on the organisations to investigate in a territory.
             </p>
           </div>
           <div className="grid gap-4 md:grid-cols-2">
@@ -194,8 +194,8 @@ export default async function HomePage() {
               <p className="font-mono text-xs uppercase tracking-wider text-clay">Territory</p>
               <h3 className="mt-3 text-2xl font-bold text-bark">Territory Opportunity Brief &middot; &pound;{TERRITORY_BRIEF_PRICE_GBP}</h3>
               <p className="mt-3 text-sm leading-6 text-dusk">
-                A ranked shortlist of 25&ndash;50 priority organisations, plus a brief on territory
-                size, structure, and notable movements, with the evidence behind each priority.
+                A shortlist of up to 50 organisations to investigate, plus a brief on territory
+                size, structure, and notable movements, with the source evidence behind each one.
               </p>
               <Link href="/pricing/territory" className="cta-primary mt-5">Check your territory</Link>
             </article>

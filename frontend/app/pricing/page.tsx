@@ -42,12 +42,12 @@ export default async function PricingPage() {
           CQC signal intelligence
         </p>
         <h1 className="mb-5 text-4xl font-bold text-bark">
-          Decide which care organisations are worth approaching next, and why
+          Decide which care organisations to investigate next, and why
         </h1>
         <p className="text-lg leading-8 text-dusk" style={{ fontFamily: "Lora" }}>
           CareGist sells two products. The Weekly Digest follows one England region week
-          by week; the Territory Opportunity Brief ranks the accounts worth approaching
-          there. Both are built on observation-dated evidence from CQC&apos;s published
+          by week; the Territory Opportunity Brief shortlists the organisations to
+          investigate there. Both are built on observation-dated evidence from CQC&apos;s published
           record. The pilot costs £{WEEKLY_DIGEST_PILOT_PRICE_GBP} for four weekly digests. The Brief costs £{TERRITORY_BRIEF_PRICE_GBP}.
           Both are one-off purchases, with no subscription or automatic renewal.
         </p>

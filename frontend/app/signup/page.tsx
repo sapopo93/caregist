@@ -18,7 +18,7 @@ const PLAN_COPY: Record<string, { title: string; body: string }> = {
   },
   "territory-opportunity-brief": {
     title: "Start a Territory Opportunity Brief",
-    body: "A ranked shortlist of the accounts worth approaching in your territory, with the evidence behind each priority.",
+    body: "A shortlist of the organisations to investigate in your territory, with the source evidence behind each one.",
   },
 };
 
