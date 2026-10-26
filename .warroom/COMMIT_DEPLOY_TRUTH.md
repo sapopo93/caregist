@@ -1,3 +1,24 @@
+## 2026-10-26 — rating rule, Terms v2.3 and trading release
+
+Merged under founder authorization (26 Oct, "push and we ship"), each with every PR check passing:
+[#125](https://github.com/sapopo93/caregist/pull/125) report readiness (resolver, competitor scan and P12 flags all off; independent review passed with features disabled) `1b10f91`;
+[#123](https://github.com/sapopo93/caregist/pull/123) file-sourced ratings in Brief and pages, data-driven labels, edition-dated staleness, integrated with #125 using the reviewed #127 resolution `833ec13`;
+[#130](https://github.com/sapopo93/caregist/pull/130) Business Terms v2.3 and Privacy Notice v2.1, in force 26 Oct 2026 (AI legal review with three corrections; no solicitor review yet) `5990e63`;
+[#131](https://github.com/sapopo93/caregist/pull/131) CQC ratings import workflow `0354e85`;
+[#132](https://github.com/sapopo93/caregist/pull/132) coverage check excludes quarantined locations `1534c7f`;
+[#133](https://github.com/sapopo93/caregist/pull/133) operator pilot layer `d9f4906`;
+[#134](https://github.com/sapopo93/caregist/pull/134) rating rule: ratings file first, newer CQC page check wins, API fills gaps, source and disagreement on every row `1cb7b40`;
+[#135](https://github.com/sapopo93/caregist/pull/135) set-based ratings apply `ebad475`; [#136](https://github.com/sapopo93/caregist/pull/136) ordered locking and deadlock retry `9ba69e8`.
+Production Smoke PASS on `1b10f91`, `833ec13`, `5990e63` and `1cb7b40`; Vercel runtime errors: none in the hour after the rule release.
+
+Production data: migration 069 applied 25 Oct (Freshness Watchdog run 40205848533); migration 070 applied 26 Oct after Neon recovery branch `recovery/pre-migration-070-20261026`; schema check PASS. Ratings file `01_October_2026_Latest_ratings.ods` (sha256 aba66fd8…c59cd, edition 2026-10-01) re-imported with its edition date by Import CQC ratings run 40277186502 (32,161 rows; staleness check OK, 25 days old). Two earlier applies committed nothing: run 40272405511 hit the 30-minute limit (row-by-row) and run 40276188706 deadlocked with the CQC reconciliation; #135 and #136 fix both.
+
+Commercial model unchanged: human-led (written scope, Stripe Payment Link, manual fulfilment). Self-serve checkout and delivery gates remain closed.
+
+Open: #129 (Territory Preview recovery, migration 066, draft by its author's terms) and #90 (report-index health, also migration 066) need rebasing on the rating rule and a production migration. 35 stale PRs closed; remote branch deletion awaits the founder (session not permitted to delete branches). Source reconciliation remains `partial` (3 quarantined locations; watermark 2026-10-18).
+
+---
+
 ## 2026-10-24 22:08 UTC — read-only observation
 
 Production backend `/api/v1/version` and frontend `/api/health/directory` both serve `bd23b392d4483beac579cd26b7dbd523872de075`, which equals GitHub `origin/main` (PR #124). This supersedes the c5b92a6 entry below as the current release identity. Observation only: nothing was deployed. Report-readiness work is on the unmerged branch `feat/report-readiness-20261024` and is not deployed.
