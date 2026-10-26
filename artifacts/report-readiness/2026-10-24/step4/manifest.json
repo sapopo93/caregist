@@ -1,0 +1,88 @@
+[
+ {
+  "postcode": "BS6 6BH",
+  "radius_km": 5.0,
+  "service_type": "care_home",
+  "origin": [
+   51.4666386,
+   -2.599189
+  ],
+  "origin_method": "centroid of 1 directory location(s) at this postcode",
+  "services": 62,
+  "rating_counts": {
+   "Good": 52,
+   "Outstanding": 2,
+   "Requires improvement": 2,
+   "inherited from a predecessor registration": 3,
+   "no published rating": 3
+  },
+  "registrations_12m": 2,
+  "confirmed_closures_12m": 3,
+  "other_endings_12m": {},
+  "excluded_deregistered": [],
+  "files": [
+   "competitor_scan_BS66BH_care_home_5km.pdf",
+   "competitor_scan_BS66BH_care_home_5km.csv"
+  ],
+  "directory_read_at": "2026-10-24T23:52:21+00:00"
+ },
+ {
+  "postcode": "LS9 6BT",
+  "radius_km": 5.0,
+  "service_type": "homecare",
+  "origin": [
+   53.8107846,
+   -1.5001352
+  ],
+  "origin_method": "centroid of 1 directory location(s) at this postcode",
+  "services": 117,
+  "rating_counts": {
+   "Good": 55,
+   "Requires improvement": 10,
+   "inherited from a predecessor registration": 1,
+   "no published rating": 51
+  },
+  "registrations_12m": 1,
+  "confirmed_closures_12m": 4,
+  "other_endings_12m": {
+   "dormant": 5,
+   "re_registration": 1
+  },
+  "excluded_deregistered": [],
+  "files": [
+   "competitor_scan_LS96BT_homecare_5km.pdf",
+   "competitor_scan_LS96BT_homecare_5km.csv"
+  ],
+  "directory_read_at": "2026-10-24T23:52:21+00:00"
+ },
+ {
+  "postcode": "NR7 0RF",
+  "radius_km": 10.0,
+  "service_type": "care_home",
+  "origin": [
+   52.6281527,
+   1.3514355
+  ],
+  "origin_method": "centroid of 1 directory location(s) at this postcode",
+  "services": 71,
+  "rating_counts": {
+   "Good": 32,
+   "Outstanding": 5,
+   "Requires improvement": 13,
+   "inherited from a predecessor registration": 10,
+   "no published rating": 11
+  },
+  "registrations_12m": 5,
+  "confirmed_closures_12m": 3,
+  "other_endings_12m": {
+   "dormant": 1,
+   "re_registration": 3
+  },
+  "excluded_deregistered": [],
+  "files": [
+   "competitor_scan_NR70RF_care_home_10km.pdf",
+   "competitor_scan_NR70RF_care_home_10km.csv"
+  ],
+  "directory_read_at": "2026-10-24T23:52:21+00:00"
+ }
+]
