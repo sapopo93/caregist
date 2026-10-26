@@ -23,7 +23,7 @@ export const metadata: Metadata = {
 };
 
 const PLAN_BADGES: Record<string, string> = {
-  "Weekly Digest": `£${WEEKLY_DIGEST_PILOT_PRICE_GBP} one-off pilot`,
+  "Weekly Digest": `£${WEEKLY_DIGEST_PILOT_PRICE_GBP} one-off pilot · by enquiry`,
   "Territory Opportunity Brief": "One-off brief",
   "Free Directory": "Free · no account required",
 };

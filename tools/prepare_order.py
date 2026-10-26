@@ -1,6 +1,6 @@
 """Prepare a CareGist order for checking and sending.
 
-One command per step of the human-led sale (Business Terms v2.2.1):
+One command per step of the human-led sale (Business Terms v2.3):
 
   brief  quote    scope agreed by email -> build the Brief, check it, draft the
                   scope-confirmation email with the GBP 745 payment link
@@ -58,7 +58,7 @@ TERMS_URL = "https://www.caregist.co.uk/terms"
 BRIEF_PRICE = "£745 fixed fee. No VAT added."
 DIGEST_PRICE = "£150 for four weekly digests. No VAT added. No automatic renewal."
 SOURCE_MAX_AGE_DAYS = 8          # the documented source-freshness promise
-MAX_SHORTLIST = 50               # Terms v2.2.1: up to 50, exact number confirmed before payment
+MAX_SHORTLIST = 50               # Terms v2.3: up to 50, exact number confirmed before payment
 DELIVERY_WORKING_DAYS = 3
 
 REGIONS = (
@@ -614,7 +614,7 @@ def build_brief(args: argparse.Namespace, *, env: dict[str, str], order_dir: Pat
         rating_inputs = {"file_ratings": asyncio.run(fetch_file_ratings(env["DATABASE_URL"], ids)) if ids else {}}
     brief = generate_territory_opportunity_brief(
         {"kind": "region", "name": args.region, "window_days": 90, "shortlist_target": args.shortlist},
-        PurchaseContext(order_reference=args.order_ref, generated_at=now, terms_version="2.2.1"),
+        PurchaseContext(order_reference=args.order_ref, generated_at=now, terms_version="2.3"),
         locations_source=export_dir / "_locations_detail.ndjson",
         providers_source=export_dir / "_providers_detail.ndjson",
         location_ids=ids,
@@ -674,7 +674,7 @@ def brief_quote_email(args: argparse.Namespace, summary: dict[str, Any], now: da
 
 Thank you for your enquiry. I have checked the published CQC record for your scope and can confirm we can deliver it.
 
-Confirmed scope (this email is the order form under our Business Terms v2.2.1):
+Confirmed scope (this email is the order form under our Business Terms v2.3):
 - Territory: {summary['region']}
 - Provider group: {summary['provider_group']}
 - Service type: {summary['service_type']}
@@ -724,7 +724,7 @@ def digest_quote_email(args: argparse.Namespace) -> tuple[str, str]:
     subject = f"Your Weekly Digest pilot: {args.region}, starting {start.strftime('%d %B %Y')} (ref {args.order_ref})"
     body = f"""Hi {args.buyer_name or 'there'},
 
-Thank you for your enquiry. Here is the confirmed Weekly Digest pilot (this email is the order form under our Business Terms v2.2.1):
+Thank you for your enquiry. Here is the confirmed Weekly Digest pilot (this email is the order form under our Business Terms v2.3):
 
 - Region: {args.region}
 - Buyer type: {args.buyer_type or 'as discussed'}
