@@ -20,8 +20,10 @@ psycopg2 = pytest.importorskip("psycopg2")
 
 from tools import import_cqc_latest_ratings as importer  # noqa: E402
 
-DATABASE_URL = os.getenv("CAREGIST_TEST_DATABASE_URL")
-pytestmark = pytest.mark.skipif(not DATABASE_URL, reason="CAREGIST_TEST_DATABASE_URL not set")
+# The schema is created and owned by the admin role (CI's test role may not
+# create schemas); the importer needs no row-level security, so it uses it too.
+DATABASE_URL = os.getenv("CAREGIST_TEST_ADMIN_DATABASE_URL") or os.getenv("CAREGIST_TEST_DATABASE_URL")
+pytestmark = pytest.mark.skipif(not os.getenv("CAREGIST_TEST_DATABASE_URL"), reason="CAREGIST_TEST_DATABASE_URL not set")
 SCHEMA = "import_ratings_test"
 HEADER = ["Location ID", "Service / Population Group", "Domain", "Latest Rating", "Publication Date"]
 
