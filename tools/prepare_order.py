@@ -70,12 +70,12 @@ REGIONS = (
 # exactly what the coverage check counted. tests/test_prepare_order.py fails if
 # the two ever drift apart.
 #
-# Ratings are reconciled: the API rating when it is a real published rating,
-# otherwise CQC's published ratings file (migration 068), so a buyer is never
-# sold a smaller list than the one CQC's own website shows.
+# Ratings follow the CareGist rating rule (file first, a newer CQC page check
+# wins where it differs, API only for the file's gaps); see
+# frontend/lib/directory-query-clauses.ts, which this must match exactly.
 RECONCILED_RATING_SQL = """(CASE
-    WHEN lower(btrim(overall_rating)) IN ('outstanding', 'good', 'requires improvement', 'inadequate') THEN overall_rating
-    WHEN file_overall_rating IS NOT NULL AND (site_check_rating IS NULL OR site_check_rating = file_overall_rating) THEN file_overall_rating
+    WHEN site_check_rating IS NOT NULL AND site_check_rating IS DISTINCT FROM file_overall_rating AND (file_rating_edition_date IS NULL OR site_check_at::date >= file_rating_edition_date) THEN NULLIF(site_check_rating, 'none')
+    WHEN file_overall_rating IS NOT NULL THEN file_overall_rating
     ELSE overall_rating
   END)"""
 
@@ -149,22 +149,31 @@ async def fetch_scope_location_ids(database_url: str, region: str, provider_grou
         await conn.close()
 
 
-async def fetch_file_ratings(database_url: str, ids: list[str]) -> dict[str, tuple[str, date | None]]:
-    """Overall ratings from CQC's published ratings file (migration 068) for these locations."""
+async def fetch_file_ratings(database_url: str, ids: list[str]) -> dict[str, tuple[str | None, date | None]]:
+    """Ratings the rule serves from the file or a newer CQC page check, per location.
+
+    (rating, date) where the ratings file (or a CQC page check made after its
+    edition) decides the rating; rating is None where the page shows none, which
+    withholds the register's API rating too. Locations the file does not cover are
+    absent, so the Brief keeps the API rating for them (rule 3).
+    """
     import asyncpg
 
     conn = await asyncpg.connect(database_url)
     try:
         async with conn.transaction(readonly=True):
             rows = await conn.fetch(
-                "SELECT id, file_overall_rating, file_overall_rating_date FROM care_providers "
-                "WHERE id = ANY($1::text[]) AND file_overall_rating IS NOT NULL "
-                "AND (site_check_rating IS NULL OR site_check_rating = file_overall_rating)",
+                f"SELECT id, {RECONCILED_RATING_SQL} AS rating, "
+                "CASE WHEN site_check_rating IS NOT NULL AND site_check_rating IS DISTINCT FROM file_overall_rating "
+                "AND (file_rating_edition_date IS NULL OR site_check_at::date >= file_rating_edition_date) "
+                "THEN site_check_at::date ELSE file_overall_rating_date END AS rated_on "
+                "FROM care_providers WHERE id = ANY($1::text[]) "
+                "AND (file_overall_rating IS NOT NULL OR site_check_rating IS NOT NULL)",
                 ids,
             )
     finally:
         await conn.close()
-    return {r["id"]: (r["file_overall_rating"], r["file_overall_rating_date"]) for r in rows}
+    return {r["id"]: (r["rating"], r["rated_on"]) for r in rows}
 
 
 def resolved_contract_enabled(env: dict[str, str]) -> bool:

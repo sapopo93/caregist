@@ -61,6 +61,14 @@ TYPE_LABELS = {
 
 def _row_to_dict(row) -> dict[str, Any]:
     d = dict(row)
+    if "served_rating" in d:
+        # Whole-row lookups: serve the rating the precedence rule chose, not the
+        # raw API column (api.queries.providers.SERVED_ROW_EXTRA).
+        served = d.pop("served_rating")
+        d["overall_rating"] = served
+        d["rating_absence_reason"] = d.pop("served_absence", None)
+        if served is not None:
+            d["rating_state"] = "rated"
     for k, v in d.items():
         if hasattr(v, "as_tuple"):
             d[k] = float(v)

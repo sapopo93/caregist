@@ -1156,7 +1156,7 @@ def generate_territory_opportunity_brief(
     providers_source: str | Path,
     location_ids: Iterable[str] | None = None,
     provider_group: str | None = None,
-    file_ratings: dict[str, tuple[str, date | None]] | None = None,
+    file_ratings: dict[str, tuple[str | None, date | None]] | None = None,
     rating_evidence: Mapping[str, RatingEvidence] | None = None,
     website_observations: Mapping[str, RatingEvidence] | None = None,
 ) -> TerritoryBrief:
@@ -1171,10 +1171,12 @@ def generate_territory_opportunity_brief(
     buyer's coverage check counted). ``provider_group`` adds each member's
     documented group state as evidence so standing groups are not empty.
 
-    ``file_ratings`` maps a location id to (overall rating, publication date) from
-    CQC's published ratings file. It fills only locations whose register row carries
-    no current overall rating, so the Brief agrees with the coverage check instead of
-    reporting a false "no published rating".
+    ``file_ratings`` maps a location id to (overall rating, date) chosen by the
+    CareGist rating rule: CQC's published ratings file, or a CQC page check made
+    after the file's edition where it differs. It replaces the register's API
+    rating for every location it covers (the API fills only the file's gaps), and a
+    ``None`` rating -- CQC's page shows none -- withholds the register rating, so the
+    Brief agrees with the coverage check and the website.
 
     ``rating_evidence`` (ratings-file :class:`RatingEvidence` keyed by CQC
     location id) and optionally ``website_observations`` switch the Brief to the
@@ -1213,8 +1215,12 @@ def generate_territory_opportunity_brief(
     if file_ratings:
         for i, row in enumerate(location_rows):
             hit = file_ratings.get(str(row.get("locationId") or "").strip())
-            if hit and not _current_rating_evidence(row)[0]:
-                rating, published = hit
+            if hit is None:
+                continue
+            rating, published = hit
+            if rating is None:
+                location_rows[i] = {**row, "currentRatings": {}}
+            else:
                 location_rows[i] = {
                     **row,
                     "currentRatings": {
@@ -1222,7 +1228,7 @@ def generate_territory_opportunity_brief(
                         "reportDate": published.isoformat() if published else None,
                     },
                 }
-                file_filled += 1
+            file_filled += 1
 
     catalogue = known_territories(location_rows)
     validated = validate_scope(scope, catalogue)
@@ -1469,8 +1475,9 @@ def generate_territory_opportunity_brief(
         )
     if file_filled:
         caveats = (
-            f"{file_filled} location(s) in the register edition carry no current rating; their "
-            "overall rating is taken from CQC's published latest-ratings file instead.",
+            f"{file_filled} location(s) take their overall rating from CQC's published "
+            "latest-ratings file (or a later check of CQC's own page) rather than the register "
+            "edition's API rating; the API rating is used only where the file has none.",
             *caveats,
         )
     group_note = (

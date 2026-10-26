@@ -32,7 +32,7 @@ const FACT_LINKS: Array<{
     label: "Inadequate",
     href: "/search?opportunity=inadequate",
     valueKey: "inadequate",
-    note: "Locations carrying this overall CQC rating: the API rating where CQC publishes one, otherwise CQC's published ratings file",
+    note: "Locations carrying this overall CQC rating: CQC's published ratings file, updated where CQC's website shows a newer report",
   },
   {
     label: "Requires Improvement",

@@ -173,6 +173,28 @@ readers only at the retired tier catalogue above.
   set** and no workflow currently sets it, so it silently skips in CI. Treat the
   paid path as not proven end to end until that is wired.
 
+### Rating rule (which source serves a rating)
+
+Authoritative since 26 Oct 2026; one SQL definition, kept identical in
+`api/queries/providers.py` (`SERVED_RATING`), `frontend/lib/directory-query-clauses.ts`
+(`RECONCILED_RATING_SQL`) and `tools/prepare_order.py`, and pinned on real Postgres
+by `tests/integration/test_rating_rule_pg.py`.
+
+1. **CQC's monthly ratings file is the main source** (`file_overall_rating`, edition
+   in `file_rating_edition_date`). `.github/workflows/import-cqc-ratings.yml` imports a
+   newer file daily (`--only-if-newer`).
+2. **Weekly CQC page check wins where it differs** (`site_check_rating`/`site_check_at`,
+   `tools/verify_file_ratings_against_site.py --targets newer-reports`), only if made on
+   or after the file edition; a page showing no rating withholds it. The next file
+   supersedes old checks. A run where most pages read "no rating" is refused (markup change).
+3. **The API rating fills only the file's gaps** (new registrations, services the file
+   does not cover).
+4. **Every row carries `rating_source`** (`cqc_file`, `cqc_website`, `cqc_website_unrated`,
+   `cqc_api`), `rating_source_date` and `rating_conflict` (`website_vs_file`,
+   `file_vs_api`); `tools/report_rating_disagreements.py` reports them on every run.
+
+The flag-gated resolver in `api/services/rating_resolver.py` (#125) is separate and off.
+
 ### New Registration Feed
 
 Historical compatibility endpoints for the earlier feed model follow. They do

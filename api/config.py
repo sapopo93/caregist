@@ -1001,7 +1001,7 @@ BASIC_CSV_FIELDS = [
 BASIC_FIELDS = [
     "id", "name", "slug", "type", "status", "town", "county", "postcode",
     "region", "local_authority", "overall_rating", "rating_absence_reason",
-    "rating_source", "rating_source_date", "service_types",
+    "rating_source", "rating_source_date", "rating_conflict", "service_types",
     "specialisms", "number_of_beds", "data_completeness_score", "data_completeness_tier",
     "phone", "website", "last_inspection_date", "inspection_report_url",
     "inspection_summary", "profile_description", "profile_photos",

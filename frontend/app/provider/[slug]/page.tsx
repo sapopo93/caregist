@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 import { getDirectoryProvider } from "@/lib/directory-db";
 import { normalizeExternalHttpUrl, cqcEvidenceUrl } from "@/lib/external-url";
 import { getProviderHref, directoryReturnHref } from "@/lib/provider-path";
-import { DISPUTED_FILE_RATING_NOTE, fileRatingNote } from "@/lib/rating-source";
+import { ratingSourceNote } from "@/lib/rating-source";
 import { getSiteUrl } from "@/lib/site";
 
 const ratingDimensions = [
@@ -105,13 +105,8 @@ export default async function ProviderPage({ params, searchParams }: { params: P
             <div className="rounded-full border border-stone bg-white px-4 py-2 text-sm font-semibold text-bark">
               {provider.overall_rating ?? "Rating not published"}
             </div>
-            {provider.rating_source === "cqc_file" && (
-              <p className="max-w-xs text-right text-xs text-dusk">
-                {fileRatingNote(provider.rating_source_date, { notInApi: true })}
-              </p>
-            )}
-            {provider.rating_source === "cqc_file_disputed" && (
-              <p className="max-w-xs text-right text-xs text-dusk">{DISPUTED_FILE_RATING_NOTE}</p>
+            {ratingSourceNote(provider.rating_source, provider.rating_source_date) && (
+              <p className="max-w-xs text-right text-xs text-dusk">{ratingSourceNote(provider.rating_source, provider.rating_source_date)}</p>
             )}
           </div>
         </div>
