@@ -140,20 +140,29 @@ def main(argv=None) -> int:
         if not args.apply:
             print("dry run: nothing written (use --apply)")
             return 0
-        n = 0
-        for lid, (rating, pub) in ratings.items():
-            if lid in db:
-                cur.execute(
-                    """UPDATE care_providers SET file_overall_rating=%s, file_overall_rating_date=%s,
-                              file_rating_edition_date=%s,
-                              site_check_rating = CASE WHEN file_rating_source_sha256 IS NOT DISTINCT FROM %s
-                                                       THEN site_check_rating END,
-                              site_check_at = CASE WHEN file_rating_source_sha256 IS NOT DISTINCT FROM %s
-                                                   THEN site_check_at END,
-                              file_rating_source=%s, file_rating_source_sha256=%s WHERE id=%s""",
-                    (rating, parse_date(pub), args.edition_date, sha, sha, args.ods.name, sha, lid),
-                )
-                n += cur.rowcount
+        # One set-based UPDATE: a row-by-row loop is ~32,000 network round trips
+        # and outran the 30-minute job limit, so nothing was ever committed.
+        from psycopg2.extras import execute_values
+
+        cur.execute("CREATE TEMP TABLE incoming_ratings (id text PRIMARY KEY, rating text, published date) ON COMMIT DROP")
+        execute_values(
+            cur,
+            "INSERT INTO incoming_ratings (id, rating, published) VALUES %s",
+            [(lid, rating, parse_date(pub)) for lid, (rating, pub) in ratings.items() if lid in db],
+            page_size=5000,
+        )
+        cur.execute(
+            """UPDATE care_providers cp SET file_overall_rating=i.rating, file_overall_rating_date=i.published,
+                      file_rating_edition_date=%s,
+                      site_check_rating = CASE WHEN cp.file_rating_source_sha256 IS NOT DISTINCT FROM %s
+                                               THEN cp.site_check_rating END,
+                      site_check_at = CASE WHEN cp.file_rating_source_sha256 IS NOT DISTINCT FROM %s
+                                           THEN cp.site_check_at END,
+                      file_rating_source=%s, file_rating_source_sha256=%s
+                 FROM incoming_ratings i WHERE cp.id = i.id""",
+            (args.edition_date, sha, sha, args.ods.name, sha),
+        )
+        n = cur.rowcount
         # Rows stamped by an earlier file but absent from this one lose the stale claim.
         cur.execute(
             """UPDATE care_providers SET file_overall_rating=NULL, file_overall_rating_date=NULL,
