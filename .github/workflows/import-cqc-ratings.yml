@@ -1,0 +1,70 @@
+name: Import CQC ratings file
+
+# Manual only. Finds CQC's current "Latest ratings" ODS, records its edition date
+# (migration 070) and runs tools/import_cqc_latest_ratings.py against production.
+# Dry-run unless `apply` is ticked; the importer writes only the file_* columns.
+on:
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: "Write the file_* columns (unticked = dry run, writes nothing)"
+        type: boolean
+        default: false
+      ods_url:
+        description: "Override: exact ODS URL (leave blank to discover it on CQC's data page)"
+        type: string
+        default: ""
+      edition_date:
+        description: "Override: edition date YYYY-MM-DD (required with ods_url)"
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: import-cqc-ratings
+  cancel-in-progress: false
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install psycopg2-binary==2.9.9 python-dotenv
+      - name: Locate the ratings file
+        id: src
+        env:
+          ODS_URL: ${{ inputs.ods_url }}
+          EDITION: ${{ inputs.edition_date }}
+        run: |
+          if [ -n "$ODS_URL" ]; then
+            test -n "$EDITION" || { echo "edition_date is required with ods_url" >&2; exit 1; }
+            { echo "url=$ODS_URL"; echo "edition=$EDITION"; } >> "$GITHUB_OUTPUT"
+          else
+            python -m tools.find_cqc_ratings_file | tee -a "$GITHUB_OUTPUT"
+          fi
+      - name: Download
+        env:
+          URL: ${{ steps.src.outputs.url }}
+        run: |
+          curl -fsSL -A "CareGist-ratings-import/1.0 (+https://caregist.co.uk)" -o "$RUNNER_TEMP/ratings.ods" "$URL"
+          sha256sum "$RUNNER_TEMP/ratings.ods"
+      - name: Import (dry run unless apply)
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          EDITION: ${{ steps.src.outputs.edition }}
+          APPLY: ${{ inputs.apply }}
+        run: |
+          args=("$RUNNER_TEMP/ratings.ods" --edition-date "$EDITION")
+          if [ "$APPLY" = "true" ]; then args+=(--apply); fi
+          python -m tools.import_cqc_latest_ratings "${args[@]}"
+      - name: Ratings-file staleness after import
+        if: inputs.apply
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: python -m tools.check_file_ratings_freshness
