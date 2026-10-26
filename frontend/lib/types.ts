@@ -17,13 +17,14 @@ export interface Provider {
    */
   rating_absence_reason?: string | null;
   /**
-   * 'cqc_file' when the rating is served from CQC's published ratings file,
-   * 'cqc_file_disputed' when a file rating is withheld because CQC's own page no
-   * longer showed it, else null (the API's own rating).
+   * Which source served the rating: 'cqc_file', 'cqc_website', 'cqc_website_unrated'
+   * (withheld: CQC's page shows none) or 'cqc_api'; null when no source has one.
    */
   rating_source?: string | null;
-  /** CQC's publication date (YYYY-MM-DD) for a rating served from the ratings file. */
+  /** That source's date (YYYY-MM-DD). */
   rating_source_date?: string | null;
+  /** 'website_vs_file' or 'file_vs_api' when the sources disagree, else null. */
+  rating_conflict?: string | null;
   service_types: string | null;
   data_completeness_tier: string | null;
   phone: string | null;

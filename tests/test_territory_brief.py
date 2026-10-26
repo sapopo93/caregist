@@ -574,15 +574,18 @@ def test_every_primary_signal_label_has_its_own_questions():
     assert set(_COMPLIANCE_QUESTIONS) <= set(_SIGNAL_LABEL.values())
 
 
-def test_file_rating_fills_a_location_the_register_row_leaves_blank(tmp_path):
+def test_file_rating_is_the_main_source_and_the_api_fills_only_its_gaps(tmp_path):
     locs = [
         _loc(locationId="1-F", name="File Rated Home", registrationDate="2025-01-01"),
         _loc(locationId="1-G", providerId="1-P002", name="Api Rated Home", registrationDate="2025-01-01",
              currentRatings=_rating_block("Good", "2025-06-01")),
+        _loc(locationId="1-H", providerId="1-P003", name="Withheld Home", registrationDate="2025-01-01",
+             currentRatings=_rating_block("Inadequate", "2025-06-01")),
     ]
     providers = [
         {"providerId": "1-P001", "name": "Prov One Ltd"},
         {"providerId": "1-P002", "name": "Prov Two Ltd"},
+        {"providerId": "1-P003", "name": "Prov Three Ltd"},
     ]
     loc_path, prov_path = _write_snapshot(tmp_path, locs, providers)
     scope = {"kind": "local_authority", "name": "Testershire", "window_days": 90}
@@ -590,11 +593,13 @@ def test_file_rating_fills_a_location_the_register_row_leaves_blank(tmp_path):
         scope, CONTEXT, locations_source=loc_path, providers_source=prov_path,
         provider_group="inadequate",
         file_ratings={
-            "1-F": ("Inadequate", date(2025, 9, 1)),
-            "1-G": ("Inadequate", date(2025, 9, 1)),  # register row already rated: API wins
+            "1-F": ("Inadequate", date(2025, 9, 1)),   # file fills the API's gap
+            "1-G": ("Inadequate", date(2025, 9, 1)),   # file wins over the API's Good
+            "1-H": (None, date(2025, 10, 20)),         # CQC's page shows none: withheld
         },
     )
     by_name = {o.location_name: o for o in brief.shortlist}
     assert by_name["File Rated Home"].current_rating == "Inadequate"
-    assert by_name["Api Rated Home"].current_rating == "Good"
+    assert by_name["Api Rated Home"].current_rating == "Inadequate"
+    assert "Withheld Home" not in by_name
     assert any("published latest-ratings file" in c for c in brief.data_caveats)

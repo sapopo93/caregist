@@ -14,7 +14,6 @@ reliably carry it, and the staleness check measures it.
 from __future__ import annotations
 
 import argparse
-import csv
 import hashlib
 import os
 import sys
@@ -79,6 +78,11 @@ def parse_date(text: str):
         return None
 
 
+def edition_is_newer(edition: date | None, held: date | None) -> bool:
+    """True when ``edition`` is later than the newest edition production holds."""
+    return edition is not None and (held is None or edition > held)
+
+
 def edition_problem(edition: date | None, newest_rating: date | None, today: date) -> str | None:
     """Why an edition date cannot be right for this file, or None when it can."""
     if edition is None:
@@ -96,7 +100,8 @@ def main(argv=None) -> int:
     ap.add_argument("--apply", action="store_true", help="write file_* columns")
     ap.add_argument("--edition-date", type=date.fromisoformat,
                     help="date CQC published this edition of the file (YYYY-MM-DD); required with --apply")
-    ap.add_argument("--report", type=Path, help="write a per-location CSV of every API-vs-file disagreement")
+    ap.add_argument("--only-if-newer", action="store_true",
+                    help="do nothing when production already holds this edition or a later one")
     args = ap.parse_args(argv)
 
     sha = hashlib.sha256(args.ods.read_bytes()).hexdigest()
@@ -118,27 +123,20 @@ def main(argv=None) -> int:
     load_dotenv()
     conn = psycopg2.connect(os.environ["DATABASE_URL"])
     with conn, conn.cursor() as cur:
-        cur.execute("SELECT id, status, coalesce(overall_rating,'') FROM care_providers")
-        db = {i: (s, r) for i, s, r in cur.fetchall()}
-        outcome = Counter()
-        report = []
-        for lid, (rating, pub) in ratings.items():
-            if lid not in db:
-                outcome["not_in_db"] += 1
-                continue
-            status, api = db[lid]
-            kind = "agrees" if api == rating else "api_blank" if not api else "api_differs"
-            outcome[(status, kind)] += 1
-            if kind != "agrees":
-                report.append([lid, status, api, rating, pub, kind])
-        if args.report:
-            with args.report.open("w", newline="") as fh:
-                w = csv.writer(fh)
-                w.writerow(["location_id", "status", "api_rating", "file_rating", "file_publication_date", "difference"])
-                w.writerows(sorted(report))
-            print(f"wrote {len(report)} disagreements to {args.report}")
-        for k, v in sorted(outcome.items(), key=lambda kv: str(kv[0])):
-            print(" ", k, v)
+        if args.only_if_newer:
+            cur.execute("SELECT max(file_rating_edition_date) FROM care_providers")
+            held = cur.fetchone()[0]
+            if not edition_is_newer(args.edition_date, held):
+                print(f"production already holds the {held} edition; nothing to import")
+                return 0
+        # The file is the main rating source, so the importer no longer reconciles
+        # each rating against the API; disagreements between sources are reported
+        # by tools/report_rating_disagreements.py from the served SQL itself.
+        cur.execute("SELECT id, status FROM care_providers")
+        db = dict(cur.fetchall())
+        outcome = Counter(db[lid] if lid in db else "not_in_db" for lid in ratings)
+        for k, v in sorted(outcome.items()):
+            print(f"  {k}: {v}")
         if not args.apply:
             print("dry run: nothing written (use --apply)")
             return 0

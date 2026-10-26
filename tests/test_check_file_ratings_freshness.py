@@ -34,3 +34,12 @@ def test_importer_requires_a_plausible_edition_date():
     assert "future" in edition_problem(date(2026, 10, 24), None, TODAY)
     assert "predates" in edition_problem(date(2026, 9, 1), date(2026, 9, 30), TODAY)
     assert edition_problem(date(2026, 10, 2), date(2026, 9, 30), TODAY) is None
+
+
+def test_scheduled_import_runs_only_for_a_newer_edition():
+    from tools.import_cqc_latest_ratings import edition_is_newer
+
+    assert edition_is_newer(date(2026, 11, 1), date(2026, 10, 1)) is True
+    assert edition_is_newer(date(2026, 10, 1), date(2026, 10, 1)) is False
+    assert edition_is_newer(date(2026, 10, 1), None) is True
+    assert edition_is_newer(None, None) is False

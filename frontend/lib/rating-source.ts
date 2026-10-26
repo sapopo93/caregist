@@ -1,11 +1,9 @@
 /**
- * Labels for ratings served from CQC's published ratings file (migration 068)
- * rather than CQC's API. The date comes from the row (`rating_source_date`, the
- * date CQC published that rating), so no label names a fixed file edition.
+ * Labels naming the source of every displayed rating (the CareGist rating rule):
+ * CQC's published ratings file is the main source, a later check of CQC's own page
+ * wins where it differs, and CQC's API fills only the file's gaps. The date comes
+ * from the row (`rating_source_date`), so no label names a fixed file edition.
  */
-
-export const DISPUTED_FILE_RATING_NOTE =
-  "CQC's ratings file lists a rating for this location, but CQC's own page no longer shows it, so none is displayed.";
 
 /** "12 March 2025" for a YYYY-MM-DD date, or null when absent or unreadable. */
 export function formatRatingSourceDate(value: string | null | undefined): string | null {
@@ -16,13 +14,28 @@ export function formatRatingSourceDate(value: string | null | undefined): string
   return date.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
 }
 
-export function fileRatingNote(
+/** The label for a rating's source, or null when no source served one. */
+export function ratingSourceNote(
+  source: string | null | undefined,
   sourceDate: string | null | undefined,
-  { notInApi = false }: { notInApi?: boolean } = {},
-): string {
-  const published = formatRatingSourceDate(sourceDate);
-  const base = published
-    ? `Rating per CQC's published ratings file (rating published ${published})`
-    : "Rating per CQC's published ratings file";
-  return notInApi ? `${base}; not yet returned by CQC's API.` : base;
+): string | null {
+  const when = formatRatingSourceDate(sourceDate);
+  switch (source) {
+    case "cqc_file":
+      return when
+        ? `Rating per CQC's published ratings file (rating published ${when})`
+        : "Rating per CQC's published ratings file";
+    case "cqc_website":
+      return when
+        ? `Rating per CQC's own website, checked ${when}; newer than CQC's ratings file`
+        : "Rating per CQC's own website; newer than CQC's ratings file";
+    case "cqc_website_unrated":
+      return "CQC's own website shows no current rating for this location, so none is displayed.";
+    case "cqc_api":
+      return when
+        ? `Rating per CQC's API (rating published ${when}); not in CQC's ratings file yet`
+        : "Rating per CQC's API; not in CQC's ratings file yet";
+    default:
+      return null;
+  }
 }

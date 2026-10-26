@@ -18,6 +18,7 @@ from api.queries.providers import (
     NEARBY_QUERY,
     SEARCH_SELECT,
     SEARCH_SELECT_RANKED,
+    SERVED_RATING,
     SERVED_RATING_ABSENCE,
 )
 from api.services.rating_states import (
@@ -47,14 +48,14 @@ def test_row_projections_carry_the_reason(query):
     assert "rating_absence_reason" in query
 
 
-def test_sql_returns_null_reason_only_for_a_rated_row():
+def test_sql_returns_null_reason_only_when_a_rating_is_served():
     # The two fields are complementary: never both populated, never both empty.
-    # (a rating filled from CQC's published ratings file also has no absence.)
-    assert SERVED_RATING_ABSENCE == (
-        "CASE WHEN rating_state = 'rated' OR (file_overall_rating IS NOT NULL AND "
-        "(site_check_rating IS NULL OR site_check_rating = file_overall_rating)) "
-        "THEN NULL ELSE rating_state END"
-    )
+    # The reason is NULL exactly when the rule serves a rating (file, page check or
+    # API); a page showing no rating is 'not_published'; otherwise the row's own
+    # state. Behaviour is pinned on real Postgres in
+    # tests/integration/test_rating_rule_pg.py.
+    assert SERVED_RATING_ABSENCE.startswith(f"CASE WHEN ({SERVED_RATING}) IS NOT NULL THEN NULL ")
+    assert SERVED_RATING_ABSENCE.endswith("THEN 'not_published' ELSE rating_state END")
 
 
 # --- a served rating has no absence to explain ---

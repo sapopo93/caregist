@@ -1,7 +1,7 @@
 import type { DirectoryProviderSummary } from "@/lib/directory-db";
 import CompareButton from "@/components/CompareButton";
 import { getProviderHref, directoryReturnHref } from "@/lib/provider-path";
-import { DISPUTED_FILE_RATING_NOTE, fileRatingNote } from "@/lib/rating-source";
+import { ratingSourceNote } from "@/lib/rating-source";
 
 function splitPipeValue(value: string | null): string[] {
   return (value ?? "")
@@ -65,13 +65,8 @@ export default function DirectoryProviderCard({ provider, returnTo }: { provider
           </div>
         </div>
       </div>
-      {provider.rating_source === "cqc_file" && (
-        <p className="mt-2 text-xs text-dusk">
-          {fileRatingNote(provider.rating_source_date, { notInApi: true })}
-        </p>
-      )}
-      {provider.rating_source === "cqc_file_disputed" && (
-        <p className="mt-2 text-xs text-dusk">{DISPUTED_FILE_RATING_NOTE}</p>
+      {ratingSourceNote(provider.rating_source, provider.rating_source_date) && (
+        <p className="mt-2 text-xs text-dusk">{ratingSourceNote(provider.rating_source, provider.rating_source_date)}</p>
       )}
 
       {services.length > 0 && (
