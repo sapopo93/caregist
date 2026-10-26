@@ -2,6 +2,7 @@ import RatingBadge from "./RatingBadge";
 import VerifiedBadge from "./VerifiedBadge";
 import CompareButton from "./CompareButton";
 import { getProviderHref, getProviderPathKey } from "@/lib/provider-path";
+import { ratingSourceNote } from "@/lib/rating-source";
 
 interface Provider {
   id?: string | null;
@@ -12,6 +13,8 @@ interface Provider {
   county: string;
   postcode: string;
   overall_rating: string;
+  rating_source?: string | null;
+  rating_source_date?: string | null;
   service_types: string;
   phone: string;
   number_of_beds: number | null;
@@ -54,6 +57,9 @@ export default function ProviderCard({ provider }: { provider: Provider }) {
           </div>
         </div>
         <p className="text-dusk text-sm mb-1">{location} {provider.postcode}</p>
+        {ratingSourceNote(provider.rating_source, provider.rating_source_date) && (
+          <p className="text-xs text-dusk mb-1">{ratingSourceNote(provider.rating_source, provider.rating_source_date)}</p>
+        )}
         {services && <p className="text-dusk text-sm mb-2">{services}</p>}
         <div className="flex gap-3 text-sm text-dusk items-center flex-wrap">
           {provider.phone && <span>{provider.phone}</span>}

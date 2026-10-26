@@ -23,7 +23,7 @@ export const metadata: Metadata = {
 };
 
 const PLAN_BADGES: Record<string, string> = {
-  "Weekly Digest": `£${WEEKLY_DIGEST_PILOT_PRICE_GBP} one-off pilot`,
+  "Weekly Digest": `£${WEEKLY_DIGEST_PILOT_PRICE_GBP} one-off pilot · by enquiry`,
   "Territory Opportunity Brief": "One-off brief",
   "Free Directory": "Free · no account required",
 };
@@ -56,8 +56,8 @@ export default async function PricingPage() {
       <aside className="mb-8 rounded-xl border border-stone bg-parchment p-6 text-sm leading-6 text-bark">
         <h2 className="mb-2 text-lg font-bold">How to order</h2>
         <p>For a Territory Opportunity Brief, choose your region, review matching
-        organisations, then email your scope for review. For the Weekly Digest, email the
-        England region you want covered and a start date. Online ordering is not
+        organisations, then email your scope for review. For the Weekly Digest, choose your
+        England region below, then continue to prepare your enquiry and add your preferred start date. Online ordering is not
         available. Neither route places an order or takes payment by itself.</p>
       </aside>
 

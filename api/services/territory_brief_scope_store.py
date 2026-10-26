@@ -1,6 +1,6 @@
 """Private storage for a Territory Opportunity Brief's versioned buyer scope.
 
-The objective text and exclusion identifiers live only in migration 066's tables.
+The objective text and exclusion identifiers live only in migration 071's tables.
 Stripe metadata carries ``scope_versions.id`` as an opaque reference and nothing
 else from the rules. Nothing here logs the rules.
 """

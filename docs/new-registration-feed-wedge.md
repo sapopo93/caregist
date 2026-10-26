@@ -1,5 +1,7 @@
 # CareGist Phase 1 Wedge
 
+> **15 October 2026 manual update:** Use the [current manual](manuals/README.md) for operating instructions, current offers and evidence limits. Older prices, approvals, feature-readiness claims and proposed dates below are dated context, not current authority. This document does not activate any commercial or outreach gate.
+
 ## Product truth
 
 CareGist launch v1 is not a broad directory or generic intelligence suite.

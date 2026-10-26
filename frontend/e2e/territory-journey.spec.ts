@@ -11,7 +11,7 @@ test("coverage enquiry clears obsolete selections and recovers from errors", asy
   });
   await page.goto("/pricing");
   await page.getByRole("region", { name: "CareGist products" }).getByRole("link", { name: "Check your territory" }).click();
-  await expect(page.getByRole("heading", { name: "See how many organisations match your scope" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "See how many care locations match your scope" })).toBeVisible();
   const check = page.getByRole("button", { name: "Check this territory" });
   await expect(check).toBeDisabled();
   await page.locator("#territory-region").selectOption({ index: 1 });
@@ -20,6 +20,7 @@ test("coverage enquiry clears obsolete selections and recovers from errors", asy
   await check.click();
   const email = page.getByRole("link", { name: "Email this scope for review" });
   await expect(email).toBeVisible();
+  await expect(page.getByRole("link", { name: "View matching providers for free" })).toHaveCount(0);
   const href = decodeURIComponent((await email.getAttribute("href"))!);
   expect(href).toContain(await page.locator("#territory-service").inputValue());
   await expect(page.getByRole("link", { name: /Continue to payment/ })).toHaveCount(0);
@@ -64,7 +65,7 @@ test("checkout return page does not treat a supplied session ID as payment proof
   await expect(page.getByRole("link", { name: /Download/ })).toHaveCount(0);
 });
 
-test("small territories retain free discovery and a usable webmail enquiry", async ({ page }) => {
+test("small territories retain a usable webmail enquiry without revealing matching providers", async ({ page }) => {
   await page.route("**/api/territory/coverage", async (route) => {
     const scope = route.request().postDataJSON();
     await route.fulfill({ json: { scope, coverage: { verdict: "insufficient", providerCount: 7, mostRecentObservation: "2026-06-10", canCheckout: false } } });
@@ -74,8 +75,7 @@ test("small territories retain free discovery and a usable webmail enquiry", asy
   await page.getByLabel("Which provider group do you want to research?", { exact: true }).selectOption("inadequate");
   await page.locator("#territory-service").selectOption("Homecare Agencies");
   await page.getByRole("button", { name: "Check this territory", exact: true }).click();
-  const free = page.getByRole("link", { name: "View matching providers for free" });
-  await expect(free).toHaveAttribute("href", "/search?region=London&opportunity=inadequate&service_type=Homecare+Agencies");
+  await expect(page.getByRole("link", { name: "View matching providers for free" })).toHaveCount(0);
   const custom = page.getByRole("link", { name: "Ask about a custom scope" });
   await expect(custom).toBeVisible();
   expect(decodeURIComponent((await custom.getAttribute("href"))!)).toContain("This is an enquiry, not an order.");
@@ -89,7 +89,6 @@ test("small territories retain free discovery and a usable webmail enquiry", asy
   await expect(page.getByRole("link", { name: /Continue to payment/ })).toHaveCount(0);
   await page.locator("#territory-region").selectOption("South East");
   await expect(custom).toHaveCount(0);
-  await expect(free).toHaveCount(0);
   await expect(page.getByLabel("Your scope enquiry")).toHaveCount(0);
 });
 

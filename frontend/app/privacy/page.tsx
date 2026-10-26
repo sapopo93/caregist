@@ -2,14 +2,14 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Privacy Notice | CareGist",
-  description: "How CareGist processes personal data for the Directory, Radar, Intelligence Feed, and Embedded services.",
+  description: "How CareGist processes personal data for the Free Directory, Territory Opportunity Brief and Weekly Digest pilot.",
 };
 
 export default function PrivacyPage() {
   return (
     <main className="mx-auto max-w-3xl px-6 py-12">
       <h1 className="mb-2 text-3xl font-bold">Privacy Notice</h1>
-      <p className="mb-8 text-sm text-dusk">Version 2.0 · In force from 9 August 2026</p>
+      <p className="mb-8 text-sm text-dusk">Version 2.1 · In force from 26 October 2026</p>
 
       <div className="prose prose-sm space-y-7 text-charcoal" style={{ fontFamily: "Lora" }}>
         <section>
@@ -53,6 +53,27 @@ export default function PrivacyPage() {
             separately approved after privacy review; it is never labelled as a vacancy.
             Named-manager change processing is not part of the launched service.
           </p>
+          <p>
+            <strong>Provider details shared with our business customers.</strong> Some care
+            providers are registered with CQC as individuals or partnerships, so the CQC
+            register entry for a provider can be personal data: for example a sole
+            trader&apos;s name, the registered address, phone number or website. We obtain this
+            from CQC&apos;s public register and we include it in the Territory Opportunity Briefs
+            and Weekly Digests we supply to businesses that sell services to care providers.
+            Each customer receives it as an independent controller and must use it lawfully,
+            including the electronic-marketing and telephone-screening rules (see section 5 of
+            our Business Terms). We rely on legitimate interests: providing accurate,
+            source-dated information about the regulated care market. We do not add
+            information that CQC does not publish, and we keep it only while it reflects the
+            current register.
+          </p>
+          <p>
+            If you are a provider, or a person named in a provider&apos;s register entry, you can
+            object to this use or ask us to correct it at any time by emailing{" "}
+            <a href="mailto:privacy@caregist.co.uk" className="text-clay underline">privacy@caregist.co.uk</a>.
+            We will stop including your details in future outputs unless we have compelling
+            legitimate grounds that override your interests, and we will tell you which.
+          </p>
         </section>
 
         <section>
@@ -65,6 +86,7 @@ export default function PrivacyPage() {
                 <tr><td className="border-b border-stone p-2">Secure the service, isolate tenants, prevent abuse, and maintain audit records</td><td className="border-b border-stone p-2">Legitimate interests and legal obligation where applicable</td></tr>
                 <tr><td className="border-b border-stone p-2">Track saved, dismissed, exported, or reported outcomes to personalise deterministic ranking</td><td className="border-b border-stone p-2">Contract and legitimate interests</td></tr>
                 <tr><td className="border-b border-stone p-2">Process CQC reports into traceable source facts and explanations</td><td className="border-b border-stone p-2">Legitimate interests in providing evidence-linked business intelligence</td></tr>
+                <tr><td className="border-b border-stone p-2">Include CQC-published provider details, which may identify a sole trader or partner, in Territory Opportunity Briefs and Weekly Digests supplied to business customers</td><td className="border-b border-stone p-2">Legitimate interests in supplying accurate, source-dated information about the regulated care market</td></tr>
                 <tr><td className="border-b border-stone p-2">Process payments, accounting records, and contractual acceptance</td><td className="border-b border-stone p-2">Contract and legal obligation</td></tr>
                 <tr><td className="p-2">Respond to claims, corrections, support, and rights requests</td><td className="p-2">Contract, legitimate interests, and legal obligation as applicable</td></tr>
               </tbody>

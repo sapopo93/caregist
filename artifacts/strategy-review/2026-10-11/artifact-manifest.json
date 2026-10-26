@@ -1,0 +1,76 @@
+{
+  "generated_at": "2026-10-11T07:00:30.041949+00:00",
+  "scope": "strategy and manual-process review, not commercial approval",
+  "files": [
+    {
+      "file": "EVIDENCE.md",
+      "sha256": "07800971f710a285062aabb206f7bcebe8daa7e6485f0b8e4234201e32c8f187",
+      "bytes": 8696
+    },
+    {
+      "file": "INDEPENDENT_REVIEW.md",
+      "sha256": "cdfbb641f5da3c955e41b261faeacd491f85b6f209ff447e07684bd5bdf32504",
+      "bytes": 6263
+    },
+    {
+      "file": "MANUAL_RUNBOOK.md",
+      "sha256": "b830bf9f3b6adfe5708fccaf71ba537272388010d71921d81ebd6a09b31409bf",
+      "bytes": 13152
+    },
+    {
+      "file": "OPERATOR_RECORD.md",
+      "sha256": "1e47a7df27077a5c54480f19ef8f83f971bfa8a5c3fab120b60dffb8f34c3ff5",
+      "bytes": 4471
+    },
+    {
+      "file": "PLAN.md",
+      "sha256": "a14b266984b46552a787ef04823690bcd2bbab7edc52c0ca06593a1e8a4f6bba",
+      "bytes": 25616
+    },
+    {
+      "file": "coverage.json",
+      "sha256": "2f7fa1880947f30736b9305f81b86427f6526eaf33261b3707320294477771f7",
+      "bytes": 979
+    },
+    {
+      "file": "data-status.json",
+      "sha256": "8b74d8b0c8e7dcbac4c7d876980a289c57c302037434213bca9b66545b0444a9",
+      "bytes": 1751
+    },
+    {
+      "file": "directory-health.json",
+      "sha256": "6deb01e83f5d8450f183eec098b69e04c9d1f5ba1a9e5c7573274a1fb395054f",
+      "bytes": 560
+    },
+    {
+      "file": "health.json",
+      "sha256": "41fc6e7bc75681c290c3a7676ada4be621455427da5305196d0ee9c6b5d55bb8",
+      "bytes": 5338
+    },
+    {
+      "file": "home.json",
+      "sha256": "a4d39daa932bd552dda690f6c1e97d754e919bd86d95a6077634de6462d9acac",
+      "bytes": 4156
+    },
+    {
+      "file": "pricing.json",
+      "sha256": "bda147218451318a409f026fd568800969b575af7c6eeea8af52c7e3e6ce214e",
+      "bytes": 4202
+    },
+    {
+      "file": "targeted-generator-tests.txt",
+      "sha256": "731cd6b2570d3bd6067dc8566b0bd341bf9c4ecbabc256fdbe3f271168860a4e",
+      "bytes": 579
+    },
+    {
+      "file": "terms.json",
+      "sha256": "1d725cb4d3ba40f22e3a588fac976ccafd9d4a34e4c7b95d7159da9b5e3ad5d7",
+      "bytes": 9377
+    },
+    {
+      "file": "territory.json",
+      "sha256": "b00f16df3ab6843f4723212867552104286c6c755c575d1000b29116b9460e78",
+      "bytes": 4409
+    }
+  ]
+}

@@ -35,6 +35,7 @@ from typing import Any
 import stripe
 from fastapi import HTTPException
 
+from api.utils.stripe_compat import stripe_dict
 from api.config import settings
 from api.services.territory_brief_fulfilment import (
     TERRITORY_BRIEF_CONSENT_TEXT,
@@ -330,7 +331,7 @@ async def _record_failure(
 
 
 def _retrieve_session(session_id: str) -> dict[str, Any]:
-    return stripe.checkout.Session.retrieve(session_id, expand=["line_items"])
+    return stripe_dict(stripe.checkout.Session.retrieve(session_id, expand=["line_items"]))
 
 
 def fulfilment_deps() -> FulfilmentDeps:
@@ -348,7 +349,7 @@ def fulfilment_deps() -> FulfilmentDeps:
 def validate_checkout_price() -> None:
     """Check the configured Stripe object before reserving an order or taking money."""
     try:
-        price = stripe.Price.retrieve(settings.stripe_price_territory_brief, expand=["product"])
+        price = stripe_dict(stripe.Price.retrieve(settings.stripe_price_territory_brief, expand=["product"]))
     except stripe.StripeError as exc:
         raise HTTPException(status_code=503, detail="Territory Brief price verification is unavailable.") from exc
     product = price.get("product") or {}

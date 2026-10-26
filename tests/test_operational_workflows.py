@@ -214,3 +214,31 @@ def test_freshness_watchdog_reports_monitor_health_and_freshness_separately():
     assert report["if"] == "always()"
     assert "tools/report_watchdog_verdicts.py" in report["run"]
     assert steps[-1] is report
+
+
+def test_manual_watchdog_dispatch_skips_migrations_unless_restore_point_asserted():
+    workflow, _source = _workflow("freshness-watchdog.yml")
+    job = workflow["jobs"]["apply-production-migrations"]
+
+    assert job["if"] == (
+        "github.event_name == 'workflow_dispatch' && inputs.confirm_production_backup"
+    )
+    refusal = next(
+        step for step in job["steps"]
+        if step.get("name") == "Refuse without an asserted restore point"
+    )
+    assert "confirm_production_backup" in refusal["run"]
+
+
+def test_ci_runs_the_territory_brief_paid_path_against_real_postgres():
+    workflow, _source = _workflow("ci.yml")
+    steps = workflow["jobs"]["migrations"]["steps"]
+    step = next(
+        step for step in steps
+        if step.get("name") == "Territory Brief paid fulfilment (real Postgres)"
+    )
+
+    assert step["env"]["TB_PG_URL"].startswith("postgresql://")
+    assert "db/apply_migrations.py" in step["run"]
+    assert "tests/test_territory_brief_pg_integration.py" in step["run"]
+    assert '"1 passed"' in step["run"]

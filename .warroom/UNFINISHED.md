@@ -1,3 +1,13 @@
+## 2026-10-22 quarantine release preparation
+
+Production read-only verification confirms migration 067 is already applied, with three unresolved quarantined location IDs and 59,382 stored location rows. `db/apply_migrations.py --target production --check` reports no pending migrations for this release candidate. No production migration or source-row mutation was performed. Current-main integration adds persistent quarantine to pipeline evidence/logs and keeps source freshness partial while quarantined ACTIVE records remain; Data Status exposes their count. Local finalizer tests include resolved, manifest-present, inactive, missing-provider and missing-schema cases. Deployment and preview activation still require the exact candidate's CI and independent review. This supersedes older statements below that migration 067 was unapplied; commercial gates remain closed.
+
+## 2026-10-18 reconciliation follow-up
+
+The authoritative batch completed, but the source health state is `partial`: one detail was unavailable and three candidate details were unconfirmed. The three prior HTTP-404 cases have a seeded quarantine migration and a finalizer change in [PR #94](https://github.com/sapopo93/caregist/pull/94) that skips unresolved exceptions while keeping them ACTIVE; neither is deployed or applied. Run-specific database `deactivation_confirmation` was not directly queried, and the deployed logger emitted only `unconfirmed=3`, so the exact current IDs are corroborated by the prior 01:06:48 UTC probe cache and same-source retry, not by the latest run log. Independent Grok retest and DeepSeek challenge are pending. Checkout remains not ready and delivery disabled. See [run evidence](../artifacts/cqc-nightly/2026-10-18-reconciliation-run-39113995661.md).
+
+---
+
 ## 2026-10-16 known incomplete
 Backfill dry run not run. No real sample Brief or free-CQC comparison (a synthetic render exists, labelled synthetic). Delivery/economics rehearsal not done. Terms copy for quantity and "CRM-ready" wording drafted nowhere yet (fix list S9, held for approval). Autism/ADHD product, refund guarantee and Brief-only Digest access are deliberately not built.
 

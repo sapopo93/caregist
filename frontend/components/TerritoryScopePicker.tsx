@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import TerritorySignalPreview from "@/components/TerritorySignalPreview";
 import { trackEvent } from "@/lib/analytics";
 import { DEFAULT_SERVICE_TYPE_OPTIONS } from "@/lib/directory-constants";
 import {
@@ -94,7 +95,7 @@ export default function TerritoryScopePicker() {
         `Region: ${result.scope.region}`,
         `Buyer type: ${selectedBuyer?.label ?? result.scope.buyerType}`,
         `Service type: ${result.scope.serviceType || "All"}`,
-        `Providers in scope: ${result.coverage.providerCount}`,
+        `Locations in scope: ${result.coverage.providerCount}`,
         `Coverage verdict: ${result.coverage.verdict}`,
         `Advertised brief price: £${TERRITORY_BRIEF_PRICE_GBP}. Please confirm suitability and any custom scope before work starts.`,
       ].join("\n")
@@ -104,14 +105,6 @@ export default function TerritoryScopePicker() {
         `Territory Opportunity Brief — ${scopeSummary}`,
       )}&body=${encodeURIComponent(enquiryText)}`
     : "";
-  const directoryHref = result
-    ? `/search?${new URLSearchParams({
-        region: result.scope.region,
-        opportunity: result.scope.buyerType,
-        ...(result.scope.serviceType ? { service_type: result.scope.serviceType } : {}),
-      })}`
-    : "";
-
   async function copyEnquiry() {
     try {
       await navigator.clipboard.writeText(enquiryText);
@@ -126,7 +119,7 @@ export default function TerritoryScopePicker() {
       <h3>Choose your territory</h3>
       <p className={styles.checkLead}>
         Pick a region and the organisations you sell to. We check the published CQC record for
-        matching organisations. This check is free and does not place an order.
+        matching locations. This check is free and does not place an order.
       </p>
 
       <div className={styles.fieldGrid}>
@@ -222,11 +215,8 @@ export default function TerritoryScopePicker() {
           >
             <p className={styles.scopeSummary}>{scopeSummary}</p>
             <p className={styles.resultDetail}>
-              {result.coverage.providerCount < 12
-                ? "Too few matching organisations for the proposed brief. Try another region or remove the service filter."
-                : result.coverage.providerCount < 25
-                  ? "This scope has fewer than 25 matching organisations. A review is needed to establish whether a smaller brief is suitable."
-                  : "This count is a starting point for reviewing your scope. It does not verify a ranked shortlist or confirm delivery availability."}
+              This is a count of matching locations. A provider may have several locations.
+              We confirm suitability and the exact number of distinct providers in the Brief before any payment.
             </p>
             {result.coverage.stale ? (
               <p
@@ -240,7 +230,7 @@ export default function TerritoryScopePicker() {
             ) : null}
             <dl className={styles.dl}>
               <div>
-                <dt>Providers in scope</dt>
+                <dt>Locations in scope</dt>
                 <dd>{result.coverage.providerCount}</dd>
               </div>
               <div>
@@ -249,9 +239,8 @@ export default function TerritoryScopePicker() {
               </div>
             </dl>
 
-            <div className={styles.resultActions}>
-              <a href={directoryHref} className={styles.buttonOutline}>View matching providers for free</a>
-            </div>
+            <TerritorySignalPreview region={result.scope.region} serviceType={result.scope.serviceType} />
+
             <div style={{ marginTop: 18 }}>
                 <a
                   href={mailtoHref}

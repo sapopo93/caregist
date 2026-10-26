@@ -1,4 +1,4 @@
-# Buyer scope storage: review pack for migration 066 and the Stripe boundary
+# Buyer scope storage: review pack for migration 071 and the Stripe boundary
 
 Status: **built and tested, not deployed.** No migration has been run against production. Checkout and delivery gates are untouched and remain closed.
 
@@ -6,7 +6,7 @@ Status: **built and tested, not deployed.** No migration has been run against pr
 
 | Area | Change | Legacy effect |
 |---|---|---|
-| `db/migrations/066_territory_brief_buyer_scope.sql` | Two new tables: `territory_brief_scope_versions` (frozen rules, counts, hash, retention timestamps) and `territory_brief_scope_exclusions` (CQC identifiers only). A trigger freezes a version once written and refuses deletes. | `territory_brief_orders` and migration 060 are not altered. Orders without rules have no rows here |
+| `db/migrations/071_territory_brief_buyer_scope.sql` | Two new tables: `territory_brief_scope_versions` (frozen rules, counts, hash, retention timestamps) and `territory_brief_scope_exclusions` (CQC identifiers only). A trigger freezes a version once written and refuses deletes. | `territory_brief_orders` and migration 060 are not altered. Orders without rules have no rows here |
 | `api/services/territory_brief_scope_store.py` (new) | Insert, load (checks the reference belongs to the order), schedule purge, purge | None |
 | `api/routers/billing.py` | Checkout request accepts optional `buyer_objective`, `excluded_provider_ids`, `excluded_location_ids`. Order and scope version are written in one transaction. Only `scope_ref` (an opaque UUID) is added to Stripe metadata. Response does not echo the rules | Without the new fields, behaviour and metadata are identical |
 | `api/services/territory_brief_fulfilment.py` | Order query returns the bound `scope_ref`. Fulfilment refuses if Stripe's `scope_ref` and the order's differ (including one present and one absent). Rules are loaded privately and passed to generation. Retention clock starts at fulfilment | Orders with no reference behave as before |
@@ -22,7 +22,7 @@ Not built: uploading a client list and matching names to CQC identifiers. Exclus
 
 | Check | Result |
 |---|---|
-| Real PostgreSQL 16, scratch database: apply 060 then 066; insert and load; second order cannot read the first order's scope; frozen scope rejects UPDATE and DELETE; non-CQC identifier rejected by the schema; version 2 links to version 1; purge deletes only due rows and keeps row, hash and counts; regeneration after purge refuses; legacy order untouched; down migration drops cleanly | 1 passed (`tests/test_territory_brief_scope_pg.py`) |
+| Real PostgreSQL 16, scratch database: apply 060 then 071; insert and load; second order cannot read the first order's scope; frozen scope rejects UPDATE and DELETE; non-CQC identifier rejected by the schema; version 2 links to version 1; purge deletes only due rows and keeps row, hash and counts; regeneration after purge refuses; legacy order untouched; down migration drops cleanly | 1 passed (`tests/test_territory_brief_scope_pg.py`) |
 | Unit: Stripe metadata contains no objective or identifier; checkout response does not echo them; names rejected with a 422 that does not repeat them; fulfilment refuses a missing, extra or foreign reference; rules reach generation; retention starts; legacy order SQL unchanged | 12 passed (`tests/test_territory_brief_scope_store.py`) |
 | Existing fulfilment, checkout and buyer-rules tests | 64 passed. One test fake gained a `transaction()` method because checkout now opens a transaction |
 | Whole non-integration suite | 1365 passed, 1 skipped, 3 failed. The same 3 fail identically on the base commit with my changes stashed (`test_crm_ai_safety` NER model, two `test_nightly_cqc_db_check` git-history tests), so they are environmental and not from this work |

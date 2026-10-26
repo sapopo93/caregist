@@ -1,5 +1,12 @@
 # CareGist
 
+Current instructions: [user, training, sales GTM, CRM and operations manuals](docs/manuals/README.md), updated 15 October 2026. The public offers are the £150 four-week Weekly Digest and £745 one-off Territory Opportunity Brief; the Free Directory remains available. See the [dated release evidence](artifacts/releases/2026-10-15/RELEASE.md) for actual deployment and gate observations. Older release statements below retain their dated limits.
+
+
+Current catalogue: **Territory Brief £745 one-off** and **Weekly Digest £150 for four weeks**, subject to the published tax wording and named activation gates. See [the current strategy](docs/CAREGIST_MASTER_STRATEGY.md) and `deploy/stripe-price-manifest.json`. Radar/Feed positioning and Stripe prices in the historical project description below are superseded.
+
+Current operator documents: [user manual](docs/user-manual.md), [training and competency](docs/training.md), [documentation index](docs/README.md) and [15 October release record](docs/release-2026-10-15.md). Older dated reports retain their original scope and are not current acceptance certificates.
+
 CareGist is a UK care-provider directory and intelligence service built from Care Quality Commission data. The **controlled catalogue-safety release is deployed**, but the paid Radar release is not yet approved. Checkout, source collectors, outbound delivery, and other commercial capabilities remain fail-closed until their named recovery, source-trust, legal, and pilot gates pass. A configured vendor credential is not approval to enable a capability.
 
 The live site at https://www.caregist.co.uk serves the Free Directory, provider detail pages, the final Radar/Feed positioning, source-status reporting, and the current legal and licence surfaces. It does not publicly sell legacy data packs, paid listings, extra seats, or predictive products. The live Stripe catalogue contains Radar Regional (£299/month), Radar National (£799/month), Intelligence Feed Pilot (£6,000/year), and quote-only Embedded Enterprise; the three priced products remain checkout-gated. Those historical counts are superseded by the 6 October public health observation: 59,190 location rows and 57,263 active rows. Counts are measured observations, not evidence of record accuracy or source freshness.

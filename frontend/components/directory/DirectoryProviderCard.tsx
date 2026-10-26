@@ -1,6 +1,7 @@
 import type { DirectoryProviderSummary } from "@/lib/directory-db";
 import CompareButton from "@/components/CompareButton";
 import { getProviderHref, directoryReturnHref } from "@/lib/provider-path";
+import { ratingSourceNote } from "@/lib/rating-source";
 
 function splitPipeValue(value: string | null): string[] {
   return (value ?? "")
@@ -64,6 +65,9 @@ export default function DirectoryProviderCard({ provider, returnTo }: { provider
           </div>
         </div>
       </div>
+      {ratingSourceNote(provider.rating_source, provider.rating_source_date) && (
+        <p className="mt-2 text-xs text-dusk">{ratingSourceNote(provider.rating_source, provider.rating_source_date)}</p>
+      )}
 
       {services.length > 0 && (
         <div className="mt-4 flex flex-wrap gap-2">

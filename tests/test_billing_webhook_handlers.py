@@ -545,3 +545,145 @@ async def test_brief_failure_is_persisted_only_after_webhook_lock_is_released(mo
     with pytest.raises(TerritoryBriefGenerationError):
         await billing.stripe_webhook(_webhook_request())
     assert lifecycle == ["lock", "rollback", "release", "record"]
+
+
+class _RecordingConn:
+    def __init__(self):
+        self.executed: list[tuple] = []
+
+    async def execute(self, query, *args):
+        self.executed.append((query, args))
+        return "INSERT 0 1"
+
+    async def fetchrow(self, query, *args, **kwargs):  # pragma: no cover - must not be reached
+        raise AssertionError("a Payment Link sale must not look up B2B acceptance")
+
+
+@pytest.mark.asyncio
+async def test_payment_link_sale_is_recorded_for_manual_fulfilment_not_retried():
+    conn = _RecordingConn()
+
+    await billing._handle_checkout_completed(
+        conn,
+        {
+            "id": "cs_live_manual",
+            "payment_link": "plink_1UEkzy4mijLHzRRkWjk3pFVW",
+            "metadata": {},
+            "payment_status": "paid",
+            "amount_total": 74500,
+            "currency": "gbp",
+            "customer_details": {"email": "buyer@example.com", "name": "Buyer Ltd"},
+        },
+    )
+
+    (lock_query, _), (query, args) = conn.executed
+    assert "pg_advisory_xact_lock" in lock_query
+    assert "INSERT INTO analytics_events" in query
+    assert "'manual_sale_paid'" in query
+    assert args[0] == "buyer@example.com"
+    meta = __import__("json").loads(args[1])
+    assert meta["stripe_checkout_session_id"] == "cs_live_manual"
+    assert meta["amount_total"] == 74500
+    assert meta["fulfilment"] == "manual"
+
+
+@pytest.mark.asyncio
+async def test_payment_link_session_with_caregist_metadata_keeps_strict_checks():
+    with pytest.raises(RuntimeError, match="missing user_id"):
+        await billing._handle_checkout_completed(
+            _Conn(),
+            {
+                "payment_link": "plink_x",
+                "metadata": {"tier": "starter", "price_id": "price_starter", "type": "b2b"},
+                "subscription": "sub_123",
+            },
+        )
+
+
+def _signed_request(payload: bytes, secret: str) -> Request:
+    """A request signed exactly as Stripe signs webhooks, for the real SDK path."""
+    import hashlib
+    import hmac
+    import time
+
+    timestamp = int(time.time())
+    signature = hmac.new(secret.encode(), f"{timestamp}.".encode() + payload, hashlib.sha256).hexdigest()
+
+    async def receive():
+        return {"type": "http.request", "body": payload, "more_body": False}
+
+    return Request(
+        {
+            "type": "http",
+            "method": "POST",
+            "path": "/api/v1/billing/webhook",
+            "headers": [(b"stripe-signature", f"t={timestamp},v1={signature}".encode())],
+            "query_string": b"",
+        },
+        receive,
+    )
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("event_type", "session", "expected_sql"),
+    [
+        # Production 20 Oct 2026: stripe-python 15 made this raise
+        # "'get' is a dict method, but a Session is not a dict".
+        ("checkout.session.expired", {"id": "cs_live_expired", "object": "checkout.session"}, "SET status = 'expired'"),
+        (
+            "checkout.session.completed",
+            {
+                "id": "cs_live_paid",
+                "object": "checkout.session",
+                "payment_link": "plink_1UBt3M4mijLHzRRkz4joD0We",
+                "metadata": {},
+                "payment_status": "paid",
+                "amount_total": 15000,
+                "currency": "gbp",
+                "customer_details": {"email": "buyer@example.com", "name": "Buyer Ltd"},
+            },
+            "'manual_sale_paid'",
+        ),
+    ],
+)
+async def test_real_stripe_sdk_event_objects_are_handled(monkeypatch, event_type, session, expected_sql):
+    import json
+
+    conn = _WebhookConn()
+
+    @asynccontextmanager
+    async def mock_get_connection():
+        yield conn
+
+    secret = "whsec_dummy"
+    payload = json.dumps(
+        {"id": f"evt_{event_type}", "object": "event", "type": event_type, "data": {"object": session}}
+    ).encode()
+    monkeypatch.setattr(billing.settings, "stripe_secret_key", "sk_test_dummy")
+    monkeypatch.setattr(billing.settings, "stripe_webhook_secret", secret)
+    monkeypatch.setattr(billing, "get_connection", mock_get_connection)
+
+    result = await billing.stripe_webhook(_signed_request(payload, secret))
+
+    assert result == {"status": "ok"}
+    assert any(expected_sql in str(args[0]) for args in conn.executed_queries)
+
+
+def test_stripe_dict_converts_real_sdk_objects_recursively():
+    import stripe
+
+    from api.utils.stripe_compat import stripe_dict
+
+    obj = stripe.checkout.Session.construct_from(
+        {"id": "cs_1", "metadata": {"type": "x"}, "line_items": {"data": [{"price": {"id": "price_1"}}]}},
+        "sk_test",
+    )
+    with pytest.raises(AttributeError):
+        obj.get("id")
+
+    plain = stripe_dict(obj)
+
+    assert plain.get("metadata").get("type") == "x"
+    assert plain["line_items"]["data"][0]["price"]["id"] == "price_1"
+    assert type(plain) is dict

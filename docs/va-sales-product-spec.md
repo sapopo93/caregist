@@ -1,5 +1,7 @@
 # CareGist VA Sales Product Brief
 
+> **15 October 2026 manual update:** Use the [current manual](manuals/SALES_GTM_MANUAL.md) for operating instructions, current offers and evidence limits. Older prices, approvals, feature-readiness claims and proposed dates below are dated context, not current authority. This document does not activate any commercial or outreach gate.
+
 > **Superseded — historical training material, not approved for outreach or
 > quoting.** The products, prices, scripts, URLs, and claims below predate the
 > authoritative `2026-08` catalogue and must not be used with prospects. Current

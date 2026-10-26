@@ -1,11 +1,59 @@
 {
   "classes": {
+    "1-10218428676": {
+      "class": "db_inactive_matches_deregistration",
+      "class_revision": 2,
+      "deregistration_date": "2026-10-08",
+      "fetched_at": "2026-10-14T01:00:39Z",
+      "registration_date": "2021-01-15",
+      "registration_status": "Deregistered"
+    },
+    "1-10564181876": {
+      "class": "db_inactive_matches_deregistration",
+      "class_revision": 2,
+      "deregistration_date": "2026-10-06",
+      "fetched_at": "2026-10-14T01:00:39Z",
+      "registration_date": "2021-06-07",
+      "registration_status": "Deregistered"
+    },
+    "1-105860838": {
+      "class": "db_inactive_matches_deregistration",
+      "class_revision": 2,
+      "deregistration_date": "2026-10-06",
+      "fetched_at": "2026-10-14T01:00:39Z",
+      "registration_date": "2010-11-17",
+      "registration_status": "Deregistered"
+    },
+    "1-11594834295": {
+      "class": "db_inactive_matches_deregistration",
+      "class_revision": 2,
+      "deregistration_date": "2026-10-13",
+      "fetched_at": "2026-10-15T01:01:17Z",
+      "registration_date": "2021-09-10",
+      "registration_status": "Deregistered"
+    },
+    "1-15153339060": {
+      "class": "db_inactive_but_source_registered",
+      "class_revision": 2,
+      "deregistration_date": null,
+      "fetched_at": "2026-10-15T01:01:17Z",
+      "registration_date": "2023-03-24",
+      "registration_status": "Registered"
+    },
     "1-15659436285": {
       "class": "db_inactive_matches_deregistration",
       "class_revision": 2,
       "deregistration_date": "2026-09-29",
       "fetched_at": "2026-10-03T03:20:27Z",
       "registration_date": "2023-04-26",
+      "registration_status": "Deregistered"
+    },
+    "1-17983909292": {
+      "class": "db_inactive_matches_deregistration",
+      "class_revision": 2,
+      "deregistration_date": "2025-11-10",
+      "fetched_at": "2026-10-13T01:00:58Z",
+      "registration_date": "2023-11-20",
       "registration_status": "Deregistered"
     },
     "1-18693250147": {
@@ -207,6 +255,14 @@
       "fetched_at": "2026-09-20T04:36:26Z",
       "registration_date": "2026-09-11",
       "registration_status": "Registered"
+    },
+    "1-26687820715": {
+      "class": "db_inactive_matches_deregistration",
+      "class_revision": 2,
+      "deregistration_date": "2026-10-06",
+      "fetched_at": "2026-10-08T01:01:30Z",
+      "registration_date": "2026-02-08",
+      "registration_status": "Deregistered"
     },
     "1-27395339278": {
       "class": "db_inactive_but_source_registered",
@@ -431,6 +487,14 @@
       "fetched_at": "2026-09-20T04:36:26Z",
       "registration_date": "2026-09-11",
       "registration_status": "Registered"
+    },
+    "1-29463091506": {
+      "class": "db_inactive_matches_deregistration",
+      "class_revision": 2,
+      "deregistration_date": "2026-10-13",
+      "fetched_at": "2026-10-15T01:01:17Z",
+      "registration_date": "2026-09-03",
+      "registration_status": "Deregistered"
     },
     "1-29464594078": {
       "class": "db_inactive_but_source_registered",
@@ -680,6 +744,14 @@
       "registration_date": "2017-07-23",
       "registration_status": "Deregistered"
     },
+    "1-543804048": {
+      "class": "db_inactive_matches_deregistration",
+      "class_revision": 2,
+      "deregistration_date": "2026-10-08",
+      "fetched_at": "2026-10-12T01:03:52Z",
+      "registration_date": "2013-02-01",
+      "registration_status": "Deregistered"
+    },
     "1-544421663": {
       "class": "db_inactive_matches_deregistration",
       "class_revision": 2,
@@ -687,7 +759,63 @@
       "fetched_at": "2026-09-20T04:36:26Z",
       "registration_date": "2013-04-01",
       "registration_status": "Deregistered"
+    },
+    "1-552817287": {
+      "class": "db_inactive_matches_deregistration",
+      "class_revision": 2,
+      "deregistration_date": "2026-10-09",
+      "fetched_at": "2026-10-13T01:00:58Z",
+      "registration_date": "2013-04-01",
+      "registration_status": "Deregistered"
+    },
+    "1-5869201780": {
+      "class": "db_inactive_matches_deregistration",
+      "class_revision": 2,
+      "deregistration_date": "2026-10-07",
+      "fetched_at": "2026-10-13T01:00:58Z",
+      "registration_date": "2018-11-06",
+      "registration_status": "Deregistered"
+    },
+    "1-6081634380": {
+      "class": "db_inactive_but_source_registered",
+      "class_revision": 2,
+      "deregistration_date": null,
+      "fetched_at": "2026-10-08T01:01:30Z",
+      "registration_date": "2018-11-26",
+      "registration_status": "Registered"
+    },
+    "1-6096659133": {
+      "class": "db_inactive_matches_deregistration",
+      "class_revision": 2,
+      "deregistration_date": "2026-10-06",
+      "fetched_at": "2026-10-13T01:00:58Z",
+      "registration_date": "2019-02-18",
+      "registration_status": "Deregistered"
+    },
+    "1-6539761618": {
+      "class": "db_inactive_matches_deregistration",
+      "class_revision": 2,
+      "deregistration_date": "2026-10-08",
+      "fetched_at": "2026-10-14T01:00:39Z",
+      "registration_date": "2019-03-06",
+      "registration_status": "Deregistered"
+    },
+    "1-9017424451": {
+      "class": "db_inactive_matches_deregistration",
+      "class_revision": 2,
+      "deregistration_date": "2026-10-11",
+      "fetched_at": "2026-10-14T01:00:39Z",
+      "registration_date": "2020-06-12",
+      "registration_status": "Deregistered"
+    },
+    "1-9474762255": {
+      "class": "db_inactive_matches_deregistration",
+      "class_revision": 2,
+      "deregistration_date": "2026-10-08",
+      "fetched_at": "2026-10-14T01:00:39Z",
+      "registration_date": "2020-09-03",
+      "registration_status": "Deregistered"
     }
   },
-  "updated_at": "2026-10-07T01:00:52Z"
+  "updated_at": "2026-10-15T01:01:17Z"
 }

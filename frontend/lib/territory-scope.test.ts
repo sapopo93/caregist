@@ -73,7 +73,7 @@ test("evaluateTerritoryCoverage keeps count bands while every enquiry remains no
     assert.equal(result.canCheckout, false);
     assert.equal(result.stale, false);
     assert.match(result.headline, new RegExp(`^${expected.providerCount} matching `));
-    assert.match(result.detail, new RegExp(`contains ${expected.providerCount} active providers`));
+    assert.match(result.detail, new RegExp(`contains ${expected.providerCount} active locations`));
 
     const customerCopy = `${result.headline} ${result.detail}`;
     assert.doesNotMatch(customerCopy, /ready for|can be covered|will rank|rank every|full ranked shortlist/i);

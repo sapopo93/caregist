@@ -1,3 +1,24 @@
+## 2026-10-24 next bounded action — independent review of report-readiness packet
+
+Independent approved-provider review of [REPORT_READINESS_EVIDENCE.md](REPORT_READINESS_EVIDENCE.md) and its PR (branch `feat/report-readiness-20261024`), using the checklist in that file. Review it together with open PR #123, whose API-else-file precedence this resolver contract replaces. Keep `resolved_rating_contract_enabled`, `competitor_scan_enabled` and `p12_list_enabled` false.
+
+After review, smallest next fixes:
+- re-check the State of Care reference values;
+- decide whether the 51 unreconciled CQC deregistrations need an approved reconciliation run;
+- add dual-registration merging to report outputs.
+
+No merge, deploy, production write or gate change is authorised by this entry.
+
+## 2026-10-22 quarantine release preparation
+
+Production read-only verification confirms migration 067 is already applied, with three unresolved quarantined location IDs and 59,382 stored location rows. `db/apply_migrations.py --target production --check` reports no pending migrations for this release candidate. No production migration or source-row mutation was performed. Current-main integration adds persistent quarantine to pipeline evidence/logs and keeps source freshness partial while quarantined ACTIVE records remain; Data Status exposes their count. Local finalizer tests include resolved, manifest-present, inactive, missing-provider and missing-schema cases. Deployment and preview activation still require the exact candidate's CI and independent review. This supersedes older statements below that migration 067 was unapplied; commercial gates remain closed.
+
+## 2026-10-18 next bounded action
+
+Complete independent review of [PR #94](https://github.com/sapopo93/caregist/pull/94), then apply its migration through the repository's production migration workflow after the restore point is verified. Verify the three IDs are recorded as unresolved exceptions and remain ACTIVE, and confirm the next reconciliation skips their detail calls while preserving identity checks. Ask CQC for the cause of the three HTTP 404s and for the identity/status behind `1-29608453477`; clear each exception only after authoritative evidence. Keep checkout/delivery gates as reported by live health; continue human-led sales only with verified claims. See [run evidence](../artifacts/cqc-nightly/2026-10-18-reconciliation-run-39113995661.md).
+
+---
+
 ## 2026-10-16 evening follow-up (Henry's five instructions)
 
 Next single bounded action: Henry runs the read-only backfill dry run locally with the command in [backfill-dry-run-command.md](../artifacts/collection-evidence/2026-10-16/backfill-dry-run-command.md) and returns the two output files. Then review the concrete diff in [STAGE3_REVIEW_PACK.md](../artifacts/product-research/2026-10-16/STAGE3_REVIEW_PACK.md) (migration 066, rollback plan, retention proposal). The 14 Oct cancellation actor is unknown ([analysis](../artifacts/collection-evidence/2026-10-16/reconciliation-cancellation-14-oct.md)). Gates unchanged and closed.

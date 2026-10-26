@@ -1,5 +1,7 @@
 # Weekly Digest pilot measurement
 
+> **15 October 2026 manual update:** Use the [current manual](manuals/SALES_GTM_MANUAL.md) for operating instructions, current offers and evidence limits. Older prices, approvals, feature-readiness claims and proposed dates below are dated context, not current authority. This document does not activate any commercial or outreach gate.
+
 This is a four-week, one-off £150 pilot. It is a measurement plan, not a new
 recurring product or an approval to open checkout.
 

@@ -1,7 +1,7 @@
-"""Real-Postgres check of migration 066 and the scope store.
+"""Real-Postgres check of migration 071 and the scope store.
 
 Skipped unless SCOPE_PG_URL points at a disposable database. It works in its own
-schema (``scope_pg_test``), applies 060 and 066 there and drops it afterwards, so it
+schema (``scope_pg_test``), applies 060 and 071 there and drops it afterwards, so it
 touches nothing else. Never point it at production.
 
     SCOPE_PG_URL=postgresql://user@localhost/scratch python -m pytest tests/test_territory_brief_scope_pg.py -q
@@ -37,7 +37,7 @@ async def _fresh():
     await conn.execute("DROP SCHEMA IF EXISTS scope_pg_test CASCADE; CREATE SCHEMA scope_pg_test")
     await conn.execute("SET search_path TO scope_pg_test")
     await conn.execute((MIGRATIONS / "060_territory_brief_fulfilment.sql").read_text())
-    await conn.execute((MIGRATIONS / "066_territory_brief_buyer_scope.sql").read_text())
+    await conn.execute((MIGRATIONS / "071_territory_brief_buyer_scope.sql").read_text())
     return conn
 
 
@@ -100,7 +100,7 @@ async def test_round_trip_isolation_freeze_and_retention():
         assert await conn.fetchval("SELECT COUNT(*) FROM territory_brief_scope_versions WHERE order_id = $1", b) == 0
 
         # Down migration is clean.
-        await conn.execute((MIGRATIONS / "down" / "066_territory_brief_buyer_scope.down.sql").read_text())
+        await conn.execute((MIGRATIONS / "down" / "071_territory_brief_buyer_scope.down.sql").read_text())
         assert await conn.fetchval("SELECT to_regclass('territory_brief_scope_exclusions')") is None
         assert await conn.fetchval("SELECT COUNT(*) FROM territory_brief_orders") == 2
     finally:

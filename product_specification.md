@@ -1,5 +1,7 @@
 # CareGist Product Specification: New-Provider Intelligence Suite
 
+> **15 October 2026 manual update:** Use the [current manual](docs/manuals/README.md) for operating instructions, current offers and evidence limits. Older prices, approvals, feature-readiness claims and proposed dates below are dated context, not current authority. This document does not activate any commercial or outreach gate.
+
 > **Superseded product specification — historical and non-operative.** The
 > products, tiers, prices, entitlements, forecasts, and “live” labels below
 > predate catalogue `2026-08` and must not be used for implementation, public

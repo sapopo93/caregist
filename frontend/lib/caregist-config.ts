@@ -29,7 +29,7 @@ export const PRICING_LADDER: PricingTier[] = [
     recommended: true,
     includes: [
       "CRM-import-ready territory dataset",
-      "Ranked shortlist of 25–50 priority organisations, each with a stated reason",
+      "Ranked shortlist of up to 50 priority organisations, each with a stated reason (exact number confirmed before you pay)",
       "3–5 page brief on territory size, market structure, notable movements, and recommended approach",
       "Observation dates carried through the deliverable",
     ],

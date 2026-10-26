@@ -31,6 +31,7 @@ class HealthConnection:
         tables: set[str] | None = None,
         canonical_columns_ready: bool = True,
         source_snapshot_identity_ready: bool = True,
+        running_signal_age: timedelta | None = None,
     ):
         self.now = now
         self.active_count = active_count
@@ -51,6 +52,7 @@ class HealthConnection:
         }
         self.canonical_columns_ready = canonical_columns_ready
         self.source_snapshot_identity_ready = source_snapshot_identity_ready
+        self.running_signal_age = running_signal_age
 
     @asynccontextmanager
     async def transaction(self, **options):
@@ -58,6 +60,8 @@ class HealthConnection:
         yield
 
     async def fetchval(self, query: str, *args):
+        if "FROM reconciliation_quarantined_locations" in query:
+            return 0
         if "information_schema.tables" in query:
             return args[0] in self.tables
         if "information_schema.columns" in query:
@@ -75,8 +79,18 @@ class HealthConnection:
                 "grouped_provider_organisations": 3_200,
                 "named_group_labels": 2_900,
             }
+        if "WHERE run_type = 'signal_poll'" in query and "ORDER BY completed_at DESC" in query:
+            return {"completed_at": self.now - self.signal_run_age}
         if "WHERE run_type = 'signal_poll'" in query and "LIMIT 1" in query:
             completed = self.now - self.signal_run_age
+            if self.running_signal_age is not None:
+                return {
+                    "run_type": "signal_poll",
+                    "status": "running",
+                    "started_at": self.now - self.running_signal_age,
+                    "completed_at": None,
+                    "error_message": None,
+                }
             return {
                 "run_type": "signal_poll",
                 "status": "completed",
@@ -388,3 +402,50 @@ def test_operational_latency_respects_seven_day_window():
         source_checked_at=inside_observed - timedelta(minutes=2),
         now=now,
     ) == 120.0
+
+
+def _check(result, name):
+    return next(check for check in result["checks"] if check["name"] == name)
+
+
+@pytest.mark.asyncio
+async def test_poll_in_progress_does_not_make_a_fresh_collector_stale():
+    # Production 20 Oct 2026: the 04:37 backup poll was running when health
+    # was read, and the whole pipeline reported degraded for its ~20 minutes.
+    now = datetime.now(UTC)
+    conn = HealthConnection(
+        now=now, signal_run_age=timedelta(hours=1), running_signal_age=timedelta(minutes=3)
+    )
+
+    result = await get_pipeline_health(conn)
+
+    assert result["feed_fresh"] is True
+    execution = _check(result, "signal_poll_execution")
+    assert execution["ok"] is True
+    assert execution["details"]["latestStatus"] == "running"
+    assert execution["details"]["lastSuccessfulCompletedAt"] == (
+        (now - timedelta(hours=1)).isoformat()
+    )
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("running_age", "last_success_age"),
+    [
+        (timedelta(minutes=51), timedelta(hours=1)),  # overran its job timeout
+        (timedelta(minutes=-5), timedelta(hours=1)),  # started in the future
+        (timedelta(minutes=3), timedelta(hours=17)),  # last success outside the SLA
+    ],
+)
+async def test_poll_in_progress_still_fails_closed_when_overrun_or_stale(
+    running_age, last_success_age
+):
+    now = datetime.now(UTC)
+    conn = HealthConnection(
+        now=now, signal_run_age=last_success_age, running_signal_age=running_age
+    )
+
+    result = await get_pipeline_health(conn)
+
+    assert result["feed_fresh"] is False
+    assert _check(result, "signal_poll_execution")["ok"] is False

@@ -31,8 +31,18 @@ from collections import Counter
 from dataclasses import asdict, dataclass
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Iterable, Literal
+from typing import Any, Iterable, Literal, Mapping
 
+from api.services.rating_resolver import (
+    INHERITED,
+    SOURCE_API,
+    SOURCE_FILE,
+    UNRESOLVED,
+    RatingEvidence,
+    ResolvedRating,
+    canonical_rating,
+    resolve_rating,
+)
 from tools.generate_radar_territory_sample import (
     _load_ndjson,
     _parse_date,
@@ -59,6 +69,17 @@ MIN_SHORTLIST = 10
 MAX_SHORTLIST = 50
 DEFAULT_SHORTLIST = 30
 DEFAULT_WINDOW_DAYS = 90
+
+#: The provider groups a buyer picks on /pricing/territory. Membership is decided
+#: by the directory query the coverage check uses (see tools/prepare_order.py),
+#: so the Brief covers exactly the organisations the buyer was shown.
+PROVIDER_GROUP_LABELS = {
+    "new_90": "New registrations (last 90 days)",
+    "inadequate": "Currently rated Inadequate",
+    "requires_improvement": "Currently rated Requires improvement",
+    "not_yet_inspected": "No published CQC rating",
+    "stale_inspection": "No inspection in the last 3 years, or none recorded",
+}
 
 
 class ScopeError(ValueError):
@@ -155,6 +176,7 @@ class OrgEvent:
     detail: str
     source_url: str
     source_field: str
+    source_edition: str | None = None
 
 
 @dataclass(frozen=True)
@@ -180,9 +202,14 @@ class RankedOrganisation:
     # Buyer-specific follow-ups keyed by BUYER_QUESTION_TYPES, asked after the
     # general question above. Like it, each one asks and never asserts need.
     buyer_questions: tuple[tuple[str, str], ...] = ()
+    # Resolved-rating provenance (api/services/rating_resolver.py); None unless
+    # the Brief was generated under the resolved rating contract.
+    rating_resolution: dict[str, Any] | None = None
 
     def to_json(self) -> dict[str, Any]:
         data = asdict(self)
+        if self.rating_resolution is None:
+            data.pop("rating_resolution")
         data["service_types"] = list(self.service_types)
         data["buyer_questions"] = dict(self.buyer_questions)
         data["most_recent_event_date"] = (
@@ -209,9 +236,10 @@ class TerritoryBrief:
     data_caveats: tuple[str, ...]
     source_provenance: dict[str, Any]
     evidence_coverage: tuple[dict[str, Any], ...] = ()
+    rating_resolution: dict[str, Any] | None = None
 
     def to_json(self) -> dict[str, Any]:
-        return {
+        data = {
             "scope": self.scope.to_json(),
             "purchase_context": self.purchase_context.to_json(),
             "as_of_date": self.as_of_date.isoformat(),
@@ -228,6 +256,9 @@ class TerritoryBrief:
             "source_provenance": self.source_provenance,
             "evidence_coverage": list(self.evidence_coverage),
         }
+        if self.rating_resolution is not None:
+            data["rating_resolution"] = self.rating_resolution
+        return data
 
 
 # --------------------------------------------------------------------------- #
@@ -454,6 +485,9 @@ _BASE_WEIGHT = {
     "rating_changed": 34.0,
     "rating_published": 14.0,
     "reactivated": 20.0,
+    "rating_current": 40.0,
+    "not_yet_inspected": 30.0,
+    "stale_inspection": 30.0,
 }
 
 
@@ -530,11 +564,17 @@ _SIGNAL_LABEL = {
     "rating_changed": "Rating change",
     "rating_published": "New inspection report",
     "reactivated": "Returned from dormancy",
+    "rating_current": "Current rating",
+    "not_yet_inspected": "No published rating",
+    "stale_inspection": "No recent inspection",
 }
 
 
 def _primary_signal(events: list[OrgEvent]) -> str:
-    order = ["rating_changed", "new_registration", "rating_published", "reactivated"]
+    order = [
+        "rating_changed", "rating_current", "new_registration", "stale_inspection",
+        "not_yet_inspected", "rating_published", "reactivated",
+    ]
     for kind in order:
         if any(e.event_type == kind for e in events):
             return _SIGNAL_LABEL[kind]
@@ -570,6 +610,19 @@ def _recency_phrase(event_date: date, as_of: date) -> str:
     if age <= 120:
         return "within the last four months"
     return f"about {age // 30} months ago"
+
+
+def _age_phrase(then: date, as_of: date) -> str:
+    """Exact, plain age of a dated fact; never rounded up."""
+    days = (as_of - then).days
+    if days < 0:
+        return "after the source date"
+    if days < 31:
+        return f"{days} day{'s' if days != 1 else ''} ago"
+    months = days // 30
+    if months < 24:
+        return f"about {months} month{'s' if months != 1 else ''} ago"
+    return f"about {days // 365} years ago"
 
 
 def _reason(
@@ -646,6 +699,57 @@ def _reason(
             f"(current rating {ev.new_value}). Verify its age and supporting evidence before contact."
         )
 
+    for ev in events:
+        if ev.event_type == "rating_current":
+            dated = (
+                f"in the report published {ev.effective_date.strftime('%d %b %Y')}"
+                if "date not recorded" not in ev.detail
+                else "(report date not recorded in the source)"
+            )
+            parts.append(
+                f"Currently rated {ev.new_value} overall by CQC {dated}. This is the published "
+                f"overall rating, not a statement about the service today; read the report "
+                f"before any contact."
+            )
+        elif ev.event_type == "not_yet_inspected":
+            # The group means "no published rating"; the record cannot show whether or
+            # when an inspection will happen, so the text claims neither.
+            if ev.old_value == "registration_date_missing":
+                parts.append(
+                    f"No published CQC rating on record ({_service_and_size(svc, beds)}), and the "
+                    f"source does not record a registration date. Check the CQC page before contact."
+                )
+            else:
+                parts.append(
+                    f"No published CQC rating on record; registered with CQC on "
+                    f"{ev.effective_date.strftime('%d %b %Y')} ({_age_phrase(ev.effective_date, as_of)}). "
+                    f"The record does not show a completed rated inspection ({_service_and_size(svc, beds)}); "
+                    f"check the CQC page before contact. This does not establish supplier need or purchasing intent."
+                )
+        elif ev.event_type == "stale_inspection":
+            if ev.old_value == "registration_date_missing":
+                parts.append(
+                    "No CQC inspection date and no registration date are recorded in the source. "
+                    "Check the CQC page before contact."
+                )
+            elif ev.old_value == "never_inspected":
+                recent = (as_of - ev.effective_date).days < 3 * 365
+                parts.append(
+                    f"No CQC inspection date recorded; registered on "
+                    f"{ev.effective_date.strftime('%d %b %Y')} ({_age_phrase(ev.effective_date, as_of)})."
+                    + (
+                        " It is in this group because the 'stale inspections' filter includes every "
+                        "location without a recorded inspection date, not because an inspection is overdue."
+                        if recent else ""
+                    )
+                )
+            else:
+                parts.append(
+                    f"Last CQC inspection on {ev.effective_date.strftime('%d %b %Y')}, "
+                    f"{_age_phrase(ev.effective_date, as_of)} before the source date, so a re-inspection "
+                    f"may be due. CQC sets its own schedule; this is not a prediction of timing."
+                )
+
     if provider_cluster >= 2:
         parts.append(
             f"The provider behind this location has {provider_cluster} locations moving in "
@@ -688,6 +792,17 @@ _QUALIFICATION_QUESTIONS = {
     _SIGNAL_LABEL["reactivated"]: (
         "Is this service planning to restart operations, and who is responsible for "
         "choosing suppliers?"
+    ),
+    _SIGNAL_LABEL["rating_current"]: (
+        "What has this service changed since its last published rating, and who leads its "
+        "improvement plan?"
+    ),
+    _SIGNAL_LABEL["not_yet_inspected"]: (
+        "Who is preparing this service for its first CQC inspection, and which suppliers has "
+        "it not yet chosen?"
+    ),
+    _SIGNAL_LABEL["stale_inspection"]: (
+        "How is this service preparing for its next CQC inspection, and who owns that work?"
     ),
 }
 
@@ -733,6 +848,18 @@ _COMPLIANCE_QUESTIONS = {
     _SIGNAL_LABEL["rating_published"]: (
         "Which areas did the published report raise, and who is leading the service's "
         "response to them?"
+    ),
+    _SIGNAL_LABEL["rating_current"]: (
+        "Which areas did the latest report raise, and has the service arranged a governance "
+        "audit, mock inspection or training in response?"
+    ),
+    _SIGNAL_LABEL["not_yet_inspected"]: (
+        "Who is preparing this service for its first CQC inspection, and has it arranged a "
+        "governance audit or mock inspection yet?"
+    ),
+    _SIGNAL_LABEL["stale_inspection"]: (
+        "When did the service last review itself against CQC's current assessment framework, "
+        "and who would lead preparation for re-inspection?"
     ),
 }
 _COMPLIANCE_DEFAULT = (
@@ -890,12 +1017,208 @@ def _next_actions(insights: dict[str, Any], ranked: list[RankedOrganisation], sc
 # --------------------------------------------------------------------------- #
 
 
+def _provider_group_event(row: dict[str, Any], group: str, *, as_of: date) -> OrgEvent | None:
+    """The documented state that puts a location in the buyer's provider group.
+
+    Window events only cover recent movement; a group such as "currently rated
+    Inadequate" is a standing state, so each member carries it as evidence.
+    """
+    location_id = str(row.get("locationId") or "").strip()
+    url = CQC_PROFILE_URL.format(location_id=location_id) if location_id else CQC_DATA_PAGE
+    registered = _parse_date(row.get("registrationDate"))
+    last_inspection = _parse_date((row.get("lastInspection") or {}).get("date"))
+    if group in ("inadequate", "requires_improvement"):
+        resolved = row.get("_resolved_rating")
+        if isinstance(resolved, ResolvedRating):
+            return _resolved_group_event(resolved, group, url=url)
+        rating, report_date = _current_rating_evidence(row)
+        if not rating:
+            return None
+        effective = report_date or last_inspection
+        detail = (
+            f"Current overall rating {rating} (report {effective.isoformat()})"
+            if effective
+            else f"Current overall rating {rating} (report date not recorded in source)"
+        )
+        return OrgEvent(
+            event_type="rating_current",
+            effective_date=effective or as_of,
+            old_value=None,
+            new_value=rating,
+            detail=detail,
+            source_url=url,
+            source_field="location.currentRatings.overall",
+        )
+    if group == "not_yet_inspected":
+        return OrgEvent(
+            event_type="not_yet_inspected",
+            effective_date=registered or as_of,
+            old_value=None if registered else "registration_date_missing",
+            new_value="No published rating",
+            detail=(
+                f"Registered {registered.isoformat()}; no published CQC rating"
+                if registered else "No published CQC rating; registration date not recorded"
+            ),
+            source_url=url,
+            source_field="location.currentRatings/lastInspection",
+        )
+    if group == "stale_inspection":
+        if last_inspection:
+            return OrgEvent(
+                event_type="stale_inspection",
+                effective_date=last_inspection,
+                old_value=last_inspection.isoformat(),
+                new_value=None,
+                detail=f"Last CQC inspection {last_inspection.isoformat()}",
+                source_url=url,
+                source_field="location.lastInspection.date",
+            )
+        return OrgEvent(
+            event_type="stale_inspection",
+            effective_date=registered or as_of,
+            old_value="never_inspected" if registered else "registration_date_missing",
+            new_value=None,
+            detail=(
+                f"No CQC inspection recorded since registration on {registered.isoformat()}"
+                if registered else "No CQC inspection recorded"
+            ),
+            source_url=url,
+            source_field="location.lastInspection",
+        )
+    return None
+
+
+_GROUP_RATING = {"inadequate": "Inadequate", "requires_improvement": "Requires improvement"}
+_SOURCE_LABEL = {
+    SOURCE_API: "CQC API",
+    SOURCE_FILE: "CQC published ratings file",
+    "cqc_website": "CQC location page",
+}
+
+
+def _resolved_source_edition(resolved: ResolvedRating) -> str:
+    ev = resolved.evidence_for(resolved.source) if resolved.source else None
+    if ev and ev.source == SOURCE_FILE:
+        edition = ev.edition_date.isoformat() if ev.edition_date else "edition not recorded"
+        return f"CQC ratings file {edition} sha256:{ev.source_sha256 or 'not recorded'}"
+    if ev and ev.observed_on:
+        return f"CQC location page observed {ev.observed_on.isoformat()}"
+    return CQC_DATA_PAGE
+
+
+def _resolved_group_event(resolved: ResolvedRating, group: str, *, url: str) -> OrgEvent | None:
+    """A rating-based group admits only a ``current`` value equal to the group's rating.
+
+    Inherited ratings describe a predecessor registration and unresolved ones are
+    omitted, so neither can place a location in a rating-based group.
+    """
+    if not resolved.is_current or resolved.value != _GROUP_RATING[group] or not resolved.publication_date:
+        return None
+    label = _SOURCE_LABEL.get(resolved.source or "", resolved.source or "source")
+    return OrgEvent(
+        event_type="rating_current",
+        effective_date=resolved.publication_date,
+        old_value=None,
+        new_value=resolved.value,
+        detail=(
+            f"Current overall rating {resolved.value} (published {resolved.publication_date.isoformat()}; "
+            f"source: {label})"
+        ),
+        source_url=url,
+        source_field=f"resolved_rating.{resolved.source}",
+        source_edition=_resolved_source_edition(resolved),
+    )
+
+
+def _check_evidence_mapping(mapping: Mapping[str, Any] | None, source: str, name: str) -> None:
+    for key, value in (mapping or {}).items():
+        if not isinstance(value, RatingEvidence) or value.source != source:
+            raise TypeError(
+                f"{name}[{key!r}] must be RatingEvidence with source={source!r}, got {type(value).__name__}"
+            )
+
+
+def _align_rating_events(
+    events: list[OrgEvent], resolved: ResolvedRating, row: dict[str, Any]
+) -> list[OrgEvent]:
+    """Keep API rating events consistent with the resolved rating.
+
+    ``rating_published`` and the ``rating_changed`` into the API's latest value
+    both assert that value as the current rating. They are kept only when the
+    resolution is ``current`` with that same value; otherwise (unresolved,
+    inherited, none, or a newer different value) they are dropped so a disputed
+    or superseded value never reaches the narrative, evidence or exports.
+    Earlier in-window movements stay as dated historical facts.
+    """
+    sequence = _rating_sequence(row)
+    if not sequence:
+        return events
+    latest_date = sequence[-1][0]
+    kept = []
+    for e in events:
+        asserts_current = e.event_type in ("rating_published", "rating_changed") and e.effective_date == latest_date
+        if asserts_current and not (resolved.is_current and resolved.value == canonical_rating(e.new_value)):
+            continue
+        kept.append(e)
+    return kept
+
+
+def resolve_row_rating(
+    row: dict[str, Any],
+    file_rating: RatingEvidence | None,
+    website_observation: RatingEvidence | None = None,
+) -> ResolvedRating:
+    """Resolve a snapshot row's overall rating with its file/website evidence."""
+    raw, report_date = _current_rating_evidence(row)
+    evidence = [RatingEvidence(source=SOURCE_API, value=canonical_rating(raw), publication_date=report_date,
+                               raw_value=raw)]
+    if file_rating is not None:
+        evidence.append(file_rating)
+    if website_observation is not None:
+        evidence.append(website_observation)
+    return resolve_rating(evidence, registration_date=_parse_date(row.get("registrationDate")))
+
+
+def _rating_resolution_summary(
+    rows: list[dict[str, Any]], provider_group: str | None
+) -> dict[str, Any]:
+    resolved = {
+        str(row.get("locationId") or ""): row["_resolved_rating"]
+        for row in rows if isinstance(row.get("_resolved_rating"), ResolvedRating)
+    }
+    counts = Counter(r.status for r in resolved.values())
+    files = sorted({
+        (e.edition_date.isoformat() if e.edition_date else None, e.source_sha256)
+        for r in resolved.values() for e in r.evidence if e.source == SOURCE_FILE
+    }, key=lambda t: (t[0] or "", t[1] or ""))
+    exclusions = []
+    if provider_group in _GROUP_RATING:
+        for lid, r in sorted(resolved.items()):
+            if not r.is_current or r.value != _GROUP_RATING[provider_group]:
+                exclusions.append({"location_id": lid, "status": r.status,
+                                   "value": r.value if r.displayable else None, "reason": r.reason})
+    return {
+        "contract": "resolved_current_rating_v1",
+        "status_counts": dict(sorted(counts.items())),
+        "ratings_file_editions": [{"edition_date": e, "sha256": h} for e, h in files],
+        "omitted_unresolved": sorted(lid for lid, r in resolved.items() if r.status == UNRESOLVED),
+        "inherited": sorted(lid for lid, r in resolved.items() if r.status == INHERITED),
+        "scope_exclusions": exclusions,
+        "by_location": {lid: r.to_dict() for lid, r in sorted(resolved.items())},
+    }
+
+
 def generate_territory_opportunity_brief(
     scope: dict[str, Any] | TerritoryScope,
     purchase_context: PurchaseContext,
     *,
     locations_source: str | Path,
     providers_source: str | Path,
+    location_ids: Iterable[str] | None = None,
+    provider_group: str | None = None,
+    file_ratings: dict[str, tuple[str | None, date | None]] | None = None,
+    rating_evidence: Mapping[str, RatingEvidence] | None = None,
+    website_observations: Mapping[str, RatingEvidence] | None = None,
 ) -> TerritoryBrief:
     """Generate a complete Territory Opportunity Brief.
 
@@ -903,7 +1226,42 @@ def generate_territory_opportunity_brief(
     :class:`TerritoryScope`; it is always validated against the source data.
     Raises :class:`ScopeError` for an invalid/unknown scope and
     :class:`FileNotFoundError` for a missing snapshot.
+
+    ``location_ids`` restricts the Brief to an exact set (the organisations the
+    buyer's coverage check counted). ``provider_group`` adds each member's
+    documented group state as evidence so standing groups are not empty.
+
+    ``file_ratings`` maps a location id to (overall rating, date) chosen by the
+    CareGist rating rule: CQC's published ratings file, or a CQC page check made
+    after the file's edition where it differs. It replaces the register's API
+    rating for every location it covers (the API fills only the file's gaps), and a
+    ``None`` rating -- CQC's page shows none -- withholds the register rating, so the
+    Brief agrees with the coverage check and the website.
+
+    ``rating_evidence`` (ratings-file :class:`RatingEvidence` keyed by CQC
+    location id) and optionally ``website_observations`` switch the Brief to the
+    resolved rating contract: every rating shown, counted or used for a
+    rating-based group comes from
+    :func:`api.services.rating_resolver.resolve_rating`. Passing either -- even
+    an empty mapping -- is an explicit opt-in and requires
+    ``settings.resolved_rating_contract_enabled`` (off by default); with the
+    flag off the call is refused rather than silently falling back. Values must
+    be :class:`RatingEvidence` with ``source == "cqc_ratings_file"``; the
+    ``(rating, date)`` tuples of the earlier API-else-file fill are rejected.
+    With neither argument the Brief behaves exactly as before.
+
+    The two are alternatives, never combined: ``file_ratings`` is the legacy
+    (flag-off) API-else-file fill from PR #123, ``rating_evidence`` the resolved
+    contract (flag-on). Passing both raises ``ValueError``.
     """
+    if provider_group is not None and provider_group not in PROVIDER_GROUP_LABELS:
+        raise ScopeError(f"unknown provider group {provider_group!r}")
+    if file_ratings is not None and (rating_evidence is not None or website_observations is not None):
+        raise ValueError("pass file_ratings (legacy fill) or rating_evidence (resolved contract), not both")
+    allowed_ids = (
+        {str(item).strip() for item in location_ids if str(item).strip()}
+        if location_ids is not None else None
+    )
     locations_path = Path(locations_source)
     providers_path = Path(providers_source)
     if not locations_path.exists():
@@ -913,6 +1271,24 @@ def generate_territory_opportunity_brief(
 
     provider_names = load_provider_names(providers_path)
     location_rows = list(_load_ndjson(locations_path))
+    file_filled = 0
+    if file_ratings:
+        for i, row in enumerate(location_rows):
+            hit = file_ratings.get(str(row.get("locationId") or "").strip())
+            if hit is None:
+                continue
+            rating, published = hit
+            if rating is None:
+                location_rows[i] = {**row, "currentRatings": {}}
+            else:
+                location_rows[i] = {
+                    **row,
+                    "currentRatings": {
+                        "overall": {"rating": rating},
+                        "reportDate": published.isoformat() if published else None,
+                    },
+                }
+            file_filled += 1
 
     catalogue = known_territories(location_rows)
     validated = validate_scope(scope, catalogue)
@@ -927,6 +1303,32 @@ def generate_territory_opportunity_brief(
 
     # First pass: provider cluster counts within scope.
     scoped_rows = [row for row in location_rows if _in_scope(row, validated)]
+    if allowed_ids is not None:
+        scoped_rows = [
+            row for row in scoped_rows if str(row.get("locationId") or "").strip() in allowed_ids
+        ]
+    resolving = rating_evidence is not None or website_observations is not None
+    if resolving:
+        from api.config import settings
+
+        if not settings.resolved_rating_contract_enabled:
+            raise RuntimeError(
+                "resolved rating contract is disabled (RESOLVED_RATING_CONTRACT_ENABLED=false)"
+            )
+        _check_evidence_mapping(rating_evidence, SOURCE_FILE, "rating_evidence")
+        _check_evidence_mapping(website_observations, "cqc_website", "website_observations")
+        scoped_rows = [
+            {
+                **row,
+                "_resolved_rating": resolve_row_rating(
+                    row,
+                    (rating_evidence or {}).get(str(row.get("locationId") or "").strip()),
+                    (website_observations or {}).get(str(row.get("locationId") or "").strip()),
+                ),
+            }
+            for row in scoped_rows
+        ]
+    rating_resolution = _rating_resolution_summary(scoped_rows, provider_group) if resolving else None
     territory_locations = len(scoped_rows)
     generated_on = purchase_context.generated_at.astimezone(timezone.utc).date()
     coverage = _evidence_coverage(
@@ -943,9 +1345,24 @@ def generate_territory_opportunity_brief(
     excluded_locations = set(validated.excluded_location_ids)
     excluded_with_signal = 0
     for row in scoped_rows:
+        resolved_row = row.get("_resolved_rating")
+        if (
+            isinstance(resolved_row, ResolvedRating)
+            and provider_group in _GROUP_RATING
+            and not (resolved_row.is_current and resolved_row.value == _GROUP_RATING[provider_group])
+        ):
+            # A rating-based group admits only matching current ratings; other
+            # signals cannot bring a non-member back in (listed in scope_exclusions).
+            continue
         events = _location_events(
             row, window_start=window_start, window_end=window_end, as_of=as_of
         )
+        if isinstance(resolved_row, ResolvedRating):
+            events = _align_rating_events(events, resolved_row, row)
+        if provider_group and provider_group != "new_90":
+            state = _provider_group_event(row, provider_group, as_of=as_of)
+            if state is not None:
+                events = [*events, state]
         if events:
             provider_id = str(row.get("providerId") or "").strip()
             if (
@@ -980,6 +1397,9 @@ def generate_territory_opportunity_brief(
         current_rating = (
             str(overall.get("rating") or "").strip() or None if isinstance(overall, dict) else None
         )
+        resolved = row.get("_resolved_rating")
+        if isinstance(resolved, ResolvedRating):
+            current_rating = resolved.value if resolved.displayable else None
         has_history = bool(_rating_sequence(row))
         score, breakdown = _score(
             events, beds=beds, provider_cluster=cluster, as_of=generated_on,
@@ -997,6 +1417,11 @@ def generate_territory_opportunity_brief(
             has_rating_history=has_history,
             as_of=generated_on,
         )
+        if isinstance(resolved, ResolvedRating) and resolved.status == INHERITED and "inherited" not in reason:
+            reason += (
+                f" Its overall rating of {resolved.value} was published before this registration "
+                "(inherited from a predecessor), not from an inspection of this registration."
+            )
         evidence = tuple(
             {
                 "event_type": e.event_type,
@@ -1006,7 +1431,7 @@ def generate_territory_opportunity_brief(
                 "detail": e.detail,
                 "source_field": e.source_field,
                 "source_url": e.source_url,
-                "source_edition": CQC_DATA_PAGE,
+                "source_edition": e.source_edition or CQC_DATA_PAGE,
             }
             for e in sorted(events, key=lambda e: e.effective_date)
         )
@@ -1034,6 +1459,7 @@ def generate_territory_opportunity_brief(
                     _primary_signal(events), provider_cluster=cluster, territory=validated.name
                 ),
                 buyer_questions=_buyer_questions(_primary_signal(events)),
+                rating_resolution=resolved.to_dict() if isinstance(resolved, ResolvedRating) else None,
             )
         )
 
@@ -1076,6 +1502,7 @@ def generate_territory_opportunity_brief(
     actions = _next_actions(insights, list(shortlist), validated)
 
     exec_summary = _executive_summary(
+        provider_group=provider_group,
         scope=validated,
         as_of=as_of,
         generated_on=generated_on,
@@ -1119,8 +1546,34 @@ def generate_territory_opportunity_brief(
             "who holds purchasing authority; central and local buying centres need corroboration.",
             caveats[-1],
         )
+    if rating_resolution is not None:
+        editions = ", ".join(
+            f"{e['edition_date'] or 'undated'} (sha256 {str(e['sha256'] or 'not recorded')[:12]})"
+            for e in rating_resolution["ratings_file_editions"]
+        ) or "none supplied"
+        caveats = (
+            "Ratings are resolved across CQC's API and its published ratings file "
+            f"(editions: {editions}). {len(rating_resolution['omitted_unresolved'])} location(s) "
+            "with conflicting evidence are shown without a rating; "
+            f"{len(rating_resolution['inherited'])} inherited rating(s) are labelled and never "
+            "treated as current inspections. A ratings-file value is never reported as a rating change.",
+            *caveats,
+        )
+    if file_filled:
+        caveats = (
+            f"{file_filled} location(s) take their overall rating from CQC's published "
+            "latest-ratings file (or a later check of CQC's own page) rather than the register "
+            "edition's API rating; the API rating is used only where the file has none.",
+            *caveats,
+        )
+    group_note = (
+        f" Provider group: {PROVIDER_GROUP_LABELS[provider_group]}, taken from the same "
+        f"directory query as the coverage check; each member carries its documented group "
+        f"state as evidence."
+        if provider_group else ""
+    )
     methodology = (
-        f"Scope: {validated.kind.replace('_', ' ')} = {validated.name}. "
+        f"Scope: {validated.kind.replace('_', ' ')} = {validated.name}.{group_note} "
         f"Window: {window_start.isoformat()} to {window_end.isoformat()} inclusive "
         f"({validated.window_days} days), anchored to the newest source date.",
         "Supported events: new CQC registration in-window (excluding dormant locations); overall "
@@ -1158,6 +1611,9 @@ def generate_territory_opportunity_brief(
         "licence": OGL_ATTRIBUTION,
         "licence_url": "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
     }
+    if rating_resolution is not None:
+        provenance["rating_contract"] = rating_resolution["contract"]
+        provenance["ratings_file_editions"] = rating_resolution["ratings_file_editions"]
 
     return TerritoryBrief(
         scope=validated,
@@ -1175,10 +1631,16 @@ def generate_territory_opportunity_brief(
         data_caveats=caveats,
         source_provenance=provenance,
         evidence_coverage=coverage,
+        rating_resolution=rating_resolution,
     )
 
 
 def _current_rating_evidence(row):
+    resolved = row.get("_resolved_rating")
+    if isinstance(resolved, ResolvedRating):
+        if not resolved.displayable:
+            return None, None
+        return resolved.value, resolved.publication_date
     current = row.get("currentRatings")
     if not isinstance(current, dict):
         return None, None
@@ -1233,6 +1695,11 @@ def _evidence_coverage(rows, *, generated_on, window_start, window_end):
             "recorded_source_hash": row.get("source_snapshot_sha256"),
             "registration_metadata_gaps": missing,
             "reference_url": CQC_PROFILE_URL.format(location_id=row.get("locationId") or ""),
+            **(
+                {"rating_status": row["_resolved_rating"].status,
+                 "rating_source": row["_resolved_rating"].source if row["_resolved_rating"].displayable else None}
+                if isinstance(row.get("_resolved_rating"), ResolvedRating) else {}
+            ),
         })
     return tuple(sorted(coverage, key=lambda item: (item["provider_id"], item["location_id"])))
 
@@ -1251,6 +1718,7 @@ def _latest_source_date(rows: list[dict[str, Any]]) -> date | None:
 
 def _executive_summary(
     *,
+    provider_group: str | None = None,
     scope: TerritoryScope,
     as_of: date,
     generated_on: date,
@@ -1266,11 +1734,18 @@ def _executive_summary(
         f"{o.organisation_name} ({o.location_name}) - {o.primary_signal.lower()}"
         for o in shortlist[:3]
     ]
-    headline = (
-        f"{considered} location(s) in {scope.name} show a supported opportunity signal in the "
-        f"{scope.window_days}-day window ending {window_end.strftime('%d %b %Y')}; "
-        f"{len(shortlist)} are shortlisted and ranked."
-    )
+    if provider_group and provider_group != "new_90":
+        headline = (
+            f"{considered} location(s) in {scope.name} are in the provider group "
+            f"'{PROVIDER_GROUP_LABELS[provider_group]}' on the source edition dated "
+            f"{as_of.strftime('%d %b %Y')}; {len(shortlist)} are shortlisted and ranked."
+        )
+    else:
+        headline = (
+            f"{considered} location(s) in {scope.name} show a supported opportunity signal in the "
+            f"{scope.window_days}-day window ending {window_end.strftime('%d %b %Y')}; "
+            f"{len(shortlist)} are shortlisted and ranked."
+        )
     movement = []
     if by_type.get("new_registration"):
         movement.append(f"{by_type['new_registration']} new registration(s)")
@@ -1278,7 +1753,14 @@ def _executive_summary(
         movement.append(f"{by_type['rating_changed']} rating change(s)")
     if by_type.get("rating_published"):
         movement.append(f"{by_type['rating_published']} new inspection report(s)")
+    if by_type.get("rating_current"):
+        movement.append(f"{by_type['rating_current']} location(s) with the selected current rating")
+    if by_type.get("not_yet_inspected"):
+        movement.append(f"{by_type['not_yet_inspected']} location(s) with no published rating")
+    if by_type.get("stale_inspection"):
+        movement.append(f"{by_type['stale_inspection']} location(s) with no inspection in the last 3 years or none recorded")
     return {
+        "provider_group": PROVIDER_GROUP_LABELS.get(provider_group) if provider_group else None,
         "territory": scope.name,
         "territory_kind": scope.kind.replace("_", " "),
         "date_generated": generated_on.isoformat(),
@@ -1348,6 +1830,7 @@ def brief_to_csv(brief: TerritoryBrief) -> str:
             "registration_metadata_gaps",
             "shortlist_notice",
             "licence",
+            *(_RESOLVED_CSV_COLUMNS if brief.rating_resolution is not None else ()),
             *(("buyer_objective", "scope_rule_version") if brief.scope.has_buyer_rules else ()),
         ]
     )
@@ -1386,6 +1869,10 @@ def brief_to_csv(brief: TerritoryBrief) -> str:
                 notice,
                 OGL_ATTRIBUTION,
                 *(
+                    [_csv_cell((org.rating_resolution or {}).get(key)) for key in _RESOLVED_CSV_KEYS]
+                    if brief.rating_resolution is not None else ()
+                ),
+                *(
                     (brief.scope.buyer_objective or "", brief.scope.rule_version)
                     if brief.scope.has_buyer_rules
                     else ()
@@ -1393,3 +1880,18 @@ def brief_to_csv(brief: TerritoryBrief) -> str:
             ]
         )
     return buf.getvalue()
+
+
+_RESOLVED_CSV_KEYS = (
+    "status", "source", "publication_date", "api_value", "api_publication_date", "file_value",
+    "file_publication_date", "file_inherited_flag", "file_sha256", "file_edition_date",
+)
+_RESOLVED_CSV_COLUMNS = tuple(f"rating_{k}" for k in _RESOLVED_CSV_KEYS)
+
+
+def _csv_cell(value: Any) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, bool):
+        return "Y" if value else "N"
+    return str(value)

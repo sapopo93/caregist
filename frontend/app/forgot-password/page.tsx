@@ -48,7 +48,7 @@ export default function ForgotPasswordPage() {
       const res = await fetch("/api/v1/auth/reset-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, token: code, new_password: newPassword }),
+        body: JSON.stringify({ email, token: code.trim(), new_password: newPassword }),
       });
 
       const data = await res.json().catch(() => ({}));
@@ -69,11 +69,25 @@ export default function ForgotPasswordPage() {
   return (
     <div className="max-w-md mx-auto px-6 py-16">
       <h1 className="text-3xl font-bold text-center mb-2">Reset your password</h1>
-      <p className="text-dusk text-center mb-8">
-        {step === 1
-          ? "Enter your email. If it is registered and email delivery is available, reset instructions will be sent."
-          : "If your email is registered and email delivery is available, check your inbox for a 6-digit code."}
-      </p>
+      {step === 1 ? (
+        <p className="text-dusk text-center mb-8">
+          Enter the email you use to log in. We will email you a reset code.
+        </p>
+      ) : (
+        <div className="bg-cream border border-stone rounded-lg p-4 mb-6 text-sm text-bark">
+          <p className="font-medium mb-2">Check your email (including spam) for a message from CareGist.</p>
+          <ol className="list-decimal pl-5 space-y-1">
+            <li>Copy the whole reset code from the email. It is one long line with no spaces.</li>
+            <li>Paste it into the <strong>Reset code</strong> box below.</li>
+            <li>Choose a new password of at least 12 characters.</li>
+            <li>Press <strong>Reset Password</strong>, then log in with your new password.</li>
+          </ol>
+          <p className="mt-2 text-dusk">
+            The code expires after 15 minutes. If you asked for more than one code, use the newest email.
+            No email after a few minutes? <button type="button" onClick={() => { setStep(1); setCode(""); setError(""); }} className="underline">Send a new code</button>.
+          </p>
+        </div>
+      )}
 
       {error && (
         <div className="bg-cream border border-alert rounded-lg p-3 mb-4 text-sm text-alert">
@@ -106,29 +120,29 @@ export default function ForgotPasswordPage() {
       ) : (
         <form onSubmit={handleResetPassword} className="space-y-4">
           <div>
-            <label htmlFor="code" className="block text-sm font-medium text-bark mb-1">6-digit code</label>
+            <label htmlFor="code" className="block text-sm font-medium text-bark mb-1">Reset code</label>
             <input
               id="code"
               type="text"
               autoComplete="one-time-code"
-              inputMode="numeric"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
               required
-              maxLength={6}
-              pattern="\d{6}"
               value={code}
               onChange={(e) => setCode(e.target.value)}
-              placeholder="000000"
-              className="w-full px-4 py-3 rounded-lg border border-stone bg-cream focus:ring-2 focus:ring-clay focus:outline-none text-center text-2xl tracking-widest"
+              placeholder="Paste the code from the email"
+              className="w-full px-4 py-3 rounded-lg border border-stone bg-cream focus:ring-2 focus:ring-clay focus:outline-none font-mono text-sm"
             />
           </div>
           <div>
-            <label htmlFor="new-password" className="block text-sm font-medium text-bark mb-1">New password</label>
+            <label htmlFor="new-password" className="block text-sm font-medium text-bark mb-1">New password (at least 12 characters)</label>
             <input
               id="new-password"
               type="password"
               autoComplete="new-password"
               required
-              minLength={8}
+              minLength={12}
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               className="w-full px-4 py-3 rounded-lg border border-stone bg-cream focus:ring-2 focus:ring-clay focus:outline-none"

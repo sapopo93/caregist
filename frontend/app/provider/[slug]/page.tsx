@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { getDirectoryProvider } from "@/lib/directory-db";
 import { normalizeExternalHttpUrl, cqcEvidenceUrl } from "@/lib/external-url";
 import { getProviderHref, directoryReturnHref } from "@/lib/provider-path";
+import { ratingSourceNote } from "@/lib/rating-source";
 import { getSiteUrl } from "@/lib/site";
 
 const ratingDimensions = [
@@ -100,8 +101,13 @@ export default async function ProviderPage({ params, searchParams }: { params: P
             <p className="mt-3 max-w-3xl text-sm leading-6 text-dusk">{location}</p>
           </div>
 
-          <div className="rounded-full border border-stone bg-white px-4 py-2 text-sm font-semibold text-bark">
-            {provider.overall_rating ?? "Rating not published"}
+          <div className="flex flex-col items-end gap-1">
+            <div className="rounded-full border border-stone bg-white px-4 py-2 text-sm font-semibold text-bark">
+              {provider.overall_rating ?? "Rating not published"}
+            </div>
+            {ratingSourceNote(provider.rating_source, provider.rating_source_date) && (
+              <p className="max-w-xs text-right text-xs text-dusk">{ratingSourceNote(provider.rating_source, provider.rating_source_date)}</p>
+            )}
           </div>
         </div>
 

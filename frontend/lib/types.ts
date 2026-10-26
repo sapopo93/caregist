@@ -16,6 +16,15 @@ export interface Provider {
    * Optional so responses predating the field still type-check.
    */
   rating_absence_reason?: string | null;
+  /**
+   * Which source served the rating: 'cqc_file', 'cqc_website', 'cqc_website_unrated'
+   * (withheld: CQC's page shows none) or 'cqc_api'; null when no source has one.
+   */
+  rating_source?: string | null;
+  /** That source's date (YYYY-MM-DD). */
+  rating_source_date?: string | null;
+  /** 'website_vs_file' or 'file_vs_api' when the sources disagree, else null. */
+  rating_conflict?: string | null;
   service_types: string | null;
   data_completeness_tier: string | null;
   phone: string | null;

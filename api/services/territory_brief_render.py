@@ -209,7 +209,8 @@ def render_brief_pdf(brief: TerritoryBrief) -> bytes:
         if o.number_of_beds:
             meta.append(f"{o.number_of_beds} beds")
         if o.current_rating:
-            meta.append(f"rating {o.current_rating}")
+            status = (o.rating_resolution or {}).get("status")
+            meta.append(f"rating {o.current_rating}" + (f" ({status})" if status and status != "current" else ""))
         meta.append(f"score {o.score:.0f}")
         pdf.spacer(3)
         pdf.paragraph(f"{o.rank}. {o.organisation_name} - {o.location_name}")
@@ -242,7 +243,55 @@ def render_brief_pdf(brief: TerritoryBrief) -> bytes:
                 + f"hash: {row['recorded_source_hash'] or 'not supplied'}.", muted=True,
             )
             pdf.paragraph(f"CQC reference: {row['reference_url']}", muted=True)
+    if brief.rating_resolution is not None:
+        _rating_provenance_appendix(pdf, brief)
     return pdf.build()
+
+
+_STATUS_TEXT = {
+    "current": "current",
+    "inherited": "inherited from a predecessor registration",
+    "unresolved": "conflicting evidence - not shown",
+    "none": "no published rating",
+}
+
+
+def _rating_provenance_appendix(pdf: PdfBuilder, brief: TerritoryBrief) -> None:
+    res = brief.rating_resolution or {}
+    pdf.heading("Appendix C. Rating provenance")
+    counts = res.get("status_counts", {})
+    pdf.paragraph(
+        "Every rating in this brief is resolved across CQC's public API and CQC's published "
+        "ratings file, keeping both values and their publication dates. The most recently "
+        "published value is shown; a value inherited from a predecessor registration is labelled "
+        "and never counted as a current inspection; conflicting evidence is not shown. "
+        "Status counts across the territory: "
+        + (", ".join(f"{_STATUS_TEXT.get(k, k)}: {v}" for k, v in counts.items()) or "none") + ".",
+        muted=True,
+    )
+    for e in res.get("ratings_file_editions", []):
+        pdf.paragraph(
+            f"Ratings file edition {e['edition_date'] or 'not recorded'}, sha256 {e['sha256'] or 'not recorded'}.",
+            muted=True,
+        )
+    rows = []
+    for o in brief.shortlist:
+        r = o.rating_resolution or {}
+        rows.append([
+            o.rank,
+            o.location_name,
+            f"{r.get('value') or '-'}\n{_STATUS_TEXT.get(r.get('status'), r.get('status') or '')}",
+            f"{r.get('api_value') or '-'}\n{r.get('api_publication_date') or ''}",
+            f"{r.get('file_value') or '-'}\n{r.get('file_publication_date') or ''}",
+        ])
+    if rows:
+        pdf.table(["#", "Location", "Rating shown", "CQC API", "Ratings file"], rows,
+                  widths=[0.32, 2.2, 1.6, 1.0, 1.0])
+    if res.get("omitted_unresolved"):
+        pdf.paragraph(
+            "Ratings not shown because the evidence conflicts: " + ", ".join(res["omitted_unresolved"]) + ".",
+            muted=True,
+        )
 
 
 def _cqc_url(location_id: str) -> str:

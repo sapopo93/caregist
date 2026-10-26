@@ -1,5 +1,7 @@
 # CareGist Production Deployment Checklist
 
+> **15 October 2026:** Start with the [current operations manual](docs/manuals/OPERATIONS_MANUAL.md) and [release record](artifacts/releases/2026-10-15/RELEASE.md). Older completed checklist items below are dated evidence and do not establish current source or commercial readiness.
+
 **Last updated:** 2026-08-09
 **Purpose:** Deployment-owner checklist for taking the hardened codebase from staging to production.
 **Rule:** Public directory traffic is allowed. Source collectors may run only in delivery-disabled shadow mode after the recovery and migration gates pass. Do not enable paid Radar, outbound delivery, or other commercial capabilities until every applicable item is complete and evidenced.

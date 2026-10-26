@@ -424,6 +424,21 @@ class Settings(BaseSettings):
     # wording has explicit solicitor sign-off (its published Business Terms
     # currently describe a manual, cancellable, three-working-day service).
     territory_self_serve_checkout_enabled: bool = False
+    # Free, read-only Territory Brief preview (counts plus three dated example
+    # signals). It opens no checkout, delivery, export or lead gate, but it is a
+    # new public claim surface, so it stays off until its copy and numbers have
+    # had independent review (docs/territory-preview.md).
+    territory_preview_enabled: bool = False
+    # Report-readiness outputs (.warroom/REPORT_READINESS_BRIEF.md). Each is a
+    # new customer-facing claim surface, so each stays off until its evidence
+    # packet has independent review. None opens checkout, delivery or export.
+    # Territory Brief ratings resolved across CQC API and ratings file
+    # (api/services/rating_resolver.py) instead of the API snapshot alone.
+    resolved_rating_contract_enabled: bool = False
+    # P4 competitor scan generator (api/services/competitor_scan.py).
+    competitor_scan_enabled: bool = False
+    # P12 list: medium care homes with Well-led below Good (api/services/p12_list.py).
+    p12_list_enabled: bool = False
     review_publication_enabled: bool = False
     # Independent signal-intelligence kill switches. Defaults are deliberately
     # fail-closed; workflows opt collectors into shadow mode explicitly.
@@ -468,16 +483,16 @@ class Settings(BaseSettings):
     crm_transcription_compute_type: str = "int8"
     crm_transcription_cpu_threads: int = 4
     crm_transcription_timeout_seconds: int = 900
-    crm_ai_base_url: str = "https://api.deepseek.com/v1"
+    crm_ai_base_url: str = ""
     crm_ai_api_key: str = ""
-    crm_ai_model: str = "deepseek-v4-flash"
+    crm_ai_model: str = ""
     crm_ai_pseudonym_key: str = ""
     crm_ai_monthly_cap_usd: Decimal = Decimal("10.00")
-    # Current DeepSeek V4 Flash cache-miss prices. These are configurable so a
-    # price change can fail closed without a code release.
-    crm_ai_input_price_usd_per_million: Decimal = Decimal("0.14")
-    crm_ai_cache_hit_price_usd_per_million: Decimal = Decimal("0.0028")
-    crm_ai_output_price_usd_per_million: Decimal = Decimal("0.28")
+    # A local model costs nothing per token, so zero prices are valid; the usage
+    # ledger still records tokens. Only a loopback provider is allowed (see below).
+    crm_ai_input_price_usd_per_million: Decimal = Decimal("0")
+    crm_ai_cache_hit_price_usd_per_million: Decimal = Decimal("0")
+    crm_ai_output_price_usd_per_million: Decimal = Decimal("0")
     resend_webhook_secret: str = ""
     crm_allowed_test_numbers: str = ""
     twilio_account_sid: str = ""
@@ -554,17 +569,29 @@ class Settings(BaseSettings):
                 "RESEND_API_KEY, RESEND_WEBHOOK_SECRET, and CRM_EMAIL_SENDER_POSTAL_ADDRESS."
             )
         if self.crm_ai_enabled:
-            required_ai = {
-                "CRM_AI_API_KEY": self.crm_ai_api_key,
-                "CRM_AI_PSEUDONYM_KEY": self.crm_ai_pseudonym_key,
-            }
-            missing_ai = [name for name, value in required_ai.items() if not value]
-            if missing_ai:
-                raise RuntimeError("FATAL: CRM AI is enabled without " + ", ".join(missing_ai) + ".")
-            if not self.crm_recording_enabled:
-                raise RuntimeError("FATAL: CRM AI requires CRM_RECORDING_ENABLED.")
+            # DeepSeek was removed on 19 Oct 2026 (UK GDPR: no adequacy decision for
+            # transfers to China). The only approved provider is a model served on
+            # the worker's own machine (e.g. Ollama on loopback), so redacted
+            # transcripts never leave it and no international transfer occurs.
+            ai_url = urlparse(self.crm_ai_base_url)
+            if (
+                ai_url.scheme not in {"http", "https"}
+                or (ai_url.hostname or "").lower() not in {"127.0.0.1", "::1", "localhost"}
+                or ai_url.username
+                or ai_url.password
+                or ai_url.query
+                or ai_url.fragment
+            ):
+                raise RuntimeError(
+                    "FATAL: CRM AI is limited to a local model: CRM_AI_BASE_URL must be a "
+                    "loopback origin (127.0.0.1, ::1 or localhost)."
+                )
+            if not self.crm_ai_model:
+                raise RuntimeError("FATAL: CRM AI is enabled without CRM_AI_MODEL.")
             if len(self.crm_ai_pseudonym_key) < 32:
                 raise RuntimeError("FATAL: CRM_AI_PSEUDONYM_KEY must contain at least 32 characters.")
+            if not self.crm_recording_enabled:
+                raise RuntimeError("FATAL: CRM AI requires CRM_RECORDING_ENABLED.")
             if (
                 self.crm_transcription_model != "small.en"
                 or self.crm_transcription_device != "cpu"
@@ -573,29 +600,14 @@ class Settings(BaseSettings):
                 raise RuntimeError(
                     "FATAL: CRM transcription must use local small.en on CPU with int8."
                 )
-            if self.crm_ai_model != "deepseek-v4-flash":
-                raise RuntimeError("FATAL: CRM routine AI must use deepseek-v4-flash.")
-            ai_url = urlparse(self.crm_ai_base_url)
-            if (
-                ai_url.scheme != "https"
-                or ai_url.hostname != "api.deepseek.com"
-                or ai_url.username
-                or ai_url.password
-                or ai_url.query
-                or ai_url.fragment
-                or ai_url.path.rstrip("/") not in {"", "/v1"}
-            ):
-                raise RuntimeError(
-                    "FATAL: CRM_AI_BASE_URL must be the approved HTTPS DeepSeek API origin."
-                )
             if self.crm_ai_monthly_cap_usd <= 0:
                 raise RuntimeError("FATAL: CRM_AI_MONTHLY_CAP_USD must be greater than zero.")
             if (
-                self.crm_ai_input_price_usd_per_million <= 0
-                or self.crm_ai_cache_hit_price_usd_per_million <= 0
-                or self.crm_ai_output_price_usd_per_million <= 0
+                self.crm_ai_input_price_usd_per_million < 0
+                or self.crm_ai_cache_hit_price_usd_per_million < 0
+                or self.crm_ai_output_price_usd_per_million < 0
             ):
-                raise RuntimeError("FATAL: CRM AI token prices must be greater than zero.")
+                raise RuntimeError("FATAL: CRM AI token prices cannot be negative.")
         if self.crm_calling_enabled:
             if not self.crm_enabled or not self.outbound_communications_enabled:
                 raise RuntimeError(
@@ -988,7 +1000,8 @@ BASIC_CSV_FIELDS = [
 
 BASIC_FIELDS = [
     "id", "name", "slug", "type", "status", "town", "county", "postcode",
-    "region", "local_authority", "overall_rating", "rating_absence_reason", "service_types",
+    "region", "local_authority", "overall_rating", "rating_absence_reason",
+    "rating_source", "rating_source_date", "rating_conflict", "service_types",
     "specialisms", "number_of_beds", "data_completeness_score", "data_completeness_tier",
     "phone", "website", "last_inspection_date", "inspection_report_url",
     "inspection_summary", "profile_description", "profile_photos",

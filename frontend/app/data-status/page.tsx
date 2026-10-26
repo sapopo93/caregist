@@ -21,6 +21,7 @@ type SourceStatus = {
   coveragePercentage?: number | null;
   successCount?: number | null;
   failureCount?: number | null;
+  quarantinedLocationCount?: number | null;
   countsReconciled?: boolean;
   checksumSha256?: string | null;
   reason?: string | null;
@@ -85,6 +86,7 @@ export default async function DataStatusPage() {
           <div><dt className="text-xs uppercase tracking-wide text-dusk">Checked locations</dt><dd className="mt-1 font-mono font-bold text-charcoal">{status?.checkedLocations?.toLocaleString("en-GB") ?? "Not available"}</dd></div>
           <div><dt className="text-xs uppercase tracking-wide text-dusk">Successful checks</dt><dd className="mt-1 font-mono font-bold text-charcoal">{status?.successCount?.toLocaleString("en-GB") ?? "Not available"}</dd></div>
           <div><dt className="text-xs uppercase tracking-wide text-dusk">Failed checks</dt><dd className="mt-1 font-mono font-bold text-charcoal">{status?.failureCount?.toLocaleString("en-GB") ?? "Not available"}</dd></div>
+          <div><dt className="text-xs uppercase tracking-wide text-dusk">Locations awaiting source verification</dt><dd className="mt-1 font-mono font-bold text-charcoal">{status?.quarantinedLocationCount?.toLocaleString("en-GB") ?? "Not available"}</dd></div>
           <div><dt className="text-xs uppercase tracking-wide text-dusk">Counts reconcile</dt><dd className="mt-1 font-medium text-charcoal">{status?.countsReconciled ? "Yes" : "No or unconfirmed"}</dd></div>
           <div className="sm:col-span-2"><dt className="text-xs uppercase tracking-wide text-dusk">Source checksum (SHA-256)</dt><dd className="mt-1 break-all font-mono text-sm text-charcoal">{status?.checksumSha256 || "Not available"}</dd></div>
         </dl>
