@@ -2,10 +2,14 @@
 """Record overall ratings from CQC's published "Latest ratings" ODS file.
 
 Dry-run by default: prints how the file compares with care_providers and writes
-nothing. `--apply` writes only the file_* columns (migration 068); it never
-touches overall_rating, which keeps mirroring the CQC API.
+nothing. `--apply` writes only the file_* columns (migrations 068 and 070); it
+never touches overall_rating, which keeps mirroring the CQC API.
 
-    python3 -m tools.import_cqc_latest_ratings PATH.ods [--apply]
+`--edition-date` is the date CQC published this edition of the file, as shown on
+CQC's download page. It is required with `--apply` because the filename does not
+reliably carry it, and the staleness check measures it.
+
+    python3 -m tools.import_cqc_latest_ratings PATH.ods --edition-date YYYY-MM-DD [--apply]
 """
 from __future__ import annotations
 
@@ -16,7 +20,7 @@ import os
 import sys
 import zipfile
 from collections import Counter
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 import xml.etree.ElementTree as ET
 
@@ -75,10 +79,23 @@ def parse_date(text: str):
         return None
 
 
+def edition_problem(edition: date | None, newest_rating: date | None, today: date) -> str | None:
+    """Why an edition date cannot be right for this file, or None when it can."""
+    if edition is None:
+        return "--edition-date YYYY-MM-DD is required with --apply (the date CQC published this file)"
+    if edition > today:
+        return f"edition date {edition} is in the future"
+    if newest_rating is not None and edition < newest_rating:
+        return f"edition date {edition} predates a rating the file says was published {newest_rating}"
+    return None
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("ods", type=Path)
     ap.add_argument("--apply", action="store_true", help="write file_* columns")
+    ap.add_argument("--edition-date", type=date.fromisoformat,
+                    help="date CQC published this edition of the file (YYYY-MM-DD); required with --apply")
     ap.add_argument("--report", type=Path, help="write a per-location CSV of every API-vs-file disagreement")
     args = ap.parse_args(argv)
 
@@ -87,6 +104,13 @@ def main(argv=None) -> int:
     print(f"file {args.ods.name} sha256 {sha}")
     print(f"locations with a published overall rating: {len(ratings)}; ambiguous skipped: {len(ambiguous)}")
     print("by rating:", dict(Counter(v[0] for v in ratings.values())))
+    newest_rating = max((d for d in (parse_date(v[1]) for v in ratings.values()) if d), default=None)
+    print(f"newest rating publication date in the file: {newest_rating}; edition date: {args.edition_date}")
+    if args.apply:
+        problem = edition_problem(args.edition_date, newest_rating, date.today())
+        if problem:
+            print(f"refusing to apply: {problem}", file=sys.stderr)
+            return 2
 
     import psycopg2
     from dotenv import load_dotenv
@@ -123,13 +147,19 @@ def main(argv=None) -> int:
             if lid in db:
                 cur.execute(
                     """UPDATE care_providers SET file_overall_rating=%s, file_overall_rating_date=%s,
+                              file_rating_edition_date=%s,
+                              site_check_rating = CASE WHEN file_rating_source_sha256 IS NOT DISTINCT FROM %s
+                                                       THEN site_check_rating END,
+                              site_check_at = CASE WHEN file_rating_source_sha256 IS NOT DISTINCT FROM %s
+                                                   THEN site_check_at END,
                               file_rating_source=%s, file_rating_source_sha256=%s WHERE id=%s""",
-                    (rating, parse_date(pub), args.ods.name, sha, lid),
+                    (rating, parse_date(pub), args.edition_date, sha, sha, args.ods.name, sha, lid),
                 )
                 n += cur.rowcount
         # Rows stamped by an earlier file but absent from this one lose the stale claim.
         cur.execute(
             """UPDATE care_providers SET file_overall_rating=NULL, file_overall_rating_date=NULL,
+                      file_rating_edition_date=NULL, site_check_rating=NULL, site_check_at=NULL,
                       file_rating_source=NULL, file_rating_source_sha256=NULL
                 WHERE file_rating_source_sha256 IS NOT NULL AND file_rating_source_sha256 <> %s""",
             (sha,),

@@ -31,6 +31,7 @@ import type { NormalizedLeadRequest } from "./directory-leads.ts";
 import {
   buildDirectoryTextSearchClause,
   NO_PUBLISHED_RATING_CLAUSE,
+  RATING_SOURCE_DATE_SQL,
   RATING_SOURCE_SQL,
   RECONCILED_RATING_SQL,
   buildOpportunityClause,
@@ -51,6 +52,8 @@ export interface DirectoryProviderSummary {
   overall_rating: string | null;
   /** 'cqc_file' when the rating comes from CQC's published ratings file, not the API. */
   rating_source?: string | null;
+  /** CQC's publication date (YYYY-MM-DD) for a rating served from the ratings file. */
+  rating_source_date?: string | null;
   registration_date: string | null;
   service_types: string | null;
   specialisms: string | null;
@@ -293,6 +296,7 @@ function buildSearchSql(filters: DirectorySearchParams) {
       website,
       ${RECONCILED_RATING_SQL} AS overall_rating,
       ${RATING_SOURCE_SQL} AS rating_source,
+      ${RATING_SOURCE_DATE_SQL} AS rating_source_date,
       registration_date::text AS registration_date,
       service_types,
       specialisms,
@@ -576,7 +580,9 @@ export async function getDirectoryProvider(slugOrId: string): Promise<DirectoryP
           local_authority,
           phone,
           website,
-          overall_rating,
+          ${RECONCILED_RATING_SQL} AS overall_rating,
+          ${RATING_SOURCE_SQL} AS rating_source,
+          ${RATING_SOURCE_DATE_SQL} AS rating_source_date,
           registration_date::text AS registration_date,
           rating_safe,
           rating_effective,
@@ -721,7 +727,7 @@ export async function listProvidersForExport(scope: DirectoryExportScope): Promi
           specialisms,
           phone,
           website,
-          overall_rating,
+          ${RECONCILED_RATING_SQL} AS overall_rating,
           registration_date::text AS registration_date,
           inspection_report_url
         FROM care_providers

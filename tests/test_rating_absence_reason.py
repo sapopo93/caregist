@@ -51,7 +51,8 @@ def test_sql_returns_null_reason_only_for_a_rated_row():
     # The two fields are complementary: never both populated, never both empty.
     # (a rating filled from CQC's published ratings file also has no absence.)
     assert SERVED_RATING_ABSENCE == (
-        "CASE WHEN rating_state = 'rated' OR file_overall_rating IS NOT NULL "
+        "CASE WHEN rating_state = 'rated' OR (file_overall_rating IS NOT NULL AND "
+        "(site_check_rating IS NULL OR site_check_rating = file_overall_rating)) "
         "THEN NULL ELSE rating_state END"
     )
 

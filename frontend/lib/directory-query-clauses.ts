@@ -8,14 +8,25 @@ import type { DirectoryOpportunity } from "./directory-constants.ts";
  */
 export const RECONCILED_RATING_SQL = `(CASE
     WHEN lower(btrim(overall_rating)) IN ('outstanding', 'good', 'requires improvement', 'inadequate') THEN overall_rating
-    WHEN file_overall_rating IS NOT NULL THEN file_overall_rating
+    WHEN file_overall_rating IS NOT NULL AND (site_check_rating IS NULL OR site_check_rating = file_overall_rating) THEN file_overall_rating
     ELSE overall_rating
   END)`;
 
-/** 'cqc_file' when the displayed rating came from the ratings file, else null. */
+/**
+ * 'cqc_file' when the displayed rating came from the ratings file; 'cqc_file_disputed'
+ * when the file has a rating that CQC's own page no longer showed when checked
+ * (migration 069), so none is displayed; else null.
+ */
 export const RATING_SOURCE_SQL = `(CASE
     WHEN lower(btrim(overall_rating)) IN ('outstanding', 'good', 'requires improvement', 'inadequate') THEN NULL
-    WHEN file_overall_rating IS NOT NULL THEN 'cqc_file'
+    WHEN file_overall_rating IS NOT NULL AND (site_check_rating IS NULL OR site_check_rating = file_overall_rating) THEN 'cqc_file'
+    WHEN file_overall_rating IS NOT NULL THEN 'cqc_file_disputed'
+  END)`;
+
+/** The date CQC published a rating served from the ratings file, else null. */
+export const RATING_SOURCE_DATE_SQL = `(CASE
+    WHEN lower(btrim(overall_rating)) IN ('outstanding', 'good', 'requires improvement', 'inadequate') THEN NULL
+    WHEN file_overall_rating IS NOT NULL AND (site_check_rating IS NULL OR site_check_rating = file_overall_rating) THEN file_overall_rating_date::text
   END)`;
 
 export const NO_PUBLISHED_RATING_CLAUSE =

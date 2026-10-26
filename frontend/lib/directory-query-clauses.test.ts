@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 
 import {
@@ -52,4 +53,9 @@ describe("directory query clauses", () => {
       `lower(btrim(${RECONCILED_RATING_SQL})) = lower(btrim($4))`,
     );
   });
+});
+
+it("directory-db never selects the raw API rating column for display", () => {
+  const source = readFileSync(new URL("./directory-db.ts", import.meta.url), "utf8");
+  assert.doesNotMatch(source, /^\s+overall_rating,\s*$/m);
 });

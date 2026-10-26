@@ -75,7 +75,7 @@ REGIONS = (
 # sold a smaller list than the one CQC's own website shows.
 RECONCILED_RATING_SQL = """(CASE
     WHEN lower(btrim(overall_rating)) IN ('outstanding', 'good', 'requires improvement', 'inadequate') THEN overall_rating
-    WHEN file_overall_rating IS NOT NULL THEN file_overall_rating
+    WHEN file_overall_rating IS NOT NULL AND (site_check_rating IS NULL OR site_check_rating = file_overall_rating) THEN file_overall_rating
     ELSE overall_rating
   END)"""
 
@@ -147,6 +147,73 @@ async def fetch_scope_location_ids(database_url: str, region: str, provider_grou
             return [row["id"] for row in await conn.fetch(sql, *params)]
     finally:
         await conn.close()
+
+
+async def fetch_file_ratings(database_url: str, ids: list[str]) -> dict[str, tuple[str, date | None]]:
+    """Overall ratings from CQC's published ratings file (migration 068) for these locations."""
+    import asyncpg
+
+    conn = await asyncpg.connect(database_url)
+    try:
+        async with conn.transaction(readonly=True):
+            rows = await conn.fetch(
+                "SELECT id, file_overall_rating, file_overall_rating_date FROM care_providers "
+                "WHERE id = ANY($1::text[]) AND file_overall_rating IS NOT NULL "
+                "AND (site_check_rating IS NULL OR site_check_rating = file_overall_rating)",
+                ids,
+            )
+    finally:
+        await conn.close()
+    return {r["id"]: (r["file_overall_rating"], r["file_overall_rating_date"]) for r in rows}
+
+
+def resolved_contract_enabled(env: dict[str, str]) -> bool:
+    """RESOLVED_RATING_CONTRACT_ENABLED, read the way pydantic reads a bool flag."""
+    return str(env.get("RESOLVED_RATING_CONTRACT_ENABLED", "")).strip().lower() in {"1", "true", "yes", "on"}
+
+
+async def fetch_rating_evidence(database_url: str, ids: list[str]) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Ratings-file evidence and CQC page checks for the resolved rating contract.
+
+    Returns ``(rating_evidence, website_observations)`` of
+    :class:`api.services.rating_resolver.RatingEvidence`. Every page check
+    becomes a dated observation the resolver weighs against the API and file
+    values: one showing a rating can confirm or contradict them, and one showing
+    ``'none'`` (no rating on the page) is kept with ``value=None`` so the
+    resolver can mark the rating unresolved instead of the check disappearing.
+    The file value is always kept as evidence; withholding is the resolver's
+    decision, not the loader's.
+    """
+    import asyncpg
+
+    from api.services.rating_resolver import SOURCE_FILE, SOURCE_WEBSITE, RatingEvidence, canonical_rating
+
+    conn = await asyncpg.connect(database_url)
+    try:
+        async with conn.transaction(readonly=True):
+            rows = await conn.fetch(
+                "SELECT id, file_overall_rating, file_overall_rating_date, file_rating_source_sha256, "
+                "site_check_rating, site_check_at FROM care_providers "
+                "WHERE id = ANY($1::text[]) AND file_overall_rating IS NOT NULL",
+                ids,
+            )
+    finally:
+        await conn.close()
+    evidence: dict[str, Any] = {}
+    observations: dict[str, Any] = {}
+    for r in rows:
+        checked = (r["site_check_rating"] or "").strip()
+        evidence[r["id"]] = RatingEvidence(
+            source=SOURCE_FILE, value=canonical_rating(r["file_overall_rating"]),
+            publication_date=r["file_overall_rating_date"], source_sha256=r["file_rating_source_sha256"],
+            raw_value=r["file_overall_rating"],
+        )
+        if checked and r["site_check_at"] is not None:
+            observations[r["id"]] = RatingEvidence(
+                source=SOURCE_WEBSITE, value=canonical_rating(checked), observed_on=r["site_check_at"].date(),
+                raw_value=checked,
+            )
+    return evidence, observations
 
 
 def latest_export(base: Path) -> Path:
@@ -534,6 +601,17 @@ def build_brief(args: argparse.Namespace, *, env: dict[str, str], order_dir: Pat
         detail += f" (buyer's enquiry said {args.expected_count})"
     checks.add("scope_has_locations", bool(ids), detail)
 
+    if resolved_contract_enabled(env):
+        evidence, observations = (
+            asyncio.run(fetch_rating_evidence(env["DATABASE_URL"], ids)) if ids else ({}, {})
+        )
+        rating_inputs: dict[str, Any] = {"rating_evidence": evidence, "website_observations": observations}
+        checks.add(
+            "rating_contract", True,
+            f"resolved rating contract: {len(evidence)} ratings-file values, {len(observations)} CQC page checks",
+        )
+    else:
+        rating_inputs = {"file_ratings": asyncio.run(fetch_file_ratings(env["DATABASE_URL"], ids)) if ids else {}}
     brief = generate_territory_opportunity_brief(
         {"kind": "region", "name": args.region, "window_days": 90, "shortlist_target": args.shortlist},
         PurchaseContext(order_reference=args.order_ref, generated_at=now, terms_version="2.2.1"),
@@ -541,6 +619,7 @@ def build_brief(args: argparse.Namespace, *, env: dict[str, str], order_dir: Pat
         providers_source=export_dir / "_providers_detail.ndjson",
         location_ids=ids,
         provider_group=args.provider_group,
+        **rating_inputs,
     )
     checks.add(
         "shortlist_not_empty",

@@ -2,6 +2,7 @@ import RatingBadge from "./RatingBadge";
 import VerifiedBadge from "./VerifiedBadge";
 import CompareButton from "./CompareButton";
 import { getProviderHref, getProviderPathKey } from "@/lib/provider-path";
+import { DISPUTED_FILE_RATING_NOTE, fileRatingNote } from "@/lib/rating-source";
 
 interface Provider {
   id?: string | null;
@@ -13,6 +14,7 @@ interface Provider {
   postcode: string;
   overall_rating: string;
   rating_source?: string | null;
+  rating_source_date?: string | null;
   service_types: string;
   phone: string;
   number_of_beds: number | null;
@@ -56,7 +58,10 @@ export default function ProviderCard({ provider }: { provider: Provider }) {
         </div>
         <p className="text-dusk text-sm mb-1">{location} {provider.postcode}</p>
         {provider.rating_source === "cqc_file" && (
-          <p className="text-xs text-dusk mb-1">Rating per CQC&apos;s published ratings file (1 Oct 2026)</p>
+          <p className="text-xs text-dusk mb-1">{fileRatingNote(provider.rating_source_date)}</p>
+        )}
+        {provider.rating_source === "cqc_file_disputed" && (
+          <p className="text-xs text-dusk mb-1">{DISPUTED_FILE_RATING_NOTE}</p>
         )}
         {services && <p className="text-dusk text-sm mb-2">{services}</p>}
         <div className="flex gap-3 text-sm text-dusk items-center flex-wrap">
