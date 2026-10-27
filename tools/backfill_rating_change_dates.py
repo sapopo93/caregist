@@ -143,7 +143,15 @@ def decide(row: dict[str, Any]) -> Decision:
     return Decision(ledger_id, report_date, "dated")
 
 
-async def backfill(conn, *, apply: bool) -> dict[str, Any]:
+ROLLBACK_SQL = (
+    "UPDATE trusted_event_ledger SET effective_date = NULL, effective_date_source = NULL, "
+    "metadata = metadata - 'effective_date_backfill' "
+    "WHERE id = ANY($1::bigint[]) AND event_type = 'rating_changed' "
+    "AND metadata ? 'effective_date_backfill'"
+)
+
+
+async def backfill(conn, *, apply: bool, detail_path: Path | None = None) -> dict[str, Any]:
     undated_before = int(await conn.fetchval(UNDATED_COUNT_SQL) or 0)
     rows = [dict(r) for r in await conn.fetch(CANDIDATES_SQL)]
     decisions = [decide(row) for row in rows]
@@ -154,6 +162,23 @@ async def backfill(conn, *, apply: bool) -> dict[str, Any]:
         1 for row in rows if row.get("effective_date") is None
     )
     to_date = [d for d in decisions if d.effective_date is not None]
+
+    if detail_path is not None:
+        by_id = {int(r["id"]): r for r in rows}
+        detail = [
+            {
+                "ledger_id": d.ledger_id,
+                "location_id": by_id[d.ledger_id]["location_id"],
+                "old_value": _rating_text(by_id[d.ledger_id].get("old_value")),
+                "new_value": _rating_text(by_id[d.ledger_id].get("new_value")),
+                "observed_at": by_id[d.ledger_id].get("observed_at"),
+                "effective_date_before": by_id[d.ledger_id].get("effective_date"),
+                "effective_date_proposed": d.effective_date,
+                "reason": d.reason,
+            }
+            for d in decisions
+        ]
+        detail_path.write_text(json.dumps(detail, indent=2, default=str))
 
     written = 0
     if apply and to_date:
@@ -168,6 +193,11 @@ async def backfill(conn, *, apply: bool) -> dict[str, Any]:
         "datable_rows": len(to_date),
         "rows_written": written,
         "reasons": dict(sorted(reasons.items())),
+        "rollback": {
+            "note": "Every written row carries metadata.effective_date_backfill; the prior effective_date was NULL.",
+            "sql": ROLLBACK_SQL,
+            "ids_param": [d.ledger_id for d in to_date],
+        },
     }
 
 
@@ -184,10 +214,12 @@ def _load_env_file() -> None:
             os.environ[key.strip()] = value.strip()
 
 
-async def _run(database_url: str, *, apply: bool) -> dict[str, Any]:
-    conn = await asyncpg.connect(database_url)
+async def _run(database_url: str, *, apply: bool, detail_path: Path | None = None) -> dict[str, Any]:
+    # A dry run asks the server to refuse writes, so it is read-only even on a read-write role.
+    settings = None if apply else {"default_transaction_read_only": "on"}
+    conn = await asyncpg.connect(database_url, server_settings=settings)
     try:
-        return await backfill(conn, apply=apply)
+        return await backfill(conn, apply=apply, detail_path=detail_path)
     finally:
         await conn.close()
 
@@ -196,6 +228,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Date historical rating_changed rows from CQC report dates")
     parser.add_argument("--database-url", default=None)
     parser.add_argument("--apply", action="store_true", help="Write the dates. Without it, report only.")
+    parser.add_argument("--detail-file", default=None, help="Write per-row decisions (ids, before-values) as JSON.")
     args = parser.parse_args()
 
     database_url = args.database_url
@@ -206,7 +239,9 @@ def main() -> int:
         print("ERROR: DATABASE_URL not set. Pass --database-url or set it in the environment.", file=sys.stderr)
         return 2
 
-    report = asyncio.run(_run(database_url, apply=args.apply))
+    report = asyncio.run(
+        _run(database_url, apply=args.apply, detail_path=Path(args.detail_file) if args.detail_file else None)
+    )
     print(json.dumps(report, indent=2, default=str))
     return 0
 

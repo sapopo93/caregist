@@ -23,6 +23,19 @@ First challenge the [frozen evidence packet](../artifacts/rating-audit/2026-10-2
 
 Complete independent review of [PR #94](https://github.com/sapopo93/caregist/pull/94), then apply its migration through the repository's production migration workflow after the restore point is verified. Verify the three IDs are recorded as unresolved exceptions and remain ACTIVE, and confirm the next reconciliation skips their detail calls while preserving identity checks. Ask CQC for the cause of the three HTTP 404s and for the identity/status behind `1-29608453477`; clear each exception only after authoritative evidence. Keep checkout/delivery gates as reported by live health; continue human-led sales only with verified claims. See [run evidence](../artifacts/cqc-nightly/2026-10-18-reconciliation-run-39113995661.md).
 
+---
+
+## 2026-10-16 evening follow-up (Henry's five instructions)
+
+Next single bounded action: Henry runs the read-only backfill dry run locally with the command in [backfill-dry-run-command.md](../artifacts/collection-evidence/2026-10-16/backfill-dry-run-command.md) and returns the two output files. Then review the concrete diff in [STAGE3_REVIEW_PACK.md](../artifacts/product-research/2026-10-16/STAGE3_REVIEW_PACK.md) (migration 066, rollback plan, retention proposal). The 14 Oct cancellation actor is unknown ([analysis](../artifacts/collection-evidence/2026-10-16/reconciliation-cancellation-14-oct.md)). Gates unchanged and closed.
+
+---
+
+## 2026-10-16 next single bounded action
+From a machine that can reach cqc.org.uk and the CQC API: capture what the poller's request returns (status, content type, hash, markup, robots.txt for /search), then decide replace, supplement or retire the report-index route (fix list S2, S4). In parallel, founder to approve a read-only production dry run of `tools/backfill_rating_change_dates.py` and name the sample buyer. Details and owner decisions: [IMPLEMENTATION_STATUS.md](../artifacts/product-research/2026-10-16/IMPLEMENTATION_STATUS.md). Older entries below are historical.
+
+---
+
 ## 2026-10-09 buying audit — next bounded work
 
 Merge only the independently reviewed fail-closed repair after required CI, using Henry’s standing merge authorization. Keep gates closed. Next engineering proof: durable reconciliation for outer-commit failure/process interruption plus orphan-upload cleanup policy. Next product proof: carry agreed criteria through outputs and supply each promised qualification question. Digest-specific terms need approval before a four-week delivery/recovery rehearsal. Assign actual staff owners and exercise authorized synthetic enquiry/payment/inbox/private-file/acceptance receipts. [Evidence and acceptance checklist](../artifacts/buying-audit/2026-10-09/BUYING_PROCESS.md). Older entries below are historical.

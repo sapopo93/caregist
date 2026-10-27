@@ -12,6 +12,13 @@ Unfinished: implement/review the proposed Brief resolved-rating contract; resolv
 
 The authoritative batch completed, but the source health state is `partial`: one detail was unavailable and three candidate details were unconfirmed. The three prior HTTP-404 cases have a seeded quarantine migration and a finalizer change in [PR #94](https://github.com/sapopo93/caregist/pull/94) that skips unresolved exceptions while keeping them ACTIVE; neither is deployed or applied. Run-specific database `deactivation_confirmation` was not directly queried, and the deployed logger emitted only `unconfirmed=3`, so the exact current IDs are corroborated by the prior 01:06:48 UTC probe cache and same-source retry, not by the latest run log. Independent Grok retest and DeepSeek challenge are pending. Checkout remains not ready and delivery disabled. See [run evidence](../artifacts/cqc-nightly/2026-10-18-reconciliation-run-39113995661.md).
 
+---
+
+## 2026-10-16 known incomplete
+Backfill dry run not run. No real sample Brief or free-CQC comparison (a synthetic render exists, labelled synthetic). Delivery/economics rehearsal not done. Terms copy for quantity and "CRM-ready" wording drafted nowhere yet (fix list S9, held for approval). Autism/ADHD product, refund guarantee and Brief-only Digest access are deliberately not built.
+
+---
+
 ## 2026-10-09 buying audit — unfinished evidence
 
 Paid buying remains PARTIAL. Missing: approved Digest terms and four consecutive deliveries, agreed-criteria output fidelity and qualification questions, verified deployable source path, assigned staff handling, merchant sandbox transaction, delivered inbox receipt/bounce recovery, valid private Blob download, customer acceptance/refund settlement, interruption/commit recovery and orphan cleanup. The local repairs and 1,400 backend/Postgres passes (two skips), 183 frontend passes and six browser scenarios do not establish these. No real messages/payments/refunds or gate changes were made. [Full proof and limits](../artifacts/buying-audit/2026-10-09/BUYING_PROCESS.md). Older entries below are historical.

@@ -26,6 +26,21 @@ def _fmt_date(value: date) -> str:
     return value.strftime("%d %B %Y")
 
 
+def _buyer_rule_lines(es: dict) -> list[str]:
+    rules = es.get("buyer_scope")
+    if not rules:
+        return []
+    lines = [f"Agreed buyer rules (version {rules['rule_version']})"]
+    if rules.get("objective"):
+        lines[0] += f": {rules['objective']}"
+    if rules.get("exclusion_rule_count"):
+        lines.append(
+            f"{rules['exclusion_rule_count']} identifier-based exclusion(s) applied before ranking; "
+            f"{rules['excluded_with_signal']} location(s) with an in-window signal were removed."
+        )
+    return lines
+
+
 def render_brief_pdf(brief: TerritoryBrief) -> bytes:
     scope = brief.scope
     es = brief.executive_summary
@@ -48,6 +63,7 @@ def render_brief_pdf(brief: TerritoryBrief) -> bytes:
             f"Product: Territory Opportunity Brief (GBP {brief.purchase_context.price_gbp}).",
             "Contents: sections 1-7 are the executive brief; Appendix A carries the "
             "reason and evidence for every shortlisted organisation.",
+            *_buyer_rule_lines(es),
         ],
     )
 

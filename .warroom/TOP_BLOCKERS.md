@@ -27,6 +27,16 @@ Production read-only verification confirms migration 067 is already applied, wit
 3. Checkout is still not ready and delivery is disabled. Human-led sales must use claims backed by verified source evidence; unresolved identities/statuses must be omitted.
 4. Independent Grok retest and DeepSeek challenge are not evidenced for this run; producer success alone is not a green release gate.
 
+---
+
+## 2026-10-16 added blockers
+1. BLOCKED (collection): report-index route returns almost nothing and reported `success`; cause unproven; needs CQC access outside this environment. PR #90 makes the status visible but does not fix coverage.
+2. BLOCKED (collection): scheduled full reconciliation failed 11 and 14 Oct; 14 Oct shows a run-level cancellation of five shards about 1h45m in (cause unknown).
+3. BLOCKED (product): order, enquiry, coverage and Stripe-metadata plumbing for buyer rules awaits migration and approval; only the generator/PDF/CSV slice exists.
+4. BLOCKED (governance): Grok/Codex/DeepSeek reviews and the output-quality gate were not available; nothing here is independently approved.
+
+---
+
 ## 2026-10-09 buying audit — current blockers
 
 1. Product promises are not proven by the dormant generator: selected provider/service criteria and per-entry qualification questions need fulfilment evidence.

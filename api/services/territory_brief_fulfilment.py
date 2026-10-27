@@ -191,13 +191,29 @@ async def validate_existing_consent_evidence(
     return True
 
 
-def build_checkout_metadata(order_id: str, scope: dict[str, Any], cfg: FulfilmentSettings) -> dict[str, str]:
+def _row_value(row: Any, key: str) -> Any:
+    try:
+        return row[key]
+    except (KeyError, IndexError):
+        return None
+
+
+def build_checkout_metadata(
+    order_id: str,
+    scope: dict[str, Any],
+    cfg: FulfilmentSettings,
+    *,
+    scope_ref: str | None = None,
+) -> dict[str, str]:
     """Immutable metadata to attach to the Stripe Checkout Session.
 
     Fulfilment re-validates every value against the authoritative session and the
     local order, so this is a correlation aid, not a trust anchor.
+
+    ``scope_ref`` is an opaque identifier of the private buyer scope. The rules
+    themselves (objective, exclusions) are never put in Stripe metadata.
     """
-    return {
+    metadata = {
         "type": METADATA_TYPE,
         "order_id": str(order_id),
         "price_id": cfg.stripe_price_territory_brief,
@@ -209,6 +225,9 @@ def build_checkout_metadata(order_id: str, scope: dict[str, Any], cfg: Fulfilmen
         "terms_sha256": cfg.terms_sha256,
         "consent_text_sha256": cfg.consent_sha256,
     }
+    if scope_ref:
+        metadata["scope_ref"] = str(scope_ref)
+    return metadata
 
 
 async def fulfil_territory_brief_order(
@@ -284,6 +303,8 @@ async def fulfil_territory_brief_order(
         SELECT id, customer_email, stripe_price_id, status,
                scope_kind, scope_name, scope_window_days, scope_shortlist_target,
                generation_attempts, stripe_payment_intent_id, amount_total, currency,
+               (SELECT v.id::text FROM territory_brief_scope_versions v
+                 WHERE v.order_id = territory_brief_orders.id AND v.version = 1) AS bound_scope_ref,
                source_edition_id
         FROM territory_brief_orders
         WHERE id = $1 AND stripe_checkout_session_id = $2
@@ -302,6 +323,9 @@ async def fulfil_territory_brief_order(
         or metadata.get("price_id") != order["stripe_price_id"]
     ):
         raise TerritoryBriefFulfilmentError("territory-brief checkout scope does not match the reserved order")
+    bound_scope_ref = _row_value(order, "bound_scope_ref")
+    if (metadata.get("scope_ref") or None) != (bound_scope_ref or None):
+        raise TerritoryBriefFulfilmentError("territory-brief checkout buyer-scope reference does not match the order")
     validate_existing_payment_evidence(order, failure_context)
     await validate_existing_consent_evidence(
         conn,
@@ -365,10 +389,18 @@ async def fulfil_territory_brief_order(
             failure_context,
             required=True,
         )
+        generation_row = dict(order)
+        if bound_scope_ref:
+            from api.services.territory_brief_scope_store import load_scope_rules
+
+            try:
+                generation_row["scope_rules"] = await load_scope_rules(conn, bound_scope_ref, str(order_id))
+            except LookupError as exc:
+                raise TerritoryBriefFulfilmentError(str(exc)) from exc
         pack = (
-            deps.generate_with_connection(dict(order), conn)
+            deps.generate_with_connection(generation_row, conn)
             if deps.generate_with_connection
-            else deps.generate(dict(order))
+            else deps.generate(generation_row)
         )
         if inspect.isawaitable(pack):
             pack = await pack
@@ -391,6 +423,11 @@ async def fulfil_territory_brief_order(
             pack.sha256,
             order_id,
         )
+
+        if bound_scope_ref:
+            from api.services.territory_brief_scope_store import schedule_exclusion_purge
+
+            await schedule_exclusion_purge(conn, bound_scope_ref)
 
         raw_pdf, hash_pdf = new_download_token()
         raw_csv, hash_csv = new_download_token()

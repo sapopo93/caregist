@@ -56,6 +56,16 @@ class _Conn:
         self.executions.append(args)
         return "UPDATE 1"
 
+    def transaction(self):
+        class _Tx:
+            async def __aenter__(self_inner):
+                return self
+
+            async def __aexit__(self_inner, *exc):
+                return False
+
+        return _Tx()
+
 
 @pytest.fixture
 def brief_settings(monkeypatch):

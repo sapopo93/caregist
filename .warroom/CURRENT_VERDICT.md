@@ -12,6 +12,19 @@ Evidence: [audit report](../artifacts/rating-audit/2026-10-22/REPORT.md), per-ID
 
 Run [39113995661](https://github.com/sapopo93/caregist/actions/runs/39113995661) completed authoritative batch `2aa80136-5a9f-4888-ae05-7a92a2642336` from the Oct 14 CQC directory (57,110 locations; SHA-256 `b2d673bd0243f3f55d89a36a342b4a6cf0c71df900a4705e9f628937b8b9401a`). Finalizer: 57,109 written, one detail unavailable, 66 deregistrations confirmed, 55 candidates kept as registered, and three unconfirmed candidates acknowledged while remaining ACTIVE. Live `/api/v1/health` reports reconciled counts and active count 57,168 but `freshnessStatus=partial`, one failure, and `checkoutReady=false`. Three prior HTTP-404 IDs have public identity evidence for two and no located profile for one; they are not proven deregistered. Persistent quarantine code/migration is committed in [PR #94](https://github.com/sapopo93/caregist/pull/94), but not deployed or applied to production. Full evidence and limitations: [reconciliation run record](../artifacts/cqc-nightly/2026-10-18-reconciliation-run-39113995661.md). No commercial gate is approved by this source reconciliation.
 
+---
+
+## 2026-10-16 evening: still PARTIAL
+
+Added since the morning entry: migration 066 and private buyer-scope storage built and tested on real PostgreSQL 16 (not deployed); Stripe metadata carries only an opaque reference; backfill dry run is read-only and awaiting a local run (no production access here); 14 Oct reconciliation cancellation has no code cause and an unknown actor; synthetic West Midlands demonstration produced and labelled. No production write, deployment, payment or outbound message. Commercial gates closed.
+
+---
+
+## 2026-10-16 product-position checkpoint: PARTIAL
+Evidence: [IMPLEMENTATION_STATUS.md](../artifacts/product-research/2026-10-16/IMPLEMENTATION_STATUS.md). Report-index health classification and buyer-rule generator/PDF/CSV changes are in draft PR #90 (CI green on the first commit; later commit pending). The report index returned 0 candidates in 6 of 7 sampled runs and 3 in one (21 Aug) while every run concluded `success`; the full history is NOT VERIFIED. Scheduled reconciliations of 11 and 14 Oct failed; freshness watchdog 16 Oct 08:57 UTC: `partial`, last complete pass 134.9h old. Backfill dry run, sample Brief and delivery rehearsal were not done (no production, CQC or Stripe access). Required reviewers unavailable: gate BLOCKED, not self-approved. No commercial gate changed.
+
+---
+
 ## 2026-10-09 buying audit — current dated checkpoint
 
 PARTIAL. Observed production at 09:07 UTC serves `3d3f3e42e95d3f1829387df19731eb819d93e993`. Discovery and enquiry initiation work; receipt, staff handling and complete paid delivery are unverified. Reviewed local repair branch `codex/buying-process-audit-20261009` fixes refund schema/audit atomicity, failed-generation payment evidence, immutable identity/consent, refund replay ordering and enquiry-only coverage semantics. Final local validation: 1,400 backend/Postgres passed, two explicitly skipped; 82 recovery checks; 183 frontend checks; six live-page browser scenarios. Independent technical re-review clears the HIGH findings for the bounded fail-closed repair; MEDIUM commit/interruption/orphan cleanup remains. Product/criteria, Digest terms, deployable source and real operational receipts remain unverified. This checkpoint is not deployment or commercial approval. [Full evidence](../artifacts/buying-audit/2026-10-09/BUYING_PROCESS.md).
