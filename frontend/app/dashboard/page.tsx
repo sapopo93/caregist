@@ -513,22 +513,22 @@ export default function DashboardPage() {
       )}
 
       <div className="grid md:grid-cols-2 gap-6 mb-6">
-        <div className="bg-cream border border-stone rounded-lg p-6">
+        <div className="min-w-0 bg-cream border border-stone rounded-lg p-6">
           <h2 className="text-xl font-bold mb-3">Data explorer</h2>
           <p className="text-dusk text-sm mb-4">
             Search the wider provider directory and follow the official source link before acting on a record.
           </p>
-          <div className="flex gap-4">
+          <div className="flex flex-wrap gap-x-4 gap-y-2">
             <Link href="/search" className="text-sm text-clay underline">Open explorer</Link>
             <Link href="/pricing" className="text-sm text-clay underline">View plan limits</Link>
           </div>
         </div>
-        <div className="bg-cream border border-stone rounded-lg p-6">
+        <div className="min-w-0 bg-cream border border-stone rounded-lg p-6">
           <h2 className="text-xl font-bold mb-3">Provider records</h2>
           <p className="text-dusk text-sm mb-4">
             Browse factual CQC records and report a data issue to CareGist support. CareGist does not sell paid ranking.
           </p>
-          <div className="flex gap-4">
+          <div className="flex flex-wrap gap-x-4 gap-y-2">
             <Link href="/search" className="text-sm text-clay underline">Browse providers</Link>
             <a href="mailto:support@caregist.co.uk?subject=Provider+record+correction" className="text-sm text-clay underline">Report a data issue</a>
           </div>
@@ -543,13 +543,13 @@ export default function DashboardPage() {
           Use your key when you are ready to query the same event-led workflow programmatically.
         </p>
         <div className="flex items-center gap-3">
-          <code className="flex-1 bg-parchment border border-stone rounded px-4 py-2 text-sm font-mono text-charcoal truncate">
+          <code className="flex-1 min-w-0 bg-parchment border border-stone rounded px-4 py-2 text-sm font-mono text-charcoal truncate">
             {revealedApiKey || "Password required to reveal your API key"}
           </code>
           <button
             onClick={copyKey}
             disabled={!revealedApiKey}
-            className="px-4 py-2 bg-clay text-white rounded-lg text-sm hover:bg-bark transition-colors"
+            className="shrink-0 px-4 py-2 bg-clay text-white rounded-lg text-sm hover:bg-bark transition-colors"
           >
             {copied ? "Copied!" : "Copy"}
           </button>
@@ -577,7 +577,7 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid md:grid-cols-2 gap-6">
-        <div className="bg-cream border border-stone rounded-lg p-6">
+        <div className="min-w-0 bg-cream border border-stone rounded-lg p-6">
           <h2 className="text-xl font-bold mb-3">Team and attribution</h2>
           <p className="text-dusk text-sm mb-3">
             {tier === "pro" || tier === "business"
@@ -593,25 +593,25 @@ export default function DashboardPage() {
               <p className="text-xs text-dusk mb-3">
                 Issue separate API keys for each teammate or workflow owner. Each active key consumes one seat.
               </p>
-              <div className="grid sm:grid-cols-[1fr_1fr_auto] gap-3 mb-3">
+              <div className="grid sm:grid-cols-2 gap-3 mb-3">
                 <input
                   type="text"
                   value={newKeyName}
                   onChange={(e) => setNewKeyName(e.target.value)}
                   placeholder="Name"
-                  className="px-3 py-2 rounded border border-stone bg-white text-sm"
+                  className="min-w-0 px-3 py-2 rounded border border-stone bg-white text-sm"
                 />
                 <input
                   type="email"
                   value={newKeyEmail}
                   onChange={(e) => setNewKeyEmail(e.target.value)}
                   placeholder="Email"
-                  className="px-3 py-2 rounded border border-stone bg-white text-sm"
+                  className="min-w-0 px-3 py-2 rounded border border-stone bg-white text-sm"
                 />
                 <button
                   onClick={() => void handleCreateTeamKey()}
                   disabled={keyLoading}
-                  className="px-4 py-2 bg-clay text-white rounded-lg text-sm hover:bg-bark transition-colors disabled:opacity-50"
+                  className="sm:col-span-2 px-4 py-2 bg-clay text-white rounded-lg text-sm hover:bg-bark transition-colors disabled:opacity-50"
                 >
                   {keyLoading ? "Creating..." : "Create key"}
                 </button>
@@ -625,12 +625,12 @@ export default function DashboardPage() {
               <div className="space-y-2">
                 {teamKeys.map((key) => (
                   <div key={key.id} className="flex items-center justify-between gap-3 text-xs text-dusk border-b border-stone pb-2 last:border-b-0 last:pb-0">
-                    <div>
+                    <div className="min-w-0 break-words">
                       <p className="font-medium text-bark">{key.name || "Unnamed key"} · {key.email || "No email"}</p>
                       <p>{key.masked_key} · Last used: {key.last_used_at ? new Date(key.last_used_at).toLocaleString("en-GB") : "Not used yet"}</p>
                     </div>
                     {typeof key.id === "number" && (
-                      <button onClick={() => void handleRevokeTeamKey(key.id)} className="text-clay underline">
+                      <button onClick={() => void handleRevokeTeamKey(key.id)} className="shrink-0 text-clay underline">
                         Revoke
                       </button>
                     )}
@@ -648,13 +648,13 @@ export default function DashboardPage() {
           </Link>
         </div>
 
-        <div className="bg-cream border border-stone rounded-lg p-6">
+        <div className="min-w-0 bg-cream border border-stone rounded-lg p-6">
           <h2 className="text-xl font-bold mb-3">Webhooks and integrations</h2>
           <p className="text-dusk text-sm mb-3">
             Existing integration entitlements remain supported. New integrations use a scoped Intelligence Feed pilot with canonical events and signed delivery.
           </p>
-          <p className="text-xs text-dusk mb-4">
-            Current Feed delivery uses <code className="bg-parchment px-1 rounded">radar.event.created</code>; the event type remains in the signed payload. Historical event aliases remain compatibility-only.
+          <p className="text-xs text-dusk mb-4 break-words">
+            Current Feed delivery uses <code className="bg-parchment px-1 rounded break-all">radar.event.created</code>; the event type remains in the signed payload. Historical event aliases remain compatibility-only.
           </p>
           <Link
             href="/intelligence-feed"
@@ -693,7 +693,7 @@ export default function DashboardPage() {
           <p>curl -H &quot;X-API-Key: {quickStartApiKey}&quot; \</p>
           <p>&nbsp; &quot;https://www.caregist.co.uk/api/v1/feed/new-registrations?region=London&quot;</p>
         </div>
-        <div className="mt-4 flex gap-4 text-sm">
+        <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-sm">
           <Link href="/intelligence-feed" className="text-clay underline">Intelligence Feed pilot</Link>
           <Link href="/pricing" className="text-clay underline">Pricing and entitlements</Link>
         </div>
