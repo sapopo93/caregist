@@ -106,6 +106,8 @@ export interface DirectoryOpportunityStats {
   notYetInspected: number;
   noPublishedRating: number;
   staleInspection: number;
+  /** Active locations CQC's published ratings file lists as Inadequate (null if unavailable). */
+  inadequateInCqcFile?: number | null;
 }
 
 interface SearchRow extends DirectoryProviderSummary {
@@ -476,7 +478,16 @@ export async function getDirectoryOpportunityStats(): Promise<DirectoryOpportuni
     );
 
     const row = result.rows[0];
+    // Separate, failure-tolerant query: file_* columns come from migration 068.
+    const fileCount = await getSql()
+      .query<{ n: number }>(
+        `SELECT COUNT(*)::int AS n FROM care_providers
+          WHERE status = 'ACTIVE' AND file_overall_rating = 'Inadequate'`,
+      )
+      .then((r) => r.rows[0]?.n ?? null)
+      .catch(() => null);
     return {
+      inadequateInCqcFile: fileCount,
       totalProviders: row?.total_providers ?? 0,
       newLast90Days: row?.new_last_90_days ?? 0,
       inadequate: row?.inadequate ?? 0,
