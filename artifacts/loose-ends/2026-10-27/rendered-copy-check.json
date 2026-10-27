@@ -1,0 +1,50 @@
+[
+  {
+    "path": "/",
+    "status": 200,
+    "unsupported_claims_absent": true,
+    "research_positioning_present": true,
+    "description": "Discover CQC-registered services for free, buy the Weekly Digest for one England region, or commission a Territory Opportunity Brief on which organisations to investigate next.",
+    "limitation": null
+  },
+  {
+    "path": "/pricing",
+    "status": 200,
+    "unsupported_claims_absent": true,
+    "research_positioning_present": true,
+    "description": "Two products for teams selling into the UK care sector: the Weekly Digest for one England region, and the one-off Territory Opportunity Brief.",
+    "limitation": null
+  },
+  {
+    "path": "/search",
+    "status": 200,
+    "unsupported_claims_absent": true,
+    "research_positioning_present": true,
+    "description": "Search factual CQC location records by name, region, service type, rating, and registration recency.",
+    "limitation": null
+  },
+  {
+    "path": "/signup",
+    "status": 200,
+    "unsupported_claims_absent": true,
+    "research_positioning_present": false,
+    "description": "Search CQC-registered services for free and turn verified new registrations and rating changes into evidence-linked team workflows.",
+    "limitation": "Default signup does not render plan copy; source contract covers the plan text."
+  },
+  {
+    "path": "/territory-opportunity-brief",
+    "status": 200,
+    "unsupported_claims_absent": true,
+    "research_positioning_present": true,
+    "description": "A buyer-specific shortlist of up to 50 care organisations to investigate, a CSV dataset and a concise executive brief for \u00a3745.",
+    "limitation": null
+  },
+  {
+    "path": "/terms",
+    "status": 200,
+    "unsupported_claims_absent": true,
+    "research_positioning_present": true,
+    "description": "Terms governing the CareGist Free Directory, Territory Opportunity Brief and Weekly Digest pilot.",
+    "limitation": null
+  }
+]
