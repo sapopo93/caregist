@@ -56,7 +56,8 @@ async def load_source(raw_scope, *, edition_id=None, connection=None):
                 scope = validate_scope(raw_scope, known_territories(territories))
                 column = "local_authority" if scope.kind == "local_authority" else "region"
                 rows = await conn.fetch(
-                    f"""SELECT payload, provider_name FROM territory_brief_source_locations
+                    f"""SELECT payload, provider_name, rule_rating_applies, rule_rating, rule_rating_date
+                        FROM territory_brief_source_locations
                         WHERE edition_id = $1 AND lower({column}) = lower($2)
                         ORDER BY location_id LIMIT $3""",
                     edition["id"], scope.name, MAX_SCOPE_LOCATIONS + 1,
@@ -67,13 +68,16 @@ async def load_source(raw_scope, *, edition_id=None, connection=None):
         raise
     except Exception as exc:
         raise SourceUnavailable("Postgres CQC evidence is unavailable") from exc
-    locations, names = [], {}
+    locations, names, ruled = [], {}, {}
     for row in rows:
         payload = row["payload"]
         payload = json.loads(payload) if isinstance(payload, str) else dict(payload)
         locations.append(payload)
         names[str(payload.get("providerId") or "").strip()] = row["provider_name"]
-    return scope, dict(edition), locations, names
+        if row["rule_rating_applies"]:
+            ruled[str(payload.get("locationId") or "").strip()] = (row["rule_rating"], row["rule_rating_date"])
+    # The rating rule's result frozen with the edition (migration 066).
+    return scope, {**dict(edition), "rule_ratings": ruled}, locations, names
 
 
 def build_brief(scope, edition, locations, names, context):
@@ -83,6 +87,7 @@ def build_brief(scope, edition, locations, names, context):
         locations_label=f"{label}-locations-{edition['locations_sha256']}",
         providers_label=f"{label}-providers-{edition['providers_sha256']}",
         source_as_of=edition["source_as_of"],
+        file_ratings=edition.get("rule_ratings") or None,
     )
 
 

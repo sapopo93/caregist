@@ -18,11 +18,21 @@ from psycopg2.extras import Json, execute_values
 
 from api.services.territory_brief import _latest_source_date
 from tools.generate_radar_territory_sample import _load_ndjson, load_provider_names
+from tools.prepare_order import RECONCILED_RATING_SQL, RULE_RATING_DATE_SQL, RULE_RATING_DECIDES_SQL
 
 
 def file_hash(path):
     with path.open('rb') as stream:
         return hashlib.file_digest(stream, 'sha256').hexdigest()
+
+
+def rule_ratings(cur) -> dict:
+    """Every location whose rating the ratings file or a CQC page check decides."""
+    cur.execute(
+        f"SELECT id::text, {RECONCILED_RATING_SQL}, {RULE_RATING_DATE_SQL} "
+        f"FROM care_providers WHERE {RULE_RATING_DECIDES_SQL}"
+    )
+    return {lid: (rating, rated_on) for lid, rating, rated_on in cur.fetchall()}
 
 
 def import_edition(conn, locations_path: Path, providers_path: Path, retrieved_at: datetime):
@@ -47,14 +57,17 @@ def import_edition(conn, locations_path: Path, providers_path: Path, retrieved_a
                 (source_retrieved_at, source_as_of, locations_sha256, providers_sha256, location_count)
                 VALUES (%s,%s,%s,%s,%s) RETURNING id''', (retrieved_at, as_of, *hashes, count))
             edition_id = cur.fetchone()[0]
+            ruled = rule_ratings(cur)
             batch = []
             for row in _load_ndjson(locations_path):
                 location_id = str(row.get('locationId') or '').strip()
                 provider_id = str(row.get('providerId') or '').strip()
                 if not location_id or not provider_id or provider_id not in names:
                     raise ValueError('Location lacks a verified provider identity/name')
+                rule = ruled.get(location_id)
                 batch.append((edition_id, location_id, str(row.get('localAuthority') or '').strip(),
-                              str(row.get('region') or '').strip(), names[provider_id], Json(row)))
+                              str(row.get('region') or '').strip(), names[provider_id], Json(row),
+                              rule is not None, rule[0] if rule else None, rule[1] if rule else None))
                 if len(batch) >= 500:
                     _insert(cur, batch)
                     batch.clear()
@@ -67,7 +80,8 @@ def import_edition(conn, locations_path: Path, providers_path: Path, retrieved_a
 
 def _insert(cur, rows):
     execute_values(cur, '''INSERT INTO territory_brief_source_locations
-        (edition_id, location_id, local_authority, region, provider_name, payload) VALUES %s''', rows)
+        (edition_id, location_id, local_authority, region, provider_name, payload,
+         rule_rating_applies, rule_rating, rule_rating_date) VALUES %s''', rows)
 
 
 def main():

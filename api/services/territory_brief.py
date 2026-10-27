@@ -1211,6 +1211,42 @@ def generate_territory_opportunity_brief(
 
     provider_names = load_provider_names(providers_path)
     location_rows = list(_load_ndjson(locations_path))
+
+    return generate_brief_from_rows(
+        scope, purchase_context, location_rows=location_rows,
+        provider_names=provider_names, locations_label=locations_path.name,
+        providers_label=providers_path.name, allowed_ids=allowed_ids,
+        provider_group=provider_group, file_ratings=file_ratings,
+        rating_evidence=rating_evidence, website_observations=website_observations,
+    )
+
+
+def generate_brief_from_rows(
+    scope: dict[str, Any] | TerritoryScope,
+    purchase_context: PurchaseContext,
+    *,
+    location_rows: list[dict[str, Any]],
+    provider_names: dict[str, str],
+    locations_label: str,
+    providers_label: str,
+    source_as_of: date | None = None,
+    allowed_ids: set[str] | None = None,
+    provider_group: str | None = None,
+    file_ratings: dict[str, tuple[str | None, date | None]] | None = None,
+    rating_evidence: Mapping[str, RatingEvidence] | None = None,
+    website_observations: Mapping[str, RatingEvidence] | None = None,
+) -> TerritoryBrief:
+    """Shared deterministic engine for file and durable database editions.
+
+    Takes the same rating inputs as :func:`generate_territory_opportunity_brief`
+    (the CareGist rating rule's ``file_ratings``, or the flag-gated resolved
+    contract), so both source paths serve identical ratings.
+    """
+    if provider_group is not None and provider_group not in PROVIDER_GROUP_LABELS:
+        raise ScopeError(f"unknown provider group {provider_group!r}")
+    if file_ratings is not None and (rating_evidence is not None or website_observations is not None):
+        raise ValueError("pass file_ratings (legacy fill) or rating_evidence (resolved contract), not both")
+    location_rows = list(location_rows)
     file_filled = 0
     if file_ratings:
         for i, row in enumerate(location_rows):
@@ -1230,27 +1266,6 @@ def generate_territory_opportunity_brief(
                 }
             file_filled += 1
 
-    return generate_brief_from_rows(
-        scope, purchase_context, location_rows=location_rows,
-        provider_names=provider_names, locations_label=locations_path.name,
-        providers_label=providers_path.name, allowed_ids=allowed_ids,
-        provider_group=provider_group,
-    )
-
-
-def generate_brief_from_rows(
-    scope: dict[str, Any] | TerritoryScope,
-    purchase_context: PurchaseContext,
-    *,
-    location_rows: list[dict[str, Any]],
-    provider_names: dict[str, str],
-    locations_label: str,
-    providers_label: str,
-    source_as_of: date | None = None,
-    allowed_ids: set[str] | None = None,
-    provider_group: str | None = None,
-) -> TerritoryBrief:
-    """Shared deterministic engine for file and durable database editions."""
     catalogue = known_territories(location_rows)
     validated = validate_scope(scope, catalogue)
 

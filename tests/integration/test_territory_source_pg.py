@@ -191,3 +191,46 @@ async def test_paid_fulfilment_uses_pinned_postgres_source(source_db, tmp_path, 
     assert uploads['pdf'].startswith(b'%PDF')
     assert b'rating_changed' in uploads['csv']
     assert await conn.fetchval('SELECT count(*) FROM territory_brief_download_tokens WHERE order_id=$1', order_id) == 2
+
+
+async def test_edition_freezes_the_rating_rule_and_the_brief_serves_it(source_db, tmp_path):
+    # The ratings file wins over the payload's API rating, a CQC page showing no
+    # rating withholds it, and both are frozen with the edition: a later change to
+    # care_providers does not alter a pinned order's Brief.
+    conn, url = source_db
+    files = snapshot(tmp_path)
+    for i in range(12):
+        await conn.execute(
+            "INSERT INTO care_providers (id, provider_id, name, slug, status) VALUES ($1, $2, $3, $4, 'ACTIVE')",
+            f'L{i}', f'P{i}', f'Location {i}', f'location-{i}',
+        )
+    edition_date = (files[2] - timedelta(days=5)).date()
+    await conn.execute(
+        "UPDATE care_providers SET file_overall_rating = 'Inadequate', file_overall_rating_date = $1, "
+        "file_rating_edition_date = $1 WHERE id = 'L0'", edition_date,
+    )
+    await conn.execute(
+        "UPDATE care_providers SET file_overall_rating = 'Good', file_overall_rating_date = $1, "
+        "file_rating_edition_date = $1, site_check_rating = 'none', site_check_at = now() WHERE id = 'L1'",
+        edition_date,
+    )
+    edition = load(url, files)
+    _, metadata, locations, names = await source.load_source(SCOPE, edition_id=edition)
+    assert metadata['rule_ratings']['L0'] == ('Inadequate', edition_date)
+    assert metadata['rule_ratings']['L1'][0] is None
+    assert 'L2' not in metadata['rule_ratings']  # no file rating: the API rating stands
+
+    from api.services.territory_brief import PurchaseContext
+    context = PurchaseContext(order_reference='t', generated_at=files[2])
+    everyone = {**SCOPE, 'shortlist_target': 12}
+    brief = source.build_brief(source.validate_scope(everyone, source.known_territories(locations)),
+                               metadata, locations, names, context)
+    by_id = {o.location_id: o for o in brief.shortlist}
+    assert by_id['L0'].current_rating == 'Inadequate'
+    assert 'L1' not in by_id or by_id['L1'].current_rating is None
+    assert all(o.current_rating == 'Good' for lid, o in by_id.items() if lid not in ('L0', 'L1'))
+
+    # Frozen: changing the live row afterwards does not change the pinned edition.
+    await conn.execute("UPDATE care_providers SET file_overall_rating = 'Outstanding' WHERE id = 'L0'")
+    _, again, _, _ = await source.load_source(SCOPE, edition_id=edition)
+    assert again['rule_ratings']['L0'] == ('Inadequate', edition_date)

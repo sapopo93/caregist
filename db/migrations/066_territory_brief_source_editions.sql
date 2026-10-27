@@ -18,6 +18,14 @@ CREATE TABLE territory_brief_source_locations (
   region TEXT NOT NULL,
   provider_name TEXT NOT NULL,
   payload JSONB NOT NULL CHECK (jsonb_typeof(payload) = 'object'),
+  -- The CareGist rating rule's result at import time (ratings file first, a
+  -- newer CQC page check wins, API only for the file's gaps), frozen with the
+  -- edition so a payment retry rebuilds the same Brief. applies = false means
+  -- the file and page checks say nothing, so the payload's API rating stands;
+  -- applies = true with a NULL rating means CQC's page shows none (withheld).
+  rule_rating_applies BOOLEAN NOT NULL DEFAULT FALSE,
+  rule_rating TEXT,
+  rule_rating_date DATE,
   PRIMARY KEY (edition_id, location_id)
 );
 CREATE INDEX territory_brief_source_la ON territory_brief_source_locations(edition_id, lower(local_authority));
