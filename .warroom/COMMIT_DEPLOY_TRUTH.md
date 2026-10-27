@@ -1,3 +1,17 @@
+## 2026-10-27 — production migrations 066 and 071 applied (schema only, no code release)
+
+Applied to production Neon (London) by Codex under Henry's authorisation, after staging. Exact SQL taken from PR #90 head `8b759acd5aa9df2084444f3cb6aae598ca620e0a`: `066_territory_brief_source_editions.sql` (sha256 `7b5ff3427c85477ebbc7b99055f27ee300feb87d6923bf733e6fd75b6de59a22`) and `071_territory_brief_buyer_scope.sql` (sha256 `63adfdc3017347c60fb8f7922a778340cbfbf24691c627bea2dd9353f5496dfc`). Each file ran in its own transaction with a ledger entry. Evidence: `artifacts/recovery/2026-10-27/` (`README.md`, `before.json`, `after.json`, `staging.json`, `recovery-validation.json`, `health-after.json`).
+
+Recovery: one retained Neon branch `recovery/pre-066-071-20261027` (`br-quiet-shape-absfw674`, parent `br-nameless-glitter-abix2cgn`, created 06:43 UTC, expiry Never). This is a snapshot check, not a restore drill.
+
+Counts before and after: 57,165 ACTIVE and 2,252 INACTIVE, unchanged. Health after: `status=degraded`, `freshness_ok=false`, 15 quarantined locations, `checkoutReady=false`, `deliveryEnabled=false`. The degraded state predates this change (see 25 Oct below).
+
+Not established by this entry: the six protection triggers listed in the README were not re-queried here, and the Neon branch was not independently re-read. The "Go" message in the CQC website changes review thread was reported by Codex with a screenshot; it was not re-checked.
+
+No application code was released. The Postgres-backed Territory Brief source-edition code that reads these tables remains local on `feature/territory-preview` and is not deployed. Releasing it needs its own gate. Stripe Projects still points at an older US database (read-only check only); this is unresolved.
+
+---
+
 ## 2026-10-25 22:15 GMT — release identity and checkout reconciliation
 
 Authoritative release: `18536de02235297ba14bd29593760e49d91196b6` (PR #126) on GitHub main. Production backend `/api/v1/version`, frontend `/api/health/directory` and the latest GitHub Production deployment (7310298710, 25 Oct 07:52 UTC) all match. Supersedes `c5b92a6` below.
