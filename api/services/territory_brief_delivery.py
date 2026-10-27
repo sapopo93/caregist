@@ -13,13 +13,9 @@ and `RESEND_API_KEY` are all set, and `terms_evidence()` raises 503 until the
 placeholder consent wording is replaced with the solicitor-approved string whose
 SHA-256 matches `TERRITORY_BRIEF_CONSENT_SHA256`.
 
-§5 (pre-enable engineering task): `_snapshot_rows()` reads the mirrored CQC
-NDJSON snapshot, exactly as `tools/generate_radar_territory_sample.py` does.
-That file is ~734 MB and is not in the serverless bundle, so generation MUST be
-repointed at canonical Postgres (or a per-edition territory index) before the
-feature flag is enabled. This module is the single seam for that change:
-`_snapshot_rows()`, `scope_catalogue()` and `generate_pack()` are the only
-places that touch the row source.
+Generation reads immutable CQC evidence editions in Postgres. Checkout validates
+and pins an edition before payment; retries read that same edition. Original
+rating history is retained without requiring NDJSON files on the runtime host.
 """
 
 from __future__ import annotations
@@ -28,8 +24,6 @@ import hashlib
 import logging
 import secrets
 from datetime import datetime, timezone
-from functools import lru_cache
-from pathlib import Path
 from typing import Any
 
 import stripe
@@ -48,10 +42,6 @@ from api.services.territory_brief_fulfilment import (
 )
 
 logger = logging.getLogger("caregist.billing.territory_brief")
-
-_REPO_ROOT = Path(__file__).resolve().parents[2]
-_LOCATIONS_SNAPSHOT = _REPO_ROOT / "_locations_detail.ndjson"
-_PROVIDERS_SNAPSHOT = _REPO_ROOT / "_providers_detail.ndjson"
 
 _HEX = frozenset("0123456789abcdef")
 
@@ -98,59 +88,24 @@ def fulfilment_settings() -> FulfilmentSettings:
     )
 
 
-# --------------------------------------------------------------------------- #
-# Row source (§5 seam)
-# --------------------------------------------------------------------------- #
-
-
-def _snapshot_paths() -> tuple[Path, Path]:
-    if not _LOCATIONS_SNAPSHOT.exists() or not _PROVIDERS_SNAPSHOT.exists():
-        raise FileNotFoundError(
-            "CQC snapshot not available to the Territory Opportunity Brief generator. "
-            "Before enabling TERRITORY_SELF_SERVE_CHECKOUT_ENABLED the generation source "
-            "must be repointed at canonical Postgres (see "
-            "docs/territory-brief-instant-delivery-2026-09-09.md §5)."
-        )
-    return _LOCATIONS_SNAPSHOT, _PROVIDERS_SNAPSHOT
-
-
-@lru_cache(maxsize=1)
-def scope_catalogue() -> dict[str, dict[str, str]]:
-    """Normalised -> canonical name for every LA and region in the source data.
-
-    Cached for the process lifetime: the set of English local authorities and
-    regions is effectively static between snapshot refreshes. §5 replaces this
-    with a Postgres-backed lookup.
-    """
-    from tools.generate_radar_territory_sample import _load_ndjson
-
-    from api.services.territory_brief import known_territories
-
-    locations_path, _ = _snapshot_paths()
-    return known_territories(_load_ndjson(locations_path))
-
-
-# --------------------------------------------------------------------------- #
-# Injected collaborators
-# --------------------------------------------------------------------------- #
-
-
-def generate_pack(order_row: dict[str, Any]) -> GeneratedPack:
+async def generate_pack(order_row: dict[str, Any], connection=None) -> GeneratedPack:
     """Generate the brief for a paid order and return the uploadable pack.
 
     ``order_row`` is the ``territory_brief_orders`` row selected FOR UPDATE in
-    the webhook transaction. Scope is re-validated against live source data here
+    the webhook transaction. Scope is re-validated against its pinned source edition here
     (never trusting the stored value blindly); an unknown scope raises and the
     order is recorded failed + retried, never fulfilled.
     """
     from api.services.territory_brief import (
         PurchaseContext,
         brief_to_csv,
-        generate_territory_opportunity_brief,
     )
     from api.services.territory_brief_render import render_brief_pdf
 
-    locations_path, providers_path = _snapshot_paths()
+    from api.services.territory_brief_source import SourceUnavailable, load_source, build_brief
+
+    if not order_row.get("source_edition_id"):
+        raise SourceUnavailable("Order has no pinned CQC evidence edition; manual recovery required")
     scope = {
         "kind": order_row["scope_kind"],
         "name": order_row["scope_name"],
@@ -172,12 +127,10 @@ def generate_pack(order_row: dict[str, Any]) -> GeneratedPack:
         generated_at=datetime.now(timezone.utc),
         terms_version=(settings.territory_brief_terms_version or "").strip() or None,
     )
-    brief = generate_territory_opportunity_brief(
-        scope,
-        context,
-        locations_source=locations_path,
-        providers_source=providers_path,
+    validated, edition, locations, names = await load_source(
+        scope, edition_id=order_row["source_edition_id"], connection=connection,
     )
+    brief = build_brief(validated, edition, locations, names, context)
     return GeneratedPack(
         pdf_bytes=render_brief_pdf(brief),
         csv_text=brief_to_csv(brief),
@@ -339,6 +292,7 @@ def fulfilment_deps() -> FulfilmentDeps:
 
     return FulfilmentDeps(
         generate=generate_pack,
+        generate_with_connection=generate_pack,
         upload=upload_pack,
         retrieve_session=_retrieve_session,
         record_failure=_record_failure,

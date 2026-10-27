@@ -17,7 +17,7 @@ Read `.warroom/README.md` and `.warroom/PIPELINE.md` before acting.
 3. **CONTINUE** resumes from `.warroom/`. Do not repeat closed work.
 4. **Codex** (gpt-5.6-sol) applies the named fix only.
 5. **Grok** re-tests the customer journey step by step.
-6. **DeepSeek V4 Pro** challenges a frozen evidence packet. Model agreement is not green.
+6. **An independent reviewer model from an approved provider** challenges a frozen evidence packet. Model agreement is not green. DeepSeek is prohibited (removed 19 Oct 2026, UK GDPR).
 7. **Hermes** orchestrates the next single bounded step.
 
 Checkout, collectors, outbound delivery, leads, claims, and exports stay fail-closed until their named gates pass. A producing model cannot approve its own work.

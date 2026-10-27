@@ -85,7 +85,11 @@ def brief_settings(monkeypatch):
     monkeypatch.setattr(billing.settings, "territory_brief_terms_sha256", TERMS_SHA)
     monkeypatch.setattr(billing.settings, "territory_brief_consent_sha256", CONSENT_SHA)
     monkeypatch.setattr(billing.settings, "app_url", "https://caregist.co.uk")
-    monkeypatch.setattr(territory_brief_delivery, "scope_catalogue", lambda: CATALOGUE)
+    from api.services import territory_brief_source
+    from api.services.territory_brief import validate_scope
+    async def prepare(raw):
+        return validate_scope(raw, CATALOGUE), 7
+    monkeypatch.setattr(territory_brief_source, "prepare_checkout", prepare)
 
 
 @pytest.mark.asyncio
@@ -241,15 +245,27 @@ FIXTURE = Path(__file__).parent / "fixtures" / "territory_brief" / "locations_de
 
 
 @pytest.mark.skipif(not FIXTURE.exists(), reason="territory_brief fixture not present")
-def test_generate_pack_maps_brief_to_generated_pack(monkeypatch):
+@pytest.mark.asyncio
+async def test_generate_pack_maps_brief_to_generated_pack(monkeypatch):
     fixture_dir = FIXTURE.parent
-    monkeypatch.setattr(territory_brief_delivery, "_LOCATIONS_SNAPSHOT", fixture_dir / "locations_detail.jsonl")
-    monkeypatch.setattr(territory_brief_delivery, "_PROVIDERS_SNAPSHOT", fixture_dir / "providers_detail.jsonl")
+    from api.services import territory_brief_source
+    from api.services.territory_brief import validate_scope, known_territories, _latest_source_date
+    from tools.generate_radar_territory_sample import _load_ndjson, load_provider_names
+    locations = list(_load_ndjson(FIXTURE))
+    names = load_provider_names(fixture_dir / "providers_detail.jsonl")
+    async def load(raw, **kwargs):
+        assert kwargs["edition_id"] == 7
+        return validate_scope(raw, known_territories(locations)), {
+            "id": 7, "source_as_of": _latest_source_date(locations),
+            "locations_sha256": "a" * 64, "providers_sha256": "b" * 64,
+        }, locations, names
+    monkeypatch.setattr(territory_brief_source, "load_source", load)
     monkeypatch.setattr(territory_brief_delivery.settings, "territory_brief_terms_version", "itest")
 
-    pack = territory_brief_delivery.generate_pack(
+    pack = await territory_brief_delivery.generate_pack(
         {
             "id": "itest-pack-0001",
+            "source_edition_id": 7,
             "scope_kind": "local_authority",
             "scope_name": "Southampton",
             "scope_window_days": 365,
@@ -287,7 +303,9 @@ async def test_wrong_stripe_price_blocks_before_order_or_checkout(monkeypatch, b
 
 @pytest.mark.asyncio
 async def test_missing_source_returns_503_before_stripe_or_database(monkeypatch, brief_settings):
-    monkeypatch.setattr(territory_brief_delivery, "scope_catalogue", Mock(side_effect=FileNotFoundError("missing source")))
+    from api.services import territory_brief_source
+    from unittest.mock import AsyncMock
+    monkeypatch.setattr(territory_brief_source, "prepare_checkout", AsyncMock(side_effect=OSError("missing source")))
     create = Mock()
     connection = Mock()
     monkeypatch.setattr(billing.stripe.checkout.Session, "create", create)

@@ -750,10 +750,11 @@ async def create_territory_brief_checkout(req: TerritoryBriefCheckoutRequest) ->
 
     cfg = territory_brief_delivery.fulfilment_settings()  # 503 until terms + consent approved
 
-    from api.services.territory_brief import ScopeError, validate_scope
+    from api.services.territory_brief import ScopeError
+    from api.services.territory_brief_source import prepare_checkout
 
     try:
-        scope = validate_scope(
+        scope, source_edition_id = await prepare_checkout(
             {
                 "kind": req.scope_kind,
                 "name": req.scope_name,
@@ -763,7 +764,6 @@ async def create_territory_brief_checkout(req: TerritoryBriefCheckoutRequest) ->
                 "excluded_provider_ids": req.excluded_provider_ids,
                 "excluded_location_ids": req.excluded_location_ids,
             },
-            territory_brief_delivery.scope_catalogue(),
         )
     except ScopeError as exc:
         raise HTTPException(status_code=422, detail=str(exc))
@@ -780,8 +780,8 @@ async def create_territory_brief_checkout(req: TerritoryBriefCheckoutRequest) ->
                 """
                 INSERT INTO territory_brief_orders
                     (customer_email, stripe_price_id, scope_kind, scope_name,
-                     scope_window_days, scope_shortlist_target)
-                VALUES ($1, $2, $3, $4, $5, $6)
+                     scope_window_days, scope_shortlist_target, source_edition_id)
+                VALUES ($1, $2, $3, $4, $5, $6, $7)
                 RETURNING id
                 """,
                 email,
@@ -790,6 +790,7 @@ async def create_territory_brief_checkout(req: TerritoryBriefCheckoutRequest) ->
                 scope.name,
                 scope.window_days,
                 scope.shortlist_target,
+                source_edition_id,
             )
             if scope.has_buyer_rules:
                 from api.services.territory_brief_scope_store import insert_scope_version

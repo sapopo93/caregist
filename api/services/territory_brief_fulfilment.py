@@ -26,6 +26,7 @@ CQC snapshot, Stripe, or a network.
 from __future__ import annotations
 
 import hashlib
+import inspect
 import html
 import logging
 import secrets
@@ -112,7 +113,7 @@ class FulfilmentDeps:
     """Injected side-effecting collaborators."""
 
     # (order_row) -> GeneratedPack
-    generate: Callable[[dict[str, Any]], GeneratedPack]
+    generate: Callable[[dict[str, Any]], GeneratedPack | Awaitable[GeneratedPack]]
     # (order_id, kind 'pdf'|'csv', data, content_type) -> BlobRef
     upload: Callable[[str, str, bytes, str], BlobRef]
     # stripe.checkout.Session.retrieve equivalent: (session_id) -> dict
@@ -124,6 +125,7 @@ class FulfilmentDeps:
     record_failure: Callable[[str, str, dict[str, Any] | None], Awaitable[None]]
     # audit hook mirroring api.utils.audit.write_audit_log(**kwargs)
     write_audit_log: Callable[..., Awaitable[None]]
+    generate_with_connection: Callable[..., Awaitable[GeneratedPack]] | None = None
     now: Callable[[], datetime] = lambda: datetime.now(timezone.utc)
 
 
@@ -302,7 +304,8 @@ async def fulfil_territory_brief_order(
                scope_kind, scope_name, scope_window_days, scope_shortlist_target,
                generation_attempts, stripe_payment_intent_id, amount_total, currency,
                (SELECT v.id::text FROM territory_brief_scope_versions v
-                 WHERE v.order_id = territory_brief_orders.id AND v.version = 1) AS bound_scope_ref
+                 WHERE v.order_id = territory_brief_orders.id AND v.version = 1) AS bound_scope_ref,
+               source_edition_id
         FROM territory_brief_orders
         WHERE id = $1 AND stripe_checkout_session_id = $2
         FOR UPDATE
@@ -394,7 +397,13 @@ async def fulfil_territory_brief_order(
                 generation_row["scope_rules"] = await load_scope_rules(conn, bound_scope_ref, str(order_id))
             except LookupError as exc:
                 raise TerritoryBriefFulfilmentError(str(exc)) from exc
-        pack = deps.generate(generation_row)
+        pack = (
+            deps.generate_with_connection(generation_row, conn)
+            if deps.generate_with_connection
+            else deps.generate(generation_row)
+        )
+        if inspect.isawaitable(pack):
+            pack = await pack
         pdf_ref = deps.upload(order_id, "pdf", pack.pdf_bytes, "application/pdf")
         csv_ref = deps.upload(order_id, "csv", pack.csv_text.encode("utf-8"), "text/csv; charset=utf-8")
 

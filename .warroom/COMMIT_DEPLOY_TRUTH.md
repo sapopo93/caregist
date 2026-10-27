@@ -31,6 +31,20 @@ Open: #129 (Territory Preview recovery, migration 066, draft by its author's ter
 
 Production backend `/api/v1/version` and frontend `/api/health/directory` both serve `bd23b392d4483beac579cd26b7dbd523872de075`, which equals GitHub `origin/main` (PR #124). This supersedes the c5b92a6 entry below as the current release identity. Observation only: nothing was deployed. Report-readiness work is on the unmerged branch `feat/report-readiness-20261024` and is not deployed.
 
+## 2026-10-25 22:15 GMT — release identity and checkout reconciliation
+
+Authoritative release: `18536de02235297ba14bd29593760e49d91196b6` (PR #126) on GitHub main. Production backend `/api/v1/version`, frontend `/api/health/directory` and the latest GitHub Production deployment (7310298710, 25 Oct 07:52 UTC) all match. Supersedes `c5b92a6` below.
+
+Main runs at this SHA: [Production Smoke 40174454256](https://github.com/sapopo93/caregist/actions/runs/40174454256) PASS, [Schema Drift 40174395498](https://github.com/sapopo93/caregist/actions/runs/40174395498) PASS, CQC signal poll PASS. Two ops runs failed on 25 Oct and were not investigated: [CQC reconciliation 40188054162](https://github.com/sapopo93/caregist/actions/runs/40188054162) and [Freshness Watchdog 40179175868](https://github.com/sapopo93/caregist/actions/runs/40179175868). Live `/api/v1/health`: status=degraded, freshness_ok=false, source.freshnessStatus=partial, checkoutReady=false, deliveryEnabled=false.
+
+Primary checkout `/Users/user/CareGist`: branch `feature/territory-preview`, fast-forwarded from stale `7ad6471` to `origin/feature/territory-preview` at `8732a84`. That branch is 15 commits ahead of and 6 behind main. Its 15 commits include merge commits; the unmerged content is the quarantine-evidence carry-through and the territory-preview SQL/wording follow-ups after PR #96. No PR is open for it. It is not deployed.
+
+Uncommitted local work was reapplied on `8732a84`. Five conflicted files took upstream because upstream had already superseded them on 20 Oct: CRM AI local-model gate (#115), Terms 2.2.1, `.env.example`. The four warroom state files kept both dated entries. What remains local and not deployed: the Postgres-backed Territory Brief source editions (`territory_brief_source.py`, migration 066, billing/fulfilment/delivery/brief changes, plus a fix threading `allowed_ids`/`provider_group` through the extracted generator), the homepage Inadequate-in-CQC-file note, AGENTS.md and REVENUE_COMMAND_PLAN DeepSeek removal wording, nightly CQC artifacts, and untracked research/marketing/legal drafts. Local pytest 1,547 PASS / 143 SKIP; frontend `tsc --noEmit` PASS.
+
+Preservation: `/private/tmp/caregist-reconcile-20261025` (HEAD.txt, status.txt, tracked.patch, untracked.tar.gz, temporary), branch `backup/territory-preview-local-20261025` at `7ad6471`, and stash "reconcile 2026-10-25: local work on 7ad6471…". No push, merge, deploy, production data change or gate change occurred. This is identity reconciliation, not product acceptance.
+
+---
+
 ## 2026-10-20 06:50 BST — human-led launch release
 
 Authoritative release: `c5b92a6793f9f3ad0e1e5e41101caf93e93d4bb0` on GitHub main; production backend `/api/v1/version` and frontend `/api/health/directory` both serve it. Supersedes `b2e3fe6` below.

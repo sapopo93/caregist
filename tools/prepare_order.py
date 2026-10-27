@@ -79,6 +79,16 @@ RECONCILED_RATING_SQL = """(CASE
     ELSE overall_rating
   END)"""
 
+# The date that goes with RECONCILED_RATING_SQL's file or page-check rating, and
+# the rows where the file or a page check decides the rating at all (the API
+# fills the rest). Shared with tools/import_territory_brief_source.py.
+RULE_RATING_DATE_SQL = (
+    "CASE WHEN site_check_rating IS NOT NULL AND site_check_rating IS DISTINCT FROM file_overall_rating "
+    "AND (file_rating_edition_date IS NULL OR site_check_at::date >= file_rating_edition_date) "
+    "THEN site_check_at::date ELSE file_overall_rating_date END"
+)
+RULE_RATING_DECIDES_SQL = "(file_overall_rating IS NOT NULL OR site_check_rating IS NOT NULL)"
+
 OPPORTUNITY_SQL = {
     "new_90": "registration_date >= CURRENT_DATE - INTERVAL '90 days'",
     "inadequate": f"{RECONCILED_RATING_SQL} = 'Inadequate'",
@@ -163,12 +173,8 @@ async def fetch_file_ratings(database_url: str, ids: list[str]) -> dict[str, tup
     try:
         async with conn.transaction(readonly=True):
             rows = await conn.fetch(
-                f"SELECT id, {RECONCILED_RATING_SQL} AS rating, "
-                "CASE WHEN site_check_rating IS NOT NULL AND site_check_rating IS DISTINCT FROM file_overall_rating "
-                "AND (file_rating_edition_date IS NULL OR site_check_at::date >= file_rating_edition_date) "
-                "THEN site_check_at::date ELSE file_overall_rating_date END AS rated_on "
-                "FROM care_providers WHERE id = ANY($1::text[]) "
-                "AND (file_overall_rating IS NOT NULL OR site_check_rating IS NOT NULL)",
+                f"SELECT id, {RECONCILED_RATING_SQL} AS rating, {RULE_RATING_DATE_SQL} AS rated_on "
+                f"FROM care_providers WHERE id = ANY($1::text[]) AND {RULE_RATING_DECIDES_SQL}",
                 ids,
             )
     finally:
