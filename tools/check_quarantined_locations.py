@@ -100,7 +100,13 @@ def check_site(location_id: str) -> tuple[str, dict]:
     if status == 200:
         m = TITLE_RE.search(body)
         detail["title"] = re.sub(r"\s+", " ", m.group(1)).strip() if m else None
-        detail["mentionsDeregistered"] = "deregistered" in body.lower()
+        # A bare word match is weak evidence (the page can carry help text), so
+        # keep the surrounding words for a person to read.
+        hit = re.search(r"deregistered", body, re.I)
+        detail["mentionsDeregistered"] = hit is not None
+        if hit:
+            window = re.sub(r"<[^>]+>", " ", body[max(0, hit.start() - 120): hit.end() + 120])
+            detail["deregisteredContext"] = re.sub(r"\s+", " ", window).strip()
     return classify_http(status), detail
 
 
