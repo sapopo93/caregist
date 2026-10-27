@@ -31,8 +31,10 @@ import type { NormalizedLeadRequest } from "./directory-leads.ts";
 import {
   buildDirectoryTextSearchClause,
   NO_PUBLISHED_RATING_CLAUSE,
+  RATING_SOURCE_DATE_SQL,
   RATING_SOURCE_SQL,
   RECONCILED_RATING_SQL,
+  buildNotQuarantinedClause,
   buildOpportunityClause,
   buildRatingClause,
 } from "./directory-query-clauses.ts";
@@ -51,6 +53,8 @@ export interface DirectoryProviderSummary {
   overall_rating: string | null;
   /** 'cqc_file' when the rating comes from CQC's published ratings file, not the API. */
   rating_source?: string | null;
+  /** CQC's publication date (YYYY-MM-DD) for a rating served from the ratings file. */
+  rating_source_date?: string | null;
   registration_date: string | null;
   service_types: string | null;
   specialisms: string | null;
@@ -295,6 +299,7 @@ function buildSearchSql(filters: DirectorySearchParams) {
       website,
       ${RECONCILED_RATING_SQL} AS overall_rating,
       ${RATING_SOURCE_SQL} AS rating_source,
+      ${RATING_SOURCE_DATE_SQL} AS rating_source_date,
       registration_date::text AS registration_date,
       service_types,
       specialisms,
@@ -506,8 +511,10 @@ export interface TerritoryScopeCoverageRow {
 /**
  * Count the active providers in a territory scope and report the freshest
  * observation date in that set. Powers the self-serve coverage gate on the
- * Territory Opportunity Brief. Throws when the directory database is
- * unavailable — the caller decides how to fail.
+ * Territory Opportunity Brief. Unresolved quarantined locations are excluded,
+ * matching the territory preview. Throws when the directory database is
+ * unavailable or the quarantine table is missing — the caller decides how to
+ * fail (the coverage route returns 503).
  */
 export async function getTerritoryScopeCoverage(scope: {
   region: string;
@@ -523,6 +530,7 @@ export async function getTerritoryScopeCoverage(scope: {
     rating: "",
     opportunity: scope.opportunity ?? "",
   });
+  clauses.push(buildNotQuarantinedClause());
 
   const result = await getSql().query<{
     provider_count: number;
@@ -587,7 +595,9 @@ export async function getDirectoryProvider(slugOrId: string): Promise<DirectoryP
           local_authority,
           phone,
           website,
-          overall_rating,
+          ${RECONCILED_RATING_SQL} AS overall_rating,
+          ${RATING_SOURCE_SQL} AS rating_source,
+          ${RATING_SOURCE_DATE_SQL} AS rating_source_date,
           registration_date::text AS registration_date,
           rating_safe,
           rating_effective,
@@ -732,7 +742,7 @@ export async function listProvidersForExport(scope: DirectoryExportScope): Promi
           specialisms,
           phone,
           website,
-          overall_rating,
+          ${RECONCILED_RATING_SQL} AS overall_rating,
           registration_date::text AS registration_date,
           inspection_report_url
         FROM care_providers

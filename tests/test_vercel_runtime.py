@@ -153,3 +153,12 @@ def test_no_cron_fires_during_the_uk_working_day():
                     f"{name} fires at {local:%H:%M} local in month {month}: work runs "
                     "18:00-06:00 UK, so a daytime slot pays for a day of Neon wake-ups"
                 )
+
+
+def test_ratings_import_never_runs_alongside_the_cqc_reconciliation():
+    # Both bulk-update care_providers; together they deadlock (26 Oct 2026).
+    repo_root = Path(__file__).parents[1]
+    group = re.compile(r"^concurrency:\s*\n\s*group:\s*(\S+)", re.MULTILINE)
+    recon = group.search((repo_root / ".github/workflows/cqc-reconciliation.yml").read_text())
+    imp = group.search((repo_root / ".github/workflows/import-cqc-ratings.yml").read_text())
+    assert recon and imp and recon.group(1) == imp.group(1)

@@ -1,6 +1,6 @@
 """Prepare a CareGist order for checking and sending.
 
-One command per step of the human-led sale (Business Terms v2.2.1):
+One command per step of the human-led sale (Business Terms v2.3):
 
   brief  quote    scope agreed by email -> build the Brief, check it, draft the
                   scope-confirmation email with the GBP 745 payment link
@@ -58,7 +58,7 @@ TERMS_URL = "https://www.caregist.co.uk/terms"
 BRIEF_PRICE = "£745 fixed fee. No VAT added."
 DIGEST_PRICE = "£150 for four weekly digests. No VAT added. No automatic renewal."
 SOURCE_MAX_AGE_DAYS = 8          # the documented source-freshness promise
-MAX_SHORTLIST = 50               # Terms v2.2.1: up to 50, exact number confirmed before payment
+MAX_SHORTLIST = 50               # Terms v2.3: up to 50, exact number confirmed before payment
 DELIVERY_WORKING_DAYS = 3
 
 REGIONS = (
@@ -70,11 +70,11 @@ REGIONS = (
 # exactly what the coverage check counted. tests/test_prepare_order.py fails if
 # the two ever drift apart.
 #
-# Ratings are reconciled: the API rating when it is a real published rating,
-# otherwise CQC's published ratings file (migration 068), so a buyer is never
-# sold a smaller list than the one CQC's own website shows.
+# Ratings follow the CareGist rating rule (file first, a newer CQC page check
+# wins where it differs, API only for the file's gaps); see
+# frontend/lib/directory-query-clauses.ts, which this must match exactly.
 RECONCILED_RATING_SQL = """(CASE
-    WHEN lower(btrim(overall_rating)) IN ('outstanding', 'good', 'requires improvement', 'inadequate') THEN overall_rating
+    WHEN site_check_rating IS NOT NULL AND site_check_rating IS DISTINCT FROM file_overall_rating AND (file_rating_edition_date IS NULL OR site_check_at::date >= file_rating_edition_date) THEN NULLIF(site_check_rating, 'none')
     WHEN file_overall_rating IS NOT NULL THEN file_overall_rating
     ELSE overall_rating
   END)"""
@@ -147,6 +147,82 @@ async def fetch_scope_location_ids(database_url: str, region: str, provider_grou
             return [row["id"] for row in await conn.fetch(sql, *params)]
     finally:
         await conn.close()
+
+
+async def fetch_file_ratings(database_url: str, ids: list[str]) -> dict[str, tuple[str | None, date | None]]:
+    """Ratings the rule serves from the file or a newer CQC page check, per location.
+
+    (rating, date) where the ratings file (or a CQC page check made after its
+    edition) decides the rating; rating is None where the page shows none, which
+    withholds the register's API rating too. Locations the file does not cover are
+    absent, so the Brief keeps the API rating for them (rule 3).
+    """
+    import asyncpg
+
+    conn = await asyncpg.connect(database_url)
+    try:
+        async with conn.transaction(readonly=True):
+            rows = await conn.fetch(
+                f"SELECT id, {RECONCILED_RATING_SQL} AS rating, "
+                "CASE WHEN site_check_rating IS NOT NULL AND site_check_rating IS DISTINCT FROM file_overall_rating "
+                "AND (file_rating_edition_date IS NULL OR site_check_at::date >= file_rating_edition_date) "
+                "THEN site_check_at::date ELSE file_overall_rating_date END AS rated_on "
+                "FROM care_providers WHERE id = ANY($1::text[]) "
+                "AND (file_overall_rating IS NOT NULL OR site_check_rating IS NOT NULL)",
+                ids,
+            )
+    finally:
+        await conn.close()
+    return {r["id"]: (r["rating"], r["rated_on"]) for r in rows}
+
+
+def resolved_contract_enabled(env: dict[str, str]) -> bool:
+    """RESOLVED_RATING_CONTRACT_ENABLED, read the way pydantic reads a bool flag."""
+    return str(env.get("RESOLVED_RATING_CONTRACT_ENABLED", "")).strip().lower() in {"1", "true", "yes", "on"}
+
+
+async def fetch_rating_evidence(database_url: str, ids: list[str]) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Ratings-file evidence and CQC page checks for the resolved rating contract.
+
+    Returns ``(rating_evidence, website_observations)`` of
+    :class:`api.services.rating_resolver.RatingEvidence`. Every page check
+    becomes a dated observation the resolver weighs against the API and file
+    values: one showing a rating can confirm or contradict them, and one showing
+    ``'none'`` (no rating on the page) is kept with ``value=None`` so the
+    resolver can mark the rating unresolved instead of the check disappearing.
+    The file value is always kept as evidence; withholding is the resolver's
+    decision, not the loader's.
+    """
+    import asyncpg
+
+    from api.services.rating_resolver import SOURCE_FILE, SOURCE_WEBSITE, RatingEvidence, canonical_rating
+
+    conn = await asyncpg.connect(database_url)
+    try:
+        async with conn.transaction(readonly=True):
+            rows = await conn.fetch(
+                "SELECT id, file_overall_rating, file_overall_rating_date, file_rating_source_sha256, "
+                "site_check_rating, site_check_at FROM care_providers "
+                "WHERE id = ANY($1::text[]) AND file_overall_rating IS NOT NULL",
+                ids,
+            )
+    finally:
+        await conn.close()
+    evidence: dict[str, Any] = {}
+    observations: dict[str, Any] = {}
+    for r in rows:
+        checked = (r["site_check_rating"] or "").strip()
+        evidence[r["id"]] = RatingEvidence(
+            source=SOURCE_FILE, value=canonical_rating(r["file_overall_rating"]),
+            publication_date=r["file_overall_rating_date"], source_sha256=r["file_rating_source_sha256"],
+            raw_value=r["file_overall_rating"],
+        )
+        if checked and r["site_check_at"] is not None:
+            observations[r["id"]] = RatingEvidence(
+                source=SOURCE_WEBSITE, value=canonical_rating(checked), observed_on=r["site_check_at"].date(),
+                raw_value=checked,
+            )
+    return evidence, observations
 
 
 def latest_export(base: Path) -> Path:
@@ -534,13 +610,25 @@ def build_brief(args: argparse.Namespace, *, env: dict[str, str], order_dir: Pat
         detail += f" (buyer's enquiry said {args.expected_count})"
     checks.add("scope_has_locations", bool(ids), detail)
 
+    if resolved_contract_enabled(env):
+        evidence, observations = (
+            asyncio.run(fetch_rating_evidence(env["DATABASE_URL"], ids)) if ids else ({}, {})
+        )
+        rating_inputs: dict[str, Any] = {"rating_evidence": evidence, "website_observations": observations}
+        checks.add(
+            "rating_contract", True,
+            f"resolved rating contract: {len(evidence)} ratings-file values, {len(observations)} CQC page checks",
+        )
+    else:
+        rating_inputs = {"file_ratings": asyncio.run(fetch_file_ratings(env["DATABASE_URL"], ids)) if ids else {}}
     brief = generate_territory_opportunity_brief(
         {"kind": "region", "name": args.region, "window_days": 90, "shortlist_target": args.shortlist},
-        PurchaseContext(order_reference=args.order_ref, generated_at=now, terms_version="2.2.1"),
+        PurchaseContext(order_reference=args.order_ref, generated_at=now, terms_version="2.3"),
         locations_source=export_dir / "_locations_detail.ndjson",
         providers_source=export_dir / "_providers_detail.ndjson",
         location_ids=ids,
         provider_group=args.provider_group,
+        **rating_inputs,
     )
     checks.add(
         "shortlist_not_empty",
@@ -595,7 +683,7 @@ def brief_quote_email(args: argparse.Namespace, summary: dict[str, Any], now: da
 
 Thank you for your enquiry. I have checked the published CQC record for your scope and can confirm we can deliver it.
 
-Confirmed scope (this email is the order form under our Business Terms v2.2.1):
+Confirmed scope (this email is the order form under our Business Terms v2.3):
 - Territory: {summary['region']}
 - Provider group: {summary['provider_group']}
 - Service type: {summary['service_type']}
@@ -645,7 +733,7 @@ def digest_quote_email(args: argparse.Namespace) -> tuple[str, str]:
     subject = f"Your Weekly Digest pilot: {args.region}, starting {start.strftime('%d %B %Y')} (ref {args.order_ref})"
     body = f"""Hi {args.buyer_name or 'there'},
 
-Thank you for your enquiry. Here is the confirmed Weekly Digest pilot (this email is the order form under our Business Terms v2.2.1):
+Thank you for your enquiry. Here is the confirmed Weekly Digest pilot (this email is the order form under our Business Terms v2.3):
 
 - Region: {args.region}
 - Buyer type: {args.buyer_type or 'as discussed'}

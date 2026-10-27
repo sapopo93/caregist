@@ -1,3 +1,11 @@
+## 2026-10-24 report-readiness blockers (branch feat/report-readiness-20261024, unmerged)
+
+1. **Status lag:** 51 locations that CQC's 20 Oct export shows as deregistered on 13–16 Oct are still ACTIVE in the directory, and none of the 19 sampled is quarantined. The new report generators exclude them; the directory still serves them. Fixing that needs a reconciliation run (a production write, not done).
+2. **Ratings precedence in served surfaces:** the resolver (`api/services/rating_resolver.py`) is wired only into the flag-gated Brief path. Search, the public coverage count and paid delivery still use API-first or API-only ratings (3 precedence defects and 2 unresolved values shown in the 100-row sample).
+3. **Benchmark references:** CQC's own 1 Apr 2026 register gives 50% of beds in 50+ homes against the brief's 70% reference. The reference must be re-checked before any claim. CareGist outputs do not merge dual registrations (+311 large homes).
+4. **Well-led column empty:** `care_providers.rating_well_led` has no values for ACTIVE rows. P12 reads Well-led from the CQC export and ratings file instead.
+5. Independent approved-provider review of [the evidence packet](REPORT_READINESS_EVIDENCE.md) is pending. All three new flags default off. No gate changed. DeepSeek is prohibited.
+
 ## 2026-10-22 quarantine release preparation
 
 Production read-only verification confirms migration 067 is already applied, with three unresolved quarantined location IDs and 59,382 stored location rows. `db/apply_migrations.py --target production --check` reports no pending migrations for this release candidate. No production migration or source-row mutation was performed. Current-main integration adds persistent quarantine to pipeline evidence/logs and keeps source freshness partial while quarantined ACTIVE records remain; Data Status exposes their count. Local finalizer tests include resolved, manifest-present, inactive, missing-provider and missing-schema cases. Deployment and preview activation still require the exact candidate's CI and independent review. This supersedes older statements below that migration 067 was unapplied; commercial gates remain closed.

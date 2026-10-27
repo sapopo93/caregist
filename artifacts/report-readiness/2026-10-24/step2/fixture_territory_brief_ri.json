@@ -1,0 +1,1518 @@
+{
+ "scope": {
+  "kind": "local_authority",
+  "name": "Testershire",
+  "window_days": 90,
+  "shortlist_target": 30,
+  "service_type": null
+ },
+ "purchase_context": {
+  "order_reference": "resolved-test",
+  "generated_at": "2026-10-24T00:00:00+00:00",
+  "product": "territory-opportunity-brief",
+  "price_gbp": 745,
+  "terms_version": "test"
+ },
+ "as_of_date": "2026-09-10",
+ "window_start": "2026-06-13",
+ "window_end": "2026-09-10",
+ "considered_locations": 8,
+ "territory_locations": 30,
+ "shortlist": [
+  {
+   "rank": 1,
+   "organisation_name": "Eskdale House Supported Living Service Ltd",
+   "location_name": "Eskdale House Supported Living Service",
+   "location_id": "1-27003473742",
+   "provider_id": "P-1-27003473742",
+   "local_authority": "Testershire",
+   "region": "Test Region",
+   "postcode": "TE1 1ST",
+   "service_types": [
+    "Care home service without nursing"
+   ],
+   "number_of_beds": 30,
+   "current_rating": "Requires improvement",
+   "primary_signal": "Current rating",
+   "most_recent_event_date": "2026-06-03",
+   "score": 47.0,
+   "score_breakdown": {
+    "rating_current@2026-06-03": 42.0,
+    "size_factor": 5.0
+   },
+   "reason": "Currently rated Requires improvement overall by CQC in the report published 03 Jun 2026. This is the published overall rating, not a statement about the service today; read the report before any contact.",
+   "evidence": [
+    {
+     "event_type": "rating_current",
+     "effective_date": "2026-06-03",
+     "old_value": null,
+     "new_value": "Requires improvement",
+     "detail": "Current overall rating Requires improvement (published 2026-06-03; source: CQC published ratings file)",
+     "source_field": "resolved_rating.cqc_ratings_file",
+     "source_url": "https://www.cqc.org.uk/location/1-27003473742",
+     "source_edition": "CQC ratings file 2026-10-02 sha256:aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd"
+    }
+   ],
+   "qualification_question": "What has this service changed since its last published rating, and who leads its improvement plan?",
+   "buyer_questions": {
+    "recruitment": "How many care-worker vacancies does this service have open, how long have they been open, and are any linked to council-commissioned packages with a start date?",
+    "compliance": "Which areas did the latest report raise, and has the service arranged a governance audit, mock inspection or training before re-inspection?",
+    "software": "What does this service use for care records today (paper, spreadsheets or a digital system), is that system on the NHS assured supplier list for digital social care records, how many users does it have, and when is the contract up for renewal?"
+   },
+   "rating_resolution": {
+    "domain": "overall",
+    "status": "current",
+    "value": "Requires improvement",
+    "source": "cqc_ratings_file",
+    "publication_date": "2026-06-03",
+    "reason": "All channels agree",
+    "newer_than_file_edition": false,
+    "api_value": null,
+    "api_raw_value": null,
+    "api_publication_date": null,
+    "file_value": "Requires improvement",
+    "file_publication_date": "2026-06-03",
+    "file_inherited_flag": false,
+    "file_sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+    "file_edition_date": "2026-10-02",
+    "website_value": null,
+    "website_publication_date": null,
+    "website_observed_on": null
+   }
+  },
+  {
+   "rank": 2,
+   "organisation_name": "St Stephens Nursing Home Ltd",
+   "location_name": "St Stephens Nursing Home",
+   "location_id": "1-152721284",
+   "provider_id": "P-1-152721284",
+   "local_authority": "Testershire",
+   "region": "Test Region",
+   "postcode": "TE1 1ST",
+   "service_types": [
+    "Care home service without nursing"
+   ],
+   "number_of_beds": 30,
+   "current_rating": "Requires improvement",
+   "primary_signal": "Current rating",
+   "most_recent_event_date": "2026-05-20",
+   "score": 47.0,
+   "score_breakdown": {
+    "rating_current@2026-05-20": 42.0,
+    "size_factor": 5.0
+   },
+   "reason": "Currently rated Requires improvement overall by CQC in the report published 20 May 2026. This is the published overall rating, not a statement about the service today; read the report before any contact.",
+   "evidence": [
+    {
+     "event_type": "rating_current",
+     "effective_date": "2026-05-20",
+     "old_value": null,
+     "new_value": "Requires improvement",
+     "detail": "Current overall rating Requires improvement (published 2026-05-20; source: CQC published ratings file)",
+     "source_field": "resolved_rating.cqc_ratings_file",
+     "source_url": "https://www.cqc.org.uk/location/1-152721284",
+     "source_edition": "CQC ratings file 2026-10-02 sha256:aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd"
+    }
+   ],
+   "qualification_question": "What has this service changed since its last published rating, and who leads its improvement plan?",
+   "buyer_questions": {
+    "recruitment": "How many care-worker vacancies does this service have open, how long have they been open, and are any linked to council-commissioned packages with a start date?",
+    "compliance": "Which areas did the latest report raise, and has the service arranged a governance audit, mock inspection or training before re-inspection?",
+    "software": "What does this service use for care records today (paper, spreadsheets or a digital system), is that system on the NHS assured supplier list for digital social care records, how many users does it have, and when is the contract up for renewal?"
+   },
+   "rating_resolution": {
+    "domain": "overall",
+    "status": "current",
+    "value": "Requires improvement",
+    "source": "cqc_ratings_file",
+    "publication_date": "2026-05-20",
+    "reason": "Most recently published value across channels",
+    "newer_than_file_edition": false,
+    "api_value": "Good",
+    "api_raw_value": "Good",
+    "api_publication_date": "2019-07-16",
+    "file_value": "Requires improvement",
+    "file_publication_date": "2026-05-20",
+    "file_inherited_flag": false,
+    "file_sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+    "file_edition_date": "2026-10-02",
+    "website_value": null,
+    "website_publication_date": null,
+    "website_observed_on": null
+   }
+  },
+  {
+   "rank": 3,
+   "organisation_name": "Angel Home Care Service Private Limited Ltd",
+   "location_name": "Angel Home Care Service Private Limited",
+   "location_id": "1-407665280",
+   "provider_id": "P-1-407665280",
+   "local_authority": "Testershire",
+   "region": "Test Region",
+   "postcode": "TE1 1ST",
+   "service_types": [
+    "Care home service without nursing"
+   ],
+   "number_of_beds": 30,
+   "current_rating": "Requires improvement",
+   "primary_signal": "Current rating",
+   "most_recent_event_date": "2026-04-22",
+   "score": 45.0,
+   "score_breakdown": {
+    "rating_current@2026-04-22": 40.0,
+    "size_factor": 5.0
+   },
+   "reason": "Currently rated Requires improvement overall by CQC in the report published 22 Apr 2026. This is the published overall rating, not a statement about the service today; read the report before any contact.",
+   "evidence": [
+    {
+     "event_type": "rating_current",
+     "effective_date": "2026-04-22",
+     "old_value": null,
+     "new_value": "Requires improvement",
+     "detail": "Current overall rating Requires improvement (published 2026-04-22; source: CQC published ratings file)",
+     "source_field": "resolved_rating.cqc_ratings_file",
+     "source_url": "https://www.cqc.org.uk/location/1-407665280",
+     "source_edition": "CQC ratings file 2026-10-02 sha256:aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd"
+    }
+   ],
+   "qualification_question": "What has this service changed since its last published rating, and who leads its improvement plan?",
+   "buyer_questions": {
+    "recruitment": "How many care-worker vacancies does this service have open, how long have they been open, and are any linked to council-commissioned packages with a start date?",
+    "compliance": "Which areas did the latest report raise, and has the service arranged a governance audit, mock inspection or training before re-inspection?",
+    "software": "What does this service use for care records today (paper, spreadsheets or a digital system), is that system on the NHS assured supplier list for digital social care records, how many users does it have, and when is the contract up for renewal?"
+   },
+   "rating_resolution": {
+    "domain": "overall",
+    "status": "current",
+    "value": "Requires improvement",
+    "source": "cqc_ratings_file",
+    "publication_date": "2026-04-22",
+    "reason": "All channels agree",
+    "newer_than_file_edition": false,
+    "api_value": null,
+    "api_raw_value": null,
+    "api_publication_date": null,
+    "file_value": "Requires improvement",
+    "file_publication_date": "2026-04-22",
+    "file_inherited_flag": false,
+    "file_sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+    "file_edition_date": "2026-10-02",
+    "website_value": null,
+    "website_publication_date": null,
+    "website_observed_on": null
+   }
+  },
+  {
+   "rank": 4,
+   "organisation_name": "Althorp Grange Ltd",
+   "location_name": "Althorp Grange",
+   "location_id": "1-390976877",
+   "provider_id": "P-1-390976877",
+   "local_authority": "Testershire",
+   "region": "Test Region",
+   "postcode": "TE1 1ST",
+   "service_types": [
+    "Care home service without nursing"
+   ],
+   "number_of_beds": 30,
+   "current_rating": "Requires improvement",
+   "primary_signal": "Current rating",
+   "most_recent_event_date": "2025-12-11",
+   "score": 45.0,
+   "score_breakdown": {
+    "rating_current@2025-12-11": 40.0,
+    "size_factor": 5.0
+   },
+   "reason": "Currently rated Requires improvement overall by CQC in the report published 11 Dec 2025. This is the published overall rating, not a statement about the service today; read the report before any contact.",
+   "evidence": [
+    {
+     "event_type": "rating_current",
+     "effective_date": "2025-12-11",
+     "old_value": null,
+     "new_value": "Requires improvement",
+     "detail": "Current overall rating Requires improvement (published 2025-12-11; source: CQC published ratings file)",
+     "source_field": "resolved_rating.cqc_ratings_file",
+     "source_url": "https://www.cqc.org.uk/location/1-390976877",
+     "source_edition": "CQC ratings file 2026-10-02 sha256:aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd"
+    }
+   ],
+   "qualification_question": "What has this service changed since its last published rating, and who leads its improvement plan?",
+   "buyer_questions": {
+    "recruitment": "How many care-worker vacancies does this service have open, how long have they been open, and are any linked to council-commissioned packages with a start date?",
+    "compliance": "Which areas did the latest report raise, and has the service arranged a governance audit, mock inspection or training before re-inspection?",
+    "software": "What does this service use for care records today (paper, spreadsheets or a digital system), is that system on the NHS assured supplier list for digital social care records, how many users does it have, and when is the contract up for renewal?"
+   },
+   "rating_resolution": {
+    "domain": "overall",
+    "status": "current",
+    "value": "Requires improvement",
+    "source": "cqc_ratings_file",
+    "publication_date": "2025-12-11",
+    "reason": "Most recently published value across channels",
+    "newer_than_file_edition": false,
+    "api_value": "Inadequate",
+    "api_raw_value": "Inadequate",
+    "api_publication_date": "2024-02-28",
+    "file_value": "Requires improvement",
+    "file_publication_date": "2025-12-11",
+    "file_inherited_flag": false,
+    "file_sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+    "file_edition_date": "2026-10-02",
+    "website_value": null,
+    "website_publication_date": null,
+    "website_observed_on": null
+   }
+  },
+  {
+   "rank": 5,
+   "organisation_name": "Lucketts Farm Ltd",
+   "location_name": "Lucketts Farm",
+   "location_id": "1-2352094536",
+   "provider_id": "P-1-2352094536",
+   "local_authority": "Testershire",
+   "region": "Test Region",
+   "postcode": "TE1 1ST",
+   "service_types": [
+    "Care home service without nursing"
+   ],
+   "number_of_beds": 30,
+   "current_rating": "Requires improvement",
+   "primary_signal": "Current rating",
+   "most_recent_event_date": "2025-10-16",
+   "score": 45.0,
+   "score_breakdown": {
+    "rating_current@2025-10-16": 40.0,
+    "size_factor": 5.0
+   },
+   "reason": "Currently rated Requires improvement overall by CQC in the report published 16 Oct 2025. This is the published overall rating, not a statement about the service today; read the report before any contact.",
+   "evidence": [
+    {
+     "event_type": "rating_current",
+     "effective_date": "2025-10-16",
+     "old_value": null,
+     "new_value": "Requires improvement",
+     "detail": "Current overall rating Requires improvement (published 2025-10-16; source: CQC published ratings file)",
+     "source_field": "resolved_rating.cqc_ratings_file",
+     "source_url": "https://www.cqc.org.uk/location/1-2352094536",
+     "source_edition": "CQC ratings file 2026-10-02 sha256:aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd"
+    }
+   ],
+   "qualification_question": "What has this service changed since its last published rating, and who leads its improvement plan?",
+   "buyer_questions": {
+    "recruitment": "How many care-worker vacancies does this service have open, how long have they been open, and are any linked to council-commissioned packages with a start date?",
+    "compliance": "Which areas did the latest report raise, and has the service arranged a governance audit, mock inspection or training before re-inspection?",
+    "software": "What does this service use for care records today (paper, spreadsheets or a digital system), is that system on the NHS assured supplier list for digital social care records, how many users does it have, and when is the contract up for renewal?"
+   },
+   "rating_resolution": {
+    "domain": "overall",
+    "status": "current",
+    "value": "Requires improvement",
+    "source": "cqc_ratings_file",
+    "publication_date": "2025-10-16",
+    "reason": "All channels agree",
+    "newer_than_file_edition": false,
+    "api_value": null,
+    "api_raw_value": null,
+    "api_publication_date": null,
+    "file_value": "Requires improvement",
+    "file_publication_date": "2025-10-16",
+    "file_inherited_flag": false,
+    "file_sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+    "file_edition_date": "2026-10-02",
+    "website_value": null,
+    "website_publication_date": null,
+    "website_observed_on": null
+   }
+  },
+  {
+   "rank": 6,
+   "organisation_name": "Nomira Care Ltd Ltd",
+   "location_name": "Nomira Care Ltd",
+   "location_id": "1-13937101349",
+   "provider_id": "P-1-13937101349",
+   "local_authority": "Testershire",
+   "region": "Test Region",
+   "postcode": "TE1 1ST",
+   "service_types": [
+    "Care home service without nursing"
+   ],
+   "number_of_beds": 30,
+   "current_rating": "Requires improvement",
+   "primary_signal": "Current rating",
+   "most_recent_event_date": "2025-08-19",
+   "score": 45.0,
+   "score_breakdown": {
+    "rating_current@2025-08-19": 40.0,
+    "size_factor": 5.0
+   },
+   "reason": "Currently rated Requires improvement overall by CQC in the report published 19 Aug 2025. This is the published overall rating, not a statement about the service today; read the report before any contact.",
+   "evidence": [
+    {
+     "event_type": "rating_current",
+     "effective_date": "2025-08-19",
+     "old_value": null,
+     "new_value": "Requires improvement",
+     "detail": "Current overall rating Requires improvement (published 2025-08-19; source: CQC published ratings file)",
+     "source_field": "resolved_rating.cqc_ratings_file",
+     "source_url": "https://www.cqc.org.uk/location/1-13937101349",
+     "source_edition": "CQC ratings file 2026-10-02 sha256:aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd"
+    }
+   ],
+   "qualification_question": "What has this service changed since its last published rating, and who leads its improvement plan?",
+   "buyer_questions": {
+    "recruitment": "How many care-worker vacancies does this service have open, how long have they been open, and are any linked to council-commissioned packages with a start date?",
+    "compliance": "Which areas did the latest report raise, and has the service arranged a governance audit, mock inspection or training before re-inspection?",
+    "software": "What does this service use for care records today (paper, spreadsheets or a digital system), is that system on the NHS assured supplier list for digital social care records, how many users does it have, and when is the contract up for renewal?"
+   },
+   "rating_resolution": {
+    "domain": "overall",
+    "status": "current",
+    "value": "Requires improvement",
+    "source": "cqc_ratings_file",
+    "publication_date": "2025-08-19",
+    "reason": "All channels agree",
+    "newer_than_file_edition": false,
+    "api_value": null,
+    "api_raw_value": null,
+    "api_publication_date": null,
+    "file_value": "Requires improvement",
+    "file_publication_date": "2025-08-19",
+    "file_inherited_flag": false,
+    "file_sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+    "file_edition_date": "2026-10-02",
+    "website_value": null,
+    "website_publication_date": null,
+    "website_observed_on": null
+   }
+  },
+  {
+   "rank": 7,
+   "organisation_name": "Rose Court Care Home Ltd",
+   "location_name": "Rose Court Care Home",
+   "location_id": "1-15297949474",
+   "provider_id": "P-1-15297949474",
+   "local_authority": "Testershire",
+   "region": "Test Region",
+   "postcode": "TE1 1ST",
+   "service_types": [
+    "Care home service without nursing"
+   ],
+   "number_of_beds": 30,
+   "current_rating": "Requires improvement",
+   "primary_signal": "Current rating",
+   "most_recent_event_date": "2025-08-12",
+   "score": 45.0,
+   "score_breakdown": {
+    "rating_current@2025-08-12": 40.0,
+    "size_factor": 5.0
+   },
+   "reason": "Currently rated Requires improvement overall by CQC in the report published 12 Aug 2025. This is the published overall rating, not a statement about the service today; read the report before any contact.",
+   "evidence": [
+    {
+     "event_type": "rating_current",
+     "effective_date": "2025-08-12",
+     "old_value": null,
+     "new_value": "Requires improvement",
+     "detail": "Current overall rating Requires improvement (published 2025-08-12; source: CQC published ratings file)",
+     "source_field": "resolved_rating.cqc_ratings_file",
+     "source_url": "https://www.cqc.org.uk/location/1-15297949474",
+     "source_edition": "CQC ratings file 2026-10-02 sha256:aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd"
+    }
+   ],
+   "qualification_question": "What has this service changed since its last published rating, and who leads its improvement plan?",
+   "buyer_questions": {
+    "recruitment": "How many care-worker vacancies does this service have open, how long have they been open, and are any linked to council-commissioned packages with a start date?",
+    "compliance": "Which areas did the latest report raise, and has the service arranged a governance audit, mock inspection or training before re-inspection?",
+    "software": "What does this service use for care records today (paper, spreadsheets or a digital system), is that system on the NHS assured supplier list for digital social care records, how many users does it have, and when is the contract up for renewal?"
+   },
+   "rating_resolution": {
+    "domain": "overall",
+    "status": "current",
+    "value": "Requires improvement",
+    "source": "cqc_ratings_file",
+    "publication_date": "2025-08-12",
+    "reason": "All channels agree",
+    "newer_than_file_edition": false,
+    "api_value": null,
+    "api_raw_value": null,
+    "api_publication_date": null,
+    "file_value": "Requires improvement",
+    "file_publication_date": "2025-08-12",
+    "file_inherited_flag": false,
+    "file_sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+    "file_edition_date": "2026-10-02",
+    "website_value": null,
+    "website_publication_date": null,
+    "website_observed_on": null
+   }
+  },
+  {
+   "rank": 8,
+   "organisation_name": "The Chesser Surgery Ltd",
+   "location_name": "The Chesser Surgery",
+   "location_id": "1-552527797",
+   "provider_id": "P-1-552527797",
+   "local_authority": "Testershire",
+   "region": "Test Region",
+   "postcode": "TE1 1ST",
+   "service_types": [
+    "Care home service without nursing"
+   ],
+   "number_of_beds": 30,
+   "current_rating": "Requires improvement",
+   "primary_signal": "Current rating",
+   "most_recent_event_date": "2025-01-09",
+   "score": 45.0,
+   "score_breakdown": {
+    "rating_current@2025-01-09": 40.0,
+    "size_factor": 5.0
+   },
+   "reason": "Currently rated Requires improvement overall by CQC in the report published 09 Jan 2025. This is the published overall rating, not a statement about the service today; read the report before any contact.",
+   "evidence": [
+    {
+     "event_type": "rating_current",
+     "effective_date": "2025-01-09",
+     "old_value": null,
+     "new_value": "Requires improvement",
+     "detail": "Current overall rating Requires improvement (published 2025-01-09; source: CQC published ratings file)",
+     "source_field": "resolved_rating.cqc_ratings_file",
+     "source_url": "https://www.cqc.org.uk/location/1-552527797",
+     "source_edition": "CQC ratings file 2026-10-02 sha256:aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd"
+    }
+   ],
+   "qualification_question": "What has this service changed since its last published rating, and who leads its improvement plan?",
+   "buyer_questions": {
+    "recruitment": "How many care-worker vacancies does this service have open, how long have they been open, and are any linked to council-commissioned packages with a start date?",
+    "compliance": "Which areas did the latest report raise, and has the service arranged a governance audit, mock inspection or training before re-inspection?",
+    "software": "What does this service use for care records today (paper, spreadsheets or a digital system), is that system on the NHS assured supplier list for digital social care records, how many users does it have, and when is the contract up for renewal?"
+   },
+   "rating_resolution": {
+    "domain": "overall",
+    "status": "current",
+    "value": "Requires improvement",
+    "source": "cqc_ratings_file",
+    "publication_date": "2025-01-09",
+    "reason": "Most recently published value across channels",
+    "newer_than_file_edition": false,
+    "api_value": "Good",
+    "api_raw_value": "Good",
+    "api_publication_date": "2016-11-10",
+    "file_value": "Requires improvement",
+    "file_publication_date": "2025-01-09",
+    "file_inherited_flag": false,
+    "file_sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+    "file_edition_date": "2026-10-02",
+    "website_value": null,
+    "website_publication_date": null,
+    "website_observed_on": null
+   }
+  }
+ ],
+ "executive_summary": {
+  "provider_group": "Currently rated Requires improvement",
+  "territory": "Testershire",
+  "territory_kind": "local authority",
+  "date_generated": "2026-10-24",
+  "source_edition": "2026-09-10",
+  "window": "2026-06-13 to 2026-09-10",
+  "territory_locations_in_source": 30,
+  "opportunity_set_size": 8,
+  "shortlisted": 8,
+  "headline": "8 location(s) in Testershire are in the provider group 'Currently rated Requires improvement' on the source edition dated 10 Sep 2026; 8 are shortlisted and ranked.",
+  "movement_summary": "8 location(s) with the selected current rating",
+  "strongest_opportunities": [
+   "Eskdale House Supported Living Service Ltd (Eskdale House Supported Living Service) - current rating",
+   "St Stephens Nursing Home Ltd (St Stephens Nursing Home) - current rating",
+   "Angel Home Care Service Private Limited Ltd (Angel Home Care Service Private Limited) - current rating"
+  ],
+  "limitations": "Reflects the published CQC register edition, not a live lookup; opportunity signals show where to look first, not provider quality or intent.",
+  "shortfall_notice": "Shortfall: this territory has 8 organisation(s) with a supported signal in the window, fewer than the requested shortlist of 30. All of them are included; none have been added to make up the number."
+ },
+ "territory_insights": {
+  "events_by_type": {
+   "rating_current": 8
+  },
+  "rating_moves": {
+   "declines": 0,
+   "improvements": 0
+  },
+  "new_beds_entering_market": 0,
+  "activity_by_sub_area": [
+   {
+    "area": "Test Region",
+    "events": 8
+   }
+  ],
+  "service_type_mix": [
+   {
+    "service_type": "Care home service without nursing",
+    "organisations": 8
+   }
+  ],
+  "most_active_providers": [],
+  "shortlist_size": 8,
+  "rating_date_coverage": {
+   "undated_locations": 0,
+   "recent_rating_changes_available": true,
+   "limitation": "Only CQC-dated rating movements are counted."
+  }
+ },
+ "next_actions": [
+  "Verify each organisation's current status on the linked CQC page before outreach - this brief reflects the published register edition, not a live lookup."
+ ],
+ "methodology_notes": [
+  "Scope: local authority = Testershire. Provider group: Currently rated Requires improvement, taken from the same directory query as the coverage check; each member carries its documented group state as evidence. Window: 2026-06-13 to 2026-09-10 inclusive (90 days), anchored to the newest source date.",
+  "Supported events: new CQC registration in-window (excluding dormant locations); overall rating change in-window (derived from ordered historic/current ratings); new inspection report in-window where no change can be derived.",
+  "Score recency is measured against generation, not the source window. Score = base weight per event x recency multiplier (1.5 within 30 days, 1.2 within 90, 1.05 within 180) + rating-direction adjustment (downgrade +16, upgrade +9) + a bed-count size factor + a provider-cluster bonus where the same provider has multiple locations moving. Scores are capped at 100.",
+  "One location represents each provider: highest score, then most recent event date, then organisation name, then lexicographically smallest CQC location id. Deduplication happens before the shortlist limit. Ties break by those same keys, so the same source data always yields the same ranking."
+ ],
+ "data_caveats": [
+  "Ratings are resolved across CQC's API and its published ratings file (editions: 2026-10-02 (sha256 aba66fd8ca20)). 2 location(s) with conflicting evidence are shown without a rating; 1 inherited rating(s) are labelled and never treated as current inspections. A ratings-file value is never reported as a rating change.",
+  "Only CQC-dated rating movements are counted.",
+  "Rating freshness is measured against the generation date, separately from the source window. Stale RI records remain visible in evidence coverage, outside the shortlist when they have no in-window signal. Missing metadata describes the supplied snapshot, not a claim that CQC never published it.",
+  "This brief reflects the published CQC register edition dated 2026-09-10 (the newest date present in the source), not a live API lookup.",
+  "The register carries the latest rating and its report date. Where no rating history is present a change cannot be derived, so a first/refreshed rating is reported as a new inspection report rather than a rating change.",
+  "Organisations with incomplete provider identifiers or names in the source are excluded from the shortlist rather than shown with gaps.",
+  "Opportunity signals indicate where to investigate first; they are not statements about a provider's quality, finances, or intent.",
+  "Contains public sector information licensed under the Open Government Licence v3.0."
+ ],
+ "source_provenance": {
+  "source_page": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data",
+  "locations_snapshot": "locations.ndjson",
+  "providers_snapshot": "providers.ndjson",
+  "snapshot_edition_date": "2026-09-10",
+  "generator": "api.services.territory_brief.generate_territory_opportunity_brief",
+  "generated_at": "2026-10-24T00:00:00+00:00",
+  "licence": "Contains public sector information licensed under the Open Government Licence v3.0",
+  "licence_url": "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
+  "rating_contract": "resolved_current_rating_v1",
+  "ratings_file_editions": [
+   {
+    "edition_date": "2026-10-02",
+    "sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd"
+   }
+  ]
+ },
+ "evidence_coverage": [
+  {
+   "location_id": "1-13937101349",
+   "provider_id": "P-1-13937101349",
+   "location_name": "Nomira Care Ltd",
+   "current_rating": "Requires improvement",
+   "rating_publication_date": "2025-08-19",
+   "rating_freshness": "stale (over 12 months)",
+   "registration_date": "2022-11-07",
+   "recorded_source_url": null,
+   "recorded_source_hash": null,
+   "registration_metadata_gaps": [
+    "source URL",
+    "source hash"
+   ],
+   "reference_url": "https://www.cqc.org.uk/location/1-13937101349",
+   "rating_status": "current",
+   "rating_source": "cqc_ratings_file"
+  },
+  {
+   "location_id": "1-152721284",
+   "provider_id": "P-1-152721284",
+   "location_name": "St Stephens Nursing Home",
+   "current_rating": "Requires improvement",
+   "rating_publication_date": "2026-05-20",
+   "rating_freshness": "within 12 months",
+   "registration_date": "2011-01-26",
+   "recorded_source_url": null,
+   "recorded_source_hash": null,
+   "registration_metadata_gaps": [
+    "source URL",
+    "source hash"
+   ],
+   "reference_url": "https://www.cqc.org.uk/location/1-152721284",
+   "rating_status": "current",
+   "rating_source": "cqc_ratings_file"
+  },
+  {
+   "location_id": "1-15297949474",
+   "provider_id": "P-1-15297949474",
+   "location_name": "Rose Court Care Home",
+   "current_rating": "Requires improvement",
+   "rating_publication_date": "2025-08-12",
+   "rating_freshness": "stale (over 12 months)",
+   "registration_date": "2023-05-03",
+   "recorded_source_url": null,
+   "recorded_source_hash": null,
+   "registration_metadata_gaps": [
+    "source URL",
+    "source hash"
+   ],
+   "reference_url": "https://www.cqc.org.uk/location/1-15297949474",
+   "rating_status": "current",
+   "rating_source": "cqc_ratings_file"
+  },
+  {
+   "location_id": "1-2352094536",
+   "provider_id": "P-1-2352094536",
+   "location_name": "Lucketts Farm",
+   "current_rating": "Requires improvement",
+   "rating_publication_date": "2025-10-16",
+   "rating_freshness": "stale (over 12 months)",
+   "registration_date": "2016-01-04",
+   "recorded_source_url": null,
+   "recorded_source_hash": null,
+   "registration_metadata_gaps": [
+    "source URL",
+    "source hash"
+   ],
+   "reference_url": "https://www.cqc.org.uk/location/1-2352094536",
+   "rating_status": "current",
+   "rating_source": "cqc_ratings_file"
+  },
+  {
+   "location_id": "1-27003473742",
+   "provider_id": "P-1-27003473742",
+   "location_name": "Eskdale House Supported Living Service",
+   "current_rating": "Requires improvement",
+   "rating_publication_date": "2026-06-03",
+   "rating_freshness": "within 12 months",
+   "registration_date": "2026-02-24",
+   "recorded_source_url": null,
+   "recorded_source_hash": null,
+   "registration_metadata_gaps": [
+    "source URL",
+    "source hash"
+   ],
+   "reference_url": "https://www.cqc.org.uk/location/1-27003473742",
+   "rating_status": "current",
+   "rating_source": "cqc_ratings_file"
+  },
+  {
+   "location_id": "1-29650851551",
+   "provider_id": "P-1-29650851551",
+   "location_name": "NEAD Support Ltd - Remote Clinical Service",
+   "current_rating": null,
+   "rating_publication_date": null,
+   "rating_freshness": "unknown (no publication date)",
+   "registration_date": "2026-09-10",
+   "recorded_source_url": null,
+   "recorded_source_hash": null,
+   "registration_metadata_gaps": [
+    "source URL",
+    "source hash"
+   ],
+   "reference_url": "https://www.cqc.org.uk/location/1-29650851551",
+   "rating_status": "none",
+   "rating_source": null
+  },
+  {
+   "location_id": "1-390976877",
+   "provider_id": "P-1-390976877",
+   "location_name": "Althorp Grange",
+   "current_rating": "Requires improvement",
+   "rating_publication_date": "2025-12-11",
+   "rating_freshness": "within 12 months",
+   "registration_date": "2012-04-05",
+   "recorded_source_url": null,
+   "recorded_source_hash": null,
+   "registration_metadata_gaps": [
+    "source URL",
+    "source hash"
+   ],
+   "reference_url": "https://www.cqc.org.uk/location/1-390976877",
+   "rating_status": "current",
+   "rating_source": "cqc_ratings_file"
+  },
+  {
+   "location_id": "1-407665280",
+   "provider_id": "P-1-407665280",
+   "location_name": "Angel Home Care Service Private Limited",
+   "current_rating": "Requires improvement",
+   "rating_publication_date": "2026-04-22",
+   "rating_freshness": "within 12 months",
+   "registration_date": "2012-05-04",
+   "recorded_source_url": null,
+   "recorded_source_hash": null,
+   "registration_metadata_gaps": [
+    "source URL",
+    "source hash"
+   ],
+   "reference_url": "https://www.cqc.org.uk/location/1-407665280",
+   "rating_status": "current",
+   "rating_source": "cqc_ratings_file"
+  },
+  {
+   "location_id": "1-552527797",
+   "provider_id": "P-1-552527797",
+   "location_name": "The Chesser Surgery",
+   "current_rating": "Requires improvement",
+   "rating_publication_date": "2025-01-09",
+   "rating_freshness": "stale (over 12 months)",
+   "registration_date": "2013-04-01",
+   "recorded_source_url": null,
+   "recorded_source_hash": null,
+   "registration_metadata_gaps": [
+    "source URL",
+    "source hash"
+   ],
+   "reference_url": "https://www.cqc.org.uk/location/1-552527797",
+   "rating_status": "current",
+   "rating_source": "cqc_ratings_file"
+  }
+ ],
+ "rating_resolution": {
+  "contract": "resolved_current_rating_v1",
+  "status_counts": {
+   "current": 22,
+   "inherited": 1,
+   "none": 5,
+   "unresolved": 2
+  },
+  "ratings_file_editions": [
+   {
+    "edition_date": "2026-10-02",
+    "sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd"
+   }
+  ],
+  "omitted_unresolved": [
+   "1-19886383752",
+   "1-22160036426"
+  ],
+  "inherited": [
+   "1-16491295796"
+  ],
+  "scope_exclusions": [
+   {
+    "location_id": "1-10192918971",
+    "status": "current",
+    "value": "Outstanding",
+    "reason": "All channels agree"
+   },
+   {
+    "location_id": "1-10615519904",
+    "status": "current",
+    "value": "Inadequate",
+    "reason": "All channels agree"
+   },
+   {
+    "location_id": "1-11270646845",
+    "status": "current",
+    "value": "Good",
+    "reason": "All channels agree"
+   },
+   {
+    "location_id": "1-113028260",
+    "status": "current",
+    "value": "Inadequate",
+    "reason": "All channels agree"
+   },
+   {
+    "location_id": "1-12566526711",
+    "status": "none",
+    "value": null,
+    "reason": "No channel publishes a rating value"
+   },
+   {
+    "location_id": "1-125730630",
+    "status": "current",
+    "value": "Inadequate",
+    "reason": "All channels agree"
+   },
+   {
+    "location_id": "1-130890582",
+    "status": "current",
+    "value": "Outstanding",
+    "reason": "All channels agree"
+   },
+   {
+    "location_id": "1-142705508",
+    "status": "current",
+    "value": "Inadequate",
+    "reason": "All channels agree"
+   },
+   {
+    "location_id": "1-16491295796",
+    "status": "inherited",
+    "value": "Outstanding",
+    "reason": "Published before this registration or flagged inherited"
+   },
+   {
+    "location_id": "1-16516340886",
+    "status": "current",
+    "value": "Outstanding",
+    "reason": "All channels agree"
+   },
+   {
+    "location_id": "1-19058724680",
+    "status": "current",
+    "value": "Good",
+    "reason": "All channels agree"
+   },
+   {
+    "location_id": "1-19886383752",
+    "status": "unresolved",
+    "value": null,
+    "reason": "An inherited value is contradicted by a value earned under this registration"
+   },
+   {
+    "location_id": "1-199649069",
+    "status": "none",
+    "value": null,
+    "reason": "No channel publishes a rating value"
+   },
+   {
+    "location_id": "1-22160036426",
+    "status": "unresolved",
+    "value": null,
+    "reason": "An inherited value is contradicted by a value earned under this registration"
+   },
+   {
+    "location_id": "1-2467326262",
+    "status": "current",
+    "value": "Outstanding",
+    "reason": "All channels agree"
+   },
+   {
+    "location_id": "1-2761140569",
+    "status": "current",
+    "value": "Good",
+    "reason": "All channels agree"
+   },
+   {
+    "location_id": "1-29650851551",
+    "status": "none",
+    "value": null,
+    "reason": "No channel publishes a rating value"
+   },
+   {
+    "location_id": "1-456354523",
+    "status": "current",
+    "value": "Inadequate",
+    "reason": "All channels agree"
+   },
+   {
+    "location_id": "1-546109592",
+    "status": "current",
+    "value": "Good",
+    "reason": "All channels agree"
+   },
+   {
+    "location_id": "1-546202187",
+    "status": "current",
+    "value": "Good",
+    "reason": "All channels agree"
+   },
+   {
+    "location_id": "1-5588555895",
+    "status": "none",
+    "value": null,
+    "reason": "No channel publishes a rating value"
+   },
+   {
+    "location_id": "RHARA",
+    "status": "none",
+    "value": null,
+    "reason": "No channel publishes a rating value"
+   }
+  ],
+  "by_location": {
+   "1-10192918971": {
+    "domain": "overall",
+    "status": "current",
+    "value": "Outstanding",
+    "source": "cqc_ratings_file",
+    "publication_date": "2025-07-29",
+    "reason": "All channels agree",
+    "newer_than_file_edition": false,
+    "api_value": null,
+    "api_raw_value": null,
+    "api_publication_date": null,
+    "file_value": "Outstanding",
+    "file_publication_date": "2025-07-29",
+    "file_inherited_flag": false,
+    "file_sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+    "file_edition_date": "2026-10-02",
+    "website_value": null,
+    "website_publication_date": null,
+    "website_observed_on": null
+   },
+   "1-10615519904": {
+    "domain": "overall",
+    "status": "current",
+    "value": "Inadequate",
+    "source": "cqc_ratings_file",
+    "publication_date": "2026-09-18",
+    "reason": "All channels agree",
+    "newer_than_file_edition": false,
+    "api_value": null,
+    "api_raw_value": null,
+    "api_publication_date": null,
+    "file_value": "Inadequate",
+    "file_publication_date": "2026-09-18",
+    "file_inherited_flag": false,
+    "file_sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+    "file_edition_date": "2026-10-02",
+    "website_value": null,
+    "website_publication_date": null,
+    "website_observed_on": null
+   },
+   "1-11270646845": {
+    "domain": "overall",
+    "status": "current",
+    "value": "Good",
+    "source": "cqc_ratings_file",
+    "publication_date": "2025-03-14",
+    "reason": "All channels agree",
+    "newer_than_file_edition": false,
+    "api_value": null,
+    "api_raw_value": null,
+    "api_publication_date": null,
+    "file_value": "Good",
+    "file_publication_date": "2025-03-14",
+    "file_inherited_flag": false,
+    "file_sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+    "file_edition_date": "2026-10-02",
+    "website_value": null,
+    "website_publication_date": null,
+    "website_observed_on": null
+   },
+   "1-113028260": {
+    "domain": "overall",
+    "status": "current",
+    "value": "Inadequate",
+    "source": "cqc_ratings_file",
+    "publication_date": "2025-10-27",
+    "reason": "All channels agree",
+    "newer_than_file_edition": false,
+    "api_value": null,
+    "api_raw_value": null,
+    "api_publication_date": null,
+    "file_value": "Inadequate",
+    "file_publication_date": "2025-10-27",
+    "file_inherited_flag": false,
+    "file_sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+    "file_edition_date": "2026-10-02",
+    "website_value": null,
+    "website_publication_date": null,
+    "website_observed_on": null
+   },
+   "1-12566526711": {
+    "domain": "overall",
+    "status": "none",
+    "value": null,
+    "source": null,
+    "publication_date": null,
+    "reason": "No channel publishes a rating value",
+    "newer_than_file_edition": false,
+    "api_value": null,
+    "api_raw_value": null,
+    "api_publication_date": null,
+    "file_value": null,
+    "file_publication_date": null,
+    "file_inherited_flag": null,
+    "file_sha256": null,
+    "file_edition_date": null,
+    "website_value": null,
+    "website_publication_date": null,
+    "website_observed_on": null
+   },
+   "1-125730630": {
+    "domain": "overall",
+    "status": "current",
+    "value": "Inadequate",
+    "source": "cqc_ratings_file",
+    "publication_date": "2025-09-25",
+    "reason": "All channels agree",
+    "newer_than_file_edition": false,
+    "api_value": null,
+    "api_raw_value": null,
+    "api_publication_date": null,
+    "file_value": "Inadequate",
+    "file_publication_date": "2025-09-25",
+    "file_inherited_flag": false,
+    "file_sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+    "file_edition_date": "2026-10-02",
+    "website_value": null,
+    "website_publication_date": null,
+    "website_observed_on": null
+   },
+   "1-130890582": {
+    "domain": "overall",
+    "status": "current",
+    "value": "Outstanding",
+    "source": "cqc_ratings_file",
+    "publication_date": "2026-06-03",
+    "reason": "All channels agree",
+    "newer_than_file_edition": false,
+    "api_value": null,
+    "api_raw_value": null,
+    "api_publication_date": null,
+    "file_value": "Outstanding",
+    "file_publication_date": "2026-06-03",
+    "file_inherited_flag": false,
+    "file_sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+    "file_edition_date": "2026-10-02",
+    "website_value": null,
+    "website_publication_date": null,
+    "website_observed_on": null
+   },
+   "1-13937101349": {
+    "domain": "overall",
+    "status": "current",
+    "value": "Requires improvement",
+    "source": "cqc_ratings_file",
+    "publication_date": "2025-08-19",
+    "reason": "All channels agree",
+    "newer_than_file_edition": false,
+    "api_value": null,
+    "api_raw_value": null,
+    "api_publication_date": null,
+    "file_value": "Requires improvement",
+    "file_publication_date": "2025-08-19",
+    "file_inherited_flag": false,
+    "file_sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+    "file_edition_date": "2026-10-02",
+    "website_value": null,
+    "website_publication_date": null,
+    "website_observed_on": null
+   },
+   "1-142705508": {
+    "domain": "overall",
+    "status": "current",
+    "value": "Inadequate",
+    "source": "cqc_ratings_file",
+    "publication_date": "2026-07-08",
+    "reason": "All channels agree",
+    "newer_than_file_edition": false,
+    "api_value": null,
+    "api_raw_value": null,
+    "api_publication_date": null,
+    "file_value": "Inadequate",
+    "file_publication_date": "2026-07-08",
+    "file_inherited_flag": false,
+    "file_sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+    "file_edition_date": "2026-10-02",
+    "website_value": null,
+    "website_publication_date": null,
+    "website_observed_on": null
+   },
+   "1-152721284": {
+    "domain": "overall",
+    "status": "current",
+    "value": "Requires improvement",
+    "source": "cqc_ratings_file",
+    "publication_date": "2026-05-20",
+    "reason": "Most recently published value across channels",
+    "newer_than_file_edition": false,
+    "api_value": "Good",
+    "api_raw_value": "Good",
+    "api_publication_date": "2019-07-16",
+    "file_value": "Requires improvement",
+    "file_publication_date": "2026-05-20",
+    "file_inherited_flag": false,
+    "file_sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+    "file_edition_date": "2026-10-02",
+    "website_value": null,
+    "website_publication_date": null,
+    "website_observed_on": null
+   },
+   "1-15297949474": {
+    "domain": "overall",
+    "status": "current",
+    "value": "Requires improvement",
+    "source": "cqc_ratings_file",
+    "publication_date": "2025-08-12",
+    "reason": "All channels agree",
+    "newer_than_file_edition": false,
+    "api_value": null,
+    "api_raw_value": null,
+    "api_publication_date": null,
+    "file_value": "Requires improvement",
+    "file_publication_date": "2025-08-12",
+    "file_inherited_flag": false,
+    "file_sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+    "file_edition_date": "2026-10-02",
+    "website_value": null,
+    "website_publication_date": null,
+    "website_observed_on": null
+   },
+   "1-16491295796": {
+    "domain": "overall",
+    "status": "inherited",
+    "value": "Outstanding",
+    "source": "cqc_ratings_file",
+    "publication_date": "2018-08-24",
+    "reason": "Published before this registration or flagged inherited",
+    "newer_than_file_edition": false,
+    "api_value": null,
+    "api_raw_value": null,
+    "api_publication_date": null,
+    "file_value": "Outstanding",
+    "file_publication_date": "2018-08-24",
+    "file_inherited_flag": true,
+    "file_sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+    "file_edition_date": "2026-10-02",
+    "website_value": null,
+    "website_publication_date": null,
+    "website_observed_on": null
+   },
+   "1-16516340886": {
+    "domain": "overall",
+    "status": "current",
+    "value": "Outstanding",
+    "source": "cqc_ratings_file",
+    "publication_date": "2026-08-27",
+    "reason": "All channels agree",
+    "newer_than_file_edition": false,
+    "api_value": null,
+    "api_raw_value": null,
+    "api_publication_date": null,
+    "file_value": "Outstanding",
+    "file_publication_date": "2026-08-27",
+    "file_inherited_flag": false,
+    "file_sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+    "file_edition_date": "2026-10-02",
+    "website_value": null,
+    "website_publication_date": null,
+    "website_observed_on": null
+   },
+   "1-19058724680": {
+    "domain": "overall",
+    "status": "current",
+    "value": "Good",
+    "source": "cqc_ratings_file",
+    "publication_date": "2026-07-24",
+    "reason": "All channels agree",
+    "newer_than_file_edition": false,
+    "api_value": null,
+    "api_raw_value": null,
+    "api_publication_date": null,
+    "file_value": "Good",
+    "file_publication_date": "2026-07-24",
+    "file_inherited_flag": false,
+    "file_sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+    "file_edition_date": "2026-10-02",
+    "website_value": null,
+    "website_publication_date": null,
+    "website_observed_on": null
+   },
+   "1-19886383752": {
+    "domain": "overall",
+    "status": "unresolved",
+    "value": null,
+    "source": null,
+    "publication_date": null,
+    "reason": "An inherited value is contradicted by a value earned under this registration",
+    "newer_than_file_edition": false,
+    "api_value": "Outstanding",
+    "api_raw_value": "Outstanding",
+    "api_publication_date": "2018-06-08",
+    "file_value": "Good",
+    "file_publication_date": "2026-05-07",
+    "file_inherited_flag": false,
+    "file_sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+    "file_edition_date": "2026-10-02",
+    "website_value": null,
+    "website_publication_date": null,
+    "website_observed_on": null
+   },
+   "1-199649069": {
+    "domain": "overall",
+    "status": "none",
+    "value": null,
+    "source": null,
+    "publication_date": null,
+    "reason": "No channel publishes a rating value",
+    "newer_than_file_edition": false,
+    "api_value": null,
+    "api_raw_value": null,
+    "api_publication_date": null,
+    "file_value": null,
+    "file_publication_date": null,
+    "file_inherited_flag": null,
+    "file_sha256": null,
+    "file_edition_date": null,
+    "website_value": null,
+    "website_publication_date": null,
+    "website_observed_on": null
+   },
+   "1-22160036426": {
+    "domain": "overall",
+    "status": "unresolved",
+    "value": null,
+    "source": null,
+    "publication_date": null,
+    "reason": "An inherited value is contradicted by a value earned under this registration",
+    "newer_than_file_edition": false,
+    "api_value": "Outstanding",
+    "api_raw_value": "Outstanding",
+    "api_publication_date": "2018-03-07",
+    "file_value": "Good",
+    "file_publication_date": "2026-03-11",
+    "file_inherited_flag": false,
+    "file_sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+    "file_edition_date": "2026-10-02",
+    "website_value": null,
+    "website_publication_date": null,
+    "website_observed_on": null
+   },
+   "1-2352094536": {
+    "domain": "overall",
+    "status": "current",
+    "value": "Requires improvement",
+    "source": "cqc_ratings_file",
+    "publication_date": "2025-10-16",
+    "reason": "All channels agree",
+    "newer_than_file_edition": false,
+    "api_value": null,
+    "api_raw_value": null,
+    "api_publication_date": null,
+    "file_value": "Requires improvement",
+    "file_publication_date": "2025-10-16",
+    "file_inherited_flag": false,
+    "file_sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+    "file_edition_date": "2026-10-02",
+    "website_value": null,
+    "website_publication_date": null,
+    "website_observed_on": null
+   },
+   "1-2467326262": {
+    "domain": "overall",
+    "status": "current",
+    "value": "Outstanding",
+    "source": "cqc_ratings_file",
+    "publication_date": "2025-07-18",
+    "reason": "All channels agree",
+    "newer_than_file_edition": false,
+    "api_value": null,
+    "api_raw_value": null,
+    "api_publication_date": null,
+    "file_value": "Outstanding",
+    "file_publication_date": "2025-07-18",
+    "file_inherited_flag": false,
+    "file_sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+    "file_edition_date": "2026-10-02",
+    "website_value": null,
+    "website_publication_date": null,
+    "website_observed_on": null
+   },
+   "1-27003473742": {
+    "domain": "overall",
+    "status": "current",
+    "value": "Requires improvement",
+    "source": "cqc_ratings_file",
+    "publication_date": "2026-06-03",
+    "reason": "All channels agree",
+    "newer_than_file_edition": false,
+    "api_value": null,
+    "api_raw_value": null,
+    "api_publication_date": null,
+    "file_value": "Requires improvement",
+    "file_publication_date": "2026-06-03",
+    "file_inherited_flag": false,
+    "file_sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+    "file_edition_date": "2026-10-02",
+    "website_value": null,
+    "website_publication_date": null,
+    "website_observed_on": null
+   },
+   "1-2761140569": {
+    "domain": "overall",
+    "status": "current",
+    "value": "Good",
+    "source": "cqc_ratings_file",
+    "publication_date": "2025-07-23",
+    "reason": "All channels agree",
+    "newer_than_file_edition": false,
+    "api_value": null,
+    "api_raw_value": null,
+    "api_publication_date": null,
+    "file_value": "Good",
+    "file_publication_date": "2025-07-23",
+    "file_inherited_flag": false,
+    "file_sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+    "file_edition_date": "2026-10-02",
+    "website_value": null,
+    "website_publication_date": null,
+    "website_observed_on": null
+   },
+   "1-29650851551": {
+    "domain": "overall",
+    "status": "none",
+    "value": null,
+    "source": null,
+    "publication_date": null,
+    "reason": "No channel publishes a rating value",
+    "newer_than_file_edition": false,
+    "api_value": null,
+    "api_raw_value": null,
+    "api_publication_date": null,
+    "file_value": null,
+    "file_publication_date": null,
+    "file_inherited_flag": null,
+    "file_sha256": null,
+    "file_edition_date": null,
+    "website_value": null,
+    "website_publication_date": null,
+    "website_observed_on": null
+   },
+   "1-390976877": {
+    "domain": "overall",
+    "status": "current",
+    "value": "Requires improvement",
+    "source": "cqc_ratings_file",
+    "publication_date": "2025-12-11",
+    "reason": "Most recently published value across channels",
+    "newer_than_file_edition": false,
+    "api_value": "Inadequate",
+    "api_raw_value": "Inadequate",
+    "api_publication_date": "2024-02-28",
+    "file_value": "Requires improvement",
+    "file_publication_date": "2025-12-11",
+    "file_inherited_flag": false,
+    "file_sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+    "file_edition_date": "2026-10-02",
+    "website_value": null,
+    "website_publication_date": null,
+    "website_observed_on": null
+   },
+   "1-407665280": {
+    "domain": "overall",
+    "status": "current",
+    "value": "Requires improvement",
+    "source": "cqc_ratings_file",
+    "publication_date": "2026-04-22",
+    "reason": "All channels agree",
+    "newer_than_file_edition": false,
+    "api_value": null,
+    "api_raw_value": null,
+    "api_publication_date": null,
+    "file_value": "Requires improvement",
+    "file_publication_date": "2026-04-22",
+    "file_inherited_flag": false,
+    "file_sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+    "file_edition_date": "2026-10-02",
+    "website_value": null,
+    "website_publication_date": null,
+    "website_observed_on": null
+   },
+   "1-456354523": {
+    "domain": "overall",
+    "status": "current",
+    "value": "Inadequate",
+    "source": "cqc_ratings_file",
+    "publication_date": "2026-01-06",
+    "reason": "All channels agree",
+    "newer_than_file_edition": false,
+    "api_value": null,
+    "api_raw_value": null,
+    "api_publication_date": null,
+    "file_value": "Inadequate",
+    "file_publication_date": "2026-01-06",
+    "file_inherited_flag": false,
+    "file_sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+    "file_edition_date": "2026-10-02",
+    "website_value": null,
+    "website_publication_date": null,
+    "website_observed_on": null
+   },
+   "1-546109592": {
+    "domain": "overall",
+    "status": "current",
+    "value": "Good",
+    "source": "cqc_ratings_file",
+    "publication_date": "2025-07-11",
+    "reason": "All channels agree",
+    "newer_than_file_edition": false,
+    "api_value": null,
+    "api_raw_value": null,
+    "api_publication_date": null,
+    "file_value": "Good",
+    "file_publication_date": "2025-07-11",
+    "file_inherited_flag": false,
+    "file_sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+    "file_edition_date": "2026-10-02",
+    "website_value": null,
+    "website_publication_date": null,
+    "website_observed_on": null
+   },
+   "1-546202187": {
+    "domain": "overall",
+    "status": "current",
+    "value": "Good",
+    "source": "cqc_ratings_file",
+    "publication_date": "2026-03-31",
+    "reason": "All channels agree",
+    "newer_than_file_edition": false,
+    "api_value": null,
+    "api_raw_value": null,
+    "api_publication_date": null,
+    "file_value": "Good",
+    "file_publication_date": "2026-03-31",
+    "file_inherited_flag": false,
+    "file_sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+    "file_edition_date": "2026-10-02",
+    "website_value": null,
+    "website_publication_date": null,
+    "website_observed_on": null
+   },
+   "1-552527797": {
+    "domain": "overall",
+    "status": "current",
+    "value": "Requires improvement",
+    "source": "cqc_ratings_file",
+    "publication_date": "2025-01-09",
+    "reason": "Most recently published value across channels",
+    "newer_than_file_edition": false,
+    "api_value": "Good",
+    "api_raw_value": "Good",
+    "api_publication_date": "2016-11-10",
+    "file_value": "Requires improvement",
+    "file_publication_date": "2025-01-09",
+    "file_inherited_flag": false,
+    "file_sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+    "file_edition_date": "2026-10-02",
+    "website_value": null,
+    "website_publication_date": null,
+    "website_observed_on": null
+   },
+   "1-5588555895": {
+    "domain": "overall",
+    "status": "none",
+    "value": null,
+    "source": null,
+    "publication_date": null,
+    "reason": "No channel publishes a rating value",
+    "newer_than_file_edition": false,
+    "api_value": null,
+    "api_raw_value": null,
+    "api_publication_date": null,
+    "file_value": null,
+    "file_publication_date": null,
+    "file_inherited_flag": null,
+    "file_sha256": null,
+    "file_edition_date": null,
+    "website_value": null,
+    "website_publication_date": null,
+    "website_observed_on": null
+   },
+   "RHARA": {
+    "domain": "overall",
+    "status": "none",
+    "value": null,
+    "source": null,
+    "publication_date": null,
+    "reason": "No channel publishes a rating value",
+    "newer_than_file_edition": false,
+    "api_value": null,
+    "api_raw_value": null,
+    "api_publication_date": null,
+    "file_value": null,
+    "file_publication_date": null,
+    "file_inherited_flag": null,
+    "file_sha256": null,
+    "file_edition_date": null,
+    "website_value": null,
+    "website_publication_date": null,
+    "website_observed_on": null
+   }
+  }
+ }
+}

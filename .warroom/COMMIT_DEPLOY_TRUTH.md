@@ -1,3 +1,36 @@
+## 2026-10-27 02:46 UTC — CQC register reconciliation finalized
+
+Batch `65b9501d-743c-41c7-9fe8-37a68451f71d` (run 40417162953, main `9e44060`) finalized from CQC's 22 Oct 2026 directory (57,107 locations, 100% coverage, 0 fetch failures): active 57,165, 33 confirmed-deregistered locations deactivated, 44 confirmed still registered kept active, 12 that CQC's API returns HTTP 404 for (1-29359742625…799, 1-29363204826…930) kept ACTIVE under the workflow's operator acknowledgement. Freshness watchdog (run 40440532731): reconciled 3.7 h ago against a 192 h SLA; status `partial` solely because 15 locations are quarantined (the 3 from 18 Oct plus these 12). Clearing it needs CQC to restore those records or an operator decision to deregister them; no code change.
+
+How it got here: run 40267054399 (04:03 UTC 26 Oct) lost shards 1, 4 and 5 to deadlocks with a CQC ratings import apply this session ran concurrently (fixed: #136 ordered locking and retry, #138 the import now shares the reconciliation concurrency group). Run 40380378132 completed all shards but correctly refused to finalize 12 unconfirmed candidates; its single resume wave (run 40415436179) then lost the finalize lock to an hourly signal poll (fixed: #140 bounded finalize lock retries). Also merged: #139 report-index health from #90.
+
+---
+
+## 2026-10-26 — rating rule, Terms v2.3 and trading release
+
+Merged under founder authorization (26 Oct, "push and we ship"), each with every PR check passing:
+[#125](https://github.com/sapopo93/caregist/pull/125) report readiness (resolver, competitor scan and P12 flags all off; independent review passed with features disabled) `1b10f91`;
+[#123](https://github.com/sapopo93/caregist/pull/123) file-sourced ratings in Brief and pages, data-driven labels, edition-dated staleness, integrated with #125 using the reviewed #127 resolution `833ec13`;
+[#130](https://github.com/sapopo93/caregist/pull/130) Business Terms v2.3 and Privacy Notice v2.1, in force 26 Oct 2026 (AI legal review with three corrections; no solicitor review yet) `5990e63`;
+[#131](https://github.com/sapopo93/caregist/pull/131) CQC ratings import workflow `0354e85`;
+[#132](https://github.com/sapopo93/caregist/pull/132) coverage check excludes quarantined locations `1534c7f`;
+[#133](https://github.com/sapopo93/caregist/pull/133) operator pilot layer `d9f4906`;
+[#134](https://github.com/sapopo93/caregist/pull/134) rating rule: ratings file first, newer CQC page check wins, API fills gaps, source and disagreement on every row `1cb7b40`;
+[#135](https://github.com/sapopo93/caregist/pull/135) set-based ratings apply `ebad475`; [#136](https://github.com/sapopo93/caregist/pull/136) ordered locking and deadlock retry `9ba69e8`.
+Production Smoke PASS on `1b10f91`, `833ec13`, `5990e63` and `1cb7b40`; Vercel runtime errors: none in the hour after the rule release.
+
+Production data: migration 069 applied 25 Oct (Freshness Watchdog run 40205848533); migration 070 applied 26 Oct after Neon recovery branch `recovery/pre-migration-070-20261026`; schema check PASS. Ratings file `01_October_2026_Latest_ratings.ods` (sha256 aba66fd8…c59cd, edition 2026-10-01) re-imported with its edition date by Import CQC ratings run 40277186502 (32,161 rows; staleness check OK, 25 days old). Two earlier applies committed nothing: run 40272405511 hit the 30-minute limit (row-by-row) and run 40276188706 deadlocked with the CQC reconciliation; #135 and #136 fix both.
+
+Commercial model unchanged: human-led (written scope, Stripe Payment Link, manual fulfilment). Self-serve checkout and delivery gates remain closed.
+
+Open: #129 (Territory Preview recovery, migration 066, draft by its author's terms) and #90 (report-index health, also migration 066) need rebasing on the rating rule and a production migration. 35 stale PRs closed; remote branch deletion awaits the founder (session not permitted to delete branches). Source reconciliation remains `partial` (3 quarantined locations; watermark 2026-10-18).
+
+---
+
+## 2026-10-24 22:08 UTC — read-only observation
+
+Production backend `/api/v1/version` and frontend `/api/health/directory` both serve `bd23b392d4483beac579cd26b7dbd523872de075`, which equals GitHub `origin/main` (PR #124). This supersedes the c5b92a6 entry below as the current release identity. Observation only: nothing was deployed. Report-readiness work is on the unmerged branch `feat/report-readiness-20261024` and is not deployed.
+
 ## 2026-10-25 22:15 GMT — release identity and checkout reconciliation
 
 Authoritative release: `18536de02235297ba14bd29593760e49d91196b6` (PR #126) on GitHub main. Production backend `/api/v1/version`, frontend `/api/health/directory` and the latest GitHub Production deployment (7310298710, 25 Oct 07:52 UTC) all match. Supersedes `c5b92a6` below.

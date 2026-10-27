@@ -170,6 +170,7 @@ artifacts/radar-verification/Fulcrum_Care.html
 /output/pdf/
 # Shared release truth is intentionally versioned.
 !.warroom/COMMIT_DEPLOY_TRUTH.md
+!.warroom/REPORT_READINESS_EVIDENCE.md
 
 .projects/cache
 .projects/vault

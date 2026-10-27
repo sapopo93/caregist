@@ -42,14 +42,28 @@ _TSVECTOR = """to_tsvector('english',
 # sort key and facet below is built from these constants, so there is one
 # definition of "the rating this row may publish".
 #
-# Reconciliation (migration 068): when the API published no current rating for a
-# row but CQC's own published ratings file lists one, that file rating is served
-# -- the API still wins whenever it has a rating. ``file_overall_rating`` only
-# ever holds a published-vocabulary value copied verbatim from the file by
-# tools/import_cqc_latest_ratings.py, so nothing is inferred.
+# Rating precedence (the CareGist rating rule, 26 Oct 2026):
+#   1. CQC's monthly published ratings file is the main source for every rating
+#      (``file_overall_rating``, migration 068; imported by
+#      tools/import_cqc_latest_ratings.py with its edition date, migration 070).
+#   2. Between files, a weekly check of CQC's own location page
+#      (``site_check_rating``/``site_check_at``, migration 069,
+#      tools/verify_file_ratings_against_site.py) wins where it differs from the
+#      file -- but only if it was made on or after the file's edition date, so the
+#      next file supersedes an old check. A page showing no rating ('none')
+#      withholds the rating.
+#   3. The API rating (``rating_state = 'rated'``) is used only where the file has
+#      no rating: new registrations and services the file does not cover.
+# Every projection also returns which source served the rating and flags any
+# disagreement between sources (rule 4).
+WEBSITE_WINS = (
+    "site_check_rating IS NOT NULL AND site_check_rating IS DISTINCT FROM file_overall_rating "
+    "AND (file_rating_edition_date IS NULL OR site_check_at::date >= file_rating_edition_date)"
+)
 SERVED_RATING = (
-    "CASE WHEN rating_state = 'rated' THEN overall_rating "
-    "WHEN file_overall_rating IS NOT NULL THEN file_overall_rating END"
+    f"CASE WHEN {WEBSITE_WINS} THEN NULLIF(site_check_rating, 'none') "
+    "WHEN file_overall_rating IS NOT NULL THEN file_overall_rating "
+    "WHEN rating_state = 'rated' THEN overall_rating END"
 )
 SERVED_RATING_COLUMN = f"{SERVED_RATING} AS overall_rating"
 
@@ -62,12 +76,48 @@ SERVED_RATING_COLUMN = f"{SERVED_RATING} AS overall_rating"
 # the source has withdrawn, which are opposite signals to a reader. The state is
 # already recorded per row; this exposes it rather than re-deriving or inventing
 # it, and it is NULL exactly when a rating IS served, so the two fields are
-# never both populated and never both empty.
+# never both populated and never both empty. A rating withheld because CQC's
+# page shows none is 'not_published'.
 SERVED_RATING_ABSENCE = (
-    "CASE WHEN rating_state = 'rated' OR file_overall_rating IS NOT NULL "
-    "THEN NULL ELSE rating_state END"
+    f"CASE WHEN ({SERVED_RATING}) IS NOT NULL THEN NULL "
+    f"WHEN {WEBSITE_WINS} THEN 'not_published' ELSE rating_state END"
 )
 SERVED_RATING_ABSENCE_COLUMN = f"{SERVED_RATING_ABSENCE} AS rating_absence_reason"
+
+# Which source served the rating (rule 4): 'cqc_website', 'cqc_website_unrated'
+# (withheld because CQC's page shows none), 'cqc_file' or 'cqc_api'; NULL when no
+# source has a rating. ``rating_source_date`` is that source's date: the page
+# check, the file rating's publication date, or the API's published-rating date.
+RATING_SOURCE = (
+    f"CASE WHEN {WEBSITE_WINS} AND site_check_rating <> 'none' THEN 'cqc_website' "
+    f"WHEN {WEBSITE_WINS} THEN 'cqc_website_unrated' "
+    "WHEN file_overall_rating IS NOT NULL THEN 'cqc_file' "
+    "WHEN rating_state = 'rated' THEN 'cqc_api' END"
+)
+RATING_SOURCE_DATE = (
+    f"CASE WHEN {WEBSITE_WINS} THEN site_check_at::date "
+    "WHEN file_overall_rating IS NOT NULL THEN file_overall_rating_date "
+    "WHEN rating_state = 'rated' THEN last_published_rating_date END"
+)
+# Every disagreement between sources, flagged on the row (rule 4):
+# 'website_vs_file' when the page check overrides the file, 'file_vs_api' when
+# the file and a published API rating differ. NULL when the sources agree.
+RATING_CONFLICT = (
+    f"CASE WHEN {WEBSITE_WINS} AND file_overall_rating IS NOT NULL THEN 'website_vs_file' "
+    "WHEN file_overall_rating IS NOT NULL AND rating_state = 'rated' "
+    "AND overall_rating IS DISTINCT FROM file_overall_rating THEN 'file_vs_api' END"
+)
+RATING_SOURCE_COLUMNS = (
+    f"{RATING_SOURCE} AS rating_source, {RATING_SOURCE_DATE} AS rating_source_date, "
+    f"{RATING_CONFLICT} AS rating_conflict"
+)
+# Whole-row lookups (``SELECT *``) carry the raw API columns; these extra columns
+# give them the same served rating, absence reason and source as every other
+# projection. ``api.routers.providers._row_to_dict`` folds them back in.
+SERVED_ROW_EXTRA = (
+    f"{SERVED_RATING} AS served_rating, {SERVED_RATING_ABSENCE} AS served_absence, "
+    f"{RATING_SOURCE_COLUMNS}"
+)
 SERVED_RATING_NORMALISED = f"LOWER(BTRIM({SERVED_RATING}))"
 #: The published vocabulary, taken from the module the ingestion classifier and
 #: migration 061 both use, so a rating filter can only ever match a rating this
@@ -79,7 +129,7 @@ SERVED_RATING_IS_PUBLISHED = "{} IN ({})".format(
 
 SEARCH_SELECT = f"""
 SELECT id, provider_id, name, slug, type, status, town, county, postcode,
-       region, local_authority, {SERVED_RATING_COLUMN}, {SERVED_RATING_ABSENCE_COLUMN}, service_types, specialisms,
+       region, local_authority, {SERVED_RATING_COLUMN}, {SERVED_RATING_ABSENCE_COLUMN}, {RATING_SOURCE_COLUMNS}, service_types, specialisms,
        number_of_beds, data_completeness_score, data_completeness_tier, latitude, longitude, phone,
        is_claimed, profile_tier, review_count, avg_review_rating
 FROM care_providers
@@ -88,7 +138,7 @@ FROM care_providers
 # Ranked search select — adds ts_rank for relevance sorting
 SEARCH_SELECT_RANKED = f"""
 SELECT id, provider_id, name, slug, type, status, town, county, postcode,
-       region, local_authority, {SERVED_RATING_COLUMN}, {SERVED_RATING_ABSENCE_COLUMN}, service_types, specialisms,
+       region, local_authority, {SERVED_RATING_COLUMN}, {SERVED_RATING_ABSENCE_COLUMN}, {RATING_SOURCE_COLUMNS}, service_types, specialisms,
        number_of_beds, data_completeness_score, data_completeness_tier, latitude, longitude, phone,
        is_claimed, profile_tier, review_count, avg_review_rating,
        ts_rank({_TSVECTOR}, plainto_tsquery('english', coalesce($1, ''))) AS rank
@@ -134,8 +184,8 @@ WHERE UPPER(status) = 'ACTIVE'
 """
 
 # CQC ID direct lookup
-CQC_ID_LOOKUP = """
-SELECT * FROM care_providers WHERE (id = $1 OR provider_id = $1) AND UPPER(status) = 'ACTIVE'
+CQC_ID_LOOKUP = f"""
+SELECT *, {SERVED_ROW_EXTRA} FROM care_providers WHERE (id = $1 OR provider_id = $1) AND UPPER(status) = 'ACTIVE'
 """
 
 SPONSORED_SORT_PREFIX = "CASE WHEN profile_tier = 'sponsored' THEN 0 ELSE 1 END ASC"
@@ -238,8 +288,8 @@ ORDER BY count DESC
 LIMIT 20
 """
 
-DETAIL_BY_SLUG = """
-SELECT * FROM care_providers
+DETAIL_BY_SLUG = f"""
+SELECT *, {SERVED_ROW_EXTRA} FROM care_providers
 WHERE slug = $1 OR id = $1
 ORDER BY CASE WHEN slug = $1 THEN 0 ELSE 1 END
 LIMIT 1
@@ -247,7 +297,7 @@ LIMIT 1
 
 NEARBY_QUERY = f"""
 SELECT id, provider_id, name, slug, type, status, town, county, postcode,
-       region, {SERVED_RATING_COLUMN}, {SERVED_RATING_ABSENCE_COLUMN}, service_types, specialisms, number_of_beds,
+       region, {SERVED_RATING_COLUMN}, {SERVED_RATING_ABSENCE_COLUMN}, {RATING_SOURCE_COLUMNS}, service_types, specialisms, number_of_beds,
        data_completeness_score, data_completeness_tier, latitude, longitude, phone,
        ST_Distance(geom::geography, ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography) / 1000.0 AS distance_km
 FROM care_providers
@@ -295,8 +345,8 @@ GROUP BY {SERVED_RATING}
 ORDER BY provider_count DESC
 """
 
-COMPARE_QUERY = """
-SELECT * FROM care_providers
+COMPARE_QUERY = f"""
+SELECT *, {SERVED_ROW_EXTRA} FROM care_providers
 WHERE (slug = ANY($1::text[]) OR id = ANY($1::text[]))
   AND UPPER(status) = 'ACTIVE'
 """

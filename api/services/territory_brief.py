@@ -31,8 +31,18 @@ from collections import Counter
 from dataclasses import asdict, dataclass
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Iterable, Literal
+from typing import Any, Iterable, Literal, Mapping
 
+from api.services.rating_resolver import (
+    INHERITED,
+    SOURCE_API,
+    SOURCE_FILE,
+    UNRESOLVED,
+    RatingEvidence,
+    ResolvedRating,
+    canonical_rating,
+    resolve_rating,
+)
 from tools.generate_radar_territory_sample import (
     _load_ndjson,
     _parse_date,
@@ -144,6 +154,7 @@ class OrgEvent:
     detail: str
     source_url: str
     source_field: str
+    source_edition: str | None = None
 
 
 @dataclass(frozen=True)
@@ -169,9 +180,14 @@ class RankedOrganisation:
     # Buyer-specific follow-ups keyed by BUYER_QUESTION_TYPES, asked after the
     # general question above. Like it, each one asks and never asserts need.
     buyer_questions: tuple[tuple[str, str], ...] = ()
+    # Resolved-rating provenance (api/services/rating_resolver.py); None unless
+    # the Brief was generated under the resolved rating contract.
+    rating_resolution: dict[str, Any] | None = None
 
     def to_json(self) -> dict[str, Any]:
         data = asdict(self)
+        if self.rating_resolution is None:
+            data.pop("rating_resolution")
         data["service_types"] = list(self.service_types)
         data["buyer_questions"] = dict(self.buyer_questions)
         data["most_recent_event_date"] = (
@@ -198,9 +214,10 @@ class TerritoryBrief:
     data_caveats: tuple[str, ...]
     source_provenance: dict[str, Any]
     evidence_coverage: tuple[dict[str, Any], ...] = ()
+    rating_resolution: dict[str, Any] | None = None
 
     def to_json(self) -> dict[str, Any]:
-        return {
+        data = {
             "scope": self.scope.to_json(),
             "purchase_context": self.purchase_context.to_json(),
             "as_of_date": self.as_of_date.isoformat(),
@@ -217,6 +234,9 @@ class TerritoryBrief:
             "source_provenance": self.source_provenance,
             "evidence_coverage": list(self.evidence_coverage),
         }
+        if self.rating_resolution is not None:
+            data["rating_resolution"] = self.rating_resolution
+        return data
 
 
 # --------------------------------------------------------------------------- #
@@ -948,6 +968,9 @@ def _provider_group_event(row: dict[str, Any], group: str, *, as_of: date) -> Or
     registered = _parse_date(row.get("registrationDate"))
     last_inspection = _parse_date((row.get("lastInspection") or {}).get("date"))
     if group in ("inadequate", "requires_improvement"):
+        resolved = row.get("_resolved_rating")
+        if isinstance(resolved, ResolvedRating):
+            return _resolved_group_event(resolved, group, url=url)
         rating, report_date = _current_rating_evidence(row)
         if not rating:
             return None
@@ -1005,6 +1028,126 @@ def _provider_group_event(row: dict[str, Any], group: str, *, as_of: date) -> Or
     return None
 
 
+_GROUP_RATING = {"inadequate": "Inadequate", "requires_improvement": "Requires improvement"}
+_SOURCE_LABEL = {
+    SOURCE_API: "CQC API",
+    SOURCE_FILE: "CQC published ratings file",
+    "cqc_website": "CQC location page",
+}
+
+
+def _resolved_source_edition(resolved: ResolvedRating) -> str:
+    ev = resolved.evidence_for(resolved.source) if resolved.source else None
+    if ev and ev.source == SOURCE_FILE:
+        edition = ev.edition_date.isoformat() if ev.edition_date else "edition not recorded"
+        return f"CQC ratings file {edition} sha256:{ev.source_sha256 or 'not recorded'}"
+    if ev and ev.observed_on:
+        return f"CQC location page observed {ev.observed_on.isoformat()}"
+    return CQC_DATA_PAGE
+
+
+def _resolved_group_event(resolved: ResolvedRating, group: str, *, url: str) -> OrgEvent | None:
+    """A rating-based group admits only a ``current`` value equal to the group's rating.
+
+    Inherited ratings describe a predecessor registration and unresolved ones are
+    omitted, so neither can place a location in a rating-based group.
+    """
+    if not resolved.is_current or resolved.value != _GROUP_RATING[group] or not resolved.publication_date:
+        return None
+    label = _SOURCE_LABEL.get(resolved.source or "", resolved.source or "source")
+    return OrgEvent(
+        event_type="rating_current",
+        effective_date=resolved.publication_date,
+        old_value=None,
+        new_value=resolved.value,
+        detail=(
+            f"Current overall rating {resolved.value} (published {resolved.publication_date.isoformat()}; "
+            f"source: {label})"
+        ),
+        source_url=url,
+        source_field=f"resolved_rating.{resolved.source}",
+        source_edition=_resolved_source_edition(resolved),
+    )
+
+
+def _check_evidence_mapping(mapping: Mapping[str, Any] | None, source: str, name: str) -> None:
+    for key, value in (mapping or {}).items():
+        if not isinstance(value, RatingEvidence) or value.source != source:
+            raise TypeError(
+                f"{name}[{key!r}] must be RatingEvidence with source={source!r}, got {type(value).__name__}"
+            )
+
+
+def _align_rating_events(
+    events: list[OrgEvent], resolved: ResolvedRating, row: dict[str, Any]
+) -> list[OrgEvent]:
+    """Keep API rating events consistent with the resolved rating.
+
+    ``rating_published`` and the ``rating_changed`` into the API's latest value
+    both assert that value as the current rating. They are kept only when the
+    resolution is ``current`` with that same value; otherwise (unresolved,
+    inherited, none, or a newer different value) they are dropped so a disputed
+    or superseded value never reaches the narrative, evidence or exports.
+    Earlier in-window movements stay as dated historical facts.
+    """
+    sequence = _rating_sequence(row)
+    if not sequence:
+        return events
+    latest_date = sequence[-1][0]
+    kept = []
+    for e in events:
+        asserts_current = e.event_type in ("rating_published", "rating_changed") and e.effective_date == latest_date
+        if asserts_current and not (resolved.is_current and resolved.value == canonical_rating(e.new_value)):
+            continue
+        kept.append(e)
+    return kept
+
+
+def resolve_row_rating(
+    row: dict[str, Any],
+    file_rating: RatingEvidence | None,
+    website_observation: RatingEvidence | None = None,
+) -> ResolvedRating:
+    """Resolve a snapshot row's overall rating with its file/website evidence."""
+    raw, report_date = _current_rating_evidence(row)
+    evidence = [RatingEvidence(source=SOURCE_API, value=canonical_rating(raw), publication_date=report_date,
+                               raw_value=raw)]
+    if file_rating is not None:
+        evidence.append(file_rating)
+    if website_observation is not None:
+        evidence.append(website_observation)
+    return resolve_rating(evidence, registration_date=_parse_date(row.get("registrationDate")))
+
+
+def _rating_resolution_summary(
+    rows: list[dict[str, Any]], provider_group: str | None
+) -> dict[str, Any]:
+    resolved = {
+        str(row.get("locationId") or ""): row["_resolved_rating"]
+        for row in rows if isinstance(row.get("_resolved_rating"), ResolvedRating)
+    }
+    counts = Counter(r.status for r in resolved.values())
+    files = sorted({
+        (e.edition_date.isoformat() if e.edition_date else None, e.source_sha256)
+        for r in resolved.values() for e in r.evidence if e.source == SOURCE_FILE
+    }, key=lambda t: (t[0] or "", t[1] or ""))
+    exclusions = []
+    if provider_group in _GROUP_RATING:
+        for lid, r in sorted(resolved.items()):
+            if not r.is_current or r.value != _GROUP_RATING[provider_group]:
+                exclusions.append({"location_id": lid, "status": r.status,
+                                   "value": r.value if r.displayable else None, "reason": r.reason})
+    return {
+        "contract": "resolved_current_rating_v1",
+        "status_counts": dict(sorted(counts.items())),
+        "ratings_file_editions": [{"edition_date": e, "sha256": h} for e, h in files],
+        "omitted_unresolved": sorted(lid for lid, r in resolved.items() if r.status == UNRESOLVED),
+        "inherited": sorted(lid for lid, r in resolved.items() if r.status == INHERITED),
+        "scope_exclusions": exclusions,
+        "by_location": {lid: r.to_dict() for lid, r in sorted(resolved.items())},
+    }
+
+
 def generate_territory_opportunity_brief(
     scope: dict[str, Any] | TerritoryScope,
     purchase_context: PurchaseContext,
@@ -1013,6 +1156,9 @@ def generate_territory_opportunity_brief(
     providers_source: str | Path,
     location_ids: Iterable[str] | None = None,
     provider_group: str | None = None,
+    file_ratings: dict[str, tuple[str | None, date | None]] | None = None,
+    rating_evidence: Mapping[str, RatingEvidence] | None = None,
+    website_observations: Mapping[str, RatingEvidence] | None = None,
 ) -> TerritoryBrief:
     """Generate a complete Territory Opportunity Brief.
 
@@ -1024,9 +1170,34 @@ def generate_territory_opportunity_brief(
     ``location_ids`` restricts the Brief to an exact set (the organisations the
     buyer's coverage check counted). ``provider_group`` adds each member's
     documented group state as evidence so standing groups are not empty.
+
+    ``file_ratings`` maps a location id to (overall rating, date) chosen by the
+    CareGist rating rule: CQC's published ratings file, or a CQC page check made
+    after the file's edition where it differs. It replaces the register's API
+    rating for every location it covers (the API fills only the file's gaps), and a
+    ``None`` rating -- CQC's page shows none -- withholds the register rating, so the
+    Brief agrees with the coverage check and the website.
+
+    ``rating_evidence`` (ratings-file :class:`RatingEvidence` keyed by CQC
+    location id) and optionally ``website_observations`` switch the Brief to the
+    resolved rating contract: every rating shown, counted or used for a
+    rating-based group comes from
+    :func:`api.services.rating_resolver.resolve_rating`. Passing either -- even
+    an empty mapping -- is an explicit opt-in and requires
+    ``settings.resolved_rating_contract_enabled`` (off by default); with the
+    flag off the call is refused rather than silently falling back. Values must
+    be :class:`RatingEvidence` with ``source == "cqc_ratings_file"``; the
+    ``(rating, date)`` tuples of the earlier API-else-file fill are rejected.
+    With neither argument the Brief behaves exactly as before.
+
+    The two are alternatives, never combined: ``file_ratings`` is the legacy
+    (flag-off) API-else-file fill from PR #123, ``rating_evidence`` the resolved
+    contract (flag-on). Passing both raises ``ValueError``.
     """
     if provider_group is not None and provider_group not in PROVIDER_GROUP_LABELS:
         raise ScopeError(f"unknown provider group {provider_group!r}")
+    if file_ratings is not None and (rating_evidence is not None or website_observations is not None):
+        raise ValueError("pass file_ratings (legacy fill) or rating_evidence (resolved contract), not both")
     allowed_ids = (
         {str(item).strip() for item in location_ids if str(item).strip()}
         if location_ids is not None else None
@@ -1040,6 +1211,24 @@ def generate_territory_opportunity_brief(
 
     provider_names = load_provider_names(providers_path)
     location_rows = list(_load_ndjson(locations_path))
+    file_filled = 0
+    if file_ratings:
+        for i, row in enumerate(location_rows):
+            hit = file_ratings.get(str(row.get("locationId") or "").strip())
+            if hit is None:
+                continue
+            rating, published = hit
+            if rating is None:
+                location_rows[i] = {**row, "currentRatings": {}}
+            else:
+                location_rows[i] = {
+                    **row,
+                    "currentRatings": {
+                        "overall": {"rating": rating},
+                        "reportDate": published.isoformat() if published else None,
+                    },
+                }
+            file_filled += 1
 
     return generate_brief_from_rows(
         scope, purchase_context, location_rows=location_rows,
@@ -1079,6 +1268,28 @@ def generate_brief_from_rows(
         scoped_rows = [
             row for row in scoped_rows if str(row.get("locationId") or "").strip() in allowed_ids
         ]
+    resolving = rating_evidence is not None or website_observations is not None
+    if resolving:
+        from api.config import settings
+
+        if not settings.resolved_rating_contract_enabled:
+            raise RuntimeError(
+                "resolved rating contract is disabled (RESOLVED_RATING_CONTRACT_ENABLED=false)"
+            )
+        _check_evidence_mapping(rating_evidence, SOURCE_FILE, "rating_evidence")
+        _check_evidence_mapping(website_observations, "cqc_website", "website_observations")
+        scoped_rows = [
+            {
+                **row,
+                "_resolved_rating": resolve_row_rating(
+                    row,
+                    (rating_evidence or {}).get(str(row.get("locationId") or "").strip()),
+                    (website_observations or {}).get(str(row.get("locationId") or "").strip()),
+                ),
+            }
+            for row in scoped_rows
+        ]
+    rating_resolution = _rating_resolution_summary(scoped_rows, provider_group) if resolving else None
     territory_locations = len(scoped_rows)
     generated_on = purchase_context.generated_at.astimezone(timezone.utc).date()
     coverage = _evidence_coverage(
@@ -1092,9 +1303,20 @@ def generate_brief_from_rows(
     provider_event_locations: Counter[str] = Counter()
     per_row_events: list[tuple[dict[str, Any], list[OrgEvent]]] = []
     for row in scoped_rows:
+        resolved_row = row.get("_resolved_rating")
+        if (
+            isinstance(resolved_row, ResolvedRating)
+            and provider_group in _GROUP_RATING
+            and not (resolved_row.is_current and resolved_row.value == _GROUP_RATING[provider_group])
+        ):
+            # A rating-based group admits only matching current ratings; other
+            # signals cannot bring a non-member back in (listed in scope_exclusions).
+            continue
         events = _location_events(
             row, window_start=window_start, window_end=window_end, as_of=as_of
         )
+        if isinstance(resolved_row, ResolvedRating):
+            events = _align_rating_events(events, resolved_row, row)
         if provider_group and provider_group != "new_90":
             state = _provider_group_event(row, provider_group, as_of=as_of)
             if state is not None:
@@ -1125,6 +1347,9 @@ def generate_brief_from_rows(
         current_rating = (
             str(overall.get("rating") or "").strip() or None if isinstance(overall, dict) else None
         )
+        resolved = row.get("_resolved_rating")
+        if isinstance(resolved, ResolvedRating):
+            current_rating = resolved.value if resolved.displayable else None
         has_history = bool(_rating_sequence(row))
         score, breakdown = _score(
             events, beds=beds, provider_cluster=cluster, as_of=generated_on,
@@ -1142,6 +1367,11 @@ def generate_brief_from_rows(
             has_rating_history=has_history,
             as_of=generated_on,
         )
+        if isinstance(resolved, ResolvedRating) and resolved.status == INHERITED and "inherited" not in reason:
+            reason += (
+                f" Its overall rating of {resolved.value} was published before this registration "
+                "(inherited from a predecessor), not from an inspection of this registration."
+            )
         evidence = tuple(
             {
                 "event_type": e.event_type,
@@ -1151,7 +1381,7 @@ def generate_brief_from_rows(
                 "detail": e.detail,
                 "source_field": e.source_field,
                 "source_url": e.source_url,
-                "source_edition": CQC_DATA_PAGE,
+                "source_edition": e.source_edition or CQC_DATA_PAGE,
             }
             for e in sorted(events, key=lambda e: e.effective_date)
         )
@@ -1179,6 +1409,7 @@ def generate_brief_from_rows(
                     _primary_signal(events), provider_cluster=cluster, territory=validated.name
                 ),
                 buyer_questions=_buyer_questions(_primary_signal(events)),
+                rating_resolution=resolved.to_dict() if isinstance(resolved, ResolvedRating) else None,
             )
         )
 
@@ -1250,6 +1481,26 @@ def generate_brief_from_rows(
         "provider's quality, finances, or intent.",
         OGL_ATTRIBUTION + ".",
     )
+    if rating_resolution is not None:
+        editions = ", ".join(
+            f"{e['edition_date'] or 'undated'} (sha256 {str(e['sha256'] or 'not recorded')[:12]})"
+            for e in rating_resolution["ratings_file_editions"]
+        ) or "none supplied"
+        caveats = (
+            "Ratings are resolved across CQC's API and its published ratings file "
+            f"(editions: {editions}). {len(rating_resolution['omitted_unresolved'])} location(s) "
+            "with conflicting evidence are shown without a rating; "
+            f"{len(rating_resolution['inherited'])} inherited rating(s) are labelled and never "
+            "treated as current inspections. A ratings-file value is never reported as a rating change.",
+            *caveats,
+        )
+    if file_filled:
+        caveats = (
+            f"{file_filled} location(s) take their overall rating from CQC's published "
+            "latest-ratings file (or a later check of CQC's own page) rather than the register "
+            "edition's API rating; the API rating is used only where the file has none.",
+            *caveats,
+        )
     group_note = (
         f" Provider group: {PROVIDER_GROUP_LABELS[provider_group]}, taken from the same "
         f"directory query as the coverage check; each member carries its documented group "
@@ -1284,6 +1535,9 @@ def generate_brief_from_rows(
         "licence": OGL_ATTRIBUTION,
         "licence_url": "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
     }
+    if rating_resolution is not None:
+        provenance["rating_contract"] = rating_resolution["contract"]
+        provenance["ratings_file_editions"] = rating_resolution["ratings_file_editions"]
 
     return TerritoryBrief(
         scope=validated,
@@ -1301,10 +1555,16 @@ def generate_brief_from_rows(
         data_caveats=caveats,
         source_provenance=provenance,
         evidence_coverage=coverage,
+        rating_resolution=rating_resolution,
     )
 
 
 def _current_rating_evidence(row):
+    resolved = row.get("_resolved_rating")
+    if isinstance(resolved, ResolvedRating):
+        if not resolved.displayable:
+            return None, None
+        return resolved.value, resolved.publication_date
     current = row.get("currentRatings")
     if not isinstance(current, dict):
         return None, None
@@ -1359,6 +1619,11 @@ def _evidence_coverage(rows, *, generated_on, window_start, window_end):
             "recorded_source_hash": row.get("source_snapshot_sha256"),
             "registration_metadata_gaps": missing,
             "reference_url": CQC_PROFILE_URL.format(location_id=row.get("locationId") or ""),
+            **(
+                {"rating_status": row["_resolved_rating"].status,
+                 "rating_source": row["_resolved_rating"].source if row["_resolved_rating"].displayable else None}
+                if isinstance(row.get("_resolved_rating"), ResolvedRating) else {}
+            ),
         })
     return tuple(sorted(coverage, key=lambda item: (item["provider_id"], item["location_id"])))
 
@@ -1489,6 +1754,7 @@ def brief_to_csv(brief: TerritoryBrief) -> str:
             "registration_metadata_gaps",
             "shortlist_notice",
             "licence",
+            *(_RESOLVED_CSV_COLUMNS if brief.rating_resolution is not None else ()),
         ]
     )
     notice = brief.executive_summary.get("shortfall_notice") or ""
@@ -1525,6 +1791,25 @@ def brief_to_csv(brief: TerritoryBrief) -> str:
                 "; ".join(coverage_by_location.get(org.location_id, {}).get("registration_metadata_gaps", [])),
                 notice,
                 OGL_ATTRIBUTION,
+                *(
+                    [_csv_cell((org.rating_resolution or {}).get(key)) for key in _RESOLVED_CSV_KEYS]
+                    if brief.rating_resolution is not None else ()
+                ),
             ]
         )
     return buf.getvalue()
+
+
+_RESOLVED_CSV_KEYS = (
+    "status", "source", "publication_date", "api_value", "api_publication_date", "file_value",
+    "file_publication_date", "file_inherited_flag", "file_sha256", "file_edition_date",
+)
+_RESOLVED_CSV_COLUMNS = tuple(f"rating_{k}" for k in _RESOLVED_CSV_KEYS)
+
+
+def _csv_cell(value: Any) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, bool):
+        return "Y" if value else "N"
+    return str(value)

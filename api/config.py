@@ -429,6 +429,16 @@ class Settings(BaseSettings):
     # new public claim surface, so it stays off until its copy and numbers have
     # had independent review (docs/territory-preview.md).
     territory_preview_enabled: bool = False
+    # Report-readiness outputs (.warroom/REPORT_READINESS_BRIEF.md). Each is a
+    # new customer-facing claim surface, so each stays off until its evidence
+    # packet has independent review. None opens checkout, delivery or export.
+    # Territory Brief ratings resolved across CQC API and ratings file
+    # (api/services/rating_resolver.py) instead of the API snapshot alone.
+    resolved_rating_contract_enabled: bool = False
+    # P4 competitor scan generator (api/services/competitor_scan.py).
+    competitor_scan_enabled: bool = False
+    # P12 list: medium care homes with Well-led below Good (api/services/p12_list.py).
+    p12_list_enabled: bool = False
     review_publication_enabled: bool = False
     # Independent signal-intelligence kill switches. Defaults are deliberately
     # fail-closed; workflows opt collectors into shadow mode explicitly.
@@ -990,7 +1000,8 @@ BASIC_CSV_FIELDS = [
 
 BASIC_FIELDS = [
     "id", "name", "slug", "type", "status", "town", "county", "postcode",
-    "region", "local_authority", "overall_rating", "rating_absence_reason", "service_types",
+    "region", "local_authority", "overall_rating", "rating_absence_reason",
+    "rating_source", "rating_source_date", "rating_conflict", "service_types",
     "specialisms", "number_of_beds", "data_completeness_score", "data_completeness_tier",
     "phone", "website", "last_inspection_date", "inspection_report_url",
     "inspection_summary", "profile_description", "profile_photos",
