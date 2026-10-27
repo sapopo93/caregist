@@ -82,12 +82,14 @@ describe("revenue path contracts", () => {
       "app/pricing/page.tsx",
       "app/search/page.tsx",
       "app/signup/page.tsx",
+      "app/territory-opportunity-brief/page.tsx",
+      "app/terms/page.tsx",
       "lib/caregist-config.ts",
     ];
 
     for (const file of briefCopyFiles) {
       const copy = source(file);
-      assert.doesNotMatch(copy, /CRM-import-ready/i, file);
+      assert.doesNotMatch(copy, /CRM(?:-import)?-ready/i, file);
       assert.doesNotMatch(copy, /worth\s+approaching/i, file);
       assert.doesNotMatch(copy, /ranked shortlist|ranks the accounts|priority organisations/i, file);
       assert.match(copy, /organisations\s+to\s+investigate/, file);
