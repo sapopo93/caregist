@@ -1,3 +1,11 @@
+## 2026-10-27 02:46 UTC — CQC register reconciliation finalized
+
+Batch `65b9501d-743c-41c7-9fe8-37a68451f71d` (run 40417162953, main `9e44060`) finalized from CQC's 22 Oct 2026 directory (57,107 locations, 100% coverage, 0 fetch failures): active 57,165, 33 confirmed-deregistered locations deactivated, 44 confirmed still registered kept active, 12 that CQC's API returns HTTP 404 for (1-29359742625…799, 1-29363204826…930) kept ACTIVE under the workflow's operator acknowledgement. Freshness watchdog (run 40440532731): reconciled 3.7 h ago against a 192 h SLA; status `partial` solely because 15 locations are quarantined (the 3 from 18 Oct plus these 12). Clearing it needs CQC to restore those records or an operator decision to deregister them; no code change.
+
+How it got here: run 40267054399 (04:03 UTC 26 Oct) lost shards 1, 4 and 5 to deadlocks with a CQC ratings import apply this session ran concurrently (fixed: #136 ordered locking and retry, #138 the import now shares the reconciliation concurrency group). Run 40380378132 completed all shards but correctly refused to finalize 12 unconfirmed candidates; its single resume wave (run 40415436179) then lost the finalize lock to an hourly signal poll (fixed: #140 bounded finalize lock retries). Also merged: #139 report-index health from #90.
+
+---
+
 ## 2026-10-26 — rating rule, Terms v2.3 and trading release
 
 Merged under founder authorization (26 Oct, "push and we ship"), each with every PR check passing:
