@@ -6,6 +6,7 @@ Live provider timestamps and request time are deliberately not evidence.
 
 from __future__ import annotations
 
+import os
 from datetime import UTC, date, datetime, timedelta
 from typing import Any, Mapping
 
@@ -18,6 +19,15 @@ from api.services.cqc_reconciliation_evidence import (
 
 
 FRESHNESS_SLA = timedelta(days=8)
+
+# Operator-reviewed quarantined locations are a bounded exception, like the
+# bounded detail-unavailable ids: up to this many unresolved rows are reported
+# beside a fresh watermark (they stay ACTIVE but are held out of Territory
+# previews). More than this means something systemic, and the watermark is
+# partial again.
+QUARANTINE_EXCEPTION_CAP = int(os.getenv("CQC_QUARANTINE_EXCEPTION_CAP", "25"))
+if QUARANTINE_EXCEPTION_CAP < 0:
+    raise ValueError("CQC_QUARANTINE_EXCEPTION_CAP must be non-negative")
 
 # A reconciliation normally runs ~4.5 h (8 shards, max-parallel 4). A running
 # attempt younger than this does not invalidate an existing in-SLA watermark.
@@ -313,14 +323,15 @@ def build_cqc_freshness(
             ),
         }
 
-    if quarantined_count:
+    if quarantined_count > QUARANTINE_EXCEPTION_CAP:
         return {
             "status": "partial",
             **common,
             "reason": "unresolved_quarantined_locations",
             "message": (
                 f"The last reconciled CQC retrieval was {_display_utc(retrieved_at)}. "
-                f"{quarantined_count:,} locations remain quarantined pending source verification. "
+                f"{quarantined_count:,} locations remain quarantined pending source verification, "
+                f"more than the {QUARANTINE_EXCEPTION_CAP:,} the freshness claim tolerates. "
                 "Reconciled counts do not establish that these locations have been verified."
             ),
         }
@@ -335,6 +346,11 @@ def build_cqc_freshness(
         "their stored details were left unchanged and missing rows remain absent."
         if failure else "reconciled successfully, and completed without collection errors."
     )
+    if quarantined_count:
+        completion_message += (
+            f" {quarantined_count:,} locations remain quarantined pending source verification; "
+            "they are held out of Territory previews and are not covered by this statement."
+        )
     return {
         "status": "fresh",
         **exception_fields,

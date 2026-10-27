@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 import pytest
 
 from api.services.cqc_freshness import (
+    QUARANTINE_EXCEPTION_CAP,
     RECONCILIATION_IN_PROGRESS_GRACE,
     build_cqc_freshness,
     get_cqc_freshness,
@@ -232,15 +233,27 @@ class FreshnessConnection:
 
 
 @pytest.mark.asyncio
-async def test_persistent_quarantine_prevents_a_false_fresh_claim():
+async def test_a_bounded_number_of_quarantines_is_an_exception_beside_a_fresh_watermark():
     row = _run()
     conn = FreshnessConnection(watermark=row, attempt=row, quarantined_count=3)
     result = await get_cqc_freshness(conn, now=NOW)
-    assert result["status"] == "partial"
-    assert result["reason"] == "unresolved_quarantined_locations"
+    assert result["status"] == "fresh"
+    assert result["reason"] is None
     assert result["quarantinedLocationCount"] == 3
     assert result["countsReconciled"] is True
     assert "3 locations remain quarantined" in result["message"]
+    assert "not covered by this statement" in result["message"]
+
+
+@pytest.mark.asyncio
+async def test_quarantines_beyond_the_cap_still_prevent_a_fresh_claim():
+    row = _run()
+    count = QUARANTINE_EXCEPTION_CAP + 1
+    conn = FreshnessConnection(watermark=row, attempt=row, quarantined_count=count)
+    result = await get_cqc_freshness(conn, now=NOW)
+    assert result["status"] == "partial"
+    assert result["reason"] == "unresolved_quarantined_locations"
+    assert result["quarantinedLocationCount"] == count
     assert "completed without collection errors" not in result["message"]
 
 
