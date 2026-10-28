@@ -18,6 +18,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from api.config import runtime_requires_production_secrets, settings
 from api.database import close_pool, init_pool
 from api.logging_config import setup_logging
+from api.observability import configure_sentry
 
 # Structured JSON logs in production, human-readable locally
 setup_logging(json_output="localhost" not in settings.database_url)
@@ -25,14 +26,10 @@ from api.routers import admin, analytics, api_applications, auth, billing, city_
 
 _logger = logging.getLogger("caregist.app")
 
-if sentry_sdk and settings.sentry_dsn:
-    sentry_sdk.init(
-        dsn=settings.sentry_dsn,
-        traces_sample_rate=0.1,
-        profiles_sample_rate=0.1,
-        environment="production" if "localhost" not in settings.database_url else "development",
-        release="caregist-api@1.0.0",
-    )
+configure_sentry(
+    sentry_sdk, settings.sentry_dsn,
+    production="localhost" not in settings.database_url,
+)
 
 
 async def _email_drain_loop() -> None:

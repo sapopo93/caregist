@@ -22,7 +22,6 @@ PROVIDED_OR_GUARDED = {
     "starlette": "fastapi",
     "dotenv": "uvicorn",
     "boto3": "guarded",
-    "sentry_sdk": "guarded",
 }
 HEAVY_AND_UNUSED_BY_THE_API = {
     "pandas", "numpy", "tqdm", "python-slugify", "validators",
