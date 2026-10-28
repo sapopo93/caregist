@@ -67,11 +67,14 @@ describe("page contracts", () => {
   it("labels unpublished ratings honestly on the homepage", () => {
     const source = readAppFile("app/page.tsx");
 
-    assert.match(source, /No published rating/);
-    assert.match(source, /rating=No%20published%20rating/);
-    assert.match(source, /valueKey: "noPublishedRating"/);
-    assert.match(source, /exact overall CQC rating/);
-    assert.doesNotMatch(source, /valueKey: "notYetInspected"/);
+    // Since the 26 Oct 2026 rating rule withholds an unrated location as NULL,
+    // no row carries the literal text "No published rating"; an exact match
+    // counted 0 and linked to an empty search. The card must use the segment.
+    assert.match(source, /label: "No published rating"/);
+    assert.match(source, /opportunity=not_yet_inspected/);
+    assert.match(source, /valueKey: "notYetInspected"/);
+    assert.doesNotMatch(source, /rating=No%20published%20rating/);
+    assert.doesNotMatch(source, /valueKey: "noPublishedRating"/);
     assert.doesNotMatch(source, /label: "Not yet inspected"/);
   });
 
@@ -80,6 +83,22 @@ describe("page contracts", () => {
 
     assert.match(source, /This page counts the named/);
     assert.match(source, /town or name search can return more/);
+  });
+
+  it("lets region pages reach past their first page of providers", () => {
+    const source = readAppFile("app/region/[slug]/page.tsx");
+
+    assert.match(source, /\?page=\$\{currentPage \+ 1\}/);
+    assert.match(source, /\?page=\$\{currentPage - 1\}/);
+    assert.match(source, /\/search\?region=\$\{encodeURIComponent\(REGION_MAP\[slug\]\)\}/);
+  });
+
+  it("sends an out-of-range search page back to page one", () => {
+    const source = readAppFile("app/search/page.tsx");
+
+    assert.match(source, /results\.providers\.length === 0 && filters\.page > 1/);
+    assert.match(source, /returnParams\.delete\("page"\)/);
+    assert.match(source, /redirect\(/);
   });
 
   it("exposes a real Compare Now link after two selections", () => {
