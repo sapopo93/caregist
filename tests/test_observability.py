@@ -33,6 +33,13 @@ def test_no_dsn_or_sdk_does_not_initialise():
     assert not configure_sentry(None, "configured", production=True)
 
 
+def test_api_specific_connection_takes_precedence(monkeypatch):
+    monkeypatch.setenv("CAREGIST_API_SENTRY_DSN", "backend-only")
+    sdk = MagicMock()
+    assert configure_sentry(sdk, "legacy-shared", production=True)
+    assert sdk.init.call_args.kwargs["dsn"] == "backend-only"
+
+
 def test_sdk_uses_error_only_configuration_without_rollout_event(monkeypatch):
     monkeypatch.setenv("VERCEL_GIT_COMMIT_SHA", "abc")
     monkeypatch.delenv("SENTRY_VERIFY_RELEASE", raising=False)

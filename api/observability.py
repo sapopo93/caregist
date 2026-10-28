@@ -30,6 +30,10 @@ class CareGistSentryVerification(Exception):
 
 
 def configure_sentry(sdk: Any, dsn: str, *, production: bool) -> bool:
+    # SENTRY_DSN is also automatically consumed by the Next.js server SDK.
+    # Prefer a backend-specific connection; retain the old argument for local
+    # and other existing backend-only deployments.
+    dsn = os.environ.get("CAREGIST_API_SENTRY_DSN") or dsn
     if sdk is None or not dsn:
         return False
     release = os.environ.get("VERCEL_GIT_COMMIT_SHA") or "local"
