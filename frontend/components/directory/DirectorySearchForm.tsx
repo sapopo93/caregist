@@ -6,6 +6,7 @@ import {
   type DirectoryOpportunity,
 } from "@/lib/directory-constants";
 import type { DirectoryFilterOptions } from "@/lib/directory-db";
+import { serviceTypeLabel } from "@/lib/service-taxonomy";
 
 interface Props {
   action?: string;
@@ -114,7 +115,7 @@ export default function DirectorySearchForm({
             <option value="">All service types</option>
             {serviceTypes.map((value) => (
               <option key={value} value={value}>
-                {value.includes("-") ? value.split("-").map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(" ") : value}
+                {serviceTypeLabel(value)}
               </option>
             ))}
           </select>

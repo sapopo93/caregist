@@ -17,6 +17,11 @@ export function canonicalServices(): CanonicalService[] {
   return services;
 }
 
+/** Display name for a service slug; unknown values (legacy aliases) pass through. */
+export function serviceTypeLabel(value: string): string {
+  return bySlug.get(value.trim())?.name ?? value;
+}
+
 export function resolveServiceAliases(value: string): string[] {
   const cleaned = value.trim();
   const entry = bySlug.get(cleaned) ?? byAlias.get(cleaned.toLocaleLowerCase("en-GB"));

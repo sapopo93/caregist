@@ -14,6 +14,8 @@ test("static sitemap preserves the public non-provider routes without fabricated
       BASE_URL,
       `${BASE_URL}/search`,
       `${BASE_URL}/pricing`,
+      `${BASE_URL}/pricing/territory`,
+      `${BASE_URL}/territory-opportunity-brief`,
       `${BASE_URL}/intelligence-feed`,
       `${BASE_URL}/why-caregist`,
       `${BASE_URL}/data-status`,
@@ -36,4 +38,14 @@ test("robots advertises the static sitemap and the single segmented provider sit
     `${BASE_URL}/provider-sitemap-index.xml`,
   ]);
   assert.equal(new Set(robots.sitemap).size, 2);
+});
+
+test("robots keeps account, admin and API paths out of crawls", () => {
+  const rules = buildCareGistRobots(BASE_URL).rules;
+  const disallow = Array.isArray(rules) ? rules.flatMap((rule) => rule.disallow ?? []) : rules.disallow;
+
+  for (const path of ["/api/", "/admin", "/dashboard", "/provider-dashboard/", "/login", "/signup"]) {
+    assert.ok(([] as string[]).concat(disallow ?? []).includes(path), `${path} is disallowed`);
+  }
+  assert.ok(!([] as string[]).concat(disallow ?? []).some((path) => path.startsWith("/provider/")));
 });

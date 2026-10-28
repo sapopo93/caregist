@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { canonicalServices, canonicalizeServiceCounts, resolveServiceAliases } from "./service-taxonomy.ts";
+import { canonicalServices, canonicalizeServiceCounts, resolveServiceAliases, serviceTypeLabel } from "./service-taxonomy.ts";
 
 describe("canonical service taxonomy", () => {
   it("covers every observed CQC source label exactly once", () => {
@@ -20,5 +20,13 @@ describe("canonical service taxonomy", () => {
       { service_type: "Domiciliary care service", provider_count: 5 },
     ]);
     assert.equal(rows.find((row) => row.service_type === "home-care")?.provider_count, 105);
+  });
+});
+
+describe("service type labels", () => {
+  it("uses display names instead of title-casing the slug", () => {
+    assert.equal(serviceTypeLabel("blood-transplant"), "Blood and Transplant Services");
+    assert.equal(serviceTypeLabel("primary-medical-care"), "GP and Primary Medical Services");
+    assert.equal(serviceTypeLabel("Homecare Agencies"), "Homecare Agencies");
   });
 });
