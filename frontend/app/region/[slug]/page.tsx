@@ -86,6 +86,7 @@ export default async function RegionPage({
   }
 
   const totalProviders = stats?.total_providers || results.meta.total;
+  const currentPage = Math.max(1, Number(results.meta.page) || 1);
   const pctGood = stats?.pct_good_or_outstanding;
 
   const jsonLd = {
@@ -208,6 +209,30 @@ export default async function RegionPage({
 
       {!error && results.data.length === 0 && (
         <p className="text-center text-dusk py-12">No providers found.</p>
+      )}
+
+      {/* The API returns one page at a time; without these links the page was a
+          dead end after its first few rows. */}
+      {!error && (results.meta.pages > 1 || isRegion) && (
+        <nav aria-label="More providers" className="mt-6 flex flex-wrap items-center justify-between gap-3 text-sm print:hidden">
+          <div className="flex gap-3">
+            {currentPage > 1 && (
+              <Link href={`/region/${slug}?page=${currentPage - 1}`} className="rounded-full border border-stone px-4 py-2 font-semibold text-bark hover:bg-cream">
+                Previous
+              </Link>
+            )}
+            {currentPage < results.meta.pages && (
+              <Link href={`/region/${slug}?page=${currentPage + 1}`} className="rounded-full border border-stone px-4 py-2 font-semibold text-bark hover:bg-cream">
+                Next
+              </Link>
+            )}
+          </div>
+          {isRegion && (
+            <Link href={`/search?region=${encodeURIComponent(REGION_MAP[slug])}`} className="font-semibold text-clay underline underline-offset-4 hover:text-bark">
+              Filter all {totalProviders.toLocaleString()} {displayName} providers in the directory
+            </Link>
+          )}
+        </nav>
       )}
 
       {/* Email Capture */}

@@ -42,9 +42,9 @@ const FACT_LINKS: Array<{
   },
   {
     label: "No published rating",
-    href: "/search?rating=No%20published%20rating",
-    valueKey: "noPublishedRating",
-    note: "Locations currently carrying this exact overall CQC rating",
+    href: "/search?opportunity=not_yet_inspected",
+    valueKey: "notYetInspected",
+    note: "Locations with no published overall CQC rating",
   },
 ];
 
