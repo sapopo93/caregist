@@ -6,8 +6,8 @@ from api.service_taxonomy import canonical_service_rows, resolve_service_filter,
 def test_taxonomy_covers_all_observed_cqc_service_labels():
     aliases = [alias for entry in taxonomy() for alias in entry["aliases"]]
 
-    assert len(aliases) == 57
-    assert len({alias.casefold() for alias in aliases}) == 57
+    assert len(aliases) == 58
+    assert len({alias.casefold() for alias in aliases}) == 58
 
 
 def test_canonical_and_legacy_filters_resolve_to_same_exact_aliases():
