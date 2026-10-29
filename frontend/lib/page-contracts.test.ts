@@ -46,7 +46,7 @@ describe("page contracts", () => {
     assert.match(storySource, /permanentRedirect\("\/why-caregist"\)/);
     assert.match(claimSource, /Provider claims are unavailable/);
     assert.match(claimSource, /\/search\?q=/);
-    assert.match(claimSource, /cqc\.org\.uk\/care-services\/find-care-service/);
+    assert.match(claimSource, /cqc\.org\.uk\/care-services"/);
     assert.equal(existsSync(resolve(appRoot, "components/CityRatingPage.tsx")), false);
     assert.doesNotMatch(readAppFile("app/dashboard/page.tsx"), /Find a provider to claim|\/claim\//);
   });
@@ -103,6 +103,17 @@ describe("page contracts", () => {
 
     assert.doesNotMatch(source, /EmailCaptureStrip|emailGated|slice\(0, 3\)/);
     assert.match(source, /const visibleResults = sortedResults/);
+  });
+
+  it("filters the radius search by the service names CQC rows actually hold", () => {
+    const source = readAppFile("components/RadiusFinder.tsx");
+
+    // The API matches service_types ILIKE '%value%'; these short aliases matched 0 rows.
+    for (const dead of ["Residential Homes", "Homecare Agencies", "Nursing Homes", "Doctors/Gps", "Dentist", "Community Services - "]) {
+      assert.doesNotMatch(source, new RegExp(`value: "${dead}`));
+    }
+    assert.match(source, /value: "Care home service without nursing"/);
+    assert.match(source, /value: "Domiciliary care"/);
   });
 
   it("redirects Requires Improvement city pages with the stored rating casing", () => {

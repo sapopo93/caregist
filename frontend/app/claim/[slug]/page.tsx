@@ -31,7 +31,7 @@ export default async function ClaimUnavailablePage({
           Find the provider in CareGist
         </Link>
         <a
-          href="https://www.cqc.org.uk/care-services/find-care-service"
+          href="https://www.cqc.org.uk/care-services"
           target="_blank"
           rel="noopener noreferrer"
           className="rounded-lg border border-clay px-5 py-3 text-sm font-semibold text-clay hover:bg-cream"
