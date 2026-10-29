@@ -28,6 +28,17 @@ export function resolveServiceAliases(value: string): string[] {
   return entry?.aliases ?? (cleaned ? [cleaned] : []);
 }
 
+/**
+ * Canonical slugs that have at least one live source label. The search dropdown
+ * is built from this so an option never offers a filter that returns nothing.
+ */
+export function canonicalSlugsWithLiveRows(liveLabels: string[]): string[] {
+  const live = new Set(liveLabels.map((label) => label.trim().toLocaleLowerCase("en-GB")));
+  return services
+    .filter((entry) => entry.aliases.some((alias) => live.has(alias.trim().toLocaleLowerCase("en-GB"))))
+    .map((entry) => entry.slug);
+}
+
 export function canonicalizeServiceCounts(rows: Array<{ service_type: string; provider_count: number }>) {
   const counts = new Map<string, number>();
   for (const row of rows) {

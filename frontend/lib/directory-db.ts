@@ -1,6 +1,11 @@
 import { consumeTerritoryBriefDownload } from "./territory-brief-download.ts";
 import { createHash, randomBytes } from "node:crypto";
-import { canonicalizeServiceCounts, canonicalServices, resolveServiceAliases } from "@/lib/service-taxonomy";
+import {
+  canonicalizeServiceCounts,
+  canonicalServices,
+  canonicalSlugsWithLiveRows,
+  resolveServiceAliases,
+} from "@/lib/service-taxonomy";
 
 import { createPool } from "@vercel/postgres";
 import { Pool as NodePostgresPool } from "pg";
@@ -377,7 +382,8 @@ export async function getDirectoryFilterOptions(): Promise<DirectoryFilterOption
 
     return {
       regions: normalizeOptions(regionsRes.rows.map((row) => row.region), DEFAULT_REGION_OPTIONS),
-      serviceTypes: canonicalServices().map((entry) => entry.slug),
+      // Only offer service types that have live rows; an option with no rows returns nothing.
+      serviceTypes: canonicalSlugsWithLiveRows(serviceTypesRes.rows.map((row) => row.service_type)),
       ratings: sortRatings(
         normalizeOptions(ratingsRes.rows.map((row) => row.overall_rating), DEFAULT_RATING_OPTIONS),
       ),
