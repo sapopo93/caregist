@@ -47,6 +47,15 @@ describe("directory query clauses", () => {
     assert.match(clause, /provider_search_vector @@ websearch_to_tsquery\('english', \$2\)/);
   });
 
+  it("treats a missing CQC inspection date as stale, matching the homepage count", () => {
+    const clause = buildOpportunityClause("stale_inspection");
+    const source = readFileSync(new URL("./directory-db.ts", import.meta.url), "utf8");
+    const predicate = "last_inspection_date IS NULL OR last_inspection_date < CURRENT_DATE - INTERVAL '3 years'";
+
+    assert.equal(clause, `(${predicate})`);
+    assert.ok(source.includes(predicate), "the stale-inspection count must use the same predicate as the list filter");
+  });
+
   it("matches explicit rating filters without relying on display casing", () => {
     assert.equal(
       buildRatingClause(4),
