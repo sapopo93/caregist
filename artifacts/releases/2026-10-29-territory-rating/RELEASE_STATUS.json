@@ -1,0 +1,16 @@
+{
+  "candidate_commit": "c58efa3e8a3ccc0559d86a78be8f242dbe6f8b29",
+  "pull_request": "https://github.com/sapopo93/caregist/pull/151",
+  "mergeable": "CONFLICTING",
+  "merge_state": "DIRTY",
+  "ci_checks": [],
+  "backend_tests": 128,
+  "isolated_postgres_tests": 8,
+  "frontend_tests": 9,
+  "automatic_branch_deployments": false,
+  "deployments_for_candidate": [],
+  "grok_retest": "Attempted via Hermes with xai-oauth/grok-4.6 xhigh, max 25 turns and 180-second run budget. No output or completion receipt was produced before interruption after the budget; gate NOT VERIFIED.",
+  "independent_different_model_challenge": "pending after Grok retest",
+  "production": "unchanged",
+  "checkout_and_delivery_gates": "unchanged"
+}

@@ -1,0 +1,6 @@
+CONFLICT (content): Merge conflict in .warroom/NEXT_ACTIONS.md
+CONFLICT (content): Merge conflict in .warroom/TOP_BLOCKERS.md
+CONFLICT (content): Merge conflict in api/services/territory_brief.py
+CONFLICT (content): Merge conflict in api/services/territory_brief_render.py
+CONFLICT (content): Merge conflict in tests/integration/test_territory_source_pg.py
+CONFLICT (content): Merge conflict in tools/import_territory_brief_source.py

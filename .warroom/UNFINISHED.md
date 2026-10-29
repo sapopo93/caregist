@@ -1,3 +1,9 @@
+## 2026-10-29 rating candidate committed and pushed — release BLOCKED / NOT VERIFIED
+
+Rating implementation and frozen evidence pushed in 2df98bf/c58efa3 to `codex/territory-rating-publication-20261029`; [draft PR #151](https://github.com/sapopo93/caregist/pull/151) has merge conflicts with newer main. Six conflict paths are recorded in [release handoff](../artifacts/releases/2026-10-29-territory-rating/RELEASE_HANDOFF.md). Local candidate validation passed: 128 backend, 8 isolated Postgres, 9 frontend tests, candidate Ruff. No CI result is available for the conflicting PR.
+
+Next bounded step: reconcile the named rating changes with main's newer resolver, source-edition and buyer-rule handling without removing gates; rerun exact-candidate checks and Grok journey retest, then independent approved-provider different-model challenge. Bounded Grok attempt returned no output/receipt before interruption; NOT VERIFIED. DeepSeek prohibited. Branch autodeploy disabled; no deployment or production write; checkout/delivery and all commercial gates unchanged. Unrelated original-checkout changes remain preserved outside the branch.
+
 ## 2026-10-29 publication precedence amendment — LOCAL / PARTIAL
 
 Contract v2 compares dated CQC file/website publications only; undated website fills gaps; API fills gaps only and never wins by its date. Unresolvable conflicts retain candidate evidence. Labels show source and publication-as-of date; undated publication dates stay unavailable. [Updated frozen packet and checks](../artifacts/rating-resolution/2026-10-29-publication-precedence/README.md). Required [Grok then independent-model reviews remain queued locally](../artifacts/rating-resolution/2026-10-29-publication-precedence/REVIEW_QUEUE.md), not run. No production writes, merges or deployment; checkout/delivery and all commercial gates unchanged. Prior packet is historical evidence, not the current review target.
