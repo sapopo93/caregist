@@ -1,0 +1,577 @@
+"""Unit tests for the Territory Opportunity Brief generator.
+
+These use small synthetic CQC-shaped snapshots written to ``tmp_path`` so every
+ranking, reason and validation path is exercised deterministically and without
+the real 700MB register.
+"""
+
+from __future__ import annotations
+
+import json
+import re
+import zlib
+from datetime import datetime, timezone
+from pathlib import Path
+
+import pytest
+
+from api.services.territory_brief import (
+    EvidenceError,
+    PurchaseContext,
+    ScopeError,
+    brief_to_csv,
+    generate_territory_opportunity_brief,
+    known_territories,
+    validate_scope,
+)
+from api.services.territory_brief import _validate_evidence
+from api.services.territory_brief_render import render_brief_pdf
+
+CONTEXT = PurchaseContext(
+    order_reference="test-order",
+    generated_at=datetime(2026, 1, 1, tzinfo=timezone.utc),
+    terms_version="test",
+)
+
+
+# --------------------------------------------------------------------------- #
+# Snapshot builders
+# --------------------------------------------------------------------------- #
+
+
+def _loc(**over):
+    base = {
+        "locationId": "1-001",
+        "name": "Test Location",
+        "providerId": "1-P001",
+        "localAuthority": "Testershire",
+        "region": "Test Region",
+        "registrationDate": "2026-02-10",
+        "registrationStatus": "Registered",
+        "dormancy": "N",
+        "numberOfBeds": 20,
+        "postalCode": "TE1 1ST",
+        "gacServiceTypes": [{"description": "Care home service without nursing"}],
+        "currentRatings": {},
+        "historicRatings": [],
+    }
+    base.update(over)
+    return base
+
+
+def _rating_block(rating: str, report_date: str):
+    return {
+        "overall": {"rating": rating, "reportDate": report_date},
+        "reportDate": report_date,
+    }
+
+
+def _historic(rating: str, report_date: str):
+    return {"overall": {"rating": rating}, "reportDate": report_date}
+
+
+def _write_snapshot(tmp_path: Path, locations: list[dict], providers: list[dict] | None = None):
+    loc_path = tmp_path / "locations.ndjson"
+    prov_path = tmp_path / "providers.ndjson"
+    loc_path.write_text("\n".join(json.dumps(row) for row in locations) + "\n", encoding="utf-8")
+    providers = providers or [{"providerId": "1-P001", "name": "Test Provider Ltd"}]
+    prov_path.write_text("\n".join(json.dumps(row) for row in providers) + "\n", encoding="utf-8")
+    return loc_path, prov_path
+
+
+def _generate(tmp_path, locations, providers=None, **scope_over):
+    loc_path, prov_path = _write_snapshot(tmp_path, locations, providers)
+    scope = {"kind": "local_authority", "name": "Testershire", "window_days": 90}
+    scope.update(scope_over)
+    return generate_territory_opportunity_brief(
+        scope, CONTEXT, locations_source=loc_path, providers_source=prov_path
+    )
+
+
+# --------------------------------------------------------------------------- #
+# Scope validation
+# --------------------------------------------------------------------------- #
+
+
+def test_validate_scope_canonicalises_case():
+    cat = known_territories([_loc(localAuthority="Isle of Wight")])
+    scope = validate_scope({"kind": "local_authority", "name": "isle of WIGHT"}, cat)
+    assert scope.name == "Isle of Wight"
+    assert scope.window_days == 90
+
+
+def test_validate_scope_rejects_unknown_territory():
+    cat = known_territories([_loc(localAuthority="Kent")])
+    with pytest.raises(ScopeError, match="not a recognised"):
+        validate_scope({"kind": "local_authority", "name": "Atlantis"}, cat)
+
+
+@pytest.mark.parametrize(
+    "raw",
+    [
+        {"kind": "county", "name": "Kent"},
+        {"kind": "local_authority", "name": ""},
+        {"kind": "local_authority", "name": "Kent'; DROP TABLE providers;--"},
+        {"kind": "local_authority", "name": "Kent", "window_days": 0},
+        {"kind": "local_authority", "name": "Kent", "window_days": 5000},
+        {"kind": "local_authority", "name": "Kent", "shortlist_target": 3},
+        {"kind": "local_authority", "name": "Kent", "shortlist_target": 500},
+        "not-an-object",
+    ],
+)
+def test_validate_scope_rejects_bad_input(raw):
+    cat = known_territories([_loc(localAuthority="Kent")])
+    with pytest.raises(ScopeError):
+        validate_scope(raw, cat)
+
+
+def test_generator_never_falls_back_to_a_default_territory(tmp_path):
+    with pytest.raises(ScopeError):
+        _generate(tmp_path, [_loc()], name="Nowhereshire")
+
+
+def test_missing_snapshot_fails_loudly(tmp_path):
+    with pytest.raises(FileNotFoundError):
+        generate_territory_opportunity_brief(
+            {"kind": "local_authority", "name": "Testershire"},
+            CONTEXT,
+            locations_source=tmp_path / "nope.ndjson",
+            providers_source=tmp_path / "nope2.ndjson",
+        )
+
+
+# --------------------------------------------------------------------------- #
+# Ranking
+# --------------------------------------------------------------------------- #
+
+
+def test_ranking_orders_by_score_desc(tmp_path):
+    locs = [
+        _loc(locationId="1-A", providerId="1-P001", name="Small Home",
+             registrationDate="2025-12-01", numberOfBeds=5),
+        _loc(locationId="1-B", providerId="1-P002", name="Big Recent Home",
+             registrationDate="2026-02-18", numberOfBeds=80),
+    ]
+    providers = [
+        {"providerId": "1-P001", "name": "Prov One Ltd"},
+        {"providerId": "1-P002", "name": "Prov Two Ltd"},
+    ]
+    brief = _generate(tmp_path, locs, providers, window_days=120)
+    assert [o.location_name for o in brief.shortlist] == ["Big Recent Home", "Small Home"]
+    assert brief.shortlist[0].score > brief.shortlist[1].score
+    assert brief.shortlist[0].rank == 1 and brief.shortlist[1].rank == 2
+
+
+def test_tie_break_is_stable_and_deterministic(tmp_path):
+    # Three identical-profile locations, same date -> identical score. Order must
+    # be by name then location id, and identical across runs.
+    locs = [
+        _loc(locationId="1-C", providerId="1-PC", name="Charlie House", registrationDate="2026-02-10"),
+        _loc(locationId="1-A", providerId="1-PA", name="Alpha House", registrationDate="2026-02-10"),
+        _loc(locationId="1-B", providerId="1-PB", name="Alpha House", registrationDate="2026-02-10"),
+    ]
+    providers = [{"providerId": f"1-P{c}", "name": f"{c} Ltd"} for c in "ABC"]
+    order1 = [o.location_id for o in _generate(tmp_path, locs, providers).shortlist]
+    order2 = [o.location_id for o in _generate(tmp_path, locs, providers).shortlist]
+    assert order1 == order2 == ["1-A", "1-B", "1-C"]
+
+
+def test_rating_decline_outscores_plain_registration(tmp_path):
+    decline = _loc(
+        locationId="1-DEC", providerId="1-PDEC", name="Declining Home",
+        registrationDate="2020-01-01", numberOfBeds=10,
+        historicRatings=[_historic("Good", "2023-01-01")],
+        currentRatings=_rating_block("Inadequate", "2026-02-01"),
+    )
+    reg = _loc(locationId="1-REG", providerId="1-PREG", name="New Home",
+               registrationDate="2026-02-01", numberOfBeds=10)
+    providers = [
+        {"providerId": "1-PDEC", "name": "Decline Ltd"},
+        {"providerId": "1-PREG", "name": "Newco Ltd"},
+    ]
+    brief = _generate(tmp_path, [decline, reg], providers, window_days=90)
+    assert brief.shortlist[0].location_name == "Declining Home"
+    assert "down" in brief.shortlist[0].reason.lower()
+
+
+def test_provider_cluster_bonus_and_narrative(tmp_path):
+    locs = [
+        _loc(locationId=f"1-{i}", providerId="1-PMULTI", name=f"Chain Site {i}",
+             registrationDate="2026-02-05")
+        for i in range(3)
+    ]
+    providers = [{"providerId": "1-PMULTI", "name": "Chain Care Ltd"}]
+    brief = _generate(tmp_path, locs, providers)
+    assert all("account-level opportunity" in o.reason for o in brief.shortlist)
+    assert brief.territory_insights["most_active_providers"][0]["provider"] == "Chain Care Ltd"
+
+
+# --------------------------------------------------------------------------- #
+# Reasons
+# --------------------------------------------------------------------------- #
+
+
+def test_every_shortlisted_org_has_a_nonempty_reason(tmp_path):
+    locs = [
+        _loc(locationId="1-1", providerId="1-P1", name="A", registrationDate="2026-02-10"),
+        _loc(locationId="1-2", providerId="1-P2", name="B", numberOfBeds=None,
+             gacServiceTypes=[], registrationDate="2026-02-11"),
+        _loc(locationId="1-3", providerId="1-P3", name="C", postalCode="",
+             historicRatings=[_historic("Requires improvement", "2022-01-01")],
+             currentRatings=_rating_block("Good", "2026-01-15")),
+    ]
+    providers = [{"providerId": f"1-P{i}", "name": f"P{i} Ltd"} for i in (1, 2, 3)]
+    brief = _generate(tmp_path, locs, providers)
+    assert len(brief.shortlist) == 3
+    for o in brief.shortlist:
+        assert o.reason and o.reason.strip()
+        assert len(o.reason) > 30
+        assert o.evidence  # at least one evidence item
+
+
+def test_improvement_reason_wording(tmp_path):
+    loc = _loc(
+        locationId="1-IMP", providerId="1-PIMP", name="Improver",
+        registrationDate="2019-01-01",
+        historicRatings=[_historic("Requires improvement", "2022-06-01")],
+        currentRatings=_rating_block("Good", "2026-01-20"),
+    )
+    brief = _generate(tmp_path, [loc], [{"providerId": "1-PIMP", "name": "Improver Ltd"}])
+    assert brief.shortlist[0].primary_signal == "Rating change"
+    assert "improved" in brief.shortlist[0].reason.lower()
+
+
+def test_incomplete_org_excluded_when_provider_name_missing(tmp_path):
+    good = _loc(locationId="1-OK", providerId="1-POK", name="Fine Home", registrationDate="2026-02-10")
+    bad = _loc(locationId="1-BAD", providerId="1-UNKNOWN", name="Ghost Home", registrationDate="2026-02-10")
+    # provider list only names the good one; bad one has name too though (falls back to location name)
+    brief = _generate(tmp_path, [good, bad], [{"providerId": "1-POK", "name": "OK Ltd"}])
+    names = {o.location_name for o in brief.shortlist}
+    assert "Fine Home" in names
+
+
+def test_reregistration_is_labelled_distinctly(tmp_path):
+    loc = _loc(
+        locationId="1-RE", providerId="1-PRE", name="Handover House",
+        registrationDate="2026-02-10",
+        historicRatings=[_historic("Good", "2021-01-01")],
+        currentRatings=_rating_block("Good", "2021-01-01"),
+    )
+    brief = _generate(tmp_path, [loc], [{"providerId": "1-PRE", "name": "Handover Ltd"}])
+    assert "re-registered" in brief.shortlist[0].reason.lower()
+
+
+def test_reasons_do_not_infer_supplier_intent_from_registration_or_rating(tmp_path):
+    locs = [
+        _loc(locationId="1-NEW", providerId="1-PNEW", name="New Home", registrationDate="2026-02-10"),
+        _loc(
+            locationId="1-DOWN",
+            providerId="1-PDOWN",
+            name="Declining Home",
+            registrationDate="2019-01-01",
+            historicRatings=[_historic("Good", "2025-01-01")],
+            currentRatings=_rating_block("Requires improvement", "2026-02-01"),
+        ),
+    ]
+    providers = [
+        {"providerId": "1-PNEW", "name": "New Ltd"},
+        {"providerId": "1-PDOWN", "name": "Down Ltd"},
+    ]
+    brief = _generate(tmp_path, locs, providers, window_days=90)
+    reasons = " ".join(o.reason.lower() for o in brief.shortlist)
+    assert "purchasing intent" in reasons
+    assert "budget-releasing" not in reasons
+    assert "no incumbent supplier" not in reasons
+
+
+def test_evidence_provenance_is_fail_closed():
+    with pytest.raises(EvidenceError, match="source_url"):
+        _validate_evidence(({
+            "event_type": "new_registration",
+            "effective_date": "2026-02-10",
+            "detail": "new registration",
+            "source_field": "registrationDate",
+            "source_edition": "CQC register",
+        },))
+
+
+# --------------------------------------------------------------------------- #
+# Structure / caveats / determinism of whole brief
+# --------------------------------------------------------------------------- #
+
+
+def test_window_anchored_to_newest_source_date(tmp_path):
+    locs = [_loc(registrationDate="2026-02-20"), _loc(locationId="1-old", providerId="1-P001",
+                                                      registrationDate="2019-01-01")]
+    brief = _generate(tmp_path, locs, window_days=30)
+    assert brief.as_of_date.isoformat() == "2026-02-20"
+    assert brief.window_start.isoformat() == "2026-01-22"
+
+
+def test_empty_window_produces_valid_empty_brief(tmp_path):
+    # Newest source date is anchored by a dormant new registration (which is not
+    # a supported event), so the window contains nothing to shortlist.
+    brief = _generate(tmp_path, [_loc(dormancy="Y", registrationDate="2026-02-20",
+                                      currentRatings={}, historicRatings=[])],
+                      window_days=7)
+    assert brief.shortlist == ()
+    assert "no supported" in brief.executive_summary["movement_summary"]
+    # rendering an empty brief must still succeed
+    pdf = render_brief_pdf(brief)
+    assert pdf.startswith(b"%PDF")
+
+
+def test_brief_is_byte_identical_for_identical_inputs(tmp_path):
+    locs = [_loc(locationId=f"1-{i}", providerId=f"1-P{i}", name=f"H{i}",
+                 registrationDate="2026-02-1%d" % (i % 10)) for i in range(5)]
+    providers = [{"providerId": f"1-P{i}", "name": f"P{i} Ltd"} for i in range(5)]
+    a = _generate(tmp_path, locs, providers)
+    b = _generate(tmp_path, locs, providers)
+    assert json.dumps(a.to_json(), sort_keys=True) == json.dumps(b.to_json(), sort_keys=True)
+    assert render_brief_pdf(a) == render_brief_pdf(b)
+
+
+def test_caveats_and_methodology_present(tmp_path):
+    brief = _generate(tmp_path, [_loc()])
+    assert any("Open Government Licence" in c for c in brief.data_caveats)
+    assert any("register edition" in c for c in brief.data_caveats)
+    assert len(brief.methodology_notes) >= 3
+    assert brief.next_actions
+
+
+# --------------------------------------------------------------------------- #
+# CSV + PDF transformation
+# --------------------------------------------------------------------------- #
+
+
+def test_csv_has_expected_columns_and_no_blank_reason(tmp_path):
+    brief = _generate(tmp_path, [
+        _loc(locationId="1-1", providerId="1-P1", name="A", registrationDate="2026-02-10"),
+        _loc(locationId="1-2", providerId="1-P2", name="B", registrationDate="2026-02-11"),
+    ], [{"providerId": "1-P1", "name": "P1 Ltd"}, {"providerId": "1-P2", "name": "P2 Ltd"}])
+    csv_text = brief_to_csv(brief)
+    header, *rows = csv_text.strip().splitlines()
+    assert header.split(",")[:4] == ["rank", "organisation", "location", "cqc_location_id"]
+    assert "reason" in header and "cqc_record_url" in header
+    assert len(rows) == 2
+    for row in rows:
+        assert ",,," not in row  # crude blank-cluster check
+    import csv as _csv
+    import io
+    parsed = list(_csv.DictReader(io.StringIO(csv_text)))
+    assert all(row["reason"].strip() for row in parsed)
+
+
+def test_pdf_renders_multipage_with_appendix(tmp_path):
+    locs = [
+        _loc(locationId=f"1-{i}", providerId=f"1-P{i}", name=f"Home {i}",
+             registrationDate="2026-02-%02d" % (1 + i % 20), numberOfBeds=10 + i)
+        for i in range(20)
+    ]
+    providers = [{"providerId": f"1-P{i}", "name": f"Provider {i} Ltd"} for i in range(20)]
+    brief = _generate(tmp_path, locs, providers, window_days=120)
+    pdf = render_brief_pdf(brief)
+    assert pdf.startswith(b"%PDF-1.4")
+    assert pdf.rstrip().endswith(b"%%EOF")
+    # multi-page: the /Type /Page count in the object stream
+    assert pdf.count(b"/Type /Page") >= 4
+    assert b"Appendix A" not in pdf  # compressed streams; sanity that we don't accidentally store plaintext
+
+
+def test_undated_current_rating_refuses_recent_changes_claim(tmp_path):
+    brief = _generate(tmp_path, [_loc(
+        currentRatings={"overall": {"rating": "Requires improvement"}},
+        historicRatings=[_historic("Good", "2020-01-01")],
+    )])
+    status = brief.territory_insights["rating_date_coverage"]
+    assert status["recent_rating_changes_available"] is False
+    assert "unavailable" in status["limitation"]
+    assert b"Recent rating changes unavailable" in _pdf_stream_text(render_brief_pdf(brief))
+    assert not brief.territory_insights["events_by_type"].get("rating_changed")
+    assert brief.evidence_coverage[0]["rating_publication_date"] is None
+    assert "no publication date" in brief.evidence_coverage[0]["rating_freshness"]
+
+
+def test_old_snapshot_does_not_make_stale_ri_fresh(tmp_path):
+    loc, prov = _write_snapshot(tmp_path, [_loc(
+        registrationDate="2020-01-01",
+        currentRatings=_rating_block("Requires improvement", "2024-04-26"),
+    )])
+    brief = generate_territory_opportunity_brief(
+        {"kind": "local_authority", "name": "Testershire"},
+        PurchaseContext("stale-test", datetime(2026, 10, 2, tzinfo=timezone.utc)),
+        locations_source=loc, providers_source=prov,
+    )
+    row = brief.evidence_coverage[0]
+    assert row["rating_publication_date"] == "2024-04-26"
+    assert row["rating_freshness"] == "stale (over 12 months)"
+    assert "fresh regulatory" not in str(brief.to_json())
+    assert brief.shortlist[0].score_breakdown["rating_published@2024-04-26"] == 14.0
+    assert b"2024-04-26" in _pdf_stream_text(render_brief_pdf(brief))
+    assert "stale (over 12 months)" in brief_to_csv(brief)
+
+
+def test_registration_metadata_gaps_are_reported_without_dropping_rows(tmp_path):
+    brief = _generate(tmp_path, [
+        _loc(locationId="missing"),
+        _loc(locationId="complete", providerId="other",
+             source_url="https://api.service.cqc.org.uk/public/v1/locations/complete",
+             source_snapshot_sha256="a" * 64),
+    ])
+    rows = {r["location_id"]: r for r in brief.evidence_coverage}
+    assert set(rows) == {"missing", "complete"}
+    assert rows["missing"]["registration_metadata_gaps"] == ["source URL", "source hash"]
+    assert rows["complete"]["registration_metadata_gaps"] == []
+    assert b"source URL, source hash" in _pdf_stream_text(render_brief_pdf(brief))
+    assert "source URL; source hash" in brief_to_csv(brief)
+
+
+def test_ri_missing_registration_date_remains_visible(tmp_path):
+    brief = _generate(tmp_path, [_loc(
+        registrationDate=None,
+        currentRatings={"reportDate": "2024-04-26", "overall": {"rating": "Requires improvement"}},
+    )])
+    assert brief.evidence_coverage[0]["rating_publication_date"] == "2024-04-26"
+    assert "registration date" in brief.evidence_coverage[0]["registration_metadata_gaps"]
+
+
+def _pdf_stream_text(pdf):
+    return b"\n".join(zlib.decompress(stream) for stream in re.findall(
+        rb"stream\n(.*?)\nendstream", pdf, re.S
+    ))
+
+
+def test_stale_ri_without_window_signal_is_retained_as_context(tmp_path):
+    brief = _generate(tmp_path, [
+        _loc(registrationDate="2020-01-01",
+             currentRatings=_rating_block("Requires improvement", "2024-04-26")),
+        _loc(locationId="anchor", providerId="anchor", dormancy="Y", registrationDate="2025-12-31"),
+    ])
+    assert not brief.shortlist
+    stale = next(row for row in brief.evidence_coverage if row["location_id"] == "1-001")
+    assert stale["rating_freshness"] == "stale (over 12 months)"
+    assert b"2024-04-26" in _pdf_stream_text(render_brief_pdf(brief))
+def test_provider_dedup_uses_best_location_before_limit(tmp_path):
+    locs = [_loc(locationId=f"dup-{i:02}", numberOfBeds=60) for i in range(12)]
+    locs += [_loc(locationId="other", providerId="other", numberOfBeds=1)]
+    brief = _generate(tmp_path, locs, shortlist_target=10)
+    assert [o.location_id for o in brief.shortlist] == ["dup-00", "other"]
+    assert len({o.provider_id for o in brief.shortlist}) == len(brief.shortlist)
+    reversed_brief = _generate(tmp_path, list(reversed(locs)), shortlist_target=10)
+    assert [o.location_id for o in reversed_brief.shortlist] == ["dup-00", "other"]
+
+
+def test_provider_dedup_prefers_score_then_event_date(tmp_path):
+    locs = [
+        _loc(locationId="older", registrationDate="2026-02-01", numberOfBeds=20),
+        _loc(locationId="newer", registrationDate="2026-02-10", numberOfBeds=20),
+        _loc(locationId="small", registrationDate="2026-02-10", numberOfBeds=1),
+    ]
+    assert [o.location_id for o in _generate(tmp_path, locs).shortlist] == ["newer"]
+
+
+def test_missing_provider_id_is_not_a_provider(tmp_path):
+    brief = _generate(tmp_path, [_loc(providerId=""), _loc(locationId="known")])
+    assert [o.location_id for o in brief.shortlist] == ["known"]
+
+
+# --------------------------------------------------------------------------- #
+# Qualification question + service-type scope
+# --------------------------------------------------------------------------- #
+
+
+def _three_orgs():
+    locs = [
+        _loc(locationId="1-1", providerId="1-P1", name="A", registrationDate="2026-02-10"),
+        _loc(locationId="1-2", providerId="1-P2", name="B", registrationDate="2026-02-11",
+             gacServiceTypes=[{"description": "Doctors/GPs"}]),
+        _loc(locationId="1-3", providerId="1-P3", name="C", registrationDate="2026-02-12",
+             gacServiceTypes=[{"description": "Care home service with nursing"}]),
+    ]
+    providers = [{"providerId": f"1-P{i}", "name": f"P{i} Ltd"} for i in (1, 2, 3)]
+    return locs, providers
+
+
+def test_every_entry_has_a_qualification_question_in_csv_and_pdf(tmp_path):
+    locs, providers = _three_orgs()
+    brief = _generate(tmp_path, locs, providers)
+    assert brief.shortlist
+    for o in brief.shortlist:
+        assert o.qualification_question.strip().endswith("?")
+        assert o.to_json()["qualification_question"] == o.qualification_question
+    import csv as _csv, io as _io
+    rows = list(_csv.DictReader(_io.StringIO(brief_to_csv(brief))))
+    assert [r["qualification_question"] for r in rows] == [
+        o.qualification_question for o in brief.shortlist
+    ]
+    assert _pdf_stream_text(render_brief_pdf(brief)).count(b"Qualification question") == len(brief.shortlist)
+
+
+def test_qualification_question_does_not_assert_intent(tmp_path):
+    locs, providers = _three_orgs()
+    for o in _generate(tmp_path, locs, providers).shortlist:
+        assert not re.search(r"\b(is looking|plans to buy|will buy|needs a supplier)\b",
+                             o.qualification_question, re.I)
+
+
+def test_service_type_scope_excludes_other_services(tmp_path):
+    locs, providers = _three_orgs()
+    brief = _generate(tmp_path, locs, providers, service_type="care home service without nursing")
+    assert [o.location_id for o in brief.shortlist] == ["1-1"]
+    assert brief.scope.service_type == "care home service without nursing"
+
+
+def test_service_type_absent_keeps_unfiltered_behaviour(tmp_path):
+    locs, providers = _three_orgs()
+    brief = _generate(tmp_path, locs, providers)
+    assert {o.location_id for o in brief.shortlist} == {"1-1", "1-2", "1-3"}
+    assert brief.scope.service_type is None
+
+
+def test_service_type_rejects_unsupported_characters(tmp_path):
+    locs, providers = _three_orgs()
+    with pytest.raises(ScopeError):
+        _generate(tmp_path, locs, providers, service_type="<script>")
+
+
+def test_every_entry_carries_one_question_per_buyer_type_in_csv_and_pdf(tmp_path):
+    from api.services.territory_brief import BUYER_QUESTION_TYPES
+
+    locs, providers = _three_orgs()
+    brief = _generate(tmp_path, locs, providers)
+    assert brief.shortlist
+    import csv as _csv, io as _io
+    rows = list(_csv.DictReader(_io.StringIO(brief_to_csv(brief))))
+    for org, row in zip(brief.shortlist, rows, strict=True):
+        questions = dict(org.buyer_questions)
+        assert tuple(questions) == BUYER_QUESTION_TYPES
+        for buyer in BUYER_QUESTION_TYPES:
+            assert questions[buyer].strip().endswith("?")
+            assert row[f"{buyer}_question"] == questions[buyer]
+        assert org.to_json()["buyer_questions"] == questions
+    pdf_text = _pdf_stream_text(render_brief_pdf(brief))
+    for buyer in BUYER_QUESTION_TYPES:
+        assert pdf_text.count(f"For {buyer} buyers".encode()) == len(brief.shortlist)
+
+
+def test_buyer_questions_follow_the_primary_signal_and_do_not_assert_intent(tmp_path):
+    locs, providers = _three_orgs()
+    for org in _generate(tmp_path, locs, providers).shortlist:
+        assert org.primary_signal == "New CQC registration"
+        assert "newly registered service" in org.qualification_question
+        questions = dict(org.buyer_questions)
+        assert "first CQC inspection" in questions["compliance"]
+        assert "first packages or contracts" in questions["recruitment"]
+        for question in questions.values():
+            assert not re.search(r"\b(is looking|plans to buy|will buy|needs a supplier)\b", question, re.I)
+
+
+def test_every_primary_signal_label_has_its_own_questions():
+    from api.services.territory_brief import (
+        _COMPLIANCE_QUESTIONS,
+        _QUALIFICATION_QUESTIONS,
+        _SIGNAL_LABEL,
+    )
+
+    assert set(_QUALIFICATION_QUESTIONS) == set(_SIGNAL_LABEL.values())
+    assert set(_COMPLIANCE_QUESTIONS) <= set(_SIGNAL_LABEL.values())

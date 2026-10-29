@@ -1,0 +1,918 @@
+{
+  "locationId": "1-11270646845",
+  "providerId": "1-9116193675",
+  "organisationType": "Location",
+  "type": "Social Care Org",
+  "name": "Kelly Healthcare Services Limited",
+  "onspdCcgCode": "E38000250",
+  "onspdCcgName": "NHS Black Country and West Birmingham CCG",
+  "onspdIcbCode": "E54000062",
+  "onspdIcbName": "NHS Black Country Integrated Care Board",
+  "odsCode": "VNKFP",
+  "registrationStatus": "Registered",
+  "registrationDate": "2021-11-01",
+  "dormancy": "N",
+  "onspdLatitude": 52.5149488,
+  "onspdLongitude": -2.0638748,
+  "careHome": "N",
+  "inspectionDirectorate": "Adult social care",
+  "postalAddressLine1": "Castlemill Serviced Offices",
+  "postalAddressLine2": "Second Floor, Burnt Tree",
+  "postalAddressTownCity": "Tipton",
+  "region": "West Midlands",
+  "postalCode": "DY4 7UF",
+  "uprn": "10092029141",
+  "mainPhoneNumber": "01213893035",
+  "website": "kellyhealthcare.co.uk",
+  "numberOfBeds": 0,
+  "constituency": "Tipton and Wednesbury",
+  "localAuthority": "Sandwell",
+  "relationships": [
+    {
+      "relatedLocationId": "1-9293285110",
+      "relatedLocationName": "Kelly Healthcare Services Limited",
+      "type": "HSCA Predecessor",
+      "reason": "Location Move"
+    }
+  ],
+  "locationTypes": [],
+  "regulatedActivities": [
+    {
+      "name": "Personal care",
+      "code": "RA1",
+      "contacts": [
+        {
+          "personTitle": "Mr",
+          "personGivenName": "Isaac Ayodele",
+          "personFamilyName": "Esheyigba",
+          "personRoles": [
+            "Registered Manager"
+          ]
+        }
+      ]
+    }
+  ],
+  "gacServiceTypes": [
+    {
+      "name": "Homecare agencies",
+      "description": "Domiciliary care service"
+    }
+  ],
+  "specialisms": [
+    {
+      "name": "Caring for adults over 65 yrs"
+    },
+    {
+      "name": "Caring for adults under 65 yrs"
+    },
+    {
+      "name": "Dementia"
+    },
+    {
+      "name": "Learning disabilities"
+    },
+    {
+      "name": "Mental health conditions"
+    },
+    {
+      "name": "Physical disabilities"
+    },
+    {
+      "name": "Sensory impairment"
+    }
+  ],
+  "inspectionCategories": [
+    {
+      "code": "S2",
+      "primary": "true",
+      "name": "Community based adult social care services"
+    }
+  ],
+  "inspectionAreas": [],
+  "assessmentServiceGroup": [
+    {
+      "assessmentServiceId": "272",
+      "assessmentServiceName": "Homecare",
+      "status": "Active"
+    }
+  ],
+  "assessment": [
+    {
+      "assessmentPlanPublishedDateTime": "2025-03-14 10:49:51",
+      "ratings": {
+        "asgRatings": [
+          {
+            "assessmentPlanId": "AP6287",
+            "title": "Ongoing Assessment for Kelly Healthcare Services Limited",
+            "assessmentDate": "2024-08-29",
+            "assessmentPlanStatus": "Active",
+            "name": "Homecare",
+            "rating": "Good",
+            "status": "Current",
+            "commentary": "Date of Assessment: 26 February 2025 to 5 March 2025. The service is a domiciliary care agency providing personal care to adults of all ages living with physical disabilities, sensory impairments, dementia and mental health conditions. This assessment was in response to CQC receiving information of concern. \nThis is the first assessment for this newly registered service. \n\nPeople received safe care. Individual risks were based on people\u2019s assessed needs and were regularly updated and reviewed. Safeguarding procedures were in place, and medicines were managed in a safe way. There were enough suitably recruited and trained staff available for people and they were happy with the care they received. \n\nThe principles of The Mental Capacity Act were followed. People received care that was responsive to their needs, it was person centred and planned for with people. Staff had received training and there were procedures in place that considered areas including people\u2019s environments, infection control and ensuring people could access health professionals. \n\nThe systems in place were effective in identifying areas of improvement and making changes when needed. Staff felt involved, supported, and listened to.\n",
+            "commentaryDate": "2025-03-10",
+            "narrative": "The service is performing well and meeting our expectations.",
+            "overallPeopleExperience": "People were happy with all aspects of their care and raised no concerns. They spoke positively about the support they received, the staff and the quality of the service. ",
+            "overallPeopleExperienceDate": "2025-03-10",
+            "keyQuestionRatings": [
+              {
+                "name": "Caring",
+                "rating": "Good",
+                "status": "Assessed",
+                "commentary": "Caring \u2013 this means we looked for evidence that the provider involved people and treated them with compassion, kindness, dignity and respect.\nThis is the first assessment for this newly registered service. This key question has been rated good.\n\nThis meant people were supported and treated with dignity and respect; and involved as partners in their care.\n",
+                "commentaryDate": "2025-03-10",
+                "narrative": "This service is caring",
+                "percentageScore": "75",
+                "topicareas": [
+                  {
+                    "name": "Independence, choice and control",
+                    "qualityStatementId": "17",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "The provider promoted people\u2019s independence, so people knew their rights and had choice and control over their own care, treatment and wellbeing.\nCare plans in place ensured staff had information available about how they supported people to make choices and remain independent. Staff we spoke with were aware of these plans and how they included people in their care. \n",
+                        "commentaryDate": "2025-03-10"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Kindness, compassion and dignity",
+                    "qualityStatementId": "15",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "3",
+                        "commentary": "The provider always treated people with kindness, empathy and compassion and respected their privacy and dignity. \nPeople and relatives felt they were treated with kindness, compassion and dignity. A person said, \u201CThey are always caring and polite\u201D. Another person commented, \u201CThey are definitely very kind. They are always doing little extra things for me like keeping things tidy. If I am feeling unhappy, they sit and chat with me.\u201D\nStaff were aware of how to treat people with kindness and compassion and gave examples how they supported people in a dignified way. One staff member said, \u201CWe give people time and space if they need to use the bathroom.\u201D\n",
+                        "commentaryDate": "2025-03-10"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Responding to people\u2019s immediate needs",
+                    "qualityStatementId": "18",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "The provider listened to and understood people\u2019s needs, views and wishes.\nPeople and relatives felt their needs were responded to. They told us they had the opportunity to be part of regular reviews where they could discuss concerns or changes to their needs.\nThe leaders told us they held regular reviews of people\u2019s care either face to face and/or over the telephone to ensure they had the most up to date information about people. If needed care could be changed to reflect this.\n",
+                        "commentaryDate": "2025-03-10"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Treating people as individuals",
+                    "qualityStatementId": "16",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "The provider treated people as individuals and made sure people\u2019s care, support and treatment met people\u2019s needs and preferences.\nPeople felt their individual needs and preferences were considered. One person told us, \u201CThey understand my preferences, they know the way I like my tea made. They apply body lotion to my skin every morning.\u201D There were systems in place to ensure people were delivered individual care, this included ensuring people and those important to them participated in regular reviews.  \n",
+                        "commentaryDate": "2025-03-10"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Workforce wellbeing and enablement",
+                    "qualityStatementId": "19",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "The provider cared about and promoted the wellbeing of their staff and supported and enabled staff to always deliver person-centred care.\n\nStaff we spoke with felt supported by the registered manager, and said it was a good place to work. There were systems in place to consider staff wellbeing and staff felt valued by the support they received.\n",
+                        "commentaryDate": "2025-03-10"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  }
+                ]
+              },
+              {
+                "name": "Effective",
+                "rating": "Good",
+                "status": "Assessed",
+                "commentary": "Effective \u2013 this means we looked for evidence that people\u2019s care, treatment and support achieved good outcomes and promoted a good quality of life, based on best available evidence.\nThis is the first assessment for this newly registered service. This key question has been rated good.\n\nThis meant people\u2019s outcomes were consistently good, and people\u2019s feedback confirmed this.\n",
+                "commentaryDate": "2025-03-10",
+                "narrative": "This service is effective",
+                "percentageScore": "75",
+                "topicareas": [
+                  {
+                    "name": "Assessing needs",
+                    "qualityStatementId": "9",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "The provider made sure people\u2019s care and treatment was effective by assessing and reviewing their health, care, wellbeing and communication needs with them.\nPeople and relatives confirmed their needs were assessed. One relative told us, \u201CAt the beginning [staff member] came to mum\u2019s flat to meet us. She went through everything, and a plan was put in place.\u201D\nCare plans and risk assessments were developed alongside people, based on these assessments. People\u2019s care was regularly reviewed to ensure it was up to date. \n",
+                        "commentaryDate": "2025-03-10"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Consent to care and treatment",
+                    "qualityStatementId": "14",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "The provider told people about their rights around consent and respected these when delivering person-centred care and treatment.\nThe provider was not currently supporting anyone who was not able to consent to their care, however the leaders were able to explain the action they would take if needed. Staff had received training in this area and were aware of the processes to follow. \n",
+                        "commentaryDate": "2025-03-10"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Delivering evidence-based care and treatment",
+                    "qualityStatementId": "10",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "The provider planned and delivered people\u2019s care and treatment with them, including what was important and mattered to them. \nLeaders told us they had a system in place which used evidence-based tools to assess people\u2019s needs. Staff were aware of these outcomes to ensure they delivered the correct care that people needed. \n",
+                        "commentaryDate": "2025-03-10"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "How staff, teams and services work together",
+                    "qualityStatementId": "11",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "3",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "The provider worked well across teams and services to support people.\nA relative told us how staff worked well together. They said, \u201CThe carers write up every visit on their phones so that the other carers are aware of what has been done and if there are any problems.\u201D\nStaff worked well together, this included sharing information about people through daily notes and attending staff meetings where people\u2019s needs were discussed. There was a system in place to ensure the staff team worked together and alongside other professionals to deliver care to people.\n",
+                        "commentaryDate": "2025-03-10"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Monitoring and improving outcomes",
+                    "qualityStatementId": "13",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "The provider routinely monitored people\u2019s care and treatment to continuously improve it.\nThere were systems in place to ensure people\u2019s needs were identified, assessed and reviewed to ensure positive outcomes were achieved for people. Staff confirmed they were aware of people\u2019s assessed needs and how they delivered support in line with this. \n",
+                        "commentaryDate": "2025-03-10"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Supporting people to live healthier lives",
+                    "qualityStatementId": "12",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "The provider supported people to manage their health and wellbeing to maximise their independence, choice and control.\nPeople and relatives confirmed people\u2019s health needs were responded to. A relative told us, \u201CIf something is not right with my relation, if she is off colour, the carers keep an extra eye on her. They know the signs of when she becomes sleepy, and her speech is jumbled and know that she might have a urine infection. They phone me or the GP.\u201D\nStaff were aware of people\u2019s health needs and the support they needed. People\u2019s health needs were assessed, and plans were in place to monitor these conditions, including when people had diabetes.\n",
+                        "commentaryDate": "2025-03-10"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  }
+                ]
+              },
+              {
+                "name": "Responsive",
+                "rating": "Good",
+                "status": "Assessed",
+                "commentary": "Responsive \u2013 this means we looked for evidence that the provider met people\u2019s needs.\nThis is the first assessment for this newly registered service. This key question has been rated good.\nThis meant people\u2019s needs were met through good organisation and delivery.\n",
+                "commentaryDate": "2025-03-10",
+                "narrative": "This service is responsive",
+                "percentageScore": "75",
+                "topicareas": [
+                  {
+                    "name": "Care provision, Integration and continuity",
+                    "qualityStatementId": "21",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "3",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "The provider understood the diverse health and care needs of people and their local communities, so care was joined-up, flexible and supported choice and continuity.\nThe leadership team told us there were systems in place to monitor and review care. We saw these systems were followed when needed. This included provisions to ensure consistent care was delivered.\n",
+                        "commentaryDate": "2025-03-10"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Equity in access",
+                    "qualityStatementId": "24",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "3",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "The provider made sure that people could access the care, support and treatment they needed when they needed it.\nPeople raised no concerns with the support they received and had access to other health professionals. \nThere were processes in place that could be followed if needed. Leaders worked alongside external agencies, including the Local Authority who they could engage with if needed. \n",
+                        "commentaryDate": "2025-03-10"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Equity in experiences and outcomes",
+                    "qualityStatementId": "25",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "Staff and leaders actively listened to information about people who are most likely to experience inequality in experience or outcomes and tailored their care, support and treatment in response to this.\nLeaders were aware of inequalities people receiving support may face and were able to tell us the action they would take if concerns arose. There were systems in place to consider and act on people\u2019s experiences in care.\n",
+                        "commentaryDate": "2025-03-10"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Listening to and involving people",
+                    "qualityStatementId": "23",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "The provider made it easy for people to share feedback and ideas, or raise complaints about their care, treatment and support. \nPeople and relatives felt they were involved with their care, and they were listened to when needed. A relative told us, \u201CI complained to [staff name] because the carers were coming later and later. She has sorted it out and they try to get to me by 9:30am. If they are going to be late, they let me know.\u201D\nLeaders told us how people were involved with their care; they told us they ensured people had the opportunity to provide feedback on their care and they used this information to make changes for people.\nThere was a system in place to ensure complaints were responded to in line with the providers own policy and procedure.\n",
+                        "commentaryDate": "2025-03-10"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Person-centred Care",
+                    "qualityStatementId": "20",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "The provider made sure people were at the centre of their care and treatment choices and they decided, in partnership with people, how to respond to any relevant changes in people\u2019s needs.\nPeople and relatives felt the care they received was individual to their needs. One person said, \u201CI stipulated, right at the beginning that I did not want male carers, they make sure not to send any. They know I am an early bird and make sure I have my visit before 9am.\u201D Staff confirmed they were aware of people\u2019s individual needs and preferences and delivered care to people aligned with these. \nThere were systems in place to ensure people were at the centre of their care when it was agreed and reviewed. \n",
+                        "commentaryDate": "2025-03-10"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Planning for the future",
+                    "qualityStatementId": "26",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "People were supported to plan for important life changes, so they could have enough time to make informed decisions about their future, including at the end of their life.\nPeople and relatives raised no concerns with the planning of end-of-life care.\nLeaders confirmed they were not supporting anyone who was currently receiving end of life care; however, they were aware of action to take if needed and as part of their assessment process had considered people\u2019s thoughts and preferences.\n",
+                        "commentaryDate": "2025-03-10"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Providing Information",
+                    "qualityStatementId": "22",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "The provider supplied appropriate, accurate and up-to-date information in formats that were tailored to individual needs.\nPeople and relatives were happy with how information was provided to them. \nLeaders told us information was available to people in different formats if they required this. They confirmed people had individual plans in place identifying their preferred method of communication. Staff confirmed to us they were aware of these plans.\nCare plans reflected how people communicated and the levels of support they needed.\n",
+                        "commentaryDate": "2025-03-10"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  }
+                ]
+              },
+              {
+                "name": "Safe",
+                "rating": "Good",
+                "status": "Assessed",
+                "commentary": "Safe \u2013 this means we looked for evidence that people were protected from abuse and avoidable harm.\n\nThis is the first assessment for this newly registered service. This key question has been rated good.\n\nThis meant people were safe and protected from avoidable harm.\n\n",
+                "commentaryDate": "2025-03-10",
+                "narrative": "This service is safe",
+                "percentageScore": "75",
+                "topicareas": [
+                  {
+                    "name": "Infection prevention and control",
+                    "qualityStatementId": "7",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "The provider assessed and managed the risk of infection. \nPeople and relatives raised no concerns with infection control and all people told us staff wore Personal Protective Equipment (PPE). Staff confirmed they had enough PPE available, and they had received training in this area. There were processes in place to ensure staff protected people from the risk of cross infection. \n",
+                        "commentaryDate": "2025-03-10"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Involving people to manage risks",
+                    "qualityStatementId": "4",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "The provider worked with people to understand and manage risks by thinking holistically. Staff provided care to meet people\u2019s needs that was safe, supportive and enabled people to do the things that mattered to them.\nPeople were happy with how their risks were managed. One relative told us, \u201CMy relation is at risk from falling. The carers make sure everything is within her reach; they are aware that she is at risk from falling\u201D. \nThere was a system in place to ensure people had care plans and risk assessments that were reflective of their current needs. These plans considered people\u2019s mobility needs, health conditions and any known risks such as falls.  These were reviewed regularly or when changes had occurred.\n",
+                        "commentaryDate": "2025-03-10"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Learning culture",
+                    "qualityStatementId": "1",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "Lessons were learnt to continually identify and embed good practice.\n\nThere were systems in place to ensure lessons were learnt. The leadership team told us about a previous incident that had occurred that resulted in a safeguarding investigation. They told us how they had changed practices due to this and they had implemented better methods of communication with people and their families. They explained how they would implement this practice to other incidents when needed. \n\n",
+                        "commentaryDate": "2025-03-10"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Medicines optimisation",
+                    "qualityStatementId": "8",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "The provider made sure that medicines and treatments were safe and met people\u2019s needs, capacities and preferences.\nPeople and relatives raised no concerns with how their medicines were managed. A relative said, \u201CStaff hand my relation her medications in a pot and ensure that she takes them. Her medication is stored in a safe place because she is confused and would be at risk of taking her medication unsupervised\u201D.\nPeople received their medicines when needed. Staff had received training, and their competency was checked to ensure they were safe to administer medicines to people. Monthly checks were completed on medicines administration records to ensure any concerns were identified and actioned. \n",
+                        "commentaryDate": "2025-03-10"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Safe and effective staffing",
+                    "qualityStatementId": "6",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "The provider had systems in place to ensure there were enough staff available to support people.\nAll people and relatives we spoke with felt there were enough staff, and that staff had the skills and training to look after them well. One person said, \u201CI am not able to walk, they transfer me safely from bed to chair, they use a slide board if required, they know what they are doing.\u201D\nThere were systems in place to ensure there were enough staff available to support people at the right times. Staff were allocated their rotas in advance so they knew who they would be supporting. \nStaff had received the relevant pre-employment checks before they could start working with people to ensure they were safe to do so. \nStaff had received training to ensure they had the relevant knowledge and skills to support people. This included training that was relevant to people\u2019s individual needs.\n",
+                        "commentaryDate": "2025-03-10"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Safe environments",
+                    "qualityStatementId": "5",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "The provider detected and controlled potential risks in the care environment. \nThere were processes in place to ensure environmental risks in people\u2019s homes and surrounding areas had been considered. We saw all people had individual risk assessments in place that related to their environment. \n",
+                        "commentaryDate": "2025-03-10"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Safe systems, pathways and transitions",
+                    "qualityStatementId": "2",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "3",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "The provider worked with people and healthcare partners to establish and maintain safe systems of care, in which safety was managed or monitored. \nThe leaders told us the processes that were followed when people started using the service. They explained that once a referral had been received, they would go out and meet with the person and their families and complete an assessment to ensure they could meet their needs before agreeing to the package. They told us they would then base people\u2019s care plans and risk assessments on these assessed needs. We saw this process had been followed when people started using the service. \n",
+                        "commentaryDate": "2025-03-10"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Safeguarding",
+                    "qualityStatementId": "3",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "The provider worked with people and healthcare partners to understand what being safe meant to them and the best way to achieve that. The provider shared concerns quickly and appropriately.\nAll people felt safe being supported by staff. A relative told us, \u201CIt gives me peace of mind, knowing that carers visit my mother.\u201D\nThere were systems in place to ensure safeguarding concerns were identified, reviewed and investigated. Staff were able to tell us the action they would take if they were concerned about a person and confirmed they had received training. \n",
+                        "commentaryDate": "2025-03-10"
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  }
+                ]
+              },
+              {
+                "name": "Well-led",
+                "rating": "Good",
+                "status": "Assessed",
+                "commentary": "Well-led \u2013 this means we looked for evidence that service leadership, management and governance assured high-quality, person-centred care; supported learning and innovation; and promoted an open, fair culture. \nThis is the first assessment for this newly registered service. This key question has been rated good.\n\nThis meant the service was consistently managed and well-led. Leaders and the culture they created promoted high-quality, person-centred care.\n",
+                "commentaryDate": "2025-03-10",
+                "narrative": "This service is well-led",
+                "percentageScore": "75",
+                "topicareas": [
+                  {
+                    "name": "Capable, compassionate and inclusive leaders",
+                    "qualityStatementId": "28",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "Leaders had the skills, knowledge, experience and credibility to lead effectively. They did so with integrity, openness and honesty.\nPeople and relatives spoke positively about the leaders and how the service was run. One person said, \u201CI give the Agency my thumbs up, I have no complaints\u201D. Staff we spoke with were also happy. One staff member commented, \u201CI am happy to work here, I have no concerns.\u201D\nThere were systems in place to ensure all staff including the registered manager understood their roles and responsibilities.\n",
+                        "commentaryDate": "2025-03-10"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Freedom to speak up",
+                    "qualityStatementId": "29",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "The provider fostered a positive culture where people felt they could speak up and their voice would be heard.\nPeople and relatives knew how to raise concerns and felt confident to do so. One person said, \u201CI have no complaints but if I did, I would speak to the manager.\u201D\nThere was a whistleblowing policy in place and staff were aware of this and the procedures they needed to follow.\n",
+                        "commentaryDate": "2025-03-10"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Governance, management and sustainability",
+                    "qualityStatementId": "31",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "The provider had clear responsibilities, roles, systems of accountability and good governance.\nThere were systems in place that monitored the care people received and the quality of the service. These included audits of call times, medicines and the care people received. These audits were effective in identifying areas of improvements and making changes where needed.\n",
+                        "commentaryDate": "2025-03-10"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Learning, improvement and innovation",
+                    "qualityStatementId": "33",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "The provider focused on continuous learning, innovation and improvement across the organisation and local system.\nThe processes in place were effective in identifying where improvements were needed. We were able to see where learning had been identified and the action taken to make changes.\n",
+                        "commentaryDate": "2025-03-10"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Partnerships and communities",
+                    "qualityStatementId": "32",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "3",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "The provider understood their duty to collaborate and work in partnership, so services worked seamlessly for people.\nThere were systems in place to ensure the provider worked in partnership with other agencies. As part of this assessment, we asked the Local Authority for feedback, and we received no concerns. \n",
+                        "commentaryDate": "2025-03-10"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Shared direction and culture",
+                    "qualityStatementId": "27",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "The provider had a shared vision, strategy and culture.\nThere were processes in place to ensure the service promoted a positive culture for both staff and the people they supported. Staff confirmed they were aware of and followed this vision.\n",
+                        "commentaryDate": "2025-03-10"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Workforce equality, diversity and inclusion",
+                    "qualityStatementId": "30",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "The provider valued diversity in their workforce.\nStaff felt they were treated in an inclusive way and their diverse needs were considered. The registered manager confirmed there were policies in place to ensure this was effective.\nThere were processes in place to consider staffs individual needs.\n",
+                        "commentaryDate": "2025-03-10"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

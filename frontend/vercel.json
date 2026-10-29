@@ -2,7 +2,8 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "git": {
     "deploymentEnabled": {
-      "audit-fixes-2026-10-06": false
+      "audit-fixes-2026-10-06": false,
+      "codex/territory-rating-publication-20261029": false
     }
   },
   "framework": "nextjs",

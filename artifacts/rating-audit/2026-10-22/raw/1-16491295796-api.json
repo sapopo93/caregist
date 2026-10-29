@@ -1,0 +1,136 @@
+{
+  "locationId": "1-16491295796",
+  "providerId": "1-16294645097",
+  "organisationType": "Location",
+  "type": "Primary Medical Services",
+  "name": "Tillingham Medical Centre",
+  "onspdCcgCode": "E38000106",
+  "onspdCcgName": "NHS Mid Essex CCG",
+  "odsCcgCode": "06Q",
+  "odsCcgName": "NHS Mid and South Essex Icb - 06Q",
+  "onspdIcbCode": "E54000066",
+  "onspdIcbName": "NHS Essex Integrated Care Board",
+  "odsCode": "F81183",
+  "registrationStatus": "Registered",
+  "registrationDate": "2023-07-26",
+  "dormancy": "N",
+  "onspdLatitude": 51.69335,
+  "onspdLongitude": 0.882462,
+  "careHome": "N",
+  "inspectionDirectorate": "Primary medical services",
+  "postalAddressLine1": "61 South Street",
+  "postalAddressLine2": "Tillingham",
+  "postalAddressTownCity": "Southminster",
+  "postalAddressCounty": "Essex",
+  "region": "East",
+  "postalCode": "CM0 7TH",
+  "mainPhoneNumber": "01621778383",
+  "website": "www.dengiemedicalpartnership.nhs.uk",
+  "numberOfBeds": 0,
+  "constituency": "Maldon",
+  "localAuthority": "Essex",
+  "relationships": [
+    {
+      "relatedLocationId": "1-14822264053",
+      "relatedLocationName": "Tillingham Medical Centre",
+      "type": "HSCA Predecessor",
+      "reason": "Legal Entity Change"
+    }
+  ],
+  "locationTypes": [
+    {
+      "type": "GP Practice"
+    }
+  ],
+  "regulatedActivities": [
+    {
+      "name": "Maternity and midwifery services",
+      "code": "RA11",
+      "contacts": [
+        {
+          "personTitle": "Dr",
+          "personGivenName": "Daniel John",
+          "personFamilyName": "Hancock",
+          "personRoles": [
+            "Registered Manager"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Family planning",
+      "code": "RA15",
+      "contacts": [
+        {
+          "personTitle": "Dr",
+          "personGivenName": "Daniel John",
+          "personFamilyName": "Hancock",
+          "personRoles": [
+            "Registered Manager"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Treatment of disease, disorder or injury",
+      "code": "RA5",
+      "contacts": [
+        {
+          "personTitle": "Dr",
+          "personGivenName": "Daniel John",
+          "personFamilyName": "Hancock",
+          "personRoles": [
+            "Registered Manager"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Surgical procedures",
+      "code": "RA7",
+      "contacts": [
+        {
+          "personTitle": "Dr",
+          "personGivenName": "Daniel John",
+          "personFamilyName": "Hancock",
+          "personRoles": [
+            "Registered Manager"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Diagnostic and screening procedures",
+      "code": "RA8",
+      "contacts": [
+        {
+          "personTitle": "Dr",
+          "personGivenName": "Daniel John",
+          "personFamilyName": "Hancock",
+          "personRoles": [
+            "Registered Manager"
+          ]
+        }
+      ]
+    }
+  ],
+  "gacServiceTypes": [
+    {
+      "name": "Doctors/Gps",
+      "description": "Doctors treatment service"
+    }
+  ],
+  "specialisms": [
+    {
+      "name": "Services for everyone"
+    }
+  ],
+  "inspectionCategories": [
+    {
+      "code": "P2",
+      "primary": "true",
+      "name": "GP Practices"
+    }
+  ],
+  "inspectionAreas": []
+}

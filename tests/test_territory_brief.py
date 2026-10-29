@@ -356,7 +356,10 @@ def test_csv_has_expected_columns_and_no_blank_reason(tmp_path):
     assert len(rows) == 2
     for row in rows:
         assert ",,," not in row  # crude blank-cluster check
-    assert "reason" not in rows[0] and len(rows[0]) > 40
+    import csv as _csv
+    import io
+    parsed = list(_csv.DictReader(io.StringIO(csv_text)))
+    assert all(row["reason"].strip() for row in parsed)
 
 
 def test_pdf_renders_multipage_with_appendix(tmp_path):

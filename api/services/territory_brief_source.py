@@ -10,6 +10,7 @@ from api.services.territory_brief import (
     PurchaseContext, generate_brief_from_rows, known_territories, validate_scope,
 )
 from api.services.cqc_freshness import FRESHNESS_SLA
+from api.services.territory_rating import resolve_rating
 
 MAX_SCOPE_LOCATIONS = 25000
 
@@ -71,6 +72,8 @@ async def load_source(raw_scope, *, edition_id=None, connection=None):
     for row in rows:
         payload = row["payload"]
         payload = json.loads(payload) if isinstance(payload, str) else dict(payload)
+        if payload.get('rating_resolution') != resolve_rating(payload):
+            raise SourceUnavailable('Brief edition lacks a consistent resolved-rating contract')
         locations.append(payload)
         names[str(payload.get("providerId") or "").strip()] = row["provider_name"]
     return scope, dict(edition), locations, names

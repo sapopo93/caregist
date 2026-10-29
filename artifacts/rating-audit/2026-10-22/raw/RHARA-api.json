@@ -1,0 +1,102 @@
+{
+  "locationId": "RHARA",
+  "providerId": "RHA",
+  "organisationType": "Location",
+  "type": "NHS Healthcare Organisation",
+  "name": "Nottingham University Hospital",
+  "brandId": "Q76",
+  "brandName": "NHS England Midlands - East Midlands",
+  "onspdCcgCode": "E38000243",
+  "onspdCcgName": "NHS Nottingham and Nottinghamshire CCG",
+  "onspdIcbCode": "E54000060",
+  "onspdIcbName": "NHS Nottingham and Nottinghamshire Integrated Care Board",
+  "registrationStatus": "Registered",
+  "registrationDate": "2010-06-15",
+  "dormancy": "N",
+  "onspdLatitude": 52.943799,
+  "onspdLongitude": -1.185957,
+  "careHome": "N",
+  "inspectionDirectorate": "Hospitals",
+  "postalAddressLine1": "Derby Road",
+  "postalAddressTownCity": "Nottingham",
+  "postalAddressCounty": "Nottinghamshire",
+  "region": "East Midlands",
+  "postalCode": "NG7 2UH",
+  "mainPhoneNumber": "01159691300",
+  "website": "www.nottinghamshirehealthcare.nhs.uk",
+  "constituency": "Nottingham South",
+  "localAuthority": "Nottingham",
+  "lastInspection": {
+    "date": "2014-04-29"
+  },
+  "relationships": [],
+  "locationTypes": [],
+  "regulatedActivities": [
+    {
+      "name": "Treatment of disease, disorder or injury",
+      "code": "RA5",
+      "contacts": []
+    },
+    {
+      "name": "Assessment or medical treatment for persons detained under the Mental Health Act 1983",
+      "code": "RA6",
+      "contacts": []
+    },
+    {
+      "name": "Surgical procedures",
+      "code": "RA7",
+      "contacts": []
+    },
+    {
+      "name": "Diagnostic and screening procedures",
+      "code": "RA8",
+      "contacts": []
+    }
+  ],
+  "gacServiceTypes": [
+    {
+      "name": "Dentist",
+      "description": "Dental service"
+    },
+    {
+      "name": "Hospitals - Mental health/capacity",
+      "description": "Hospital services for people with mental health needs, learning disabilities and problems with substance misuse"
+    }
+  ],
+  "specialisms": [
+    {
+      "name": "Caring for people whose rights are restricted under the Mental Health Act"
+    },
+    {
+      "name": "Learning disabilities"
+    },
+    {
+      "name": "Mental health conditions"
+    }
+  ],
+  "inspectionCategories": [
+    {
+      "code": "H9",
+      "primary": "true",
+      "name": "Mental health - community \u0026 residential - NHS"
+    },
+    {
+      "code": "P1",
+      "name": "Dentists"
+    }
+  ],
+  "inspectionAreas": [],
+  "providerInspectionAreas": [
+    {
+      "inspectionAreaId": "chschildren",
+      "reports": [
+        {
+          "inspectionId": "INS2-12325588311",
+          "reportLinkId": "054ea20a-4d29-4ddd-8c93-5c28abff2fbf",
+          "providerId": "RHA",
+          "locationId": "RHARA"
+        }
+      ]
+    }
+  ]
+}

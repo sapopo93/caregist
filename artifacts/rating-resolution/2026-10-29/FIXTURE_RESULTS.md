@@ -1,0 +1,30 @@
+- 1-546202187 — Village Surgery: Good; CQC ratings file; 2026-03-31
+- 1-2761140569 — Wytham House: Good; CQC ratings file; 2025-07-23
+- 1-546109592 — Crawley Road Medical Centre: Good; CQC ratings file; 2025-07-11
+- 1-19058724680 — Hallmark Willingdon Park Manor Luxury Care Home: Good; CQC ratings file; 2026-07-24
+- 1-11270646845 — Kelly Healthcare Services Limited: Good; CQC ratings file; 2025-03-14
+- 1-2352094536 — Lucketts Farm: Requires improvement; CQC ratings file; 2025-10-16
+- 1-15297949474 — Rose Court Care Home: Requires improvement; CQC ratings file; 2025-08-12
+- 1-27003473742 — Eskdale House Supported Living Service: Requires improvement; CQC ratings file; 2026-06-03
+- 1-407665280 — Angel Home Care Service Private Limited: Requires improvement; CQC ratings file; 2026-04-22
+- 1-13937101349 — Nomira Care Ltd: Requires improvement; CQC ratings file; 2025-08-19
+- 1-130890582 — Carlton House: Outstanding; CQC ratings file; 2026-06-03
+- 1-2467326262 — Milford Del Support Agency: Outstanding; CQC ratings file; 2025-07-18
+- 1-10192918971 — Woodways: Outstanding; CQC ratings file; 2025-07-29
+- 1-16491295796 — Tillingham Medical Centre: unresolved; no accepted current source; no accepted publication date; retained file: Outstanding (2018-08-24)
+- 1-16516340886 — Collegiate House: Outstanding; CQC ratings file; 2026-08-27
+- 1-142705508 — Silverdale Nursing Home: Inadequate; CQC ratings file; 2026-07-08
+- 1-456354523 — Florence House: Inadequate; CQC ratings file; 2026-01-06
+- 1-113028260 — Fairfield Nursing Home: Inadequate; CQC ratings file; 2025-10-27
+- 1-125730630 — Welcome House - The Chestnuts: Requires improvement; CQC website; 2026-10-13
+- 1-10615519904 — Silverjen Limited: Inadequate; CQC ratings file; 2026-09-18
+- 1-152721284 — St Stephens Nursing Home: Requires improvement; CQC ratings file + CQC website; 2026-05-20
+- 1-19886383752 — The Check House: unresolved; no accepted current source; no accepted publication date; retained file: Good (2026-05-07)
+- 1-22160036426 — Irchester 170: Good; CQC ratings file + CQC website; 2026-03-11
+- 1-390976877 — Althorp Grange: Requires improvement; CQC ratings file + CQC website; 2025-12-11
+- 1-552527797 — The Chesser Surgery: Requires improvement; CQC website; 2025-03-05
+- 1-12566526711 — Candela Healthcare Ltd: unrated; no accepted current source; no accepted publication date
+- 1-199649069 — Belle Vale Dental Centre: unrated; no accepted current source; no accepted publication date
+- 1-29650851551 — NEAD Support Ltd - Remote Clinical Service: unrated; no accepted current source; no accepted publication date
+- RHARA — Nottingham University Hospital: unrated; no accepted current source; no accepted publication date
+- 1-5588555895 — The Doctors Laboratory: unrated; no accepted current source; no accepted publication date

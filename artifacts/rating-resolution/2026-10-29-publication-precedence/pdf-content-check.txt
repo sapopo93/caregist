@@ -1,0 +1,1 @@
+PASS: all 30 IDs, accepted publication dates and supplied source hashes present in PDF text. CSV/JSON source, date and provenance equality checked during generation.

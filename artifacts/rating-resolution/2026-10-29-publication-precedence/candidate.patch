@@ -1,0 +1,869 @@
+diff --git a/api/services/territory_brief.py b/api/services/territory_brief.py
+index d333eb9..878ac4a 100644
+--- a/api/services/territory_brief.py
++++ b/api/services/territory_brief.py
+@@ -26,6 +26,7 @@ from __future__ import annotations
+ 
+ import csv
+ import io
++import json
+ import re
+ from collections import Counter
+ from dataclasses import asdict, dataclass
+@@ -33,6 +34,9 @@ from datetime import date, datetime, timedelta, timezone
+ from pathlib import Path
+ from typing import Any, Iterable, Literal
+ 
++from api.service_taxonomy import resolve_service_filter
++from api.services.territory_rating import resolve_rating, rating_label, rating_scope_eligible
++
+ from tools.generate_radar_territory_sample import (
+     _load_ndjson,
+     _parse_date,
+@@ -165,6 +169,7 @@ class RankedOrganisation:
+     score_breakdown: dict[str, float]
+     reason: str
+     evidence: tuple[dict[str, Any], ...]
++    rating_resolution: dict[str, Any] | None = None
+     qualification_question: str = ""
+     # Buyer-specific follow-ups keyed by BUYER_QUESTION_TYPES, asked after the
+     # general question above. Like it, each one asks and never asserts need.
+@@ -323,9 +328,8 @@ def _service_types(row: dict[str, Any]) -> tuple[str, ...]:
+ 
+ 
+ def _in_scope(row: dict[str, Any], scope: TerritoryScope) -> bool:
+-    if scope.service_type and scope.service_type.casefold() not in {
+-        t.casefold() for t in _service_types(row)
+-    }:
++    aliases = resolve_service_filter(scope.service_type)
++    if aliases and not set(aliases).intersection(t.casefold() for t in _service_types(row)):
+         return False
+     if scope.kind == "local_authority":
+         return str(row.get("localAuthority") or "").strip().casefold() == scope.name.casefold()
+@@ -574,7 +578,7 @@ def _reason(
+             # A "new registration" that already carries a rating/history is a
+             # re-registration - an ownership, legal-entity or management change.
+             rating_note = (
+-                f" It carries an inherited overall rating of {current_rating}."
++                f" It carries an overall rating of {current_rating}."
+                 if current_rating
+                 else ""
+             )
+@@ -616,21 +620,14 @@ def _reason(
+         ev = published[0]
+         parts.append(
+             f"CQC published an inspection report on {ev.effective_date.strftime('%d %b %Y')} "
+-            f"(current rating {ev.new_value}). Verify its age and supporting evidence before contact."
++            f"(published overall rating {ev.new_value}). Verify its age and supporting evidence before contact."
+         )
+ 
+     for ev in events:
+         if ev.event_type == "rating_current":
+-            dated = (
+-                f"in the report published {ev.effective_date.strftime('%d %b %Y')}"
+-                if "date not recorded" not in ev.detail
+-                else "(report date not recorded in the source)"
+-            )
+-            parts.append(
+-                f"Currently rated {ev.new_value} overall by CQC {dated}. This is the published "
+-                f"overall rating, not a statement about the service today; read the report "
+-                f"before any contact."
+-            )
++            # The resolved label carries the actual publication date (or its
++            # absence). Scoring/inspection dates cannot supply a publication date.
++            parts.append(ev.detail + ". Read the source evidence before contact.")
+         elif ev.event_type == "not_yet_inspected":
+             # The group means "no published rating"; the record cannot show whether or
+             # when an inspection will happen, so the text claims neither.
+@@ -943,20 +940,18 @@ def _provider_group_event(row: dict[str, Any], group: str, *, as_of: date) -> Or
+     Window events only cover recent movement; a group such as "currently rated
+     Inadequate" is a standing state, so each member carries it as evidence.
+     """
++    if not rating_scope_eligible(row):
++        return None
+     location_id = str(row.get("locationId") or "").strip()
+     url = CQC_PROFILE_URL.format(location_id=location_id) if location_id else CQC_DATA_PAGE
+     registered = _parse_date(row.get("registrationDate"))
+     last_inspection = _parse_date((row.get("lastInspection") or {}).get("date"))
+     if group in ("inadequate", "requires_improvement"):
+         rating, report_date = _current_rating_evidence(row)
+-        if not rating:
++        if rating != {"inadequate": "Inadequate", "requires_improvement": "Requires improvement"}[group]:
+             return None
+         effective = report_date or last_inspection
+-        detail = (
+-            f"Current overall rating {rating} (report {effective.isoformat()})"
+-            if effective
+-            else f"Current overall rating {rating} (report date not recorded in source)"
+-        )
++        detail = rating_label(resolve_rating(row))
+         return OrgEvent(
+             event_type="rating_current",
+             effective_date=effective or as_of,
+@@ -964,9 +959,11 @@ def _provider_group_event(row: dict[str, Any], group: str, *, as_of: date) -> Or
+             new_value=rating,
+             detail=detail,
+             source_url=url,
+-            source_field="location.currentRatings.overall",
++            source_field="location.rating_resolution",
+         )
+     if group == "not_yet_inspected":
++        if resolve_rating(row)["status"] != "unrated":
++            return None
+         return OrgEvent(
+             event_type="not_yet_inspected",
+             effective_date=registered or as_of,
+@@ -1079,6 +1076,9 @@ def generate_brief_from_rows(
+         scoped_rows = [
+             row for row in scoped_rows if str(row.get("locationId") or "").strip() in allowed_ids
+         ]
++    if provider_group in ("inadequate", "requires_improvement", "not_yet_inspected"):
++        scoped_rows = [row for row in scoped_rows
++                       if _provider_group_event(row, provider_group, as_of=as_of) is not None]
+     territory_locations = len(scoped_rows)
+     generated_on = purchase_context.generated_at.astimezone(timezone.utc).date()
+     coverage = _evidence_coverage(
+@@ -1120,11 +1120,8 @@ def generate_brief_from_rows(
+         except (TypeError, ValueError):
+             beds = None
+         service_types = _service_types(row)
+-        current_ratings = row.get("currentRatings") or {}
+-        overall = current_ratings.get("overall") if isinstance(current_ratings, dict) else None
+-        current_rating = (
+-            str(overall.get("rating") or "").strip() or None if isinstance(overall, dict) else None
+-        )
++        resolution = resolve_rating(row)
++        current_rating = resolution["value"]
+         has_history = bool(_rating_sequence(row))
+         score, breakdown = _score(
+             events, beds=beds, provider_cluster=cluster, as_of=generated_on,
+@@ -1142,6 +1139,11 @@ def generate_brief_from_rows(
+             has_rating_history=has_history,
+             as_of=generated_on,
+         )
++        if resolution['status'] in ('unresolved', 'inherited'):
++            reason = (f"Current-provider overall rating is {resolution['status']}. "
++                      "The supplied evidence does not establish a current-provider inspection; "
++                      "review the CQC profile and retained source evidence before qualification.")
++        reason += " Rating evidence: " + rating_label(resolution) + "."
+         evidence = tuple(
+             {
+                 "event_type": e.event_type,
+@@ -1169,6 +1171,7 @@ def generate_brief_from_rows(
+                 service_types=service_types,
+                 number_of_beds=beds,
+                 current_rating=current_rating,
++                rating_resolution=resolution,
+                 primary_signal=_primary_signal(events),
+                 most_recent_event_date=most_recent,
+                 score=score,
+@@ -1305,19 +1308,12 @@ def generate_brief_from_rows(
+ 
+ 
+ def _current_rating_evidence(row):
+-    current = row.get("currentRatings")
+-    if not isinstance(current, dict):
+-        return None, None
+-    overall = current.get("overall")
+-    if not isinstance(overall, dict):
+-        return None, None
+-    return overall.get("rating"), _parse_date(
+-        current.get("reportDate") or overall.get("reportDate") or overall.get("date")
+-    )
++    resolved = resolve_rating(row)
++    return resolved["value"], _parse_date(resolved["publication_date"])
+ 
+ 
+ def _evidence_coverage(rows, *, generated_on, window_start, window_end):
+-    """Keep RI context and registration provenance gaps visible outside ranking.
++    """Keep current-state rating and provenance gaps visible outside ranking.
+ 
+     Dates and metadata are copied from the snapshot, never inferred from the
+     snapshot's retrieval time. A constructed CQC link is a reference, not proof
+@@ -1331,10 +1327,6 @@ def _evidence_coverage(rows, *, generated_on, window_start, window_end):
+     for row in rows:
+         rating, publication = _current_rating_evidence(row)
+         registration = _parse_date(row.get("registrationDate"))
+-        is_ri = str(rating or "").strip().casefold() == "requires improvement"
+-        in_window = registration is not None and window_start <= registration <= window_end
+-        if not is_ri and not in_window:
+-            continue
+         missing = []
+         if not row.get("source_url"):
+             missing.append("source URL")
+@@ -1352,6 +1344,7 @@ def _evidence_coverage(rows, *, generated_on, window_start, window_end):
+             "provider_id": str(row.get("providerId") or ""),
+             "location_name": str(row.get("name") or ""),
+             "current_rating": rating,
++            "rating_resolution": resolve_rating(row),
+             "rating_publication_date": publication.isoformat() if publication else None,
+             "rating_freshness": freshness,
+             "registration_date": registration.isoformat() if registration else None,
+@@ -1369,6 +1362,9 @@ def _latest_source_date(rows: list[dict[str, Any]]) -> date | None:
+         cand = _parse_date(row.get("registrationDate"))
+         if cand and (latest is None or cand > latest):
+             latest = cand
++        resolved_date = _parse_date(resolve_rating(row)['publication_date'])
++        if resolved_date and (latest is None or resolved_date > latest):
++            latest = resolved_date
+         for report_date, _rating in _rating_sequence(row):
+             if latest is None or report_date > latest:
+                 latest = report_date
+@@ -1486,6 +1482,7 @@ def brief_to_csv(brief: TerritoryBrief) -> str:
+             "cqc_record_url",
+             "rating_evidence_date",
+             "rating_freshness",
++            "rating_status", "rating_source", "rating_provenance_json",
+             "registration_metadata_gaps",
+             "shortlist_notice",
+             "licence",
+@@ -1522,6 +1519,9 @@ def brief_to_csv(brief: TerritoryBrief) -> str:
+                 CQC_PROFILE_URL.format(location_id=org.location_id),
+                 coverage_by_location.get(org.location_id, {}).get("rating_publication_date") or "",
+                 coverage_by_location.get(org.location_id, {}).get("rating_freshness") or "not assessed",
++                (org.rating_resolution or {}).get("status", "unresolved"),
++                (org.rating_resolution or {}).get("source") or "",
++                json.dumps(org.rating_resolution, sort_keys=True),
+                 "; ".join(coverage_by_location.get(org.location_id, {}).get("registration_metadata_gaps", [])),
+                 notice,
+                 OGL_ATTRIBUTION,
+diff --git a/api/services/territory_brief_render.py b/api/services/territory_brief_render.py
+index b2f7d97..ffd6c5f 100644
+--- a/api/services/territory_brief_render.py
++++ b/api/services/territory_brief_render.py
+@@ -192,8 +192,9 @@ def render_brief_pdf(brief: TerritoryBrief) -> bytes:
+             meta.append(o.service_types[0])
+         if o.number_of_beds:
+             meta.append(f"{o.number_of_beds} beds")
+-        if o.current_rating:
+-            meta.append(f"rating {o.current_rating}")
++        if o.rating_resolution:
++            from api.services.territory_rating import rating_label
++            meta.append("rating " + rating_label(o.rating_resolution))
+         meta.append(f"score {o.score:.0f}")
+         pdf.spacer(3)
+         pdf.paragraph(f"{o.rank}. {o.organisation_name} - {o.location_name}")
+@@ -225,6 +226,16 @@ def render_brief_pdf(brief: TerritoryBrief) -> bytes:
+                 + f". Recorded URL: {row['recorded_source_url'] or 'not supplied'}; "
+                 + f"hash: {row['recorded_source_hash'] or 'not supplied'}.", muted=True,
+             )
++            resolution = row.get("rating_resolution") or {}
++            pdf.paragraph("Rating status: " + str(resolution.get("status", "unresolved"))
++                          + "; source: " + str(resolution.get("source") or "none accepted"), muted=True)
++            for item in resolution.get("evidence", []):
++                pdf.paragraph(
++                    f"{item['source']}: {item.get('value') or 'no numerical rating'}; "
++                    f"published {item.get('publication_date') or 'unknown'}; "
++                    f"status {item.get('status', 'unresolved')}; edition {item.get('edition') or 'unknown'}; "
++                    f"hash {item.get('sha256') or 'not supplied'}; "
++                    f"source {item.get('url') or 'not supplied'}", muted=True)
+             pdf.paragraph(f"CQC reference: {row['reference_url']}", muted=True)
+     return pdf.build()
+ 
+diff --git a/api/services/territory_brief_source.py b/api/services/territory_brief_source.py
+index 1411ba5..f25d01d 100644
+--- a/api/services/territory_brief_source.py
++++ b/api/services/territory_brief_source.py
+@@ -10,6 +10,7 @@ from api.services.territory_brief import (
+     PurchaseContext, generate_brief_from_rows, known_territories, validate_scope,
+ )
+ from api.services.cqc_freshness import FRESHNESS_SLA
++from api.services.territory_rating import resolve_rating
+ 
+ MAX_SCOPE_LOCATIONS = 25000
+ 
+@@ -71,6 +72,8 @@ async def load_source(raw_scope, *, edition_id=None, connection=None):
+     for row in rows:
+         payload = row["payload"]
+         payload = json.loads(payload) if isinstance(payload, str) else dict(payload)
++        if payload.get('rating_resolution') != resolve_rating(payload):
++            raise SourceUnavailable('Brief edition lacks a consistent resolved-rating contract')
+         locations.append(payload)
+         names[str(payload.get("providerId") or "").strip()] = row["provider_name"]
+     return scope, dict(edition), locations, names
+diff --git a/frontend/app/api/territory/coverage/route.ts b/frontend/app/api/territory/coverage/route.ts
+index e2f60ef..1de8a0d 100644
+--- a/frontend/app/api/territory/coverage/route.ts
++++ b/frontend/app/api/territory/coverage/route.ts
+@@ -76,6 +76,7 @@ export async function POST(request: Request) {
+     {
+       scope,
+       coverage: result,
++      sourceEditionId: coverageRow.sourceEditionId ?? null,
+       price: { currency: "GBP", amount: TERRITORY_BRIEF_PRICE_GBP },
+       checkedAt: new Date().toISOString(),
+       release: { gitSha: releaseGitSha() },
+diff --git a/frontend/lib/directory-db.ts b/frontend/lib/directory-db.ts
+index cbba61f..cbeedb4 100644
+--- a/frontend/lib/directory-db.ts
++++ b/frontend/lib/directory-db.ts
+@@ -1,3 +1,4 @@
++import { territoryRatingCoverageSql } from "./territory-rating-coverage.ts";
+ import { consumeTerritoryBriefDownload } from "./territory-brief-download.ts";
+ import { createHash, randomBytes } from "node:crypto";
+ import { canonicalizeServiceCounts, canonicalServices, resolveServiceAliases } from "@/lib/service-taxonomy";
+@@ -493,6 +494,7 @@ export async function getDirectoryOpportunityStats(): Promise<DirectoryOpportuni
+ }
+ 
+ export interface TerritoryScopeCoverageRow {
++  sourceEditionId?: string;
+   providerCount: number;
+   mostRecentInspection: string | null;
+   mostRecentRegistration: string | null;
+@@ -511,6 +513,19 @@ export async function getTerritoryScopeCoverage(scope: {
+ }): Promise<TerritoryScopeCoverageRow> {
+   assertDatabaseConfigured();
+ 
++  if (["inadequate", "requires_improvement", "not_yet_inspected"].includes(scope.opportunity)) {
++    const result = await getSql().query<{
++      provider_count: number; most_recent_inspection: string | null;
++      most_recent_registration: string | null; source_edition_id: string | null;
++    }>(territoryRatingCoverageSql(scope.opportunity), [scope.region, resolveServiceAliases(scope.serviceType)]);
++    const row = result.rows[0];
++    if (!row?.source_edition_id) throw new Error("No Brief edition with resolved rating evidence");
++    return { providerCount: row.provider_count,
++      mostRecentInspection: row.most_recent_inspection,
++      mostRecentRegistration: row.most_recent_registration,
++      sourceEditionId: row.source_edition_id };
++  }
++
+   const { clauses, params } = buildWhereClause({
+     query: "",
+     region: scope.region,
+diff --git a/tests/integration/test_territory_source_pg.py b/tests/integration/test_territory_source_pg.py
+index 12882c1..b321b09 100644
+--- a/tests/integration/test_territory_source_pg.py
++++ b/tests/integration/test_territory_source_pg.py
+@@ -191,3 +191,83 @@ async def test_paid_fulfilment_uses_pinned_postgres_source(source_db, tmp_path,
+     assert uploads['pdf'].startswith(b'%PDF')
+     assert b'rating_changed' in uploads['csv']
+     assert await conn.fetchval('SELECT count(*) FROM territory_brief_download_tokens WHERE order_id=$1', order_id) == 2
++
++
++async def test_rating_contract_sidecar_pinned_and_scope_consistent(source_db, tmp_path):
++    """Public SQL and generated Brief classify the same frozen edition."""
++    import subprocess
++    from pathlib import Path
++    from api.services.territory_rating import resolve_rating
++    from api.services.territory_brief import generate_brief_from_rows, PurchaseContext
++    conn, url = source_db
++    root = Path(__file__).resolve().parents[2]
++    packet = root / 'artifacts/rating-resolution/2026-10-29'
++    rows = json.loads((packet / 'fixtures.json').read_text())
++    supplemental = json.loads((packet / 'rating-evidence.json').read_text())
++    for row in rows:
++        for key in supplemental[row['locationId']]:
++            row.pop(key, None)
++        row.update(localAuthority='Testshire', region='Test Region')
++    loc = tmp_path / 'locations.ndjson'
++    prov = tmp_path / 'providers.ndjson'
++    loc.write_text('\n'.join(json.dumps(r) for r in rows))
++    names = {r['providerId']:r['name'] for r in rows}
++    prov.write_text('\n'.join(json.dumps({'providerId':k, 'name':v}) for k,v in names.items()))
++    db = psycopg2.connect(url)
++    try:
++        edition = import_edition(db, loc, prov, datetime.now(timezone.utc), packet / 'rating-evidence.json')
++    finally:
++        db.close()
++    scope, selected, loaded, names = await source.load_source(SCOPE, edition_id=edition)
++    assert all(r['rating_resolution'] == resolve_rating(r) for r in loaded)
++    for group, value in [('inadequate', 'Inadequate'), ('requires_improvement', 'Requires improvement')]:
++        sql = subprocess.check_output([
++            'node', '--experimental-strip-types', '--input-type=module', '-e',
++            "import {territoryRatingCoverageSql as sql} from './frontend/lib/territory-rating-coverage.ts';"
++            f"process.stdout.write(sql('{group}'));"], cwd=root, text=True)
++        coverage = await conn.fetchrow(sql, 'Test Region', [])
++        expected = {r['providerId'] for r in loaded if resolve_rating(r)['value'] == value}
++        assert coverage['provider_count'] == len(expected)
++        assert coverage['source_edition_id'] == str(edition)
++        brief = generate_brief_from_rows(scope, PurchaseContext(order_reference='test', generated_at=datetime.now(timezone.utc)),
++            location_rows=loaded, provider_names=names, locations_label='test', providers_label='test',
++            source_as_of=selected['source_as_of'], provider_group=group)
++        assert all(o.provider_id in expected for o in brief.shortlist)
++        assert brief.territory_insights  # generation completed against identical edition
++        from api.service_taxonomy import resolve_service_filter
++        aliases = list(resolve_service_filter('care-home-with-nursing'))
++        narrowed = await conn.fetchrow(sql, 'Test Region', aliases)
++        matching = {r['providerId'] for r in loaded if resolve_rating(r)['value'] == value
++                    and set(aliases).intersection(t['description'].casefold() for t in r.get('gacServiceTypes', []))}
++        assert narrowed['provider_count'] == len(matching)
++        narrowed_brief = generate_brief_from_rows({**SCOPE, 'service_type':'care-home-with-nursing'},
++            PurchaseContext(order_reference='test', generated_at=datetime.now(timezone.utc)),
++            location_rows=loaded, provider_names=names, locations_label='test', providers_label='test',
++            source_as_of=selected['source_as_of'], provider_group=group)
++        assert all(o.provider_id in matching for o in narrowed_brief.shortlist)
++
++
++async def test_sidecar_dates_define_edition_and_reject_future(source_db, tmp_path):
++    conn, url = source_db
++    loc, prov, retrieved = snapshot(tmp_path, count=1)
++    row = json.loads(loc.read_text())
++    row['currentRatings'] = {}
++    row['historicRatings'] = []
++    row['registrationDate'] = '2025-01-01'
++    loc.write_text(json.dumps(row))
++    publication = (retrieved - timedelta(days=1)).date().isoformat()
++    sidecar = tmp_path / 'rating-evidence.json'
++    evidence = {'L0':{'file_overall_rating':'Good', 'file_overall_rating_date':publication,
++                      'file_rating_source':'fixture', 'file_rating_source_sha256':'a'*64}}
++    sidecar.write_text(json.dumps(evidence))
++    db = psycopg2.connect(url)
++    try:
++        edition = import_edition(db, loc, prov, retrieved, sidecar)
++        assert await conn.fetchval('SELECT source_as_of FROM territory_brief_source_editions WHERE id=$1', edition) == datetime.fromisoformat(publication).date()
++        evidence['L0']['file_overall_rating_date'] = (retrieved + timedelta(days=1)).date().isoformat()
++        sidecar.write_text(json.dumps(evidence))
++        with pytest.raises(ValueError, match='after retrieval'):
++            import_edition(db, loc, prov, retrieved, sidecar)
++        assert await conn.fetchval('SELECT count(*) FROM territory_brief_source_editions') == 1
++    finally:
++        db.close()
+diff --git a/tests/test_territory_brief.py b/tests/test_territory_brief.py
+index 7d26c0b..6148424 100644
+--- a/tests/test_territory_brief.py
++++ b/tests/test_territory_brief.py
+@@ -356,7 +356,10 @@ def test_csv_has_expected_columns_and_no_blank_reason(tmp_path):
+     assert len(rows) == 2
+     for row in rows:
+         assert ",,," not in row  # crude blank-cluster check
+-    assert "reason" not in rows[0] and len(rows[0]) > 40
++    import csv as _csv
++    import io
++    parsed = list(_csv.DictReader(io.StringIO(csv_text)))
++    assert all(row["reason"].strip() for row in parsed)
+ 
+ 
+ def test_pdf_renders_multipage_with_appendix(tmp_path):
+diff --git a/tools/import_territory_brief_source.py b/tools/import_territory_brief_source.py
+index a06c9b7..b4165fb 100644
+--- a/tools/import_territory_brief_source.py
++++ b/tools/import_territory_brief_source.py
+@@ -9,6 +9,7 @@ from __future__ import annotations
+ 
+ import argparse
+ import hashlib
++import json
+ import os
+ from datetime import datetime, timezone
+ from pathlib import Path
+@@ -17,6 +18,7 @@ import psycopg2
+ from psycopg2.extras import Json, execute_values
+ 
+ from api.services.territory_brief import _latest_source_date
++from api.services.territory_rating import resolve_rating
+ from tools.generate_radar_territory_sample import _load_ndjson, load_provider_names
+ 
+ 
+@@ -25,20 +27,44 @@ def file_hash(path):
+         return hashlib.file_digest(stream, 'sha256').hexdigest()
+ 
+ 
+-def import_edition(conn, locations_path: Path, providers_path: Path, retrieved_at: datetime):
++def import_edition(conn, locations_path: Path, providers_path: Path, retrieved_at: datetime,
++                   rating_evidence_path: Path | None = None):
+     if retrieved_at.tzinfo is None or retrieved_at > datetime.now(timezone.utc):
+         raise ValueError('A timezone-aware, non-future collection retrieval time is required')
+     names = load_provider_names(providers_path)
+     if not names:
+         raise ValueError('Provider source is empty')
+-    hashes = file_hash(locations_path), file_hash(providers_path)
++    evidence_bytes = rating_evidence_path.read_bytes() if rating_evidence_path else b""
++    supplemental = json.loads(evidence_bytes) if evidence_bytes else {}
++    if not isinstance(supplemental, dict):
++        raise ValueError('Rating evidence must be keyed by location ID')
++    allowed = {'file_overall_rating', 'file_overall_rating_date', 'file_rating_source',
++               'file_rating_source_sha256', 'file_rating_edition', 'file_rating_status',
++               'rating_website_evidence', 'api_rating_status'}
++    if any(not isinstance(v, dict) or set(v) - allowed for v in supplemental.values()):
++        raise ValueError('Rating evidence contains unsupported fields')
++    original_hashes = file_hash(locations_path), file_hash(providers_path)
++    # The edition identity includes sidecar bytes; retries cannot silently reuse
++    # an edition with different current-provider evidence.
++    hashes = ((hashlib.sha256((original_hashes[0] + ':').encode() + evidence_bytes).hexdigest()
++               if evidence_bytes else original_hashes[0]), original_hashes[1])
+     # Two streaming passes avoid loading the national register into memory.
+     count, as_of = 0, None
++    seen_ids = set()
+     for row in _load_ndjson(locations_path):
+         count += 1
+-        latest = _latest_source_date([row])
++        location_id = str(row.get('locationId') or '').strip()
++        seen_ids.add(location_id)
++        enriched = {**row, **supplemental.get(location_id, {})}
++        resolution = resolve_rating(enriched)
++        if any(e.get('publication_date') and e['publication_date'] > retrieved_at.date().isoformat()
++               for e in resolution['evidence']):
++            raise ValueError('Rating evidence contains publication dates after retrieval')
++        latest = _latest_source_date([enriched])
+         if latest is not None:
+             as_of = max(as_of, latest) if as_of else latest
++    if set(supplemental) - seen_ids:
++        raise ValueError('Rating evidence includes locations absent from source')
+     if not count or as_of is None or as_of > retrieved_at.date():
+         raise ValueError('Source is empty, undated, or contains dates after retrieval')
+     with conn:
+@@ -53,6 +79,10 @@ def import_edition(conn, locations_path: Path, providers_path: Path, retrieved_a
+                 provider_id = str(row.get('providerId') or '').strip()
+                 if not location_id or not provider_id or provider_id not in names:
+                     raise ValueError('Location lacks a verified provider identity/name')
++                row = {**row, **supplemental.get(location_id, {}),
++                       'source_snapshot_sha256': original_hashes[0],
++                       'source_edition': f'CQC API snapshot retrieved {retrieved_at.isoformat()}'}
++                row['rating_resolution'] = resolve_rating(row)
+                 batch.append((edition_id, location_id, str(row.get('localAuthority') or '').strip(),
+                               str(row.get('region') or '').strip(), names[provider_id], Json(row)))
+                 if len(batch) >= 500:
+@@ -60,7 +90,8 @@ def import_edition(conn, locations_path: Path, providers_path: Path, retrieved_a
+                     batch.clear()
+             if batch:
+                 _insert(cur, batch)
+-            if hashes != (file_hash(locations_path), file_hash(providers_path)):
++            if (original_hashes != (file_hash(locations_path), file_hash(providers_path))
++                    or (rating_evidence_path and rating_evidence_path.read_bytes() != evidence_bytes)):
+                 raise ValueError('Source files changed during import')
+     return edition_id
+ 
+@@ -75,10 +106,11 @@ def main():
+     parser.add_argument('--locations-source', type=Path, required=True)
+     parser.add_argument('--providers-source', type=Path, required=True)
+     parser.add_argument('--source-retrieved-at', type=datetime.fromisoformat, required=True)
++    parser.add_argument('--rating-evidence', type=Path, help='Pinned JSON evidence keyed by location ID')
+     args = parser.parse_args()
+     conn = psycopg2.connect(os.environ['DATABASE_URL'])
+     try:
+-        edition_id = import_edition(conn, args.locations_source, args.providers_source, args.source_retrieved_at)
++        edition_id = import_edition(conn, args.locations_source, args.providers_source, args.source_retrieved_at, args.rating_evidence)
+         print(f'Imported immutable CQC evidence edition {edition_id}; checkout flags unchanged')
+     finally:
+         conn.close()
+diff --git a/api/services/territory_rating.py b/api/services/territory_rating.py
+new file mode 100644
+index 0000000..32daf6c
+--- /dev/null
++++ b/api/services/territory_rating.py
+@@ -0,0 +1,99 @@
++"""Current-state rating evidence. Never supplies rating-change history.
++
++Evidence is pinned into a Brief source edition; no mutable directory joins or
++network requests are made while generating an order. Dates mean publication,
++not retrieval. `current` describes the supplied evidence, not a live guarantee.
++"""
++from datetime import date
++
++NUMERICAL = {'Outstanding', 'Good', 'Requires improvement', 'Inadequate'}
++VERSION = 2
++FILE_HASH = 'aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd'
++
++
++def publication(value):
++    try:
++        return date.fromisoformat(str(value)[:10]).isoformat() if value else None
++    except ValueError:
++        return None
++
++
++def resolve_rating(row):
++    current = row.get('currentRatings') or {}
++    if not isinstance(current, dict):
++        current = {}
++    overall = current.get('overall') or {}
++    if not isinstance(overall, dict):
++        overall = {}
++    api = dict(source='CQC API', value=overall.get('rating'),
++               publication_date=publication(current.get('reportDate') or overall.get('reportDate') or overall.get('date')),
++               edition=row.get('source_edition'), sha256=row.get('source_snapshot_sha256'),
++               url=row.get('source_url'), status=row.get('api_rating_status', overall.get('status', 'current')))
++    file_hash = row.get('file_rating_source_sha256')
++    file = dict(source='CQC ratings file', value=row.get('file_overall_rating'),
++                publication_date=publication(row.get('file_overall_rating_date')),
++                edition=('CQC download edition 2 October 2026; data cutoff unverified'
++                         if file_hash == FILE_HASH else row.get('file_rating_edition')),
++                sha256=file_hash, url=row.get('file_rating_source'),
++                status=row.get('file_rating_status', 'current'))
++    website = row.get('rating_website_evidence')
++    evidence = [api, file]
++    if website:
++        evidence.append({**website, 'source': 'CQC website',
++                         'publication_date': publication(website.get('publication_date'))})
++    numerical = [e for e in evidence if e.get('value') in NUMERICAL]
++    result = dict(contract_version=VERSION, value=None, publication_date=None,
++                  source=None, status='unrated', evidence=evidence,
++                  reason='No numerical location overall rating in supplied evidence')
++    if any(e.get('status') not in {'current', 'inherited', 'unresolved', 'unrated'} for e in evidence):
++        return {**result, 'status': 'unresolved', 'reason': 'Unsupported evidence status'}
++    if any(e.get('value') in NUMERICAL and e.get('status') == 'unrated' for e in evidence):
++        return {**result, 'status': 'unresolved', 'reason': 'Numerical evidence has unrated status'}
++    # A provider/context conflict cannot be resolved by sorting publication dates.
++    if any(e.get('status') == 'unresolved' for e in evidence):
++        return {**result, 'status': 'unresolved', 'reason': 'Current-provider evidence is unresolved'}
++    # Only file/website publications compete by publication date. API dates
++    # are retained as evidence, but never participate in this comparison.
++    publications = [e for e in numerical if e['source'] != 'CQC API']
++    publication_candidates = [e for e in publications if e.get('status') == 'current']
++    dated = [e for e in publication_candidates if e.get('publication_date')]
++    if dated:
++        newest = max(e['publication_date'] for e in dated)
++        latest = [e for e in dated if e['publication_date'] == newest]
++        reason = 'Newest dated CQC file/website publication; API excluded from comparison'
++    elif publication_candidates:
++        # Undated evidence can fill a gap, never displace dated evidence.
++        latest = publication_candidates
++        newest = None
++        reason = 'Undated CQC publication fills a gap; publication date unavailable'
++    elif publications:
++        return {**result, 'status': 'inherited',
++                'reason': 'CQC publication exists but establishes no current-provider rating'}
++    else:
++        latest = [e for e in numerical if e['source'] == 'CQC API' and e.get('status') == 'current']
++        newest = latest[0].get('publication_date') if latest else None
++        reason = 'API fallback only: no CQC file/website rating publication supplied'
++    if not latest:
++        return {**result, 'status': 'inherited' if numerical else 'unrated'}
++    if len({e['value'] for e in latest}) > 1:
++        return {**result, 'status': 'unresolved',
++                'reason': 'Conflicting publication candidates cannot be ordered by publication date'}
++    return {**result, 'value': latest[0]['value'], 'publication_date': newest,
++            'source': ' + '.join(e['source'] for e in latest), 'status': 'current',
++            'reason': reason}
++
++
++def rating_scope_eligible(row):
++    return (str(row.get('registrationStatus') or '').strip().casefold() == 'registered'
++            and not str(row.get('dormancy') or '').strip().upper().startswith('Y'))
++
++
++def rating_label(resolution):
++    source = resolution['source'] or 'no accepted source; see candidate evidence'
++    if resolution['status'] != 'current':
++        return f"{resolution['status']}; {source}; publication date unresolved"
++    when = resolution['publication_date']
++    basis = (f"matches CQC's published rating as of {when}" if when
++             else "undated CQC evidence; publication date unavailable")
++    fallback = ' (gap-filling API evidence)' if source == 'CQC API' else ''
++    return f"{resolution['value']}; {basis}; source {source}{fallback}"
+diff --git a/frontend/lib/territory-rating-coverage.ts b/frontend/lib/territory-rating-coverage.ts
+new file mode 100644
+index 0000000..f175540
+--- /dev/null
++++ b/frontend/lib/territory-rating-coverage.ts
+@@ -0,0 +1,37 @@
++/** Brief coverage uses the sealed edition's Python-produced rating contract.
++ * Missing contracts fail closed, rather than falling back to directory ratings.
++ */
++export function territoryRatingCoverageSql(opportunity: string): string {
++  const predicates: Record<string, string> = {
++    inadequate: "r->>'status' = 'current' AND r->>'value' = 'Inadequate'",
++    requires_improvement: "r->>'status' = 'current' AND r->>'value' = 'Requires improvement'",
++    not_yet_inspected: "r->>'status' = 'unrated'",
++  };
++  const predicate = predicates[opportunity];
++  if (!predicate) throw new Error("Unsupported rating scope");
++  return `WITH edition AS (
++    SELECT id, location_count, source_retrieved_at FROM territory_brief_source_editions
++    ORDER BY source_retrieved_at DESC, id DESC LIMIT 1
++  ), members AS (
++    SELECT s.*, payload->'rating_resolution' AS r
++    FROM territory_brief_source_locations s JOIN edition e ON s.edition_id = e.id
++  ), valid AS (
++    SELECT e.id FROM edition e
++    WHERE e.source_retrieved_at BETWEEN now() - interval '8 days' AND now()
++      AND (SELECT count(*) FROM members) = e.location_count
++      AND NOT EXISTS (SELECT 1 FROM members
++        WHERE r->>'contract_version' IS DISTINCT FROM '2')
++  )
++  SELECT count(DISTINCT (payload->>'providerId'))::int AS provider_count,
++    max(r->>'publication_date') AS most_recent_inspection,
++    max(payload->>'registrationDate') AS most_recent_registration,
++    (SELECT id::text FROM valid) AS source_edition_id
++  FROM members WHERE edition_id = (SELECT id FROM valid)
++    AND lower(btrim(payload->>'registrationStatus')) = 'registered'
++    AND upper(btrim(coalesce(payload->>'dormancy', ''))) NOT LIKE 'Y%'
++    AND lower(region) = lower($1)
++    AND (cardinality($2::text[]) = 0 OR EXISTS (SELECT 1 FROM jsonb_array_elements(
++      coalesce(payload->'gacServiceTypes', '[]'::jsonb)) t WHERE lower(btrim(t->>'description')) = ANY(
++      SELECT lower(alias) FROM unnest($2::text[]) alias)))
++    AND (${predicate})`;
++}
+diff --git a/frontend/lib/territory-rating-coverage.test.ts b/frontend/lib/territory-rating-coverage.test.ts
+new file mode 100644
+index 0000000..cad5e31
+--- /dev/null
++++ b/frontend/lib/territory-rating-coverage.test.ts
+@@ -0,0 +1,14 @@
++import assert from 'node:assert/strict';
++import test from 'node:test';
++import { territoryRatingCoverageSql } from './territory-rating-coverage.ts';
++
++test('Brief rating scope is pinned to the resolved contract and excludes uncertainty', () => {
++  const sql = territoryRatingCoverageSql('inadequate');
++  assert.match(sql, /territory_brief_source_locations/);
++  assert.match(sql, /contract_version/);
++  assert.match(sql, /r->>'status' = 'current'/);
++  assert.match(sql, /r->>'value' = 'Inadequate'/);
++  assert.doesNotMatch(sql, /care_providers/);
++  assert.match(territoryRatingCoverageSql('not_yet_inspected'), /r->>'status' = 'unrated'/);
++  assert.throws(() => territoryRatingCoverageSql('invalid'));
++});
+diff --git a/tests/test_territory_rating_resolution.py b/tests/test_territory_rating_resolution.py
+new file mode 100644
+index 0000000..5caa4bb
+--- /dev/null
++++ b/tests/test_territory_rating_resolution.py
+@@ -0,0 +1,157 @@
++"""Frozen audit acceptance checks: no network/database writes."""
++import csv
++import io
++import json
++from datetime import date, datetime, timezone
++from pathlib import Path
++
++import pytest
++
++from api.services.territory_rating import resolve_rating, FILE_HASH
++from api.services.territory_brief import (
++    PurchaseContext, generate_brief_from_rows, brief_to_csv, _provider_group_event,
++    _location_events,
++)
++from api.services.territory_brief_render import render_brief_pdf
++
++PACKET = Path(__file__).resolve().parents[1] / 'artifacts/rating-resolution/2026-10-29'
++FIXTURES = json.loads((PACKET / 'fixtures.json').read_text())
++UNRESOLVED = {'1-16491295796', '1-19886383752'}
++CONFLICTS = {'1-152721284', '1-22160036426', '1-390976877', '1-552527797'}
++
++
++@pytest.mark.parametrize('row', FIXTURES, ids=lambda r: r['locationId'])
++def test_frozen_fixture(row):
++    resolved = resolve_rating(row)
++    ident = row['locationId']
++    assert len(resolved['evidence']) >= 2
++    assert resolved['evidence'][1]['value'] == row['file_overall_rating']
++    assert resolved['evidence'][1]['sha256'] == row['file_rating_source_sha256']
++    if ident in UNRESOLVED:
++        assert resolved['status'] == 'unresolved' and resolved['value'] is None
++        assert _provider_group_event(row, 'inadequate', as_of=date(2026,10,22)) is None
++        assert _provider_group_event(row, 'not_yet_inspected', as_of=date(2026,10,22)) is None
++    elif ident in CONFLICTS:
++        assert resolved['value'] == row['file_overall_rating']
++        assert resolved['publication_date'] >= row['file_overall_rating_date']
++        assert 'CQC' in resolved['source']
++    elif ident == '1-125730630':
++        assert resolved['value'] == 'Requires improvement'
++        assert resolved['source'] == 'CQC website'
++        assert resolved['publication_date'] == '2026-10-13'
++    elif row['file_overall_rating']:
++        assert resolved['value'] == row['file_overall_rating']
++        assert resolved['source'] == 'CQC ratings file'
++        assert resolved['publication_date'] == row['file_overall_rating_date']
++    else:
++        assert resolved['status'] == 'unrated' and resolved['value'] is None
++
++
++def test_conflicts_dates_and_api_only():
++    row = {'currentRatings': {'overall': {'rating': 'Good'}, 'reportDate': '2026-10-29'}}
++    assert resolve_rating(row)['source'] == 'CQC API'
++    row.update(file_overall_rating='Inadequate', file_overall_rating_date='2025-01-01')
++    assert resolve_rating(row)['value'] == 'Inadequate'
++    assert resolve_rating(row)['publication_date'] == '2025-01-01'
++    row['file_overall_rating_date'] = None
++    assert resolve_rating(row)['source'] == 'CQC ratings file'
++    assert resolve_rating(row)['publication_date'] is None
++
++
++def test_file_observation_never_creates_history():
++    row = {'locationId':'test', 'file_overall_rating':'Good',
++           'file_overall_rating_date':'2026-10-22'}
++    assert _location_events(row, window_start=date(2026,10,1),
++                            window_end=date(2026,10,22), as_of=date(2026,10,22)) == []
++
++
++def build_fixture_brief():
++    rows = [{**r, 'localAuthority':'Fixture County', 'region':'Fixture Region',
++             'registrationDate':'2026-10-20', 'providerId':r['locationId']+'-provider'} for r in FIXTURES]
++    return generate_brief_from_rows(
++        {'kind':'local_authority','name':'Fixture County','shortlist_target':30},
++        PurchaseContext(order_reference='rating-fixtures', generated_at=datetime(2026,10,29,tzinfo=timezone.utc)),
++        location_rows=rows, provider_names={r['providerId']:r['name'] for r in rows},
++        locations_label='frozen-rating-audit-2026-10-22', providers_label='fixture-only',
++        source_as_of=date(2026,10,22))
++
++
++def test_output_consistency():
++    brief = build_fixture_brief()
++    exported = list(csv.DictReader(io.StringIO(brief_to_csv(brief))))
++    assert len(exported) == len(brief.shortlist) == 30
++    for row, org in zip(exported, brief.shortlist):
++        assert json.loads(row['rating_provenance_json']) == org.to_json()['rating_resolution']
++        assert row['current_rating'] == (org.rating_resolution['value'] or '')
++        assert row['rating_status'] == org.rating_resolution['status']
++    assert render_brief_pdf(brief).startswith(b'%PDF')
++
++
++def test_invalid_status_and_explicit_inherited():
++    row = {'currentRatings': {'overall': {'rating': 'Good'}, 'reportDate':'2026-01-01'},
++           'api_rating_status':'currnet', 'file_overall_rating':'Inadequate',
++           'file_overall_rating_date':'2025-01-01'}
++    assert resolve_rating(row)['status'] == 'unresolved'
++    row.pop('file_overall_rating')
++    row['api_rating_status'] = 'inherited'
++    assert resolve_rating(row)['status'] == 'inherited'
++    assert resolve_rating(row)['value'] is None
++
++
++@pytest.mark.parametrize('changes', [{'registrationStatus':'Deregistered'}, {'dormancy':'Y'}])
++def test_inactive_not_in_rating_scope(changes):
++    row = {**FIXTURES[0], **changes, 'file_overall_rating':'Inadequate'}
++    assert _provider_group_event(row, 'inadequate', as_of=date(2026,10,22)) is None
++
++
++@pytest.mark.parametrize('file_date,web_date,expected_source,expected_value', [
++    ('2026-01-01', None, 'CQC ratings file', 'Good'),
++    ('2026-01-01', '2025-01-01', 'CQC ratings file', 'Good'),
++    ('2026-01-01', '2026-02-01', 'CQC website', 'Inadequate'),
++    (None, '2026-02-01', 'CQC website', 'Inadequate'),
++])
++def test_publication_precedence(file_date, web_date, expected_source, expected_value):
++    row = {'file_overall_rating':'Good', 'file_overall_rating_date':file_date,
++           'rating_website_evidence':{'value':'Inadequate', 'publication_date':web_date, 'status':'current'},
++           'currentRatings':{'overall':{'rating':'Outstanding'}, 'reportDate':'2026-10-29'}}
++    r = resolve_rating(row)
++    assert r['source'] == expected_source and r['value'] == expected_value
++    assert r['evidence'][0]['publication_date'] == '2026-10-29'
++
++
++def test_undated_website_fills_gap_before_api():
++    row = {'rating_website_evidence':{'value':'Good','status':'current'},
++           'currentRatings':{'overall':{'rating':'Inadequate'},'reportDate':'2026-10-29'}}
++    r = resolve_rating(row)
++    assert r['source'] == 'CQC website' and r['publication_date'] is None
++    from api.services.territory_rating import rating_label
++    assert 'publication date unavailable' in rating_label(r)
++
++
++@pytest.mark.parametrize('stamp', ['2026-01-01', None])
++def test_unresolvable_publication_conflicts_keep_candidates(stamp):
++    row = {'file_overall_rating':'Good','file_overall_rating_date':stamp,
++           'rating_website_evidence':{'value':'Inadequate','publication_date':stamp,'status':'current'}}
++    r = resolve_rating(row)
++    assert r['status'] == 'unresolved' and r['value'] is None
++    assert {e['value'] for e in r['evidence'][1:]} == {'Good','Inadequate'}
++
++
++def test_undated_rating_group_never_invents_publication_date():
++    row = {'locationId':'undated','providerId':'provider','name':'Undated fixture',
++           'registrationStatus':'Registered','localAuthority':'Fixture County',
++           'file_overall_rating':'Inadequate','lastInspection':{'date':'2025-01-01'}}
++    brief = generate_brief_from_rows(
++        {'kind':'local_authority','name':'Fixture County','shortlist_target':10},
++        PurchaseContext(order_reference='undated',generated_at=datetime(2026,10,29,tzinfo=timezone.utc)),
++        location_rows=[row],provider_names={'provider':'Fixture'},locations_label='test',
++        providers_label='test',source_as_of=date(2026,10,22),provider_group='inadequate')
++    org = brief.shortlist[0]
++    assert 'publication date unavailable' in org.reason
++    assert 'published 01 Jan 2025' not in org.reason
++    assert 'Currently rated' not in org.reason
++    exported = next(csv.DictReader(io.StringIO(brief_to_csv(brief))))
++    assert exported['rating_evidence_date'] == ''
++    assert exported['rating_source'] == 'CQC ratings file'
++    assert org.to_json()['rating_resolution']['publication_date'] is None
++    assert render_brief_pdf(brief).startswith(b'%PDF')

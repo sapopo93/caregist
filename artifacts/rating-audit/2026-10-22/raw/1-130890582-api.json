@@ -1,0 +1,1112 @@
+{
+  "locationId": "1-130890582",
+  "providerId": "1-118164177",
+  "organisationType": "Location",
+  "type": "Social Care Org",
+  "name": "Carlton House",
+  "brandId": "BD144",
+  "brandName": "BRAND Priory Group",
+  "onspdCcgCode": "E38000225",
+  "onspdCcgName": "NHS Leeds CCG",
+  "onspdIcbCode": "E54000054",
+  "onspdIcbName": "NHS West Yorkshire Integrated Care Board",
+  "odsCode": "VLF15",
+  "registrationStatus": "Registered",
+  "registrationDate": "2010-12-08",
+  "dormancy": "N",
+  "onspdLatitude": 53.7472496,
+  "onspdLongitude": -1.5068402,
+  "careHome": "Y",
+  "inspectionDirectorate": "Adult social care",
+  "postalAddressLine1": "24 Wakefield Road",
+  "postalAddressLine2": "Rothwell Haigh",
+  "postalAddressTownCity": "Leeds",
+  "postalAddressCounty": "West Yorkshire",
+  "region": "Yorkshire \u0026 Humberside",
+  "postalCode": "LS26 0SF",
+  "uprn": "72543590",
+  "mainPhoneNumber": "01132827110",
+  "website": "www.prioryadultcare.co.uk",
+  "numberOfBeds": 16,
+  "constituency": "Leeds South West and Morley",
+  "localAuthority": "Leeds",
+  "lastInspection": {
+    "date": "2020-09-10"
+  },
+  "lastReport": {
+    "publicationDate": "2020-10-23"
+  },
+  "relationships": [],
+  "locationTypes": [],
+  "regulatedActivities": [
+    {
+      "name": "Accommodation for persons who require nursing or personal care",
+      "code": "RA2",
+      "contacts": [
+        {
+          "personTitle": "Mrs",
+          "personGivenName": "Laura Marie",
+          "personFamilyName": "Pearce",
+          "personRoles": [
+            "Registered Manager"
+          ]
+        }
+      ]
+    }
+  ],
+  "gacServiceTypes": [
+    {
+      "name": "Residential homes",
+      "description": "Care home service without nursing"
+    }
+  ],
+  "specialisms": [
+    {
+      "name": "Caring for adults over 65 yrs"
+    },
+    {
+      "name": "Caring for adults under 65 yrs"
+    },
+    {
+      "name": "Learning disabilities"
+    }
+  ],
+  "inspectionCategories": [
+    {
+      "code": "S1",
+      "primary": "true",
+      "name": "Residential social care"
+    }
+  ],
+  "inspectionAreas": [],
+  "historicRatings": [
+    {
+      "reportDate": "2020-10-23",
+      "reportLinkId": "7ee1e290-bbe0-4b6b-bd87-bc994c4f7392",
+      "overall": {
+        "rating": "Inspected but not rated",
+        "keyQuestionRatings": [
+          {
+            "name": "Safe",
+            "rating": "Inspected but not rated"
+          },
+          {
+            "name": "Well-led",
+            "rating": "Inspected but not rated"
+          }
+        ]
+      }
+    },
+    {
+      "reportDate": "2016-12-03",
+      "reportLinkId": "af4c4b73-7909-430c-ae9d-048c068f0ecb",
+      "overall": {
+        "rating": "Good",
+        "keyQuestionRatings": [
+          {
+            "name": "Safe",
+            "rating": "Good"
+          },
+          {
+            "name": "Well-led",
+            "rating": "Requires improvement"
+          },
+          {
+            "name": "Caring",
+            "rating": "Good"
+          },
+          {
+            "name": "Responsive",
+            "rating": "Good"
+          },
+          {
+            "name": "Effective",
+            "rating": "Good"
+          }
+        ]
+      }
+    },
+    {
+      "reportDate": "2015-09-17",
+      "reportLinkId": "db1701bc-c5aa-4732-aed4-6ab60e82c247",
+      "overall": {
+        "rating": "Requires improvement",
+        "keyQuestionRatings": [
+          {
+            "name": "Safe",
+            "rating": "Requires improvement"
+          },
+          {
+            "name": "Well-led",
+            "rating": "Good"
+          },
+          {
+            "name": "Caring",
+            "rating": "Good"
+          },
+          {
+            "name": "Responsive",
+            "rating": "Requires improvement"
+          },
+          {
+            "name": "Effective",
+            "rating": "Good"
+          }
+        ]
+      }
+    },
+    {
+      "reportDate": "2019-07-13",
+      "reportLinkId": "6c7b8137-2c1d-4a7e-8cc1-236f1d5dd613",
+      "overall": {
+        "rating": "Requires improvement",
+        "keyQuestionRatings": [
+          {
+            "name": "Safe",
+            "rating": "Requires improvement"
+          },
+          {
+            "name": "Well-led",
+            "rating": "Requires improvement"
+          },
+          {
+            "name": "Caring",
+            "rating": "Good"
+          },
+          {
+            "name": "Responsive",
+            "rating": "Requires improvement"
+          },
+          {
+            "name": "Effective",
+            "rating": "Good"
+          }
+        ]
+      }
+    }
+  ],
+  "reports": [
+    {
+      "linkId": "7ee1e290-bbe0-4b6b-bd87-bc994c4f7392",
+      "reportDate": "2020-10-23",
+      "firstVisitDate": "2020-09-10",
+      "reportUri": "/reports/7ee1e290-bbe0-4b6b-bd87-bc994c4f7392?20201023120000",
+      "reportType": "Location"
+    },
+    {
+      "linkId": "6c7b8137-2c1d-4a7e-8cc1-236f1d5dd613",
+      "reportDate": "2019-07-13",
+      "firstVisitDate": "2019-06-05",
+      "reportUri": "/reports/6c7b8137-2c1d-4a7e-8cc1-236f1d5dd613?20211030120000",
+      "reportType": "Location"
+    },
+    {
+      "linkId": "af4c4b73-7909-430c-ae9d-048c068f0ecb",
+      "reportDate": "2016-12-03",
+      "firstVisitDate": "2016-11-02",
+      "reportUri": "/reports/af4c4b73-7909-430c-ae9d-048c068f0ecb?20211030120000",
+      "reportType": "Location"
+    },
+    {
+      "linkId": "db1701bc-c5aa-4732-aed4-6ab60e82c247",
+      "reportDate": "2015-09-17",
+      "firstVisitDate": "2015-07-29",
+      "reportUri": "/reports/db1701bc-c5aa-4732-aed4-6ab60e82c247?20210126230548",
+      "reportType": "Location"
+    },
+    {
+      "linkId": "a60fc7ee-26f2-4705-bafa-769d2aa19978",
+      "reportDate": "2013-10-01",
+      "firstVisitDate": "2013-09-02",
+      "reportUri": "/reports/a60fc7ee-26f2-4705-bafa-769d2aa19978?20200129163919"
+    },
+    {
+      "linkId": "d78233ae-3b47-4a41-9f16-b30e95562a43",
+      "reportDate": "2012-12-14",
+      "firstVisitDate": "2012-11-28",
+      "reportUri": "/reports/d78233ae-3b47-4a41-9f16-b30e95562a43?20200129163919"
+    },
+    {
+      "linkId": "2cadb4aa-5155-4c31-b046-8fe985c00416",
+      "reportDate": "2011-11-11",
+      "firstVisitDate": "2011-10-17",
+      "reportUri": "/reports/2cadb4aa-5155-4c31-b046-8fe985c00416?20200430120000"
+    }
+  ],
+  "assessmentServiceGroup": [
+    {
+      "assessmentServiceId": "271",
+      "assessmentServiceName": "Care Homes",
+      "status": "Active"
+    }
+  ],
+  "assessment": [
+    {
+      "assessmentPlanPublishedDateTime": "2026-06-03 06:11:50",
+      "ratings": {
+        "asgRatings": [
+          {
+            "assessmentPlanId": "AP24038",
+            "title": "Ongoing Assessment for Carlton House",
+            "assessmentDate": "2026-04-01",
+            "assessmentPlanStatus": "Active",
+            "name": "Care Homes",
+            "rating": "Outstanding",
+            "status": "Current",
+            "commentary": "\u003Cp\u003EDate of Assessment: 8,15 April 2026.\u003C/p\u003E\u003Cp\u003ECarlton House is a residential care home providing support to younger adults, older adults, people living with a learning disability and autistic people. Carlton House was last rated requires improvement (published June 2019). This assessment was prompted by the age of the home\u2019s previous rating.\u003C/p\u003E\u003Cp\u003EWe assessed the home against \u2018right support, right care, right culture\u2019 guidance to make judgements about whether the provider guaranteed people with a learning disability and autistic people respect, equality, dignity, choices, independence and good access to local communities that most people take for granted.\u003C/p\u003E\u003Cp\u003ECarlton House demonstrated exceptional practice across all areas of right care, right support and right culture. People received highly personalised, therapeutic and empowering care that consistently promoted independence, choice and meaningful outcomes. The provider had created an environment where people were supported to live fulfilling lives, develop confidence and pursue both everyday goals and long\u2011term aspirations.\u003C/p\u003E\u003Cp\u003EThe care delivered was compassionate, holistic and tailored to each person\u2019s individual needs, preferences and communication style. Consistently embedded person\u2011centred practice enabled people to access and participate in activities that were genuinely meaningful to them. Staff supported individuals to set long\u2011term goals and work towards them in achievable steps, ensuring progress was celebrated and aspirations remained central to care planning. People were encouraged to develop new skills, increase independence and take greater control of their daily lives. Holistic assessment and monitoring ensured people\u2019s safety and wellbeing were always prioritised, with staff responding effectively to changes in need.\u003C/p\u003E\u003Cp\u003EPeople were supported to gain confidence, experience new opportunities and access community life in ways that reflected their interests and ambitions. Staff used personalised approaches to reduce barriers, including sensory adaptations, structured routines and proactive risk management, enabling people to explore new environments safely. Medicines were administered safely, and staff had a strong understanding of people\u2019s health conditions and the support required to manage them. The home environment was adapted and\u003C/p\u003E\u003Cp\u003Epersonalised to reflect people\u2019s specific sensory needs, routines and identity, ensuring comfort and familiarity while maintaining safety. Staff had the skills, knowledge and training to meet people\u2019s complex needs, and safe recruitment practices ensured new staff were suitable, competent and aligned with the service\u2019s values.\u003C/p\u003E\u003Cp\u003EThe culture of the service was warm, inclusive and empowering. Leaders and staff shared a strong commitment to enabling people to live rich, self-directed lives. Staff behaviour consistently demonstrated respect, patience and genuine belief in people\u2019s potential. This positive culture encouraged people to express themselves, try new things and build resilience. Staff were supported by leadership that promoted reflective practice, continuous improvement and high expectations of person\u2011centred care. As a result, people experienced continuity, stability and an environment where they felt valued, safe and understood.\u003C/p\u003E",
+            "commentaryDate": "2026-05-14",
+            "narrative": "The service is performing exceptionally well.",
+            "overallPeopleExperience": "\u003Cp\u003EPeople received care and support that was personalised, compassionate and responsive to their individual needs. Feedback from relatives and external community care professionals was consistently positive about the quality and safety of care provided to people living at Carlton House. People and their relatives described staff as kind, respectful and knowledgeable.\u003C/p\u003E\u003Cp\u003EOne relative told us, \u201CThey give [person] choices and they are really happy there. They manage [person] very well. Staff take the time to get to know [person], give them choices and keep them busy with activities they enjoy. They are encouraged to do household chores and help as muchas they are able to. They have been cooking, which they really enjoy, and doing the things they are capable of. It\u2019s amazing! When they go out, staff monitor them closely as they can sometimes get into difficulty. They now have more support, which is what [person] needs.\u201D\u003C/p\u003E\u003Cp\u003ESome people could not directly share their experiences of living at the service. In these cases, we used observation to help assess the quality of care people received. This showed that people were listened to and that staff consistently interacted with them in a positive, respectful and supportive way. Other people told us they were happy living at Carlton House and felt well supported by staff. One person said, \u201CI never want to live anywhere else, and I want the staff to all stay here too, I am happy here.\u201D\u003C/p\u003E",
+            "overallPeopleExperienceDate": "2026-05-14",
+            "keyQuestionRatings": [
+              {
+                "name": "Caring",
+                "rating": "Outstanding",
+                "status": "Assessed",
+                "commentary": "\u003Cp\u003ECaring \u2013 this means we looked for evidence that the provider involved people and treated them with compassion, kindness, dignity and respect. \u003C/p\u003E\u003Cp\u003E\u00A0\u003C/p\u003E\u003Cp\u003EAt our last assessment we rated this key question good. At this assessment, the rating has changed to outstanding. This meant people were truly respected and valued as individuals; and empowered as partners in their care in an exceptional service.\u003C/p\u003E",
+                "commentaryDate": "2026-05-14",
+                "narrative": "This service is exceptionally caring",
+                "percentageScore": "95",
+                "topicareas": [
+                  {
+                    "name": "Independence, choice and control",
+                    "qualityStatementId": "17",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "4",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe provider was exceptional at promoting people\u2019s independence, so people knew their rights and had choice and control over their own care, treatment and wellbeing.\u003C/p\u003E\u003Cp\u003EStaff and leaders demonstrated an in\u2011depth understanding of each person\u2019s social history, background and the things that mattered most to them. Care plans were highly personalised and reflected people\u2019s individual preferences, needs and aspirations. Staff used this information skilfully to support people to make informed decisions and to lead their own lives in ways that were meaningful to them. One relative told us that their loved one had previously made a decision not to take medication and that with the assistance of staff and the way it was explained to their loved one they now understand the importance of taking their medication and why it is important for them.\u003C/p\u003E\u003Cp\u003EThe service consistently went above and beyond to promote people\u2019s autonomy. People were supported to develop independence at a pace that suited them, with staff providing encouragement, guidance and opportunities rather than doing things for people. We saw examples of people accessing local colleges, undertaking voluntary work and one person choosing to learn another language. This resulted in people building confidence, developing new skills and taking greater ownership of their daily routines and long\u2011term ambitions.\u003C/p\u003E\u003Cp\u003EStaff actively enabled people to attend social events and maintain links with the community. Examples included visits to the local pub and caf\u00E9, engaging in activities that reflected individual interests, and expanding social networks. These opportunities were not only enjoyable but also supported people\u2019s personal development, helping them to feel included, valued and connected.\u003C/p\u003E\u003Cp\u003EThe service demonstrated outstanding practice in supporting people to achieve significant life goals. Staff worked closely with individuals to plan and undertake holidays and day trips, ensuring these experiences were meaningful, well\u2011planned and tailored to each person\u2019s needs and preferences. For example, one person identified gaining employment as a long-term goal. The registered manager and staff worked closely with the person to explore appropriate college courses that aligned with their interests and strengths, supporting them to develop skills that would increase their future employment opportunities.\u003C/p\u003E",
+                        "commentaryDate": "2026-05-14"
+                      }
+                    ],
+                    "qualityStatementscore": "4 - Evidence shows an exceptional standard of care"
+                  },
+                  {
+                    "name": "Kindness, compassion and dignity",
+                    "qualityStatementId": "15",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "\u003Cp\u003EThe provider was exceptional at treating people with kindness, empathy and compassion and in how they respected people\u2019s privacy and dignity. Staff always treated colleagues from other organisations with kindness and respect.\u003C/p\u003E\u003Cp\u003EEveryone we spoke with, including people using the service, their relatives, advocates and external professionals, spoke highly of the staff team, describing how they consistently went above and beyond in the care and support they provided. One relative told us how their loved one had been in an emergency placement and how this had been a difficult situation that they said felt impossible, disturbing and chaotic and how Carlton House made things possible and the management and staff had \u201Cwelcomed them with open arms\u201D. The feedback received was exceptionally positive and reflected a deeply embedded culture of warmth, empathy and person\u2011centred practice.\u003C/p\u003E\u003Cp\u003EPeople told us they felt safe, valued and respected. One person said, \u201CI would rate this place a thousand,\u201D sharing this with a huge smile that clearly reflected how happy they felt living at the home. Another person told us, \u201CI like it here, they keep me safe.\u201D These comments highlighted not only the trust people had in staff, but also the strong sense of emotional security that staff had worked hard to build.\u003C/p\u003E\u003Cp\u003ERelatives echoed these views and described the profound and positive impact staff had made on their loved ones\u2019 lives. One relative told us, \u201CIt is safe, always clean, tidy, really warm and welcoming. I really would not want [person] to be anywhere else.\u201D Another said, \u201CIt\u2019s very good,they are amazing.\u201D This feedback demonstrated the transformative effect of compassionate, sensitive and highly personalised support.\u003C/p\u003E\u003Cp\u003EAdvocates and professionals spoke very positively about staff attitudes and behaviours, consistently highlighting the team\u2019s patience, empathy and ability to develop meaningful, trusting relationships with the people they supported. Staff showed an in\u2011depth understanding of people\u2019s emotional needs and communicated with sensitivity, respect and genuine affection.\u003C/p\u003E\u003Cp\u003EThroughout our observations, staff interactions were warm, thoughtful and respectful. They took time to listen, offered reassurance when people were anxious and celebrated people\u2019s achievements. They consistently ensured that every person was treated as an individual and with dignity at all times.\u003C/p\u003E",
+                        "commentaryDate": "2026-05-14"
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "3",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "4",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      }
+                    ],
+                    "qualityStatementscore": "4 - Evidence shows an exceptional standard of care"
+                  },
+                  {
+                    "name": "Responding to people\u2019s immediate needs",
+                    "qualityStatementId": "18",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "\u003Cp\u003EThe provider listened to and understood people\u2019s needs, views and wishes. Staff responded to people\u2019s needs in the moment and acted to minimise any discomfort, concern or distress.\u003C/p\u003E\u003Cp\u003EPeople had detailed communication plans in place that clearly guided staff on how each person expressed distress, discomfort or changes in their health and mood. These plans were highly personalised, regularly reviewed and effectively embedded into day\u2011to\u2011day practice.\u003C/p\u003E\u003Cp\u003EStaff recognised early signs of anxiety or distress and responded appropriately. This enabled staff to identify emerging concerns and implement proactive strategies to prevent incidents from occurring.\u003C/p\u003E\u003Cp\u003ERecords showed when staff identified these signs, they acted promptly by offering reassurance, adapting activities and escalating concerns to appropriate professionals where required. This proactive and responsive approach helped prevent anxiety and distress from escalating and ensured people received timely, appropriate support.\u003C/p\u003E",
+                        "commentaryDate": "2026-05-14"
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "4",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Treating people as individuals",
+                    "qualityStatementId": "16",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "4",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe provider treated people as individuals and was exceptional in how they made sure people\u2019s care, support and treatment met people\u2019s needs and preferences. The provider took account of people\u2019s strengths, abilities, aspirations, culture and unique backgrounds and protected characteristics. For example, staff showed outstanding kindness and sensitivity when supporting people through difficult life experiences. They demonstrated a deep understanding of each person\u2019s emotional needs and life history. This enabled them to provide meaningful, compassionate support that upheld people\u2019s dignity and prevented distress from escalating into behaviours of concern.\u003C/p\u003E\u003Cp\u003ECultural, religious and diverse needs were actively celebrated within the service. We saw evidence of events and activities reflecting different cultures and identities, including Pride celebrations and religious festivals such as Diwali. People told us how much they enjoyed dressing up, eating a variety of foods, and singing songs linked to different cultures and religions. These celebrations helped people feel valued, included and proud of their identities.\u003C/p\u003E\u003Cp\u003EStaff also recognised the importance of maintaining family and personal connections. They worked closely with relatives to facilitate meaningful contact and ensured families felt informed and involved. Relatives told us they valued the team\u2019s empathy and described finding comfort in the thoughtful and sensitive ways staff supported ongoing communication and involvement.\u003C/p\u003E",
+                        "commentaryDate": "2026-05-14"
+                      }
+                    ],
+                    "qualityStatementscore": "4 - Evidence shows an exceptional standard of care"
+                  },
+                  {
+                    "name": "Workforce wellbeing and enablement",
+                    "qualityStatementId": "19",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe provider always cared about and promoted the wellbeing of their staff and was exceptional at supporting and enabling staff to always deliver person-centred care.\u003C/p\u003E\u003Cp\u003EStaff told us they felt well supported in their roles and described a positive working culture where wellbeing, teamwork and personal development were prioritised. Staff consistently reported that they felt valued, listened to and enabled to carry out their roles effectively.\u003C/p\u003E\u003Cp\u003EStaff spoke very positively about their experience of working at the service. One member of staff said, \u201CI feel humble and very grateful to be able to work here and support the people I do. The manager is such an amazing person and looks out for everyone.\u201D This reflected the strong sense of purpose, pride and personal satisfaction staff gained from their work.\u003C/p\u003E\u003Cp\u003EAnother member of staff told us, \u201CI have waited a long time for the changes that have now come. I knew the potential was there, but [name] has made this home a pleasure and privilege to work in.\u201D Staff felt their views were welcomed and that they contributed meaningfully to decisions about care and service development. This inclusive approach promoted ownership, confidence and cohesion within the workforce.\u003C/p\u003E\u003Cp\u003EStaff said they received regular supervision, accessible guidance from the registered manager and ongoing opportunities to develop their skills. They felt comfortable raising concerns or asking for advice and described being met with understanding, reassurance and constructive support. This had a clear and positive impact on staff morale and helped to maintain a stable, motivated and committed staff team.\u003C/p\u003E\u003Cp\u003EThe service demonstrated strong and effective practice in promoting workforce wellbeing and enablement. Staff felt supported, involved and appreciated, which contributed directly to the consistent, compassionate and high-quality care people received.\u003C/p\u003E",
+                        "commentaryDate": "2026-05-14"
+                      }
+                    ],
+                    "qualityStatementscore": "4 - Evidence shows an exceptional standard of care"
+                  }
+                ]
+              },
+              {
+                "name": "Effective",
+                "rating": "Good",
+                "status": "Assessed",
+                "commentary": "\u003Cp\u003EEffective \u2013 this means we looked for evidence that people\u2019s care, treatment and support achieved good outcomes and promoted a good quality of life, based on best available evidence. \u003C/p\u003E\u003Cp\u003E\u00A0\u003C/p\u003E\u003Cp\u003EAt our last assessment we rated this key question good. At this assessment, the rating has remained good. This meant people\u2019s outcomes were consistently good, and people\u2019s feedback confirmed this.\u003C/p\u003E",
+                "commentaryDate": "2026-05-14",
+                "narrative": "This service is effective",
+                "percentageScore": "75",
+                "topicareas": [
+                  {
+                    "name": "Assessing needs",
+                    "qualityStatementId": "9",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe provider made sure people\u2019s care and treatment was effective by assessing and reviewing their health, care, wellbeing and communication needs with them.\u003C/p\u003E\u003Cp\u003EThe service had effective processes in place to ensure people\u2019s needs were assessed in a timely and holistic way. Assessments were completed using a multidisciplinary approach, enabling staff to develop a well\u2011rounded understanding of each person\u2019s physical, mental, emotional and social needs. People were involved in monthly reviews of their care plans to ensure they remained up to date and reflective of their wishes and preferences. \u003C/p\u003E\u003Cp\u003EChanges in people\u2019s needs were communicated effectively to staff who knew them well, ensuring that the support provided remained responsive, consistent and aligned with each person\u2019s individual requirements.\u003C/p\u003E",
+                        "commentaryDate": "2026-05-14"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Consent to care and treatment",
+                    "qualityStatementId": "14",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe provider told people about their rights around consent and respected these when delivering person-centred care and treatment.\u003C/p\u003E\u003Cp\u003EStaff understood people\u2019s communication plans well and used their preferred methods consistently when seeking consent. Staff demonstrated a clear awareness of how each person expressed agreement, refusal or uncertainty, and they adapted their approach to ensure people were fully involved in decisions about their care.\u003C/p\u003E\u003Cp\u003ECommunication plans were detailed and person\u2011centred, outlining the gestures, signs, symbols or verbal cues each individual used. Staff were familiar with these plans and applied them reliably in day\u2011to\u2011day practice. Observations throughout the assessment showed staff checking in with people before offering support, explaining what they were doing and waiting for clear indications of consent before proceeding. This included using visual prompts, simple language, or giving people additional time to process information when needed.\u003C/p\u003E\u003Cp\u003EThe home had easy read documentation available for all interactions with people such as best interest decision and review meetings which ensured people were able to fully be involved in decision making about their care.\u003C/p\u003E",
+                        "commentaryDate": "2026-05-14"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Delivering evidence-based care and treatment",
+                    "qualityStatementId": "10",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe provider planned and delivered people\u2019s care and treatment with them, including what was important and mattered to them. They did this in line with legislation and current evidence-based good practice and standards.\u003C/p\u003E\u003Cp\u003EThe registered manager demonstrated a clear understanding of, and effectively implemented, the right support, right care, right culture guidance. Staff were well trained and reported receiving strong support and development to enable them to meet people\u2019s needs effectively. Staff were knowledgeable about national guidance and recommended approaches and focused on delivering individualised, person\u2011centred care.\u003C/p\u003E\u003Cp\u003EThere was a comprehensive and ongoing programme of training, which was regularly reviewed and updated in response to people\u2019s changing needs. This included Oliver McGowan training, the government\u2011recommended training for learning disability and autism, as well as Positive Behaviour Support (PBS). Training was specifically adapted to reflect the needs of the people the service supported, ensuring care was tailored, consistent and delivered by a staff team with the appropriate skills and knowledge.\u003C/p\u003E\u003Cp\u003EPeople were at the centre of decisions about their care and support, including their daily routines and activities. Staff consistently promoted people\u2019s independence, choice and control, supporting them to make decisions about their own lives. People were encouraged to access the community as part of their everyday routines, with a clear focus on promoting a good quality of life for everyone.\u003C/p\u003E\u003Cp\u003EThe provider understood and followed the principles of STOMP (Stopping Over\u2011Medication of People with a Learning Disability, Autism or Both). People were supported to be actively involved in regular medication reviews with relevant healthcare professionals, helping to ensure medicines were used appropriately and in line with best practice.\u003C/p\u003E",
+                        "commentaryDate": "2026-05-14"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "How staff, teams and services work together",
+                    "qualityStatementId": "11",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "3",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe provider worked well across teams and services to support people. They made sure people only needed to tell their story once by sharing their assessment of needs when people moved between different services.\u003C/p\u003E\u003Cp\u003ECollaborative working meant people\u2019s long\u2011term goals, preferences and aspirations were consistently placed at the centre of all decision\u2011making. Staff, teams, and external professionals worked well together with clear communication and shared goals.\u003C/p\u003E\u003Cp\u003EOne person had been supported to access an education placement that aligned with their long\u2011term goals for personal development and independence.\u003C/p\u003E",
+                        "commentaryDate": "2026-05-14"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Monitoring and improving outcomes",
+                    "qualityStatementId": "13",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe provider routinely monitored people\u2019s care and treatment to continuously improve it. They ensured that outcomes were positive and consistent, and that they met both clinical expectations and the expectations of people themselves.\u003C/p\u003E\u003Cp\u003EReview meetings were completed to ensure all information was accurate and up to date. People\u2019s long-term goals and achievements were discussed, alongside agreed plans to support progress in ways that suited everyone. For example, one person expressed a wish to go swimming. Staff worked with the person to develop a personalised plan to support this goal, which included identifying the most suitable swimming facility and using a carefully planned, step-by-step approach to prepare for each visit. This ensured the person felt confident, supported and able to access the activity successfully.\u003C/p\u003E\u003Cp\u003EReviews brought together information from daily records, professional input and people\u2019s own views to ensure support plans remained accurate, responsive and person centred. Where changes were identified, staff updated plans promptly and shared new strategies with the wider team to maintain consistency. The management team demonstrated a strong approach to monitoring and improving outcomes. Regular reviews, consistent key worker involvement and a focus on achievable goals ensured people received support that was effective, personalised and aligned with their ongoing development.\u003C/p\u003E",
+                        "commentaryDate": "2026-05-14"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Supporting people to live healthier lives",
+                    "qualityStatementId": "12",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe provider supported people to manage their health and wellbeing in ways that promoted independence, informed choice and improved long\u2011term outcomes. Staff understood people\u2019s individual health needs and worked with them to develop healthier routines that were realistic, meaningful and aligned with their preferences.\u003C/p\u003E\u003Cp\u003EWe saw evidence of people engaging in mindfulness and pamper sessions. Staff told us people relaxed during these sessions, enabling them to be open about their feelings, emotions and any concerns they had. This meant issues could be identified early and addressed promptly before they escalated.\u003C/p\u003E\u003Cp\u003EPeople were involved in safe and healthy relationship workshops, which helped them to develop a better understanding of relationships and supported them to make informed decisions.\u003C/p\u003E\u003Cp\u003EA wellness hut was being developed in the summerhouse. This would provide a safe, calm and relaxing space away from the main home, further supporting mindfulness activities and promoting people\u2019s overall wellbeing.\u003C/p\u003E\u003Cp\u003EA healthy food menu was created for the week, which was agreed and written by the people who lived at the home.\u003C/p\u003E",
+                        "commentaryDate": "2026-05-14"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  }
+                ]
+              },
+              {
+                "name": "Responsive",
+                "rating": "Outstanding",
+                "status": "Assessed",
+                "commentary": "\u003Cp\u003EResponsive \u2013 this means we looked for evidence that the provider met people\u2019s needs.\u003C/p\u003E\u003Cp\u003E\u00A0\u003C/p\u003E\u003Cp\u003EAt our last assessment we rated this key question requires improvement. At this assessment, the rating has changed to outstanding. This meant services were tailored to meet the needs of individuals and delivered to ensure flexibility, choice and continuity of care.\u003C/p\u003E",
+                "commentaryDate": "2026-05-14",
+                "narrative": "This service is exceptionally responsive",
+                "percentageScore": "89",
+                "topicareas": [
+                  {
+                    "name": "Care provision, Integration and continuity",
+                    "qualityStatementId": "21",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "3",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe provider understood the diverse health and care needs of people and their local communities, so care was joined-up, flexible and supported choice and continuity.\u003C/p\u003E\u003Cp\u003ELeaders and staff showed a strong understanding of each person\u2019s long-term goals, strengths and support needs, and worked proactively with external professionals to ensure care was cohesive, aspirational and enabling.\u003C/p\u003E\u003Cp\u003EStaff consistently supported people to work towards outcomes that were meaningful to them. One relative told us about their loved one being supported to use the buses and how that with time and patience the person can now travel alone to visit them, which enables them to have time alone as a family. These examples reflected an embedded culture of promoting independence, aspiration and choice. Care was joined up, collaborative and focused on supporting people to achieve long-term outcomes, rather than solely meeting their immediate needs. The registered manager\u2019s leadership was central to this approach, ensuring continuity of support, effective cross-team collaboration and highly personalised pathways that increased people\u2019s confidence and future prospects.\u003C/p\u003E",
+                        "commentaryDate": "2026-05-14"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Equity in access",
+                    "qualityStatementId": "24",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "3",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe provider made sure that people could access the care, support and treatment they needed when they needed it.\u003C/p\u003E\u003Cp\u003EStaff worked hard to reduce barriers and support people to ensure they were not discriminated against due to their disabilities. People had access to support that promoted equality, removed barriers or delays, and protected their rights. The provider complied with legal equality and human rights requirements, including avoiding discrimination, considering the needs of people with different protected characteristics and making reasonable adjustments. The provider prioritised resources and created opportunities to tackle inequalities and achieve equity of access.\u003C/p\u003E\u003Cp\u003EExternal stakeholders provided positive feedback about the care provided and found the staff team communicated well with them and responded to any information request promptly.\u003C/p\u003E",
+                        "commentaryDate": "2026-05-14"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Equity in experiences and outcomes",
+                    "qualityStatementId": "25",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe provider was exceptional at ensuring people could access the care, support and treatment they needed when they needed it.\u003C/p\u003E\u003Cp\u003EPeople were actively encouraged and supported to take part in new, meaningful and enriching experiences that reflected their interests, preferences and aspirations.\u003C/p\u003E\u003Cp\u003EStaff and leaders demonstrated an innovative and reflective approach to understanding the needs of people who may be at increased risk of inequality in experiences or outcomes. They actively gathered and used this information to provide exceptionally tailored care, support and treatment, ensuring responses were individualised and responsive to people\u2019s circumstances. For example, staff supported one person to access social environments from which they would otherwise have been excluded in a way that respected their identity and promoted comfort and trust. Staff ensured they felt valued, understood and at ease in their chosen community.\u003C/p\u003E\u003Cp\u003EThe provider had an equality and diversity policy and statement in place, which clearly reflected and reinforced their core values of kindness, commitment and creativity. These values were evident in staff interactions and in the way, support was personalised to minimise the risk of unequal outcomes. Staff told us they felt supported to use their skills confidently, without fear of discrimination, harassment or unfair treatment. This contributed to a positive, inclusive working culture and enabled staff to focus on delivering compassionate, person\u2011centred care.\u003C/p\u003E\u003Cp\u003ELeaders ensured that equity was embedded not only in policy but as an integral part of service development and day\u2011to\u2011day practice. Staff were encouraged to share their experiences, perspectives and ideas for improvement. This collaborative approach ensured that support remained relevant, meaningful and impactful, and helped create an environment where Carlton House was inclusive and equitable for everyone. Staff members used their own life stories to support people with addressing any bias they may receive due to their protected characteristics. \u003C/p\u003E",
+                        "commentaryDate": "2026-05-14"
+                      }
+                    ],
+                    "qualityStatementscore": "4 - Evidence shows an exceptional standard of care"
+                  },
+                  {
+                    "name": "Listening to and involving people",
+                    "qualityStatementId": "23",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe provider was exceptional at enabling people to share feedback and ideas, or raise complaints about their care, treatment and support. Staff always involved people in decisions about their care and told them what had changed as a result.\u003C/p\u003E\u003Cp\u003EThe service demonstrated a well\u2011embedded, highly person\u2011centred approach. Each person was supported to have monthly one\u2011to\u2011one meetings with their keyworkers to review their progress in line with their Life Stars (progress across key areas of life, using a visual format) updates. More informal, ongoing keyworker sessions and daily check-ins, created regular opportunities for discussion, reflection, and feedback.\u003C/p\u003E\u003Cp\u003EThese discussions focused on identifying small, realistic and achievable goals that linked directly to people\u2019s longer\u2011term aspirations. Staff used these sessions to listen attentively, explore what mattered most to each person and ensure their wishes were clearly reflected in meaningful, personalised plans. This approach helped people feel listened to, respected and empowered.\u003C/p\u003E\u003Cp\u003EStaff showed strong skills in supporting people to break down wider ambitions into manageable steps, while maintaining a clear focus on the person\u2019s overall goals. They took time to understand what motivated each individual, regularly checked how they were feeling and adjusted goals sensitively in response to people\u2019s mood, engagement or capacity at the time. This ensured the process remained positive, supportive and encouraging rather than overwhelming.\u003C/p\u003E\u003Cp\u003EPeople told us they felt valued and motivated because they were actively involved in setting their own goals, rather than having goals imposed on them. One person said, \u201CI don\u2019t want to live anywhere else, it\u2019s good here, staff are good.\u201D Staff recognised and celebrated achievements, regardless of how small, which helped to build people\u2019s independence and self\u2011confidence. Over time, this approach contributed to positive outcomes, including improved confidence, development of daily living skills and increased optimism about the future.\u003C/p\u003E",
+                        "commentaryDate": "2026-05-14"
+                      }
+                    ],
+                    "qualityStatementscore": "4 - Evidence shows an exceptional standard of care"
+                  },
+                  {
+                    "name": "Person-centred Care",
+                    "qualityStatementId": "20",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "\u003Cp\u003EThe provider was exceptional at making sure people were at the centre of their care and treatment choices and they decided, in partnership with people, how to respond to any relevant changes in their needs. \u003C/p\u003E\u003Cp\u003EThe service was extremely inclusive and reflected the individuality of the people who lived there. The home contained artwork created by people, along with photographs which showed people participating in activities, celebrations and social events. This helped to create a warm, personalised environment where people felt a sense of ownership and belonging.\u003C/p\u003E\u003Cp\u003EThere were no set mealtimes, and people could choose whether to eat together or separately. Where possible, people were supported to prepare their own meals. We observed people cooking and preparing food alongside staff and coming together to plan a weekly menu. People enjoyed trying new foods, often selected because they were favourites of others living in the home. This encouraged people to share their likes and dislikes and supported social interaction and choice. Staff consistently promoted independence, including supporting people to clean their bedrooms, complete their own laundry and carry out other domestic tasks. \u003C/p\u003E\u003Cp\u003EPositive Behaviour Support (PBS) plans were highly personalised and developed collaboratively. Each plan was specific to the individual and showed clear evidence of input from the wider care team. Plans clearly identified individual triggers, early warning signs and appropriate de\u2011escalation techniques. Staff demonstrated a strong understanding of each person\u2019s behavioural triggers and the most effective ways to support them. This ensured responses were respectful, proactive and focused on promoting wellbeing and autonomy. The strong person\u2011centred culture meant staff were confident in adapting support as needs changed, and they consistently used positive approaches to reduce distress and avoid restrictive practices. \u003C/p\u003E\u003Cp\u003EWe saw that one person shared an interest in going fishing. A member of staff who was also an experienced fisherman supported the person to obtain a fishing licence and accompanied them on a fishing trip. Following this experience, the person spoke enthusiastically with staff about their day and expressed a wish to continue this activity. This had a positive impact on their wellbeing and mental health.\u003C/p\u003E",
+                        "commentaryDate": "2026-05-14"
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "4",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      }
+                    ],
+                    "qualityStatementscore": "4 - Evidence shows an exceptional standard of care"
+                  },
+                  {
+                    "name": "Planning for the future",
+                    "qualityStatementId": "26",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EPeople were supported to plan for important life changes, so they could have enough time to make informed decisions about their future, including at the end of their life.\u003C/p\u003E\u003Cp\u003ESupport plans clearly captured significant life changes, including transitions in care and people\u2019s wishes and preferences around end\u2011of\u2011life support.\u003C/p\u003E\u003Cp\u003EThe management team approached discussions about end\u2011of\u2011life care and funeral planning sensitively and at an appropriate pace, working closely with people and their representatives. They explained that these conversations were intended to understand and respect people\u2019s wishes, as well as those of their family and loved ones, to provide reassurance, reduce potential stress at a difficult time and ensure decisions reflected what was most important to the person.\u003C/p\u003E\u003Cp\u003EPeople were also continually supported to plan and look forward to positive life events, such as holidays, birthdays and other celebrations. Staff encouraged people to explore new experiences and maintain meaningful routines, supporting them to enjoy life and create positive memories at every stage.\u003C/p\u003E",
+                        "commentaryDate": "2026-05-14"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Providing Information",
+                    "qualityStatementId": "22",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe provider was exceptional at developing appropriate, accurate and up-to-date information in formats that were tailored to individual needs.\u003C/p\u003E\u003Cp\u003ECarlton House demonstrated outstanding practice in the way it provided information to people. Staff consistently went above and beyond to ensure communication was personalised, accessible and meaningful. Their strong commitment to tailoring information to each person\u2019s individual needs had a positive and measurable impact on people\u2019s wellbeing, confidence and involvement in their own care and support.\u003C/p\u003E\u003Cp\u003EA wide range of accessible information was available to people. This included information about their care and support, policies and procedures within the home, and records of meetings in which they had participated. Information was consistently provided in easy\u2011read formats and was freely available, supporting people to understand and engage with decisions that affected them.\u003C/p\u003E\u003Cp\u003EThe registered manager demonstrated outstanding leadership in ensuring that information received from external professionals was shared in a way that was accessible, supportive and meaningful to people. This ensured continuity and consistency of communication and helped people feel informed and empowered.\u003C/p\u003E\u003Cp\u003EWe observed staff communicating with people in ways that were carefully tailored to their individual needs. For example, one person was supported using third\u2011person references, such as saying, \u201C[person] has drawn a wonderful picture.\u201D This approach was appropriate for the individual and clearly promoted reassurance, confidence and a sense of achievement. It was evident this way of communicating helped the person feel safe, well supported and empowered.\u003C/p\u003E",
+                        "commentaryDate": "2026-05-14"
+                      }
+                    ],
+                    "qualityStatementscore": "4 - Evidence shows an exceptional standard of care"
+                  }
+                ]
+              },
+              {
+                "name": "Safe",
+                "rating": "Good",
+                "status": "Assessed",
+                "commentary": "\u003Cp\u003ESafe \u2013 this means we looked for evidence that people were protected from abuse and avoidable harm. \u003C/p\u003E\u003Cp\u003E\u00A0\u003C/p\u003E\u003Cp\u003EAt our last assessment we rated this key question requires improvement. At this assessment, the rating has changed to good. This meant people were safe and protected from avoidable harm.\u003C/p\u003E",
+                "commentaryDate": "2026-05-14",
+                "narrative": "This service is safe",
+                "percentageScore": "75",
+                "topicareas": [
+                  {
+                    "name": "Infection prevention and control",
+                    "qualityStatementId": "7",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "4",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe provider assessed and managed the risk of infection. They detected and controlled the risk of it spreading and shared concerns with appropriate agencies promptly.\u003C/p\u003E\u003Cp\u003EA clear understanding of current infection prevention and control (IPC) guidance was demonstrated, and appropriate measures were in place to reduce the risk of infection spreading throughout the service. Risks were reviewed regularly, and the manager acted promptly when concerns were identified, ensuring relevant agencies were informed without delay.\u003C/p\u003E\u003Cp\u003EStaff understood their responsibilities and consistently followed safe practices, including good hand hygiene, the correct use of personal protective equipment (PPE), and effective cleaning routines. One staff member told us, \u201CWe are fully stocked [with PPE]. We receive a delivery weekly.\u201D\u003C/p\u003E\u003Cp\u003ECarlton House successfully implemented IPC measures without compromising the homely environment. Communal areas were clean and hygienic while remaining warm, personalised and welcoming. People\u2019s bedrooms retained their individuality and personal character, alongside consistently high standards of cleanliness.\u003C/p\u003E",
+                        "commentaryDate": "2026-05-14"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Involving people to manage risks",
+                    "qualityStatementId": "4",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "4",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe provider worked with people to understand and manage risks by thinking holistically. Staff provided care to meet people\u2019s needs that was safe, supportive and enabled people to do the things that mattered to them.\u003C/p\u003E\u003Cp\u003EStaff actively involved people in understanding and managing risks associated with their care and daily lives. The provider used recognised tools to identify potential hazards and establish a clear foundation for safety planning. These assessments considered a wide range of factors, including environmental risks, health-related concerns, behavioural triggers and safeguarding issues. This ensured staff had a comprehensive and up-to-date understanding of each person\u2019s needs.\u003C/p\u003E\u003Cp\u003EStaff used this information to collaborate with people, supporting them to understand identified risks and agree practical, personalised strategies to keep themselves and others safe. People were encouraged to share their views, preferences and concerns, and staff supported them to make informed decisions about how risks should be managed.\u003C/p\u003E\u003Cp\u003ERisk management plans were applied consistently, and staff reviewed them regularly with people. Reviews included discussion of any changes in behaviour, health or circumstances, with plans updated promptly to reflect new information. One staff member told us, \u201CWe have behaviour support plans to guide us. I can recognise early changes, and sometimes giving space is all it takes. Other times, light humour helps, and some people have PRN (as required medication) in place as a back-up. We always work with the least restrictive option first.\u201D\u003C/p\u003E",
+                        "commentaryDate": "2026-05-14"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Learning culture",
+                    "qualityStatementId": "1",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe provider had a proactive and positive culture of safety, based on openness and honesty. Staff listened to concerns about safety and investigated and reported safety events. Lessons were learnt to continually identify and embed good practice.\u003C/p\u003E\u003Cp\u003ECarlton House promoted a strong and positive learning culture. Leaders and staff placed clear value on reflection, improvement and continual learning, and this was evident in the way the team approached risk, challenges and change.\u003C/p\u003E\u003Cp\u003EThe service had effective systems in place to identify trends and patterns across incidents, daily records and safeguarding concerns. Staff understood why learning from these trends was important and could explain how this information helped them improve practice and prevent issues from recurring. This demonstrated learning was embedded rather than reactive.\u003C/p\u003E\u003Cp\u003EPositive risk\u2011taking was encouraged and supported. Staff told me people were not restricted unnecessarily, and risk was approached in a balanced and person\u2011centred way. Where things did not go to plan, setbacks were not viewed as failures. Instead, they were treated as opportunities to gain further insight into what worked well and what needed to be adapted. This approach helped staff feel confident in promoting independence while maintaining safety.\u003C/p\u003E\u003Cp\u003EThe service had effective mechanisms for sharing lessons learned. Staff received feedback through team meetings, reflective discussions, formal supervision and ongoing mentoring provided by the registered manager. This ensured learning was communicated consistently and staff had the opportunity to discuss how it applied to their day\u2011to\u2011day work. Staff reported they felt supported, valued and encouraged to develop their skills.\u003C/p\u003E",
+                        "commentaryDate": "2026-05-14"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Medicines optimisation",
+                    "qualityStatementId": "8",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe provider made sure that medicines and treatments were safe and met people\u2019s needs, capacities and preferences. Staff involved people in planning, including when changes happened.\u003C/p\u003E\u003Cp\u003EPeople received their medicines safely and in a timely way. Medicines administration was recorded accurately on people\u2019s medicines administration records (MARs), and medicines were stored safely and securely. Robust processes were in place to support the safe and effective use of medicines. Staff had access to detailed, person\u2011specific guidance for medicines prescribed to be taken as required (PRN), which supported consistent and safe administration.\u003C/p\u003E\u003Cp\u003EWe identified a gap on a MAR for a single medication; this had been promptly identified during an audit and appropriate action taken. Medicine quantities and stock balances were checked following each administration, which meant we could be assured that the correct doses were administered and accurately recorded by staff.\u003C/p\u003E\u003Cp\u003EThe use of topical creams and ointments was clearly recorded on MARs, with body maps in place to guide staff on the correct sites of application. Temperature monitoring records were maintained in line with national guidance to ensure medicines were stored safely.\u003C/p\u003E\u003Cp\u003EPeople were seen by their GP at least once a year and were supported to have any checks required to monitor their health. Hospital passports were in place for each person, supporting continuity of care when people accessed other health services.\u003C/p\u003E\u003Cp\u003EThere were clear processes for recording and reviewing medicines\u2011related incidents or errors. Staff administering medicines were appropriately trained and supported, and a formal observation of medicines administration was completed and recorded at least annually. Managers and suitably trained staff regularly completed medicines audits to ensure procedures were followed and to support continuous improvement.\u003C/p\u003E",
+                        "commentaryDate": "2026-05-14"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Safe and effective staffing",
+                    "qualityStatementId": "6",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "4",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe provider made sure there were enough qualified, skilled and experienced staff, who received effective support, supervision and development. They worked together well to provide safe care that met people\u2019s individual needs.\u003C/p\u003E\u003Cp\u003EThe provider had safe and effective staffing arrangements in place. Safe recruitment practices were followed consistently, including completing appropriate background checks, verifying employment histories and obtaining suitable references before staff began working at the service. This ensured that only suitable and trustworthy individuals were employed to support people.\u003C/p\u003E\u003Cp\u003EStaff told us they felt confident in their roles and had access to regular supervision, support and development opportunities. Training records showed that staff completed learning to equip them to carry out their responsibilities effectively, and new staff were supported through a structured induction process.\u003C/p\u003E\u003Cp\u003EWe saw staff working well together as a team, communicating clearly and sharing information to ensure people received consistent and safe care. One staff member told us, \u201CWe always have enough staff. They\u2019re very thorough when recruiting new staff to make sure they have the right attitude and values to complement the team. Even staff who have joined without experience have had the right approach and have developed really well. I am really impressed with the staff team.\u201D\u003C/p\u003E",
+                        "commentaryDate": "2026-05-14"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Safe environments",
+                    "qualityStatementId": "5",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "4",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe provider detected and controlled potential risks in the care environment. They made sure equipment, facilities and technology supported the delivery of safe care.\u003C/p\u003E\u003Cp\u003EThe registered manager maintained a safe and well\u2011managed environment, including when people\u2019s behaviours during periods of distress resulted in unplanned damage to the home. Staff responded promptly to maintenance issues, and repairs were completed in a timely manner to ensure the environment remained safe, functional and comfortable for people.\u003C/p\u003E\u003Cp\u003EThe maintenance person had previously worked in a support worker role, which enabled them to engage positively with people while carrying out maintenance tasks. During the assessment, we observed the maintenance person supporting someone to paint their shoe rack using a supportive, hand\u2011over\u2011hand and encouraging approach. This interaction promoted inclusion, independence and meaningful involvement while addressing maintenance needs.\u003C/p\u003E\u003Cp\u003EThis approach ensured environmental risks were managed proactively and proportionately. People were able to continue using their home safely with minimal disruption, and staff demonstrated confidence in responding to environmental changes quickly and effectively. The registered manager showed good practice in maintaining a safe environment through prompt action, effective risk management and strong leadership oversight.\u003C/p\u003E",
+                        "commentaryDate": "2026-05-14"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Safe systems, pathways and transitions",
+                    "qualityStatementId": "2",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "3",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe provider worked with people and healthcare partners to establish and maintain safe systems of care, in which safety was managed or monitored. They made sure there was continuity of care, including when people moved between different services. \u003C/p\u003E\u003Cp\u003EThe provider had clear and thorough processes to assess and plan for people\u2019s needs prior to admission. Holistic assessments considered the individual\u2019s needs, and the potential impact of a new admission on people already living at the home. This ensured people were admitted to the service safely and sensitively, with minimal disruption to others.\u003C/p\u003E\u003Cp\u003EPeople had key documents in place, such as hospital passports, which contained personalised information about their health needs, communication preferences and how they wished to be supported. This ensured professionals had immediate access to essential information when people required support from other services. This meant people did not need to repeatedly share their personal history, and the risk of inconsistent or unsafe care during transitions was reduced.\u003C/p\u003E",
+                        "commentaryDate": "2026-05-14"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Safeguarding",
+                    "qualityStatementId": "3",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "4",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe provider worked with people and healthcare partners to understand what being safe meant to them and the best way to achieve that. Staff concentrated on improving people\u2019s lives while protecting their right to live in safety, free from bullying, harassment, abuse, discrimination, avoidable harm and neglect. The provider shared concerns quickly and appropriately.\u003C/p\u003E\u003Cp\u003EPeople were supported by staff who were vigilant, compassionate, and confident in their responsibilities. Risks were well managed, concerns were identified early, and safeguarding processes were consistently effective.\u003C/p\u003E\u003Cp\u003EPeople can only be deprived of their liberty to receive care and treatment with appropriate legal authority. In care homes this can be done through a procedure called the Deprivation of Liberty Safeguards (DoLS), which is part of the Mental Capacity Act 2005 (MCA). We checked whether the home was working within the principles of the MCA and how DoLS were managed. Staff had a good understanding of people\u2019s personalised risks and safeguarding needs. They were able to clearly describe the specific vulnerabilities of each person they supported, including risks related to communication, health conditions, behaviour, and social situations. Issues were identified quickly and staff followed the organisation\u2019s procedures and informed the registered manager without delay. The registered manager demonstrated strong oversight of safeguarding. They assessed concerns promptly and took proportionate action based on the level of risk. They made timely referrals to the relevant external agencies, including the local authority safeguarding team and health professionals. Lessons learned were shared with staff, which strengthened the home\u2019s safeguarding culture.\u003C/p\u003E",
+                        "commentaryDate": "2026-05-14"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  }
+                ]
+              },
+              {
+                "name": "Well-led",
+                "rating": "Outstanding",
+                "status": "Assessed",
+                "commentary": "\u003Cp\u003EWell-led \u2013 this means we looked for evidence that service leadership, management and governance assured high-quality, person-centred care; supported learning and innovation; and promoted an open, fair culture.\u003C/p\u003E\u003Cp\u003E\u00A0\u003C/p\u003E\u003Cp\u003EAt our last assessment we rated this key question requires improvement. At this assessment, the rating has changed to Outstanding. This meant service leadership was exceptional and distinctive. Leaders and the culture they created drove and improved high-quality, person-centred care.\u003C/p\u003E",
+                "commentaryDate": "2026-05-14",
+                "narrative": "This service is exceptionally well-led",
+                "percentageScore": "89",
+                "topicareas": [
+                  {
+                    "name": "Capable, compassionate and inclusive leaders",
+                    "qualityStatementId": "28",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe provider had exceptionally inclusive leaders at all levels who understood the context in which they delivered care, treatment and support and embodied the culture and values of their workforce and organisation. Leaders had the skills, knowledge, experience and credibility to lead effectively. They always did so with integrity, openness and honesty.\u003C/p\u003E\u003Cp\u003EPeople and their relatives consistently told us they felt confident in the management team and reassured by their presence. They spoke highly of the leadership team, describing them as accessible, compassionate and deeply committed to ensuring the service was well managed.\u003C/p\u003E\u003Cp\u003EStaff consistently described leadership as exceptionally supportive and visible. They told us leaders were approachable at any time and genuinely invested in their wellbeing. Comments included, \u201CThe registered manager is one in a million, they are there for everyone and help in any way they can, they give 100% all the time.\u201D And \u201CI can raise anything with the registered manager at any time, [registered manager] always has time for everyone, they are very supportive and make me feel valued.\u201D Another staff member told us, \u201CYes 100% - when it comes to approaching [registered manager] they are one of the best managers to approach even if you go to them with negativities, they will always leave it with a positive.\u201D This reflected a culture where psychological safety was firmly embedded. Leaders demonstrated exceptional compassion, capability and inclusivity, creating a culture where staff thrived, people felt safe and valued, and high\u2011quality, person\u2011centred care was consistently delivered.\u003C/p\u003E",
+                        "commentaryDate": "2026-05-14"
+                      }
+                    ],
+                    "qualityStatementscore": "4 - Evidence shows an exceptional standard of care"
+                  },
+                  {
+                    "name": "Freedom to speak up",
+                    "qualityStatementId": "29",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe provider fostered a positive culture where people knew they could speak up and their voice would be heard. Staff told us they felt confident to raise any concerns if they had any, they were also confident concerns would be addressed promptly. They also demonstrated a clear understanding of how concerns could be escalated further if required.\u003C/p\u003E\u003Cp\u003EPeople were supported by key workers who knew them well, enabling them to share feedback using their preferred communication methods. Easy\u2011read information was available to support people to understand their right to speak up and to help staff ensure these conversations were held regularly and meaningfully. This approach empowered people to express their views and contributed to a culture where feedback was actively encouraged and valued.\u003C/p\u003E",
+                        "commentaryDate": "2026-05-14"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Governance, management and sustainability",
+                    "qualityStatementId": "31",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe provider had clear responsibilities, roles, systems of accountability and good governance. They used these to manage and deliver good quality, sustainable care, treatment and support. They acted on the best information about risk, performance and outcomes, and shared this securely with others when appropriate.\u003C/p\u003E\u003Cp\u003ELeaders demonstrated clear accountability and consistently met their regulatory responsibilities. Notifications were made promptly to the CQC and local authorities when events occurred that impacted people\u2019s health, safety or wellbeing. Robust auditing and quality assurance processes were embedded within the service and included regular reviews of care records, medicines management, health and safety arrangements, and staff practice.\u003C/p\u003E\u003Cp\u003EA culture of continuous improvement was evident throughout the home. This was supported by daily clinical oversight and structured monthly governance reviews focused on improving outcomes for people. Staff took part in daily handover meetings where individual needs, risks and support strategies were discussed to ensure consistent and responsive care delivery.\u003C/p\u003E\u003Cp\u003EWhere people lacked capacity, staff completed regular checks with both people and the wider staff team to ensure care was delivered in line with the person\u2019s wishes, best interests and the provider\u2019s values. This oversight helped ensure care remained person\u2011centred and outcome focused.\u003C/p\u003E\u003Cp\u003EWe were assured that staff understood their roles and responsibilities, and the management team could clearly account for staff actions, behaviours and performance. The area manager provided effective oversight through regular reviews of the centralised internal reporting system, clear action planning and routine on\u2011site visits. This supported the registered manager, strengthened governance arrangements and helped build trusting relationships with people.\u003C/p\u003E\u003Cp\u003EAs a result, effective governance and compliance systems were embedded. This framework enabled leaders to deliver consistently high\u2011quality care, safeguarding people\u2019s safety, promoting wellbeing and improving lives. This was further supported by positive feedback from staff, professionals and relatives.\u003C/p\u003E",
+                        "commentaryDate": "2026-05-14"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Learning, improvement and innovation",
+                    "qualityStatementId": "33",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe provider had a strong focus on continuous learning, innovation and improvement across the organisation and local system. They always encouraged creative ways of delivering equality of experience, outcomes and quality of life for people. \u003C/p\u003E\u003Cp\u003EStaff at every level demonstrated a strong commitment to reflecting on what worked well for each person and sharing this learning across the team. This ensured support remained consistent, creative, and tailored to individual needs.\u003C/p\u003E\u003Cp\u003ELearning was embedded into everyday practice. Staff routinely discussed people\u2019s body language, sensory needs, and behavioural cues during daily huddles, reflective sessions, and team meetings. These discussions went beyond routine processes; they were thoughtful and meaningful exchanges where staff openly shared insights, celebrated successes, and explored new ideas. As a result, people received highly consistent support, regardless of which staff member was providing care.\u003C/p\u003E\u003Cp\u003EThe service actively encouraged different approaches and flexible ways of responding to situations. When staff identified a new strategy which had helped someone feel calmer, more independent, or more in control, this was quickly implemented, reviewed, and, where successful, incorporated into the person\u2019s support plan. For example, one person took great pleasure in unravelling and winding up an extension lead. They were visibly engaged and happy while undertaking this activity. A staff member explained, \u201CThings don\u2019t have to be big \u2014 they just have to be right for the person.\u201D\u003C/p\u003E",
+                        "commentaryDate": "2026-05-14"
+                      }
+                    ],
+                    "qualityStatementscore": "4 - Evidence shows an exceptional standard of care"
+                  },
+                  {
+                    "name": "Partnerships and communities",
+                    "qualityStatementId": "32",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "3",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe provider understood their duty to collaborate and work in partnership, so services worked seamlessly for people. They shared information and learning with partners and collaborated for improvement.\u003C/p\u003E\u003Cp\u003EAs part of this assessment, we sought feedback from external professionals who had worked closely with the home and the management team. They consistently described care delivery as strong, highlighting positive staff practice and good experiences for people using the service.\u003C/p\u003E\u003Cp\u003EThe provider shared learning and information openly with partner agencies and worked collaboratively to drive continuous improvement. The registered manager and staff told us they maintained close working relationships with a range of external health and social care professionals, welcoming their feedback and proactively seeking advice to enhance outcomes for people.\u003C/p\u003E\u003Cp\u003EThese partnerships included GPs and NHS professionals, learning disability and positive behaviour support teams, and local authority social workers. This collaborative approach supported coordinated care and contributed to positive, person\u2011centred experiences for people living at the service.\u003C/p\u003E",
+                        "commentaryDate": "2026-05-14"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Shared direction and culture",
+                    "qualityStatementId": "27",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe provider had a very clear shared vision, strategy and culture. This was based on transparency, equity, equality and human rights, diversity and inclusion, engagement, and an exceptional understanding of the challenges and the needs of people and their communities.\u003C/p\u003E\u003Cp\u003EStaff consistently told us they were united by a shared purpose: to promote people\u2019s independence, remove barriers and minimise restrictions, so people could live full, active and meaningful lives. This shared commitment was not merely aspirational; it was evident in everyday practice, decision\u2011making and, in the way, staff spoke about the people they supported. Staff described feeling empowered to uphold the provider\u2019s values and to actively champion people\u2019s rights, choices and autonomy.\u003C/p\u003E\u003Cp\u003EAt Carlton House, this commitment was reflected in a comprehensive, person\u2011centred activity programme. Staff offered people daily opportunities to take part in meaningful and engaging activities. These opportunities enabled people to pursue their interests, supported emotional wellbeing and significantly reduced the risk of social isolation, demonstrating an outstanding, holistic approach to care.\u003C/p\u003E\u003Cp\u003EPeople thrived in an environment that was welcoming, calm and well balanced, where stimulation and relaxation were carefully considered to maximise wellbeing. This approach promoted emotional wellbeing, social inclusion and positive engagement, ensuring people benefited fully from their surroundings and support.\u003C/p\u003E\u003Cp\u003EThe culture across the service was visibly positive, ambitious and driven by a strong sense of shared responsibility. Staff demonstrated a clear understanding of the provider\u2019s values and spoke with pride about working in an environment where inclusion, respect and person\u2011centred care were non\u2011negotiable. This consistent, values\u2011led culture ensured people received enabling, individualised care, closely aligned with their own goals and aspirations.\u003C/p\u003E",
+                        "commentaryDate": "2026-05-14"
+                      }
+                    ],
+                    "qualityStatementscore": "4 - Evidence shows an exceptional standard of care"
+                  },
+                  {
+                    "name": "Workforce equality, diversity and inclusion",
+                    "qualityStatementId": "30",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe provider strongly valued diversity in their workforce. They had an inclusive and fair culture which had improved equality and equity for people who worked for them.\u003C/p\u003E\u003Cp\u003EDiversity within the workforce was actively valued, and leaders promoted an inclusive environment where staff felt confident and supported to be themselves at work. Staff consistently told us they felt respected, valued and included. This commitment to inclusion was reflected in the wide range of activities and celebrations that took place, including Pride events, themed social evenings and support for people to socialise in clubs and community venues that reflected their personal choices. One person told us, \u201CI go to the Pride march every year. \u201CAnother said \u201Cwe have a pride party in the garden, last year we had an Elvis impersonator.\u201D \u003C/p\u003E\u003Cp\u003EA dedicated culture corner was in place within the home, providing information about different cultures and religions. This information was available in easy\u2011read formats alongside more detailed resources to ensure it was accessible to both people and staff. This initiative had been well received and was successfully replicated across other services within the provider\u2019s organisation.\u003C/p\u003E\u003Cp\u003EThe provider\u2019s approach to equality, diversity and inclusion went beyond meeting regulatory requirements and demonstrated a clear commitment to continuous improvement. Their training academy offered all staff equal access to high\u2011quality development opportunities, including specialist programmes in leadership, operational practice and bespoke care. Staff were encouraged to pursue learning that aligned with both their professional aspirations and personal development, supporting equitable access to progression and skill\u2011building.\u003C/p\u003E\u003Cp\u003EAt Carlton House, leaders built upon this organisational commitment by fostering a supportive culture where staff motivated and encouraged one another. Staff described feeling empowered to develop in their roles, contribute ideas and act as positive role models for colleagues.\u003C/p\u003E\u003Cp\u003EAs a result, the provider demonstrated exceptional leadership in promoting equality, diversity and inclusion, with clear evidence of a positive impact on staff wellbeing, team culture and the quality of person\u2011centred care delivered.\u003C/p\u003E",
+                        "commentaryDate": "2026-05-14"
+                      }
+                    ],
+                    "qualityStatementscore": "4 - Evidence shows an exceptional standard of care"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

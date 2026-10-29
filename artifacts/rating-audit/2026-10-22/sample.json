@@ -1,0 +1,561 @@
+{
+  "observed_at": "2026-10-22T20:42:15.477284+00:00",
+  "counts": [
+    {
+      "status": "INACTIVE",
+      "n": 2186,
+      "file_rated": 101
+    },
+    {
+      "status": "ACTIVE",
+      "n": 57196,
+      "file_rated": 32060
+    }
+  ],
+  "file_backed_counts": [
+    {
+      "file_overall_rating": "Good",
+      "n": 6474
+    },
+    {
+      "file_overall_rating": "Inadequate",
+      "n": 141
+    },
+    {
+      "file_overall_rating": "Outstanding",
+      "n": 330
+    },
+    {
+      "file_overall_rating": "Requires improvement",
+      "n": 1735
+    }
+  ],
+  "conflict_count": 5,
+  "rows": [
+    {
+      "id": "1-546202187",
+      "name": "Village Surgery",
+      "slug": "village-surgery-sunderland",
+      "status": "ACTIVE",
+      "overall_rating": null,
+      "file_overall_rating": "Good",
+      "file_overall_rating_date": "2026-03-31",
+      "file_rating_source": "ratings.ods",
+      "file_rating_source_sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+      "postcode": "SR3 2AN",
+      "updated_at": "2026-10-22 12:56:44.544098",
+      "stratum": "file-backed Good",
+      "independent_file_lookup": [
+        "Good",
+        "31/03/2026"
+      ]
+    },
+    {
+      "id": "1-2761140569",
+      "name": "Wytham House",
+      "slug": "wytham-house-oxford-1-2761140569",
+      "status": "ACTIVE",
+      "overall_rating": null,
+      "file_overall_rating": "Good",
+      "file_overall_rating_date": "2025-07-23",
+      "file_rating_source": "ratings.ods",
+      "file_rating_source_sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+      "postcode": "OX2 9NL",
+      "updated_at": "2026-10-22 12:56:44.544098",
+      "stratum": "file-backed Good",
+      "independent_file_lookup": [
+        "Good",
+        "23/07/2025"
+      ]
+    },
+    {
+      "id": "1-546109592",
+      "name": "Crawley Road Medical Centre",
+      "slug": "crawley-road-medical-centre-london",
+      "status": "ACTIVE",
+      "overall_rating": null,
+      "file_overall_rating": "Good",
+      "file_overall_rating_date": "2025-07-11",
+      "file_rating_source": "ratings.ods",
+      "file_rating_source_sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+      "postcode": "E10 5EL",
+      "updated_at": "2026-10-22 12:56:44.544098",
+      "stratum": "file-backed Good",
+      "independent_file_lookup": [
+        "Good",
+        "11/07/2025"
+      ]
+    },
+    {
+      "id": "1-19058724680",
+      "name": "Hallmark Willingdon Park Manor Luxury Care Home",
+      "slug": "hallmark-willingdon-park-manor-luxury-care-home-eastbourne",
+      "status": "ACTIVE",
+      "overall_rating": null,
+      "file_overall_rating": "Good",
+      "file_overall_rating_date": "2026-07-24",
+      "file_rating_source": "ratings.ods",
+      "file_rating_source_sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+      "postcode": "BN22 0AB",
+      "updated_at": "2026-10-22 12:56:44.544098",
+      "stratum": "file-backed Good",
+      "independent_file_lookup": [
+        "Good",
+        "24/07/2026"
+      ]
+    },
+    {
+      "id": "1-11270646845",
+      "name": "Kelly Healthcare Services Limited",
+      "slug": "kelly-healthcare-services-limited-tipton",
+      "status": "ACTIVE",
+      "overall_rating": null,
+      "file_overall_rating": "Good",
+      "file_overall_rating_date": "2025-03-14",
+      "file_rating_source": "ratings.ods",
+      "file_rating_source_sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+      "postcode": "DY4 7UF",
+      "updated_at": "2026-10-22 12:56:44.544098",
+      "stratum": "file-backed Good",
+      "independent_file_lookup": [
+        "Good",
+        "14/03/2025"
+      ]
+    },
+    {
+      "id": "1-2352094536",
+      "name": "Lucketts Farm",
+      "slug": "lucketts-farm-canterbury",
+      "status": "ACTIVE",
+      "overall_rating": null,
+      "file_overall_rating": "Requires improvement",
+      "file_overall_rating_date": "2025-10-16",
+      "file_rating_source": "ratings.ods",
+      "file_rating_source_sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+      "postcode": "CT2 9EF",
+      "updated_at": "2026-10-22 12:56:44.544098",
+      "stratum": "file-backed Requires improvement",
+      "independent_file_lookup": [
+        "Requires improvement",
+        "16/10/2025"
+      ]
+    },
+    {
+      "id": "1-15297949474",
+      "name": "Rose Court Care Home",
+      "slug": "rose-court-care-home-london",
+      "status": "ACTIVE",
+      "overall_rating": null,
+      "file_overall_rating": "Requires improvement",
+      "file_overall_rating_date": "2025-08-12",
+      "file_rating_source": "ratings.ods",
+      "file_rating_source_sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+      "postcode": "SE8 5DN",
+      "updated_at": "2026-10-22 12:56:44.544098",
+      "stratum": "file-backed Requires improvement",
+      "independent_file_lookup": [
+        "Requires improvement",
+        "12/08/2025"
+      ]
+    },
+    {
+      "id": "1-27003473742",
+      "name": "Eskdale House Supported Living Service",
+      "slug": "eskdale-house-supported-living-service-kendal",
+      "status": "ACTIVE",
+      "overall_rating": null,
+      "file_overall_rating": "Requires improvement",
+      "file_overall_rating_date": "2026-06-03",
+      "file_rating_source": "ratings.ods",
+      "file_rating_source_sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+      "postcode": "LA9 6NQ",
+      "updated_at": "2026-10-22 12:56:44.544098",
+      "stratum": "file-backed Requires improvement",
+      "independent_file_lookup": [
+        "Requires improvement",
+        "03/06/2026"
+      ]
+    },
+    {
+      "id": "1-407665280",
+      "name": "Angel Home Care Service Private Limited",
+      "slug": "angel-home-care-service-private-limited-cheadle",
+      "status": "ACTIVE",
+      "overall_rating": null,
+      "file_overall_rating": "Requires improvement",
+      "file_overall_rating_date": "2026-04-22",
+      "file_rating_source": "ratings.ods",
+      "file_rating_source_sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+      "postcode": "SK8 4NG",
+      "updated_at": "2026-10-22 12:56:44.544098",
+      "stratum": "file-backed Requires improvement",
+      "independent_file_lookup": [
+        "Requires improvement",
+        "22/04/2026"
+      ]
+    },
+    {
+      "id": "1-13937101349",
+      "name": "Nomira Care Ltd",
+      "slug": "network-healthcare-harrow-edgware",
+      "status": "ACTIVE",
+      "overall_rating": null,
+      "file_overall_rating": "Requires improvement",
+      "file_overall_rating_date": "2025-08-19",
+      "file_rating_source": "ratings.ods",
+      "file_rating_source_sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+      "postcode": "HA8 6SD",
+      "updated_at": "2026-10-22 12:56:44.544098",
+      "stratum": "file-backed Requires improvement",
+      "independent_file_lookup": [
+        "Requires improvement",
+        "19/08/2025"
+      ]
+    },
+    {
+      "id": "1-130890582",
+      "name": "Carlton House",
+      "slug": "carlton-house-leeds",
+      "status": "ACTIVE",
+      "overall_rating": null,
+      "file_overall_rating": "Outstanding",
+      "file_overall_rating_date": "2026-06-03",
+      "file_rating_source": "ratings.ods",
+      "file_rating_source_sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+      "postcode": "LS26 0SF",
+      "updated_at": "2026-10-22 12:56:44.544098",
+      "stratum": "file-backed Outstanding",
+      "independent_file_lookup": [
+        "Outstanding",
+        "03/06/2026"
+      ]
+    },
+    {
+      "id": "1-2467326262",
+      "name": "Milford Del Support Agency",
+      "slug": "milford-del-support-agency-sandown",
+      "status": "ACTIVE",
+      "overall_rating": null,
+      "file_overall_rating": "Outstanding",
+      "file_overall_rating_date": "2025-07-18",
+      "file_rating_source": "ratings.ods",
+      "file_rating_source_sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+      "postcode": "PO36 9LE",
+      "updated_at": "2026-10-22 12:56:44.544098",
+      "stratum": "file-backed Outstanding",
+      "independent_file_lookup": [
+        "Outstanding",
+        "18/07/2025"
+      ]
+    },
+    {
+      "id": "1-10192918971",
+      "name": "Woodways",
+      "slug": "woodways-barnsley",
+      "status": "ACTIVE",
+      "overall_rating": null,
+      "file_overall_rating": "Outstanding",
+      "file_overall_rating_date": "2025-07-29",
+      "file_rating_source": "ratings.ods",
+      "file_rating_source_sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+      "postcode": "S73 0HQ",
+      "updated_at": "2026-10-22 12:56:44.544098",
+      "stratum": "file-backed Outstanding",
+      "independent_file_lookup": [
+        "Outstanding",
+        "29/07/2025"
+      ]
+    },
+    {
+      "id": "1-16491295796",
+      "name": "Tillingham Medical Centre",
+      "slug": "tillingham-medical-centre-southminster",
+      "status": "ACTIVE",
+      "overall_rating": null,
+      "file_overall_rating": "Outstanding",
+      "file_overall_rating_date": "2018-08-24",
+      "file_rating_source": "ratings.ods",
+      "file_rating_source_sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+      "postcode": "CM0 7TH",
+      "updated_at": "2026-10-22 12:56:44.544098",
+      "stratum": "file-backed Outstanding",
+      "independent_file_lookup": [
+        "Outstanding",
+        "24/08/2018"
+      ]
+    },
+    {
+      "id": "1-16516340886",
+      "name": "Collegiate House",
+      "slug": "collegiate-house-sheffield",
+      "status": "ACTIVE",
+      "overall_rating": null,
+      "file_overall_rating": "Outstanding",
+      "file_overall_rating_date": "2026-08-27",
+      "file_rating_source": "ratings.ods",
+      "file_rating_source_sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+      "postcode": "S10 2BA",
+      "updated_at": "2026-10-22 12:56:44.544098",
+      "stratum": "file-backed Outstanding",
+      "independent_file_lookup": [
+        "Outstanding",
+        "27/08/2026"
+      ]
+    },
+    {
+      "id": "1-142705508",
+      "name": "Silverdale Nursing Home",
+      "slug": "silverdale-nursing-home-newcastle-under-lyme",
+      "status": "ACTIVE",
+      "overall_rating": null,
+      "file_overall_rating": "Inadequate",
+      "file_overall_rating_date": "2026-07-08",
+      "file_rating_source": "ratings.ods",
+      "file_rating_source_sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+      "postcode": "ST5 6PQ",
+      "updated_at": "2026-10-22 12:56:44.544098",
+      "stratum": "file-backed Inadequate",
+      "independent_file_lookup": [
+        "Inadequate",
+        "08/07/2026"
+      ]
+    },
+    {
+      "id": "1-456354523",
+      "name": "Florence House",
+      "slug": "florence-house-great-yarmouth",
+      "status": "ACTIVE",
+      "overall_rating": null,
+      "file_overall_rating": "Inadequate",
+      "file_overall_rating_date": "2026-01-06",
+      "file_rating_source": "ratings.ods",
+      "file_rating_source_sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+      "postcode": "NR30 2JX",
+      "updated_at": "2026-10-22 12:56:44.544098",
+      "stratum": "file-backed Inadequate",
+      "independent_file_lookup": [
+        "Inadequate",
+        "06/01/2026"
+      ]
+    },
+    {
+      "id": "1-113028260",
+      "name": "Fairfield Nursing Home",
+      "slug": "fairfield-nursing-home-wirral",
+      "status": "ACTIVE",
+      "overall_rating": null,
+      "file_overall_rating": "Inadequate",
+      "file_overall_rating_date": "2025-10-27",
+      "file_rating_source": "ratings.ods",
+      "file_rating_source_sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+      "postcode": "CH61 6XD",
+      "updated_at": "2026-10-22 12:56:44.544098",
+      "stratum": "file-backed Inadequate",
+      "independent_file_lookup": [
+        "Inadequate",
+        "27/10/2025"
+      ]
+    },
+    {
+      "id": "1-125730630",
+      "name": "Welcome House - The Chestnuts",
+      "slug": "welcome-house-the-chestnuts-rochester",
+      "status": "ACTIVE",
+      "overall_rating": null,
+      "file_overall_rating": "Inadequate",
+      "file_overall_rating_date": "2025-09-25",
+      "file_rating_source": "ratings.ods",
+      "file_rating_source_sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+      "postcode": "ME1 1RX",
+      "updated_at": "2026-10-22 12:56:44.544098",
+      "stratum": "file-backed Inadequate",
+      "independent_file_lookup": [
+        "Inadequate",
+        "25/09/2025"
+      ]
+    },
+    {
+      "id": "1-10615519904",
+      "name": "Silverjen Limited",
+      "slug": "silverjen-limited-leatherhead",
+      "status": "ACTIVE",
+      "overall_rating": null,
+      "file_overall_rating": "Inadequate",
+      "file_overall_rating_date": "2026-09-18",
+      "file_rating_source": "ratings.ods",
+      "file_rating_source_sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+      "postcode": "KT22 7PL",
+      "updated_at": "2026-10-22 12:56:44.544098",
+      "stratum": "file-backed Inadequate",
+      "independent_file_lookup": [
+        "Inadequate",
+        "18/09/2026"
+      ]
+    },
+    {
+      "id": "1-152721284",
+      "name": "St Stephens Nursing Home",
+      "slug": "st-stephens-nursing-home-dover",
+      "status": "ACTIVE",
+      "overall_rating": "Good",
+      "file_overall_rating": "Requires improvement",
+      "file_overall_rating_date": "2026-05-20",
+      "file_rating_source": "ratings.ods",
+      "file_rating_source_sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+      "postcode": "CT16 1SW",
+      "updated_at": "2026-10-22 12:56:44.544098",
+      "stratum": "conflict",
+      "independent_file_lookup": [
+        "Requires improvement",
+        "20/05/2026"
+      ]
+    },
+    {
+      "id": "1-19886383752",
+      "name": "The Check House",
+      "slug": "the-check-house-seaton",
+      "status": "ACTIVE",
+      "overall_rating": "Outstanding",
+      "file_overall_rating": "Good",
+      "file_overall_rating_date": "2026-05-07",
+      "file_rating_source": "ratings.ods",
+      "file_rating_source_sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+      "postcode": "EX12 2PR",
+      "updated_at": "2026-10-22 12:56:44.544098",
+      "stratum": "conflict",
+      "independent_file_lookup": [
+        "Good",
+        "07/05/2026"
+      ]
+    },
+    {
+      "id": "1-22160036426",
+      "name": "Irchester 170",
+      "slug": "irchester-170-wellingborough",
+      "status": "ACTIVE",
+      "overall_rating": "Outstanding",
+      "file_overall_rating": "Good",
+      "file_overall_rating_date": "2026-03-11",
+      "file_rating_source": "ratings.ods",
+      "file_rating_source_sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+      "postcode": "NN29 7EW",
+      "updated_at": "2026-10-22 12:56:44.544098",
+      "stratum": "conflict",
+      "independent_file_lookup": [
+        "Good",
+        "11/03/2026"
+      ]
+    },
+    {
+      "id": "1-390976877",
+      "name": "Althorp Grange",
+      "slug": "althorp-grange-northampton",
+      "status": "ACTIVE",
+      "overall_rating": "Inadequate",
+      "file_overall_rating": "Requires improvement",
+      "file_overall_rating_date": "2025-12-11",
+      "file_rating_source": "ratings.ods",
+      "file_rating_source_sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+      "postcode": "NN6 8LD",
+      "updated_at": "2026-10-22 12:56:44.544098",
+      "stratum": "conflict",
+      "independent_file_lookup": [
+        "Requires improvement",
+        "11/12/2025"
+      ]
+    },
+    {
+      "id": "1-552527797",
+      "name": "The Chesser Surgery",
+      "slug": "the-chesser-surgery-carshalton",
+      "status": "ACTIVE",
+      "overall_rating": "Good",
+      "file_overall_rating": "Requires improvement",
+      "file_overall_rating_date": "2025-01-09",
+      "file_rating_source": "ratings.ods",
+      "file_rating_source_sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+      "postcode": "SM5 2RT",
+      "updated_at": "2026-10-22 12:56:44.544098",
+      "stratum": "conflict",
+      "independent_file_lookup": [
+        "Requires improvement",
+        "09/01/2025"
+      ]
+    },
+    {
+      "id": "1-12566526711",
+      "name": "Candela Healthcare Ltd",
+      "slug": "candela-healthcare-ltd-hereford",
+      "status": "ACTIVE",
+      "overall_rating": null,
+      "file_overall_rating": null,
+      "file_overall_rating_date": null,
+      "file_rating_source": null,
+      "file_rating_source_sha256": null,
+      "postcode": "HR1 2HU",
+      "updated_at": "2026-10-21 07:54:35.963054",
+      "stratum": "unrated",
+      "independent_file_lookup": null
+    },
+    {
+      "id": "1-199649069",
+      "name": "Belle Vale Dental Centre",
+      "slug": "belle-vale-dental-centre-liverpool",
+      "status": "ACTIVE",
+      "overall_rating": null,
+      "file_overall_rating": null,
+      "file_overall_rating_date": null,
+      "file_rating_source": null,
+      "file_rating_source_sha256": null,
+      "postcode": "L25 2XE",
+      "updated_at": "2026-10-21 09:56:28.938642",
+      "stratum": "unrated",
+      "independent_file_lookup": null
+    },
+    {
+      "id": "1-29650851551",
+      "name": "NEAD Support Ltd - Remote Clinical Service",
+      "slug": "nead-support-ltd-remote-clinical-service-altrincham",
+      "status": "ACTIVE",
+      "overall_rating": null,
+      "file_overall_rating": null,
+      "file_overall_rating_date": null,
+      "file_rating_source": null,
+      "file_rating_source_sha256": null,
+      "postcode": "WA14 4UD",
+      "updated_at": "2026-10-21 10:36:13.133342",
+      "stratum": "unrated",
+      "independent_file_lookup": null
+    },
+    {
+      "id": "RHARA",
+      "name": "Nottingham University Hospital",
+      "slug": "nottingham-university-hospital-nottingham",
+      "status": "ACTIVE",
+      "overall_rating": null,
+      "file_overall_rating": null,
+      "file_overall_rating_date": null,
+      "file_rating_source": null,
+      "file_rating_source_sha256": null,
+      "postcode": "NG7 2UH",
+      "updated_at": "2026-10-21 08:58:43.524746",
+      "stratum": "unrated",
+      "independent_file_lookup": null
+    },
+    {
+      "id": "1-5588555895",
+      "name": "The Doctors Laboratory",
+      "slug": "the-doctors-laboratory-london-1-5588555895",
+      "status": "ACTIVE",
+      "overall_rating": null,
+      "file_overall_rating": null,
+      "file_overall_rating_date": null,
+      "file_rating_source": null,
+      "file_rating_source_sha256": null,
+      "postcode": "WC1H 9AX",
+      "updated_at": "2026-10-22 00:59:35.870132",
+      "stratum": "unrated",
+      "independent_file_lookup": null
+    }
+  ]
+}

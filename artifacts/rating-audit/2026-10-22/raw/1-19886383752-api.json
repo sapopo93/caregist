@@ -1,0 +1,168 @@
+{
+  "locationId": "1-19886383752",
+  "providerId": "1-19624395014",
+  "organisationType": "Location",
+  "type": "Social Care Org",
+  "name": "The Check House",
+  "brandId": "BD664",
+  "brandName": "BRAND Care Concern Group",
+  "onspdCcgCode": "E38000230",
+  "onspdCcgName": "NHS Devon CCG",
+  "onspdIcbCode": "E54000037",
+  "onspdIcbName": "NHS Devon Integrated Care Board",
+  "odsCode": "VNWL1",
+  "registrationStatus": "Registered",
+  "registrationDate": "2024-10-21",
+  "dormancy": "N",
+  "onspdLatitude": 50.7036849,
+  "onspdLongitude": -3.0777875,
+  "careHome": "Y",
+  "inspectionDirectorate": "Adult social care",
+  "postalAddressLine1": "61 Beer Road",
+  "postalAddressTownCity": "Seaton",
+  "postalAddressCounty": "Devon",
+  "region": "South West",
+  "postalCode": "EX12 2PR",
+  "uprn": "100040189344",
+  "mainPhoneNumber": "0129721858",
+  "website": "www.cannoncarehomes.co.uk/the-check-house",
+  "numberOfBeds": 59,
+  "constituency": "Honiton and Sidmouth",
+  "localAuthority": "Devon",
+  "lastReport": {
+    "publicationDate": "2018-06-08"
+  },
+  "relationships": [
+    {
+      "relatedLocationId": "1-153985655",
+      "relatedLocationName": "The Check House",
+      "type": "HSCA Predecessor",
+      "reason": "New Provider"
+    }
+  ],
+  "locationTypes": [],
+  "regulatedActivities": [
+    {
+      "name": "Accommodation for persons who require nursing or personal care",
+      "code": "RA2",
+      "contacts": [
+        {
+          "personTitle": "Mrs",
+          "personGivenName": "Karen Louise",
+          "personFamilyName": "Real",
+          "personRoles": [
+            "Registered Manager"
+          ]
+        }
+      ]
+    }
+  ],
+  "gacServiceTypes": [
+    {
+      "name": "Residential homes",
+      "description": "Care home service without nursing"
+    }
+  ],
+  "specialisms": [
+    {
+      "name": "Caring for adults over 65 yrs"
+    },
+    {
+      "name": "Caring for adults under 65 yrs"
+    },
+    {
+      "name": "Dementia"
+    },
+    {
+      "name": "Physical disabilities"
+    },
+    {
+      "name": "Sensory impairment"
+    }
+  ],
+  "inspectionCategories": [
+    {
+      "code": "S1",
+      "primary": "true",
+      "name": "Residential social care"
+    }
+  ],
+  "inspectionAreas": [],
+  "currentRatings": {
+    "overall": {
+      "rating": "Outstanding",
+      "reportDate": "2018-06-08",
+      "reportLinkId": "e2bd25eb-2843-4fd5-b419-1d143acd1240",
+      "keyQuestionRatings": [
+        {
+          "name": "Safe",
+          "rating": "Good",
+          "reportDate": "2018-06-08",
+          "reportLinkId": "e2bd25eb-2843-4fd5-b419-1d143acd1240",
+          "organisationId": "1-153985655"
+        },
+        {
+          "name": "Well-led",
+          "rating": "Good",
+          "reportDate": "2018-06-08",
+          "reportLinkId": "e2bd25eb-2843-4fd5-b419-1d143acd1240",
+          "organisationId": "1-153985655"
+        },
+        {
+          "name": "Caring",
+          "rating": "Good",
+          "reportDate": "2018-06-08",
+          "reportLinkId": "e2bd25eb-2843-4fd5-b419-1d143acd1240",
+          "organisationId": "1-153985655"
+        },
+        {
+          "name": "Responsive",
+          "rating": "Outstanding",
+          "reportDate": "2018-06-08",
+          "reportLinkId": "e2bd25eb-2843-4fd5-b419-1d143acd1240",
+          "organisationId": "1-153985655"
+        },
+        {
+          "name": "Effective",
+          "rating": "Outstanding",
+          "reportDate": "2018-06-08",
+          "reportLinkId": "e2bd25eb-2843-4fd5-b419-1d143acd1240",
+          "organisationId": "1-153985655"
+        }
+      ]
+    },
+    "reportDate": "2018-06-08"
+  },
+  "historicRatings": [
+    {
+      "reportDate": "2015-12-24",
+      "reportLinkId": "262cb848-7e2a-4f88-8897-aec61f42817f",
+      "organisationId": "1-153985655",
+      "overall": {
+        "rating": "Good",
+        "keyQuestionRatings": [
+          {
+            "name": "Safe",
+            "rating": "Good"
+          },
+          {
+            "name": "Well-led",
+            "rating": "Good"
+          },
+          {
+            "name": "Caring",
+            "rating": "Good"
+          },
+          {
+            "name": "Responsive",
+            "rating": "Good"
+          },
+          {
+            "name": "Effective",
+            "rating": "Requires improvement"
+          }
+        ]
+      }
+    }
+  ]
+}

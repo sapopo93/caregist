@@ -1,0 +1,1 @@
+PASS: 30 location IDs, resolved values/statuses, accepted publication dates and every supplied source hash present in extracted PDF text.

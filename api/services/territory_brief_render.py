@@ -192,8 +192,9 @@ def render_brief_pdf(brief: TerritoryBrief) -> bytes:
             meta.append(o.service_types[0])
         if o.number_of_beds:
             meta.append(f"{o.number_of_beds} beds")
-        if o.current_rating:
-            meta.append(f"rating {o.current_rating}")
+        if o.rating_resolution:
+            from api.services.territory_rating import rating_label
+            meta.append("rating " + rating_label(o.rating_resolution))
         meta.append(f"score {o.score:.0f}")
         pdf.spacer(3)
         pdf.paragraph(f"{o.rank}. {o.organisation_name} - {o.location_name}")
@@ -225,6 +226,16 @@ def render_brief_pdf(brief: TerritoryBrief) -> bytes:
                 + f". Recorded URL: {row['recorded_source_url'] or 'not supplied'}; "
                 + f"hash: {row['recorded_source_hash'] or 'not supplied'}.", muted=True,
             )
+            resolution = row.get("rating_resolution") or {}
+            pdf.paragraph("Rating status: " + str(resolution.get("status", "unresolved"))
+                          + "; source: " + str(resolution.get("source") or "none accepted"), muted=True)
+            for item in resolution.get("evidence", []):
+                pdf.paragraph(
+                    f"{item['source']}: {item.get('value') or 'no numerical rating'}; "
+                    f"published {item.get('publication_date') or 'unknown'}; "
+                    f"status {item.get('status', 'unresolved')}; edition {item.get('edition') or 'unknown'}; "
+                    f"hash {item.get('sha256') or 'not supplied'}; "
+                    f"source {item.get('url') or 'not supplied'}", muted=True)
             pdf.paragraph(f"CQC reference: {row['reference_url']}", muted=True)
     return pdf.build()
 

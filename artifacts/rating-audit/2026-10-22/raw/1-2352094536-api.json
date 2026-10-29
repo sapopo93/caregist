@@ -1,0 +1,1049 @@
+{
+  "locationId": "1-2352094536",
+  "providerId": "1-2311495102",
+  "organisationType": "Location",
+  "type": "Social Care Org",
+  "name": "Lucketts Farm",
+  "onspdCcgCode": "E38000237",
+  "onspdCcgName": "NHS Kent and Medway CCG",
+  "onspdIcbCode": "E54000032",
+  "onspdIcbName": "NHS Kent and Medway Integrated Care Board",
+  "odsCode": "VN6TR",
+  "registrationStatus": "Registered",
+  "registrationDate": "2016-01-04",
+  "dormancy": "N",
+  "onspdLatitude": 51.303436,
+  "onspdLongitude": 1.044673,
+  "careHome": "N",
+  "inspectionDirectorate": "Adult social care",
+  "postalAddressLine1": "17 Blean Hill",
+  "postalAddressTownCity": "Canterbury",
+  "postalAddressCounty": "Kent",
+  "region": "South East",
+  "postalCode": "CT2 9EF",
+  "mainPhoneNumber": "01227478564",
+  "numberOfBeds": 0,
+  "constituency": "Canterbury",
+  "localAuthority": "Kent",
+  "lastInspection": {
+    "date": "2018-11-27"
+  },
+  "lastReport": {
+    "publicationDate": "2019-01-10"
+  },
+  "relationships": [],
+  "locationTypes": [],
+  "regulatedActivities": [
+    {
+      "name": "Personal care",
+      "code": "RA1",
+      "contacts": [
+        {
+          "personTitle": "Miss",
+          "personGivenName": "Angela Dorothy",
+          "personFamilyName": "Cook",
+          "personRoles": [
+            "Registered Manager"
+          ]
+        }
+      ]
+    }
+  ],
+  "gacServiceTypes": [
+    {
+      "name": "Supported living",
+      "description": "Supported living service"
+    }
+  ],
+  "specialisms": [
+    {
+      "name": "Caring for adults over 65 yrs"
+    },
+    {
+      "name": "Caring for adults under 65 yrs"
+    },
+    {
+      "name": "Learning disabilities"
+    }
+  ],
+  "inspectionCategories": [
+    {
+      "code": "S2",
+      "primary": "true",
+      "name": "Community based adult social care services"
+    }
+  ],
+  "inspectionAreas": [],
+  "historicRatings": [
+    {
+      "reportDate": "2017-11-03",
+      "reportLinkId": "565309b6-f6db-44c4-85ab-6bc5b290a184",
+      "overall": {
+        "rating": "Requires improvement",
+        "keyQuestionRatings": [
+          {
+            "name": "Safe",
+            "rating": "Requires improvement"
+          },
+          {
+            "name": "Well-led",
+            "rating": "Requires improvement"
+          },
+          {
+            "name": "Caring",
+            "rating": "Good"
+          },
+          {
+            "name": "Responsive",
+            "rating": "Good"
+          },
+          {
+            "name": "Effective",
+            "rating": "Good"
+          }
+        ]
+      }
+    },
+    {
+      "reportDate": "2019-01-10",
+      "reportLinkId": "08896fae-7d1c-4dcf-a1a9-2cb3a5cf9b98",
+      "overall": {
+        "rating": "Good",
+        "keyQuestionRatings": [
+          {
+            "name": "Safe",
+            "rating": "Good"
+          },
+          {
+            "name": "Well-led",
+            "rating": "Good"
+          },
+          {
+            "name": "Caring",
+            "rating": "Good"
+          },
+          {
+            "name": "Responsive",
+            "rating": "Good"
+          },
+          {
+            "name": "Effective",
+            "rating": "Good"
+          }
+        ]
+      }
+    }
+  ],
+  "reports": [
+    {
+      "linkId": "08896fae-7d1c-4dcf-a1a9-2cb3a5cf9b98",
+      "reportDate": "2019-01-10",
+      "firstVisitDate": "2018-11-27",
+      "reportUri": "/reports/08896fae-7d1c-4dcf-a1a9-2cb3a5cf9b98?20211030120000",
+      "reportType": "Location"
+    },
+    {
+      "linkId": "565309b6-f6db-44c4-85ab-6bc5b290a184",
+      "reportDate": "2017-11-03",
+      "firstVisitDate": "2017-09-28",
+      "reportUri": "/reports/565309b6-f6db-44c4-85ab-6bc5b290a184?20211030120000",
+      "reportType": "Location"
+    }
+  ],
+  "assessmentServiceGroup": [
+    {
+      "assessmentServiceId": "274",
+      "assessmentServiceName": "Supported Living",
+      "status": "Active"
+    }
+  ],
+  "assessment": [
+    {
+      "assessmentPlanPublishedDateTime": "2025-10-16 12:09:17",
+      "ratings": {
+        "asgRatings": [
+          {
+            "assessmentPlanId": "AP16013",
+            "title": "Ongoing Assessment for Lucketts Farm",
+            "assessmentDate": "2025-08-19",
+            "assessmentPlanStatus": "Active",
+            "name": "Supported Living",
+            "rating": "Requires Improvement",
+            "status": "Current",
+            "commentary": "\u003Ctr\u003E\t\u003Cp\u003EDate of assessment: 01 September to 05 September 2025. Lucketts Farm provides care and support to people living in supported living settings, so that they can live as independently as possible. People\u2019s care and housing are provided under separate contractual agreements. The Care Quality Commission (CQC) does not regulate premises used for supported living. Not everyone supported by this service received the regulated activity of personal care. This assessment looked at people\u2019s personal care and support. At the time of our assessment, the provider was supporting 15 people with personal care.\u003C/p\u003E\u003Cp\u003EThe service was last assessed in November 2018 and rated \u201CGood\u201D. We conducted this assessment due to the age of the previous rating.\u003C/p\u003E\u003Cp\u003EWe assessed the service against \u2018Right support, right care, right culture\u2019 guidance to make judgements about whether the provider guaranteed people with a learning disability and autistic people respect, equality, dignity, choices, independence and good access to local communities that most people take for granted. Leaders and staff lacked understanding of the guiding principles of the guidance, and further work was required to support people to have maximum independence in their day to day lives. \u003C/p\u003E\u003Cp\u003EWe found that risks to people had not always been safely managed, and the provider had not ensured that robust care plans or risk assessments were in place setting out how they would support people with complex health conditions to stay healthy and well. \u003C/p\u003E\u003Cp\u003EThough we saw some positive examples of how the staff had supported people to develop skills and to take part in the things that mattered to them, there was no clear plan or how people\u2019s independence was being promoted or how to support people in achieving their goals and ambitions. In some areas, the provider had not identified that practices were restrictive and had not promoted the rights of people living in their own homes.\u003C/p\u003E\u003Cp\u003ESome elements of the service were functioning well and we received some positive feedback from people, relatives, health and care professionals about their experiences. However, we found staff were working hours that exposed both them and the people they supported to a high risk of harm. Governance processes at the service had not identified areas where people were not being supported safely or in the least restrictive manner. \u003C/p\u003E\u003Cp\u003EThe service was in breach of 6 legal requirements in relation to person centred care, consent, safe care and treatment, good governance, dignity and respect and staffing. In instances where CQC has begun a process of regulatory action, we may publish this information on our website after any representations and/or appeals have been concluded\u003C/p\u003E\u003C/tr\u003E",
+            "commentaryDate": "2025-09-24",
+            "narrative": "The service is not performing as well as it should and we have told the service how it must improve.",
+            "overallPeopleExperience": "\u003Ctr\u003E\t\u003Cp\u003EWe received mixed feedback from people and their loved ones about their experience of care. The majority of those we spoke to told us that staff were kind and knew people well. Comments we included, \u201CIt\u2019s been the best thing to happen to my relative. We\u2019re so happy they have found a happy place\u201D and \u201CI am really happy, if I have got problems management will act on it\u201D.\u003C/p\u003E\u003Cp\u003EHowever, others told us communication with the service was not always easy and relatives sometimes didn\u2019t feel they were involved or kept updated about the care of their relatives. One person told us \u201CCommunication is my biggest gripe, it used to be much better but it has slipped recently\u201D.\u003C/p\u003E\u003Cp\u003EWhilst we heard feedback and observed positive interactions with people, we found the care being delivered was not always keeping people safe, maximising people\u2019s independence or carried out in the least restrictive way. \u003C/p\u003E\u003C/tr\u003E",
+            "overallPeopleExperienceDate": "2025-09-24",
+            "keyQuestionRatings": [
+              {
+                "name": "Caring",
+                "rating": "Requires Improvement",
+                "status": "Assessed",
+                "commentary": "\u003Cp\u003ECaring \u2013 this means we looked for evidence that the provider involved people and treated them with compassion, kindness, dignity and respect. At our last assessment we rated this key question good. At this assessment the rating has changed to requires improvement.\u003C/p\u003E\u003Cp\u003EThis meant people were not always well-supported, cared for or treated with dignity and respect.\u003C/p\u003E\u003Cp\u003EThe service was in breach of legal regulation in relation to dignity and respect and person centred care.\u003C/p\u003E",
+                "commentaryDate": "2025-09-24",
+                "narrative": "This service is not always caring",
+                "percentageScore": "40",
+                "topicareas": [
+                  {
+                    "name": "Independence, choice and control",
+                    "qualityStatementId": "17",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "4",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Ctr\u003E\t\u003Cp\u003EThe provider did not promote people\u2019s independence, so people did not always know their rights and have choice and control over their own care, treatment and wellbeing. We identified that restrictions had been put in place on people\u2019s lives without considering if these were proportionate, the least restrictive approach or had been consented to by people. For example, the provider had installed CCTV in people\u2019s homes which they explained was to monitor staff and any incidents but had not recognised this was also an invasion of people\u2019s privacy or ensured appropriate consent was documented. People living in their own homes had \u201Chouse rules\u201D put in place which restricted their rights to drink alcohol or smoke if they wished to, and if people wanted to receive visitors then this had to be notified in advance. One relative told us, \u201CI used to just arrive but were asked in December last year that should we want to visit to email and arrange all visits prior\u201D. \u003C/p\u003E\u003Cp\u003EWhilst people had goals documented in their care plans which explained how they would be supported to be more independent, these were mostly restricted to undertaking tasks within their house (for instance to have more independence with washing or dressing) rather than any broader ambitions or life goals. These goals provided no information on how staff should support people to achieve them, or how the provider would regularly monitor them to see if they were being achieved. While the provider informed us about some additional goals people had and how they were supporting them, these weren\u2019t recorded in people\u2019s care plans. This meant there was no clear or consistent plan for how individual people were being supported to be independent. \u003C/p\u003E\u003C/tr\u003E",
+                        "commentaryDate": "2025-09-24"
+                      }
+                    ],
+                    "qualityStatementscore": "1 - Evidence shows significant shortfalls in the standard of care"
+                  },
+                  {
+                    "name": "Kindness, compassion and dignity",
+                    "qualityStatementId": "15",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "\u003Ctr\u003E\t\u003Cp class=\u0022MsoNoSpacing\u0022\u003EThe provider did not treat people with kindness, empathy and compassion, or respect their privacy and dignity. We saw caring interactions between staff and people. Whilst we were visiting people in their own homes we observed staff speaking kindly to people, including supporting people at their own pace to make decisions and actively involve them in tasks such as cooking. People and families feedback that staff were kind and knew them well. One relative said \u201CMy relative loves spending time with all their care staff\u201D.\u003C/p\u003E\u003Cp\u003EHowever, the provider was not always ensuring it was meeting their duty of care to people because there was a lack of clear information or knowledge on how staff should meet people\u2019s health needs. Where people had complex conditions such as epilepsy, constipation or a greater risk of falling there was no clear guidance on what actions the service would take manage these safely, or when they may need to request medical advice if people\u2019s condition deteriorated. There were no clear plans to demonstrate how the service was supporting people to be independent, and live their life in the way they wished to. \u003C/p\u003E\u003Cp\u003EWe also saw language used in documentation or in person which was not dignified or did not reflect people as individuals as adults with their own strengths and rights in society. This included references to people having \u201Ctantrums\u201D, as well as being \u201Csilly\u201D and \u201Cfussy\u201D. The service referred to people as having \u201Csocial leave\u201D, which didn\u2019t reflect people had the right to visit family or friends at any time and did not require leave. \u003C/p\u003E\u003C/tr\u003E",
+                        "commentaryDate": "2025-09-24"
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "3",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "4",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      }
+                    ],
+                    "qualityStatementscore": "1 - Evidence shows significant shortfalls in the standard of care"
+                  },
+                  {
+                    "name": "Responding to people\u2019s immediate needs",
+                    "qualityStatementId": "18",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "\u003Ctr\u003E\t\u003Cp\u003EThe provider did not always listen to and understand people\u2019s needs, views and wishes. Staff did not always respond to people\u2019s needs in the moment or act to minimise any discomfort, concern or distress. We observed that where people expressed wishes in the moment, that staff were responsive and support people in doing things they wanted to do. \u003C/p\u003E\u003Cp\u003EHowever, we could not be assured that they would be able to respond in a timely way when people\u2019s health may deteriorate, as there was a lack of clear guidance on how they should respond to ensure people received the treatment they needed. One person would not communicate if they were in pain as they had a fear of medical appointments, but there was no guidance for staff on when they might recognise this person was in pain or reassure them if they were in poor health and may need to see a health professional. This meant there was a higher risk of delay in identifying any health concerns as staff would not be able to quickly recognise this person was in pain. \u003C/p\u003E\u003Cp\u003E\u00A0\u003C/p\u003E\u003C/tr\u003E",
+                        "commentaryDate": "2025-09-24"
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "4",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      }
+                    ],
+                    "qualityStatementscore": "2 - Evidence shows some shortfalls in the standard of care"
+                  },
+                  {
+                    "name": "Treating people as individuals",
+                    "qualityStatementId": "16",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "3",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "4",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe provider did not always treat people as individuals or make sure people\u2019s care, support and treatment met people\u2019s needs and preferences. They did not always take account of people\u2019s strengths, abilities, aspirations, culture and unique backgrounds and protected characteristics. Staff we spoke to knew the people they supported well and explained they had processes in place to enable people to have choice on how they wanted to live their lives. One staff member told us, \u201CWe involve people in making decisions, and there are weekly house meetings where people plan together what food they would like to have and activities they would like do in the next week\u201D. In practice we found these systems weren\u2019t always individualised. We asked what would happen if people wanted to eat different food to the other people they lived with. In one supported living setting staff could clearly explain this occurred regularly, but in another staff told us, \u201CThe meals are planned in advance and everybody has the same meal. They pick things that everybody wants, I\u2019ve never known anybody to have something different\u201D. This didn\u2019t respect that people are individuals and may sometimes wish to have different food than their peers. \u003C/p\u003E\u003Cp\u003EPeople\u2019s care plans did include information on personal preferences, likes and what was important to them. But where people\u2019s skills strengths were detailed these were based purely on household tasks such as \u201CI can put plates and cups in the dishwasher\u201D, rather than reflecting people as being unique individuals or how the service could empower people to build on their strengths. \u003C/p\u003E",
+                        "commentaryDate": "2025-09-24"
+                      }
+                    ],
+                    "qualityStatementscore": "2 - Evidence shows some shortfalls in the standard of care"
+                  },
+                  {
+                    "name": "Workforce wellbeing and enablement",
+                    "qualityStatementId": "19",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe provider did not always care about and promote the wellbeing of their staff. They did not always support or enable staff to deliver person-centred care. We received positive feedback from staff about management, with one staff member telling us, \u201CThe staff team are fantastic and management are always approachable. You can always make suggestions and they actively listen to staff\u201D. Staff we spoke to enjoyed working for the service and explained they could always get time off when they needed for personal circumstances. However although staff explained they did not feel pressured to work additional hours, by allowing staff to regularly work 7 day weeks without a rest day the provider was exposing staff to a significant risk of harm. The provider had not effectively balanced requests for staff to work additional hours, with their duty to safeguard both people and their staff by ensuring working hours were safe. They had not ensured that sufficient staff were in employed and relied on staff working unsafe hours to be able to meet people\u2019s care needs. \u003C/p\u003E",
+                        "commentaryDate": "2025-09-24"
+                      }
+                    ],
+                    "qualityStatementscore": "2 - Evidence shows some shortfalls in the standard of care"
+                  }
+                ]
+              },
+              {
+                "name": "Effective",
+                "rating": "Requires Improvement",
+                "status": "Assessed",
+                "commentary": "\u003Cp\u003EEffective \u2013 this means we looked for evidence that people\u2019s care, treatment and support achieved good outcomes and promoted a good quality of life, based on best available evidence.\u003C/p\u003E\u003Cp\u003EAt our last assessment we rated this key question good. At this assessment the rating has changed to requires improvement. This meant the effectiveness of people\u2019s care, treatment and support did not always achieve good outcomes or was inconsistent.\u003C/p\u003E\u003Cp\u003EThe service was in breach of legal regulation in relation to consent.\u003C/p\u003E",
+                "commentaryDate": "2025-09-24",
+                "narrative": "This service is not always effective",
+                "percentageScore": "42",
+                "topicareas": [
+                  {
+                    "name": "Assessing needs",
+                    "qualityStatementId": "9",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "3",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe provider did not always make sure people\u2019s care and treatment were effective because they did not always check and discuss people\u2019s health, care, wellbeing and communication needs with them. Where people had complex health conditions, the provider could not always demonstrate they had thoroughly assessed their needs when they changed to ensure care was planned effectively. Though some risks were well managed and reflected people\u2019s current needs, this was not always the case. For example, we identified 2 people were at risk of falls and had fallen recently, but the provider had not put in place a risk assessment to explain how staff could support these people to mobilise safely and prevent them from falling in the future. Care planning in place did not always reflect people\u2019s current health and care needs or show evidence that people\u2019s care had been regularly reviewed with them to ensure it met their wishes.\u003C/p\u003E\u003Cp\u003EOne relative told us, \u201CThe care plan has not been reviewed in a couple of years\u2026I feel it should be, but I\u2019m not given the opportunity to discuss that\u201D. There was no clear evidence of how often care plans had been reviewed or who had been involved in these reviews.\u003C/p\u003E",
+                        "commentaryDate": "2025-09-24"
+                      }
+                    ],
+                    "qualityStatementscore": "2 - Evidence shows some shortfalls in the standard of care"
+                  },
+                  {
+                    "name": "Consent to care and treatment",
+                    "qualityStatementId": "14",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Ctr\u003E\t\u003Cp\u003EThe provider did not tell people about their rights around consent and did not always respect their rights when delivering care and treatment. CCTV equipment had been placed in people\u2019s own homes which the provider explained people had given their consent for, however when we asked for evidence of this management could only provide newly completed consent forms created during the inspection. Therefore, we were concerned that people had been recorded in their own home for a lengthy period of time without appropriate consent being sought. The provider explained this system was to monitor staff and view any incidents, but this use wasn\u2019t proportionate to the impact on people\u2019s privacy or was the least restrictive option. Action was taken to stop using this system once we raised concerns about its usage being proportionate or dignified. \u003C/p\u003E\u003Cp\u003EWhere people did not have the mental capacity to make decisions for themselves, the service had assessed this and best interest decisions for any restrictions to keep people safe were documented. However, these were not always clear on how decisions were reached including how other less restrictive options were considered first, if people\u2019s representatives had been involved to advocate for them and when decisions should be reviewed to make sure they were still in people\u2019s best interest. One person was placed at risk by fizzy drinks which could severely exacerbate an existing medical condition but we found guidance in place around this was contradictory. Some guidance in their care plan stated that this person \u201Cmust not have fizzy drinks\u201D, whereas other information stated they could if reminded of the risks. Management told us they were considering assessing this person\u2019s mental capacity to make decisions about their care, however had not recognised that without this they did not have the right to prevent somebody from choosing certain drinks. Another person had a sensor mat in place but had not a seizure for a number of years, but they had not reviewed this usage to ensure it remained the least restrictive option. There were also house rules in place stating people could not drink excessively in their own homes or smoke, which also did not respect that people have the right to make potentially unwise choices should they wish to do so. \u003C/p\u003E\u003C/tr\u003E",
+                        "commentaryDate": "2025-09-24"
+                      }
+                    ],
+                    "qualityStatementscore": "1 - Evidence shows significant shortfalls in the standard of care"
+                  },
+                  {
+                    "name": "Delivering evidence-based care and treatment",
+                    "qualityStatementId": "10",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe provider did not always plan and deliver people\u2019s care and treatment with them, including what was important and mattered to them. We saw the service made referrals to partner organisations where people had health and support needs, and we heard positive feedback from these partners on their interactions with the service. One health and care professional told us, \u201CRecently I discussed a person who had been showing increased signs of distress with (member of management team). We had a good discussion, and they took on board the recommendations that I made. They were clearly concerned about the well-being of the resident that we were discussing\u201D. Despite this, the information available to staff lacked clarity on how the service could support people based on evidence or any guidance from partner organisations. Where people had conditions such as epilepsy there was no information on signs and symptoms for staff to look for, and information on when rescue medication should be given during a seizure was unclear resulting in staff not having a clear knowledge of this. Another person had diabetes and though most staff we spoke to were confident in how to manage this safely, the guidance in place to manage this was limited and unclear. This posed a risk as we could not be assured new or temporary staff would be able to understand to safely provide care to this person, as the information available was not sufficiently detailed. \u003C/p\u003E",
+                        "commentaryDate": "2025-09-24"
+                      }
+                    ],
+                    "qualityStatementscore": "2 - Evidence shows some shortfalls in the standard of care"
+                  },
+                  {
+                    "name": "How staff, teams and services work together",
+                    "qualityStatementId": "11",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "3",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe provider did not always work well across teams and services to support people. Staff told us they worked effectively as a team to support people\u2019s needs. One staff member said, \u201CYes I think we work well as a team, and where incidents happens or people\u2019s needs change we learn together\u201D. We received positive feedback from people and their families about the support they received. One person told us \u201CI I like it here. There are always people around when I need help, and (staff name) is a great carer\u201D.\u003C/p\u003E\u003Cp\u003EHowever, we found staffing numbers at the service were low which was acknowledged by the provider, and this sometimes limited people being able to achieve the things they wanted to do. We were told that people were supported to go out into the community, but that staffing and challenges in the services meant this was not always possible. \u003C/p\u003E",
+                        "commentaryDate": "2025-09-24"
+                      }
+                    ],
+                    "qualityStatementscore": "2 - Evidence shows some shortfalls in the standard of care"
+                  },
+                  {
+                    "name": "Monitoring and improving outcomes",
+                    "qualityStatementId": "13",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe provider did not routinely monitor people\u2019s care and treatment to continuously improve it. They did not ensure that outcomes were positive and consistent, or that they met both clinical expectations and the expectations of people themselves. \u003C/p\u003E\u003Cp\u003EWhere people had complex health conditions, the provider did not always have effective mechanisms in place to monitor how they were being managed to ensure people were being protected from harm. One person was at a significant risk of constipation, which can be a life\u2013threatening issue for people with a learning disability who are at heightened risk from complications if it is left untreated. People with a learning disability may also be less likely to recognise the symptoms of constipation and be able to communicate their symptoms, increasing the risk of serious consequences. This person had their bowel movements monitored to help staff identify when they might be constipated and require medication or treatment. However, this had not been regularly completed meaning the provider had no effective monitoring of the risks to this person and risked delaying access to support as staff could not identify when this person had last been to the toilet. \u003C/p\u003E\u003Cp\u003EWhere people had personal ambitions or goals these were often not specific with examples including \u201Cto have a good social life\u201D or to \u201Cdeveloping skills in everyday tasks\u201D, with no clarity on what these meant to people or details of how the provider would monitor these to see if they were being achieved. There was evidence of how these outcomes were being reviewed with people to ensure people were happy with the support they were receiving. \u003C/p\u003E",
+                        "commentaryDate": "2025-09-24"
+                      }
+                    ],
+                    "qualityStatementscore": "1 - Evidence shows significant shortfalls in the standard of care"
+                  },
+                  {
+                    "name": "Supporting people to live healthier lives",
+                    "qualityStatementId": "12",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "3",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Ctr\u003E\t\u003Cp\u003EThe provider did not always support people to manage their health and wellbeing, so people could not always maximise their independence, choice and control. Staff did not always support people to live healthier lives, or where possible, reduce their future needs for care and support. People had health action plans in place and we saw detailed evidence of the provider supporting people to access health services. For example, during our inspection we saw a member of staff supporting somebody to visit the dentist and each person had oral health assessments which to determine if they needed to provide any additional support to people in keeping their teeth and mouth healthy. Staff were proactive in supporting physical activity and movement with one staff member saying, \u201CWe supports people to go for a walk twice a week to stay active. There are inter-house games every last day of the month to support people in moving, which people enjoy and it gets very competitive\u201D.\u003C/p\u003E\u003Cp\u003EHowever, there was insufficient guidance in place to ensure staff had the knowledge and information to support people in managing their health conditions safely. One person had poor mobility and had a higher risk of a pressure injury as was often stationary, yet there was no risk assessment on how staff could prevent this, recognise signs or symptoms or who they would contact if they were concerned. We found similar gaps in information for a number of health conditions and people where further clarity was needed on how to support people in being healthy. \u003C/p\u003E\u003Cp\u003E\u00A0\u003C/p\u003E\u003C/tr\u003E",
+                        "commentaryDate": "2025-09-24"
+                      }
+                    ],
+                    "qualityStatementscore": "2 - Evidence shows some shortfalls in the standard of care"
+                  }
+                ]
+              },
+              {
+                "name": "Responsive",
+                "rating": "Requires Improvement",
+                "status": "Assessed",
+                "commentary": "\u003Cp\u003EResponsive \u2013 this means we looked for evidence that the provider met people\u2019s needs.\u003C/p\u003E\u003Cp\u003EAt our last assessment we rated this key question good. At this assessment the rating has changed to requires improvement. This meant people\u2019s needs were not always met.\u003C/p\u003E\u003Cp\u003EThe service was in breach of legal regulation in relation to person centred care.\u003C/p\u003E",
+                "commentaryDate": "2025-09-24",
+                "narrative": "This service is not always responsive",
+                "percentageScore": "43",
+                "topicareas": [
+                  {
+                    "name": "Care provision, Integration and continuity",
+                    "qualityStatementId": "21",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "3",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThere were some shortfalls in how the provider understood the diverse health and care needs of people and their local communities, so care was not always joined-up, flexible or supportive of choice and continuity. We saw there was a consistent staff team who knew the people who they supported well as individuals. One relative told us, \u201CThey\u2019re always looking for ideas to support (person name). They definitely listen and if there\u2019s anything they\u2019re unsure about they will call me at any time\u201D. However, people\u2019s diverse health and care needs were not always consistently recorded or understood, meaning we could not be assured people would receive care and support that was consistent or safe. \u003C/p\u003E",
+                        "commentaryDate": "2025-09-24"
+                      }
+                    ],
+                    "qualityStatementscore": "2 - Evidence shows some shortfalls in the standard of care"
+                  },
+                  {
+                    "name": "Equity in access",
+                    "qualityStatementId": "24",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Ctr\u003E\t\u003Cp\u003EThe provider did not always make sure that people could access the care, support and treatment they needed when they needed it. Though we saw from peoples records that the provider had regularly supported them to access health and care support, people\u2019s care plans were not sufficiently detailed around how staff should support their health needs safely. This meant there was often a lack of information on how staff should respond if people\u2019s health deteriorated, and the treatment or support staff should provide. This meant we could not be assured people had received the support they needed when they needed, as it was not clear what this was. \u003C/p\u003E\u003Cp\u003E\u00A0\u003C/p\u003E\u003C/tr\u003E",
+                        "commentaryDate": "2025-09-24"
+                      }
+                    ],
+                    "qualityStatementscore": "2 - Evidence shows some shortfalls in the standard of care"
+                  },
+                  {
+                    "name": "Equity in experiences and outcomes",
+                    "qualityStatementId": "25",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Ctr\u003E\t\u003Cp\u003EStaff and leaders did not actively listen to information about people who are most likely to experience inequality in experience or outcomes. This meant people\u2019s care was not always tailored in response to this. It was not always clear how the provider engaged with people to ensure they had equal opportunity to be involved in their care. Though there were regular weekly meetings of people who lived together, there was no evidence of people having opportunity to talk to staff individually to discuss their own care and ensure that the care being delivered met their wishes and preferences. Though people had some desired outcomes recorded, these were not always clear on what they meant to people in practice, how they would be achieved or any barriers or inequalities the provider needed to be aware of. \u003C/p\u003E\u003C/tr\u003E",
+                        "commentaryDate": "2025-09-24"
+                      }
+                    ],
+                    "qualityStatementscore": "1 - Evidence shows significant shortfalls in the standard of care"
+                  },
+                  {
+                    "name": "Listening to and involving people",
+                    "qualityStatementId": "23",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Ctr\u003E\t\u003Cp\u003EThe provider did not always make it easy for people to share feedback and ideas, or raise complaints about their care, treatment and support. Staff did not always involve people in decisions about their care or tell them what had changed as a result. We received mixed feedback from relatives about communication with 1 relative saying, \u201CCommunication could be better between carers, staff, management and parents\u201D. The service were in the process of supporting some people to move to new property, and we received feedback from people who felt they hadn\u2019t been kept updated on this. Some relatives felt they were not kept updated on their loved one\u2019s care, although the people being supported were adults so had the ability to say if they wished this information to be shared or not. \u003C/p\u003E\u003Cp\u003EHowever other people responded more positively with 1 relative saying, \u201CI used to think the communication was really poor but I have to say this year it has got so much better\u201D and another told us, \u201CI can talk to any of the carers, they address things fairly\u201D. We saw there were regular surveys for people and relatives to understand their experiences, as well as weekly meetings house meetings to allow people to share any feedback and wishes for the future. Though further steps needed to be taken to ensure surveys and feedback mechanisms were accessible to all.\u003C/p\u003E\u003Cp\u003E\u00A0\u003C/p\u003E\u003C/tr\u003E",
+                        "commentaryDate": "2025-09-24"
+                      }
+                    ],
+                    "qualityStatementscore": "2 - Evidence shows some shortfalls in the standard of care"
+                  },
+                  {
+                    "name": "Person-centred Care",
+                    "qualityStatementId": "20",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "\u003Ctr\u003E\t\u003Cp\u003EThe provider did not make sure people were at the centre of their care and treatment choices and they did not always work in partnership with people, to decide how to respond to any relevant changes in people\u2019s needs. It was not clear how people had been involved in creating their care plans, to ensure they were actively involved in care and that it aligned with helping them achieve the things that mattered to them. We heard some positive examples of people\u2019s care being personalised and One relative explained, \u201CThey supported (person name) to go to a nightclub and on holiday, they have a better social life than me!\u201D But there was no information in people\u2019s care plans on the things people wanted to achieve, or information for staff on how they should support them in practically achieving them. There was no clear plan or how people wanted to live their lives, and what and with who they wanted to spend their time. \u003C/p\u003E\u003Cp\u003EPeople\u2019s care was not personalised as the service did not always take account of their health needs or ensure that plans and risk assessments were in place to support people in staying healthy and well. In some cases we were only made aware of certain health needs by relatives, staff or other documentation, as they were not detailed in people\u2019s care plan. Sometimes different documents used by the service contradicted themselves so it was difficult to understand how people should be supported or wished to be cared for. There was a lack of clear evidence of how people had been involved in their care, with no records of regular discussions with people to discuss their care plan or goals to ensure documentation and the way staff were working still reflected their needs and wishes. \u003C/p\u003E\u003Cp\u003E\u00A0\u003C/p\u003E\u003C/tr\u003E",
+                        "commentaryDate": "2025-09-24"
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "4",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      }
+                    ],
+                    "qualityStatementscore": "1 - Evidence shows significant shortfalls in the standard of care"
+                  },
+                  {
+                    "name": "Planning for the future",
+                    "qualityStatementId": "26",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Ctr\u003E\t\u003Cp\u003EPeople were not always supported to plan for important life changes, so they could have enough time to make informed decisions about their future, including at the end of their life. There was limited information about how the service had discussed people\u2019s wishes for the future with them, and how the service would support them to ensure these wishes were respected. Management explained they did discuss people\u2019s wishes for end of life with them, but there was not a consistent process for this and these conversations were not documented. Management told us they were planning to do further work on this following an upcoming transition to a new electronic care planning system. Empowering people to express their wishes for end of life has a greater importance for people with a learning disability, as they have a higher likelihood of developing complex health conditions and poorer health outcomes than people without a learning disability. \u003C/p\u003E\u003Cp\u003E\u00A0\u003C/p\u003E\u003C/tr\u003E",
+                        "commentaryDate": "2025-09-24"
+                      }
+                    ],
+                    "qualityStatementscore": "2 - Evidence shows some shortfalls in the standard of care"
+                  },
+                  {
+                    "name": "Providing Information",
+                    "qualityStatementId": "22",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Ctr\u003E\t\u003Cp\u003EThe provider did not always supply appropriate, accurate and up-to-date information in formats that were tailored to individual needs. We saw that information was available in a range of formats to meet people\u2019s communication needs. For example, one person had easy read picture cards to help them maintain a healthy diet and people also had access to easy read guides to safeguarding and advocacy. There was clear information in people\u2019s care plans on how staff should communicate with people to allow them to fully participate and be involved in their care. Further steps needed to be taken in this area to ensure all information was accessible. The surveys used to gather people\u2019s feedback were worded in a complex way, and we saw many people had remarked they couldn\u2019t understand the questions. Therefore, the provider needed to consider how they were ensuring everybody has equal opportunity to give feedback on their care. \u003C/p\u003E\u003Cp\u003EPeople had access to their own care plans and records, and management explained people would continue to be able to access them following an upcoming switch to digital records. However, these care plans were not always sufficiently detailed or accurate, meaning people did not have access to documents which fully reflected the care they should expect to receive. \u003C/p\u003E\u003Cp\u003E\u00A0\u003C/p\u003E\u003C/tr\u003E",
+                        "commentaryDate": "2025-09-24"
+                      }
+                    ],
+                    "qualityStatementscore": "2 - Evidence shows some shortfalls in the standard of care"
+                  }
+                ]
+              },
+              {
+                "name": "Safe",
+                "rating": "Requires Improvement",
+                "status": "Assessed",
+                "commentary": "\u003Cp\u003ESafe \u2013 this means we looked for evidence that people were protected from abuse and avoidable harm. At our last assessment we rated this key question good. At this assessment the rating has changed to requires improvement. This meant some aspects of the service were not always safe and there was limited assurance about safety. There was an increased risk that people could be harmed.\u003C/p\u003E\u003Cp\u003EThe service was in breach of legal regulations in relation to safe care and treatment, and staffing. \u003C/p\u003E",
+                "commentaryDate": "2025-09-24",
+                "narrative": "This service is not always safe",
+                "percentageScore": "47",
+                "topicareas": [
+                  {
+                    "name": "Infection prevention and control",
+                    "qualityStatementId": "7",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "4",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe provider assessed and managed the risk of infection. They detected and controlled the risk of it spreading and shared concerns with appropriate agencies promptly. All staff had completed training in infection prevention, and there were weekly checks undertaken to ensure staff were working safely to reduce the risk of transmitting infections. Staff had a good knowledge of the steps they would take to ensure they were working safely, including when they would need to use personal protective equipment (such as gloves, masks and aprons). Where supplies of these were running low, this was picked up by the audits to ensure there was always access to these where needed. \u003C/p\u003E",
+                        "commentaryDate": "2025-09-24"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Involving people to manage risks",
+                    "qualityStatementId": "4",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "4",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Ctr\u003E\t\u003Cp\u003EThe provider did not work well with people to understand and manage risks. Staff did not provide care to meet people\u2019s needs that was safe, supportive and enabled people to do the things that mattered to them. People lived with a range of complex health conditions including epilepsy, diabetes, increased risk of falls, constipation, distressed behaviour and poor skin integrity. However, the provider had failed to put in place robust guidance or risk assessments to demonstrate how staff should support people to manage these conditions to help them stay healthy and well. For example, multiple people were at a high risk of falls due to limited mobility yet the provider had not put in place a clear risk assessment showing how they had continually reviewed and assessed this risk, and any steps they could take to prevent people from falling. We identified 1 person was also being administered anticoagulants (medication to prevent blood from clotting), which meant if they did fall there was a significantly higher risk of suffering internal bleeding. Yet there was no information on this in their care plan on how staff should respond if this person were to fall, or the importance of seeking medical advice given the higher risk posed by their medication. The provider was in the process of moving to a digital care management system and following the inspection reviewed people\u2019s care plans and risk assessments to add additional detail. \u003C/p\u003E\u003C/tr\u003E",
+                        "commentaryDate": "2025-09-24"
+                      }
+                    ],
+                    "qualityStatementscore": "1 - Evidence shows significant shortfalls in the standard of care"
+                  },
+                  {
+                    "name": "Learning culture",
+                    "qualityStatementId": "1",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "3",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Ctr\u003E\t\u003Cp\u003EThe provider did not have a proactive and positive culture of safety based on openness and honesty. Staff did not always listen to concerns about safety and did not always investigate and report safety events. Lessons were not always learnt to continually identify and embed good practice. Although incidents were documented, it was not always clear what action had been taken to prevent incidents from reoccurring or people from coming to harm in the future. We saw some positive examples of learning being discussed in team meetings, such as discussing if people\u2019s medication was working effectively or how staff should support two people separately following recent incidents. However for the majority of incidents we reviewed, the action stated \u201Cmonitored\u201D or \u201Cmanagement informed\u201D. There was no information how they had been monitored, or if management had been informed what action they had taken. One person had fallen twice in the last year but in the incident reports there were no clear actions, or learning taken to prevent this person from falling in the future. \u003C/p\u003E\u003Cp\u003EAnother person frequently hit their head when they were distressed, yet the incident report from a recent incident simply stated \u201Cmonitored\u201D with no further detail on how they had explored what might have caused the person to do this. There was no information around if they had requested any medical advice for the injury, how it would be monitored or how staff could prevent the person from doing so in the future. In both cases despite these incidents, there was no effective risk assessment in place to set out how the service could protect these people from harm. This demonstrated the provider was not consistently learning from incidents. \u003C/p\u003E\u003C/tr\u003E",
+                        "commentaryDate": "2025-09-24"
+                      }
+                    ],
+                    "qualityStatementscore": "1 - Evidence shows significant shortfalls in the standard of care"
+                  },
+                  {
+                    "name": "Medicines optimisation",
+                    "qualityStatementId": "8",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "4",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe provider had not always made sure that medicines and treatments were safe and met people\u2019s needs, capacities and preferences. Staff involved people in planning, including when changes happened. Where staff were supporting people to access medicines, the provider undertook a robust competency assessment to ensure they were sufficiently knowledgeable to administer medicines safely. People\u2019s medicines were stored, administered and recorded in line with best practice. There were regular audits to check medication practices at the service were safe. If medication errors were made, staff explained they would immediately contact 111 to receive rapid medical input. Where possible, the service encouraged and empowered people to manage their own medicines independently with one relative saying, \u201CYes (person name) has access to all their medication and takes it independently, they know what to take and when, staff are very good with supporting them to do this\u201D. \u003C/p\u003E\u003Cp\u003EHowever systems and plans were not efficiently detailed to ensure people would then receive the medication they needed, when they needed it One person had epilepsy and was prescribed rescue medication if they were to have a seizure. The guidance in place was not specific enough on when the rescue medication should be administered and when medical advice should be sought. This meant staff were not clear on how they should respond to keep this person safe. None of the staff members we spoke to knew when to administer, all giving us different times at which they would do so. Another person had constipation but monitoring systems were not being used effectively, meaning staff couldn\u2019t be clear on when they would need to administer medication. \u003C/p\u003E\u003Cp\u003EWhere \u201Cas and when\u201D medicines were prescribed, the staff were not always recording if these were effective to monitor if medicines were helping people stay well. We did see some records demonstrating the provider had discussed internally and worked with external partners if they felt people\u2019s medicines were not working effectively. \u003C/p\u003E",
+                        "commentaryDate": "2025-09-24"
+                      }
+                    ],
+                    "qualityStatementscore": "2 - Evidence shows some shortfalls in the standard of care"
+                  },
+                  {
+                    "name": "Safe and effective staffing",
+                    "qualityStatementId": "6",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "4",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe provider did not make sure there were enough qualified, skilled and experienced staff. We found that staff were working lengthy hours that exposed both themselves and those they supported to a substantially greater risk of harm. A significant proportion of staff worked almost every day, and we observed 3 members of staff who had worked 29, 30 and 31 days respectively in August in a row without a day off. Staff we spoke to stated this was their choice to work these hours and they had not been pressured to do so and were able to take breaks during the day. However, the provider had failed to recognise that working such lengthy periods without a rest day whilst supporting vulnerable individuals would place people at significant risk of harm or mistakes being made.\u003C/p\u003E\u003Cp\u003EOne staff member told us, \u201CStaff are working long hours which means mistakes can be made. New staff coming in are needed to reduce burden on the staff team\u201D. Some people\u2019s relatives also fed back that they had concerns with 1 relative saying, \u201CThere\u2019s not enough staff, and there are only 3 in management\u2026\u201D The provider told us 3 new members of staff were starting imminently which they thought would reduce the pressure on existing staff members. We also heard examples of people not always being able to live life as they wished to due to staffing numbers, such as situations where people could not access the community due to operational pressures, or people being asked to leave their home because staff were going out with others and could not support them.\u003C/p\u003E\u003Cp\u003EAlthough staff numbers and working patterns were unsafe, we found that staff were recruited safely with appropriate checks completed and that staff had appropriate training in the needs of the people they supported.\u003C/p\u003E",
+                        "commentaryDate": "2025-09-24"
+                      }
+                    ],
+                    "qualityStatementscore": "1 - Evidence shows significant shortfalls in the standard of care"
+                  },
+                  {
+                    "name": "Safe environments",
+                    "qualityStatementId": "5",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "4",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe provider detected and controlled potential risks in the care environment. They made sure equipment, facilities and technology supported the delivery of safe care. The provider had robust regular audits that ensured the safety of the environment for both people and staff, and actions were taken responsively if any risks in the environment were identified. This includes risk assessments for supporting people in access the wider community, for example around helping manage the risks of road safety and in travelling using public transport. \u003C/p\u003E",
+                        "commentaryDate": "2025-09-24"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Safe systems, pathways and transitions",
+                    "qualityStatementId": "2",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "3",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe provider did not always work well with people and healthcare partners to establish and maintain safe systems of care. They did not always manage or monitor people\u2019s safety. Though we saw the provider worked closely with partner organisation to support the needs of people, it was not always clear at what point staff should make referrals to partners if people\u2019s health needs deteriorated. Guidance in place for complex health conditions such as epilepsy, constipation and for people who had fallen or were in distress was not robust to ensure all staff would know when to request medical support. Staff did not have a good understanding of epilepsy management. One person had epilepsy and a staff member told us, \u201CIf they had a seizure I would call 999 immediately\u201D, however the guidance in place referenced first administering medication after 5 minutes, and then calling 999 after administering a second dose 5-10 minutes later. There was no explanation of why staff may need to administer this second dose after 10 minutes rather than 5, and staff were also not able to explain this. This risked causing delays in accessing crucial medical support and a higher likelihood of significant harm occurring. We saw some examples of positive partnership working, including with mental health services if staff had observed people\u2019s mental health was deteriorating and staff working proactively with the diabetes team for 1 person to make sure this was well controlled and managed safely. \u003C/p\u003E",
+                        "commentaryDate": "2025-09-24"
+                      }
+                    ],
+                    "qualityStatementscore": "2 - Evidence shows some shortfalls in the standard of care"
+                  },
+                  {
+                    "name": "Safeguarding",
+                    "qualityStatementId": "3",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "4",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Ctr\u003E\t\u003Cp\u003EThe provider did not always work well with people and healthcare partners to understand what being safe meant to them and how to achieve that. They did not always concentrate on improving people\u2019s lives or protecting their right to live in safety, free from bullying, harassment, abuse, discrimination, avoidable harm and neglect. We observed that staff were trained in safeguarding and were knowledgeable about when they might be concerned abuse and neglect was happening, and the action they would take to report this if they believed this was the case. One staff member told us \u201CAbuse can be physical, emotional, sexual and neglect. I might suspect it if I saw bruises, behaviour changes or low self-esteem\u201D.\u003C/p\u003E\u003Cp\u003EHowever, staff did not have the information to be able to ensure people were being supported to stay safe as care documentation was not specific enough on how risks to people\u2019s health should be managed. For 1 person who was at risk of hitting their head, the care plan stated if staff identified bruising to certain parts of the body they would not need to seek medical support in most circumstances as this fitted a regular pattern of behaviour. But the provider had not considered there may sometimes be other explanations for this bruising, or how staff would need to consider this and make referrals to partners to ensure this person was safe and not being exposed to a risk of harm and abuse. \u003C/p\u003E\u003Cp\u003E\u00A0\u003C/p\u003E\u003C/tr\u003E",
+                        "commentaryDate": "2025-09-24"
+                      }
+                    ],
+                    "qualityStatementscore": "2 - Evidence shows some shortfalls in the standard of care"
+                  }
+                ]
+              },
+              {
+                "name": "Well-led",
+                "rating": "Inadequate",
+                "status": "Assessed",
+                "commentary": "\u003Cp\u003EWell-led \u2013 this means we looked for evidence that service leadership, management and governance assured high-quality, person-centred care; supported learning and innovation; and promoted an open, fair culture. At our last assessment we rated this key question good. At this assessment the rating has changed to Inadequate. This meant there were widespread and significant shortfalls in leadership. Leaders and the culture they created did not assure the delivery of high-quality care.\u003C/p\u003E\u003Cp\u003EThe service was in breach of legal regulation in relation to good governance. \u003C/p\u003E",
+                "commentaryDate": "2025-09-24",
+                "narrative": "This service is not well-led",
+                "percentageScore": "36",
+                "topicareas": [
+                  {
+                    "name": "Capable, compassionate and inclusive leaders",
+                    "qualityStatementId": "28",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003ELeaders did not understand the context in which the provider delivered care, treatment and support. They did not embody the culture and values of their workforce and organisation. Leaders did not always have the skills, knowledge, experience and credibility to lead effectively, or they did not always do so with integrity, openness and honesty.\u003C/p\u003E\u003Cp\u003EManagement did not have a clear understanding of statutory guidance such as RSRCRC that we expect to demonstrate they are complying with, to ensure people have access to care that promotes independence, choice and human rights. There were no clear plans in place for how the service would support people in being independent, and having the same quality of life that most people take for granted. Though they were responsive to areas of concern where we identified them, they had not identified that restrictions in people\u2019s own homes did not ensure people\u2019s privacy or rights as individuals. The provider was not up to date with best practice expectation for empowering people with learning disabilities or were autistic to live life in the way they wanted to, always had choice and freedom or were supported with positive risk taking.\u003C/p\u003E",
+                        "commentaryDate": "2025-09-24"
+                      }
+                    ],
+                    "qualityStatementscore": "1 - Evidence shows significant shortfalls in the standard of care"
+                  },
+                  {
+                    "name": "Freedom to speak up",
+                    "qualityStatementId": "29",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Ctr\u003E\t\u003Cp\u003EThe provider fostered a positive culture where people felt they could speak up and their voice would be heard. Staff we spoke to were confident that they could raise any concerns and that these would be listened to and investigated. One staff member told us, \u201C\u2026Communication is now better, management talk to staff and there are regular supervisions which means much greater clarity and support\u201D. There were regular staff meetings which we saw evidence of staff raising concerns about people they supported, and that these were discussed in depth with clear actions agreed based on staff feedback. However, we identified that there were a number of areas where people were not being managed safely, or in a way that maximised their independence or freedom. This has not been identified or challenged, so we could not be assured that staff had an appropriate level of understanding of how care should be being delivered to be able to know when it was not being delivered or to speak up. \u003C/p\u003E\u003Cp\u003E\u00A0\u003C/p\u003E\u003C/tr\u003E",
+                        "commentaryDate": "2025-09-24"
+                      }
+                    ],
+                    "qualityStatementscore": "2 - Evidence shows some shortfalls in the standard of care"
+                  },
+                  {
+                    "name": "Governance, management and sustainability",
+                    "qualityStatementId": "31",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Ctr\u003E\t\u003Cp\u003EThe provider did not have clear responsibilities, roles, systems of accountability or good governance. They did not always act on the best information about risk, performance and outcomes, or share this securely with others when appropriate. There were regular checks in place which covered staff competency, infection prevention, medications, incidents and accidents and feedback from people, relatives and staff. However, these were not effective in identifying areas where people were being exposed to a risk of harm or not being supported in line with the least restrictive approach. People\u2019s care plans were reviewed every 6 months but management had not identified that these lacked crucial detail, people\u2019s health needs were not risk assessed and that there was insufficient information for staff to understand how to achieve their goals and ambitions. Where incidents had occurred, records were not detailed enough to show what action or learning had been taking, and how the service would work to prevent incidents occurring again in the future. There had been a failure to monitoring staffing levels to ensure they could safely meet peoples need, or that the service kept up to date with best practice guidance for supporting people to live with maximum independence or choice. Management acknowledged that monitoring had not always been effective, and a planned switch to a digital care record system aimed to ensure they had a live overview of the care being delivered across the service. \u003C/p\u003E\u003Cp\u003E\u00A0\u003C/p\u003E\u003C/tr\u003E",
+                        "commentaryDate": "2025-09-24"
+                      }
+                    ],
+                    "qualityStatementscore": "1 - Evidence shows significant shortfalls in the standard of care"
+                  },
+                  {
+                    "name": "Learning, improvement and innovation",
+                    "qualityStatementId": "33",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe provider did not focus on continuous learning, innovation and improvement across the organisation and local system. They did not encourage creative ways of delivering equality of experience, outcome and quality of life for people. \u003C/p\u003E\u003Cp\u003EThere were regular staff meetings in place which focused on people\u2019s health needs and any areas where people were being exposed to a risk of harm and saw collaborative discussions exploring how staff could make changes to support people. However there no consistent process for ensuring that clear actions, learning and analysis of themes and trends were taken when incidents or accidents occurred. There were significant areas where people\u2019s health conditions were not being managed safely or being supported in the least restrictive way. These had not been identified demonstrating people\u2019s care needs were not being effectively monitored to drive clear improvement or care based on current evidence and people\u2019s human rights., however further work was needed to ensure that clear actions, learning and analysis of themes and trends were taken where incidents and accidents occurred. \u003C/p\u003E",
+                        "commentaryDate": "2025-09-24"
+                      }
+                    ],
+                    "qualityStatementscore": "1 - Evidence shows significant shortfalls in the standard of care"
+                  },
+                  {
+                    "name": "Partnerships and communities",
+                    "qualityStatementId": "32",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "3",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe provider did not always understand their duty to collaborate and work in partnership, so services worked seamlessly for people. They did not always share information and learning with partners or collaborate for improvement. We heard some positive examples of collaborative working with external bodies to support people. For example, they had worked with the local diabetes team to train care staff to be able to be safe and competent to administer insulin for 1 person, which had allowed continuity of care as this person could be supported their usual carers who knew them well. One staff member explained, \u201CWe regularly talk to the nurses about (persons name)\u2019s diabetes if we have any concerns, to make sure we are supporting them safely\u201D\u003C/p\u003E\u003Cp\u003EHowever, people did not always have care plans in place to effectively or safely manage their health conditions. This meant it was not clear what care people were supposed to receive, or at what point the service should make referrals to external professionals. \u003C/p\u003E",
+                        "commentaryDate": "2025-09-24"
+                      }
+                    ],
+                    "qualityStatementscore": "2 - Evidence shows some shortfalls in the standard of care"
+                  },
+                  {
+                    "name": "Shared direction and culture",
+                    "qualityStatementId": "27",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe provider did not have a clear shared vision, strategy and culture which was based on transparency, equity, equality and human rights, diversity and inclusion, and engagement. They did not understand the challenges and the needs of people and their communities. The provider did not have effective systems in place to mitigate the risk of a closed culture within the service. A closed culture means a poor culture that can lead to harm, which can include human rights breaches such as abuse.The provider had not prioritised safe, high quality and compassionate care. Effective systems were not in place to review the care people received, for example risks to people\u2019s health had not been recognised or prioritised.\u003C/p\u003E\u003Cp\u003EThough we saw some positive examples of people being supported with kindness and supported to take part in daily life in a way that worked for them, there was lack of consistent planning for how the service would support independence and engage with people and their loved ones to ensure they were involved in their care. There were no clear processes for promoting care that promoted people\u2019s rights, or was in line with best practice for a service supporting individuals with a learning disability or who were autistic. \u003C/p\u003E",
+                        "commentaryDate": "2025-09-24"
+                      }
+                    ],
+                    "qualityStatementscore": "1 - Evidence shows significant shortfalls in the standard of care"
+                  },
+                  {
+                    "name": "Workforce equality, diversity and inclusion",
+                    "qualityStatementId": "30",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Ctr\u003E\t\u003Cp\u003EThe provider did not always value diversity in their workforce. They had not worked towards an inclusive and fair culture by improving equality and equity for people who worked for them. All staff had completed training in equality and diversity, and staff explained to us that they were always able to take time away from work if needed due to personal or family circumstances. There were regular supervisions to check if when staff on any challenges they were experiencing, and if there was any additional support that could be provided. One staff member told us \u201CThere is always somebody available to speak to if needed, and management are supportive\u201D. However, the provider had failed to recognise that all staff had an equal right to safe working conditions which we found were not being respected for the majority of staff who were expected to work unsafe numbers of hours. Staff often worked on their own and were responsible for safely managing complex health and support needs, and were exposed to a high risk of harm through lack of appropriate rest or effective guidance. \u003C/p\u003E\u003Cp\u003E\u00A0\u003C/p\u003E\u003C/tr\u003E",
+                        "commentaryDate": "2025-09-24"
+                      }
+                    ],
+                    "qualityStatementscore": "2 - Evidence shows some shortfalls in the standard of care"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

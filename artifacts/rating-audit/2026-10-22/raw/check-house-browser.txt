@@ -1,0 +1,232 @@
+Browser tab: 1, Title: "The Check House - Care Quality Commission", URL: "https://www.cqc.org.uk/location/1-19886383752".
+1 AXWebArea The Check House - Care Quality Commission, URL: cqc.org.uk/location/1-19886383752
+	2 link Description: Skip to main content, Value: cqc.org.uk/location/1-19886383752#main-content-wrapper
+	3 container
+		4 container site-header--desktop
+			5 container site-header__desktop-search-and-links
+				6 link Description: The Care Quality Commission, Value: cqc.org.uk/
+				7 link Description: Feedback on care, Value: cqc.org.uk/give-feedback-on-care/start
+				8 link Description: Provider portal, Value: cqc.org.uk/aboutproviderportal
+				9 container Select which area of CQC to search, and enter your search term
+					10 text Select which area of CQC to search, and enter your search term
+					11 text Area of CQC website to search
+					12 pop up button (collapsed, settable) Area of CQC website to search, Value: Website, ID: site-search-dropdown--desktop, Secondary Actions: Expand
+						13 menu
+							14 (selected) Website
+							15 Guidance for providers
+							16 Press releases
+							17 News
+							18 Publications
+							19 Documents
+					20 container
+						21 search text field (settable) Description: Keyword search, ID: search-form__input--desktop
+						22 button Search, ID: search-form__submit--desktop
+			23 content list
+				24 link Description: Home, Value: cqc.org.uk/
+				25 link Description: About us, Value: cqc.org.uk/about-us
+				26 link Description: Find care services, Value: cqc.org.uk/care-services
+				27 link Description: News, Value: cqc.org.uk/news
+				28 link Description: Publications, Value: cqc.org.uk/publications
+				29 link Description: Guidance and regulation, Value: cqc.org.uk/node/10076
+				30 link Description: Contact us, Value: cqc.org.uk/contact-us
+		31 content list
+			32 link Description: Home, Value: cqc.org.uk/
+			33 link Description: Find care services, Value: cqc.org.uk/search/all
+			34 link Description: Check House Care Limited, Value: cqc.org.uk/provider/1-19624395014
+			35 text The Check House
+	36 container main-content-wrapper
+		37 container top-of-page
+			38 content list
+				39 image Care Home
+			40 content list
+				41 text CARE HOME
+			42 heading The Check House, Value: 1
+				43 text The Check House
+			44 container
+				45 text 61 Beer Road, Seaton, Devon, EX12 2PR (01297) 21858
+			46 container
+				47 text Provided and run by: 
+				48 link Description: Check House Care Limited, Value: cqc.org.uk/provider/1-19624395014
+			49 container
+				50 text Important: The provider of this service changed. 
+				51 link Description: See old profile, Value: cqc.org.uk/location/1-153985655
+		52 content list
+			53 link Description: Overview, Value: cqc.org.uk/location/1-19886383752
+			54 link Description: Registration details, Value: cqc.org.uk/location/1-19886383752/registration-info
+			55 link Description: Map and contact details, Value: cqc.org.uk/location/1-19886383752/contact
+			56 link Description: Get alerts when we inspect, Value: cqc.org.uk/location/1-19886383752/subscribe
+			57 link Description: Give feedback on care at this service, Value: cqc.org.uk/give-feedback-on-care/start?id=1-19886383752
+			58 link Description: About your profile page, Value: cqc.org.uk/guidance-providers/all-services/about-your-profile-page
+			59 link Description: Ratings posters and widgets, Value: cqc.org.uk/location/1-19886383752/resources
+		60 container main-content
+			61 container
+				62 text Important: We have not inspected this service yet
+			63 container
+				64 text Registered on 21 October 2024
+				65 text This service was registered by CQC on 21 October 2024. New services are assessed to check they are likely to be safe, effective, caring, responsive and well-led.
+				66 container These assessments can include site visits, criminal record checks, interviews with key managers and a detailed review of how the service will be run. Follow-up inspections of new services are undertaken regularly following registration.
+				67 heading Value: 2, Ratings inherited from last inspection with previous provider These ratings were awarded to the previous provider who owned this service. We show these ratings to help you understand the history of this service.
+					68 text Ratings inherited from last inspection with previous provider
+					69 container These ratings were awarded to the previous provider who owned this service. We show these ratings to help you understand the history of this service.
+				70 text (Last report published on 8 June 2018)
+				71 link Description: See archived profile, Value: cqc.org.uk/location/1-153985655
+				72 link Description: Read previous reports, Value: cqc.org.uk/location/1-153985655/reports
+				73 heading Overview, Value: 2
+					74 text Overview
+				75 text Report published: 8 June 2018
+				76 content list
+					77 container
+						78 heading Overall, Value: 3
+							79 text Overall
+						80 text Outstanding
+					81 container
+						82 heading Safe, Value: 3
+							83 text Safe
+						84 text Good
+					85 container
+						86 heading Effective, Value: 3
+							87 text Effective
+						88 text Outstanding
+					89 container
+						90 heading Caring, Value: 3
+							91 text Caring
+						92 text Good
+					93 container
+						94 heading Responsive, Value: 3
+							95 text Responsive
+						96 text Outstanding
+					97 container
+						98 heading Well-led, Value: 3
+							99 text Well-led
+						100 text Good
+				101 link Description: Download full inspection report for The Check House - PDF - (opens in new window), Value: api.cqc.org.uk/public/v1/reports/e2bd25eb-2843-4fd5-b419-1d143acd1240?20211030120000
+				102 text Published 8 June 2018
+			103 container
+				104 heading Specialisms / services, Value: 2
+					105 text Specialisms / services
+				106 content list
+					107 text Accommodation for persons who require nursing or personal care
+					108 text Caring for adults over 65 yrs
+					109 text Caring for adults under 65 yrs
+					110 text Dementia
+					111 text Physical disabilities
+					112 text Sensory impairments
+			113 container
+				114 heading Who runs this service, Value: 2
+					115 text Who runs this service
+				116 content list
+					117 container
+						118 image Organisation
+						119 text The Check House is run by Check House Care Limited
+					120 container
+						121 image
+						122 text Mrs Karen Louise Real
+						123 text Registered Manager
+					124 container
+						125 image
+						126 text Mrs Rachel Lucy Dryden
+						127 text Nominated Individual
+		128 container view--similar-services-and-about-care
+			129 container similar-services
+				130 heading Similar services nearby..., Value: 2
+					131 text Similar services nearby...
+				132 content list
+					133 container
+						134 image Care Home
+						135 heading SENSE - 5 Seafield Road, Value: 3
+							136 link Description: SENSE - 5 Seafield Road, Value: cqc.org.uk/location/1-120444972
+						137 text In Seaton, EX12 2QS
+					138 container
+						139 image Care Home
+						140 heading Lyme Bay View Residential Home, Value: 3
+							141 link Description: Lyme Bay View Residential Home, Value: cqc.org.uk/location/1-112718345
+						142 text In Seaton, EX12 2PZ
+					143 container
+						144 image Care Home
+						145 heading Netherhayes Care Home, Value: 3
+							146 link Description: Netherhayes Care Home, Value: cqc.org.uk/location/1-137534216
+						147 text In Seaton, EX12 2LE
+			148 container about-care
+				149 heading About quality of care, Value: 2
+					150 text About quality of care
+				151 content list
+					152 link Description: About service locations, Value: cqc.org.uk/directory-care/providers/about-locations
+					153 link Description: Information we provide, Value: cqc.org.uk/help-advice/help-choosing-care-services/using-information-we-provide
+					154 link Description: About inspection reports, Value: cqc.org.uk/what-we-do/how-we-do-our-job/inspection-reports
+	155 container layout--primary-and-secondary-footer-wrapper
+		156 container feedback-on-your-care
+			157 heading Tell us about your care, Value: 3
+				158 link Description: Tell us about your care, Value: cqc.org.uk/give-feedback-on-care?referer=promoblock
+			159 text Your information helps us decide when, where and what to inspect. Let's make care better together.
+		160 container footer--primary
+			161 heading About, Value: 3, ID: footer-title--about
+				162 text About
+			163 content list About, ID: footer-content--about
+				164 link Description: Who we are, Value: cqc.org.uk/about-us/our-purpose-role/who-we-are
+				165 link Description: What we do, Value: cqc.org.uk/about-us
+				166 link Description: The fundamental standards, Value: cqc.org.uk/what-we-do/how-we-do-our-job/fundamental-standards
+				167 link Description: Give feedback on care, Value: cqc.org.uk/give-feedback-on-care/start
+				168 link Description: Equality and human rights, Value: cqc.org.uk/about-us/our-strategy-plans/equality-human-rights
+				169 link Description: Publications, Value: cqc.org.uk/publications
+				170 link Description: Press and media, Value: cqc.org.uk/news/our-media-office/our-media-office
+				171 link Description: Board meetings, Value: cqc.org.uk/about-us/how-we-are-run/board-meetings
+			172 heading What we inspect, Value: 3, ID: footer-title--what-we-inspect
+				173 text What we inspect
+			174 content list What we inspect, ID: footer-content--what-we-inspect
+				175 link Description: Care homes, Value: cqc.org.uk/search/all?filters%5B%5D=services%3Acare-home&radius=all
+				176 link Description: Services in your home, Value: cqc.org.uk/search/all?filters%5B%5D=services%3Aservices-in-home&radius=all
+				177 link Description: Clinics, Value: cqc.org.uk/search/all?filters%5B%5D=services%3Aclinic&radius=all
+				178 link Description: Dentists, Value: cqc.org.uk/search/all?filters%5B%5D=services%3Adentist&radius=all
+				179 link Description: GP services, Value: cqc.org.uk/search/all?filters%5B%5D=services%3Adoctor&radius=all
+				180 link Description: Hospitals, Value: cqc.org.uk/search/all?filters%5B%5D=services%3Ahospital&radius=all
+				181 link Description: Community services, Value: cqc.org.uk/search/all?filters%5B%5D=services%3Acommunity&radius=all
+				182 link Description: Mental health services, Value: cqc.org.uk/search/all?filters%5B%5D=services%3Amental-health&radius=all
+				183 link Description: Service providers, Value: cqc.org.uk/search/all?filters%5B%5D=services%3Aservice-provider&radius=all
+			184 heading Keep up-to-date, Value: 3, ID: footer-title--keep-up-to-date
+				185 text Keep up-to-date
+			186 content list Keep up-to-date, ID: footer-content--keep-up-to-date
+				187 link Description: This week's checks on services, Value: cqc.org.uk/search/all?query=&location-query=&radius=&display=list&sort=distance&last-published=week
+				188 link Description: Subscribe to our newsletters, Value: cqc.org.uk/news/newsletters-alerts/email-newsletters-cqc
+				189 link Description: Email alerts on services, Value: cqc.org.uk/news/newsletters-alerts/email-alerts
+				190 link Description: Latest news, Value: cqc.org.uk/search/site?fulltext=&content_type=5&authored_on=2026, ID: latest-news-date
+				191 link Description: Press releases, Value: cqc.org.uk/search/press-releases
+				192 link Description: Social media, Value: cqc.org.uk/contact-us/general-enquiries/social-media
+				193 link Description: CQC data, Value: cqc.org.uk/about-us/transparency/using-cqc-data
+				194 link Description: CQC widget, Value: cqc.org.uk/guidance-providers/ratings/using-cqc-widget-%E2%80%93-troubleshooting
+			195 heading Guidance for providers, Value: 3, ID: footer-title--providers
+				196 text Guidance for providers
+			197 content list Guidance for providers, ID: footer-content--providers
+				198 link Description: What is registration?, Value: cqc.org.uk/guidance-providers/registration/what-registration
+				199 link Description: Registering for the first time, Value: cqc.org.uk/guidance-providers/registration/register-new-provider
+				200 link Description: Meeting the regulations, Value: cqc.org.uk/guidance-providers/regulations-enforcement/regulations-service-providers-managers
+				201 link Description: Fees, Value: cqc.org.uk/guidance-providers/fees/fees
+				202 link Description: Changes to registration, Value: cqc.org.uk/guidance-providers/registration/making-changes-your-registration
+				203 link Description: Statement of purpose, Value: cqc.org.uk/guidance-providers/registration-notifications/statement-purpose
+				204 link Description: Notifications, Value: cqc.org.uk/node/8391
+				205 link Description: Criminal record (DBS) checks, Value: cqc.org.uk/guidance-providers/registration/dbs-checks-cqc-registration
+		206 container footer--secondary
+			207 container
+				208 heading Social media links, Value: 3, ID: footer-title--social-media-links
+					209 text Social media links
+				210 content list Social media links
+					211 link Description: Facebook, Value: facebook.com/CareQualityCommission
+					212 link Description: Twitter, Value: twitter.com/carequalitycomm
+					213 link Description: YouTube, Value: youtube.com/user/cqcdigitalcomms
+			214 container
+				215 heading Site Links, Value: 3, ID: footer-title--site-links
+					216 text Site Links
+				217 content list Site Links
+					218 link Description: Site accessibility, Value: cqc.org.uk/about-us/our-policies/accessibility-statement
+					219 link Description: Home, Value: cqc.org.uk/
+					220 link Description: Site map, Value: cqc.org.uk/sitemap.xml
+					221 link Description: Terms and conditions, Value: cqc.org.uk/about-us/our-policies/terms-conditions
+					222 link Description: Cookies, Value: cqc.org.uk/about-us/our-policies/cookies
+					223 link Description: Freedom of information, Value: cqc.org.uk/about-us/our-policies/freedom-information-data-protection
+					224 link Description: Privacy, Value: cqc.org.uk/about-us/our-policies/privacy-statement
+					225 link Description: Report a concern, Value: cqc.org.uk/contact-us/report-concern/report-concern-if-you-are-member-public
+					226 link Description: Job opportunities, Value: cqc.org.uk/jobs
+			227 container
+				228 text © Care Quality Commission 
+				229 text 2026
+
+The focused UI element is 1 AXWebArea The Check House - Care Quality Commission, URL: cqc.org.uk/location/1-19886383752

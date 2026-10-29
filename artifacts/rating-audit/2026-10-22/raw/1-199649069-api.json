@@ -1,0 +1,977 @@
+{
+  "locationId": "1-199649069",
+  "providerId": "1-152975394",
+  "organisationType": "Location",
+  "type": "Primary Dental Care",
+  "name": "Belle Vale Dental Centre",
+  "onspdCcgCode": "E38000101",
+  "onspdCcgName": "NHS Liverpool CCG",
+  "onspdIcbCode": "E54000008",
+  "onspdIcbName": "NHS Cheshire and Merseyside Integrated Care Board",
+  "odsCode": "V03931",
+  "registrationStatus": "Registered",
+  "registrationDate": "2011-04-01",
+  "dormancy": "N",
+  "onspdLatitude": 53.392035,
+  "onspdLongitude": -2.859752,
+  "careHome": "N",
+  "inspectionDirectorate": "Primary medical services",
+  "postalAddressLine1": "Belle Vale Health Centre",
+  "postalAddressLine2": "Hedgefield Road",
+  "postalAddressTownCity": "Liverpool",
+  "postalAddressCounty": "Merseyside",
+  "region": "North West",
+  "postalCode": "L25 2XE",
+  "mainPhoneNumber": "01515596300",
+  "numberOfBeds": 0,
+  "constituency": "Liverpool Garston",
+  "localAuthority": "Liverpool",
+  "lastInspection": {
+    "date": "2013-11-08"
+  },
+  "relationships": [],
+  "locationTypes": [],
+  "regulatedActivities": [
+    {
+      "name": "Treatment of disease, disorder or injury",
+      "code": "RA5",
+      "contacts": []
+    },
+    {
+      "name": "Surgical procedures",
+      "code": "RA7",
+      "contacts": []
+    },
+    {
+      "name": "Diagnostic and screening procedures",
+      "code": "RA8",
+      "contacts": []
+    }
+  ],
+  "gacServiceTypes": [
+    {
+      "name": "Dentist",
+      "description": "Dental service"
+    }
+  ],
+  "specialisms": [
+    {
+      "name": "Services for everyone"
+    }
+  ],
+  "inspectionCategories": [
+    {
+      "code": "P1",
+      "primary": "true",
+      "name": "Dentists"
+    }
+  ],
+  "inspectionAreas": [],
+  "historicRatings": [
+    {
+      "overall": {
+        "rating": "No published rating",
+        "keyQuestionRatings": [
+          {
+            "name": "Safe",
+            "rating": "No published rating"
+          },
+          {
+            "name": "Well-led",
+            "rating": "No published rating"
+          },
+          {
+            "name": "Caring",
+            "rating": "No published rating"
+          },
+          {
+            "name": "Responsive",
+            "rating": "No published rating"
+          },
+          {
+            "name": "Effective",
+            "rating": "No published rating"
+          }
+        ]
+      }
+    }
+  ],
+  "reports": [
+    {
+      "linkId": "59449967-0529-41d8-98ac-af64619e806a",
+      "reportDate": "2013-12-13",
+      "firstVisitDate": "2013-11-08",
+      "reportUri": "/reports/59449967-0529-41d8-98ac-af64619e806a?20151016191357"
+    }
+  ],
+  "assessmentServiceGroup": [
+    {
+      "assessmentServiceId": "275",
+      "assessmentServiceName": "Dental",
+      "status": "Active",
+      "assessmentServiceType": "Unrated"
+    }
+  ],
+  "assessment": [
+    {
+      "assessmentPlanPublishedDateTime": "2026-05-08 16:23:37",
+      "ratings": {
+        "asgRatings": [
+          {
+            "assessmentPlanId": "AP19105",
+            "title": "Ongoing Assessment for Belle Vale Dental Centre",
+            "assessmentDate": "2025-11-25",
+            "assessmentPlanStatus": "Active",
+            "name": "Dental",
+            "rating": "",
+            "status": "Current",
+            "commentary": "\u003Cdiv\u003E\u003Ctr\u003E\t\u003Cp\u003EWe carried out this announced on-site inspection on Thursday 9 April 2026.\u003C/p\u003E\u003Cp\u003EWe found the practice had met regulations.\u003C/p\u003E\u003Cp\u003EThe practice had effective systems to identify and manage risks, including infection prevention and control. \u003C/p\u003E\u003Cp\u003EStaff had the skills, knowledge and experience to carry out their roles.\u003C/p\u003E\u003Cp\u003ERecruitment procedures reflected current legislation and there was effective leadership and a culture of continuous improvement. \u003C/p\u003E\u003Cp\u003EStaff provided care and treatment in line with current guidance. They treated patients with dignity and respect and ensured access to care, support, and treatment when required. \u003C/p\u003E\u003Cp\u003EBelle Vale Dental Centre is located in Liverpool and provides NHS and private dental care and treatment for adults and children. \u003C/p\u003E\u003Cp\u003EThere was step-free access to the practice and car parking spaces available, including dedicated parking for disabled people, near the practice. \u003C/p\u003E\u003Cp\u003EThe practice had 5 treatment rooms. At the time of inspection, there were 19 staff members working at the practice. The staffing team comprised of 4 dentists, 1 dental therapist, 1 dental hygienist, 11 dental nurses, 1 trainee dental nurse, and the clinical manager (who was also a qualified dental nurse). At the time of inspection, 2 staff members were on maternity leave.\u003C/p\u003E\u003C/tr\u003E\u003C/div\u003E\u003Cp\u003EWe gathered feedback from staff and spoke to a range of staff during our inspection. \u003C/p\u003E",
+            "commentaryDate": "2026-04-22",
+            "narrative": "Not applicable",
+            "overallPeopleExperience": "\u003Cdiv\u003E\u003Cp\u003EPrior to our visit, we asked the practice to encourage patients to share their views of the service with us. We received feedback from 42 patients. Patient feedback provided a positive view of the dental team and care provided by the practice.\u003C/p\u003E\u003Cp\u003EWritten comments reflected high levels of satisfaction with both the dental team and the way the practice was run. Comments included:\u003C/p\u003E\u003Cp\u003E\u201CThis practice took my fear of dentists away. Always felt at ease with all staff who all deserve credit for the way the practice is run.\u201D\u003C/p\u003E\u003Cp\u003E\u201CI would recommend this dentist to anyone. Everything is explained to me, and I feel at ease and safe. The clinic is always very clean and staff are very helpful.\u201D\u003C/p\u003E\u003Cp\u003E\u201COutstanding, and I hate the dentist! But brilliant service.\u201D\u003C/p\u003E\u003Cp\u003EPatients commented positively about the standards of cleanliness.\u003C/p\u003E\u003Cp\u003EPatients felt able to book appointments within an acceptable timescale for their needs and said they had enough time during their appointment without feeling rushed.\u003C/p\u003E\u003Cp\u003EPatients told us they were given clear information to help them make an informed choice about their treatment and any associated costs. They were involved in decisions about their care.\u003C/p\u003E\u003Cp\u003EPatients said when they were prescribed medicines, sufficient information was given.\u003C/p\u003E\u003Cp\u003EThe practice shared patient feedback with the team. We were told this feedback was reviewed regularly and that where suggestions for improvement had been made, appropriate action would be taken to address them.\u003C/p\u003E\u003C/div\u003E",
+            "overallPeopleExperienceDate": "2026-04-22",
+            "keyQuestionRatings": [
+              {
+                "name": "Caring",
+                "rating": "Regulations met",
+                "status": "Assessed",
+                "commentary": "\u003Cp\u003EWe found this practice was providing caring services in accordance with the relevant regulations and had taken into consideration appropriate guidance. \u003C/p\u003E",
+                "commentaryDate": "2026-04-22",
+                "narrative": "The service has met the regulations",
+                "percentageScore": "0",
+                "topicareas": [
+                  {
+                    "name": "Independence, choice and control",
+                    "qualityStatementId": "17",
+                    "status": "Not Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      }
+                    ],
+                    "qualityStatementNarrative": "The service has met the regulations",
+                    "qualityStatementscore": "Regulations met"
+                  },
+                  {
+                    "name": "Kindness, compassion and dignity",
+                    "qualityStatementId": "15",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "\u003Cp\u003EStaff treated patients with kindness, respect and compassion. We observed positive interactions between staff and patients. Staff displayed an understanding of patients\u2019 needs and showed warmth and compassion to patients.\u003C/p\u003E\u003Cp\u003EPatient feedback provided a positive view of the dental team and care provided by the practice.\u003C/p\u003E\u003Cp\u003EPatient comments included that staff were welcoming and attentive, acted with integrity, and showed compassion.\u003C/p\u003E\u003Cp\u003EPatients said staff were professional, courteous, and considerate.\u003C/p\u003E\u003Cp class=\u0022pf0\u0022\u003EPatients felt they were treated as individuals, and their personal and cultural needs were respected.\u003C/p\u003E\u003Cp class=\u0022pf0\u0022\u003EPeople received care from staff who were aware of their responsibility to respect people\u2019s diversity and human rights, and of the importance of privacy and confidentiality.\u003C/p\u003E\u003Cp\u003EStaff felt respected, valued and supported in their roles, and their wellbeing was supported.\u003C/p\u003E",
+                        "commentaryDate": "2026-04-22"
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "3",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "4",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      }
+                    ],
+                    "qualityStatementNarrative": "The service has met the regulations",
+                    "qualityStatementscore": "Regulations met"
+                  },
+                  {
+                    "name": "Responding to people\u2019s immediate needs",
+                    "qualityStatementId": "18",
+                    "status": "Not Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      }
+                    ],
+                    "qualityStatementNarrative": "The service has met the regulations",
+                    "qualityStatementscore": "Regulations met"
+                  },
+                  {
+                    "name": "Treating people as individuals",
+                    "qualityStatementId": "16",
+                    "status": "Not Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      }
+                    ],
+                    "qualityStatementNarrative": "The service has met the regulations",
+                    "qualityStatementscore": "Regulations met"
+                  },
+                  {
+                    "name": "Workforce wellbeing and enablement",
+                    "qualityStatementId": "19",
+                    "status": "Not Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      }
+                    ],
+                    "qualityStatementNarrative": "The service has met the regulations",
+                    "qualityStatementscore": "Regulations met"
+                  }
+                ]
+              },
+              {
+                "name": "Effective",
+                "rating": "Regulations met",
+                "status": "Assessed",
+                "commentary": "\u003Cp\u003EWe found this practice was providing effective care in accordance with the relevant regulations and had taken into consideration appropriate guidance. \u003C/p\u003E",
+                "commentaryDate": "2026-04-22",
+                "narrative": "The service has met the regulations",
+                "percentageScore": "0",
+                "topicareas": [
+                  {
+                    "name": "Assessing needs",
+                    "qualityStatementId": "9",
+                    "status": "Not Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      }
+                    ],
+                    "qualityStatementNarrative": "The service has met the regulations",
+                    "qualityStatementscore": "Regulations met"
+                  },
+                  {
+                    "name": "Consent to care and treatment",
+                    "qualityStatementId": "14",
+                    "status": "Not Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      }
+                    ],
+                    "qualityStatementNarrative": "The service has met the regulations",
+                    "qualityStatementscore": "Regulations met"
+                  },
+                  {
+                    "name": "Delivering evidence-based care and treatment",
+                    "qualityStatementId": "10",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe provider had systems to ensure that people who used the service received person-centred care and treatment, that was appropriate, met their needs and was reflective of their personal preferences. Preventive oral health care was encouraged.\u003C/p\u003E\u003Cp\u003EStaff kept up-to-date with current evidence-based practice, and had the skills, knowledge and experience to carry out their roles.\u003C/p\u003E\u003Cp\u003EWe reviewed a sample of patient care records and found that clinical notes were not consistently in line with nationally recognised guidance. In particular, not always documenting periodontal, tooth wear and cancer risk assessments.\u003C/p\u003E\u003Cp\u003EWe saw evidence the dentists justified, graded and reported on the radiographs they took.\u003C/p\u003E\u003Cp\u003EStaff obtained patients\u2019 consent for treatment in line with legislation and guidance and understood their responsibilities under the Mental Capacity Act 2005. Staff described how they involved patients\u2019 relatives or carers when appropriate and made sure they had enough time to explain treatment options clearly.\u003C/p\u003E\u003Cp\u003EThe practice had systems for prescribing of medicines in line with current guidance and carried out antimicrobial prescribing audits.\u003C/p\u003E\u003Cp class=\u0022pf0\u0022\u003EPatients were referred to primary and secondary care specialists for treatment the practice did not provide. This included referring patients with suspected cancer under the national faster diagnosis pathways.\u003C/p\u003E\u003Cp\u003EStaff felt the practice supported them to develop and enabled them to take on responsibilities.\u003C/p\u003E",
+                        "commentaryDate": "2026-04-22"
+                      }
+                    ],
+                    "qualityStatementNarrative": "The service has met the regulations",
+                    "qualityStatementscore": "Regulations met"
+                  },
+                  {
+                    "name": "How staff, teams and services work together",
+                    "qualityStatementId": "11",
+                    "status": "Not Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "3",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      }
+                    ],
+                    "qualityStatementNarrative": "The service has met the regulations",
+                    "qualityStatementscore": "Regulations met"
+                  },
+                  {
+                    "name": "Monitoring and improving outcomes",
+                    "qualityStatementId": "13",
+                    "status": "Not Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      }
+                    ],
+                    "qualityStatementNarrative": "The service has met the regulations",
+                    "qualityStatementscore": "Regulations met"
+                  },
+                  {
+                    "name": "Supporting people to live healthier lives",
+                    "qualityStatementId": "12",
+                    "status": "Not Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      }
+                    ],
+                    "qualityStatementNarrative": "The service has met the regulations",
+                    "qualityStatementscore": "Regulations met"
+                  }
+                ]
+              },
+              {
+                "name": "Responsive",
+                "rating": "Regulations met",
+                "status": "Assessed",
+                "commentary": "\u003Cp\u003EWe found this practice was providing responsive care in accordance with the relevant regulations and had taken into consideration appropriate guidance. \u003C/p\u003E",
+                "commentaryDate": "2026-04-22",
+                "narrative": "The service has met the regulations",
+                "percentageScore": "0",
+                "topicareas": [
+                  {
+                    "name": "Care provision, Integration and continuity",
+                    "qualityStatementId": "21",
+                    "status": "Not Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "3",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      }
+                    ],
+                    "qualityStatementNarrative": "The service has met the regulations",
+                    "qualityStatementscore": "Regulations met"
+                  },
+                  {
+                    "name": "Equity in access",
+                    "qualityStatementId": "24",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EStaff had carried out a disability access audit and had an action plan in place to improve accessibility for patients. Staff described a range of reasonable adjustments made to support patients with different needs.\u003C/p\u003E\u003Cp\u003EThe practice supported patients with sensory impairments by providing a hearing induction loop and making information available in large print or alternative formats. Reading glasses and a magnifying glass were also available.\u003C/p\u003E\u003Cp\u003EThe premises was wheelchair accessible, with step\u2011free access, 5 ground floor treatment rooms and an accessible toilet located next door within the health centre. The practice also provided disabled parking and had access to language translation services, including British Sign Language.\u003C/p\u003E\u003Cp\u003EStaff were clear about the importance of providing emotional support to patients when delivering care.\u003C/p\u003E\u003Cp\u003EThe practice supported more vulnerable members of society, for example, patients living with dementia or adults and children with a learning disability.\u003C/p\u003E\u003Cp\u003EThe practice displayed its opening hours and provided information for patients through a poster and answerphone message, as well as on the practice website and within a patient information leaflet.\u003C/p\u003E\u003Cp\u003EThe frequency of appointments was agreed between the dentist and the patient, giving due regard to National Institute for Health and Care Excellence guidelines.\u003C/p\u003E\u003Cp\u003EThe practice provided patients with information on how to access emergency dental care both during working hours and when the practice was closed.\u003C/p\u003E\u003Cp\u003EAt the time of our inspection, patients who needed an urgent appointment were offered one in a timely manner. When the practice was unable to offer an urgent appointment, they worked with partner organisations to support urgent access for patients.\u003C/p\u003E",
+                        "commentaryDate": "2026-04-22"
+                      }
+                    ],
+                    "qualityStatementNarrative": "The service has met the regulations",
+                    "qualityStatementscore": "Regulations met"
+                  },
+                  {
+                    "name": "Equity in experiences and outcomes",
+                    "qualityStatementId": "25",
+                    "status": "Not Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      }
+                    ],
+                    "qualityStatementNarrative": "The service has met the regulations",
+                    "qualityStatementscore": "Regulations met"
+                  },
+                  {
+                    "name": "Listening to and involving people",
+                    "qualityStatementId": "23",
+                    "status": "Not Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      }
+                    ],
+                    "qualityStatementNarrative": "The service has met the regulations",
+                    "qualityStatementscore": "Regulations met"
+                  },
+                  {
+                    "name": "Person-centred Care",
+                    "qualityStatementId": "20",
+                    "status": "Not Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      }
+                    ],
+                    "qualityStatementNarrative": "The service has met the regulations",
+                    "qualityStatementscore": "Regulations met"
+                  },
+                  {
+                    "name": "Planning for the future",
+                    "qualityStatementId": "26",
+                    "status": "Not Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      }
+                    ],
+                    "qualityStatementNarrative": "The service has met the regulations",
+                    "qualityStatementscore": "Regulations met"
+                  },
+                  {
+                    "name": "Providing Information",
+                    "qualityStatementId": "22",
+                    "status": "Not Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      }
+                    ],
+                    "qualityStatementNarrative": "The service has met the regulations",
+                    "qualityStatementscore": "Regulations met"
+                  }
+                ]
+              },
+              {
+                "name": "Safe",
+                "rating": "Regulations met",
+                "status": "Assessed",
+                "commentary": "\u003Cp\u003EWe found this practice was providing safe care in line with the relevant regulations and had taken into consideration appropriate guidance. \u003C/p\u003E",
+                "commentaryDate": "2026-04-22",
+                "narrative": "The service has met the regulations",
+                "percentageScore": "0",
+                "topicareas": [
+                  {
+                    "name": "Infection prevention and control",
+                    "qualityStatementId": "7",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "4",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe practice had infection control procedures that reflected published guidance.\u003C/p\u003E\u003Cp\u003EStaff received appropriate training and demonstrated knowledge and awareness of infection prevention and control processes.\u003C/p\u003E\u003Cp\u003EStaff used personal protective equipment and decontaminated dental instruments after use, in line with national guidance. We saw, and staff confirmed that single-use items were not reprocessed.\u003C/p\u003E\u003Cp\u003EThe practice had effective procedures to reduce the risk of Legionella, or other bacteria, developing in water systems, in line with a risk assessment and current guidance.\u003C/p\u003E\u003Cp\u003EThe practice had protocols to ensure effective cleaning and safe segregation and disposal of hazardous waste.\u003C/p\u003E\u003Cp\u003EThe practice completed infection prevention and control audits in line with current guidance.\u003C/p\u003E",
+                        "commentaryDate": "2026-04-22"
+                      }
+                    ],
+                    "qualityStatementNarrative": "The service has met the regulations",
+                    "qualityStatementscore": "Regulations met"
+                  },
+                  {
+                    "name": "Involving people to manage risks",
+                    "qualityStatementId": "4",
+                    "status": "Not Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      }
+                    ],
+                    "qualityStatementNarrative": "The service has met the regulations",
+                    "qualityStatementscore": "Regulations met"
+                  },
+                  {
+                    "name": "Learning culture",
+                    "qualityStatementId": "1",
+                    "status": "Not Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      }
+                    ],
+                    "qualityStatementNarrative": "The service has met the regulations",
+                    "qualityStatementscore": "Regulations met"
+                  },
+                  {
+                    "name": "Medicines optimisation",
+                    "qualityStatementId": "8",
+                    "status": "Not Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "4",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      }
+                    ],
+                    "qualityStatementNarrative": "The service has met the regulations",
+                    "qualityStatementscore": "Regulations met"
+                  },
+                  {
+                    "name": "Safe and effective staffing",
+                    "qualityStatementId": "6",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe practice had a recruitment policy and procedures that reflected relevant legislation, to help them employ suitable staff, including agency or locum staff. However, improvements should be made to ensure these were consistently followed. We noted not all staff had evidence of immunity to hepatitis B. The practice acted immediately and sent evidence of hepatitis B risk assessments whilst they await titre level checks.\u003C/p\u003E\u003Cp\u003EThe practice ensured clinical staff were qualified, registered with the General Dental Council and had appropriate professional indemnity cover.\u003Cstrong\u003E \u003C/strong\u003E\u003C/p\u003E\u003Cp\u003ENewly appointed staff had an appropriate role specific structured induction.\u003C/p\u003E\u003Cp\u003EStaff had the skills, knowledge and experience to carry out their roles. They told us that there were enough staff on duty at all times. They demonstrated knowledge of safeguarding and were aware of how safeguarding information could be accessed. Staff knew how to escalate safeguarding concerns within the practice and externally.\u003C/p\u003E\u003Cp\u003EImprovements were required for the oversight of staff training. We noted some mandatory training was overdue. The practice acted immediately and sent evidence following the inspection these had been completed. The provider should ensure oversight of staff training is improved and reviewed at the required intervals.\u003C/p\u003E\u003Cp\u003EThere were effective processes to support and develop staff with additional roles and responsibilities. Staff told us communication within the practice was supported through regular staff meetings, dentist meetings and a group messaging system, which helped to share information and maintain day\u2011to\u2011day communication.\u003C/p\u003E\u003Cp\u003EStaff felt respected, supported and valued, and they were proud to work in the practice.\u003C/p\u003E",
+                        "commentaryDate": "2026-04-22"
+                      }
+                    ],
+                    "qualityStatementNarrative": "The service has met the regulations",
+                    "qualityStatementscore": "Regulations met"
+                  },
+                  {
+                    "name": "Safe environments",
+                    "qualityStatementId": "5",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "4",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe practice identified and managed risks effectively and staff described the processes. This included sharps safety, sepsis awareness and lone working.\u003C/p\u003E\u003Cp\u003EStaff demonstrated an open culture in relation to people\u2019s safety. They felt confident that risks were well managed at the practice, and this was reflected in our findings.\u003C/p\u003E\u003Cp\u003EStaff could access emergency equipment and medicines that were checked in line with national guidance. They knew how to respond to a medical emergency and had completed training in emergency resuscitation and basic life support every year. Staff also participated in medical emergency scenario training.\u003C/p\u003E\u003Cp\u003EThe premises were visibly clean, well maintained and free from clutter. Hazardous substances were clearly labelled and stored safely.\u003C/p\u003E\u003Cp\u003EWe saw satisfactory records of servicing and validation of equipment.\u003C/p\u003E\u003Cp\u003EThe practice had arrangements to ensure the safety of the X-ray equipment and the required radiation protection information was available.\u003C/p\u003E\u003Cp\u003EThe practice managed fire safety well, and fire exits were clear and well signposted. Further improvements could be made to ensure monthly visual checks of fire extinguishers were fully implemented and recorded.\u003C/p\u003E\u003Cp\u003EThe practice had systems for appropriate and safe management of medicines.\u003C/p\u003E",
+                        "commentaryDate": "2026-04-22"
+                      }
+                    ],
+                    "qualityStatementNarrative": "The service has met the regulations",
+                    "qualityStatementscore": "Regulations met"
+                  },
+                  {
+                    "name": "Safe systems, pathways and transitions",
+                    "qualityStatementId": "2",
+                    "status": "Not Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "3",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      }
+                    ],
+                    "qualityStatementNarrative": "The service has met the regulations",
+                    "qualityStatementscore": "Regulations met"
+                  },
+                  {
+                    "name": "Safeguarding",
+                    "qualityStatementId": "3",
+                    "status": "Not Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "3",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      }
+                    ],
+                    "qualityStatementNarrative": "The service has met the regulations",
+                    "qualityStatementscore": "Regulations met"
+                  }
+                ]
+              },
+              {
+                "name": "Well-led",
+                "rating": "Regulations met",
+                "status": "Assessed",
+                "commentary": "\u003Cp\u003EWe found this practice was providing well-led care in accordance with the relevant regulations and had taken into consideration appropriate guidance. \u003C/p\u003E",
+                "commentaryDate": "2026-04-22",
+                "narrative": "The service has met the regulations",
+                "percentageScore": "0",
+                "topicareas": [
+                  {
+                    "name": "Capable, compassionate and inclusive leaders",
+                    "qualityStatementId": "28",
+                    "status": "Not Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      }
+                    ],
+                    "qualityStatementNarrative": "The service has met the regulations",
+                    "qualityStatementscore": "Regulations met"
+                  },
+                  {
+                    "name": "Freedom to speak up",
+                    "qualityStatementId": "29",
+                    "status": "Not Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      }
+                    ],
+                    "qualityStatementNarrative": "The service has met the regulations",
+                    "qualityStatementscore": "Regulations met"
+                  },
+                  {
+                    "name": "Governance, management and sustainability",
+                    "qualityStatementId": "31",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe practice had a governance system that included policies and procedures, which were accessible to staff and were reviewed on a regular basis.\u003C/p\u003E\u003Cp\u003ESystems and processes were embedded, and theinspectiondid not highlightany significantissues or omissions.Areas requiringimprovement were acted onimmediately.\u003C/p\u003E\u003Cp\u003EStaff were aware of the importance of protecting patients\u2019 personal information. Staff password protected patients\u2019 electronic care records, and paper records were stored securely and complied with General Data Protection Regulations.\u003C/p\u003E\u003Cp\u003EThere were effective processes for identifying and managing risks, investigating incidents and accidents, and for receiving and acting on safety alerts.\u003C/p\u003E\u003Cp\u003EThe practice had systems and processes for learning, quality assurance and continuous improvement. This included undertaking audits according to recognised guidance.We noted improvements could be implemented to ensure all audits have actions plans to drive improvement. In particular, the radiography audit.\u003C/p\u003E\u003Cp\u003EConcerns and complaints were responded to appropriately, and outcomes were discussed to share learning and for improvement.\u003C/p\u003E\u003Cp\u003EStaff had clear responsibilities, and systems of accountability to support good governance.\u003C/p\u003E\u003Cp\u003EStaff feedback was obtained through meetings and informal discussions. Staff were encouraged to share ideas for improving the service and said these were listened to and acted upon where appropriate.\u003C/p\u003E\u003Cp\u003ETeam members were encouraged to share their views about the practice and identified areas where improvements could be made. For example, improvements had been made to the management of appointment diaries to ensure adequate treatment slots, adjustments to working hours, upgrades to practice software and monitors, and improvements to the practice d\u00E9cor.\u003C/p\u003E\u003Cp\u003EMeasures were also described to reduce the practice\u2019s environmental impact. For example, the practice recycled, switched lights and electrical equipment off when not in use, and implemented digital radiography to reduce chemical waste.\u003C/p\u003E\u003Cp\u003EThe staff explained how patients who were anxious or nervous were supported through reassurance techniques and additional appointment time where required. Examples were shared of compassionate and person\u2011centred care, including responding sensitively when patients became unwell and ensuring they were treated with dignity and respect.\u003C/p\u003E\u003Cp\u003EThe practice gathered feedback from patients, the public and external partners and responded accordingly.\u003C/p\u003E\u003Cp\u003EPositive feedback was regularly received from patients, including online reviews and thank\u2011you cards, which reflected high levels of satisfaction with the care and service provided.\u003C/p\u003E",
+                        "commentaryDate": "2026-04-22"
+                      }
+                    ],
+                    "qualityStatementNarrative": "The service has met the regulations",
+                    "qualityStatementscore": "Regulations met"
+                  },
+                  {
+                    "name": "Learning, improvement and innovation",
+                    "qualityStatementId": "33",
+                    "status": "Not Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      }
+                    ],
+                    "qualityStatementNarrative": "The service has met the regulations",
+                    "qualityStatementscore": "Regulations met"
+                  },
+                  {
+                    "name": "Partnerships and communities",
+                    "qualityStatementId": "32",
+                    "status": "Not Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "3",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      }
+                    ],
+                    "qualityStatementNarrative": "The service has met the regulations",
+                    "qualityStatementscore": "Regulations met"
+                  },
+                  {
+                    "name": "Shared direction and culture",
+                    "qualityStatementId": "27",
+                    "status": "Not Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      }
+                    ],
+                    "qualityStatementNarrative": "The service has met the regulations",
+                    "qualityStatementscore": "Regulations met"
+                  },
+                  {
+                    "name": "Workforce equality, diversity and inclusion",
+                    "qualityStatementId": "30",
+                    "status": "Not Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      }
+                    ],
+                    "qualityStatementNarrative": "The service has met the regulations",
+                    "qualityStatementscore": "Regulations met"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

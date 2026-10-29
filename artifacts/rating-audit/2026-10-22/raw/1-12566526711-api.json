@@ -1,0 +1,101 @@
+{
+  "locationId": "1-12566526711",
+  "providerId": "1-12172146980",
+  "organisationType": "Location",
+  "type": "Social Care Org",
+  "name": "Candela Healthcare Ltd",
+  "onspdCcgCode": "E38000236",
+  "onspdCcgName": "NHS Herefordshire and Worcestershire CCG",
+  "onspdIcbCode": "E54000019",
+  "onspdIcbName": "NHS Herefordshire and Worcestershire Integrated Care Board",
+  "odsCode": "VNLPP",
+  "registrationStatus": "Registered",
+  "registrationDate": "2022-03-22",
+  "dormancy": "N",
+  "dormancyEndDate": "2023-03-01",
+  "onspdLatitude": 52.0564878,
+  "onspdLongitude": -2.7118625,
+  "careHome": "N",
+  "inspectionDirectorate": "Adult social care",
+  "postalAddressLine1": "No. 5A, Former Magistrates Court",
+  "postalAddressLine2": "Gaol Street",
+  "postalAddressTownCity": "Hereford",
+  "region": "West Midlands",
+  "postalCode": "HR1 2HU",
+  "uprn": "10022783727",
+  "numberOfBeds": 0,
+  "constituency": "Hereford and South Herefordshire",
+  "localAuthority": "Herefordshire, County of",
+  "relationships": [],
+  "locationTypes": [],
+  "regulatedActivities": [
+    {
+      "name": "Personal care",
+      "code": "RA1",
+      "contacts": [
+        {
+          "personTitle": "Mrs",
+          "personGivenName": "Shelly Sihlobo",
+          "personFamilyName": "Khumalo",
+          "personRoles": [
+            "Registered Manager"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Treatment of disease, disorder or injury",
+      "code": "RA5",
+      "contacts": [
+        {
+          "personTitle": "Mrs",
+          "personGivenName": "Shelly Sihlobo",
+          "personFamilyName": "Khumalo",
+          "personRoles": [
+            "Registered Manager"
+          ]
+        }
+      ]
+    }
+  ],
+  "gacServiceTypes": [
+    {
+      "name": "Homecare agencies",
+      "description": "Domiciliary care service"
+    }
+  ],
+  "specialisms": [
+    {
+      "name": "Caring for adults over 65 yrs"
+    },
+    {
+      "name": "Caring for adults under 65 yrs"
+    },
+    {
+      "name": "Caring for children"
+    },
+    {
+      "name": "Dementia"
+    },
+    {
+      "name": "Learning disabilities"
+    },
+    {
+      "name": "Mental health conditions"
+    },
+    {
+      "name": "Physical disabilities"
+    },
+    {
+      "name": "Sensory impairment"
+    }
+  ],
+  "inspectionCategories": [
+    {
+      "code": "S2",
+      "primary": "true",
+      "name": "Community based adult social care services"
+    }
+  ],
+  "inspectionAreas": []
+}

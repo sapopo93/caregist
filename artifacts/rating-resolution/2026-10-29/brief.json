@@ -1,0 +1,3578 @@
+{
+  "scope": {
+    "kind": "local_authority",
+    "name": "Fixture County",
+    "window_days": 90,
+    "shortlist_target": 30,
+    "service_type": null
+  },
+  "purchase_context": {
+    "order_reference": "rating-fixtures",
+    "generated_at": "2026-10-29T00:00:00+00:00",
+    "product": "territory-opportunity-brief",
+    "price_gbp": 745,
+    "terms_version": null
+  },
+  "as_of_date": "2026-10-22",
+  "window_start": "2026-07-25",
+  "window_end": "2026-10-22",
+  "considered_locations": 30,
+  "territory_locations": 30,
+  "shortlist": [
+    {
+      "rank": 1,
+      "organisation_name": "Hallmark Willingdon Park Manor Luxury Care Home",
+      "location_name": "Hallmark Willingdon Park Manor Luxury Care Home",
+      "location_id": "1-19058724680",
+      "provider_id": "1-19058724680-provider",
+      "local_authority": "Fixture County",
+      "region": "Fixture Region",
+      "postcode": "BN22 0AB",
+      "service_types": [
+        "Care home service with nursing"
+      ],
+      "number_of_beds": 85,
+      "current_rating": "Good",
+      "primary_signal": "New CQC registration",
+      "most_recent_event_date": "2026-10-20",
+      "score": 79.0,
+      "score_breakdown": {
+        "new_registration@2026-10-20": 63.0,
+        "size_factor": 10.0,
+        "re_registration": 6.0
+      },
+      "reason": "Re-registered with CQC on 20 Oct 2026 (care home service with nursing, 85 beds) in the last three weeks, so it is still standing up policies, training and systems. A new legal entity or owner has taken on an existing service in Fixture County; this is a documented registration signal, not evidence of a supplier search or purchasing intent. It carries an overall rating of Good. At 85 beds it is one of the larger entrants in this window. Rating evidence: Good [current]; CQC ratings file; published 2026-07-24.",
+      "evidence": [
+        {
+          "event_type": "new_registration",
+          "effective_date": "2026-10-20",
+          "old_value": null,
+          "new_value": "Registered",
+          "detail": "CQC registration recorded 2026-10-20",
+          "source_field": "location.registrationDate",
+          "source_url": "https://www.cqc.org.uk/location/1-19058724680",
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data"
+        }
+      ],
+      "rating_resolution": {
+        "contract_version": 1,
+        "value": "Good",
+        "publication_date": "2026-07-24",
+        "source": "CQC ratings file",
+        "status": "current",
+        "evidence": [
+          {
+            "source": "CQC API",
+            "value": null,
+            "publication_date": null,
+            "edition": "Frozen API observation 22 October 2026",
+            "sha256": "a975b2f8f3249ad060b03a401208cb49151b69be3fd2bcb683eb4d972aa99b17",
+            "url": "https://api.cqc.org.uk/public/v1/locations/1-19058724680",
+            "status": "current"
+          },
+          {
+            "source": "CQC ratings file",
+            "value": "Good",
+            "publication_date": "2026-07-24",
+            "edition": "CQC download edition 2 October 2026; data cutoff unverified",
+            "sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+            "url": "ratings.ods",
+            "status": "current"
+          }
+        ],
+        "reason": "Newest comparable current-provider publication in supplied evidence"
+      },
+      "qualification_question": "Who is responsible for choosing suppliers for this newly registered service, and when does it expect to start operating?",
+      "buyer_questions": {
+        "recruitment": "How many care staff does this service plan to employ, how many are in post now, and when do its first packages or contracts start? Are those packages council-funded or already confirmed?",
+        "compliance": "Who is preparing this service for its first CQC inspection, and has it arranged a governance audit, mock inspection or safeguarding training yet?",
+        "software": "What does this service use for care records today (paper, spreadsheets or a digital system), is that system on the NHS assured supplier list for digital social care records, how many users does it have, and when is the contract up for renewal?"
+      }
+    },
+    {
+      "rank": 2,
+      "organisation_name": "Rose Court Care Home",
+      "location_name": "Rose Court Care Home",
+      "location_id": "1-15297949474",
+      "provider_id": "1-15297949474-provider",
+      "local_authority": "Fixture County",
+      "region": "Fixture Region",
+      "postcode": "SE8 5DN",
+      "service_types": [
+        "Care home service without nursing"
+      ],
+      "number_of_beds": 64,
+      "current_rating": "Requires improvement",
+      "primary_signal": "New CQC registration",
+      "most_recent_event_date": "2026-10-20",
+      "score": 79.0,
+      "score_breakdown": {
+        "new_registration@2026-10-20": 63.0,
+        "size_factor": 10.0,
+        "re_registration": 6.0
+      },
+      "reason": "Re-registered with CQC on 20 Oct 2026 (care home service without nursing, 64 beds) in the last three weeks, so it is still standing up policies, training and systems. A new legal entity or owner has taken on an existing service in Fixture County; this is a documented registration signal, not evidence of a supplier search or purchasing intent. It carries an overall rating of Requires improvement. At 64 beds it is one of the larger entrants in this window. Rating evidence: Requires improvement [current]; CQC ratings file; published 2025-08-12.",
+      "evidence": [
+        {
+          "event_type": "new_registration",
+          "effective_date": "2026-10-20",
+          "old_value": null,
+          "new_value": "Registered",
+          "detail": "CQC registration recorded 2026-10-20",
+          "source_field": "location.registrationDate",
+          "source_url": "https://www.cqc.org.uk/location/1-15297949474",
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data"
+        }
+      ],
+      "rating_resolution": {
+        "contract_version": 1,
+        "value": "Requires improvement",
+        "publication_date": "2025-08-12",
+        "source": "CQC ratings file",
+        "status": "current",
+        "evidence": [
+          {
+            "source": "CQC API",
+            "value": null,
+            "publication_date": null,
+            "edition": "Frozen API observation 22 October 2026",
+            "sha256": "b016ecdec06db5073a8a7d802137a48f8e43a5c10a778b19b2294f9cdcc27807",
+            "url": "https://api.cqc.org.uk/public/v1/locations/1-15297949474",
+            "status": "current"
+          },
+          {
+            "source": "CQC ratings file",
+            "value": "Requires improvement",
+            "publication_date": "2025-08-12",
+            "edition": "CQC download edition 2 October 2026; data cutoff unverified",
+            "sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+            "url": "ratings.ods",
+            "status": "current"
+          }
+        ],
+        "reason": "Newest comparable current-provider publication in supplied evidence"
+      },
+      "qualification_question": "Who is responsible for choosing suppliers for this newly registered service, and when does it expect to start operating?",
+      "buyer_questions": {
+        "recruitment": "How many care staff does this service plan to employ, how many are in post now, and when do its first packages or contracts start? Are those packages council-funded or already confirmed?",
+        "compliance": "Who is preparing this service for its first CQC inspection, and has it arranged a governance audit, mock inspection or safeguarding training yet?",
+        "software": "What does this service use for care records today (paper, spreadsheets or a digital system), is that system on the NHS assured supplier list for digital social care records, how many users does it have, and when is the contract up for renewal?"
+      }
+    },
+    {
+      "rank": 3,
+      "organisation_name": "The Check House",
+      "location_name": "The Check House",
+      "location_id": "1-19886383752",
+      "provider_id": "1-19886383752-provider",
+      "local_authority": "Fixture County",
+      "region": "Fixture Region",
+      "postcode": "EX12 2PR",
+      "service_types": [
+        "Care home service without nursing"
+      ],
+      "number_of_beds": 59,
+      "current_rating": null,
+      "primary_signal": "New CQC registration",
+      "most_recent_event_date": "2026-10-20",
+      "score": 78.83,
+      "score_breakdown": {
+        "new_registration@2026-10-20": 63.0,
+        "size_factor": 9.83,
+        "re_registration": 6.0
+      },
+      "reason": "Current-provider overall rating is unresolved. The supplied evidence does not establish a current-provider inspection; review the CQC profile and retained source evidence before qualification. Rating evidence: unresolved [unresolved]; no accepted current source; published date unavailable.",
+      "evidence": [
+        {
+          "event_type": "new_registration",
+          "effective_date": "2026-10-20",
+          "old_value": null,
+          "new_value": "Registered",
+          "detail": "CQC registration recorded 2026-10-20",
+          "source_field": "location.registrationDate",
+          "source_url": "https://www.cqc.org.uk/location/1-19886383752",
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data"
+        }
+      ],
+      "rating_resolution": {
+        "contract_version": 1,
+        "value": null,
+        "publication_date": null,
+        "source": null,
+        "status": "unresolved",
+        "evidence": [
+          {
+            "source": "CQC API",
+            "value": "Outstanding",
+            "publication_date": "2018-06-08",
+            "edition": "Frozen API observation 22 October 2026",
+            "sha256": "6bc17372e58ed221ddc56d98ce2d6505c98f7eccbd88a3ae56bbebaf49b47cbd",
+            "url": "https://api.cqc.org.uk/public/v1/locations/1-19886383752",
+            "status": "inherited"
+          },
+          {
+            "source": "CQC ratings file",
+            "value": "Good",
+            "publication_date": "2026-05-07",
+            "edition": "CQC download edition 2 October 2026; data cutoff unverified",
+            "sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+            "url": "ratings.ods",
+            "status": "unresolved"
+          },
+          {
+            "value": "Outstanding",
+            "status": "unresolved",
+            "publication_date": "2018-06-08",
+            "url": "https://www.cqc.org.uk/location/1-19886383752",
+            "observed_at": "2026-10-22T20:42:56.045748+00:00",
+            "sha256": "a727328bacb014d0fc8c128319d57cd3199deb66e252c57f5112352fde409bde",
+            "edition": "Frozen CQC website observation 22 October 2026",
+            "context": "Important: We have not inspected this service yet Registered on\n            21 October 2024 This service was registered by CQC on 21 October 2024.\r\nNew services are assessed to check they are likely to be safe, effective, caring, responsive and well-led. These assessments can include site visits, criminal record checks, interviews with key managers and a detailed review of how the service will be run. Follow-up inspections of new services are undertaken regularly following registration. Ratings inherited from last inspection with previous provider These ratings were awarded to the previous provider who owned this service. We show these ratings to help you understand the history of this service. (Last report published on\n                        8 June 2018) See archived profile Read previous reports Overview Report published:\n            8 June 2018 Overall Outstanding Safe Good Effective Outstanding Caring Good Responsive Outstanding Well-led Good Download full inspection report for The Check House - PDF - (opens in new window) Published\n                        8 June 2018 Specialisms / services Accommodation for persons who require nursing or personal care Caring for adults over 65 yrs Caring for adults under 65 yrs Dementia Physical disabilities Sensory impairments Who runs this service Organisation The Check House\n                        is run by\n                        Check House Care Limited Mrs Karen Louise Real Registered Manager Mrs Rachel Lucy Dryden Nominated Individual",
+            "source": "CQC website"
+          }
+        ],
+        "reason": "Current-provider evidence is unresolved"
+      },
+      "qualification_question": "Who is responsible for choosing suppliers for this newly registered service, and when does it expect to start operating?",
+      "buyer_questions": {
+        "recruitment": "How many care staff does this service plan to employ, how many are in post now, and when do its first packages or contracts start? Are those packages council-funded or already confirmed?",
+        "compliance": "Who is preparing this service for its first CQC inspection, and has it arranged a governance audit, mock inspection or safeguarding training yet?",
+        "software": "What does this service use for care records today (paper, spreadsheets or a digital system), is that system on the NHS assured supplier list for digital social care records, how many users does it have, and when is the contract up for renewal?"
+      }
+    },
+    {
+      "rank": 4,
+      "organisation_name": "Althorp Grange",
+      "location_name": "Althorp Grange",
+      "location_id": "1-390976877",
+      "provider_id": "1-390976877-provider",
+      "local_authority": "Fixture County",
+      "region": "Fixture Region",
+      "postcode": "NN6 8LD",
+      "service_types": [
+        "Care home service with nursing"
+      ],
+      "number_of_beds": 57,
+      "current_rating": "Requires improvement",
+      "primary_signal": "New CQC registration",
+      "most_recent_event_date": "2026-10-20",
+      "score": 78.5,
+      "score_breakdown": {
+        "new_registration@2026-10-20": 63.0,
+        "size_factor": 9.5,
+        "re_registration": 6.0
+      },
+      "reason": "Re-registered with CQC on 20 Oct 2026 (care home service with nursing, 57 beds) in the last three weeks, so it is still standing up policies, training and systems. A new legal entity or owner has taken on an existing service in Fixture County; this is a documented registration signal, not evidence of a supplier search or purchasing intent. It carries an overall rating of Requires improvement. A 57-bed location is a material single account. Rating evidence: Requires improvement [current]; CQC ratings file + CQC website; published 2025-12-11.",
+      "evidence": [
+        {
+          "event_type": "new_registration",
+          "effective_date": "2026-10-20",
+          "old_value": null,
+          "new_value": "Registered",
+          "detail": "CQC registration recorded 2026-10-20",
+          "source_field": "location.registrationDate",
+          "source_url": "https://www.cqc.org.uk/location/1-390976877",
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data"
+        }
+      ],
+      "rating_resolution": {
+        "contract_version": 1,
+        "value": "Requires improvement",
+        "publication_date": "2025-12-11",
+        "source": "CQC ratings file + CQC website",
+        "status": "current",
+        "evidence": [
+          {
+            "source": "CQC API",
+            "value": "Inadequate",
+            "publication_date": "2024-02-28",
+            "edition": "Frozen API observation 22 October 2026",
+            "sha256": "f704a7781026dea05c6a2275c60fdc8a0dfc09c9851e07bd1b9d4f720d9569dc",
+            "url": "https://api.cqc.org.uk/public/v1/locations/1-390976877",
+            "status": "current"
+          },
+          {
+            "source": "CQC ratings file",
+            "value": "Requires improvement",
+            "publication_date": "2025-12-11",
+            "edition": "CQC download edition 2 October 2026; data cutoff unverified",
+            "sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+            "url": "ratings.ods",
+            "status": "current"
+          },
+          {
+            "value": "Requires improvement",
+            "status": "current",
+            "publication_date": "2025-12-11",
+            "url": "https://www.cqc.org.uk/location/1-390976877",
+            "observed_at": "2026-10-22T20:42:57.713885+00:00",
+            "sha256": "611dc71eab7c405fd8142976e3e6016a934e4bfcad113d42a5e97899f8c23372",
+            "edition": "Frozen CQC website observation 22 October 2026",
+            "source": "CQC website"
+          }
+        ],
+        "reason": "Newest comparable current-provider publication in supplied evidence"
+      },
+      "qualification_question": "Who is responsible for choosing suppliers for this newly registered service, and when does it expect to start operating?",
+      "buyer_questions": {
+        "recruitment": "How many care staff does this service plan to employ, how many are in post now, and when do its first packages or contracts start? Are those packages council-funded or already confirmed?",
+        "compliance": "Who is preparing this service for its first CQC inspection, and has it arranged a governance audit, mock inspection or safeguarding training yet?",
+        "software": "What does this service use for care records today (paper, spreadsheets or a digital system), is that system on the NHS assured supplier list for digital social care records, how many users does it have, and when is the contract up for renewal?"
+      }
+    },
+    {
+      "rank": 5,
+      "organisation_name": "Wytham House",
+      "location_name": "Wytham House",
+      "location_id": "1-2761140569",
+      "provider_id": "1-2761140569-provider",
+      "local_authority": "Fixture County",
+      "region": "Fixture Region",
+      "postcode": "OX2 9NL",
+      "service_types": [
+        "Care home service with nursing"
+      ],
+      "number_of_beds": 40,
+      "current_rating": "Good",
+      "primary_signal": "New CQC registration",
+      "most_recent_event_date": "2026-10-20",
+      "score": 75.67,
+      "score_breakdown": {
+        "new_registration@2026-10-20": 63.0,
+        "size_factor": 6.67,
+        "re_registration": 6.0
+      },
+      "reason": "Re-registered with CQC on 20 Oct 2026 (care home service with nursing, 40 beds) in the last three weeks, so it is still standing up policies, training and systems. A new legal entity or owner has taken on an existing service in Fixture County; this is a documented registration signal, not evidence of a supplier search or purchasing intent. It carries an overall rating of Good. A 40-bed location is a material single account. Rating evidence: Good [current]; CQC ratings file; published 2025-07-23.",
+      "evidence": [
+        {
+          "event_type": "new_registration",
+          "effective_date": "2026-10-20",
+          "old_value": null,
+          "new_value": "Registered",
+          "detail": "CQC registration recorded 2026-10-20",
+          "source_field": "location.registrationDate",
+          "source_url": "https://www.cqc.org.uk/location/1-2761140569",
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data"
+        }
+      ],
+      "rating_resolution": {
+        "contract_version": 1,
+        "value": "Good",
+        "publication_date": "2025-07-23",
+        "source": "CQC ratings file",
+        "status": "current",
+        "evidence": [
+          {
+            "source": "CQC API",
+            "value": null,
+            "publication_date": null,
+            "edition": "Frozen API observation 22 October 2026",
+            "sha256": "32b4b3f205176abce57f6b5316ce164553cb3ca050a67bcd1c55a86f5df2964e",
+            "url": "https://api.cqc.org.uk/public/v1/locations/1-2761140569",
+            "status": "current"
+          },
+          {
+            "source": "CQC ratings file",
+            "value": "Good",
+            "publication_date": "2025-07-23",
+            "edition": "CQC download edition 2 October 2026; data cutoff unverified",
+            "sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+            "url": "ratings.ods",
+            "status": "current"
+          }
+        ],
+        "reason": "Newest comparable current-provider publication in supplied evidence"
+      },
+      "qualification_question": "Who is responsible for choosing suppliers for this newly registered service, and when does it expect to start operating?",
+      "buyer_questions": {
+        "recruitment": "How many care staff does this service plan to employ, how many are in post now, and when do its first packages or contracts start? Are those packages council-funded or already confirmed?",
+        "compliance": "Who is preparing this service for its first CQC inspection, and has it arranged a governance audit, mock inspection or safeguarding training yet?",
+        "software": "What does this service use for care records today (paper, spreadsheets or a digital system), is that system on the NHS assured supplier list for digital social care records, how many users does it have, and when is the contract up for renewal?"
+      }
+    },
+    {
+      "rank": 6,
+      "organisation_name": "Fairfield Nursing Home",
+      "location_name": "Fairfield Nursing Home",
+      "location_id": "1-113028260",
+      "provider_id": "1-113028260-provider",
+      "local_authority": "Fixture County",
+      "region": "Fixture Region",
+      "postcode": "CH61 6XD",
+      "service_types": [
+        "Care home service with nursing"
+      ],
+      "number_of_beds": 30,
+      "current_rating": "Inadequate",
+      "primary_signal": "New CQC registration",
+      "most_recent_event_date": "2026-10-20",
+      "score": 74.0,
+      "score_breakdown": {
+        "new_registration@2026-10-20": 63.0,
+        "size_factor": 5.0,
+        "re_registration": 6.0
+      },
+      "reason": "Re-registered with CQC on 20 Oct 2026 (care home service with nursing, 30 beds) in the last three weeks, so it is still standing up policies, training and systems. A new legal entity or owner has taken on an existing service in Fixture County; this is a documented registration signal, not evidence of a supplier search or purchasing intent. It carries an overall rating of Inadequate. Rating evidence: Inadequate [current]; CQC ratings file; published 2025-10-27.",
+      "evidence": [
+        {
+          "event_type": "new_registration",
+          "effective_date": "2026-10-20",
+          "old_value": null,
+          "new_value": "Registered",
+          "detail": "CQC registration recorded 2026-10-20",
+          "source_field": "location.registrationDate",
+          "source_url": "https://www.cqc.org.uk/location/1-113028260",
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data"
+        }
+      ],
+      "rating_resolution": {
+        "contract_version": 1,
+        "value": "Inadequate",
+        "publication_date": "2025-10-27",
+        "source": "CQC ratings file",
+        "status": "current",
+        "evidence": [
+          {
+            "source": "CQC API",
+            "value": null,
+            "publication_date": null,
+            "edition": "Frozen API observation 22 October 2026",
+            "sha256": "b3dcdbe451d8659349fabfe1907c01d9a01f9174306ddbfdca9d4db03e2d1df3",
+            "url": "https://api.cqc.org.uk/public/v1/locations/1-113028260",
+            "status": "current"
+          },
+          {
+            "source": "CQC ratings file",
+            "value": "Inadequate",
+            "publication_date": "2025-10-27",
+            "edition": "CQC download edition 2 October 2026; data cutoff unverified",
+            "sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+            "url": "ratings.ods",
+            "status": "current"
+          }
+        ],
+        "reason": "Newest comparable current-provider publication in supplied evidence"
+      },
+      "qualification_question": "Who is responsible for choosing suppliers for this newly registered service, and when does it expect to start operating?",
+      "buyer_questions": {
+        "recruitment": "How many care staff does this service plan to employ, how many are in post now, and when do its first packages or contracts start? Are those packages council-funded or already confirmed?",
+        "compliance": "Who is preparing this service for its first CQC inspection, and has it arranged a governance audit, mock inspection or safeguarding training yet?",
+        "software": "What does this service use for care records today (paper, spreadsheets or a digital system), is that system on the NHS assured supplier list for digital social care records, how many users does it have, and when is the contract up for renewal?"
+      }
+    },
+    {
+      "rank": 7,
+      "organisation_name": "Florence House",
+      "location_name": "Florence House",
+      "location_id": "1-456354523",
+      "provider_id": "1-456354523-provider",
+      "local_authority": "Fixture County",
+      "region": "Fixture Region",
+      "postcode": "NR30 2JX",
+      "service_types": [
+        "Care home service without nursing"
+      ],
+      "number_of_beds": 27,
+      "current_rating": "Inadequate",
+      "primary_signal": "New CQC registration",
+      "most_recent_event_date": "2026-10-20",
+      "score": 73.5,
+      "score_breakdown": {
+        "new_registration@2026-10-20": 63.0,
+        "size_factor": 4.5,
+        "re_registration": 6.0
+      },
+      "reason": "Re-registered with CQC on 20 Oct 2026 (care home service without nursing, 27 beds) in the last three weeks, so it is still standing up policies, training and systems. A new legal entity or owner has taken on an existing service in Fixture County; this is a documented registration signal, not evidence of a supplier search or purchasing intent. It carries an overall rating of Inadequate. Rating evidence: Inadequate [current]; CQC ratings file; published 2026-01-06.",
+      "evidence": [
+        {
+          "event_type": "new_registration",
+          "effective_date": "2026-10-20",
+          "old_value": null,
+          "new_value": "Registered",
+          "detail": "CQC registration recorded 2026-10-20",
+          "source_field": "location.registrationDate",
+          "source_url": "https://www.cqc.org.uk/location/1-456354523",
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data"
+        }
+      ],
+      "rating_resolution": {
+        "contract_version": 1,
+        "value": "Inadequate",
+        "publication_date": "2026-01-06",
+        "source": "CQC ratings file",
+        "status": "current",
+        "evidence": [
+          {
+            "source": "CQC API",
+            "value": null,
+            "publication_date": null,
+            "edition": "Frozen API observation 22 October 2026",
+            "sha256": "ca95130761e12bdbd220e0bc06ddd1b575f2fcdc0efe0b4b0276b61e0c623607",
+            "url": "https://api.cqc.org.uk/public/v1/locations/1-456354523",
+            "status": "current"
+          },
+          {
+            "source": "CQC ratings file",
+            "value": "Inadequate",
+            "publication_date": "2026-01-06",
+            "edition": "CQC download edition 2 October 2026; data cutoff unverified",
+            "sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+            "url": "ratings.ods",
+            "status": "current"
+          }
+        ],
+        "reason": "Newest comparable current-provider publication in supplied evidence"
+      },
+      "qualification_question": "Who is responsible for choosing suppliers for this newly registered service, and when does it expect to start operating?",
+      "buyer_questions": {
+        "recruitment": "How many care staff does this service plan to employ, how many are in post now, and when do its first packages or contracts start? Are those packages council-funded or already confirmed?",
+        "compliance": "Who is preparing this service for its first CQC inspection, and has it arranged a governance audit, mock inspection or safeguarding training yet?",
+        "software": "What does this service use for care records today (paper, spreadsheets or a digital system), is that system on the NHS assured supplier list for digital social care records, how many users does it have, and when is the contract up for renewal?"
+      }
+    },
+    {
+      "rank": 8,
+      "organisation_name": "Silverdale Nursing Home",
+      "location_name": "Silverdale Nursing Home",
+      "location_id": "1-142705508",
+      "provider_id": "1-142705508-provider",
+      "local_authority": "Fixture County",
+      "region": "Fixture Region",
+      "postcode": "ST5 6PQ",
+      "service_types": [
+        "Care home service with nursing"
+      ],
+      "number_of_beds": 27,
+      "current_rating": "Inadequate",
+      "primary_signal": "New CQC registration",
+      "most_recent_event_date": "2026-10-20",
+      "score": 73.5,
+      "score_breakdown": {
+        "new_registration@2026-10-20": 63.0,
+        "size_factor": 4.5,
+        "re_registration": 6.0
+      },
+      "reason": "Re-registered with CQC on 20 Oct 2026 (care home service with nursing, 27 beds) in the last three weeks, so it is still standing up policies, training and systems. A new legal entity or owner has taken on an existing service in Fixture County; this is a documented registration signal, not evidence of a supplier search or purchasing intent. It carries an overall rating of Inadequate. Rating evidence: Inadequate [current]; CQC ratings file; published 2026-07-08.",
+      "evidence": [
+        {
+          "event_type": "new_registration",
+          "effective_date": "2026-10-20",
+          "old_value": null,
+          "new_value": "Registered",
+          "detail": "CQC registration recorded 2026-10-20",
+          "source_field": "location.registrationDate",
+          "source_url": "https://www.cqc.org.uk/location/1-142705508",
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data"
+        }
+      ],
+      "rating_resolution": {
+        "contract_version": 1,
+        "value": "Inadequate",
+        "publication_date": "2026-07-08",
+        "source": "CQC ratings file",
+        "status": "current",
+        "evidence": [
+          {
+            "source": "CQC API",
+            "value": null,
+            "publication_date": null,
+            "edition": "Frozen API observation 22 October 2026",
+            "sha256": "5b75a0e6242070f61da5d9b250f091e221dc9533fd089cfb7fc26cb131c94647",
+            "url": "https://api.cqc.org.uk/public/v1/locations/1-142705508",
+            "status": "current"
+          },
+          {
+            "source": "CQC ratings file",
+            "value": "Inadequate",
+            "publication_date": "2026-07-08",
+            "edition": "CQC download edition 2 October 2026; data cutoff unverified",
+            "sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+            "url": "ratings.ods",
+            "status": "current"
+          }
+        ],
+        "reason": "Newest comparable current-provider publication in supplied evidence"
+      },
+      "qualification_question": "Who is responsible for choosing suppliers for this newly registered service, and when does it expect to start operating?",
+      "buyer_questions": {
+        "recruitment": "How many care staff does this service plan to employ, how many are in post now, and when do its first packages or contracts start? Are those packages council-funded or already confirmed?",
+        "compliance": "Who is preparing this service for its first CQC inspection, and has it arranged a governance audit, mock inspection or safeguarding training yet?",
+        "software": "What does this service use for care records today (paper, spreadsheets or a digital system), is that system on the NHS assured supplier list for digital social care records, how many users does it have, and when is the contract up for renewal?"
+      }
+    },
+    {
+      "rank": 9,
+      "organisation_name": "St Stephens Nursing Home",
+      "location_name": "St Stephens Nursing Home",
+      "location_id": "1-152721284",
+      "provider_id": "1-152721284-provider",
+      "local_authority": "Fixture County",
+      "region": "Fixture Region",
+      "postcode": "CT16 1SW",
+      "service_types": [
+        "Care home service with nursing"
+      ],
+      "number_of_beds": 17,
+      "current_rating": "Requires improvement",
+      "primary_signal": "New CQC registration",
+      "most_recent_event_date": "2026-10-20",
+      "score": 71.83,
+      "score_breakdown": {
+        "new_registration@2026-10-20": 63.0,
+        "size_factor": 2.83,
+        "re_registration": 6.0
+      },
+      "reason": "Re-registered with CQC on 20 Oct 2026 (care home service with nursing, 17 beds) in the last three weeks, so it is still standing up policies, training and systems. A new legal entity or owner has taken on an existing service in Fixture County; this is a documented registration signal, not evidence of a supplier search or purchasing intent. It carries an overall rating of Requires improvement. Rating evidence: Requires improvement [current]; CQC ratings file + CQC website; published 2026-05-20.",
+      "evidence": [
+        {
+          "event_type": "new_registration",
+          "effective_date": "2026-10-20",
+          "old_value": null,
+          "new_value": "Registered",
+          "detail": "CQC registration recorded 2026-10-20",
+          "source_field": "location.registrationDate",
+          "source_url": "https://www.cqc.org.uk/location/1-152721284",
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data"
+        }
+      ],
+      "rating_resolution": {
+        "contract_version": 1,
+        "value": "Requires improvement",
+        "publication_date": "2026-05-20",
+        "source": "CQC ratings file + CQC website",
+        "status": "current",
+        "evidence": [
+          {
+            "source": "CQC API",
+            "value": "Good",
+            "publication_date": "2019-07-16",
+            "edition": "Frozen API observation 22 October 2026",
+            "sha256": "d4806c03e19f98f1083d4813550a3ed08dc0ce20e4ee259d5c57074305219b1d",
+            "url": "https://api.cqc.org.uk/public/v1/locations/1-152721284",
+            "status": "current"
+          },
+          {
+            "source": "CQC ratings file",
+            "value": "Requires improvement",
+            "publication_date": "2026-05-20",
+            "edition": "CQC download edition 2 October 2026; data cutoff unverified",
+            "sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+            "url": "ratings.ods",
+            "status": "current"
+          },
+          {
+            "value": "Requires improvement",
+            "status": "current",
+            "publication_date": "2026-05-20",
+            "url": "https://www.cqc.org.uk/location/1-152721284",
+            "observed_at": "2026-10-22T20:42:55.348514+00:00",
+            "sha256": "a75240f5c8c68ed811c45ee8211242c603fd8ae0eff437ee7e3f7dc2200b0f42",
+            "edition": "Frozen CQC website observation 22 October 2026",
+            "source": "CQC website"
+          }
+        ],
+        "reason": "Newest comparable current-provider publication in supplied evidence"
+      },
+      "qualification_question": "Who is responsible for choosing suppliers for this newly registered service, and when does it expect to start operating?",
+      "buyer_questions": {
+        "recruitment": "How many care staff does this service plan to employ, how many are in post now, and when do its first packages or contracts start? Are those packages council-funded or already confirmed?",
+        "compliance": "Who is preparing this service for its first CQC inspection, and has it arranged a governance audit, mock inspection or safeguarding training yet?",
+        "software": "What does this service use for care records today (paper, spreadsheets or a digital system), is that system on the NHS assured supplier list for digital social care records, how many users does it have, and when is the contract up for renewal?"
+      }
+    },
+    {
+      "rank": 10,
+      "organisation_name": "Carlton House",
+      "location_name": "Carlton House",
+      "location_id": "1-130890582",
+      "provider_id": "1-130890582-provider",
+      "local_authority": "Fixture County",
+      "region": "Fixture Region",
+      "postcode": "LS26 0SF",
+      "service_types": [
+        "Care home service without nursing"
+      ],
+      "number_of_beds": 16,
+      "current_rating": "Outstanding",
+      "primary_signal": "New CQC registration",
+      "most_recent_event_date": "2026-10-20",
+      "score": 71.67,
+      "score_breakdown": {
+        "new_registration@2026-10-20": 63.0,
+        "size_factor": 2.67,
+        "re_registration": 6.0
+      },
+      "reason": "Re-registered with CQC on 20 Oct 2026 (care home service without nursing, 16 beds) in the last three weeks, so it is still standing up policies, training and systems. A new legal entity or owner has taken on an existing service in Fixture County; this is a documented registration signal, not evidence of a supplier search or purchasing intent. It carries an overall rating of Outstanding. Rating evidence: Outstanding [current]; CQC ratings file; published 2026-06-03.",
+      "evidence": [
+        {
+          "event_type": "new_registration",
+          "effective_date": "2026-10-20",
+          "old_value": null,
+          "new_value": "Registered",
+          "detail": "CQC registration recorded 2026-10-20",
+          "source_field": "location.registrationDate",
+          "source_url": "https://www.cqc.org.uk/location/1-130890582",
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data"
+        }
+      ],
+      "rating_resolution": {
+        "contract_version": 1,
+        "value": "Outstanding",
+        "publication_date": "2026-06-03",
+        "source": "CQC ratings file",
+        "status": "current",
+        "evidence": [
+          {
+            "source": "CQC API",
+            "value": null,
+            "publication_date": null,
+            "edition": "Frozen API observation 22 October 2026",
+            "sha256": "979ccb81c1cb2c2e097905a934641489c2462706bc2198d942c2ef5d7929c81a",
+            "url": "https://api.cqc.org.uk/public/v1/locations/1-130890582",
+            "status": "current"
+          },
+          {
+            "source": "CQC ratings file",
+            "value": "Outstanding",
+            "publication_date": "2026-06-03",
+            "edition": "CQC download edition 2 October 2026; data cutoff unverified",
+            "sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+            "url": "ratings.ods",
+            "status": "current"
+          }
+        ],
+        "reason": "Newest comparable current-provider publication in supplied evidence"
+      },
+      "qualification_question": "Who is responsible for choosing suppliers for this newly registered service, and when does it expect to start operating?",
+      "buyer_questions": {
+        "recruitment": "How many care staff does this service plan to employ, how many are in post now, and when do its first packages or contracts start? Are those packages council-funded or already confirmed?",
+        "compliance": "Who is preparing this service for its first CQC inspection, and has it arranged a governance audit, mock inspection or safeguarding training yet?",
+        "software": "What does this service use for care records today (paper, spreadsheets or a digital system), is that system on the NHS assured supplier list for digital social care records, how many users does it have, and when is the contract up for renewal?"
+      }
+    },
+    {
+      "rank": 11,
+      "organisation_name": "Welcome House - The Chestnuts",
+      "location_name": "Welcome House - The Chestnuts",
+      "location_id": "1-125730630",
+      "provider_id": "1-125730630-provider",
+      "local_authority": "Fixture County",
+      "region": "Fixture Region",
+      "postcode": "ME1 1RX",
+      "service_types": [
+        "Care home service without nursing"
+      ],
+      "number_of_beds": 15,
+      "current_rating": "Requires improvement",
+      "primary_signal": "New CQC registration",
+      "most_recent_event_date": "2026-10-20",
+      "score": 71.5,
+      "score_breakdown": {
+        "new_registration@2026-10-20": 63.0,
+        "size_factor": 2.5,
+        "re_registration": 6.0
+      },
+      "reason": "Re-registered with CQC on 20 Oct 2026 (care home service without nursing, 15 beds) in the last three weeks, so it is still standing up policies, training and systems. A new legal entity or owner has taken on an existing service in Fixture County; this is a documented registration signal, not evidence of a supplier search or purchasing intent. It carries an overall rating of Requires improvement. Rating evidence: Requires improvement [current]; CQC website; published 2026-10-13.",
+      "evidence": [
+        {
+          "event_type": "new_registration",
+          "effective_date": "2026-10-20",
+          "old_value": null,
+          "new_value": "Registered",
+          "detail": "CQC registration recorded 2026-10-20",
+          "source_field": "location.registrationDate",
+          "source_url": "https://www.cqc.org.uk/location/1-125730630",
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data"
+        }
+      ],
+      "rating_resolution": {
+        "contract_version": 1,
+        "value": "Requires improvement",
+        "publication_date": "2026-10-13",
+        "source": "CQC website",
+        "status": "current",
+        "evidence": [
+          {
+            "source": "CQC API",
+            "value": null,
+            "publication_date": null,
+            "edition": "Frozen API observation 22 October 2026",
+            "sha256": "ac93445be49bde1969a4c05cc3d4b03d31f0f96cdeeace8b20589f4bb36fa93f",
+            "url": "https://api.cqc.org.uk/public/v1/locations/1-125730630",
+            "status": "current"
+          },
+          {
+            "source": "CQC ratings file",
+            "value": "Inadequate",
+            "publication_date": "2025-09-25",
+            "edition": "CQC download edition 2 October 2026; data cutoff unverified",
+            "sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+            "url": "ratings.ods",
+            "status": "current"
+          },
+          {
+            "value": "Requires improvement",
+            "status": "current",
+            "publication_date": "2026-10-13",
+            "url": "https://www.cqc.org.uk/location/1-125730630",
+            "observed_at": "2026-10-22T20:42:54.044918+00:00",
+            "sha256": "e1c7ef47a78fb8fa26d954aa3f31bc2b6c2d1fa3996e34892d716fa5dee420e6",
+            "edition": "Frozen CQC website observation 22 October 2026",
+            "source": "CQC website"
+          }
+        ],
+        "reason": "Newest comparable current-provider publication in supplied evidence"
+      },
+      "qualification_question": "Who is responsible for choosing suppliers for this newly registered service, and when does it expect to start operating?",
+      "buyer_questions": {
+        "recruitment": "How many care staff does this service plan to employ, how many are in post now, and when do its first packages or contracts start? Are those packages council-funded or already confirmed?",
+        "compliance": "Who is preparing this service for its first CQC inspection, and has it arranged a governance audit, mock inspection or safeguarding training yet?",
+        "software": "What does this service use for care records today (paper, spreadsheets or a digital system), is that system on the NHS assured supplier list for digital social care records, how many users does it have, and when is the contract up for renewal?"
+      }
+    },
+    {
+      "rank": 12,
+      "organisation_name": "Collegiate House",
+      "location_name": "Collegiate House",
+      "location_id": "1-16516340886",
+      "provider_id": "1-16516340886-provider",
+      "local_authority": "Fixture County",
+      "region": "Fixture Region",
+      "postcode": "S10 2BA",
+      "service_types": [
+        "Care home service without nursing"
+      ],
+      "number_of_beds": 8,
+      "current_rating": "Outstanding",
+      "primary_signal": "New CQC registration",
+      "most_recent_event_date": "2026-10-20",
+      "score": 70.33,
+      "score_breakdown": {
+        "new_registration@2026-10-20": 63.0,
+        "size_factor": 1.33,
+        "re_registration": 6.0
+      },
+      "reason": "Re-registered with CQC on 20 Oct 2026 (care home service without nursing, 8 beds) in the last three weeks, so it is still standing up policies, training and systems. A new legal entity or owner has taken on an existing service in Fixture County; this is a documented registration signal, not evidence of a supplier search or purchasing intent. It carries an overall rating of Outstanding. Rating evidence: Outstanding [current]; CQC ratings file; published 2026-08-27.",
+      "evidence": [
+        {
+          "event_type": "new_registration",
+          "effective_date": "2026-10-20",
+          "old_value": null,
+          "new_value": "Registered",
+          "detail": "CQC registration recorded 2026-10-20",
+          "source_field": "location.registrationDate",
+          "source_url": "https://www.cqc.org.uk/location/1-16516340886",
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data"
+        }
+      ],
+      "rating_resolution": {
+        "contract_version": 1,
+        "value": "Outstanding",
+        "publication_date": "2026-08-27",
+        "source": "CQC ratings file",
+        "status": "current",
+        "evidence": [
+          {
+            "source": "CQC API",
+            "value": null,
+            "publication_date": null,
+            "edition": "Frozen API observation 22 October 2026",
+            "sha256": "b05797cd869268d02bd0b4768c009750f3217f4461369db35c6655e4227515ca",
+            "url": "https://api.cqc.org.uk/public/v1/locations/1-16516340886",
+            "status": "current"
+          },
+          {
+            "source": "CQC ratings file",
+            "value": "Outstanding",
+            "publication_date": "2026-08-27",
+            "edition": "CQC download edition 2 October 2026; data cutoff unverified",
+            "sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+            "url": "ratings.ods",
+            "status": "current"
+          }
+        ],
+        "reason": "Newest comparable current-provider publication in supplied evidence"
+      },
+      "qualification_question": "Who is responsible for choosing suppliers for this newly registered service, and when does it expect to start operating?",
+      "buyer_questions": {
+        "recruitment": "How many care staff does this service plan to employ, how many are in post now, and when do its first packages or contracts start? Are those packages council-funded or already confirmed?",
+        "compliance": "Who is preparing this service for its first CQC inspection, and has it arranged a governance audit, mock inspection or safeguarding training yet?",
+        "software": "What does this service use for care records today (paper, spreadsheets or a digital system), is that system on the NHS assured supplier list for digital social care records, how many users does it have, and when is the contract up for renewal?"
+      }
+    },
+    {
+      "rank": 13,
+      "organisation_name": "Irchester 170",
+      "location_name": "Irchester 170",
+      "location_id": "1-22160036426",
+      "provider_id": "1-22160036426-provider",
+      "local_authority": "Fixture County",
+      "region": "Fixture Region",
+      "postcode": "NN29 7EW",
+      "service_types": [
+        "Care home service without nursing"
+      ],
+      "number_of_beds": 6,
+      "current_rating": "Good",
+      "primary_signal": "New CQC registration",
+      "most_recent_event_date": "2026-10-20",
+      "score": 70.0,
+      "score_breakdown": {
+        "new_registration@2026-10-20": 63.0,
+        "size_factor": 1.0,
+        "re_registration": 6.0
+      },
+      "reason": "Re-registered with CQC on 20 Oct 2026 (care home service without nursing, 6 beds) in the last three weeks, so it is still standing up policies, training and systems. A new legal entity or owner has taken on an existing service in Fixture County; this is a documented registration signal, not evidence of a supplier search or purchasing intent. It carries an overall rating of Good. Rating evidence: Good [current]; CQC ratings file + CQC website; published 2026-03-11.",
+      "evidence": [
+        {
+          "event_type": "new_registration",
+          "effective_date": "2026-10-20",
+          "old_value": null,
+          "new_value": "Registered",
+          "detail": "CQC registration recorded 2026-10-20",
+          "source_field": "location.registrationDate",
+          "source_url": "https://www.cqc.org.uk/location/1-22160036426",
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data"
+        }
+      ],
+      "rating_resolution": {
+        "contract_version": 1,
+        "value": "Good",
+        "publication_date": "2026-03-11",
+        "source": "CQC ratings file + CQC website",
+        "status": "current",
+        "evidence": [
+          {
+            "source": "CQC API",
+            "value": "Outstanding",
+            "publication_date": "2018-03-07",
+            "edition": "Frozen API observation 22 October 2026",
+            "sha256": "eca3baf8747d15e5ae110a85183a8d5bf550787bc7beea597374d58369ab2c08",
+            "url": "https://api.cqc.org.uk/public/v1/locations/1-22160036426",
+            "status": "current"
+          },
+          {
+            "source": "CQC ratings file",
+            "value": "Good",
+            "publication_date": "2026-03-11",
+            "edition": "CQC download edition 2 October 2026; data cutoff unverified",
+            "sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+            "url": "ratings.ods",
+            "status": "current"
+          },
+          {
+            "value": "Good",
+            "status": "current",
+            "publication_date": "2026-03-11",
+            "url": "https://www.cqc.org.uk/location/1-22160036426",
+            "observed_at": "2026-10-22T20:42:57.242567+00:00",
+            "sha256": "06d44543815b6d7092570da792c4e7fb198ae8588649eac17d7f5412563d1814",
+            "edition": "Frozen CQC website observation 22 October 2026",
+            "source": "CQC website"
+          }
+        ],
+        "reason": "Newest comparable current-provider publication in supplied evidence"
+      },
+      "qualification_question": "Who is responsible for choosing suppliers for this newly registered service, and when does it expect to start operating?",
+      "buyer_questions": {
+        "recruitment": "How many care staff does this service plan to employ, how many are in post now, and when do its first packages or contracts start? Are those packages council-funded or already confirmed?",
+        "compliance": "Who is preparing this service for its first CQC inspection, and has it arranged a governance audit, mock inspection or safeguarding training yet?",
+        "software": "What does this service use for care records today (paper, spreadsheets or a digital system), is that system on the NHS assured supplier list for digital social care records, how many users does it have, and when is the contract up for renewal?"
+      }
+    },
+    {
+      "rank": 14,
+      "organisation_name": "Woodways",
+      "location_name": "Woodways",
+      "location_id": "1-10192918971",
+      "provider_id": "1-10192918971-provider",
+      "local_authority": "Fixture County",
+      "region": "Fixture Region",
+      "postcode": "S73 0HQ",
+      "service_types": [
+        "Care home service without nursing"
+      ],
+      "number_of_beds": 6,
+      "current_rating": "Outstanding",
+      "primary_signal": "New CQC registration",
+      "most_recent_event_date": "2026-10-20",
+      "score": 70.0,
+      "score_breakdown": {
+        "new_registration@2026-10-20": 63.0,
+        "size_factor": 1.0,
+        "re_registration": 6.0
+      },
+      "reason": "Re-registered with CQC on 20 Oct 2026 (care home service without nursing, 6 beds) in the last three weeks, so it is still standing up policies, training and systems. A new legal entity or owner has taken on an existing service in Fixture County; this is a documented registration signal, not evidence of a supplier search or purchasing intent. It carries an overall rating of Outstanding. Rating evidence: Outstanding [current]; CQC ratings file; published 2025-07-29.",
+      "evidence": [
+        {
+          "event_type": "new_registration",
+          "effective_date": "2026-10-20",
+          "old_value": null,
+          "new_value": "Registered",
+          "detail": "CQC registration recorded 2026-10-20",
+          "source_field": "location.registrationDate",
+          "source_url": "https://www.cqc.org.uk/location/1-10192918971",
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data"
+        }
+      ],
+      "rating_resolution": {
+        "contract_version": 1,
+        "value": "Outstanding",
+        "publication_date": "2025-07-29",
+        "source": "CQC ratings file",
+        "status": "current",
+        "evidence": [
+          {
+            "source": "CQC API",
+            "value": null,
+            "publication_date": null,
+            "edition": "Frozen API observation 22 October 2026",
+            "sha256": "9cbb832797ecbae9e3fb34ae66d42d4af307652ec4c1f7ca54994d3f1d15f763",
+            "url": "https://api.cqc.org.uk/public/v1/locations/1-10192918971",
+            "status": "current"
+          },
+          {
+            "source": "CQC ratings file",
+            "value": "Outstanding",
+            "publication_date": "2025-07-29",
+            "edition": "CQC download edition 2 October 2026; data cutoff unverified",
+            "sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+            "url": "ratings.ods",
+            "status": "current"
+          }
+        ],
+        "reason": "Newest comparable current-provider publication in supplied evidence"
+      },
+      "qualification_question": "Who is responsible for choosing suppliers for this newly registered service, and when does it expect to start operating?",
+      "buyer_questions": {
+        "recruitment": "How many care staff does this service plan to employ, how many are in post now, and when do its first packages or contracts start? Are those packages council-funded or already confirmed?",
+        "compliance": "Who is preparing this service for its first CQC inspection, and has it arranged a governance audit, mock inspection or safeguarding training yet?",
+        "software": "What does this service use for care records today (paper, spreadsheets or a digital system), is that system on the NHS assured supplier list for digital social care records, how many users does it have, and when is the contract up for renewal?"
+      }
+    },
+    {
+      "rank": 15,
+      "organisation_name": "Angel Home Care Service Private Limited",
+      "location_name": "Angel Home Care Service Private Limited",
+      "location_id": "1-407665280",
+      "provider_id": "1-407665280-provider",
+      "local_authority": "Fixture County",
+      "region": "Fixture Region",
+      "postcode": "SK8 4NG",
+      "service_types": [
+        "Domiciliary care service"
+      ],
+      "number_of_beds": null,
+      "current_rating": "Requires improvement",
+      "primary_signal": "New CQC registration",
+      "most_recent_event_date": "2026-10-20",
+      "score": 69.0,
+      "score_breakdown": {
+        "new_registration@2026-10-20": 63.0,
+        "re_registration": 6.0
+      },
+      "reason": "Re-registered with CQC on 20 Oct 2026 (domiciliary care service, non-bed-based) in the last three weeks, so it is still standing up policies, training and systems. A new legal entity or owner has taken on an existing service in Fixture County; this is a documented registration signal, not evidence of a supplier search or purchasing intent. It carries an overall rating of Requires improvement. Rating evidence: Requires improvement [current]; CQC ratings file; published 2026-04-22.",
+      "evidence": [
+        {
+          "event_type": "new_registration",
+          "effective_date": "2026-10-20",
+          "old_value": null,
+          "new_value": "Registered",
+          "detail": "CQC registration recorded 2026-10-20",
+          "source_field": "location.registrationDate",
+          "source_url": "https://www.cqc.org.uk/location/1-407665280",
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data"
+        }
+      ],
+      "rating_resolution": {
+        "contract_version": 1,
+        "value": "Requires improvement",
+        "publication_date": "2026-04-22",
+        "source": "CQC ratings file",
+        "status": "current",
+        "evidence": [
+          {
+            "source": "CQC API",
+            "value": null,
+            "publication_date": null,
+            "edition": "Frozen API observation 22 October 2026",
+            "sha256": "117a696a4533cf35e4a0a0940bd710470fc1550e1d706ac68011e785de8c074a",
+            "url": "https://api.cqc.org.uk/public/v1/locations/1-407665280",
+            "status": "current"
+          },
+          {
+            "source": "CQC ratings file",
+            "value": "Requires improvement",
+            "publication_date": "2026-04-22",
+            "edition": "CQC download edition 2 October 2026; data cutoff unverified",
+            "sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+            "url": "ratings.ods",
+            "status": "current"
+          }
+        ],
+        "reason": "Newest comparable current-provider publication in supplied evidence"
+      },
+      "qualification_question": "Who is responsible for choosing suppliers for this newly registered service, and when does it expect to start operating?",
+      "buyer_questions": {
+        "recruitment": "How many care staff does this service plan to employ, how many are in post now, and when do its first packages or contracts start? Are those packages council-funded or already confirmed?",
+        "compliance": "Who is preparing this service for its first CQC inspection, and has it arranged a governance audit, mock inspection or safeguarding training yet?",
+        "software": "What does this service use for care records today (paper, spreadsheets or a digital system), is that system on the NHS assured supplier list for digital social care records, how many users does it have, and when is the contract up for renewal?"
+      }
+    },
+    {
+      "rank": 16,
+      "organisation_name": "Crawley Road Medical Centre",
+      "location_name": "Crawley Road Medical Centre",
+      "location_id": "1-546109592",
+      "provider_id": "1-546109592-provider",
+      "local_authority": "Fixture County",
+      "region": "Fixture Region",
+      "postcode": "E10 5EL",
+      "service_types": [
+        "Doctors consultation service"
+      ],
+      "number_of_beds": null,
+      "current_rating": "Good",
+      "primary_signal": "New CQC registration",
+      "most_recent_event_date": "2026-10-20",
+      "score": 69.0,
+      "score_breakdown": {
+        "new_registration@2026-10-20": 63.0,
+        "re_registration": 6.0
+      },
+      "reason": "Re-registered with CQC on 20 Oct 2026 (doctors consultation service, non-bed-based) in the last three weeks, so it is still standing up policies, training and systems. A new legal entity or owner has taken on an existing service in Fixture County; this is a documented registration signal, not evidence of a supplier search or purchasing intent. It carries an overall rating of Good. Rating evidence: Good [current]; CQC ratings file; published 2025-07-11.",
+      "evidence": [
+        {
+          "event_type": "new_registration",
+          "effective_date": "2026-10-20",
+          "old_value": null,
+          "new_value": "Registered",
+          "detail": "CQC registration recorded 2026-10-20",
+          "source_field": "location.registrationDate",
+          "source_url": "https://www.cqc.org.uk/location/1-546109592",
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data"
+        }
+      ],
+      "rating_resolution": {
+        "contract_version": 1,
+        "value": "Good",
+        "publication_date": "2025-07-11",
+        "source": "CQC ratings file",
+        "status": "current",
+        "evidence": [
+          {
+            "source": "CQC API",
+            "value": null,
+            "publication_date": null,
+            "edition": "Frozen API observation 22 October 2026",
+            "sha256": "ecc0eb8e1976cb7214c0a3f2a5a07db4b01ef2649c1686274b1e77a1b065cddd",
+            "url": "https://api.cqc.org.uk/public/v1/locations/1-546109592",
+            "status": "current"
+          },
+          {
+            "source": "CQC ratings file",
+            "value": "Good",
+            "publication_date": "2025-07-11",
+            "edition": "CQC download edition 2 October 2026; data cutoff unverified",
+            "sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+            "url": "ratings.ods",
+            "status": "current"
+          }
+        ],
+        "reason": "Newest comparable current-provider publication in supplied evidence"
+      },
+      "qualification_question": "Who is responsible for choosing suppliers for this newly registered service, and when does it expect to start operating?",
+      "buyer_questions": {
+        "recruitment": "How many care staff does this service plan to employ, how many are in post now, and when do its first packages or contracts start? Are those packages council-funded or already confirmed?",
+        "compliance": "Who is preparing this service for its first CQC inspection, and has it arranged a governance audit, mock inspection or safeguarding training yet?",
+        "software": "What does this service use for care records today (paper, spreadsheets or a digital system), is that system on the NHS assured supplier list for digital social care records, how many users does it have, and when is the contract up for renewal?"
+      }
+    },
+    {
+      "rank": 17,
+      "organisation_name": "Eskdale House Supported Living Service",
+      "location_name": "Eskdale House Supported Living Service",
+      "location_id": "1-27003473742",
+      "provider_id": "1-27003473742-provider",
+      "local_authority": "Fixture County",
+      "region": "Fixture Region",
+      "postcode": "LA9 6NQ",
+      "service_types": [
+        "Supported living service"
+      ],
+      "number_of_beds": null,
+      "current_rating": "Requires improvement",
+      "primary_signal": "New CQC registration",
+      "most_recent_event_date": "2026-10-20",
+      "score": 69.0,
+      "score_breakdown": {
+        "new_registration@2026-10-20": 63.0,
+        "re_registration": 6.0
+      },
+      "reason": "Re-registered with CQC on 20 Oct 2026 (supported living service, non-bed-based) in the last three weeks, so it is still standing up policies, training and systems. A new legal entity or owner has taken on an existing service in Fixture County; this is a documented registration signal, not evidence of a supplier search or purchasing intent. It carries an overall rating of Requires improvement. Rating evidence: Requires improvement [current]; CQC ratings file; published 2026-06-03.",
+      "evidence": [
+        {
+          "event_type": "new_registration",
+          "effective_date": "2026-10-20",
+          "old_value": null,
+          "new_value": "Registered",
+          "detail": "CQC registration recorded 2026-10-20",
+          "source_field": "location.registrationDate",
+          "source_url": "https://www.cqc.org.uk/location/1-27003473742",
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data"
+        }
+      ],
+      "rating_resolution": {
+        "contract_version": 1,
+        "value": "Requires improvement",
+        "publication_date": "2026-06-03",
+        "source": "CQC ratings file",
+        "status": "current",
+        "evidence": [
+          {
+            "source": "CQC API",
+            "value": null,
+            "publication_date": null,
+            "edition": "Frozen API observation 22 October 2026",
+            "sha256": "4d673f0ef36244255595e345d649c7fa546bf8fa5a1caa545480c9565e44af74",
+            "url": "https://api.cqc.org.uk/public/v1/locations/1-27003473742",
+            "status": "current"
+          },
+          {
+            "source": "CQC ratings file",
+            "value": "Requires improvement",
+            "publication_date": "2026-06-03",
+            "edition": "CQC download edition 2 October 2026; data cutoff unverified",
+            "sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+            "url": "ratings.ods",
+            "status": "current"
+          }
+        ],
+        "reason": "Newest comparable current-provider publication in supplied evidence"
+      },
+      "qualification_question": "Who is responsible for choosing suppliers for this newly registered service, and when does it expect to start operating?",
+      "buyer_questions": {
+        "recruitment": "How many care staff does this service plan to employ, how many are in post now, and when do its first packages or contracts start? Are those packages council-funded or already confirmed?",
+        "compliance": "Who is preparing this service for its first CQC inspection, and has it arranged a governance audit, mock inspection or safeguarding training yet?",
+        "software": "What does this service use for care records today (paper, spreadsheets or a digital system), is that system on the NHS assured supplier list for digital social care records, how many users does it have, and when is the contract up for renewal?"
+      }
+    },
+    {
+      "rank": 18,
+      "organisation_name": "Kelly Healthcare Services Limited",
+      "location_name": "Kelly Healthcare Services Limited",
+      "location_id": "1-11270646845",
+      "provider_id": "1-11270646845-provider",
+      "local_authority": "Fixture County",
+      "region": "Fixture Region",
+      "postcode": "DY4 7UF",
+      "service_types": [
+        "Domiciliary care service"
+      ],
+      "number_of_beds": null,
+      "current_rating": "Good",
+      "primary_signal": "New CQC registration",
+      "most_recent_event_date": "2026-10-20",
+      "score": 69.0,
+      "score_breakdown": {
+        "new_registration@2026-10-20": 63.0,
+        "re_registration": 6.0
+      },
+      "reason": "Re-registered with CQC on 20 Oct 2026 (domiciliary care service, non-bed-based) in the last three weeks, so it is still standing up policies, training and systems. A new legal entity or owner has taken on an existing service in Fixture County; this is a documented registration signal, not evidence of a supplier search or purchasing intent. It carries an overall rating of Good. Rating evidence: Good [current]; CQC ratings file; published 2025-03-14.",
+      "evidence": [
+        {
+          "event_type": "new_registration",
+          "effective_date": "2026-10-20",
+          "old_value": null,
+          "new_value": "Registered",
+          "detail": "CQC registration recorded 2026-10-20",
+          "source_field": "location.registrationDate",
+          "source_url": "https://www.cqc.org.uk/location/1-11270646845",
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data"
+        }
+      ],
+      "rating_resolution": {
+        "contract_version": 1,
+        "value": "Good",
+        "publication_date": "2025-03-14",
+        "source": "CQC ratings file",
+        "status": "current",
+        "evidence": [
+          {
+            "source": "CQC API",
+            "value": null,
+            "publication_date": null,
+            "edition": "Frozen API observation 22 October 2026",
+            "sha256": "29bd7fa5f18024ee0297244b4df876abc65700a8d554f33371fb0551c5ea5026",
+            "url": "https://api.cqc.org.uk/public/v1/locations/1-11270646845",
+            "status": "current"
+          },
+          {
+            "source": "CQC ratings file",
+            "value": "Good",
+            "publication_date": "2025-03-14",
+            "edition": "CQC download edition 2 October 2026; data cutoff unverified",
+            "sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+            "url": "ratings.ods",
+            "status": "current"
+          }
+        ],
+        "reason": "Newest comparable current-provider publication in supplied evidence"
+      },
+      "qualification_question": "Who is responsible for choosing suppliers for this newly registered service, and when does it expect to start operating?",
+      "buyer_questions": {
+        "recruitment": "How many care staff does this service plan to employ, how many are in post now, and when do its first packages or contracts start? Are those packages council-funded or already confirmed?",
+        "compliance": "Who is preparing this service for its first CQC inspection, and has it arranged a governance audit, mock inspection or safeguarding training yet?",
+        "software": "What does this service use for care records today (paper, spreadsheets or a digital system), is that system on the NHS assured supplier list for digital social care records, how many users does it have, and when is the contract up for renewal?"
+      }
+    },
+    {
+      "rank": 19,
+      "organisation_name": "Lucketts Farm",
+      "location_name": "Lucketts Farm",
+      "location_id": "1-2352094536",
+      "provider_id": "1-2352094536-provider",
+      "local_authority": "Fixture County",
+      "region": "Fixture Region",
+      "postcode": "CT2 9EF",
+      "service_types": [
+        "Supported living service"
+      ],
+      "number_of_beds": null,
+      "current_rating": "Requires improvement",
+      "primary_signal": "New CQC registration",
+      "most_recent_event_date": "2026-10-20",
+      "score": 69.0,
+      "score_breakdown": {
+        "new_registration@2026-10-20": 63.0,
+        "re_registration": 6.0
+      },
+      "reason": "Re-registered with CQC on 20 Oct 2026 (supported living service, non-bed-based) in the last three weeks, so it is still standing up policies, training and systems. A new legal entity or owner has taken on an existing service in Fixture County; this is a documented registration signal, not evidence of a supplier search or purchasing intent. It carries an overall rating of Requires improvement. Rating evidence: Requires improvement [current]; CQC ratings file; published 2025-10-16.",
+      "evidence": [
+        {
+          "event_type": "new_registration",
+          "effective_date": "2026-10-20",
+          "old_value": null,
+          "new_value": "Registered",
+          "detail": "CQC registration recorded 2026-10-20",
+          "source_field": "location.registrationDate",
+          "source_url": "https://www.cqc.org.uk/location/1-2352094536",
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data"
+        }
+      ],
+      "rating_resolution": {
+        "contract_version": 1,
+        "value": "Requires improvement",
+        "publication_date": "2025-10-16",
+        "source": "CQC ratings file",
+        "status": "current",
+        "evidence": [
+          {
+            "source": "CQC API",
+            "value": null,
+            "publication_date": null,
+            "edition": "Frozen API observation 22 October 2026",
+            "sha256": "8d0279d9c79ff326d4359acb5f6962e8c711f4fda3158c21ec857965fe7c619a",
+            "url": "https://api.cqc.org.uk/public/v1/locations/1-2352094536",
+            "status": "current"
+          },
+          {
+            "source": "CQC ratings file",
+            "value": "Requires improvement",
+            "publication_date": "2025-10-16",
+            "edition": "CQC download edition 2 October 2026; data cutoff unverified",
+            "sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+            "url": "ratings.ods",
+            "status": "current"
+          }
+        ],
+        "reason": "Newest comparable current-provider publication in supplied evidence"
+      },
+      "qualification_question": "Who is responsible for choosing suppliers for this newly registered service, and when does it expect to start operating?",
+      "buyer_questions": {
+        "recruitment": "How many care staff does this service plan to employ, how many are in post now, and when do its first packages or contracts start? Are those packages council-funded or already confirmed?",
+        "compliance": "Who is preparing this service for its first CQC inspection, and has it arranged a governance audit, mock inspection or safeguarding training yet?",
+        "software": "What does this service use for care records today (paper, spreadsheets or a digital system), is that system on the NHS assured supplier list for digital social care records, how many users does it have, and when is the contract up for renewal?"
+      }
+    },
+    {
+      "rank": 20,
+      "organisation_name": "Milford Del Support Agency",
+      "location_name": "Milford Del Support Agency",
+      "location_id": "1-2467326262",
+      "provider_id": "1-2467326262-provider",
+      "local_authority": "Fixture County",
+      "region": "Fixture Region",
+      "postcode": "PO36 9LE",
+      "service_types": [
+        "Domiciliary care service",
+        "Supported living service"
+      ],
+      "number_of_beds": null,
+      "current_rating": "Outstanding",
+      "primary_signal": "New CQC registration",
+      "most_recent_event_date": "2026-10-20",
+      "score": 69.0,
+      "score_breakdown": {
+        "new_registration@2026-10-20": 63.0,
+        "re_registration": 6.0
+      },
+      "reason": "Re-registered with CQC on 20 Oct 2026 (domiciliary care service, non-bed-based) in the last three weeks, so it is still standing up policies, training and systems. A new legal entity or owner has taken on an existing service in Fixture County; this is a documented registration signal, not evidence of a supplier search or purchasing intent. It carries an overall rating of Outstanding. Rating evidence: Outstanding [current]; CQC ratings file; published 2025-07-18.",
+      "evidence": [
+        {
+          "event_type": "new_registration",
+          "effective_date": "2026-10-20",
+          "old_value": null,
+          "new_value": "Registered",
+          "detail": "CQC registration recorded 2026-10-20",
+          "source_field": "location.registrationDate",
+          "source_url": "https://www.cqc.org.uk/location/1-2467326262",
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data"
+        }
+      ],
+      "rating_resolution": {
+        "contract_version": 1,
+        "value": "Outstanding",
+        "publication_date": "2025-07-18",
+        "source": "CQC ratings file",
+        "status": "current",
+        "evidence": [
+          {
+            "source": "CQC API",
+            "value": null,
+            "publication_date": null,
+            "edition": "Frozen API observation 22 October 2026",
+            "sha256": "4d30f3e794dd1463c93291553fd40d83f1c8c20492c5d02d6eff1d6d2d1e7255",
+            "url": "https://api.cqc.org.uk/public/v1/locations/1-2467326262",
+            "status": "current"
+          },
+          {
+            "source": "CQC ratings file",
+            "value": "Outstanding",
+            "publication_date": "2025-07-18",
+            "edition": "CQC download edition 2 October 2026; data cutoff unverified",
+            "sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+            "url": "ratings.ods",
+            "status": "current"
+          }
+        ],
+        "reason": "Newest comparable current-provider publication in supplied evidence"
+      },
+      "qualification_question": "Who is responsible for choosing suppliers for this newly registered service, and when does it expect to start operating?",
+      "buyer_questions": {
+        "recruitment": "How many care staff does this service plan to employ, how many are in post now, and when do its first packages or contracts start? Are those packages council-funded or already confirmed?",
+        "compliance": "Who is preparing this service for its first CQC inspection, and has it arranged a governance audit, mock inspection or safeguarding training yet?",
+        "software": "What does this service use for care records today (paper, spreadsheets or a digital system), is that system on the NHS assured supplier list for digital social care records, how many users does it have, and when is the contract up for renewal?"
+      }
+    },
+    {
+      "rank": 21,
+      "organisation_name": "Nomira Care Ltd",
+      "location_name": "Nomira Care Ltd",
+      "location_id": "1-13937101349",
+      "provider_id": "1-13937101349-provider",
+      "local_authority": "Fixture County",
+      "region": "Fixture Region",
+      "postcode": "HA8 6SD",
+      "service_types": [
+        "Domiciliary care service"
+      ],
+      "number_of_beds": null,
+      "current_rating": "Requires improvement",
+      "primary_signal": "New CQC registration",
+      "most_recent_event_date": "2026-10-20",
+      "score": 69.0,
+      "score_breakdown": {
+        "new_registration@2026-10-20": 63.0,
+        "re_registration": 6.0
+      },
+      "reason": "Re-registered with CQC on 20 Oct 2026 (domiciliary care service, non-bed-based) in the last three weeks, so it is still standing up policies, training and systems. A new legal entity or owner has taken on an existing service in Fixture County; this is a documented registration signal, not evidence of a supplier search or purchasing intent. It carries an overall rating of Requires improvement. Rating evidence: Requires improvement [current]; CQC ratings file; published 2025-08-19.",
+      "evidence": [
+        {
+          "event_type": "new_registration",
+          "effective_date": "2026-10-20",
+          "old_value": null,
+          "new_value": "Registered",
+          "detail": "CQC registration recorded 2026-10-20",
+          "source_field": "location.registrationDate",
+          "source_url": "https://www.cqc.org.uk/location/1-13937101349",
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data"
+        }
+      ],
+      "rating_resolution": {
+        "contract_version": 1,
+        "value": "Requires improvement",
+        "publication_date": "2025-08-19",
+        "source": "CQC ratings file",
+        "status": "current",
+        "evidence": [
+          {
+            "source": "CQC API",
+            "value": null,
+            "publication_date": null,
+            "edition": "Frozen API observation 22 October 2026",
+            "sha256": "70aa25a7ea4710aaa84e9906769abbb8f2611132fe70de0fdea080fe82a1d15f",
+            "url": "https://api.cqc.org.uk/public/v1/locations/1-13937101349",
+            "status": "current"
+          },
+          {
+            "source": "CQC ratings file",
+            "value": "Requires improvement",
+            "publication_date": "2025-08-19",
+            "edition": "CQC download edition 2 October 2026; data cutoff unverified",
+            "sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+            "url": "ratings.ods",
+            "status": "current"
+          }
+        ],
+        "reason": "Newest comparable current-provider publication in supplied evidence"
+      },
+      "qualification_question": "Who is responsible for choosing suppliers for this newly registered service, and when does it expect to start operating?",
+      "buyer_questions": {
+        "recruitment": "How many care staff does this service plan to employ, how many are in post now, and when do its first packages or contracts start? Are those packages council-funded or already confirmed?",
+        "compliance": "Who is preparing this service for its first CQC inspection, and has it arranged a governance audit, mock inspection or safeguarding training yet?",
+        "software": "What does this service use for care records today (paper, spreadsheets or a digital system), is that system on the NHS assured supplier list for digital social care records, how many users does it have, and when is the contract up for renewal?"
+      }
+    },
+    {
+      "rank": 22,
+      "organisation_name": "Silverjen Limited",
+      "location_name": "Silverjen Limited",
+      "location_id": "1-10615519904",
+      "provider_id": "1-10615519904-provider",
+      "local_authority": "Fixture County",
+      "region": "Fixture Region",
+      "postcode": "KT22 7PL",
+      "service_types": [
+        "Domiciliary care service"
+      ],
+      "number_of_beds": null,
+      "current_rating": "Inadequate",
+      "primary_signal": "New CQC registration",
+      "most_recent_event_date": "2026-10-20",
+      "score": 69.0,
+      "score_breakdown": {
+        "new_registration@2026-10-20": 63.0,
+        "re_registration": 6.0
+      },
+      "reason": "Re-registered with CQC on 20 Oct 2026 (domiciliary care service, non-bed-based) in the last three weeks, so it is still standing up policies, training and systems. A new legal entity or owner has taken on an existing service in Fixture County; this is a documented registration signal, not evidence of a supplier search or purchasing intent. It carries an overall rating of Inadequate. Rating evidence: Inadequate [current]; CQC ratings file; published 2026-09-18.",
+      "evidence": [
+        {
+          "event_type": "new_registration",
+          "effective_date": "2026-10-20",
+          "old_value": null,
+          "new_value": "Registered",
+          "detail": "CQC registration recorded 2026-10-20",
+          "source_field": "location.registrationDate",
+          "source_url": "https://www.cqc.org.uk/location/1-10615519904",
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data"
+        }
+      ],
+      "rating_resolution": {
+        "contract_version": 1,
+        "value": "Inadequate",
+        "publication_date": "2026-09-18",
+        "source": "CQC ratings file",
+        "status": "current",
+        "evidence": [
+          {
+            "source": "CQC API",
+            "value": null,
+            "publication_date": null,
+            "edition": "Frozen API observation 22 October 2026",
+            "sha256": "ceb498724f7026ebb2b6869577b5fc85dad1c7d05dc37f4b6cebc72a02bc16fb",
+            "url": "https://api.cqc.org.uk/public/v1/locations/1-10615519904",
+            "status": "current"
+          },
+          {
+            "source": "CQC ratings file",
+            "value": "Inadequate",
+            "publication_date": "2026-09-18",
+            "edition": "CQC download edition 2 October 2026; data cutoff unverified",
+            "sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+            "url": "ratings.ods",
+            "status": "current"
+          }
+        ],
+        "reason": "Newest comparable current-provider publication in supplied evidence"
+      },
+      "qualification_question": "Who is responsible for choosing suppliers for this newly registered service, and when does it expect to start operating?",
+      "buyer_questions": {
+        "recruitment": "How many care staff does this service plan to employ, how many are in post now, and when do its first packages or contracts start? Are those packages council-funded or already confirmed?",
+        "compliance": "Who is preparing this service for its first CQC inspection, and has it arranged a governance audit, mock inspection or safeguarding training yet?",
+        "software": "What does this service use for care records today (paper, spreadsheets or a digital system), is that system on the NHS assured supplier list for digital social care records, how many users does it have, and when is the contract up for renewal?"
+      }
+    },
+    {
+      "rank": 23,
+      "organisation_name": "The Chesser Surgery",
+      "location_name": "The Chesser Surgery",
+      "location_id": "1-552527797",
+      "provider_id": "1-552527797-provider",
+      "local_authority": "Fixture County",
+      "region": "Fixture Region",
+      "postcode": "SM5 2RT",
+      "service_types": [
+        "Doctors consultation service"
+      ],
+      "number_of_beds": null,
+      "current_rating": "Requires improvement",
+      "primary_signal": "New CQC registration",
+      "most_recent_event_date": "2026-10-20",
+      "score": 69.0,
+      "score_breakdown": {
+        "new_registration@2026-10-20": 63.0,
+        "re_registration": 6.0
+      },
+      "reason": "Re-registered with CQC on 20 Oct 2026 (doctors consultation service, non-bed-based) in the last three weeks, so it is still standing up policies, training and systems. A new legal entity or owner has taken on an existing service in Fixture County; this is a documented registration signal, not evidence of a supplier search or purchasing intent. It carries an overall rating of Requires improvement. Rating evidence: Requires improvement [current]; CQC website; published 2025-03-05.",
+      "evidence": [
+        {
+          "event_type": "new_registration",
+          "effective_date": "2026-10-20",
+          "old_value": null,
+          "new_value": "Registered",
+          "detail": "CQC registration recorded 2026-10-20",
+          "source_field": "location.registrationDate",
+          "source_url": "https://www.cqc.org.uk/location/1-552527797",
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data"
+        }
+      ],
+      "rating_resolution": {
+        "contract_version": 1,
+        "value": "Requires improvement",
+        "publication_date": "2025-03-05",
+        "source": "CQC website",
+        "status": "current",
+        "evidence": [
+          {
+            "source": "CQC API",
+            "value": "Good",
+            "publication_date": "2016-11-10",
+            "edition": "Frozen API observation 22 October 2026",
+            "sha256": "03c5720c204e78981988ba86633890dbeb0d9f09fef331af9185fd05c7c9f913",
+            "url": "https://api.cqc.org.uk/public/v1/locations/1-552527797",
+            "status": "current"
+          },
+          {
+            "source": "CQC ratings file",
+            "value": "Requires improvement",
+            "publication_date": "2025-01-09",
+            "edition": "CQC download edition 2 October 2026; data cutoff unverified",
+            "sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+            "url": "ratings.ods",
+            "status": "current"
+          },
+          {
+            "value": "Requires improvement",
+            "status": "current",
+            "publication_date": "2025-03-05",
+            "url": "https://www.cqc.org.uk/location/1-552527797",
+            "observed_at": "2026-10-22T20:42:58.239646+00:00",
+            "sha256": "f75aad945ca687e797f3eadc2c2988ddf190789cca133505561975714972f59f",
+            "edition": "Frozen CQC website observation 22 October 2026",
+            "source": "CQC website"
+          }
+        ],
+        "reason": "Newest comparable current-provider publication in supplied evidence"
+      },
+      "qualification_question": "Who is responsible for choosing suppliers for this newly registered service, and when does it expect to start operating?",
+      "buyer_questions": {
+        "recruitment": "How many care staff does this service plan to employ, how many are in post now, and when do its first packages or contracts start? Are those packages council-funded or already confirmed?",
+        "compliance": "Who is preparing this service for its first CQC inspection, and has it arranged a governance audit, mock inspection or safeguarding training yet?",
+        "software": "What does this service use for care records today (paper, spreadsheets or a digital system), is that system on the NHS assured supplier list for digital social care records, how many users does it have, and when is the contract up for renewal?"
+      }
+    },
+    {
+      "rank": 24,
+      "organisation_name": "The Doctors Laboratory",
+      "location_name": "The Doctors Laboratory",
+      "location_id": "1-5588555895",
+      "provider_id": "1-5588555895-provider",
+      "local_authority": "Fixture County",
+      "region": "Fixture Region",
+      "postcode": "WC1H 9AX",
+      "service_types": [
+        "Diagnostic and/or screening service"
+      ],
+      "number_of_beds": null,
+      "current_rating": null,
+      "primary_signal": "New CQC registration",
+      "most_recent_event_date": "2026-10-20",
+      "score": 69.0,
+      "score_breakdown": {
+        "new_registration@2026-10-20": 63.0,
+        "re_registration": 6.0
+      },
+      "reason": "Re-registered with CQC on 20 Oct 2026 (diagnostic and/or screening service, non-bed-based) in the last three weeks, so it is still standing up policies, training and systems. A new legal entity or owner has taken on an existing service in Fixture County; this is a documented registration signal, not evidence of a supplier search or purchasing intent. Rating evidence: unrated [unrated]; no accepted current source; published date unavailable.",
+      "evidence": [
+        {
+          "event_type": "new_registration",
+          "effective_date": "2026-10-20",
+          "old_value": null,
+          "new_value": "Registered",
+          "detail": "CQC registration recorded 2026-10-20",
+          "source_field": "location.registrationDate",
+          "source_url": "https://www.cqc.org.uk/location/1-5588555895",
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data"
+        }
+      ],
+      "rating_resolution": {
+        "contract_version": 1,
+        "value": null,
+        "publication_date": null,
+        "source": null,
+        "status": "unrated",
+        "evidence": [
+          {
+            "source": "CQC API",
+            "value": "Inspected but not rated",
+            "publication_date": "2022-05-25",
+            "edition": "Frozen API observation 22 October 2026",
+            "sha256": "a7e2fde82eb9dc8acdddd8c003dec6d48b0e3848fb55187643d1be304519e26c",
+            "url": "https://api.cqc.org.uk/public/v1/locations/1-5588555895",
+            "status": "current"
+          },
+          {
+            "source": "CQC ratings file",
+            "value": null,
+            "publication_date": null,
+            "edition": null,
+            "sha256": null,
+            "url": null,
+            "status": "current"
+          }
+        ],
+        "reason": "No numerical location overall rating in supplied evidence"
+      },
+      "qualification_question": "Who is responsible for choosing suppliers for this newly registered service, and when does it expect to start operating?",
+      "buyer_questions": {
+        "recruitment": "How many care staff does this service plan to employ, how many are in post now, and when do its first packages or contracts start? Are those packages council-funded or already confirmed?",
+        "compliance": "Who is preparing this service for its first CQC inspection, and has it arranged a governance audit, mock inspection or safeguarding training yet?",
+        "software": "What does this service use for care records today (paper, spreadsheets or a digital system), is that system on the NHS assured supplier list for digital social care records, how many users does it have, and when is the contract up for renewal?"
+      }
+    },
+    {
+      "rank": 25,
+      "organisation_name": "Village Surgery",
+      "location_name": "Village Surgery",
+      "location_id": "1-546202187",
+      "provider_id": "1-546202187-provider",
+      "local_authority": "Fixture County",
+      "region": "Fixture Region",
+      "postcode": "SR3 2AN",
+      "service_types": [
+        "Doctors consultation service"
+      ],
+      "number_of_beds": null,
+      "current_rating": "Good",
+      "primary_signal": "New CQC registration",
+      "most_recent_event_date": "2026-10-20",
+      "score": 69.0,
+      "score_breakdown": {
+        "new_registration@2026-10-20": 63.0,
+        "re_registration": 6.0
+      },
+      "reason": "Re-registered with CQC on 20 Oct 2026 (doctors consultation service, non-bed-based) in the last three weeks, so it is still standing up policies, training and systems. A new legal entity or owner has taken on an existing service in Fixture County; this is a documented registration signal, not evidence of a supplier search or purchasing intent. It carries an overall rating of Good. Rating evidence: Good [current]; CQC ratings file; published 2026-03-31.",
+      "evidence": [
+        {
+          "event_type": "new_registration",
+          "effective_date": "2026-10-20",
+          "old_value": null,
+          "new_value": "Registered",
+          "detail": "CQC registration recorded 2026-10-20",
+          "source_field": "location.registrationDate",
+          "source_url": "https://www.cqc.org.uk/location/1-546202187",
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data"
+        }
+      ],
+      "rating_resolution": {
+        "contract_version": 1,
+        "value": "Good",
+        "publication_date": "2026-03-31",
+        "source": "CQC ratings file",
+        "status": "current",
+        "evidence": [
+          {
+            "source": "CQC API",
+            "value": null,
+            "publication_date": "2016-06-13",
+            "edition": "Frozen API observation 22 October 2026",
+            "sha256": "3aae3c77cdded1202d8ef51d6dbf2d68e3d8797990b68a4c0e739fb6f6bc15d5",
+            "url": "https://api.cqc.org.uk/public/v1/locations/1-546202187",
+            "status": "current"
+          },
+          {
+            "source": "CQC ratings file",
+            "value": "Good",
+            "publication_date": "2026-03-31",
+            "edition": "CQC download edition 2 October 2026; data cutoff unverified",
+            "sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+            "url": "ratings.ods",
+            "status": "current"
+          }
+        ],
+        "reason": "Newest comparable current-provider publication in supplied evidence"
+      },
+      "qualification_question": "Who is responsible for choosing suppliers for this newly registered service, and when does it expect to start operating?",
+      "buyer_questions": {
+        "recruitment": "How many care staff does this service plan to employ, how many are in post now, and when do its first packages or contracts start? Are those packages council-funded or already confirmed?",
+        "compliance": "Who is preparing this service for its first CQC inspection, and has it arranged a governance audit, mock inspection or safeguarding training yet?",
+        "software": "What does this service use for care records today (paper, spreadsheets or a digital system), is that system on the NHS assured supplier list for digital social care records, how many users does it have, and when is the contract up for renewal?"
+      }
+    },
+    {
+      "rank": 26,
+      "organisation_name": "Belle Vale Dental Centre",
+      "location_name": "Belle Vale Dental Centre",
+      "location_id": "1-199649069",
+      "provider_id": "1-199649069-provider",
+      "local_authority": "Fixture County",
+      "region": "Fixture Region",
+      "postcode": "L25 2XE",
+      "service_types": [
+        "Dental service"
+      ],
+      "number_of_beds": null,
+      "current_rating": null,
+      "primary_signal": "New CQC registration",
+      "most_recent_event_date": "2026-10-20",
+      "score": 63.0,
+      "score_breakdown": {
+        "new_registration@2026-10-20": 63.0
+      },
+      "reason": "Newly registered with CQC on 20 Oct 2026 (dental service, non-bed-based) in the last three weeks, so it is still standing up policies, training and systems. This is a first-time registration signal in Fixture County; it does not establish supplier need or purchasing intent, and no inspection history is available yet. Rating evidence: unrated [unrated]; no accepted current source; published date unavailable.",
+      "evidence": [
+        {
+          "event_type": "new_registration",
+          "effective_date": "2026-10-20",
+          "old_value": null,
+          "new_value": "Registered",
+          "detail": "CQC registration recorded 2026-10-20",
+          "source_field": "location.registrationDate",
+          "source_url": "https://www.cqc.org.uk/location/1-199649069",
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data"
+        }
+      ],
+      "rating_resolution": {
+        "contract_version": 1,
+        "value": null,
+        "publication_date": null,
+        "source": null,
+        "status": "unrated",
+        "evidence": [
+          {
+            "source": "CQC API",
+            "value": null,
+            "publication_date": null,
+            "edition": "Frozen API observation 22 October 2026",
+            "sha256": "46972cf7e3aee1fae5e1c4b05f3d25274dbe21eb48b3c252b375366984bcdba1",
+            "url": "https://api.cqc.org.uk/public/v1/locations/1-199649069",
+            "status": "current"
+          },
+          {
+            "source": "CQC ratings file",
+            "value": null,
+            "publication_date": null,
+            "edition": null,
+            "sha256": null,
+            "url": null,
+            "status": "current"
+          }
+        ],
+        "reason": "No numerical location overall rating in supplied evidence"
+      },
+      "qualification_question": "Who is responsible for choosing suppliers for this newly registered service, and when does it expect to start operating?",
+      "buyer_questions": {
+        "recruitment": "How many care staff does this service plan to employ, how many are in post now, and when do its first packages or contracts start? Are those packages council-funded or already confirmed?",
+        "compliance": "Who is preparing this service for its first CQC inspection, and has it arranged a governance audit, mock inspection or safeguarding training yet?",
+        "software": "What does this service use for care records today (paper, spreadsheets or a digital system), is that system on the NHS assured supplier list for digital social care records, how many users does it have, and when is the contract up for renewal?"
+      }
+    },
+    {
+      "rank": 27,
+      "organisation_name": "Candela Healthcare Ltd",
+      "location_name": "Candela Healthcare Ltd",
+      "location_id": "1-12566526711",
+      "provider_id": "1-12566526711-provider",
+      "local_authority": "Fixture County",
+      "region": "Fixture Region",
+      "postcode": "HR1 2HU",
+      "service_types": [
+        "Domiciliary care service"
+      ],
+      "number_of_beds": null,
+      "current_rating": null,
+      "primary_signal": "New CQC registration",
+      "most_recent_event_date": "2026-10-20",
+      "score": 63.0,
+      "score_breakdown": {
+        "new_registration@2026-10-20": 63.0
+      },
+      "reason": "Newly registered with CQC on 20 Oct 2026 (domiciliary care service, non-bed-based) in the last three weeks, so it is still standing up policies, training and systems. This is a first-time registration signal in Fixture County; it does not establish supplier need or purchasing intent, and no inspection history is available yet. Rating evidence: unrated [unrated]; no accepted current source; published date unavailable.",
+      "evidence": [
+        {
+          "event_type": "new_registration",
+          "effective_date": "2026-10-20",
+          "old_value": null,
+          "new_value": "Registered",
+          "detail": "CQC registration recorded 2026-10-20",
+          "source_field": "location.registrationDate",
+          "source_url": "https://www.cqc.org.uk/location/1-12566526711",
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data"
+        }
+      ],
+      "rating_resolution": {
+        "contract_version": 1,
+        "value": null,
+        "publication_date": null,
+        "source": null,
+        "status": "unrated",
+        "evidence": [
+          {
+            "source": "CQC API",
+            "value": null,
+            "publication_date": null,
+            "edition": "Frozen API observation 22 October 2026",
+            "sha256": "8db09699492bbcdaf7956197be3d43fe33dfd8b7ec5ed085f79fdfce500feeb1",
+            "url": "https://api.cqc.org.uk/public/v1/locations/1-12566526711",
+            "status": "current"
+          },
+          {
+            "source": "CQC ratings file",
+            "value": null,
+            "publication_date": null,
+            "edition": null,
+            "sha256": null,
+            "url": null,
+            "status": "current"
+          }
+        ],
+        "reason": "No numerical location overall rating in supplied evidence"
+      },
+      "qualification_question": "Who is responsible for choosing suppliers for this newly registered service, and when does it expect to start operating?",
+      "buyer_questions": {
+        "recruitment": "How many care staff does this service plan to employ, how many are in post now, and when do its first packages or contracts start? Are those packages council-funded or already confirmed?",
+        "compliance": "Who is preparing this service for its first CQC inspection, and has it arranged a governance audit, mock inspection or safeguarding training yet?",
+        "software": "What does this service use for care records today (paper, spreadsheets or a digital system), is that system on the NHS assured supplier list for digital social care records, how many users does it have, and when is the contract up for renewal?"
+      }
+    },
+    {
+      "rank": 28,
+      "organisation_name": "NEAD Support Ltd - Remote Clinical Service",
+      "location_name": "NEAD Support Ltd - Remote Clinical Service",
+      "location_id": "1-29650851551",
+      "provider_id": "1-29650851551-provider",
+      "local_authority": "Fixture County",
+      "region": "Fixture Region",
+      "postcode": "WA14 4UD",
+      "service_types": [
+        "Doctors consultation service"
+      ],
+      "number_of_beds": null,
+      "current_rating": null,
+      "primary_signal": "New CQC registration",
+      "most_recent_event_date": "2026-10-20",
+      "score": 63.0,
+      "score_breakdown": {
+        "new_registration@2026-10-20": 63.0
+      },
+      "reason": "Newly registered with CQC on 20 Oct 2026 (doctors consultation service, non-bed-based) in the last three weeks, so it is still standing up policies, training and systems. This is a first-time registration signal in Fixture County; it does not establish supplier need or purchasing intent, and no inspection history is available yet. Rating evidence: unrated [unrated]; no accepted current source; published date unavailable.",
+      "evidence": [
+        {
+          "event_type": "new_registration",
+          "effective_date": "2026-10-20",
+          "old_value": null,
+          "new_value": "Registered",
+          "detail": "CQC registration recorded 2026-10-20",
+          "source_field": "location.registrationDate",
+          "source_url": "https://www.cqc.org.uk/location/1-29650851551",
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data"
+        }
+      ],
+      "rating_resolution": {
+        "contract_version": 1,
+        "value": null,
+        "publication_date": null,
+        "source": null,
+        "status": "unrated",
+        "evidence": [
+          {
+            "source": "CQC API",
+            "value": null,
+            "publication_date": null,
+            "edition": "Frozen API observation 22 October 2026",
+            "sha256": "bf743d4573c63213c80e9b8683be0740d0f7cb6fcdb6950f10b8d087dc94aacd",
+            "url": "https://api.cqc.org.uk/public/v1/locations/1-29650851551",
+            "status": "current"
+          },
+          {
+            "source": "CQC ratings file",
+            "value": null,
+            "publication_date": null,
+            "edition": null,
+            "sha256": null,
+            "url": null,
+            "status": "current"
+          }
+        ],
+        "reason": "No numerical location overall rating in supplied evidence"
+      },
+      "qualification_question": "Who is responsible for choosing suppliers for this newly registered service, and when does it expect to start operating?",
+      "buyer_questions": {
+        "recruitment": "How many care staff does this service plan to employ, how many are in post now, and when do its first packages or contracts start? Are those packages council-funded or already confirmed?",
+        "compliance": "Who is preparing this service for its first CQC inspection, and has it arranged a governance audit, mock inspection or safeguarding training yet?",
+        "software": "What does this service use for care records today (paper, spreadsheets or a digital system), is that system on the NHS assured supplier list for digital social care records, how many users does it have, and when is the contract up for renewal?"
+      }
+    },
+    {
+      "rank": 29,
+      "organisation_name": "Nottingham University Hospital",
+      "location_name": "Nottingham University Hospital",
+      "location_id": "RHARA",
+      "provider_id": "RHARA-provider",
+      "local_authority": "Fixture County",
+      "region": "Fixture Region",
+      "postcode": "NG7 2UH",
+      "service_types": [
+        "Dental service",
+        "Hospital services for people with mental health needs, learning disabilities and problems with substance misuse"
+      ],
+      "number_of_beds": null,
+      "current_rating": null,
+      "primary_signal": "New CQC registration",
+      "most_recent_event_date": "2026-10-20",
+      "score": 63.0,
+      "score_breakdown": {
+        "new_registration@2026-10-20": 63.0
+      },
+      "reason": "Newly registered with CQC on 20 Oct 2026 (dental service, non-bed-based) in the last three weeks, so it is still standing up policies, training and systems. This is a first-time registration signal in Fixture County; it does not establish supplier need or purchasing intent, and no inspection history is available yet. Rating evidence: unrated [unrated]; no accepted current source; published date unavailable.",
+      "evidence": [
+        {
+          "event_type": "new_registration",
+          "effective_date": "2026-10-20",
+          "old_value": null,
+          "new_value": "Registered",
+          "detail": "CQC registration recorded 2026-10-20",
+          "source_field": "location.registrationDate",
+          "source_url": "https://www.cqc.org.uk/location/RHARA",
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data"
+        }
+      ],
+      "rating_resolution": {
+        "contract_version": 1,
+        "value": null,
+        "publication_date": null,
+        "source": null,
+        "status": "unrated",
+        "evidence": [
+          {
+            "source": "CQC API",
+            "value": null,
+            "publication_date": null,
+            "edition": "Frozen API observation 22 October 2026",
+            "sha256": "8ffb3a9be0a3fa2cd22f1c91ef03d265b9ceded4f20f7a2d99960edd53a296e0",
+            "url": "https://api.cqc.org.uk/public/v1/locations/RHARA",
+            "status": "current"
+          },
+          {
+            "source": "CQC ratings file",
+            "value": null,
+            "publication_date": null,
+            "edition": null,
+            "sha256": null,
+            "url": null,
+            "status": "current"
+          }
+        ],
+        "reason": "No numerical location overall rating in supplied evidence"
+      },
+      "qualification_question": "Who is responsible for choosing suppliers for this newly registered service, and when does it expect to start operating?",
+      "buyer_questions": {
+        "recruitment": "How many care staff does this service plan to employ, how many are in post now, and when do its first packages or contracts start? Are those packages council-funded or already confirmed?",
+        "compliance": "Who is preparing this service for its first CQC inspection, and has it arranged a governance audit, mock inspection or safeguarding training yet?",
+        "software": "What does this service use for care records today (paper, spreadsheets or a digital system), is that system on the NHS assured supplier list for digital social care records, how many users does it have, and when is the contract up for renewal?"
+      }
+    },
+    {
+      "rank": 30,
+      "organisation_name": "Tillingham Medical Centre",
+      "location_name": "Tillingham Medical Centre",
+      "location_id": "1-16491295796",
+      "provider_id": "1-16491295796-provider",
+      "local_authority": "Fixture County",
+      "region": "Fixture Region",
+      "postcode": "CM0 7TH",
+      "service_types": [
+        "Doctors treatment service"
+      ],
+      "number_of_beds": null,
+      "current_rating": null,
+      "primary_signal": "New CQC registration",
+      "most_recent_event_date": "2026-10-20",
+      "score": 63.0,
+      "score_breakdown": {
+        "new_registration@2026-10-20": 63.0
+      },
+      "reason": "Current-provider overall rating is unresolved. The supplied evidence does not establish a current-provider inspection; review the CQC profile and retained source evidence before qualification. Rating evidence: unresolved [unresolved]; no accepted current source; published date unavailable.",
+      "evidence": [
+        {
+          "event_type": "new_registration",
+          "effective_date": "2026-10-20",
+          "old_value": null,
+          "new_value": "Registered",
+          "detail": "CQC registration recorded 2026-10-20",
+          "source_field": "location.registrationDate",
+          "source_url": "https://www.cqc.org.uk/location/1-16491295796",
+          "source_edition": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data"
+        }
+      ],
+      "rating_resolution": {
+        "contract_version": 1,
+        "value": null,
+        "publication_date": null,
+        "source": null,
+        "status": "unresolved",
+        "evidence": [
+          {
+            "source": "CQC API",
+            "value": null,
+            "publication_date": null,
+            "edition": "Frozen API observation 22 October 2026",
+            "sha256": "78104a5dd11b4adce7b46390bd7ff5e3a49203c0082904fa69723fa871b436d8",
+            "url": "https://api.cqc.org.uk/public/v1/locations/1-16491295796",
+            "status": "current"
+          },
+          {
+            "source": "CQC ratings file",
+            "value": "Outstanding",
+            "publication_date": "2018-08-24",
+            "edition": "CQC download edition 2 October 2026; data cutoff unverified",
+            "sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+            "url": "ratings.ods",
+            "status": "unresolved"
+          },
+          {
+            "value": null,
+            "status": "unresolved",
+            "publication_date": null,
+            "url": "https://www.cqc.org.uk/location/1-16491295796",
+            "observed_at": "2026-10-22T20:42:50.709082+00:00",
+            "sha256": "8cb4c80a214621a2d423d3248518e08566dfca6a76ce4ae01b0e9f02e3a9a3cc",
+            "edition": "Frozen CQC website observation 22 October 2026",
+            "context": "Overview Registered on\n                    26 July 2023 This service was registered by CQC on 26 July 2023. New services are assessed to check they are likely to be safe, effective, caring, responsive, and well-led. These assessments can include: Site visits Criminal record checks Interviews with key managers A detailed review of how the service will be run Follow-up inspections of new services are undertaken regularly following registration. Specialisms / services Maternity and midwifery services Family planning Treatment of disease, disorder or injury Surgical procedures Diagnostic and screening procedures Services for everyone Who runs this service Organisation Tillingham Medical Centre\n                        is run by\n                        Dengie Medical Partnership Dr Daniel John Hancock Registered Manager",
+            "source": "CQC website"
+          }
+        ],
+        "reason": "Current-provider evidence is unresolved"
+      },
+      "qualification_question": "Who is responsible for choosing suppliers for this newly registered service, and when does it expect to start operating?",
+      "buyer_questions": {
+        "recruitment": "How many care staff does this service plan to employ, how many are in post now, and when do its first packages or contracts start? Are those packages council-funded or already confirmed?",
+        "compliance": "Who is preparing this service for its first CQC inspection, and has it arranged a governance audit, mock inspection or safeguarding training yet?",
+        "software": "What does this service use for care records today (paper, spreadsheets or a digital system), is that system on the NHS assured supplier list for digital social care records, how many users does it have, and when is the contract up for renewal?"
+      }
+    }
+  ],
+  "executive_summary": {
+    "provider_group": null,
+    "territory": "Fixture County",
+    "territory_kind": "local authority",
+    "date_generated": "2026-10-29",
+    "source_edition": "2026-10-22",
+    "window": "2026-07-25 to 2026-10-22",
+    "territory_locations_in_source": 30,
+    "opportunity_set_size": 30,
+    "shortlisted": 30,
+    "headline": "30 location(s) in Fixture County show a supported opportunity signal in the 90-day window ending 22 Oct 2026; 30 are shortlisted and ranked.",
+    "movement_summary": "30 new registration(s)",
+    "strongest_opportunities": [
+      "Hallmark Willingdon Park Manor Luxury Care Home (Hallmark Willingdon Park Manor Luxury Care Home) - new cqc registration",
+      "Rose Court Care Home (Rose Court Care Home) - new cqc registration",
+      "The Check House (The Check House) - new cqc registration"
+    ],
+    "limitations": "Reflects the published CQC register edition, not a live lookup; opportunity signals show where to look first, not provider quality or intent.",
+    "shortfall_notice": null
+  },
+  "territory_insights": {
+    "events_by_type": {
+      "new_registration": 30
+    },
+    "rating_moves": {
+      "declines": 0,
+      "improvements": 0
+    },
+    "new_beds_entering_market": 457,
+    "activity_by_sub_area": [
+      {
+        "area": "Fixture Region",
+        "events": 30
+      }
+    ],
+    "service_type_mix": [
+      {
+        "service_type": "Care home service without nursing",
+        "organisations": 8
+      },
+      {
+        "service_type": "Care home service with nursing",
+        "organisations": 6
+      },
+      {
+        "service_type": "Domiciliary care service",
+        "organisations": 6
+      },
+      {
+        "service_type": "Doctors consultation service",
+        "organisations": 4
+      },
+      {
+        "service_type": "Supported living service",
+        "organisations": 3
+      },
+      {
+        "service_type": "Dental service",
+        "organisations": 2
+      }
+    ],
+    "most_active_providers": [],
+    "shortlist_size": 30,
+    "rating_date_coverage": {
+      "undated_locations": 0,
+      "recent_rating_changes_available": true,
+      "limitation": "Only CQC-dated rating movements are counted."
+    }
+  },
+  "next_actions": [
+    "Review the 30 newly registered location(s) first. The registration date is a research signal only; verify the current record and any explicit supplier need before considering contact. The shortlist links each CQC record.",
+    "Verify each organisation's current status on the linked CQC page before outreach - this brief reflects the published register edition, not a live lookup."
+  ],
+  "methodology_notes": [
+    "Scope: local authority = Fixture County. Window: 2026-07-25 to 2026-10-22 inclusive (90 days), anchored to the newest source date.",
+    "Supported events: new CQC registration in-window (excluding dormant locations); overall rating change in-window (derived from ordered historic/current ratings); new inspection report in-window where no change can be derived.",
+    "Score recency is measured against generation, not the source window. Score = base weight per event x recency multiplier (1.5 within 30 days, 1.2 within 90, 1.05 within 180) + rating-direction adjustment (downgrade +16, upgrade +9) + a bed-count size factor + a provider-cluster bonus where the same provider has multiple locations moving. Scores are capped at 100.",
+    "One location represents each provider: highest score, then most recent event date, then organisation name, then lexicographically smallest CQC location id. Deduplication happens before the shortlist limit. Ties break by those same keys, so the same source data always yields the same ranking."
+  ],
+  "data_caveats": [
+    "Only CQC-dated rating movements are counted.",
+    "Rating freshness is measured against the generation date, separately from the source window. Stale RI records remain visible in evidence coverage, outside the shortlist when they have no in-window signal. Missing metadata describes the supplied snapshot, not a claim that CQC never published it.",
+    "This brief reflects the published CQC register edition dated 2026-10-22 (the newest date present in the source), not a live API lookup.",
+    "The register carries the latest rating and its report date. Where no rating history is present a change cannot be derived, so a first/refreshed rating is reported as a new inspection report rather than a rating change.",
+    "Organisations with incomplete provider identifiers or names in the source are excluded from the shortlist rather than shown with gaps.",
+    "Opportunity signals indicate where to investigate first; they are not statements about a provider's quality, finances, or intent.",
+    "Contains public sector information licensed under the Open Government Licence v3.0."
+  ],
+  "source_provenance": {
+    "source_page": "https://www.cqc.org.uk/about-us/transparency/using-cqc-data",
+    "locations_snapshot": "frozen-rating-audit-2026-10-22",
+    "providers_snapshot": "fixture-only",
+    "snapshot_edition_date": "2026-10-22",
+    "generator": "api.services.territory_brief.generate_territory_opportunity_brief",
+    "generated_at": "2026-10-29T00:00:00+00:00",
+    "licence": "Contains public sector information licensed under the Open Government Licence v3.0",
+    "licence_url": "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/"
+  },
+  "evidence_coverage": [
+    {
+      "location_id": "1-10192918971",
+      "provider_id": "1-10192918971-provider",
+      "location_name": "Woodways",
+      "current_rating": "Outstanding",
+      "rating_resolution": {
+        "contract_version": 1,
+        "value": "Outstanding",
+        "publication_date": "2025-07-29",
+        "source": "CQC ratings file",
+        "status": "current",
+        "evidence": [
+          {
+            "source": "CQC API",
+            "value": null,
+            "publication_date": null,
+            "edition": "Frozen API observation 22 October 2026",
+            "sha256": "9cbb832797ecbae9e3fb34ae66d42d4af307652ec4c1f7ca54994d3f1d15f763",
+            "url": "https://api.cqc.org.uk/public/v1/locations/1-10192918971",
+            "status": "current"
+          },
+          {
+            "source": "CQC ratings file",
+            "value": "Outstanding",
+            "publication_date": "2025-07-29",
+            "edition": "CQC download edition 2 October 2026; data cutoff unverified",
+            "sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+            "url": "ratings.ods",
+            "status": "current"
+          }
+        ],
+        "reason": "Newest comparable current-provider publication in supplied evidence"
+      },
+      "rating_publication_date": "2025-07-29",
+      "rating_freshness": "stale (over 12 months)",
+      "registration_date": "2026-10-20",
+      "recorded_source_url": "https://api.cqc.org.uk/public/v1/locations/1-10192918971",
+      "recorded_source_hash": "9cbb832797ecbae9e3fb34ae66d42d4af307652ec4c1f7ca54994d3f1d15f763",
+      "registration_metadata_gaps": [],
+      "reference_url": "https://www.cqc.org.uk/location/1-10192918971"
+    },
+    {
+      "location_id": "1-10615519904",
+      "provider_id": "1-10615519904-provider",
+      "location_name": "Silverjen Limited",
+      "current_rating": "Inadequate",
+      "rating_resolution": {
+        "contract_version": 1,
+        "value": "Inadequate",
+        "publication_date": "2026-09-18",
+        "source": "CQC ratings file",
+        "status": "current",
+        "evidence": [
+          {
+            "source": "CQC API",
+            "value": null,
+            "publication_date": null,
+            "edition": "Frozen API observation 22 October 2026",
+            "sha256": "ceb498724f7026ebb2b6869577b5fc85dad1c7d05dc37f4b6cebc72a02bc16fb",
+            "url": "https://api.cqc.org.uk/public/v1/locations/1-10615519904",
+            "status": "current"
+          },
+          {
+            "source": "CQC ratings file",
+            "value": "Inadequate",
+            "publication_date": "2026-09-18",
+            "edition": "CQC download edition 2 October 2026; data cutoff unverified",
+            "sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+            "url": "ratings.ods",
+            "status": "current"
+          }
+        ],
+        "reason": "Newest comparable current-provider publication in supplied evidence"
+      },
+      "rating_publication_date": "2026-09-18",
+      "rating_freshness": "within 12 months",
+      "registration_date": "2026-10-20",
+      "recorded_source_url": "https://api.cqc.org.uk/public/v1/locations/1-10615519904",
+      "recorded_source_hash": "ceb498724f7026ebb2b6869577b5fc85dad1c7d05dc37f4b6cebc72a02bc16fb",
+      "registration_metadata_gaps": [],
+      "reference_url": "https://www.cqc.org.uk/location/1-10615519904"
+    },
+    {
+      "location_id": "1-11270646845",
+      "provider_id": "1-11270646845-provider",
+      "location_name": "Kelly Healthcare Services Limited",
+      "current_rating": "Good",
+      "rating_resolution": {
+        "contract_version": 1,
+        "value": "Good",
+        "publication_date": "2025-03-14",
+        "source": "CQC ratings file",
+        "status": "current",
+        "evidence": [
+          {
+            "source": "CQC API",
+            "value": null,
+            "publication_date": null,
+            "edition": "Frozen API observation 22 October 2026",
+            "sha256": "29bd7fa5f18024ee0297244b4df876abc65700a8d554f33371fb0551c5ea5026",
+            "url": "https://api.cqc.org.uk/public/v1/locations/1-11270646845",
+            "status": "current"
+          },
+          {
+            "source": "CQC ratings file",
+            "value": "Good",
+            "publication_date": "2025-03-14",
+            "edition": "CQC download edition 2 October 2026; data cutoff unverified",
+            "sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+            "url": "ratings.ods",
+            "status": "current"
+          }
+        ],
+        "reason": "Newest comparable current-provider publication in supplied evidence"
+      },
+      "rating_publication_date": "2025-03-14",
+      "rating_freshness": "stale (over 12 months)",
+      "registration_date": "2026-10-20",
+      "recorded_source_url": "https://api.cqc.org.uk/public/v1/locations/1-11270646845",
+      "recorded_source_hash": "29bd7fa5f18024ee0297244b4df876abc65700a8d554f33371fb0551c5ea5026",
+      "registration_metadata_gaps": [],
+      "reference_url": "https://www.cqc.org.uk/location/1-11270646845"
+    },
+    {
+      "location_id": "1-113028260",
+      "provider_id": "1-113028260-provider",
+      "location_name": "Fairfield Nursing Home",
+      "current_rating": "Inadequate",
+      "rating_resolution": {
+        "contract_version": 1,
+        "value": "Inadequate",
+        "publication_date": "2025-10-27",
+        "source": "CQC ratings file",
+        "status": "current",
+        "evidence": [
+          {
+            "source": "CQC API",
+            "value": null,
+            "publication_date": null,
+            "edition": "Frozen API observation 22 October 2026",
+            "sha256": "b3dcdbe451d8659349fabfe1907c01d9a01f9174306ddbfdca9d4db03e2d1df3",
+            "url": "https://api.cqc.org.uk/public/v1/locations/1-113028260",
+            "status": "current"
+          },
+          {
+            "source": "CQC ratings file",
+            "value": "Inadequate",
+            "publication_date": "2025-10-27",
+            "edition": "CQC download edition 2 October 2026; data cutoff unverified",
+            "sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+            "url": "ratings.ods",
+            "status": "current"
+          }
+        ],
+        "reason": "Newest comparable current-provider publication in supplied evidence"
+      },
+      "rating_publication_date": "2025-10-27",
+      "rating_freshness": "stale (over 12 months)",
+      "registration_date": "2026-10-20",
+      "recorded_source_url": "https://api.cqc.org.uk/public/v1/locations/1-113028260",
+      "recorded_source_hash": "b3dcdbe451d8659349fabfe1907c01d9a01f9174306ddbfdca9d4db03e2d1df3",
+      "registration_metadata_gaps": [],
+      "reference_url": "https://www.cqc.org.uk/location/1-113028260"
+    },
+    {
+      "location_id": "1-12566526711",
+      "provider_id": "1-12566526711-provider",
+      "location_name": "Candela Healthcare Ltd",
+      "current_rating": null,
+      "rating_resolution": {
+        "contract_version": 1,
+        "value": null,
+        "publication_date": null,
+        "source": null,
+        "status": "unrated",
+        "evidence": [
+          {
+            "source": "CQC API",
+            "value": null,
+            "publication_date": null,
+            "edition": "Frozen API observation 22 October 2026",
+            "sha256": "8db09699492bbcdaf7956197be3d43fe33dfd8b7ec5ed085f79fdfce500feeb1",
+            "url": "https://api.cqc.org.uk/public/v1/locations/1-12566526711",
+            "status": "current"
+          },
+          {
+            "source": "CQC ratings file",
+            "value": null,
+            "publication_date": null,
+            "edition": null,
+            "sha256": null,
+            "url": null,
+            "status": "current"
+          }
+        ],
+        "reason": "No numerical location overall rating in supplied evidence"
+      },
+      "rating_publication_date": null,
+      "rating_freshness": "unknown (no publication date)",
+      "registration_date": "2026-10-20",
+      "recorded_source_url": "https://api.cqc.org.uk/public/v1/locations/1-12566526711",
+      "recorded_source_hash": "8db09699492bbcdaf7956197be3d43fe33dfd8b7ec5ed085f79fdfce500feeb1",
+      "registration_metadata_gaps": [],
+      "reference_url": "https://www.cqc.org.uk/location/1-12566526711"
+    },
+    {
+      "location_id": "1-125730630",
+      "provider_id": "1-125730630-provider",
+      "location_name": "Welcome House - The Chestnuts",
+      "current_rating": "Requires improvement",
+      "rating_resolution": {
+        "contract_version": 1,
+        "value": "Requires improvement",
+        "publication_date": "2026-10-13",
+        "source": "CQC website",
+        "status": "current",
+        "evidence": [
+          {
+            "source": "CQC API",
+            "value": null,
+            "publication_date": null,
+            "edition": "Frozen API observation 22 October 2026",
+            "sha256": "ac93445be49bde1969a4c05cc3d4b03d31f0f96cdeeace8b20589f4bb36fa93f",
+            "url": "https://api.cqc.org.uk/public/v1/locations/1-125730630",
+            "status": "current"
+          },
+          {
+            "source": "CQC ratings file",
+            "value": "Inadequate",
+            "publication_date": "2025-09-25",
+            "edition": "CQC download edition 2 October 2026; data cutoff unverified",
+            "sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+            "url": "ratings.ods",
+            "status": "current"
+          },
+          {
+            "value": "Requires improvement",
+            "status": "current",
+            "publication_date": "2026-10-13",
+            "url": "https://www.cqc.org.uk/location/1-125730630",
+            "observed_at": "2026-10-22T20:42:54.044918+00:00",
+            "sha256": "e1c7ef47a78fb8fa26d954aa3f31bc2b6c2d1fa3996e34892d716fa5dee420e6",
+            "edition": "Frozen CQC website observation 22 October 2026",
+            "source": "CQC website"
+          }
+        ],
+        "reason": "Newest comparable current-provider publication in supplied evidence"
+      },
+      "rating_publication_date": "2026-10-13",
+      "rating_freshness": "within 12 months",
+      "registration_date": "2026-10-20",
+      "recorded_source_url": "https://api.cqc.org.uk/public/v1/locations/1-125730630",
+      "recorded_source_hash": "ac93445be49bde1969a4c05cc3d4b03d31f0f96cdeeace8b20589f4bb36fa93f",
+      "registration_metadata_gaps": [],
+      "reference_url": "https://www.cqc.org.uk/location/1-125730630"
+    },
+    {
+      "location_id": "1-130890582",
+      "provider_id": "1-130890582-provider",
+      "location_name": "Carlton House",
+      "current_rating": "Outstanding",
+      "rating_resolution": {
+        "contract_version": 1,
+        "value": "Outstanding",
+        "publication_date": "2026-06-03",
+        "source": "CQC ratings file",
+        "status": "current",
+        "evidence": [
+          {
+            "source": "CQC API",
+            "value": null,
+            "publication_date": null,
+            "edition": "Frozen API observation 22 October 2026",
+            "sha256": "979ccb81c1cb2c2e097905a934641489c2462706bc2198d942c2ef5d7929c81a",
+            "url": "https://api.cqc.org.uk/public/v1/locations/1-130890582",
+            "status": "current"
+          },
+          {
+            "source": "CQC ratings file",
+            "value": "Outstanding",
+            "publication_date": "2026-06-03",
+            "edition": "CQC download edition 2 October 2026; data cutoff unverified",
+            "sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+            "url": "ratings.ods",
+            "status": "current"
+          }
+        ],
+        "reason": "Newest comparable current-provider publication in supplied evidence"
+      },
+      "rating_publication_date": "2026-06-03",
+      "rating_freshness": "within 12 months",
+      "registration_date": "2026-10-20",
+      "recorded_source_url": "https://api.cqc.org.uk/public/v1/locations/1-130890582",
+      "recorded_source_hash": "979ccb81c1cb2c2e097905a934641489c2462706bc2198d942c2ef5d7929c81a",
+      "registration_metadata_gaps": [],
+      "reference_url": "https://www.cqc.org.uk/location/1-130890582"
+    },
+    {
+      "location_id": "1-13937101349",
+      "provider_id": "1-13937101349-provider",
+      "location_name": "Nomira Care Ltd",
+      "current_rating": "Requires improvement",
+      "rating_resolution": {
+        "contract_version": 1,
+        "value": "Requires improvement",
+        "publication_date": "2025-08-19",
+        "source": "CQC ratings file",
+        "status": "current",
+        "evidence": [
+          {
+            "source": "CQC API",
+            "value": null,
+            "publication_date": null,
+            "edition": "Frozen API observation 22 October 2026",
+            "sha256": "70aa25a7ea4710aaa84e9906769abbb8f2611132fe70de0fdea080fe82a1d15f",
+            "url": "https://api.cqc.org.uk/public/v1/locations/1-13937101349",
+            "status": "current"
+          },
+          {
+            "source": "CQC ratings file",
+            "value": "Requires improvement",
+            "publication_date": "2025-08-19",
+            "edition": "CQC download edition 2 October 2026; data cutoff unverified",
+            "sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+            "url": "ratings.ods",
+            "status": "current"
+          }
+        ],
+        "reason": "Newest comparable current-provider publication in supplied evidence"
+      },
+      "rating_publication_date": "2025-08-19",
+      "rating_freshness": "stale (over 12 months)",
+      "registration_date": "2026-10-20",
+      "recorded_source_url": "https://api.cqc.org.uk/public/v1/locations/1-13937101349",
+      "recorded_source_hash": "70aa25a7ea4710aaa84e9906769abbb8f2611132fe70de0fdea080fe82a1d15f",
+      "registration_metadata_gaps": [],
+      "reference_url": "https://www.cqc.org.uk/location/1-13937101349"
+    },
+    {
+      "location_id": "1-142705508",
+      "provider_id": "1-142705508-provider",
+      "location_name": "Silverdale Nursing Home",
+      "current_rating": "Inadequate",
+      "rating_resolution": {
+        "contract_version": 1,
+        "value": "Inadequate",
+        "publication_date": "2026-07-08",
+        "source": "CQC ratings file",
+        "status": "current",
+        "evidence": [
+          {
+            "source": "CQC API",
+            "value": null,
+            "publication_date": null,
+            "edition": "Frozen API observation 22 October 2026",
+            "sha256": "5b75a0e6242070f61da5d9b250f091e221dc9533fd089cfb7fc26cb131c94647",
+            "url": "https://api.cqc.org.uk/public/v1/locations/1-142705508",
+            "status": "current"
+          },
+          {
+            "source": "CQC ratings file",
+            "value": "Inadequate",
+            "publication_date": "2026-07-08",
+            "edition": "CQC download edition 2 October 2026; data cutoff unverified",
+            "sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+            "url": "ratings.ods",
+            "status": "current"
+          }
+        ],
+        "reason": "Newest comparable current-provider publication in supplied evidence"
+      },
+      "rating_publication_date": "2026-07-08",
+      "rating_freshness": "within 12 months",
+      "registration_date": "2026-10-20",
+      "recorded_source_url": "https://api.cqc.org.uk/public/v1/locations/1-142705508",
+      "recorded_source_hash": "5b75a0e6242070f61da5d9b250f091e221dc9533fd089cfb7fc26cb131c94647",
+      "registration_metadata_gaps": [],
+      "reference_url": "https://www.cqc.org.uk/location/1-142705508"
+    },
+    {
+      "location_id": "1-152721284",
+      "provider_id": "1-152721284-provider",
+      "location_name": "St Stephens Nursing Home",
+      "current_rating": "Requires improvement",
+      "rating_resolution": {
+        "contract_version": 1,
+        "value": "Requires improvement",
+        "publication_date": "2026-05-20",
+        "source": "CQC ratings file + CQC website",
+        "status": "current",
+        "evidence": [
+          {
+            "source": "CQC API",
+            "value": "Good",
+            "publication_date": "2019-07-16",
+            "edition": "Frozen API observation 22 October 2026",
+            "sha256": "d4806c03e19f98f1083d4813550a3ed08dc0ce20e4ee259d5c57074305219b1d",
+            "url": "https://api.cqc.org.uk/public/v1/locations/1-152721284",
+            "status": "current"
+          },
+          {
+            "source": "CQC ratings file",
+            "value": "Requires improvement",
+            "publication_date": "2026-05-20",
+            "edition": "CQC download edition 2 October 2026; data cutoff unverified",
+            "sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+            "url": "ratings.ods",
+            "status": "current"
+          },
+          {
+            "value": "Requires improvement",
+            "status": "current",
+            "publication_date": "2026-05-20",
+            "url": "https://www.cqc.org.uk/location/1-152721284",
+            "observed_at": "2026-10-22T20:42:55.348514+00:00",
+            "sha256": "a75240f5c8c68ed811c45ee8211242c603fd8ae0eff437ee7e3f7dc2200b0f42",
+            "edition": "Frozen CQC website observation 22 October 2026",
+            "source": "CQC website"
+          }
+        ],
+        "reason": "Newest comparable current-provider publication in supplied evidence"
+      },
+      "rating_publication_date": "2026-05-20",
+      "rating_freshness": "within 12 months",
+      "registration_date": "2026-10-20",
+      "recorded_source_url": "https://api.cqc.org.uk/public/v1/locations/1-152721284",
+      "recorded_source_hash": "d4806c03e19f98f1083d4813550a3ed08dc0ce20e4ee259d5c57074305219b1d",
+      "registration_metadata_gaps": [],
+      "reference_url": "https://www.cqc.org.uk/location/1-152721284"
+    },
+    {
+      "location_id": "1-15297949474",
+      "provider_id": "1-15297949474-provider",
+      "location_name": "Rose Court Care Home",
+      "current_rating": "Requires improvement",
+      "rating_resolution": {
+        "contract_version": 1,
+        "value": "Requires improvement",
+        "publication_date": "2025-08-12",
+        "source": "CQC ratings file",
+        "status": "current",
+        "evidence": [
+          {
+            "source": "CQC API",
+            "value": null,
+            "publication_date": null,
+            "edition": "Frozen API observation 22 October 2026",
+            "sha256": "b016ecdec06db5073a8a7d802137a48f8e43a5c10a778b19b2294f9cdcc27807",
+            "url": "https://api.cqc.org.uk/public/v1/locations/1-15297949474",
+            "status": "current"
+          },
+          {
+            "source": "CQC ratings file",
+            "value": "Requires improvement",
+            "publication_date": "2025-08-12",
+            "edition": "CQC download edition 2 October 2026; data cutoff unverified",
+            "sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+            "url": "ratings.ods",
+            "status": "current"
+          }
+        ],
+        "reason": "Newest comparable current-provider publication in supplied evidence"
+      },
+      "rating_publication_date": "2025-08-12",
+      "rating_freshness": "stale (over 12 months)",
+      "registration_date": "2026-10-20",
+      "recorded_source_url": "https://api.cqc.org.uk/public/v1/locations/1-15297949474",
+      "recorded_source_hash": "b016ecdec06db5073a8a7d802137a48f8e43a5c10a778b19b2294f9cdcc27807",
+      "registration_metadata_gaps": [],
+      "reference_url": "https://www.cqc.org.uk/location/1-15297949474"
+    },
+    {
+      "location_id": "1-16491295796",
+      "provider_id": "1-16491295796-provider",
+      "location_name": "Tillingham Medical Centre",
+      "current_rating": null,
+      "rating_resolution": {
+        "contract_version": 1,
+        "value": null,
+        "publication_date": null,
+        "source": null,
+        "status": "unresolved",
+        "evidence": [
+          {
+            "source": "CQC API",
+            "value": null,
+            "publication_date": null,
+            "edition": "Frozen API observation 22 October 2026",
+            "sha256": "78104a5dd11b4adce7b46390bd7ff5e3a49203c0082904fa69723fa871b436d8",
+            "url": "https://api.cqc.org.uk/public/v1/locations/1-16491295796",
+            "status": "current"
+          },
+          {
+            "source": "CQC ratings file",
+            "value": "Outstanding",
+            "publication_date": "2018-08-24",
+            "edition": "CQC download edition 2 October 2026; data cutoff unverified",
+            "sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+            "url": "ratings.ods",
+            "status": "unresolved"
+          },
+          {
+            "value": null,
+            "status": "unresolved",
+            "publication_date": null,
+            "url": "https://www.cqc.org.uk/location/1-16491295796",
+            "observed_at": "2026-10-22T20:42:50.709082+00:00",
+            "sha256": "8cb4c80a214621a2d423d3248518e08566dfca6a76ce4ae01b0e9f02e3a9a3cc",
+            "edition": "Frozen CQC website observation 22 October 2026",
+            "context": "Overview Registered on\n                    26 July 2023 This service was registered by CQC on 26 July 2023. New services are assessed to check they are likely to be safe, effective, caring, responsive, and well-led. These assessments can include: Site visits Criminal record checks Interviews with key managers A detailed review of how the service will be run Follow-up inspections of new services are undertaken regularly following registration. Specialisms / services Maternity and midwifery services Family planning Treatment of disease, disorder or injury Surgical procedures Diagnostic and screening procedures Services for everyone Who runs this service Organisation Tillingham Medical Centre\n                        is run by\n                        Dengie Medical Partnership Dr Daniel John Hancock Registered Manager",
+            "source": "CQC website"
+          }
+        ],
+        "reason": "Current-provider evidence is unresolved"
+      },
+      "rating_publication_date": null,
+      "rating_freshness": "unknown (no publication date)",
+      "registration_date": "2026-10-20",
+      "recorded_source_url": "https://api.cqc.org.uk/public/v1/locations/1-16491295796",
+      "recorded_source_hash": "78104a5dd11b4adce7b46390bd7ff5e3a49203c0082904fa69723fa871b436d8",
+      "registration_metadata_gaps": [],
+      "reference_url": "https://www.cqc.org.uk/location/1-16491295796"
+    },
+    {
+      "location_id": "1-16516340886",
+      "provider_id": "1-16516340886-provider",
+      "location_name": "Collegiate House",
+      "current_rating": "Outstanding",
+      "rating_resolution": {
+        "contract_version": 1,
+        "value": "Outstanding",
+        "publication_date": "2026-08-27",
+        "source": "CQC ratings file",
+        "status": "current",
+        "evidence": [
+          {
+            "source": "CQC API",
+            "value": null,
+            "publication_date": null,
+            "edition": "Frozen API observation 22 October 2026",
+            "sha256": "b05797cd869268d02bd0b4768c009750f3217f4461369db35c6655e4227515ca",
+            "url": "https://api.cqc.org.uk/public/v1/locations/1-16516340886",
+            "status": "current"
+          },
+          {
+            "source": "CQC ratings file",
+            "value": "Outstanding",
+            "publication_date": "2026-08-27",
+            "edition": "CQC download edition 2 October 2026; data cutoff unverified",
+            "sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+            "url": "ratings.ods",
+            "status": "current"
+          }
+        ],
+        "reason": "Newest comparable current-provider publication in supplied evidence"
+      },
+      "rating_publication_date": "2026-08-27",
+      "rating_freshness": "within 12 months",
+      "registration_date": "2026-10-20",
+      "recorded_source_url": "https://api.cqc.org.uk/public/v1/locations/1-16516340886",
+      "recorded_source_hash": "b05797cd869268d02bd0b4768c009750f3217f4461369db35c6655e4227515ca",
+      "registration_metadata_gaps": [],
+      "reference_url": "https://www.cqc.org.uk/location/1-16516340886"
+    },
+    {
+      "location_id": "1-19058724680",
+      "provider_id": "1-19058724680-provider",
+      "location_name": "Hallmark Willingdon Park Manor Luxury Care Home",
+      "current_rating": "Good",
+      "rating_resolution": {
+        "contract_version": 1,
+        "value": "Good",
+        "publication_date": "2026-07-24",
+        "source": "CQC ratings file",
+        "status": "current",
+        "evidence": [
+          {
+            "source": "CQC API",
+            "value": null,
+            "publication_date": null,
+            "edition": "Frozen API observation 22 October 2026",
+            "sha256": "a975b2f8f3249ad060b03a401208cb49151b69be3fd2bcb683eb4d972aa99b17",
+            "url": "https://api.cqc.org.uk/public/v1/locations/1-19058724680",
+            "status": "current"
+          },
+          {
+            "source": "CQC ratings file",
+            "value": "Good",
+            "publication_date": "2026-07-24",
+            "edition": "CQC download edition 2 October 2026; data cutoff unverified",
+            "sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+            "url": "ratings.ods",
+            "status": "current"
+          }
+        ],
+        "reason": "Newest comparable current-provider publication in supplied evidence"
+      },
+      "rating_publication_date": "2026-07-24",
+      "rating_freshness": "within 12 months",
+      "registration_date": "2026-10-20",
+      "recorded_source_url": "https://api.cqc.org.uk/public/v1/locations/1-19058724680",
+      "recorded_source_hash": "a975b2f8f3249ad060b03a401208cb49151b69be3fd2bcb683eb4d972aa99b17",
+      "registration_metadata_gaps": [],
+      "reference_url": "https://www.cqc.org.uk/location/1-19058724680"
+    },
+    {
+      "location_id": "1-19886383752",
+      "provider_id": "1-19886383752-provider",
+      "location_name": "The Check House",
+      "current_rating": null,
+      "rating_resolution": {
+        "contract_version": 1,
+        "value": null,
+        "publication_date": null,
+        "source": null,
+        "status": "unresolved",
+        "evidence": [
+          {
+            "source": "CQC API",
+            "value": "Outstanding",
+            "publication_date": "2018-06-08",
+            "edition": "Frozen API observation 22 October 2026",
+            "sha256": "6bc17372e58ed221ddc56d98ce2d6505c98f7eccbd88a3ae56bbebaf49b47cbd",
+            "url": "https://api.cqc.org.uk/public/v1/locations/1-19886383752",
+            "status": "inherited"
+          },
+          {
+            "source": "CQC ratings file",
+            "value": "Good",
+            "publication_date": "2026-05-07",
+            "edition": "CQC download edition 2 October 2026; data cutoff unverified",
+            "sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+            "url": "ratings.ods",
+            "status": "unresolved"
+          },
+          {
+            "value": "Outstanding",
+            "status": "unresolved",
+            "publication_date": "2018-06-08",
+            "url": "https://www.cqc.org.uk/location/1-19886383752",
+            "observed_at": "2026-10-22T20:42:56.045748+00:00",
+            "sha256": "a727328bacb014d0fc8c128319d57cd3199deb66e252c57f5112352fde409bde",
+            "edition": "Frozen CQC website observation 22 October 2026",
+            "context": "Important: We have not inspected this service yet Registered on\n            21 October 2024 This service was registered by CQC on 21 October 2024.\r\nNew services are assessed to check they are likely to be safe, effective, caring, responsive and well-led. These assessments can include site visits, criminal record checks, interviews with key managers and a detailed review of how the service will be run. Follow-up inspections of new services are undertaken regularly following registration. Ratings inherited from last inspection with previous provider These ratings were awarded to the previous provider who owned this service. We show these ratings to help you understand the history of this service. (Last report published on\n                        8 June 2018) See archived profile Read previous reports Overview Report published:\n            8 June 2018 Overall Outstanding Safe Good Effective Outstanding Caring Good Responsive Outstanding Well-led Good Download full inspection report for The Check House - PDF - (opens in new window) Published\n                        8 June 2018 Specialisms / services Accommodation for persons who require nursing or personal care Caring for adults over 65 yrs Caring for adults under 65 yrs Dementia Physical disabilities Sensory impairments Who runs this service Organisation The Check House\n                        is run by\n                        Check House Care Limited Mrs Karen Louise Real Registered Manager Mrs Rachel Lucy Dryden Nominated Individual",
+            "source": "CQC website"
+          }
+        ],
+        "reason": "Current-provider evidence is unresolved"
+      },
+      "rating_publication_date": null,
+      "rating_freshness": "unknown (no publication date)",
+      "registration_date": "2026-10-20",
+      "recorded_source_url": "https://api.cqc.org.uk/public/v1/locations/1-19886383752",
+      "recorded_source_hash": "6bc17372e58ed221ddc56d98ce2d6505c98f7eccbd88a3ae56bbebaf49b47cbd",
+      "registration_metadata_gaps": [],
+      "reference_url": "https://www.cqc.org.uk/location/1-19886383752"
+    },
+    {
+      "location_id": "1-199649069",
+      "provider_id": "1-199649069-provider",
+      "location_name": "Belle Vale Dental Centre",
+      "current_rating": null,
+      "rating_resolution": {
+        "contract_version": 1,
+        "value": null,
+        "publication_date": null,
+        "source": null,
+        "status": "unrated",
+        "evidence": [
+          {
+            "source": "CQC API",
+            "value": null,
+            "publication_date": null,
+            "edition": "Frozen API observation 22 October 2026",
+            "sha256": "46972cf7e3aee1fae5e1c4b05f3d25274dbe21eb48b3c252b375366984bcdba1",
+            "url": "https://api.cqc.org.uk/public/v1/locations/1-199649069",
+            "status": "current"
+          },
+          {
+            "source": "CQC ratings file",
+            "value": null,
+            "publication_date": null,
+            "edition": null,
+            "sha256": null,
+            "url": null,
+            "status": "current"
+          }
+        ],
+        "reason": "No numerical location overall rating in supplied evidence"
+      },
+      "rating_publication_date": null,
+      "rating_freshness": "unknown (no publication date)",
+      "registration_date": "2026-10-20",
+      "recorded_source_url": "https://api.cqc.org.uk/public/v1/locations/1-199649069",
+      "recorded_source_hash": "46972cf7e3aee1fae5e1c4b05f3d25274dbe21eb48b3c252b375366984bcdba1",
+      "registration_metadata_gaps": [],
+      "reference_url": "https://www.cqc.org.uk/location/1-199649069"
+    },
+    {
+      "location_id": "1-22160036426",
+      "provider_id": "1-22160036426-provider",
+      "location_name": "Irchester 170",
+      "current_rating": "Good",
+      "rating_resolution": {
+        "contract_version": 1,
+        "value": "Good",
+        "publication_date": "2026-03-11",
+        "source": "CQC ratings file + CQC website",
+        "status": "current",
+        "evidence": [
+          {
+            "source": "CQC API",
+            "value": "Outstanding",
+            "publication_date": "2018-03-07",
+            "edition": "Frozen API observation 22 October 2026",
+            "sha256": "eca3baf8747d15e5ae110a85183a8d5bf550787bc7beea597374d58369ab2c08",
+            "url": "https://api.cqc.org.uk/public/v1/locations/1-22160036426",
+            "status": "current"
+          },
+          {
+            "source": "CQC ratings file",
+            "value": "Good",
+            "publication_date": "2026-03-11",
+            "edition": "CQC download edition 2 October 2026; data cutoff unverified",
+            "sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+            "url": "ratings.ods",
+            "status": "current"
+          },
+          {
+            "value": "Good",
+            "status": "current",
+            "publication_date": "2026-03-11",
+            "url": "https://www.cqc.org.uk/location/1-22160036426",
+            "observed_at": "2026-10-22T20:42:57.242567+00:00",
+            "sha256": "06d44543815b6d7092570da792c4e7fb198ae8588649eac17d7f5412563d1814",
+            "edition": "Frozen CQC website observation 22 October 2026",
+            "source": "CQC website"
+          }
+        ],
+        "reason": "Newest comparable current-provider publication in supplied evidence"
+      },
+      "rating_publication_date": "2026-03-11",
+      "rating_freshness": "within 12 months",
+      "registration_date": "2026-10-20",
+      "recorded_source_url": "https://api.cqc.org.uk/public/v1/locations/1-22160036426",
+      "recorded_source_hash": "eca3baf8747d15e5ae110a85183a8d5bf550787bc7beea597374d58369ab2c08",
+      "registration_metadata_gaps": [],
+      "reference_url": "https://www.cqc.org.uk/location/1-22160036426"
+    },
+    {
+      "location_id": "1-2352094536",
+      "provider_id": "1-2352094536-provider",
+      "location_name": "Lucketts Farm",
+      "current_rating": "Requires improvement",
+      "rating_resolution": {
+        "contract_version": 1,
+        "value": "Requires improvement",
+        "publication_date": "2025-10-16",
+        "source": "CQC ratings file",
+        "status": "current",
+        "evidence": [
+          {
+            "source": "CQC API",
+            "value": null,
+            "publication_date": null,
+            "edition": "Frozen API observation 22 October 2026",
+            "sha256": "8d0279d9c79ff326d4359acb5f6962e8c711f4fda3158c21ec857965fe7c619a",
+            "url": "https://api.cqc.org.uk/public/v1/locations/1-2352094536",
+            "status": "current"
+          },
+          {
+            "source": "CQC ratings file",
+            "value": "Requires improvement",
+            "publication_date": "2025-10-16",
+            "edition": "CQC download edition 2 October 2026; data cutoff unverified",
+            "sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+            "url": "ratings.ods",
+            "status": "current"
+          }
+        ],
+        "reason": "Newest comparable current-provider publication in supplied evidence"
+      },
+      "rating_publication_date": "2025-10-16",
+      "rating_freshness": "stale (over 12 months)",
+      "registration_date": "2026-10-20",
+      "recorded_source_url": "https://api.cqc.org.uk/public/v1/locations/1-2352094536",
+      "recorded_source_hash": "8d0279d9c79ff326d4359acb5f6962e8c711f4fda3158c21ec857965fe7c619a",
+      "registration_metadata_gaps": [],
+      "reference_url": "https://www.cqc.org.uk/location/1-2352094536"
+    },
+    {
+      "location_id": "1-2467326262",
+      "provider_id": "1-2467326262-provider",
+      "location_name": "Milford Del Support Agency",
+      "current_rating": "Outstanding",
+      "rating_resolution": {
+        "contract_version": 1,
+        "value": "Outstanding",
+        "publication_date": "2025-07-18",
+        "source": "CQC ratings file",
+        "status": "current",
+        "evidence": [
+          {
+            "source": "CQC API",
+            "value": null,
+            "publication_date": null,
+            "edition": "Frozen API observation 22 October 2026",
+            "sha256": "4d30f3e794dd1463c93291553fd40d83f1c8c20492c5d02d6eff1d6d2d1e7255",
+            "url": "https://api.cqc.org.uk/public/v1/locations/1-2467326262",
+            "status": "current"
+          },
+          {
+            "source": "CQC ratings file",
+            "value": "Outstanding",
+            "publication_date": "2025-07-18",
+            "edition": "CQC download edition 2 October 2026; data cutoff unverified",
+            "sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+            "url": "ratings.ods",
+            "status": "current"
+          }
+        ],
+        "reason": "Newest comparable current-provider publication in supplied evidence"
+      },
+      "rating_publication_date": "2025-07-18",
+      "rating_freshness": "stale (over 12 months)",
+      "registration_date": "2026-10-20",
+      "recorded_source_url": "https://api.cqc.org.uk/public/v1/locations/1-2467326262",
+      "recorded_source_hash": "4d30f3e794dd1463c93291553fd40d83f1c8c20492c5d02d6eff1d6d2d1e7255",
+      "registration_metadata_gaps": [],
+      "reference_url": "https://www.cqc.org.uk/location/1-2467326262"
+    },
+    {
+      "location_id": "1-27003473742",
+      "provider_id": "1-27003473742-provider",
+      "location_name": "Eskdale House Supported Living Service",
+      "current_rating": "Requires improvement",
+      "rating_resolution": {
+        "contract_version": 1,
+        "value": "Requires improvement",
+        "publication_date": "2026-06-03",
+        "source": "CQC ratings file",
+        "status": "current",
+        "evidence": [
+          {
+            "source": "CQC API",
+            "value": null,
+            "publication_date": null,
+            "edition": "Frozen API observation 22 October 2026",
+            "sha256": "4d673f0ef36244255595e345d649c7fa546bf8fa5a1caa545480c9565e44af74",
+            "url": "https://api.cqc.org.uk/public/v1/locations/1-27003473742",
+            "status": "current"
+          },
+          {
+            "source": "CQC ratings file",
+            "value": "Requires improvement",
+            "publication_date": "2026-06-03",
+            "edition": "CQC download edition 2 October 2026; data cutoff unverified",
+            "sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+            "url": "ratings.ods",
+            "status": "current"
+          }
+        ],
+        "reason": "Newest comparable current-provider publication in supplied evidence"
+      },
+      "rating_publication_date": "2026-06-03",
+      "rating_freshness": "within 12 months",
+      "registration_date": "2026-10-20",
+      "recorded_source_url": "https://api.cqc.org.uk/public/v1/locations/1-27003473742",
+      "recorded_source_hash": "4d673f0ef36244255595e345d649c7fa546bf8fa5a1caa545480c9565e44af74",
+      "registration_metadata_gaps": [],
+      "reference_url": "https://www.cqc.org.uk/location/1-27003473742"
+    },
+    {
+      "location_id": "1-2761140569",
+      "provider_id": "1-2761140569-provider",
+      "location_name": "Wytham House",
+      "current_rating": "Good",
+      "rating_resolution": {
+        "contract_version": 1,
+        "value": "Good",
+        "publication_date": "2025-07-23",
+        "source": "CQC ratings file",
+        "status": "current",
+        "evidence": [
+          {
+            "source": "CQC API",
+            "value": null,
+            "publication_date": null,
+            "edition": "Frozen API observation 22 October 2026",
+            "sha256": "32b4b3f205176abce57f6b5316ce164553cb3ca050a67bcd1c55a86f5df2964e",
+            "url": "https://api.cqc.org.uk/public/v1/locations/1-2761140569",
+            "status": "current"
+          },
+          {
+            "source": "CQC ratings file",
+            "value": "Good",
+            "publication_date": "2025-07-23",
+            "edition": "CQC download edition 2 October 2026; data cutoff unverified",
+            "sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+            "url": "ratings.ods",
+            "status": "current"
+          }
+        ],
+        "reason": "Newest comparable current-provider publication in supplied evidence"
+      },
+      "rating_publication_date": "2025-07-23",
+      "rating_freshness": "stale (over 12 months)",
+      "registration_date": "2026-10-20",
+      "recorded_source_url": "https://api.cqc.org.uk/public/v1/locations/1-2761140569",
+      "recorded_source_hash": "32b4b3f205176abce57f6b5316ce164553cb3ca050a67bcd1c55a86f5df2964e",
+      "registration_metadata_gaps": [],
+      "reference_url": "https://www.cqc.org.uk/location/1-2761140569"
+    },
+    {
+      "location_id": "1-29650851551",
+      "provider_id": "1-29650851551-provider",
+      "location_name": "NEAD Support Ltd - Remote Clinical Service",
+      "current_rating": null,
+      "rating_resolution": {
+        "contract_version": 1,
+        "value": null,
+        "publication_date": null,
+        "source": null,
+        "status": "unrated",
+        "evidence": [
+          {
+            "source": "CQC API",
+            "value": null,
+            "publication_date": null,
+            "edition": "Frozen API observation 22 October 2026",
+            "sha256": "bf743d4573c63213c80e9b8683be0740d0f7cb6fcdb6950f10b8d087dc94aacd",
+            "url": "https://api.cqc.org.uk/public/v1/locations/1-29650851551",
+            "status": "current"
+          },
+          {
+            "source": "CQC ratings file",
+            "value": null,
+            "publication_date": null,
+            "edition": null,
+            "sha256": null,
+            "url": null,
+            "status": "current"
+          }
+        ],
+        "reason": "No numerical location overall rating in supplied evidence"
+      },
+      "rating_publication_date": null,
+      "rating_freshness": "unknown (no publication date)",
+      "registration_date": "2026-10-20",
+      "recorded_source_url": "https://api.cqc.org.uk/public/v1/locations/1-29650851551",
+      "recorded_source_hash": "bf743d4573c63213c80e9b8683be0740d0f7cb6fcdb6950f10b8d087dc94aacd",
+      "registration_metadata_gaps": [],
+      "reference_url": "https://www.cqc.org.uk/location/1-29650851551"
+    },
+    {
+      "location_id": "1-390976877",
+      "provider_id": "1-390976877-provider",
+      "location_name": "Althorp Grange",
+      "current_rating": "Requires improvement",
+      "rating_resolution": {
+        "contract_version": 1,
+        "value": "Requires improvement",
+        "publication_date": "2025-12-11",
+        "source": "CQC ratings file + CQC website",
+        "status": "current",
+        "evidence": [
+          {
+            "source": "CQC API",
+            "value": "Inadequate",
+            "publication_date": "2024-02-28",
+            "edition": "Frozen API observation 22 October 2026",
+            "sha256": "f704a7781026dea05c6a2275c60fdc8a0dfc09c9851e07bd1b9d4f720d9569dc",
+            "url": "https://api.cqc.org.uk/public/v1/locations/1-390976877",
+            "status": "current"
+          },
+          {
+            "source": "CQC ratings file",
+            "value": "Requires improvement",
+            "publication_date": "2025-12-11",
+            "edition": "CQC download edition 2 October 2026; data cutoff unverified",
+            "sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+            "url": "ratings.ods",
+            "status": "current"
+          },
+          {
+            "value": "Requires improvement",
+            "status": "current",
+            "publication_date": "2025-12-11",
+            "url": "https://www.cqc.org.uk/location/1-390976877",
+            "observed_at": "2026-10-22T20:42:57.713885+00:00",
+            "sha256": "611dc71eab7c405fd8142976e3e6016a934e4bfcad113d42a5e97899f8c23372",
+            "edition": "Frozen CQC website observation 22 October 2026",
+            "source": "CQC website"
+          }
+        ],
+        "reason": "Newest comparable current-provider publication in supplied evidence"
+      },
+      "rating_publication_date": "2025-12-11",
+      "rating_freshness": "within 12 months",
+      "registration_date": "2026-10-20",
+      "recorded_source_url": "https://api.cqc.org.uk/public/v1/locations/1-390976877",
+      "recorded_source_hash": "f704a7781026dea05c6a2275c60fdc8a0dfc09c9851e07bd1b9d4f720d9569dc",
+      "registration_metadata_gaps": [],
+      "reference_url": "https://www.cqc.org.uk/location/1-390976877"
+    },
+    {
+      "location_id": "1-407665280",
+      "provider_id": "1-407665280-provider",
+      "location_name": "Angel Home Care Service Private Limited",
+      "current_rating": "Requires improvement",
+      "rating_resolution": {
+        "contract_version": 1,
+        "value": "Requires improvement",
+        "publication_date": "2026-04-22",
+        "source": "CQC ratings file",
+        "status": "current",
+        "evidence": [
+          {
+            "source": "CQC API",
+            "value": null,
+            "publication_date": null,
+            "edition": "Frozen API observation 22 October 2026",
+            "sha256": "117a696a4533cf35e4a0a0940bd710470fc1550e1d706ac68011e785de8c074a",
+            "url": "https://api.cqc.org.uk/public/v1/locations/1-407665280",
+            "status": "current"
+          },
+          {
+            "source": "CQC ratings file",
+            "value": "Requires improvement",
+            "publication_date": "2026-04-22",
+            "edition": "CQC download edition 2 October 2026; data cutoff unverified",
+            "sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+            "url": "ratings.ods",
+            "status": "current"
+          }
+        ],
+        "reason": "Newest comparable current-provider publication in supplied evidence"
+      },
+      "rating_publication_date": "2026-04-22",
+      "rating_freshness": "within 12 months",
+      "registration_date": "2026-10-20",
+      "recorded_source_url": "https://api.cqc.org.uk/public/v1/locations/1-407665280",
+      "recorded_source_hash": "117a696a4533cf35e4a0a0940bd710470fc1550e1d706ac68011e785de8c074a",
+      "registration_metadata_gaps": [],
+      "reference_url": "https://www.cqc.org.uk/location/1-407665280"
+    },
+    {
+      "location_id": "1-456354523",
+      "provider_id": "1-456354523-provider",
+      "location_name": "Florence House",
+      "current_rating": "Inadequate",
+      "rating_resolution": {
+        "contract_version": 1,
+        "value": "Inadequate",
+        "publication_date": "2026-01-06",
+        "source": "CQC ratings file",
+        "status": "current",
+        "evidence": [
+          {
+            "source": "CQC API",
+            "value": null,
+            "publication_date": null,
+            "edition": "Frozen API observation 22 October 2026",
+            "sha256": "ca95130761e12bdbd220e0bc06ddd1b575f2fcdc0efe0b4b0276b61e0c623607",
+            "url": "https://api.cqc.org.uk/public/v1/locations/1-456354523",
+            "status": "current"
+          },
+          {
+            "source": "CQC ratings file",
+            "value": "Inadequate",
+            "publication_date": "2026-01-06",
+            "edition": "CQC download edition 2 October 2026; data cutoff unverified",
+            "sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+            "url": "ratings.ods",
+            "status": "current"
+          }
+        ],
+        "reason": "Newest comparable current-provider publication in supplied evidence"
+      },
+      "rating_publication_date": "2026-01-06",
+      "rating_freshness": "within 12 months",
+      "registration_date": "2026-10-20",
+      "recorded_source_url": "https://api.cqc.org.uk/public/v1/locations/1-456354523",
+      "recorded_source_hash": "ca95130761e12bdbd220e0bc06ddd1b575f2fcdc0efe0b4b0276b61e0c623607",
+      "registration_metadata_gaps": [],
+      "reference_url": "https://www.cqc.org.uk/location/1-456354523"
+    },
+    {
+      "location_id": "1-546109592",
+      "provider_id": "1-546109592-provider",
+      "location_name": "Crawley Road Medical Centre",
+      "current_rating": "Good",
+      "rating_resolution": {
+        "contract_version": 1,
+        "value": "Good",
+        "publication_date": "2025-07-11",
+        "source": "CQC ratings file",
+        "status": "current",
+        "evidence": [
+          {
+            "source": "CQC API",
+            "value": null,
+            "publication_date": null,
+            "edition": "Frozen API observation 22 October 2026",
+            "sha256": "ecc0eb8e1976cb7214c0a3f2a5a07db4b01ef2649c1686274b1e77a1b065cddd",
+            "url": "https://api.cqc.org.uk/public/v1/locations/1-546109592",
+            "status": "current"
+          },
+          {
+            "source": "CQC ratings file",
+            "value": "Good",
+            "publication_date": "2025-07-11",
+            "edition": "CQC download edition 2 October 2026; data cutoff unverified",
+            "sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+            "url": "ratings.ods",
+            "status": "current"
+          }
+        ],
+        "reason": "Newest comparable current-provider publication in supplied evidence"
+      },
+      "rating_publication_date": "2025-07-11",
+      "rating_freshness": "stale (over 12 months)",
+      "registration_date": "2026-10-20",
+      "recorded_source_url": "https://api.cqc.org.uk/public/v1/locations/1-546109592",
+      "recorded_source_hash": "ecc0eb8e1976cb7214c0a3f2a5a07db4b01ef2649c1686274b1e77a1b065cddd",
+      "registration_metadata_gaps": [],
+      "reference_url": "https://www.cqc.org.uk/location/1-546109592"
+    },
+    {
+      "location_id": "1-546202187",
+      "provider_id": "1-546202187-provider",
+      "location_name": "Village Surgery",
+      "current_rating": "Good",
+      "rating_resolution": {
+        "contract_version": 1,
+        "value": "Good",
+        "publication_date": "2026-03-31",
+        "source": "CQC ratings file",
+        "status": "current",
+        "evidence": [
+          {
+            "source": "CQC API",
+            "value": null,
+            "publication_date": "2016-06-13",
+            "edition": "Frozen API observation 22 October 2026",
+            "sha256": "3aae3c77cdded1202d8ef51d6dbf2d68e3d8797990b68a4c0e739fb6f6bc15d5",
+            "url": "https://api.cqc.org.uk/public/v1/locations/1-546202187",
+            "status": "current"
+          },
+          {
+            "source": "CQC ratings file",
+            "value": "Good",
+            "publication_date": "2026-03-31",
+            "edition": "CQC download edition 2 October 2026; data cutoff unverified",
+            "sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+            "url": "ratings.ods",
+            "status": "current"
+          }
+        ],
+        "reason": "Newest comparable current-provider publication in supplied evidence"
+      },
+      "rating_publication_date": "2026-03-31",
+      "rating_freshness": "within 12 months",
+      "registration_date": "2026-10-20",
+      "recorded_source_url": "https://api.cqc.org.uk/public/v1/locations/1-546202187",
+      "recorded_source_hash": "3aae3c77cdded1202d8ef51d6dbf2d68e3d8797990b68a4c0e739fb6f6bc15d5",
+      "registration_metadata_gaps": [],
+      "reference_url": "https://www.cqc.org.uk/location/1-546202187"
+    },
+    {
+      "location_id": "1-552527797",
+      "provider_id": "1-552527797-provider",
+      "location_name": "The Chesser Surgery",
+      "current_rating": "Requires improvement",
+      "rating_resolution": {
+        "contract_version": 1,
+        "value": "Requires improvement",
+        "publication_date": "2025-03-05",
+        "source": "CQC website",
+        "status": "current",
+        "evidence": [
+          {
+            "source": "CQC API",
+            "value": "Good",
+            "publication_date": "2016-11-10",
+            "edition": "Frozen API observation 22 October 2026",
+            "sha256": "03c5720c204e78981988ba86633890dbeb0d9f09fef331af9185fd05c7c9f913",
+            "url": "https://api.cqc.org.uk/public/v1/locations/1-552527797",
+            "status": "current"
+          },
+          {
+            "source": "CQC ratings file",
+            "value": "Requires improvement",
+            "publication_date": "2025-01-09",
+            "edition": "CQC download edition 2 October 2026; data cutoff unverified",
+            "sha256": "aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd",
+            "url": "ratings.ods",
+            "status": "current"
+          },
+          {
+            "value": "Requires improvement",
+            "status": "current",
+            "publication_date": "2025-03-05",
+            "url": "https://www.cqc.org.uk/location/1-552527797",
+            "observed_at": "2026-10-22T20:42:58.239646+00:00",
+            "sha256": "f75aad945ca687e797f3eadc2c2988ddf190789cca133505561975714972f59f",
+            "edition": "Frozen CQC website observation 22 October 2026",
+            "source": "CQC website"
+          }
+        ],
+        "reason": "Newest comparable current-provider publication in supplied evidence"
+      },
+      "rating_publication_date": "2025-03-05",
+      "rating_freshness": "stale (over 12 months)",
+      "registration_date": "2026-10-20",
+      "recorded_source_url": "https://api.cqc.org.uk/public/v1/locations/1-552527797",
+      "recorded_source_hash": "03c5720c204e78981988ba86633890dbeb0d9f09fef331af9185fd05c7c9f913",
+      "registration_metadata_gaps": [],
+      "reference_url": "https://www.cqc.org.uk/location/1-552527797"
+    },
+    {
+      "location_id": "1-5588555895",
+      "provider_id": "1-5588555895-provider",
+      "location_name": "The Doctors Laboratory",
+      "current_rating": null,
+      "rating_resolution": {
+        "contract_version": 1,
+        "value": null,
+        "publication_date": null,
+        "source": null,
+        "status": "unrated",
+        "evidence": [
+          {
+            "source": "CQC API",
+            "value": "Inspected but not rated",
+            "publication_date": "2022-05-25",
+            "edition": "Frozen API observation 22 October 2026",
+            "sha256": "a7e2fde82eb9dc8acdddd8c003dec6d48b0e3848fb55187643d1be304519e26c",
+            "url": "https://api.cqc.org.uk/public/v1/locations/1-5588555895",
+            "status": "current"
+          },
+          {
+            "source": "CQC ratings file",
+            "value": null,
+            "publication_date": null,
+            "edition": null,
+            "sha256": null,
+            "url": null,
+            "status": "current"
+          }
+        ],
+        "reason": "No numerical location overall rating in supplied evidence"
+      },
+      "rating_publication_date": null,
+      "rating_freshness": "unknown (no publication date)",
+      "registration_date": "2026-10-20",
+      "recorded_source_url": "https://api.cqc.org.uk/public/v1/locations/1-5588555895",
+      "recorded_source_hash": "a7e2fde82eb9dc8acdddd8c003dec6d48b0e3848fb55187643d1be304519e26c",
+      "registration_metadata_gaps": [],
+      "reference_url": "https://www.cqc.org.uk/location/1-5588555895"
+    },
+    {
+      "location_id": "RHARA",
+      "provider_id": "RHARA-provider",
+      "location_name": "Nottingham University Hospital",
+      "current_rating": null,
+      "rating_resolution": {
+        "contract_version": 1,
+        "value": null,
+        "publication_date": null,
+        "source": null,
+        "status": "unrated",
+        "evidence": [
+          {
+            "source": "CQC API",
+            "value": null,
+            "publication_date": null,
+            "edition": "Frozen API observation 22 October 2026",
+            "sha256": "8ffb3a9be0a3fa2cd22f1c91ef03d265b9ceded4f20f7a2d99960edd53a296e0",
+            "url": "https://api.cqc.org.uk/public/v1/locations/RHARA",
+            "status": "current"
+          },
+          {
+            "source": "CQC ratings file",
+            "value": null,
+            "publication_date": null,
+            "edition": null,
+            "sha256": null,
+            "url": null,
+            "status": "current"
+          }
+        ],
+        "reason": "No numerical location overall rating in supplied evidence"
+      },
+      "rating_publication_date": null,
+      "rating_freshness": "unknown (no publication date)",
+      "registration_date": "2026-10-20",
+      "recorded_source_url": "https://api.cqc.org.uk/public/v1/locations/RHARA",
+      "recorded_source_hash": "8ffb3a9be0a3fa2cd22f1c91ef03d265b9ceded4f20f7a2d99960edd53a296e0",
+      "registration_metadata_gaps": [],
+      "reference_url": "https://www.cqc.org.uk/location/RHARA"
+    }
+  ]
+}

@@ -2,7 +2,8 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "git": {
     "deploymentEnabled": {
-      "audit-fixes-2026-10-06": false
+      "audit-fixes-2026-10-06": false,
+      "codex/territory-rating-publication-20261029": false
     }
   },
   "services": {
@@ -66,35 +67,51 @@
   "rewrites": [
     {
       "source": "/api/health/directory",
-      "destination": { "service": "frontend" }
+      "destination": {
+        "service": "frontend"
+      }
     },
     {
       "source": "/api/export",
-      "destination": { "service": "frontend" }
+      "destination": {
+        "service": "frontend"
+      }
     },
     {
       "source": "/api/leads/request",
-      "destination": { "service": "frontend" }
+      "destination": {
+        "service": "frontend"
+      }
     },
     {
       "source": "/api/v1",
-      "destination": { "service": "backend" }
+      "destination": {
+        "service": "backend"
+      }
     },
     {
       "source": "/api/v1/(.*)",
-      "destination": { "service": "backend" }
+      "destination": {
+        "service": "backend"
+      }
     },
     {
       "source": "/internal/(.*)",
-      "destination": { "service": "backend" }
+      "destination": {
+        "service": "backend"
+      }
     },
     {
       "source": "/metrics",
-      "destination": { "service": "backend" }
+      "destination": {
+        "service": "backend"
+      }
     },
     {
       "source": "/(.*)",
-      "destination": { "service": "frontend" }
+      "destination": {
+        "service": "frontend"
+      }
     }
   ],
   "crons": [

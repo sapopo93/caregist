@@ -1,0 +1,71 @@
+{
+  "locationId": "1-29650851551",
+  "providerId": "1-25286895366",
+  "organisationType": "Location",
+  "type": "Independent Healthcare Org",
+  "name": "NEAD Support Ltd - Remote Clinical Service",
+  "onspdCcgCode": "E38000187",
+  "onspdCcgName": "NHS Trafford CCG",
+  "onspdIcbCode": "E54000057",
+  "onspdIcbName": "NHS Greater Manchester Integrated Care Board",
+  "registrationStatus": "Registered",
+  "registrationDate": "2026-09-10",
+  "dormancy": "N",
+  "onspdLatitude": 53.3935418,
+  "onspdLongitude": -2.3577024,
+  "careHome": "N",
+  "inspectionDirectorate": "Primary medical services",
+  "postalAddressLine1": "9 Swale Drive",
+  "postalAddressTownCity": "Altrincham",
+  "region": "North West",
+  "postalCode": "WA14 4UD",
+  "uprn": "100011640959",
+  "mainPhoneNumber": "07943805482",
+  "website": "www.neadsupport.org.uk",
+  "numberOfBeds": 0,
+  "constituency": "Altrincham and Sale West",
+  "localAuthority": "Trafford",
+  "relationships": [],
+  "locationTypes": [],
+  "regulatedActivities": [
+    {
+      "name": "Treatment of disease, disorder or injury",
+      "code": "RA5",
+      "contacts": [
+        {
+          "personTitle": "Dr",
+          "personGivenName": "Amy",
+          "personFamilyName": "Wilson",
+          "personRoles": [
+            "Registered Manager"
+          ]
+        }
+      ]
+    }
+  ],
+  "gacServiceTypes": [
+    {
+      "name": "Doctors/Gps",
+      "description": "Doctors consultation service"
+    }
+  ],
+  "specialisms": [
+    {
+      "name": "Caring for adults under 65 yrs"
+    },
+    {
+      "name": "Caring for children"
+    },
+    {
+      "name": "Learning disabilities"
+    }
+  ],
+  "inspectionCategories": [
+    {
+      "code": "P7",
+      "primary": "true",
+      "name": "Independent consulting doctors"
+    }
+  ],
+  "inspectionAreas": []
+}

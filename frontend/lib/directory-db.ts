@@ -1,3 +1,4 @@
+import { territoryRatingCoverageSql } from "./territory-rating-coverage.ts";
 import { consumeTerritoryBriefDownload } from "./territory-brief-download.ts";
 import { createHash, randomBytes } from "node:crypto";
 import { canonicalizeServiceCounts, canonicalServices, resolveServiceAliases } from "@/lib/service-taxonomy";
@@ -493,6 +494,7 @@ export async function getDirectoryOpportunityStats(): Promise<DirectoryOpportuni
 }
 
 export interface TerritoryScopeCoverageRow {
+  sourceEditionId?: string;
   providerCount: number;
   mostRecentInspection: string | null;
   mostRecentRegistration: string | null;
@@ -510,6 +512,19 @@ export async function getTerritoryScopeCoverage(scope: {
   opportunity: DirectoryOpportunity | "";
 }): Promise<TerritoryScopeCoverageRow> {
   assertDatabaseConfigured();
+
+  if (["inadequate", "requires_improvement", "not_yet_inspected"].includes(scope.opportunity)) {
+    const result = await getSql().query<{
+      provider_count: number; most_recent_inspection: string | null;
+      most_recent_registration: string | null; source_edition_id: string | null;
+    }>(territoryRatingCoverageSql(scope.opportunity), [scope.region, resolveServiceAliases(scope.serviceType)]);
+    const row = result.rows[0];
+    if (!row?.source_edition_id) throw new Error("No Brief edition with resolved rating evidence");
+    return { providerCount: row.provider_count,
+      mostRecentInspection: row.most_recent_inspection,
+      mostRecentRegistration: row.most_recent_registration,
+      sourceEditionId: row.source_edition_id };
+  }
 
   const { clauses, params } = buildWhereClause({
     query: "",

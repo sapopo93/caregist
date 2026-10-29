@@ -1,0 +1,1805 @@
+Territory Opportunity Brief
+Fixture County (local authority) - generated 29 October 2026
+
+
+Prepared for order rating-fixtures
+Opportunity window: 25 July 2026 to 22 October 2026 (90 days)
+Organisations considered: 30 Shortlisted: 30 Territory locations in source: 30
+Source: CQC public register edition 2026-10-22. Product: Territory Opportunity Brief (GBP 745).
+Contents: sections 1-7 are the executive brief; Appendix A carries the reason and evidence for every
+shortlisted organisation.
+
+
+
+
+1. Executive summary
+30 location(s) in Fixture County show a supported opportunity signal in the 90-day window ending 22
+Oct 2026; 30 are shortlisted and ranked.
+
+Territory                       Fixture County (local authority)
+Date generated                  2026-10-29
+Source edition                  2026-10-22
+Window                          2026-07-25 to 2026-10-22
+Opportunity set                 30
+Shortlisted & ranked            30
+Movement in window              30 new registration(s)
+Highest-ranked organisations:
+
+ - Hallmark Willingdon Park Manor Luxury Care Home (Hallmark Willingdon Park Manor Luxury Care
+   Home) - new cqc registration
+ - Rose Court Care Home (Rose Court Care Home) - new cqc registration
+ - The Check House (The Check House) - new cqc registration
+
+Limitations: Reflects the published CQC register edition, not a live lookup; opportunity signals show
+where to look first, not provider quality or intent.
+
+
+2. Ranked opportunity shortlist
+Ranked by a deterministic opportunity score (see section 6). Every row carries a stated reason and links
+to the underlying CQC record. The same source data always produces this same order.
+
+ #      Organisation / location                                     Area                Primary signal         Score
+
+ 1      Hallmark Willingdon Park Manor Luxury Care                  Fixture County      New CQC registration   79
+        Home                                                                            2026-10-20
+        Hallmark Willingdon Park Manor Luxury Care
+        Home
+
+
+
+
+CareGist | Fixture County | Confidential to order rating-fixtures    |   Page 1 of 30
+ 2      Rose Court Care Home                                        Fixture County      New CQC registration   79
+        Rose Court Care Home                                                            2026-10-20
+
+ 3      The Check House                                             Fixture County      New CQC registration   79
+        The Check House                                                                 2026-10-20
+
+ 4      Althorp Grange                                              Fixture County      New CQC registration   78
+        Althorp Grange                                                                  2026-10-20
+
+ 5      Wytham House                                                Fixture County      New CQC registration   76
+        Wytham House                                                                    2026-10-20
+
+ 6      Fairfield Nursing Home                                      Fixture County      New CQC registration   74
+        Fairfield Nursing Home                                                          2026-10-20
+
+ 7      Florence House                                              Fixture County      New CQC registration   74
+        Florence House                                                                  2026-10-20
+
+ 8      Silverdale Nursing Home                                     Fixture County      New CQC registration   74
+        Silverdale Nursing Home                                                         2026-10-20
+
+ 9      St Stephens Nursing Home                                    Fixture County      New CQC registration   72
+        St Stephens Nursing Home                                                        2026-10-20
+
+ 10     Carlton House                                               Fixture County      New CQC registration   72
+        Carlton House                                                                   2026-10-20
+
+ 11     Welcome House - The Chestnuts                               Fixture County      New CQC registration   72
+        Welcome House - The Chestnuts                                                   2026-10-20
+
+ 12     Collegiate House                                            Fixture County      New CQC registration   70
+        Collegiate House                                                                2026-10-20
+
+ 13     Irchester 170                                               Fixture County      New CQC registration   70
+        Irchester 170                                                                   2026-10-20
+
+ 14     Woodways                                                    Fixture County      New CQC registration   70
+        Woodways                                                                        2026-10-20
+
+ 15     Angel Home Care Service Private Limited                     Fixture County      New CQC registration   69
+        Angel Home Care Service Private Limited                                         2026-10-20
+
+ 16     Crawley Road Medical Centre                                 Fixture County      New CQC registration   69
+        Crawley Road Medical Centre                                                     2026-10-20
+
+ 17     Eskdale House Supported Living Service                      Fixture County      New CQC registration   69
+        Eskdale House Supported Living Service                                          2026-10-20
+
+ 18     Kelly Healthcare Services Limited                           Fixture County      New CQC registration   69
+        Kelly Healthcare Services Limited                                               2026-10-20
+
+ 19     Lucketts Farm                                               Fixture County      New CQC registration   69
+        Lucketts Farm                                                                   2026-10-20
+
+ 20     Milford Del Support Agency                                  Fixture County      New CQC registration   69
+        Milford Del Support Agency                                                      2026-10-20
+
+ 21     Nomira Care Ltd                                             Fixture County      New CQC registration   69
+        Nomira Care Ltd                                                                 2026-10-20
+
+ 22     Silverjen Limited                                           Fixture County      New CQC registration   69
+        Silverjen Limited                                                               2026-10-20
+
+ 23     The Chesser Surgery                                         Fixture County      New CQC registration   69
+        The Chesser Surgery                                                             2026-10-20
+
+
+
+CareGist | Fixture County | Confidential to order rating-fixtures    |   Page 2 of 30
+ 24     The Doctors Laboratory                                      Fixture County      New CQC registration     69
+        The Doctors Laboratory                                                          2026-10-20
+
+ 25     Village Surgery                                             Fixture County      New CQC registration     69
+        Village Surgery                                                                 2026-10-20
+
+ 26     Belle Vale Dental Centre                                    Fixture County      New CQC registration     63
+        Belle Vale Dental Centre                                                        2026-10-20
+
+ 27     Candela Healthcare Ltd                                      Fixture County      New CQC registration     63
+        Candela Healthcare Ltd                                                          2026-10-20
+
+ 28     NEAD Support Ltd - Remote Clinical Service                  Fixture County      New CQC registration     63
+        NEAD Support Ltd - Remote Clinical Service                                      2026-10-20
+
+ 29     Nottingham University Hospital                              Fixture County      New CQC registration     63
+        Nottingham University Hospital                                                  2026-10-20
+
+ 30     Tillingham Medical Centre                                   Fixture County      New CQC registration     63
+        Tillingham Medical Centre                                                       2026-10-20
+
+
+
+3. How the shortlist was built
+Each organisation reached this list because of at least one supported event in the window: a new CQC
+registration, an overall rating change, or a newly published inspection report. The opportunity score
+combines the event type, how recent it is, the direction of any rating move, the size of the location, and
+whether the same provider has several locations moving at once. Appendix A gives the full reason and
+the evidence for every organisation, in rank order.
+
+
+4. Territory insights
+Aggregate view of the whole opportunity set (not just the shortlist).
+
+Events by type                         new_registration: 30
+Rating moves                           0 downgrades, 0 upgrades
+New beds entering market               457
+Service-type mix in the opportunity set:
+
+ Service type                                                                                    Organisations
+
+ Care home service without nursing                                                               8
+
+ Care home service with nursing                                                                  6
+
+ Domiciliary care service                                                                        6
+
+ Doctors consultation service                                                                    4
+
+ Supported living service                                                                        3
+
+ Dental service                                                                                  2
+
+No single provider has more than one location moving in this window.
+
+
+5. Recommended next actions
+Practical, evidence-bounded. These are based on the signals in this brief and do not assume any
+provider is in difficulty or seeking a supplier.
+
+
+CareGist | Fixture County | Confidential to order rating-fixtures    |   Page 3 of 30
+ 1. Review the 30 newly registered location(s) first. The registration date is a research signal only;
+    verify the current record and any explicit supplier need before considering contact. The shortlist links
+    each CQC record.
+ 2. Verify each organisation's current status on the linked CQC page before outreach - this brief reflects
+    the published register edition, not a live lookup.
+
+
+6. Methodology and data notes
+ - Scope: local authority = Fixture County. Window: 2026-07-25 to 2026-10-22 inclusive (90 days),
+   anchored to the newest source date.
+ - Supported events: new CQC registration in-window (excluding dormant locations); overall rating
+   change in-window (derived from ordered historic/current ratings); new inspection report in-window
+   where no change can be derived.
+ - Score recency is measured against generation, not the source window. Score = base weight per
+   event x recency multiplier (1.5 within 30 days, 1.2 within 90, 1.05 within 180) + rating-direction
+   adjustment (downgrade +16, upgrade +9) + a bed-count size factor + a provider-cluster bonus where
+   the same provider has multiple locations moving. Scores are capped at 100.
+ - One location represents each provider: highest score, then most recent event date, then organisation
+   name, then lexicographically smallest CQC location id. Deduplication happens before the shortlist
+   limit. Ties break by those same keys, so the same source data always yields the same ranking.
+
+
+7. Limitations and disclaimer
+ - Only CQC-dated rating movements are counted.
+ - Rating freshness is measured against the generation date, separately from the source window. Stale
+   RI records remain visible in evidence coverage, outside the shortlist when they have no in-window
+   signal. Missing metadata describes the supplied snapshot, not a claim that CQC never published it.
+ - This brief reflects the published CQC register edition dated 2026-10-22 (the newest date present in
+   the source), not a live API lookup.
+ - The register carries the latest rating and its report date. Where no rating history is present a change
+   cannot be derived, so a first/refreshed rating is reported as a new inspection report rather than a
+   rating change.
+ - Organisations with incomplete provider identifiers or names in the source are excluded from the
+   shortlist rather than shown with gaps.
+ - Opportunity signals indicate where to investigate first; they are not statements about a provider's
+   quality, finances, or intent.
+ - Contains public sector information licensed under the Open Government Licence v3.0.
+
+CareGist is independent of the Care Quality Commission. This brief is compiled from the published
+CQC register and is provided for business research. It is not regulatory, legal, financial, or investment
+advice, and it makes no statement about any provider's quality, solvency, or intentions. Opportunity
+signals indicate where a buyer may wish to investigate first. Verify every organisation's current status
+directly with CQC before acting. Contains public sector information licensed under the Open
+Government Licence v3.0.
+
+Provenance: frozen-rating-audit-2026-10-22 + fixture-only, edition 2026-10-22. Source page:
+https://www.cqc.org.uk/about-us/transparency/using-cqc-data. Licence:
+
+
+CareGist | Fixture County | Confidential to order rating-fixtures   |   Page 4 of 30
+https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/
+
+
+
+
+Appendix A. Reason and evidence, by rank
+One entry per shortlisted organisation, in the same order as section 2. Every entry has a non-empty,
+evidence-bound reason and links to the underlying CQC record.
+
+1. Hallmark Willingdon Park Manor Luxury Care Home - Hallmark Willingdon Park Manor Luxury Care
+Home
+
+Fixture County | BN22 0AB | Care home service with nursing | 85 beds | rating Good; matches
+CQC's published rating as of 2026-07-24; source CQC ratings file | score 79
+
+Re-registered with CQC on 20 Oct 2026 (care home service with nursing, 85 beds) in the last three
+weeks, so it is still standing up policies, training and systems. A new legal entity or owner has taken on
+an existing service in Fixture County; this is a documented registration signal, not evidence of a supplier
+search or purchasing intent. It carries an overall rating of Good. At 85 beds it is one of the larger
+entrants in this window. Rating evidence: Good; matches CQC's published rating as of 2026-07-24;
+source CQC ratings file.
+
+Qualification question: Who is responsible for choosing suppliers for this newly registered service, and
+when does it expect to start operating?
+
+For recruitment buyers: How many care staff does this service plan to employ, how many are in post
+now, and when do its first packages or contracts start? Are those packages council-funded or already
+confirmed?
+
+For compliance buyers: Who is preparing this service for its first CQC inspection, and has it arranged a
+governance audit, mock inspection or safeguarding training yet?
+
+For software buyers: What does this service use for care records today (paper, spreadsheets or a digital
+system), is that system on the NHS assured supplier list for digital social care records, how many users
+does it have, and when is the contract up for renewal?
+
+Evidence: 2026-10-20 CQC registration recorded 2026-10-20
+
+CQC record: https://www.cqc.org.uk/location/1-19058724680
+
+2. Rose Court Care Home - Rose Court Care Home
+
+Fixture County | SE8 5DN | Care home service without nursing | 64 beds | rating Requires
+improvement; matches CQC's published rating as of 2025-08-12; source CQC ratings file | score 79
+
+Re-registered with CQC on 20 Oct 2026 (care home service without nursing, 64 beds) in the last three
+weeks, so it is still standing up policies, training and systems. A new legal entity or owner has taken on
+an existing service in Fixture County; this is a documented registration signal, not evidence of a supplier
+search or purchasing intent. It carries an overall rating of Requires improvement. At 64 beds it is one of
+the larger entrants in this window. Rating evidence: Requires improvement; matches CQC's published
+rating as of 2025-08-12; source CQC ratings file.
+
+Qualification question: Who is responsible for choosing suppliers for this newly registered service, and
+when does it expect to start operating?
+
+For recruitment buyers: How many care staff does this service plan to employ, how many are in post
+now, and when do its first packages or contracts start? Are those packages council-funded or already
+
+CareGist | Fixture County | Confidential to order rating-fixtures   |   Page 5 of 30
+confirmed?
+
+For compliance buyers: Who is preparing this service for its first CQC inspection, and has it arranged a
+governance audit, mock inspection or safeguarding training yet?
+
+For software buyers: What does this service use for care records today (paper, spreadsheets or a digital
+system), is that system on the NHS assured supplier list for digital social care records, how many users
+does it have, and when is the contract up for renewal?
+
+Evidence: 2026-10-20 CQC registration recorded 2026-10-20
+
+CQC record: https://www.cqc.org.uk/location/1-15297949474
+
+3. The Check House - The Check House
+
+Fixture County | EX12 2PR | Care home service without nursing | 59 beds | rating unresolved; no
+accepted source; see candidate evidence; publication date unresolved | score 79
+
+Current-provider overall rating is unresolved. The supplied evidence does not establish a
+current-provider inspection; review the CQC profile and retained source evidence before qualification.
+Rating evidence: unresolved; no accepted source; see candidate evidence; publication date unresolved.
+
+Qualification question: Who is responsible for choosing suppliers for this newly registered service, and
+when does it expect to start operating?
+
+For recruitment buyers: How many care staff does this service plan to employ, how many are in post
+now, and when do its first packages or contracts start? Are those packages council-funded or already
+confirmed?
+
+For compliance buyers: Who is preparing this service for its first CQC inspection, and has it arranged a
+governance audit, mock inspection or safeguarding training yet?
+
+For software buyers: What does this service use for care records today (paper, spreadsheets or a digital
+system), is that system on the NHS assured supplier list for digital social care records, how many users
+does it have, and when is the contract up for renewal?
+
+Evidence: 2026-10-20 CQC registration recorded 2026-10-20
+
+CQC record: https://www.cqc.org.uk/location/1-19886383752
+
+4. Althorp Grange - Althorp Grange
+
+Fixture County | NN6 8LD | Care home service with nursing | 57 beds | rating Requires
+improvement; matches CQC's published rating as of 2025-12-11; source CQC ratings file + CQC
+website | score 78
+
+Re-registered with CQC on 20 Oct 2026 (care home service with nursing, 57 beds) in the last three
+weeks, so it is still standing up policies, training and systems. A new legal entity or owner has taken on
+an existing service in Fixture County; this is a documented registration signal, not evidence of a supplier
+search or purchasing intent. It carries an overall rating of Requires improvement. A 57-bed location is a
+material single account. Rating evidence: Requires improvement; matches CQC's published rating as of
+2025-12-11; source CQC ratings file + CQC website.
+
+Qualification question: Who is responsible for choosing suppliers for this newly registered service, and
+when does it expect to start operating?
+
+For recruitment buyers: How many care staff does this service plan to employ, how many are in post
+now, and when do its first packages or contracts start? Are those packages council-funded or already
+
+CareGist | Fixture County | Confidential to order rating-fixtures   |   Page 6 of 30
+confirmed?
+
+For compliance buyers: Who is preparing this service for its first CQC inspection, and has it arranged a
+governance audit, mock inspection or safeguarding training yet?
+
+For software buyers: What does this service use for care records today (paper, spreadsheets or a digital
+system), is that system on the NHS assured supplier list for digital social care records, how many users
+does it have, and when is the contract up for renewal?
+
+Evidence: 2026-10-20 CQC registration recorded 2026-10-20
+
+CQC record: https://www.cqc.org.uk/location/1-390976877
+
+5. Wytham House - Wytham House
+
+Fixture County | OX2 9NL | Care home service with nursing | 40 beds | rating Good; matches
+CQC's published rating as of 2025-07-23; source CQC ratings file | score 76
+
+Re-registered with CQC on 20 Oct 2026 (care home service with nursing, 40 beds) in the last three
+weeks, so it is still standing up policies, training and systems. A new legal entity or owner has taken on
+an existing service in Fixture County; this is a documented registration signal, not evidence of a supplier
+search or purchasing intent. It carries an overall rating of Good. A 40-bed location is a material single
+account. Rating evidence: Good; matches CQC's published rating as of 2025-07-23; source CQC
+ratings file.
+
+Qualification question: Who is responsible for choosing suppliers for this newly registered service, and
+when does it expect to start operating?
+
+For recruitment buyers: How many care staff does this service plan to employ, how many are in post
+now, and when do its first packages or contracts start? Are those packages council-funded or already
+confirmed?
+
+For compliance buyers: Who is preparing this service for its first CQC inspection, and has it arranged a
+governance audit, mock inspection or safeguarding training yet?
+
+For software buyers: What does this service use for care records today (paper, spreadsheets or a digital
+system), is that system on the NHS assured supplier list for digital social care records, how many users
+does it have, and when is the contract up for renewal?
+
+Evidence: 2026-10-20 CQC registration recorded 2026-10-20
+
+CQC record: https://www.cqc.org.uk/location/1-2761140569
+
+6. Fairfield Nursing Home - Fairfield Nursing Home
+
+Fixture County | CH61 6XD | Care home service with nursing | 30 beds | rating Inadequate;
+matches CQC's published rating as of 2025-10-27; source CQC ratings file | score 74
+
+Re-registered with CQC on 20 Oct 2026 (care home service with nursing, 30 beds) in the last three
+weeks, so it is still standing up policies, training and systems. A new legal entity or owner has taken on
+an existing service in Fixture County; this is a documented registration signal, not evidence of a supplier
+search or purchasing intent. It carries an overall rating of Inadequate. Rating evidence: Inadequate;
+matches CQC's published rating as of 2025-10-27; source CQC ratings file.
+
+Qualification question: Who is responsible for choosing suppliers for this newly registered service, and
+when does it expect to start operating?
+
+For recruitment buyers: How many care staff does this service plan to employ, how many are in post
+
+CareGist | Fixture County | Confidential to order rating-fixtures   |   Page 7 of 30
+now, and when do its first packages or contracts start? Are those packages council-funded or already
+confirmed?
+
+For compliance buyers: Who is preparing this service for its first CQC inspection, and has it arranged a
+governance audit, mock inspection or safeguarding training yet?
+
+For software buyers: What does this service use for care records today (paper, spreadsheets or a digital
+system), is that system on the NHS assured supplier list for digital social care records, how many users
+does it have, and when is the contract up for renewal?
+
+Evidence: 2026-10-20 CQC registration recorded 2026-10-20
+
+CQC record: https://www.cqc.org.uk/location/1-113028260
+
+7. Florence House - Florence House
+
+Fixture County | NR30 2JX | Care home service without nursing | 27 beds | rating Inadequate;
+matches CQC's published rating as of 2026-01-06; source CQC ratings file | score 74
+
+Re-registered with CQC on 20 Oct 2026 (care home service without nursing, 27 beds) in the last three
+weeks, so it is still standing up policies, training and systems. A new legal entity or owner has taken on
+an existing service in Fixture County; this is a documented registration signal, not evidence of a supplier
+search or purchasing intent. It carries an overall rating of Inadequate. Rating evidence: Inadequate;
+matches CQC's published rating as of 2026-01-06; source CQC ratings file.
+
+Qualification question: Who is responsible for choosing suppliers for this newly registered service, and
+when does it expect to start operating?
+
+For recruitment buyers: How many care staff does this service plan to employ, how many are in post
+now, and when do its first packages or contracts start? Are those packages council-funded or already
+confirmed?
+
+For compliance buyers: Who is preparing this service for its first CQC inspection, and has it arranged a
+governance audit, mock inspection or safeguarding training yet?
+
+For software buyers: What does this service use for care records today (paper, spreadsheets or a digital
+system), is that system on the NHS assured supplier list for digital social care records, how many users
+does it have, and when is the contract up for renewal?
+
+Evidence: 2026-10-20 CQC registration recorded 2026-10-20
+
+CQC record: https://www.cqc.org.uk/location/1-456354523
+
+8. Silverdale Nursing Home - Silverdale Nursing Home
+
+Fixture County | ST5 6PQ | Care home service with nursing | 27 beds | rating Inadequate; matches
+CQC's published rating as of 2026-07-08; source CQC ratings file | score 74
+
+Re-registered with CQC on 20 Oct 2026 (care home service with nursing, 27 beds) in the last three
+weeks, so it is still standing up policies, training and systems. A new legal entity or owner has taken on
+an existing service in Fixture County; this is a documented registration signal, not evidence of a supplier
+search or purchasing intent. It carries an overall rating of Inadequate. Rating evidence: Inadequate;
+matches CQC's published rating as of 2026-07-08; source CQC ratings file.
+
+Qualification question: Who is responsible for choosing suppliers for this newly registered service, and
+when does it expect to start operating?
+
+For recruitment buyers: How many care staff does this service plan to employ, how many are in post
+
+CareGist | Fixture County | Confidential to order rating-fixtures   |   Page 8 of 30
+now, and when do its first packages or contracts start? Are those packages council-funded or already
+confirmed?
+
+For compliance buyers: Who is preparing this service for its first CQC inspection, and has it arranged a
+governance audit, mock inspection or safeguarding training yet?
+
+For software buyers: What does this service use for care records today (paper, spreadsheets or a digital
+system), is that system on the NHS assured supplier list for digital social care records, how many users
+does it have, and when is the contract up for renewal?
+
+Evidence: 2026-10-20 CQC registration recorded 2026-10-20
+
+CQC record: https://www.cqc.org.uk/location/1-142705508
+
+9. St Stephens Nursing Home - St Stephens Nursing Home
+
+Fixture County | CT16 1SW | Care home service with nursing | 17 beds | rating Requires
+improvement; matches CQC's published rating as of 2026-05-20; source CQC ratings file + CQC
+website | score 72
+
+Re-registered with CQC on 20 Oct 2026 (care home service with nursing, 17 beds) in the last three
+weeks, so it is still standing up policies, training and systems. A new legal entity or owner has taken on
+an existing service in Fixture County; this is a documented registration signal, not evidence of a supplier
+search or purchasing intent. It carries an overall rating of Requires improvement. Rating evidence:
+Requires improvement; matches CQC's published rating as of 2026-05-20; source CQC ratings file +
+CQC website.
+
+Qualification question: Who is responsible for choosing suppliers for this newly registered service, and
+when does it expect to start operating?
+
+For recruitment buyers: How many care staff does this service plan to employ, how many are in post
+now, and when do its first packages or contracts start? Are those packages council-funded or already
+confirmed?
+
+For compliance buyers: Who is preparing this service for its first CQC inspection, and has it arranged a
+governance audit, mock inspection or safeguarding training yet?
+
+For software buyers: What does this service use for care records today (paper, spreadsheets or a digital
+system), is that system on the NHS assured supplier list for digital social care records, how many users
+does it have, and when is the contract up for renewal?
+
+Evidence: 2026-10-20 CQC registration recorded 2026-10-20
+
+CQC record: https://www.cqc.org.uk/location/1-152721284
+
+10. Carlton House - Carlton House
+
+Fixture County | LS26 0SF | Care home service without nursing | 16 beds | rating Outstanding;
+matches CQC's published rating as of 2026-06-03; source CQC ratings file | score 72
+
+Re-registered with CQC on 20 Oct 2026 (care home service without nursing, 16 beds) in the last three
+weeks, so it is still standing up policies, training and systems. A new legal entity or owner has taken on
+an existing service in Fixture County; this is a documented registration signal, not evidence of a supplier
+search or purchasing intent. It carries an overall rating of Outstanding. Rating evidence: Outstanding;
+matches CQC's published rating as of 2026-06-03; source CQC ratings file.
+
+Qualification question: Who is responsible for choosing suppliers for this newly registered service, and
+
+
+CareGist | Fixture County | Confidential to order rating-fixtures   |   Page 9 of 30
+when does it expect to start operating?
+
+For recruitment buyers: How many care staff does this service plan to employ, how many are in post
+now, and when do its first packages or contracts start? Are those packages council-funded or already
+confirmed?
+
+For compliance buyers: Who is preparing this service for its first CQC inspection, and has it arranged a
+governance audit, mock inspection or safeguarding training yet?
+
+For software buyers: What does this service use for care records today (paper, spreadsheets or a digital
+system), is that system on the NHS assured supplier list for digital social care records, how many users
+does it have, and when is the contract up for renewal?
+
+Evidence: 2026-10-20 CQC registration recorded 2026-10-20
+
+CQC record: https://www.cqc.org.uk/location/1-130890582
+
+11. Welcome House - The Chestnuts - Welcome House - The Chestnuts
+
+Fixture County | ME1 1RX | Care home service without nursing | 15 beds | rating Requires
+improvement; matches CQC's published rating as of 2026-10-13; source CQC website | score 72
+
+Re-registered with CQC on 20 Oct 2026 (care home service without nursing, 15 beds) in the last three
+weeks, so it is still standing up policies, training and systems. A new legal entity or owner has taken on
+an existing service in Fixture County; this is a documented registration signal, not evidence of a supplier
+search or purchasing intent. It carries an overall rating of Requires improvement. Rating evidence:
+Requires improvement; matches CQC's published rating as of 2026-10-13; source CQC website.
+
+Qualification question: Who is responsible for choosing suppliers for this newly registered service, and
+when does it expect to start operating?
+
+For recruitment buyers: How many care staff does this service plan to employ, how many are in post
+now, and when do its first packages or contracts start? Are those packages council-funded or already
+confirmed?
+
+For compliance buyers: Who is preparing this service for its first CQC inspection, and has it arranged a
+governance audit, mock inspection or safeguarding training yet?
+
+For software buyers: What does this service use for care records today (paper, spreadsheets or a digital
+system), is that system on the NHS assured supplier list for digital social care records, how many users
+does it have, and when is the contract up for renewal?
+
+Evidence: 2026-10-20 CQC registration recorded 2026-10-20
+
+CQC record: https://www.cqc.org.uk/location/1-125730630
+
+12. Collegiate House - Collegiate House
+
+Fixture County | S10 2BA | Care home service without nursing | 8 beds | rating Outstanding;
+matches CQC's published rating as of 2026-08-27; source CQC ratings file | score 70
+
+Re-registered with CQC on 20 Oct 2026 (care home service without nursing, 8 beds) in the last three
+weeks, so it is still standing up policies, training and systems. A new legal entity or owner has taken on
+an existing service in Fixture County; this is a documented registration signal, not evidence of a supplier
+search or purchasing intent. It carries an overall rating of Outstanding. Rating evidence: Outstanding;
+matches CQC's published rating as of 2026-08-27; source CQC ratings file.
+
+Qualification question: Who is responsible for choosing suppliers for this newly registered service, and
+
+CareGist | Fixture County | Confidential to order rating-fixtures   |   Page 10 of 30
+when does it expect to start operating?
+
+For recruitment buyers: How many care staff does this service plan to employ, how many are in post
+now, and when do its first packages or contracts start? Are those packages council-funded or already
+confirmed?
+
+For compliance buyers: Who is preparing this service for its first CQC inspection, and has it arranged a
+governance audit, mock inspection or safeguarding training yet?
+
+For software buyers: What does this service use for care records today (paper, spreadsheets or a digital
+system), is that system on the NHS assured supplier list for digital social care records, how many users
+does it have, and when is the contract up for renewal?
+
+Evidence: 2026-10-20 CQC registration recorded 2026-10-20
+
+CQC record: https://www.cqc.org.uk/location/1-16516340886
+
+13. Irchester 170 - Irchester 170
+
+Fixture County | NN29 7EW | Care home service without nursing | 6 beds | rating Good; matches
+CQC's published rating as of 2026-03-11; source CQC ratings file + CQC website | score 70
+
+Re-registered with CQC on 20 Oct 2026 (care home service without nursing, 6 beds) in the last three
+weeks, so it is still standing up policies, training and systems. A new legal entity or owner has taken on
+an existing service in Fixture County; this is a documented registration signal, not evidence of a supplier
+search or purchasing intent. It carries an overall rating of Good. Rating evidence: Good; matches CQC's
+published rating as of 2026-03-11; source CQC ratings file + CQC website.
+
+Qualification question: Who is responsible for choosing suppliers for this newly registered service, and
+when does it expect to start operating?
+
+For recruitment buyers: How many care staff does this service plan to employ, how many are in post
+now, and when do its first packages or contracts start? Are those packages council-funded or already
+confirmed?
+
+For compliance buyers: Who is preparing this service for its first CQC inspection, and has it arranged a
+governance audit, mock inspection or safeguarding training yet?
+
+For software buyers: What does this service use for care records today (paper, spreadsheets or a digital
+system), is that system on the NHS assured supplier list for digital social care records, how many users
+does it have, and when is the contract up for renewal?
+
+Evidence: 2026-10-20 CQC registration recorded 2026-10-20
+
+CQC record: https://www.cqc.org.uk/location/1-22160036426
+
+14. Woodways - Woodways
+
+Fixture County | S73 0HQ | Care home service without nursing | 6 beds | rating Outstanding;
+matches CQC's published rating as of 2025-07-29; source CQC ratings file | score 70
+
+Re-registered with CQC on 20 Oct 2026 (care home service without nursing, 6 beds) in the last three
+weeks, so it is still standing up policies, training and systems. A new legal entity or owner has taken on
+an existing service in Fixture County; this is a documented registration signal, not evidence of a supplier
+search or purchasing intent. It carries an overall rating of Outstanding. Rating evidence: Outstanding;
+matches CQC's published rating as of 2025-07-29; source CQC ratings file.
+
+Qualification question: Who is responsible for choosing suppliers for this newly registered service, and
+
+CareGist | Fixture County | Confidential to order rating-fixtures   |   Page 11 of 30
+when does it expect to start operating?
+
+For recruitment buyers: How many care staff does this service plan to employ, how many are in post
+now, and when do its first packages or contracts start? Are those packages council-funded or already
+confirmed?
+
+For compliance buyers: Who is preparing this service for its first CQC inspection, and has it arranged a
+governance audit, mock inspection or safeguarding training yet?
+
+For software buyers: What does this service use for care records today (paper, spreadsheets or a digital
+system), is that system on the NHS assured supplier list for digital social care records, how many users
+does it have, and when is the contract up for renewal?
+
+Evidence: 2026-10-20 CQC registration recorded 2026-10-20
+
+CQC record: https://www.cqc.org.uk/location/1-10192918971
+
+15. Angel Home Care Service Private Limited - Angel Home Care Service Private Limited
+
+Fixture County | SK8 4NG | Domiciliary care service | rating Requires improvement; matches CQC's
+published rating as of 2026-04-22; source CQC ratings file | score 69
+
+Re-registered with CQC on 20 Oct 2026 (domiciliary care service, non-bed-based) in the last three
+weeks, so it is still standing up policies, training and systems. A new legal entity or owner has taken on
+an existing service in Fixture County; this is a documented registration signal, not evidence of a supplier
+search or purchasing intent. It carries an overall rating of Requires improvement. Rating evidence:
+Requires improvement; matches CQC's published rating as of 2026-04-22; source CQC ratings file.
+
+Qualification question: Who is responsible for choosing suppliers for this newly registered service, and
+when does it expect to start operating?
+
+For recruitment buyers: How many care staff does this service plan to employ, how many are in post
+now, and when do its first packages or contracts start? Are those packages council-funded or already
+confirmed?
+
+For compliance buyers: Who is preparing this service for its first CQC inspection, and has it arranged a
+governance audit, mock inspection or safeguarding training yet?
+
+For software buyers: What does this service use for care records today (paper, spreadsheets or a digital
+system), is that system on the NHS assured supplier list for digital social care records, how many users
+does it have, and when is the contract up for renewal?
+
+Evidence: 2026-10-20 CQC registration recorded 2026-10-20
+
+CQC record: https://www.cqc.org.uk/location/1-407665280
+
+16. Crawley Road Medical Centre - Crawley Road Medical Centre
+
+Fixture County | E10 5EL | Doctors consultation service | rating Good; matches CQC's published
+rating as of 2025-07-11; source CQC ratings file | score 69
+
+Re-registered with CQC on 20 Oct 2026 (doctors consultation service, non-bed-based) in the last three
+weeks, so it is still standing up policies, training and systems. A new legal entity or owner has taken on
+an existing service in Fixture County; this is a documented registration signal, not evidence of a supplier
+search or purchasing intent. It carries an overall rating of Good. Rating evidence: Good; matches CQC's
+published rating as of 2025-07-11; source CQC ratings file.
+
+Qualification question: Who is responsible for choosing suppliers for this newly registered service, and
+
+CareGist | Fixture County | Confidential to order rating-fixtures   |   Page 12 of 30
+when does it expect to start operating?
+
+For recruitment buyers: How many care staff does this service plan to employ, how many are in post
+now, and when do its first packages or contracts start? Are those packages council-funded or already
+confirmed?
+
+For compliance buyers: Who is preparing this service for its first CQC inspection, and has it arranged a
+governance audit, mock inspection or safeguarding training yet?
+
+For software buyers: What does this service use for care records today (paper, spreadsheets or a digital
+system), is that system on the NHS assured supplier list for digital social care records, how many users
+does it have, and when is the contract up for renewal?
+
+Evidence: 2026-10-20 CQC registration recorded 2026-10-20
+
+CQC record: https://www.cqc.org.uk/location/1-546109592
+
+17. Eskdale House Supported Living Service - Eskdale House Supported Living Service
+
+Fixture County | LA9 6NQ | Supported living service | rating Requires improvement; matches CQC's
+published rating as of 2026-06-03; source CQC ratings file | score 69
+
+Re-registered with CQC on 20 Oct 2026 (supported living service, non-bed-based) in the last three
+weeks, so it is still standing up policies, training and systems. A new legal entity or owner has taken on
+an existing service in Fixture County; this is a documented registration signal, not evidence of a supplier
+search or purchasing intent. It carries an overall rating of Requires improvement. Rating evidence:
+Requires improvement; matches CQC's published rating as of 2026-06-03; source CQC ratings file.
+
+Qualification question: Who is responsible for choosing suppliers for this newly registered service, and
+when does it expect to start operating?
+
+For recruitment buyers: How many care staff does this service plan to employ, how many are in post
+now, and when do its first packages or contracts start? Are those packages council-funded or already
+confirmed?
+
+For compliance buyers: Who is preparing this service for its first CQC inspection, and has it arranged a
+governance audit, mock inspection or safeguarding training yet?
+
+For software buyers: What does this service use for care records today (paper, spreadsheets or a digital
+system), is that system on the NHS assured supplier list for digital social care records, how many users
+does it have, and when is the contract up for renewal?
+
+Evidence: 2026-10-20 CQC registration recorded 2026-10-20
+
+CQC record: https://www.cqc.org.uk/location/1-27003473742
+
+18. Kelly Healthcare Services Limited - Kelly Healthcare Services Limited
+
+Fixture County | DY4 7UF | Domiciliary care service | rating Good; matches CQC's published rating
+as of 2025-03-14; source CQC ratings file | score 69
+
+Re-registered with CQC on 20 Oct 2026 (domiciliary care service, non-bed-based) in the last three
+weeks, so it is still standing up policies, training and systems. A new legal entity or owner has taken on
+an existing service in Fixture County; this is a documented registration signal, not evidence of a supplier
+search or purchasing intent. It carries an overall rating of Good. Rating evidence: Good; matches CQC's
+published rating as of 2025-03-14; source CQC ratings file.
+
+Qualification question: Who is responsible for choosing suppliers for this newly registered service, and
+
+CareGist | Fixture County | Confidential to order rating-fixtures   |   Page 13 of 30
+when does it expect to start operating?
+
+For recruitment buyers: How many care staff does this service plan to employ, how many are in post
+now, and when do its first packages or contracts start? Are those packages council-funded or already
+confirmed?
+
+For compliance buyers: Who is preparing this service for its first CQC inspection, and has it arranged a
+governance audit, mock inspection or safeguarding training yet?
+
+For software buyers: What does this service use for care records today (paper, spreadsheets or a digital
+system), is that system on the NHS assured supplier list for digital social care records, how many users
+does it have, and when is the contract up for renewal?
+
+Evidence: 2026-10-20 CQC registration recorded 2026-10-20
+
+CQC record: https://www.cqc.org.uk/location/1-11270646845
+
+19. Lucketts Farm - Lucketts Farm
+
+Fixture County | CT2 9EF | Supported living service | rating Requires improvement; matches CQC's
+published rating as of 2025-10-16; source CQC ratings file | score 69
+
+Re-registered with CQC on 20 Oct 2026 (supported living service, non-bed-based) in the last three
+weeks, so it is still standing up policies, training and systems. A new legal entity or owner has taken on
+an existing service in Fixture County; this is a documented registration signal, not evidence of a supplier
+search or purchasing intent. It carries an overall rating of Requires improvement. Rating evidence:
+Requires improvement; matches CQC's published rating as of 2025-10-16; source CQC ratings file.
+
+Qualification question: Who is responsible for choosing suppliers for this newly registered service, and
+when does it expect to start operating?
+
+For recruitment buyers: How many care staff does this service plan to employ, how many are in post
+now, and when do its first packages or contracts start? Are those packages council-funded or already
+confirmed?
+
+For compliance buyers: Who is preparing this service for its first CQC inspection, and has it arranged a
+governance audit, mock inspection or safeguarding training yet?
+
+For software buyers: What does this service use for care records today (paper, spreadsheets or a digital
+system), is that system on the NHS assured supplier list for digital social care records, how many users
+does it have, and when is the contract up for renewal?
+
+Evidence: 2026-10-20 CQC registration recorded 2026-10-20
+
+CQC record: https://www.cqc.org.uk/location/1-2352094536
+
+20. Milford Del Support Agency - Milford Del Support Agency
+
+Fixture County | PO36 9LE | Domiciliary care service | rating Outstanding; matches CQC's
+published rating as of 2025-07-18; source CQC ratings file | score 69
+
+Re-registered with CQC on 20 Oct 2026 (domiciliary care service, non-bed-based) in the last three
+weeks, so it is still standing up policies, training and systems. A new legal entity or owner has taken on
+an existing service in Fixture County; this is a documented registration signal, not evidence of a supplier
+search or purchasing intent. It carries an overall rating of Outstanding. Rating evidence: Outstanding;
+matches CQC's published rating as of 2025-07-18; source CQC ratings file.
+
+Qualification question: Who is responsible for choosing suppliers for this newly registered service, and
+
+CareGist | Fixture County | Confidential to order rating-fixtures   |   Page 14 of 30
+when does it expect to start operating?
+
+For recruitment buyers: How many care staff does this service plan to employ, how many are in post
+now, and when do its first packages or contracts start? Are those packages council-funded or already
+confirmed?
+
+For compliance buyers: Who is preparing this service for its first CQC inspection, and has it arranged a
+governance audit, mock inspection or safeguarding training yet?
+
+For software buyers: What does this service use for care records today (paper, spreadsheets or a digital
+system), is that system on the NHS assured supplier list for digital social care records, how many users
+does it have, and when is the contract up for renewal?
+
+Evidence: 2026-10-20 CQC registration recorded 2026-10-20
+
+CQC record: https://www.cqc.org.uk/location/1-2467326262
+
+21. Nomira Care Ltd - Nomira Care Ltd
+
+Fixture County | HA8 6SD | Domiciliary care service | rating Requires improvement; matches CQC's
+published rating as of 2025-08-19; source CQC ratings file | score 69
+
+Re-registered with CQC on 20 Oct 2026 (domiciliary care service, non-bed-based) in the last three
+weeks, so it is still standing up policies, training and systems. A new legal entity or owner has taken on
+an existing service in Fixture County; this is a documented registration signal, not evidence of a supplier
+search or purchasing intent. It carries an overall rating of Requires improvement. Rating evidence:
+Requires improvement; matches CQC's published rating as of 2025-08-19; source CQC ratings file.
+
+Qualification question: Who is responsible for choosing suppliers for this newly registered service, and
+when does it expect to start operating?
+
+For recruitment buyers: How many care staff does this service plan to employ, how many are in post
+now, and when do its first packages or contracts start? Are those packages council-funded or already
+confirmed?
+
+For compliance buyers: Who is preparing this service for its first CQC inspection, and has it arranged a
+governance audit, mock inspection or safeguarding training yet?
+
+For software buyers: What does this service use for care records today (paper, spreadsheets or a digital
+system), is that system on the NHS assured supplier list for digital social care records, how many users
+does it have, and when is the contract up for renewal?
+
+Evidence: 2026-10-20 CQC registration recorded 2026-10-20
+
+CQC record: https://www.cqc.org.uk/location/1-13937101349
+
+22. Silverjen Limited - Silverjen Limited
+
+Fixture County | KT22 7PL | Domiciliary care service | rating Inadequate; matches CQC's published
+rating as of 2026-09-18; source CQC ratings file | score 69
+
+Re-registered with CQC on 20 Oct 2026 (domiciliary care service, non-bed-based) in the last three
+weeks, so it is still standing up policies, training and systems. A new legal entity or owner has taken on
+an existing service in Fixture County; this is a documented registration signal, not evidence of a supplier
+search or purchasing intent. It carries an overall rating of Inadequate. Rating evidence: Inadequate;
+matches CQC's published rating as of 2026-09-18; source CQC ratings file.
+
+Qualification question: Who is responsible for choosing suppliers for this newly registered service, and
+
+CareGist | Fixture County | Confidential to order rating-fixtures   |   Page 15 of 30
+when does it expect to start operating?
+
+For recruitment buyers: How many care staff does this service plan to employ, how many are in post
+now, and when do its first packages or contracts start? Are those packages council-funded or already
+confirmed?
+
+For compliance buyers: Who is preparing this service for its first CQC inspection, and has it arranged a
+governance audit, mock inspection or safeguarding training yet?
+
+For software buyers: What does this service use for care records today (paper, spreadsheets or a digital
+system), is that system on the NHS assured supplier list for digital social care records, how many users
+does it have, and when is the contract up for renewal?
+
+Evidence: 2026-10-20 CQC registration recorded 2026-10-20
+
+CQC record: https://www.cqc.org.uk/location/1-10615519904
+
+23. The Chesser Surgery - The Chesser Surgery
+
+Fixture County | SM5 2RT | Doctors consultation service | rating Requires improvement; matches
+CQC's published rating as of 2025-03-05; source CQC website | score 69
+
+Re-registered with CQC on 20 Oct 2026 (doctors consultation service, non-bed-based) in the last three
+weeks, so it is still standing up policies, training and systems. A new legal entity or owner has taken on
+an existing service in Fixture County; this is a documented registration signal, not evidence of a supplier
+search or purchasing intent. It carries an overall rating of Requires improvement. Rating evidence:
+Requires improvement; matches CQC's published rating as of 2025-03-05; source CQC website.
+
+Qualification question: Who is responsible for choosing suppliers for this newly registered service, and
+when does it expect to start operating?
+
+For recruitment buyers: How many care staff does this service plan to employ, how many are in post
+now, and when do its first packages or contracts start? Are those packages council-funded or already
+confirmed?
+
+For compliance buyers: Who is preparing this service for its first CQC inspection, and has it arranged a
+governance audit, mock inspection or safeguarding training yet?
+
+For software buyers: What does this service use for care records today (paper, spreadsheets or a digital
+system), is that system on the NHS assured supplier list for digital social care records, how many users
+does it have, and when is the contract up for renewal?
+
+Evidence: 2026-10-20 CQC registration recorded 2026-10-20
+
+CQC record: https://www.cqc.org.uk/location/1-552527797
+
+24. The Doctors Laboratory - The Doctors Laboratory
+
+Fixture County | WC1H 9AX | Diagnostic and/or screening service | rating unrated; no accepted
+source; see candidate evidence; publication date unresolved | score 69
+
+Re-registered with CQC on 20 Oct 2026 (diagnostic and/or screening service, non-bed-based) in the
+last three weeks, so it is still standing up policies, training and systems. A new legal entity or owner has
+taken on an existing service in Fixture County; this is a documented registration signal, not evidence of
+a supplier search or purchasing intent. Rating evidence: unrated; no accepted source; see candidate
+evidence; publication date unresolved.
+
+Qualification question: Who is responsible for choosing suppliers for this newly registered service, and
+
+CareGist | Fixture County | Confidential to order rating-fixtures   |   Page 16 of 30
+when does it expect to start operating?
+
+For recruitment buyers: How many care staff does this service plan to employ, how many are in post
+now, and when do its first packages or contracts start? Are those packages council-funded or already
+confirmed?
+
+For compliance buyers: Who is preparing this service for its first CQC inspection, and has it arranged a
+governance audit, mock inspection or safeguarding training yet?
+
+For software buyers: What does this service use for care records today (paper, spreadsheets or a digital
+system), is that system on the NHS assured supplier list for digital social care records, how many users
+does it have, and when is the contract up for renewal?
+
+Evidence: 2026-10-20 CQC registration recorded 2026-10-20
+
+CQC record: https://www.cqc.org.uk/location/1-5588555895
+
+25. Village Surgery - Village Surgery
+
+Fixture County | SR3 2AN | Doctors consultation service | rating Good; matches CQC's published
+rating as of 2026-03-31; source CQC ratings file | score 69
+
+Re-registered with CQC on 20 Oct 2026 (doctors consultation service, non-bed-based) in the last three
+weeks, so it is still standing up policies, training and systems. A new legal entity or owner has taken on
+an existing service in Fixture County; this is a documented registration signal, not evidence of a supplier
+search or purchasing intent. It carries an overall rating of Good. Rating evidence: Good; matches CQC's
+published rating as of 2026-03-31; source CQC ratings file.
+
+Qualification question: Who is responsible for choosing suppliers for this newly registered service, and
+when does it expect to start operating?
+
+For recruitment buyers: How many care staff does this service plan to employ, how many are in post
+now, and when do its first packages or contracts start? Are those packages council-funded or already
+confirmed?
+
+For compliance buyers: Who is preparing this service for its first CQC inspection, and has it arranged a
+governance audit, mock inspection or safeguarding training yet?
+
+For software buyers: What does this service use for care records today (paper, spreadsheets or a digital
+system), is that system on the NHS assured supplier list for digital social care records, how many users
+does it have, and when is the contract up for renewal?
+
+Evidence: 2026-10-20 CQC registration recorded 2026-10-20
+
+CQC record: https://www.cqc.org.uk/location/1-546202187
+
+26. Belle Vale Dental Centre - Belle Vale Dental Centre
+
+Fixture County | L25 2XE | Dental service | rating unrated; no accepted source; see candidate
+evidence; publication date unresolved | score 63
+
+Newly registered with CQC on 20 Oct 2026 (dental service, non-bed-based) in the last three weeks, so
+it is still standing up policies, training and systems. This is a first-time registration signal in Fixture
+County; it does not establish supplier need or purchasing intent, and no inspection history is available
+yet. Rating evidence: unrated; no accepted source; see candidate evidence; publication date
+unresolved.
+
+Qualification question: Who is responsible for choosing suppliers for this newly registered service, and
+
+CareGist | Fixture County | Confidential to order rating-fixtures   |   Page 17 of 30
+when does it expect to start operating?
+
+For recruitment buyers: How many care staff does this service plan to employ, how many are in post
+now, and when do its first packages or contracts start? Are those packages council-funded or already
+confirmed?
+
+For compliance buyers: Who is preparing this service for its first CQC inspection, and has it arranged a
+governance audit, mock inspection or safeguarding training yet?
+
+For software buyers: What does this service use for care records today (paper, spreadsheets or a digital
+system), is that system on the NHS assured supplier list for digital social care records, how many users
+does it have, and when is the contract up for renewal?
+
+Evidence: 2026-10-20 CQC registration recorded 2026-10-20
+
+CQC record: https://www.cqc.org.uk/location/1-199649069
+
+27. Candela Healthcare Ltd - Candela Healthcare Ltd
+
+Fixture County | HR1 2HU | Domiciliary care service | rating unrated; no accepted source; see
+candidate evidence; publication date unresolved | score 63
+
+Newly registered with CQC on 20 Oct 2026 (domiciliary care service, non-bed-based) in the last three
+weeks, so it is still standing up policies, training and systems. This is a first-time registration signal in
+Fixture County; it does not establish supplier need or purchasing intent, and no inspection history is
+available yet. Rating evidence: unrated; no accepted source; see candidate evidence; publication date
+unresolved.
+
+Qualification question: Who is responsible for choosing suppliers for this newly registered service, and
+when does it expect to start operating?
+
+For recruitment buyers: How many care staff does this service plan to employ, how many are in post
+now, and when do its first packages or contracts start? Are those packages council-funded or already
+confirmed?
+
+For compliance buyers: Who is preparing this service for its first CQC inspection, and has it arranged a
+governance audit, mock inspection or safeguarding training yet?
+
+For software buyers: What does this service use for care records today (paper, spreadsheets or a digital
+system), is that system on the NHS assured supplier list for digital social care records, how many users
+does it have, and when is the contract up for renewal?
+
+Evidence: 2026-10-20 CQC registration recorded 2026-10-20
+
+CQC record: https://www.cqc.org.uk/location/1-12566526711
+
+28. NEAD Support Ltd - Remote Clinical Service - NEAD Support Ltd - Remote Clinical Service
+
+Fixture County | WA14 4UD | Doctors consultation service | rating unrated; no accepted source; see
+candidate evidence; publication date unresolved | score 63
+
+Newly registered with CQC on 20 Oct 2026 (doctors consultation service, non-bed-based) in the last
+three weeks, so it is still standing up policies, training and systems. This is a first-time registration signal
+in Fixture County; it does not establish supplier need or purchasing intent, and no inspection history is
+available yet. Rating evidence: unrated; no accepted source; see candidate evidence; publication date
+unresolved.
+
+Qualification question: Who is responsible for choosing suppliers for this newly registered service, and
+
+CareGist | Fixture County | Confidential to order rating-fixtures   |   Page 18 of 30
+when does it expect to start operating?
+
+For recruitment buyers: How many care staff does this service plan to employ, how many are in post
+now, and when do its first packages or contracts start? Are those packages council-funded or already
+confirmed?
+
+For compliance buyers: Who is preparing this service for its first CQC inspection, and has it arranged a
+governance audit, mock inspection or safeguarding training yet?
+
+For software buyers: What does this service use for care records today (paper, spreadsheets or a digital
+system), is that system on the NHS assured supplier list for digital social care records, how many users
+does it have, and when is the contract up for renewal?
+
+Evidence: 2026-10-20 CQC registration recorded 2026-10-20
+
+CQC record: https://www.cqc.org.uk/location/1-29650851551
+
+29. Nottingham University Hospital - Nottingham University Hospital
+
+Fixture County | NG7 2UH | Dental service | rating unrated; no accepted source; see candidate
+evidence; publication date unresolved | score 63
+
+Newly registered with CQC on 20 Oct 2026 (dental service, non-bed-based) in the last three weeks, so
+it is still standing up policies, training and systems. This is a first-time registration signal in Fixture
+County; it does not establish supplier need or purchasing intent, and no inspection history is available
+yet. Rating evidence: unrated; no accepted source; see candidate evidence; publication date
+unresolved.
+
+Qualification question: Who is responsible for choosing suppliers for this newly registered service, and
+when does it expect to start operating?
+
+For recruitment buyers: How many care staff does this service plan to employ, how many are in post
+now, and when do its first packages or contracts start? Are those packages council-funded or already
+confirmed?
+
+For compliance buyers: Who is preparing this service for its first CQC inspection, and has it arranged a
+governance audit, mock inspection or safeguarding training yet?
+
+For software buyers: What does this service use for care records today (paper, spreadsheets or a digital
+system), is that system on the NHS assured supplier list for digital social care records, how many users
+does it have, and when is the contract up for renewal?
+
+Evidence: 2026-10-20 CQC registration recorded 2026-10-20
+
+CQC record: https://www.cqc.org.uk/location/RHARA
+
+30. Tillingham Medical Centre - Tillingham Medical Centre
+
+Fixture County | CM0 7TH | Doctors treatment service | rating unresolved; no accepted source; see
+candidate evidence; publication date unresolved | score 63
+
+Current-provider overall rating is unresolved. The supplied evidence does not establish a
+current-provider inspection; review the CQC profile and retained source evidence before qualification.
+Rating evidence: unresolved; no accepted source; see candidate evidence; publication date unresolved.
+
+Qualification question: Who is responsible for choosing suppliers for this newly registered service, and
+when does it expect to start operating?
+
+
+
+CareGist | Fixture County | Confidential to order rating-fixtures   |   Page 19 of 30
+For recruitment buyers: How many care staff does this service plan to employ, how many are in post
+now, and when do its first packages or contracts start? Are those packages council-funded or already
+confirmed?
+
+For compliance buyers: Who is preparing this service for its first CQC inspection, and has it arranged a
+governance audit, mock inspection or safeguarding training yet?
+
+For software buyers: What does this service use for care records today (paper, spreadsheets or a digital
+system), is that system on the NHS assured supplier list for digital social care records, how many users
+does it have, and when is the contract up for renewal?
+
+Evidence: 2026-10-20 CQC registration recorded 2026-10-20
+
+CQC record: https://www.cqc.org.uk/location/1-16491295796
+
+
+Appendix B. Evidence dates and metadata coverage
+RI context remains visible even without an in-window event. Freshness is measured at generation.
+Metadata gaps refer to the supplied snapshot; constructed reference links do not replace missing
+recorded source metadata.
+
+Woodways (1-10192918971; provider 1-10192918971-provider)
+
+Rating evidence date: 2025-07-29; stale (over 12 months). Registration date: 2026-10-20.
+
+Registration metadata gaps: none. Recorded URL:
+https://api.cqc.org.uk/public/v1/locations/1-10192918971; hash:
+9cbb832797ecbae9e3fb34ae66d42d4af307652ec4c1f7ca54994d3f1d15f763.
+
+Rating status: current; source: CQC ratings file
+
+CQC API: no numerical rating; published unknown; status current; edition Frozen API observation 22
+October 2026; hash 9cbb832797ecbae9e3fb34ae66d42d4af307652ec4c1f7ca54994d3f1d15f763;
+source https://api.cqc.org.uk/public/v1/locations/1-10192918971
+
+CQC ratings file: Outstanding; published 2025-07-29; status current; edition CQC download edition 2
+October 2026; data cutoff unverified; hash
+aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd; source ratings.ods
+
+CQC reference: https://www.cqc.org.uk/location/1-10192918971
+
+Silverjen Limited (1-10615519904; provider 1-10615519904-provider)
+
+Rating evidence date: 2026-09-18; within 12 months. Registration date: 2026-10-20.
+
+Registration metadata gaps: none. Recorded URL:
+https://api.cqc.org.uk/public/v1/locations/1-10615519904; hash:
+ceb498724f7026ebb2b6869577b5fc85dad1c7d05dc37f4b6cebc72a02bc16fb.
+
+Rating status: current; source: CQC ratings file
+
+CQC API: no numerical rating; published unknown; status current; edition Frozen API observation 22
+October 2026; hash ceb498724f7026ebb2b6869577b5fc85dad1c7d05dc37f4b6cebc72a02bc16fb;
+source https://api.cqc.org.uk/public/v1/locations/1-10615519904
+
+CQC ratings file: Inadequate; published 2026-09-18; status current; edition CQC download edition 2
+October 2026; data cutoff unverified; hash
+aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd; source ratings.ods
+
+CareGist | Fixture County | Confidential to order rating-fixtures   |   Page 20 of 30
+CQC reference: https://www.cqc.org.uk/location/1-10615519904
+
+Kelly Healthcare Services Limited (1-11270646845; provider 1-11270646845-provider)
+
+Rating evidence date: 2025-03-14; stale (over 12 months). Registration date: 2026-10-20.
+
+Registration metadata gaps: none. Recorded URL:
+https://api.cqc.org.uk/public/v1/locations/1-11270646845; hash:
+29bd7fa5f18024ee0297244b4df876abc65700a8d554f33371fb0551c5ea5026.
+
+Rating status: current; source: CQC ratings file
+
+CQC API: no numerical rating; published unknown; status current; edition Frozen API observation 22
+October 2026; hash 29bd7fa5f18024ee0297244b4df876abc65700a8d554f33371fb0551c5ea5026;
+source https://api.cqc.org.uk/public/v1/locations/1-11270646845
+
+CQC ratings file: Good; published 2025-03-14; status current; edition CQC download edition 2 October
+2026; data cutoff unverified; hash
+aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd; source ratings.ods
+
+CQC reference: https://www.cqc.org.uk/location/1-11270646845
+
+Fairfield Nursing Home (1-113028260; provider 1-113028260-provider)
+
+Rating evidence date: 2025-10-27; stale (over 12 months). Registration date: 2026-10-20.
+
+Registration metadata gaps: none. Recorded URL:
+https://api.cqc.org.uk/public/v1/locations/1-113028260; hash:
+b3dcdbe451d8659349fabfe1907c01d9a01f9174306ddbfdca9d4db03e2d1df3.
+
+Rating status: current; source: CQC ratings file
+
+CQC API: no numerical rating; published unknown; status current; edition Frozen API observation 22
+October 2026; hash b3dcdbe451d8659349fabfe1907c01d9a01f9174306ddbfdca9d4db03e2d1df3;
+source https://api.cqc.org.uk/public/v1/locations/1-113028260
+
+CQC ratings file: Inadequate; published 2025-10-27; status current; edition CQC download edition 2
+October 2026; data cutoff unverified; hash
+aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd; source ratings.ods
+
+CQC reference: https://www.cqc.org.uk/location/1-113028260
+
+Candela Healthcare Ltd (1-12566526711; provider 1-12566526711-provider)
+
+Rating evidence date: not supplied; unknown (no publication date). Registration date: 2026-10-20.
+
+Registration metadata gaps: none. Recorded URL:
+https://api.cqc.org.uk/public/v1/locations/1-12566526711; hash:
+8db09699492bbcdaf7956197be3d43fe33dfd8b7ec5ed085f79fdfce500feeb1.
+
+Rating status: unrated; source: none accepted
+
+CQC API: no numerical rating; published unknown; status current; edition Frozen API observation 22
+October 2026; hash 8db09699492bbcdaf7956197be3d43fe33dfd8b7ec5ed085f79fdfce500feeb1;
+source https://api.cqc.org.uk/public/v1/locations/1-12566526711
+
+CQC ratings file: no numerical rating; published unknown; status current; edition unknown; hash not
+supplied; source not supplied
+
+CQC reference: https://www.cqc.org.uk/location/1-12566526711
+
+CareGist | Fixture County | Confidential to order rating-fixtures   |   Page 21 of 30
+Welcome House - The Chestnuts (1-125730630; provider 1-125730630-provider)
+
+Rating evidence date: 2026-10-13; within 12 months. Registration date: 2026-10-20.
+
+Registration metadata gaps: none. Recorded URL:
+https://api.cqc.org.uk/public/v1/locations/1-125730630; hash:
+ac93445be49bde1969a4c05cc3d4b03d31f0f96cdeeace8b20589f4bb36fa93f.
+
+Rating status: current; source: CQC website
+
+CQC API: no numerical rating; published unknown; status current; edition Frozen API observation 22
+October 2026; hash ac93445be49bde1969a4c05cc3d4b03d31f0f96cdeeace8b20589f4bb36fa93f;
+source https://api.cqc.org.uk/public/v1/locations/1-125730630
+
+CQC ratings file: Inadequate; published 2025-09-25; status current; edition CQC download edition 2
+October 2026; data cutoff unverified; hash
+aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd; source ratings.ods
+
+CQC website: Requires improvement; published 2026-10-13; status current; edition Frozen CQC
+website observation 22 October 2026; hash
+e1c7ef47a78fb8fa26d954aa3f31bc2b6c2d1fa3996e34892d716fa5dee420e6; source
+https://www.cqc.org.uk/location/1-125730630
+
+CQC reference: https://www.cqc.org.uk/location/1-125730630
+
+Carlton House (1-130890582; provider 1-130890582-provider)
+
+Rating evidence date: 2026-06-03; within 12 months. Registration date: 2026-10-20.
+
+Registration metadata gaps: none. Recorded URL:
+https://api.cqc.org.uk/public/v1/locations/1-130890582; hash:
+979ccb81c1cb2c2e097905a934641489c2462706bc2198d942c2ef5d7929c81a.
+
+Rating status: current; source: CQC ratings file
+
+CQC API: no numerical rating; published unknown; status current; edition Frozen API observation 22
+October 2026; hash 979ccb81c1cb2c2e097905a934641489c2462706bc2198d942c2ef5d7929c81a;
+source https://api.cqc.org.uk/public/v1/locations/1-130890582
+
+CQC ratings file: Outstanding; published 2026-06-03; status current; edition CQC download edition 2
+October 2026; data cutoff unverified; hash
+aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd; source ratings.ods
+
+CQC reference: https://www.cqc.org.uk/location/1-130890582
+
+Nomira Care Ltd (1-13937101349; provider 1-13937101349-provider)
+
+Rating evidence date: 2025-08-19; stale (over 12 months). Registration date: 2026-10-20.
+
+Registration metadata gaps: none. Recorded URL:
+https://api.cqc.org.uk/public/v1/locations/1-13937101349; hash:
+70aa25a7ea4710aaa84e9906769abbb8f2611132fe70de0fdea080fe82a1d15f.
+
+Rating status: current; source: CQC ratings file
+
+CQC API: no numerical rating; published unknown; status current; edition Frozen API observation 22
+October 2026; hash 70aa25a7ea4710aaa84e9906769abbb8f2611132fe70de0fdea080fe82a1d15f;
+source https://api.cqc.org.uk/public/v1/locations/1-13937101349
+
+
+
+CareGist | Fixture County | Confidential to order rating-fixtures   |   Page 22 of 30
+CQC ratings file: Requires improvement; published 2025-08-19; status current; edition CQC download
+edition 2 October 2026; data cutoff unverified; hash
+aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd; source ratings.ods
+
+CQC reference: https://www.cqc.org.uk/location/1-13937101349
+
+Silverdale Nursing Home (1-142705508; provider 1-142705508-provider)
+
+Rating evidence date: 2026-07-08; within 12 months. Registration date: 2026-10-20.
+
+Registration metadata gaps: none. Recorded URL:
+https://api.cqc.org.uk/public/v1/locations/1-142705508; hash:
+5b75a0e6242070f61da5d9b250f091e221dc9533fd089cfb7fc26cb131c94647.
+
+Rating status: current; source: CQC ratings file
+
+CQC API: no numerical rating; published unknown; status current; edition Frozen API observation 22
+October 2026; hash 5b75a0e6242070f61da5d9b250f091e221dc9533fd089cfb7fc26cb131c94647;
+source https://api.cqc.org.uk/public/v1/locations/1-142705508
+
+CQC ratings file: Inadequate; published 2026-07-08; status current; edition CQC download edition 2
+October 2026; data cutoff unverified; hash
+aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd; source ratings.ods
+
+CQC reference: https://www.cqc.org.uk/location/1-142705508
+
+St Stephens Nursing Home (1-152721284; provider 1-152721284-provider)
+
+Rating evidence date: 2026-05-20; within 12 months. Registration date: 2026-10-20.
+
+Registration metadata gaps: none. Recorded URL:
+https://api.cqc.org.uk/public/v1/locations/1-152721284; hash:
+d4806c03e19f98f1083d4813550a3ed08dc0ce20e4ee259d5c57074305219b1d.
+
+Rating status: current; source: CQC ratings file + CQC website
+
+CQC API: Good; published 2019-07-16; status current; edition Frozen API observation 22 October
+2026; hash d4806c03e19f98f1083d4813550a3ed08dc0ce20e4ee259d5c57074305219b1d; source
+https://api.cqc.org.uk/public/v1/locations/1-152721284
+
+CQC ratings file: Requires improvement; published 2026-05-20; status current; edition CQC download
+edition 2 October 2026; data cutoff unverified; hash
+aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd; source ratings.ods
+
+CQC website: Requires improvement; published 2026-05-20; status current; edition Frozen CQC
+website observation 22 October 2026; hash
+a75240f5c8c68ed811c45ee8211242c603fd8ae0eff437ee7e3f7dc2200b0f42; source
+https://www.cqc.org.uk/location/1-152721284
+
+CQC reference: https://www.cqc.org.uk/location/1-152721284
+
+Rose Court Care Home (1-15297949474; provider 1-15297949474-provider)
+
+Rating evidence date: 2025-08-12; stale (over 12 months). Registration date: 2026-10-20.
+
+Registration metadata gaps: none. Recorded URL:
+https://api.cqc.org.uk/public/v1/locations/1-15297949474; hash:
+b016ecdec06db5073a8a7d802137a48f8e43a5c10a778b19b2294f9cdcc27807.
+
+
+
+CareGist | Fixture County | Confidential to order rating-fixtures   |   Page 23 of 30
+Rating status: current; source: CQC ratings file
+
+CQC API: no numerical rating; published unknown; status current; edition Frozen API observation 22
+October 2026; hash b016ecdec06db5073a8a7d802137a48f8e43a5c10a778b19b2294f9cdcc27807;
+source https://api.cqc.org.uk/public/v1/locations/1-15297949474
+
+CQC ratings file: Requires improvement; published 2025-08-12; status current; edition CQC download
+edition 2 October 2026; data cutoff unverified; hash
+aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd; source ratings.ods
+
+CQC reference: https://www.cqc.org.uk/location/1-15297949474
+
+Tillingham Medical Centre (1-16491295796; provider 1-16491295796-provider)
+
+Rating evidence date: not supplied; unknown (no publication date). Registration date: 2026-10-20.
+
+Registration metadata gaps: none. Recorded URL:
+https://api.cqc.org.uk/public/v1/locations/1-16491295796; hash:
+78104a5dd11b4adce7b46390bd7ff5e3a49203c0082904fa69723fa871b436d8.
+
+Rating status: unresolved; source: none accepted
+
+CQC API: no numerical rating; published unknown; status current; edition Frozen API observation 22
+October 2026; hash 78104a5dd11b4adce7b46390bd7ff5e3a49203c0082904fa69723fa871b436d8;
+source https://api.cqc.org.uk/public/v1/locations/1-16491295796
+
+CQC ratings file: Outstanding; published 2018-08-24; status unresolved; edition CQC download edition
+2 October 2026; data cutoff unverified; hash
+aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd; source ratings.ods
+
+CQC website: no numerical rating; published unknown; status unresolved; edition Frozen CQC website
+observation 22 October 2026; hash
+8cb4c80a214621a2d423d3248518e08566dfca6a76ce4ae01b0e9f02e3a9a3cc; source
+https://www.cqc.org.uk/location/1-16491295796
+
+CQC reference: https://www.cqc.org.uk/location/1-16491295796
+
+Collegiate House (1-16516340886; provider 1-16516340886-provider)
+
+Rating evidence date: 2026-08-27; within 12 months. Registration date: 2026-10-20.
+
+Registration metadata gaps: none. Recorded URL:
+https://api.cqc.org.uk/public/v1/locations/1-16516340886; hash:
+b05797cd869268d02bd0b4768c009750f3217f4461369db35c6655e4227515ca.
+
+Rating status: current; source: CQC ratings file
+
+CQC API: no numerical rating; published unknown; status current; edition Frozen API observation 22
+October 2026; hash b05797cd869268d02bd0b4768c009750f3217f4461369db35c6655e4227515ca;
+source https://api.cqc.org.uk/public/v1/locations/1-16516340886
+
+CQC ratings file: Outstanding; published 2026-08-27; status current; edition CQC download edition 2
+October 2026; data cutoff unverified; hash
+aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd; source ratings.ods
+
+CQC reference: https://www.cqc.org.uk/location/1-16516340886
+
+Hallmark Willingdon Park Manor Luxury Care Home (1-19058724680; provider
+1-19058724680-provider)
+
+CareGist | Fixture County | Confidential to order rating-fixtures   |   Page 24 of 30
+Rating evidence date: 2026-07-24; within 12 months. Registration date: 2026-10-20.
+
+Registration metadata gaps: none. Recorded URL:
+https://api.cqc.org.uk/public/v1/locations/1-19058724680; hash:
+a975b2f8f3249ad060b03a401208cb49151b69be3fd2bcb683eb4d972aa99b17.
+
+Rating status: current; source: CQC ratings file
+
+CQC API: no numerical rating; published unknown; status current; edition Frozen API observation 22
+October 2026; hash a975b2f8f3249ad060b03a401208cb49151b69be3fd2bcb683eb4d972aa99b17;
+source https://api.cqc.org.uk/public/v1/locations/1-19058724680
+
+CQC ratings file: Good; published 2026-07-24; status current; edition CQC download edition 2 October
+2026; data cutoff unverified; hash
+aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd; source ratings.ods
+
+CQC reference: https://www.cqc.org.uk/location/1-19058724680
+
+The Check House (1-19886383752; provider 1-19886383752-provider)
+
+Rating evidence date: not supplied; unknown (no publication date). Registration date: 2026-10-20.
+
+Registration metadata gaps: none. Recorded URL:
+https://api.cqc.org.uk/public/v1/locations/1-19886383752; hash:
+6bc17372e58ed221ddc56d98ce2d6505c98f7eccbd88a3ae56bbebaf49b47cbd.
+
+Rating status: unresolved; source: none accepted
+
+CQC API: Outstanding; published 2018-06-08; status inherited; edition Frozen API observation 22
+October 2026; hash 6bc17372e58ed221ddc56d98ce2d6505c98f7eccbd88a3ae56bbebaf49b47cbd;
+source https://api.cqc.org.uk/public/v1/locations/1-19886383752
+
+CQC ratings file: Good; published 2026-05-07; status unresolved; edition CQC download edition 2
+October 2026; data cutoff unverified; hash
+aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd; source ratings.ods
+
+CQC website: Outstanding; published 2018-06-08; status unresolved; edition Frozen CQC website
+observation 22 October 2026; hash
+a727328bacb014d0fc8c128319d57cd3199deb66e252c57f5112352fde409bde; source
+https://www.cqc.org.uk/location/1-19886383752
+
+CQC reference: https://www.cqc.org.uk/location/1-19886383752
+
+Belle Vale Dental Centre (1-199649069; provider 1-199649069-provider)
+
+Rating evidence date: not supplied; unknown (no publication date). Registration date: 2026-10-20.
+
+Registration metadata gaps: none. Recorded URL:
+https://api.cqc.org.uk/public/v1/locations/1-199649069; hash:
+46972cf7e3aee1fae5e1c4b05f3d25274dbe21eb48b3c252b375366984bcdba1.
+
+Rating status: unrated; source: none accepted
+
+CQC API: no numerical rating; published unknown; status current; edition Frozen API observation 22
+October 2026; hash 46972cf7e3aee1fae5e1c4b05f3d25274dbe21eb48b3c252b375366984bcdba1;
+source https://api.cqc.org.uk/public/v1/locations/1-199649069
+
+CQC ratings file: no numerical rating; published unknown; status current; edition unknown; hash not
+supplied; source not supplied
+
+CareGist | Fixture County | Confidential to order rating-fixtures   |   Page 25 of 30
+CQC reference: https://www.cqc.org.uk/location/1-199649069
+
+Irchester 170 (1-22160036426; provider 1-22160036426-provider)
+
+Rating evidence date: 2026-03-11; within 12 months. Registration date: 2026-10-20.
+
+Registration metadata gaps: none. Recorded URL:
+https://api.cqc.org.uk/public/v1/locations/1-22160036426; hash:
+eca3baf8747d15e5ae110a85183a8d5bf550787bc7beea597374d58369ab2c08.
+
+Rating status: current; source: CQC ratings file + CQC website
+
+CQC API: Outstanding; published 2018-03-07; status current; edition Frozen API observation 22
+October 2026; hash eca3baf8747d15e5ae110a85183a8d5bf550787bc7beea597374d58369ab2c08;
+source https://api.cqc.org.uk/public/v1/locations/1-22160036426
+
+CQC ratings file: Good; published 2026-03-11; status current; edition CQC download edition 2 October
+2026; data cutoff unverified; hash
+aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd; source ratings.ods
+
+CQC website: Good; published 2026-03-11; status current; edition Frozen CQC website observation 22
+October 2026; hash 06d44543815b6d7092570da792c4e7fb198ae8588649eac17d7f5412563d1814;
+source https://www.cqc.org.uk/location/1-22160036426
+
+CQC reference: https://www.cqc.org.uk/location/1-22160036426
+
+Lucketts Farm (1-2352094536; provider 1-2352094536-provider)
+
+Rating evidence date: 2025-10-16; stale (over 12 months). Registration date: 2026-10-20.
+
+Registration metadata gaps: none. Recorded URL:
+https://api.cqc.org.uk/public/v1/locations/1-2352094536; hash:
+8d0279d9c79ff326d4359acb5f6962e8c711f4fda3158c21ec857965fe7c619a.
+
+Rating status: current; source: CQC ratings file
+
+CQC API: no numerical rating; published unknown; status current; edition Frozen API observation 22
+October 2026; hash 8d0279d9c79ff326d4359acb5f6962e8c711f4fda3158c21ec857965fe7c619a;
+source https://api.cqc.org.uk/public/v1/locations/1-2352094536
+
+CQC ratings file: Requires improvement; published 2025-10-16; status current; edition CQC download
+edition 2 October 2026; data cutoff unverified; hash
+aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd; source ratings.ods
+
+CQC reference: https://www.cqc.org.uk/location/1-2352094536
+
+Milford Del Support Agency (1-2467326262; provider 1-2467326262-provider)
+
+Rating evidence date: 2025-07-18; stale (over 12 months). Registration date: 2026-10-20.
+
+Registration metadata gaps: none. Recorded URL:
+https://api.cqc.org.uk/public/v1/locations/1-2467326262; hash:
+4d30f3e794dd1463c93291553fd40d83f1c8c20492c5d02d6eff1d6d2d1e7255.
+
+Rating status: current; source: CQC ratings file
+
+CQC API: no numerical rating; published unknown; status current; edition Frozen API observation 22
+October 2026; hash 4d30f3e794dd1463c93291553fd40d83f1c8c20492c5d02d6eff1d6d2d1e7255;
+source https://api.cqc.org.uk/public/v1/locations/1-2467326262
+
+
+CareGist | Fixture County | Confidential to order rating-fixtures   |   Page 26 of 30
+CQC ratings file: Outstanding; published 2025-07-18; status current; edition CQC download edition 2
+October 2026; data cutoff unverified; hash
+aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd; source ratings.ods
+
+CQC reference: https://www.cqc.org.uk/location/1-2467326262
+
+Eskdale House Supported Living Service (1-27003473742; provider 1-27003473742-provider)
+
+Rating evidence date: 2026-06-03; within 12 months. Registration date: 2026-10-20.
+
+Registration metadata gaps: none. Recorded URL:
+https://api.cqc.org.uk/public/v1/locations/1-27003473742; hash:
+4d673f0ef36244255595e345d649c7fa546bf8fa5a1caa545480c9565e44af74.
+
+Rating status: current; source: CQC ratings file
+
+CQC API: no numerical rating; published unknown; status current; edition Frozen API observation 22
+October 2026; hash 4d673f0ef36244255595e345d649c7fa546bf8fa5a1caa545480c9565e44af74;
+source https://api.cqc.org.uk/public/v1/locations/1-27003473742
+
+CQC ratings file: Requires improvement; published 2026-06-03; status current; edition CQC download
+edition 2 October 2026; data cutoff unverified; hash
+aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd; source ratings.ods
+
+CQC reference: https://www.cqc.org.uk/location/1-27003473742
+
+Wytham House (1-2761140569; provider 1-2761140569-provider)
+
+Rating evidence date: 2025-07-23; stale (over 12 months). Registration date: 2026-10-20.
+
+Registration metadata gaps: none. Recorded URL:
+https://api.cqc.org.uk/public/v1/locations/1-2761140569; hash:
+32b4b3f205176abce57f6b5316ce164553cb3ca050a67bcd1c55a86f5df2964e.
+
+Rating status: current; source: CQC ratings file
+
+CQC API: no numerical rating; published unknown; status current; edition Frozen API observation 22
+October 2026; hash 32b4b3f205176abce57f6b5316ce164553cb3ca050a67bcd1c55a86f5df2964e;
+source https://api.cqc.org.uk/public/v1/locations/1-2761140569
+
+CQC ratings file: Good; published 2025-07-23; status current; edition CQC download edition 2 October
+2026; data cutoff unverified; hash
+aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd; source ratings.ods
+
+CQC reference: https://www.cqc.org.uk/location/1-2761140569
+
+NEAD Support Ltd - Remote Clinical Service (1-29650851551; provider 1-29650851551-provider)
+
+Rating evidence date: not supplied; unknown (no publication date). Registration date: 2026-10-20.
+
+Registration metadata gaps: none. Recorded URL:
+https://api.cqc.org.uk/public/v1/locations/1-29650851551; hash:
+bf743d4573c63213c80e9b8683be0740d0f7cb6fcdb6950f10b8d087dc94aacd.
+
+Rating status: unrated; source: none accepted
+
+CQC API: no numerical rating; published unknown; status current; edition Frozen API observation 22
+October 2026; hash bf743d4573c63213c80e9b8683be0740d0f7cb6fcdb6950f10b8d087dc94aacd;
+source https://api.cqc.org.uk/public/v1/locations/1-29650851551
+
+
+CareGist | Fixture County | Confidential to order rating-fixtures   |   Page 27 of 30
+CQC ratings file: no numerical rating; published unknown; status current; edition unknown; hash not
+supplied; source not supplied
+
+CQC reference: https://www.cqc.org.uk/location/1-29650851551
+
+Althorp Grange (1-390976877; provider 1-390976877-provider)
+
+Rating evidence date: 2025-12-11; within 12 months. Registration date: 2026-10-20.
+
+Registration metadata gaps: none. Recorded URL:
+https://api.cqc.org.uk/public/v1/locations/1-390976877; hash:
+f704a7781026dea05c6a2275c60fdc8a0dfc09c9851e07bd1b9d4f720d9569dc.
+
+Rating status: current; source: CQC ratings file + CQC website
+
+CQC API: Inadequate; published 2024-02-28; status current; edition Frozen API observation 22 October
+2026; hash f704a7781026dea05c6a2275c60fdc8a0dfc09c9851e07bd1b9d4f720d9569dc; source
+https://api.cqc.org.uk/public/v1/locations/1-390976877
+
+CQC ratings file: Requires improvement; published 2025-12-11; status current; edition CQC download
+edition 2 October 2026; data cutoff unverified; hash
+aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd; source ratings.ods
+
+CQC website: Requires improvement; published 2025-12-11; status current; edition Frozen CQC
+website observation 22 October 2026; hash
+611dc71eab7c405fd8142976e3e6016a934e4bfcad113d42a5e97899f8c23372; source
+https://www.cqc.org.uk/location/1-390976877
+
+CQC reference: https://www.cqc.org.uk/location/1-390976877
+
+Angel Home Care Service Private Limited (1-407665280; provider 1-407665280-provider)
+
+Rating evidence date: 2026-04-22; within 12 months. Registration date: 2026-10-20.
+
+Registration metadata gaps: none. Recorded URL:
+https://api.cqc.org.uk/public/v1/locations/1-407665280; hash:
+117a696a4533cf35e4a0a0940bd710470fc1550e1d706ac68011e785de8c074a.
+
+Rating status: current; source: CQC ratings file
+
+CQC API: no numerical rating; published unknown; status current; edition Frozen API observation 22
+October 2026; hash 117a696a4533cf35e4a0a0940bd710470fc1550e1d706ac68011e785de8c074a;
+source https://api.cqc.org.uk/public/v1/locations/1-407665280
+
+CQC ratings file: Requires improvement; published 2026-04-22; status current; edition CQC download
+edition 2 October 2026; data cutoff unverified; hash
+aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd; source ratings.ods
+
+CQC reference: https://www.cqc.org.uk/location/1-407665280
+
+Florence House (1-456354523; provider 1-456354523-provider)
+
+Rating evidence date: 2026-01-06; within 12 months. Registration date: 2026-10-20.
+
+Registration metadata gaps: none. Recorded URL:
+https://api.cqc.org.uk/public/v1/locations/1-456354523; hash:
+ca95130761e12bdbd220e0bc06ddd1b575f2fcdc0efe0b4b0276b61e0c623607.
+
+Rating status: current; source: CQC ratings file
+
+
+CareGist | Fixture County | Confidential to order rating-fixtures   |   Page 28 of 30
+CQC API: no numerical rating; published unknown; status current; edition Frozen API observation 22
+October 2026; hash ca95130761e12bdbd220e0bc06ddd1b575f2fcdc0efe0b4b0276b61e0c623607;
+source https://api.cqc.org.uk/public/v1/locations/1-456354523
+
+CQC ratings file: Inadequate; published 2026-01-06; status current; edition CQC download edition 2
+October 2026; data cutoff unverified; hash
+aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd; source ratings.ods
+
+CQC reference: https://www.cqc.org.uk/location/1-456354523
+
+Crawley Road Medical Centre (1-546109592; provider 1-546109592-provider)
+
+Rating evidence date: 2025-07-11; stale (over 12 months). Registration date: 2026-10-20.
+
+Registration metadata gaps: none. Recorded URL:
+https://api.cqc.org.uk/public/v1/locations/1-546109592; hash:
+ecc0eb8e1976cb7214c0a3f2a5a07db4b01ef2649c1686274b1e77a1b065cddd.
+
+Rating status: current; source: CQC ratings file
+
+CQC API: no numerical rating; published unknown; status current; edition Frozen API observation 22
+October 2026; hash ecc0eb8e1976cb7214c0a3f2a5a07db4b01ef2649c1686274b1e77a1b065cddd;
+source https://api.cqc.org.uk/public/v1/locations/1-546109592
+
+CQC ratings file: Good; published 2025-07-11; status current; edition CQC download edition 2 October
+2026; data cutoff unverified; hash
+aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd; source ratings.ods
+
+CQC reference: https://www.cqc.org.uk/location/1-546109592
+
+Village Surgery (1-546202187; provider 1-546202187-provider)
+
+Rating evidence date: 2026-03-31; within 12 months. Registration date: 2026-10-20.
+
+Registration metadata gaps: none. Recorded URL:
+https://api.cqc.org.uk/public/v1/locations/1-546202187; hash:
+3aae3c77cdded1202d8ef51d6dbf2d68e3d8797990b68a4c0e739fb6f6bc15d5.
+
+Rating status: current; source: CQC ratings file
+
+CQC API: no numerical rating; published 2016-06-13; status current; edition Frozen API observation 22
+October 2026; hash 3aae3c77cdded1202d8ef51d6dbf2d68e3d8797990b68a4c0e739fb6f6bc15d5;
+source https://api.cqc.org.uk/public/v1/locations/1-546202187
+
+CQC ratings file: Good; published 2026-03-31; status current; edition CQC download edition 2 October
+2026; data cutoff unverified; hash
+aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd; source ratings.ods
+
+CQC reference: https://www.cqc.org.uk/location/1-546202187
+
+The Chesser Surgery (1-552527797; provider 1-552527797-provider)
+
+Rating evidence date: 2025-03-05; stale (over 12 months). Registration date: 2026-10-20.
+
+Registration metadata gaps: none. Recorded URL:
+https://api.cqc.org.uk/public/v1/locations/1-552527797; hash:
+03c5720c204e78981988ba86633890dbeb0d9f09fef331af9185fd05c7c9f913.
+
+Rating status: current; source: CQC website
+
+
+CareGist | Fixture County | Confidential to order rating-fixtures   |   Page 29 of 30
+CQC API: Good; published 2016-11-10; status current; edition Frozen API observation 22 October
+2026; hash 03c5720c204e78981988ba86633890dbeb0d9f09fef331af9185fd05c7c9f913; source
+https://api.cqc.org.uk/public/v1/locations/1-552527797
+
+CQC ratings file: Requires improvement; published 2025-01-09; status current; edition CQC download
+edition 2 October 2026; data cutoff unverified; hash
+aba66fd8ca207828a4f6325e7329d98eec3b82aee12a0bfdbceddd58da0c59cd; source ratings.ods
+
+CQC website: Requires improvement; published 2025-03-05; status current; edition Frozen CQC
+website observation 22 October 2026; hash
+f75aad945ca687e797f3eadc2c2988ddf190789cca133505561975714972f59f; source
+https://www.cqc.org.uk/location/1-552527797
+
+CQC reference: https://www.cqc.org.uk/location/1-552527797
+
+The Doctors Laboratory (1-5588555895; provider 1-5588555895-provider)
+
+Rating evidence date: not supplied; unknown (no publication date). Registration date: 2026-10-20.
+
+Registration metadata gaps: none. Recorded URL:
+https://api.cqc.org.uk/public/v1/locations/1-5588555895; hash:
+a7e2fde82eb9dc8acdddd8c003dec6d48b0e3848fb55187643d1be304519e26c.
+
+Rating status: unrated; source: none accepted
+
+CQC API: Inspected but not rated; published 2022-05-25; status current; edition Frozen API observation
+22 October 2026; hash a7e2fde82eb9dc8acdddd8c003dec6d48b0e3848fb55187643d1be304519e26c;
+source https://api.cqc.org.uk/public/v1/locations/1-5588555895
+
+CQC ratings file: no numerical rating; published unknown; status current; edition unknown; hash not
+supplied; source not supplied
+
+CQC reference: https://www.cqc.org.uk/location/1-5588555895
+
+Nottingham University Hospital (RHARA; provider RHARA-provider)
+
+Rating evidence date: not supplied; unknown (no publication date). Registration date: 2026-10-20.
+
+Registration metadata gaps: none. Recorded URL: https://api.cqc.org.uk/public/v1/locations/RHARA;
+hash: 8ffb3a9be0a3fa2cd22f1c91ef03d265b9ceded4f20f7a2d99960edd53a296e0.
+
+Rating status: unrated; source: none accepted
+
+CQC API: no numerical rating; published unknown; status current; edition Frozen API observation 22
+October 2026; hash 8ffb3a9be0a3fa2cd22f1c91ef03d265b9ceded4f20f7a2d99960edd53a296e0;
+source https://api.cqc.org.uk/public/v1/locations/RHARA
+
+CQC ratings file: no numerical rating; published unknown; status current; edition unknown; hash not
+supplied; source not supplied
+
+CQC reference: https://www.cqc.org.uk/location/RHARA
+
+
+
+
+CareGist | Fixture County | Confidential to order rating-fixtures   |   Page 30 of 30
+

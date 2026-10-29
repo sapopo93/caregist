@@ -1,0 +1,1530 @@
+"""Territory Opportunity Brief generator.
+
+This is the production generation service behind the £745 one-off product. It
+extends the deterministic scaffolding in
+``tools/generate_radar_territory_sample.py`` (window derivation, supported-event
+rules, provenance) with the parts a paying buyer needs and a raw CSV does not:
+
+* a validated buyer-chosen scope (one England local authority or region),
+* a deterministic ranked shortlist of organisations,
+* a plain-English, evidence-bound reason for every shortlisted organisation,
+* territory-level aggregate insight,
+* evidence-bounded recommended next actions,
+* structured output that renders to both a professional brief and a CSV.
+
+Design rules
+------------
+* Deterministic: identical source files + scope + ``generated_at`` produce a
+  byte-identical brief. No wall-clock, no RNG, stable tie-breaks everywhere.
+* Evidence only: every reason and insight is built from fields that exist in
+  the mirrored public CQC snapshot. Nothing is inferred or invented.
+* Stripe-independent: ``generate_territory_opportunity_brief`` takes a plain
+  ``TerritoryScope`` and ``PurchaseContext`` and never imports billing.
+"""
+
+from __future__ import annotations
+
+import csv
+import io
+import json
+import re
+from collections import Counter
+from dataclasses import asdict, dataclass
+from datetime import date, datetime, timedelta, timezone
+from pathlib import Path
+from typing import Any, Iterable, Literal
+
+from api.service_taxonomy import resolve_service_filter
+from api.services.territory_rating import resolve_rating, rating_label, rating_scope_eligible
+
+from tools.generate_radar_territory_sample import (
+    _load_ndjson,
+    _parse_date,
+    _rating_sequence,
+    load_provider_names,
+)
+
+OGL_ATTRIBUTION = (
+    "Contains public sector information licensed under the Open Government Licence v3.0"
+)
+CQC_PROFILE_URL = "https://www.cqc.org.uk/location/{location_id}"
+CQC_DATA_PAGE = "https://www.cqc.org.uk/about-us/transparency/using-cqc-data"
+
+_RATING_RANK = {
+    "outstanding": 4,
+    "good": 3,
+    "requires improvement": 2,
+    "inadequate": 1,
+}
+
+MIN_WINDOW_DAYS = 7
+MAX_WINDOW_DAYS = 365
+MIN_SHORTLIST = 10
+MAX_SHORTLIST = 50
+DEFAULT_SHORTLIST = 30
+DEFAULT_WINDOW_DAYS = 90
+
+#: The provider groups a buyer picks on /pricing/territory. Membership is decided
+#: by the directory query the coverage check uses (see tools/prepare_order.py),
+#: so the Brief covers exactly the organisations the buyer was shown.
+PROVIDER_GROUP_LABELS = {
+    "new_90": "New registrations (last 90 days)",
+    "inadequate": "Currently rated Inadequate",
+    "requires_improvement": "Currently rated Requires improvement",
+    "not_yet_inspected": "No published CQC rating",
+    "stale_inspection": "No inspection in the last 3 years, or none recorded",
+}
+
+
+class ScopeError(ValueError):
+    """Raised when a buyer-supplied scope is missing, malformed, or unknown."""
+
+
+class EvidenceError(ValueError):
+    """Raised when a shortlist event cannot be traced to its source evidence."""
+
+
+# --------------------------------------------------------------------------- #
+# Inputs
+# --------------------------------------------------------------------------- #
+
+
+@dataclass(frozen=True)
+class TerritoryScope:
+    """A validated buyer-chosen territory.
+
+    ``kind`` is 'local_authority' or 'region'. ``name`` is matched
+    case-insensitively against the values actually present in the snapshot;
+    the canonical spelling from the data is stored back here by
+    :func:`validate_scope`.
+    """
+
+    kind: Literal["local_authority", "region"]
+    name: str
+    window_days: int = DEFAULT_WINDOW_DAYS
+    shortlist_target: int = DEFAULT_SHORTLIST
+    service_type: str | None = None
+
+    def to_json(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass(frozen=True)
+class PurchaseContext:
+    """Non-PII provenance for the generated artefact.
+
+    Deliberately excludes buyer email / name: the brief is stored in Blob and
+    delivered by token, so it must not embed personal data. ``order_reference``
+    is the opaque local order id used for audit correlation only.
+    """
+
+    order_reference: str
+    generated_at: datetime
+    product: str = "territory-opportunity-brief"
+    price_gbp: int = 745
+    terms_version: str | None = None
+
+    def to_json(self) -> dict[str, Any]:
+        return {
+            "order_reference": self.order_reference,
+            "generated_at": self.generated_at.astimezone(timezone.utc).isoformat(),
+            "product": self.product,
+            "price_gbp": self.price_gbp,
+            "terms_version": self.terms_version,
+        }
+
+
+# --------------------------------------------------------------------------- #
+# Intermediate + output types
+# --------------------------------------------------------------------------- #
+
+
+@dataclass(frozen=True)
+class OrgEvent:
+    event_type: str  # new_registration | rating_changed | rating_published | reactivated
+    effective_date: date
+    old_value: Any
+    new_value: Any
+    detail: str
+    source_url: str
+    source_field: str
+
+
+@dataclass(frozen=True)
+class RankedOrganisation:
+    rank: int
+    organisation_name: str
+    location_name: str
+    location_id: str
+    provider_id: str
+    local_authority: str
+    region: str
+    postcode: str
+    service_types: tuple[str, ...]
+    number_of_beds: int | None
+    current_rating: str | None
+    primary_signal: str
+    most_recent_event_date: date | None
+    score: float
+    score_breakdown: dict[str, float]
+    reason: str
+    evidence: tuple[dict[str, Any], ...]
+    rating_resolution: dict[str, Any] | None = None
+    qualification_question: str = ""
+    # Buyer-specific follow-ups keyed by BUYER_QUESTION_TYPES, asked after the
+    # general question above. Like it, each one asks and never asserts need.
+    buyer_questions: tuple[tuple[str, str], ...] = ()
+
+    def to_json(self) -> dict[str, Any]:
+        data = asdict(self)
+        data["service_types"] = list(self.service_types)
+        data["buyer_questions"] = dict(self.buyer_questions)
+        data["most_recent_event_date"] = (
+            self.most_recent_event_date.isoformat() if self.most_recent_event_date else None
+        )
+        data["evidence"] = [dict(item) for item in self.evidence]
+        return data
+
+
+@dataclass(frozen=True)
+class TerritoryBrief:
+    scope: TerritoryScope
+    purchase_context: PurchaseContext
+    as_of_date: date
+    window_start: date
+    window_end: date
+    considered_locations: int
+    territory_locations: int
+    shortlist: tuple[RankedOrganisation, ...]
+    executive_summary: dict[str, Any]
+    territory_insights: dict[str, Any]
+    next_actions: tuple[str, ...]
+    methodology_notes: tuple[str, ...]
+    data_caveats: tuple[str, ...]
+    source_provenance: dict[str, Any]
+    evidence_coverage: tuple[dict[str, Any], ...] = ()
+
+    def to_json(self) -> dict[str, Any]:
+        return {
+            "scope": self.scope.to_json(),
+            "purchase_context": self.purchase_context.to_json(),
+            "as_of_date": self.as_of_date.isoformat(),
+            "window_start": self.window_start.isoformat(),
+            "window_end": self.window_end.isoformat(),
+            "considered_locations": self.considered_locations,
+            "territory_locations": self.territory_locations,
+            "shortlist": [org.to_json() for org in self.shortlist],
+            "executive_summary": self.executive_summary,
+            "territory_insights": self.territory_insights,
+            "next_actions": list(self.next_actions),
+            "methodology_notes": list(self.methodology_notes),
+            "data_caveats": list(self.data_caveats),
+            "source_provenance": self.source_provenance,
+            "evidence_coverage": list(self.evidence_coverage),
+        }
+
+
+# --------------------------------------------------------------------------- #
+# Scope validation
+# --------------------------------------------------------------------------- #
+
+_NAME_OK = re.compile(r"^[A-Za-z0-9 .,'()&/-]{2,80}$")
+
+
+def known_territories(locations: Iterable[dict[str, Any]]) -> dict[str, dict[str, str]]:
+    """Map normalised -> canonical name for every LA and region in the snapshot."""
+    las: dict[str, str] = {}
+    regions: dict[str, str] = {}
+    for row in locations:
+        la = str(row.get("localAuthority") or "").strip()
+        region = str(row.get("region") or "").strip()
+        if la:
+            las.setdefault(la.casefold(), la)
+        if region:
+            regions.setdefault(region.casefold(), region)
+    return {"local_authority": las, "region": regions}
+
+
+def validate_scope(
+    raw: dict[str, Any] | TerritoryScope,
+    catalogue: dict[str, dict[str, str]],
+) -> TerritoryScope:
+    """Validate and canonicalise a buyer-supplied scope.
+
+    ``catalogue`` comes from :func:`known_territories`. Raises :class:`ScopeError`
+    on anything missing, malformed, or not present in the source data - never
+    falls back to a default territory.
+    """
+    if isinstance(raw, TerritoryScope):
+        kind, name, window_days, shortlist_target, service_type = (
+            raw.kind, raw.name, raw.window_days, raw.shortlist_target, raw.service_type,
+        )
+    else:
+        if not isinstance(raw, dict):
+            raise ScopeError("scope must be an object")
+        kind = str(raw.get("kind") or "").strip()
+        name = str(raw.get("name") or "").strip()
+        window_days = raw.get("window_days", DEFAULT_WINDOW_DAYS)
+        shortlist_target = raw.get("shortlist_target", DEFAULT_SHORTLIST)
+        service_type = raw.get("service_type")
+
+    service_type = str(service_type).strip() if service_type else None
+    if service_type and not _NAME_OK.match(service_type):
+        raise ScopeError("scope.service_type contains unsupported characters")
+
+    if kind not in ("local_authority", "region"):
+        raise ScopeError("scope.kind must be 'local_authority' or 'region'")
+    if not name:
+        raise ScopeError("scope.name is required")
+    if not _NAME_OK.match(name):
+        raise ScopeError("scope.name contains unsupported characters")
+
+    try:
+        window_days = int(window_days)
+    except (TypeError, ValueError):
+        raise ScopeError("scope.window_days must be an integer")
+    if not (MIN_WINDOW_DAYS <= window_days <= MAX_WINDOW_DAYS):
+        raise ScopeError(
+            f"scope.window_days must be between {MIN_WINDOW_DAYS} and {MAX_WINDOW_DAYS}"
+        )
+
+    try:
+        shortlist_target = int(shortlist_target)
+    except (TypeError, ValueError):
+        raise ScopeError("scope.shortlist_target must be an integer")
+    if not (MIN_SHORTLIST <= shortlist_target <= MAX_SHORTLIST):
+        raise ScopeError(
+            f"scope.shortlist_target must be between {MIN_SHORTLIST} and {MAX_SHORTLIST}"
+        )
+
+    canonical = catalogue.get(kind, {}).get(name.casefold())
+    if not canonical:
+        raise ScopeError(
+            f"{name!r} is not a recognised England {kind.replace('_', ' ')} in the current source data"
+        )
+
+    return TerritoryScope(
+        kind=kind,  # type: ignore[arg-type]
+        name=canonical,
+        window_days=window_days,
+        shortlist_target=shortlist_target,
+        service_type=service_type or None,
+    )
+
+
+# --------------------------------------------------------------------------- #
+# Event collection
+# --------------------------------------------------------------------------- #
+
+
+def _service_types(row: dict[str, Any]) -> tuple[str, ...]:
+    out: list[str] = []
+    for item in row.get("gacServiceTypes") or []:
+        if isinstance(item, dict):
+            name = str(item.get("description") or item.get("name") or "").strip()
+            if name and name not in out:
+                out.append(name)
+    return tuple(out)
+
+
+def _in_scope(row: dict[str, Any], scope: TerritoryScope) -> bool:
+    aliases = resolve_service_filter(scope.service_type)
+    if aliases and not set(aliases).intersection(t.casefold() for t in _service_types(row)):
+        return False
+    if scope.kind == "local_authority":
+        return str(row.get("localAuthority") or "").strip().casefold() == scope.name.casefold()
+    return str(row.get("region") or "").strip().casefold() == scope.name.casefold()
+
+
+def _location_events(
+    row: dict[str, Any],
+    *,
+    window_start: date,
+    window_end: date,
+    as_of: date,
+) -> list[OrgEvent]:
+    events: list[OrgEvent] = []
+    location_id = str(row.get("locationId") or "").strip()
+    url = CQC_PROFILE_URL.format(location_id=location_id) if location_id else CQC_DATA_PAGE
+
+    reg_date = _parse_date(row.get("registrationDate"))
+    dormant = str(row.get("dormancy") or "").strip().upper().startswith("Y")
+    if reg_date is not None and window_start <= reg_date <= window_end and not dormant:
+        events.append(
+            OrgEvent(
+                event_type="new_registration",
+                effective_date=reg_date,
+                old_value=None,
+                new_value=str(row.get("registrationStatus") or "Registered").strip(),
+                detail=f"CQC registration recorded {reg_date.isoformat()}",
+                source_url=url,
+                source_field="location.registrationDate",
+            )
+        )
+
+    ratings = _rating_sequence(row)
+    previous: str | None = None
+    for report_date, rating in ratings:
+        if previous is not None and previous != rating and window_start <= report_date <= window_end:
+            events.append(
+                OrgEvent(
+                    event_type="rating_changed",
+                    effective_date=report_date,
+                    old_value=previous,
+                    new_value=rating,
+                    detail=f"Overall rating {previous} -> {rating} on {report_date.isoformat()}",
+                    source_url=url,
+                    source_field="location.historicRatings/currentRatings.overall",
+                )
+            )
+        previous = rating
+
+    # Rating published inside the window with no detected transition (single
+    # report or first rating): a weaker but genuine "fresh inspection" signal.
+    if ratings:
+        last_date, last_rating = ratings[-1]
+        has_change = any(e.event_type == "rating_changed" for e in events)
+        if not has_change and window_start <= last_date <= window_end:
+            events.append(
+                OrgEvent(
+                    event_type="rating_published",
+                    effective_date=last_date,
+                    old_value=None,
+                    new_value=last_rating,
+                    detail=f"Inspection report published {last_date.isoformat()} (rating {last_rating})",
+                    source_url=url,
+                    source_field="location.currentRatings.overall.reportDate",
+                )
+            )
+
+    return events
+
+
+# --------------------------------------------------------------------------- #
+# Scoring + reasons
+# --------------------------------------------------------------------------- #
+
+_BASE_WEIGHT = {
+    "new_registration": 42.0,
+    "rating_changed": 34.0,
+    "rating_published": 14.0,
+    "reactivated": 20.0,
+    "rating_current": 40.0,
+    "not_yet_inspected": 30.0,
+    "stale_inspection": 30.0,
+}
+
+
+def _recency_multiplier(event_date: date, as_of: date) -> float:
+    age = (as_of - event_date).days
+    if age < 0:
+        return 1.0  # A future source date cannot establish recency.
+    if age <= 30:
+        return 1.5
+    if age <= 90:
+        return 1.2
+    if age <= 180:
+        return 1.05
+    return 1.0
+
+
+def _rating_direction(old: Any, new: Any) -> str:
+    o = _RATING_RANK.get(str(old or "").strip().casefold())
+    n = _RATING_RANK.get(str(new or "").strip().casefold())
+    if o is None or n is None:
+        return "changed"
+    if n < o:
+        return "decline"
+    if n > o:
+        return "improvement"
+    return "changed"
+
+
+def _score(
+    events: list[OrgEvent],
+    *,
+    beds: int | None,
+    provider_cluster: int,
+    as_of: date,
+    re_registration: bool = False,
+) -> tuple[float, dict[str, float]]:
+    breakdown: dict[str, float] = {}
+    total = 0.0
+    for ev in events:
+        base = _BASE_WEIGHT.get(ev.event_type, 10.0)
+        mult = _recency_multiplier(ev.effective_date, as_of)
+        contribution = base * mult
+        if ev.event_type == "rating_changed":
+            direction = _rating_direction(ev.old_value, ev.new_value)
+            if direction == "decline":
+                contribution += 16.0
+            elif direction == "improvement":
+                contribution += 9.0
+        breakdown[f"{ev.event_type}@{ev.effective_date.isoformat()}"] = round(contribution, 2)
+        total += contribution
+
+    size_factor = 0.0
+    if beds:
+        size_factor = min(beds, 60) / 6.0
+        breakdown["size_factor"] = round(size_factor, 2)
+        total += size_factor
+
+    if provider_cluster >= 2:
+        cluster_bonus = min(provider_cluster, 5) * 3.0
+        breakdown["provider_cluster"] = round(cluster_bonus, 2)
+        total += cluster_bonus
+
+    if re_registration:
+        # A re-registration (ownership / entity change) on an existing service is
+        # a slightly stronger commercial trigger than a greenfield opening.
+        breakdown["re_registration"] = 6.0
+        total += 6.0
+
+    return round(min(total, 100.0), 2), breakdown
+
+
+_SIGNAL_LABEL = {
+    "new_registration": "New CQC registration",
+    "rating_changed": "Rating change",
+    "rating_published": "New inspection report",
+    "reactivated": "Returned from dormancy",
+    "rating_current": "Current rating",
+    "not_yet_inspected": "No published rating",
+    "stale_inspection": "No recent inspection",
+}
+
+
+def _primary_signal(events: list[OrgEvent]) -> str:
+    order = [
+        "rating_changed", "rating_current", "new_registration", "stale_inspection",
+        "not_yet_inspected", "rating_published", "reactivated",
+    ]
+    for kind in order:
+        if any(e.event_type == kind for e in events):
+            return _SIGNAL_LABEL[kind]
+    return "Territory activity"
+
+
+def _service_and_size(svc: str, beds: int | None) -> str:
+    if not beds:
+        return f"{svc}, non-bed-based"
+    return f"{svc}, {beds} beds"
+
+
+def _size_emphasis(beds: int | None) -> str:
+    if not beds:
+        return ""
+    if beds >= 60:
+        return f" At {beds} beds it is one of the larger entrants in this window."
+    if beds >= 40:
+        return f" A {beds}-bed location is a material single account."
+    return ""
+
+
+def _recency_phrase(event_date: date, as_of: date) -> str:
+    age = (as_of - event_date).days
+    if age > 365:
+        return f"on the source date (stale evidence, {age} days before generation)"
+    if age < 0:
+        return "on a source date after generation (recency unverified)"
+    if age <= 21:
+        return "in the last three weeks, so it is still standing up policies, training and systems"
+    if age <= 60:
+        return "in the last two months, so onboarding decisions are still open"
+    if age <= 120:
+        return "within the last four months"
+    return f"about {age // 30} months ago"
+
+
+def _age_phrase(then: date, as_of: date) -> str:
+    """Exact, plain age of a dated fact; never rounded up."""
+    days = (as_of - then).days
+    if days < 0:
+        return "after the source date"
+    if days < 31:
+        return f"{days} day{'s' if days != 1 else ''} ago"
+    months = days // 30
+    if months < 24:
+        return f"about {months} month{'s' if months != 1 else ''} ago"
+    return f"about {days // 365} years ago"
+
+
+def _reason(
+    *,
+    org_name: str,
+    events: list[OrgEvent],
+    beds: int | None,
+    service_types: tuple[str, ...],
+    territory: str,
+    provider_cluster: int,
+    current_rating: str | None,
+    has_rating_history: bool,
+    as_of: date,
+) -> str:
+    """Compose a non-empty, evidence-bound explanation. Never returns ''."""
+    parts: list[str] = []
+    svc = service_types[0].lower() if service_types else "care service"
+
+    regs = [e for e in events if e.event_type == "new_registration"]
+    changes = [e for e in events if e.event_type == "rating_changed"]
+    published = [e for e in events if e.event_type == "rating_published"]
+
+    if regs:
+        ev = regs[0]
+        when = _recency_phrase(ev.effective_date, as_of)
+        descriptor = _service_and_size(svc, beds)
+        emphasis = _size_emphasis(beds)
+        if has_rating_history or current_rating:
+            # A "new registration" that already carries a rating/history is a
+            # re-registration - an ownership, legal-entity or management change.
+            rating_note = (
+                f" It carries an overall rating of {current_rating}."
+                if current_rating
+                else ""
+            )
+            parts.append(
+                f"Re-registered with CQC on {ev.effective_date.strftime('%d %b %Y')} "
+                f"({descriptor}) {when}. A new legal entity or owner has taken on an existing "
+                f"service in {territory}; this is a documented registration signal, not evidence "
+                f"of a supplier search or purchasing intent.{rating_note}{emphasis}"
+            )
+        else:
+            parts.append(
+                f"Newly registered with CQC on {ev.effective_date.strftime('%d %b %Y')} "
+                f"({descriptor}) {when}. This is a first-time registration signal in {territory}; "
+                f"it does not establish supplier need or purchasing intent, and no inspection "
+                f"history is available yet.{emphasis}"
+            )
+    for ev in changes:
+        direction = _rating_direction(ev.old_value, ev.new_value)
+        if direction == "decline":
+            parts.append(
+                f"Overall CQC rating moved down from {ev.old_value} to {ev.new_value} on "
+                f"{ev.effective_date.strftime('%d %b %Y')} - a documented change in the "
+                f"published overall rating. Review the underlying CQC record before drawing "
+                f"commercial conclusions."
+            )
+        elif direction == "improvement":
+            parts.append(
+                f"Overall CQC rating improved from {ev.old_value} to {ev.new_value} on "
+                f"{ev.effective_date.strftime('%d %b %Y')} - a documented change in the "
+                f"published overall rating. Review the underlying CQC record before drawing "
+                f"commercial conclusions."
+            )
+        else:
+            parts.append(
+                f"Overall CQC rating was re-published as {ev.new_value} on "
+                f"{ev.effective_date.strftime('%d %b %Y')} (previously {ev.old_value})."
+            )
+    if published and not changes:
+        ev = published[0]
+        parts.append(
+            f"CQC published an inspection report on {ev.effective_date.strftime('%d %b %Y')} "
+            f"(published overall rating {ev.new_value}). Verify its age and supporting evidence before contact."
+        )
+
+    for ev in events:
+        if ev.event_type == "rating_current":
+            # The resolved label carries the actual publication date (or its
+            # absence). Scoring/inspection dates cannot supply a publication date.
+            parts.append(ev.detail + ". Read the source evidence before contact.")
+        elif ev.event_type == "not_yet_inspected":
+            # The group means "no published rating"; the record cannot show whether or
+            # when an inspection will happen, so the text claims neither.
+            if ev.old_value == "registration_date_missing":
+                parts.append(
+                    f"No published CQC rating on record ({_service_and_size(svc, beds)}), and the "
+                    f"source does not record a registration date. Check the CQC page before contact."
+                )
+            else:
+                parts.append(
+                    f"No published CQC rating on record; registered with CQC on "
+                    f"{ev.effective_date.strftime('%d %b %Y')} ({_age_phrase(ev.effective_date, as_of)}). "
+                    f"The record does not show a completed rated inspection ({_service_and_size(svc, beds)}); "
+                    f"check the CQC page before contact. This does not establish supplier need or purchasing intent."
+                )
+        elif ev.event_type == "stale_inspection":
+            if ev.old_value == "registration_date_missing":
+                parts.append(
+                    "No CQC inspection date and no registration date are recorded in the source. "
+                    "Check the CQC page before contact."
+                )
+            elif ev.old_value == "never_inspected":
+                recent = (as_of - ev.effective_date).days < 3 * 365
+                parts.append(
+                    f"No CQC inspection date recorded; registered on "
+                    f"{ev.effective_date.strftime('%d %b %Y')} ({_age_phrase(ev.effective_date, as_of)})."
+                    + (
+                        " It is in this group because the 'stale inspections' filter includes every "
+                        "location without a recorded inspection date, not because an inspection is overdue."
+                        if recent else ""
+                    )
+                )
+            else:
+                parts.append(
+                    f"Last CQC inspection on {ev.effective_date.strftime('%d %b %Y')}, "
+                    f"{_age_phrase(ev.effective_date, as_of)} before the source date, so a re-inspection "
+                    f"may be due. CQC sets its own schedule; this is not a prediction of timing."
+                )
+
+    if provider_cluster >= 2:
+        parts.append(
+            f"The provider behind this location has {provider_cluster} locations moving in "
+            f"{territory} in this window, so it is an account-level opportunity, not a one-off."
+        )
+
+    if not parts:
+        # Defensive: an organisation only reaches the shortlist via >=1 event,
+        # so this path is unreachable in normal operation. Keep it truthful.
+        latest = max(events, key=lambda e: e.effective_date) if events else None
+        if latest:
+            parts.append(
+                f"{_SIGNAL_LABEL.get(latest.event_type, 'Territory activity')} recorded on "
+                f"{latest.effective_date.strftime('%d %b %Y')}: {latest.detail}."
+            )
+        else:
+            parts.append(
+                f"Included on territory relevance to {territory}; see the evidence links for the "
+                f"underlying CQC record."
+            )
+
+    return " ".join(parts)
+
+
+# Keyed by the labels _primary_signal actually returns. Literal keys drifted
+# from those labels once, silently giving every entry the generic fallback.
+_QUALIFICATION_QUESTIONS = {
+    _SIGNAL_LABEL["rating_changed"]: (
+        "Has the change in overall rating altered what this organisation needs to buy or "
+        "change in the next quarter, and who owns that decision?"
+    ),
+    _SIGNAL_LABEL["new_registration"]: (
+        "Who is responsible for choosing suppliers for this newly registered service, and "
+        "when does it expect to start operating?"
+    ),
+    _SIGNAL_LABEL["rating_published"]: (
+        "Is the recently published inspection outcome prompting a review of suppliers or "
+        "practice, and who leads it?"
+    ),
+    _SIGNAL_LABEL["reactivated"]: (
+        "Is this service planning to restart operations, and who is responsible for "
+        "choosing suppliers?"
+    ),
+    _SIGNAL_LABEL["rating_current"]: (
+        "What has this service changed since its last published rating, and who leads its "
+        "improvement plan?"
+    ),
+    _SIGNAL_LABEL["not_yet_inspected"]: (
+        "Who is preparing this service for its first CQC inspection, and which suppliers has "
+        "it not yet chosen?"
+    ),
+    _SIGNAL_LABEL["stale_inspection"]: (
+        "How is this service preparing for its next CQC inspection, and who owns that work?"
+    ),
+}
+
+
+def _qualification_question(primary_signal: str, *, provider_cluster: int, territory: str) -> str:
+    """One evidence-bound discovery question to ask before any outreach.
+
+    It asks; it never asserts need or intent, which the CQC record cannot show.
+    """
+    question = _QUALIFICATION_QUESTIONS.get(
+        primary_signal,
+        "What is this organisation's current supplier arrangement, and who decides changes?",
+    )
+    if provider_cluster >= 2:
+        question += f" Is that decided centrally across its {provider_cluster} moving locations in {territory}?"
+    return question
+
+
+#: Buyer types the Brief carries a follow-up question for, in output order.
+BUYER_QUESTION_TYPES = ("recruitment", "compliance", "software")
+
+_RECRUITMENT_QUESTIONS = {
+    _SIGNAL_LABEL["new_registration"]: (
+        "How many care staff does this service plan to employ, how many are in post now, "
+        "and when do its first packages or contracts start? Are those packages council-funded "
+        "or already confirmed?"
+    ),
+}
+_RECRUITMENT_DEFAULT = (
+    "How many care-worker vacancies does this service have open, how long have they been "
+    "open, and are any linked to council-commissioned packages with a start date?"
+)
+
+_COMPLIANCE_QUESTIONS = {
+    _SIGNAL_LABEL["new_registration"]: (
+        "Who is preparing this service for its first CQC inspection, and has it arranged a "
+        "governance audit, mock inspection or safeguarding training yet?"
+    ),
+    _SIGNAL_LABEL["rating_changed"]: (
+        "Which areas did the inspection report raise, and has the service arranged a "
+        "governance audit, mock inspection or safeguarding training before re-inspection?"
+    ),
+    _SIGNAL_LABEL["rating_published"]: (
+        "Which areas did the published report raise, and who is leading the service's "
+        "response to them?"
+    ),
+    _SIGNAL_LABEL["rating_current"]: (
+        "Which areas did the latest report raise, and has the service arranged a governance "
+        "audit, mock inspection or training before re-inspection?"
+    ),
+    _SIGNAL_LABEL["not_yet_inspected"]: (
+        "Who is preparing this service for its first CQC inspection, and has it arranged a "
+        "governance audit or mock inspection yet?"
+    ),
+    _SIGNAL_LABEL["stale_inspection"]: (
+        "When did the service last review itself against CQC's current assessment framework, "
+        "and who would lead preparation for re-inspection?"
+    ),
+}
+_COMPLIANCE_DEFAULT = (
+    "Who leads quality and compliance for this service, and when did it last have an "
+    "independent governance audit or mock inspection?"
+)
+
+_SOFTWARE_QUESTION = (
+    "What does this service use for care records today (paper, spreadsheets or a digital "
+    "system), is that system on the NHS assured supplier list for digital social care "
+    "records, how many users does it have, and when is the contract up for renewal?"
+)
+
+
+def _buyer_questions(primary_signal: str) -> tuple[tuple[str, str], ...]:
+    """One follow-up question per buyer type, chosen by the entry's primary signal.
+
+    These are discovery prompts for the buyer to ask the provider. The CQC record
+    cannot show headcount, systems or audit plans, so each one asks and none
+    asserts.
+    """
+    return (
+        ("recruitment", _RECRUITMENT_QUESTIONS.get(primary_signal, _RECRUITMENT_DEFAULT)),
+        ("compliance", _COMPLIANCE_QUESTIONS.get(primary_signal, _COMPLIANCE_DEFAULT)),
+        ("software", _SOFTWARE_QUESTION),
+    )
+
+
+def _validate_evidence(evidence: tuple[dict[str, Any], ...]) -> None:
+    """Fail closed when a shortlisted event loses its provenance fields."""
+    required = {"event_type", "effective_date", "detail", "source_field", "source_url", "source_edition"}
+    for index, item in enumerate(evidence):
+        missing = sorted(field for field in required if not item.get(field))
+        if missing:
+            raise EvidenceError(
+                f"shortlist evidence item {index} is missing required provenance: {', '.join(missing)}"
+            )
+        if not str(item["source_url"]).startswith(("https://", "http://")):
+            raise EvidenceError(f"shortlist evidence item {index} has an invalid source_url")
+
+
+# --------------------------------------------------------------------------- #
+# Territory insights + next actions
+# --------------------------------------------------------------------------- #
+
+
+def _territory_insights(
+    ranked: list[RankedOrganisation],
+    *,
+    all_event_rows: list[tuple[dict[str, Any], list[OrgEvent]]],
+    scope: TerritoryScope,
+) -> dict[str, Any]:
+    event_type_counts: Counter[str] = Counter()
+    subarea_counts: Counter[str] = Counter()
+    service_counts: Counter[str] = Counter()
+    provider_counts: Counter[str] = Counter()
+    decline = improvement = 0
+    beds_entering = 0
+
+    for row, events in all_event_rows:
+        subarea = (
+            str(row.get("localAuthority") or "").strip()
+            if scope.kind == "region"
+            else str(row.get("region") or "").strip()
+        )
+        for ev in events:
+            event_type_counts[ev.event_type] += 1
+            if subarea:
+                subarea_counts[subarea] += 1
+            if ev.event_type == "rating_changed":
+                d = _rating_direction(ev.old_value, ev.new_value)
+                if d == "decline":
+                    decline += 1
+                elif d == "improvement":
+                    improvement += 1
+            if ev.event_type == "new_registration":
+                try:
+                    beds_entering += int(row.get("numberOfBeds") or 0)
+                except (TypeError, ValueError):
+                    pass
+        for svc in _service_types(row):
+            service_counts[svc] += 1
+        pname = str(row.get("providerName") or row.get("_provider_name") or "").strip()
+        if pname:
+            provider_counts[pname] += 1
+
+    most_active_providers = [
+        {"provider": name, "locations_moving": count}
+        for name, count in provider_counts.most_common(5)
+        if count >= 2
+    ]
+
+    return {
+        "events_by_type": dict(sorted(event_type_counts.items())),
+        "rating_moves": {"declines": decline, "improvements": improvement},
+        "new_beds_entering_market": beds_entering,
+        "activity_by_sub_area": [
+            {"area": area, "events": count}
+            for area, count in subarea_counts.most_common(8)
+        ],
+        "service_type_mix": [
+            {"service_type": svc, "organisations": count}
+            for svc, count in service_counts.most_common(6)
+        ],
+        "most_active_providers": most_active_providers,
+        "shortlist_size": len(ranked),
+    }
+
+
+def _next_actions(insights: dict[str, Any], ranked: list[RankedOrganisation], scope: TerritoryScope) -> tuple[str, ...]:
+    actions: list[str] = []
+    by_type = insights["events_by_type"]
+    new_regs = by_type.get("new_registration", 0)
+    declines = insights["rating_moves"]["declines"]
+    improvements = insights["rating_moves"]["improvements"]
+
+    if new_regs:
+        actions.append(
+            f"Review the {new_regs} newly registered location(s) first. The registration date is "
+            f"a research signal only; verify the current record and any explicit supplier need "
+            f"before considering contact. The shortlist links each CQC record."
+        )
+    if declines:
+        actions.append(
+            f"Review the {declines} location(s) with a documented rating decline and inspect the "
+            f"underlying CQC evidence before proposing any improvement-support offer. A rating "
+            f"decline does not establish budget, urgency or willingness to buy."
+        )
+    if improvements:
+        actions.append(
+            f"Note the {improvements} location(s) that improved their rating - these are proof "
+            f"points and possible reference customers rather than immediate remedial sales."
+        )
+    if insights["most_active_providers"]:
+        top = insights["most_active_providers"][0]["provider"]
+        actions.append(
+            f"Treat {top} as an account, not a lead: multiple of their locations are moving in "
+            f"this window, so target the provider's central quality lead."
+        )
+    top_area = insights["activity_by_sub_area"][0]["area"] if insights["activity_by_sub_area"] else None
+    if top_area and scope.kind == "region":
+        actions.append(
+            f"Concentrate field time on {top_area}: it has the highest count of qualifying "
+            f"events in {scope.name} this window."
+        )
+    actions.append(
+        "Verify each organisation's current status on the linked CQC page before outreach - this "
+        "brief reflects the published register edition, not a live lookup."
+    )
+    return tuple(actions)
+
+
+# --------------------------------------------------------------------------- #
+# Main entry point
+# --------------------------------------------------------------------------- #
+
+
+def _provider_group_event(row: dict[str, Any], group: str, *, as_of: date) -> OrgEvent | None:
+    """The documented state that puts a location in the buyer's provider group.
+
+    Window events only cover recent movement; a group such as "currently rated
+    Inadequate" is a standing state, so each member carries it as evidence.
+    """
+    if not rating_scope_eligible(row):
+        return None
+    location_id = str(row.get("locationId") or "").strip()
+    url = CQC_PROFILE_URL.format(location_id=location_id) if location_id else CQC_DATA_PAGE
+    registered = _parse_date(row.get("registrationDate"))
+    last_inspection = _parse_date((row.get("lastInspection") or {}).get("date"))
+    if group in ("inadequate", "requires_improvement"):
+        rating, report_date = _current_rating_evidence(row)
+        if rating != {"inadequate": "Inadequate", "requires_improvement": "Requires improvement"}[group]:
+            return None
+        effective = report_date or last_inspection
+        detail = rating_label(resolve_rating(row))
+        return OrgEvent(
+            event_type="rating_current",
+            effective_date=effective or as_of,
+            old_value=None,
+            new_value=rating,
+            detail=detail,
+            source_url=url,
+            source_field="location.rating_resolution",
+        )
+    if group == "not_yet_inspected":
+        if resolve_rating(row)["status"] != "unrated":
+            return None
+        return OrgEvent(
+            event_type="not_yet_inspected",
+            effective_date=registered or as_of,
+            old_value=None if registered else "registration_date_missing",
+            new_value="No published rating",
+            detail=(
+                f"Registered {registered.isoformat()}; no published CQC rating"
+                if registered else "No published CQC rating; registration date not recorded"
+            ),
+            source_url=url,
+            source_field="location.currentRatings/lastInspection",
+        )
+    if group == "stale_inspection":
+        if last_inspection:
+            return OrgEvent(
+                event_type="stale_inspection",
+                effective_date=last_inspection,
+                old_value=last_inspection.isoformat(),
+                new_value=None,
+                detail=f"Last CQC inspection {last_inspection.isoformat()}",
+                source_url=url,
+                source_field="location.lastInspection.date",
+            )
+        return OrgEvent(
+            event_type="stale_inspection",
+            effective_date=registered or as_of,
+            old_value="never_inspected" if registered else "registration_date_missing",
+            new_value=None,
+            detail=(
+                f"No CQC inspection recorded since registration on {registered.isoformat()}"
+                if registered else "No CQC inspection recorded"
+            ),
+            source_url=url,
+            source_field="location.lastInspection",
+        )
+    return None
+
+
+def generate_territory_opportunity_brief(
+    scope: dict[str, Any] | TerritoryScope,
+    purchase_context: PurchaseContext,
+    *,
+    locations_source: str | Path,
+    providers_source: str | Path,
+    location_ids: Iterable[str] | None = None,
+    provider_group: str | None = None,
+) -> TerritoryBrief:
+    """Generate a complete Territory Opportunity Brief.
+
+    ``scope`` may be a raw dict (from checkout metadata) or a
+    :class:`TerritoryScope`; it is always validated against the source data.
+    Raises :class:`ScopeError` for an invalid/unknown scope and
+    :class:`FileNotFoundError` for a missing snapshot.
+
+    ``location_ids`` restricts the Brief to an exact set (the organisations the
+    buyer's coverage check counted). ``provider_group`` adds each member's
+    documented group state as evidence so standing groups are not empty.
+    """
+    if provider_group is not None and provider_group not in PROVIDER_GROUP_LABELS:
+        raise ScopeError(f"unknown provider group {provider_group!r}")
+    allowed_ids = (
+        {str(item).strip() for item in location_ids if str(item).strip()}
+        if location_ids is not None else None
+    )
+    locations_path = Path(locations_source)
+    providers_path = Path(providers_source)
+    if not locations_path.exists():
+        raise FileNotFoundError(f"locations snapshot not found: {locations_path}")
+    if not providers_path.exists():
+        raise FileNotFoundError(f"providers snapshot not found: {providers_path}")
+
+    provider_names = load_provider_names(providers_path)
+    location_rows = list(_load_ndjson(locations_path))
+
+    return generate_brief_from_rows(
+        scope, purchase_context, location_rows=location_rows,
+        provider_names=provider_names, locations_label=locations_path.name,
+        providers_label=providers_path.name, allowed_ids=allowed_ids,
+        provider_group=provider_group,
+    )
+
+
+def generate_brief_from_rows(
+    scope: dict[str, Any] | TerritoryScope,
+    purchase_context: PurchaseContext,
+    *,
+    location_rows: list[dict[str, Any]],
+    provider_names: dict[str, str],
+    locations_label: str,
+    providers_label: str,
+    source_as_of: date | None = None,
+    allowed_ids: set[str] | None = None,
+    provider_group: str | None = None,
+) -> TerritoryBrief:
+    """Shared deterministic engine for file and durable database editions."""
+    catalogue = known_territories(location_rows)
+    validated = validate_scope(scope, catalogue)
+
+    # Anchor the window to the newest source date in the snapshot so output is
+    # reproducible and never claims to be more current than the data.
+    as_of = source_as_of or _latest_source_date(location_rows)
+    if as_of is None:
+        raise ScopeError("source snapshot has no usable dates; cannot define a window")
+    window_end = as_of
+    window_start = as_of - timedelta(days=validated.window_days - 1)
+
+    # First pass: provider cluster counts within scope.
+    scoped_rows = [row for row in location_rows if _in_scope(row, validated)]
+    if allowed_ids is not None:
+        scoped_rows = [
+            row for row in scoped_rows if str(row.get("locationId") or "").strip() in allowed_ids
+        ]
+    if provider_group in ("inadequate", "requires_improvement", "not_yet_inspected"):
+        scoped_rows = [row for row in scoped_rows
+                       if _provider_group_event(row, provider_group, as_of=as_of) is not None]
+    territory_locations = len(scoped_rows)
+    generated_on = purchase_context.generated_at.astimezone(timezone.utc).date()
+    coverage = _evidence_coverage(
+        scoped_rows, generated_on=generated_on, window_start=window_start, window_end=window_end
+    )
+    undated_ratings = sum(
+        1 for row in scoped_rows
+        if _current_rating_evidence(row)[0] and _current_rating_evidence(row)[1] is None
+    )
+
+    provider_event_locations: Counter[str] = Counter()
+    per_row_events: list[tuple[dict[str, Any], list[OrgEvent]]] = []
+    for row in scoped_rows:
+        events = _location_events(
+            row, window_start=window_start, window_end=window_end, as_of=as_of
+        )
+        if provider_group and provider_group != "new_90":
+            state = _provider_group_event(row, provider_group, as_of=as_of)
+            if state is not None:
+                events = [*events, state]
+        if events:
+            provider_id = str(row.get("providerId") or "").strip()
+            provider_event_locations[provider_id] += 1
+            row = {**row, "_provider_name": provider_names.get(provider_id, "")}
+            per_row_events.append((row, events))
+
+    # Build ranked organisations.
+    candidates: list[RankedOrganisation] = []
+    for row, events in per_row_events:
+        provider_id = str(row.get("providerId") or "").strip()
+        location_id = str(row.get("locationId") or "").strip()
+        provider_name = provider_names.get(provider_id) or str(row.get("name") or "").strip()
+        location_name = str(row.get("name") or "").strip()
+        if not provider_name or not location_name or not location_id:
+            continue
+        cluster = provider_event_locations.get(provider_id, 0)
+        try:
+            beds: int | None = int(row.get("numberOfBeds")) if row.get("numberOfBeds") else None
+        except (TypeError, ValueError):
+            beds = None
+        service_types = _service_types(row)
+        resolution = resolve_rating(row)
+        current_rating = resolution["value"]
+        has_history = bool(_rating_sequence(row))
+        score, breakdown = _score(
+            events, beds=beds, provider_cluster=cluster, as_of=generated_on,
+            re_registration=bool(any(e.event_type == "new_registration" for e in events) and (has_history or current_rating)),
+        )
+        most_recent = max((e.effective_date for e in events), default=None)
+        reason = _reason(
+            org_name=provider_name,
+            events=events,
+            beds=beds,
+            service_types=service_types,
+            territory=validated.name,
+            provider_cluster=cluster,
+            current_rating=current_rating,
+            has_rating_history=has_history,
+            as_of=generated_on,
+        )
+        if resolution['status'] in ('unresolved', 'inherited'):
+            reason = (f"Current-provider overall rating is {resolution['status']}. "
+                      "The supplied evidence does not establish a current-provider inspection; "
+                      "review the CQC profile and retained source evidence before qualification.")
+        reason += " Rating evidence: " + rating_label(resolution) + "."
+        evidence = tuple(
+            {
+                "event_type": e.event_type,
+                "effective_date": e.effective_date.isoformat(),
+                "old_value": e.old_value,
+                "new_value": e.new_value,
+                "detail": e.detail,
+                "source_field": e.source_field,
+                "source_url": e.source_url,
+                "source_edition": CQC_DATA_PAGE,
+            }
+            for e in sorted(events, key=lambda e: e.effective_date)
+        )
+        _validate_evidence(evidence)
+        candidates.append(
+            RankedOrganisation(
+                rank=0,
+                organisation_name=provider_name,
+                location_name=location_name,
+                location_id=location_id,
+                provider_id=provider_id,
+                local_authority=str(row.get("localAuthority") or "").strip(),
+                region=str(row.get("region") or "").strip(),
+                postcode=str(row.get("postalCode") or row.get("postcode") or "").strip(),
+                service_types=service_types,
+                number_of_beds=beds,
+                current_rating=current_rating,
+                rating_resolution=resolution,
+                primary_signal=_primary_signal(events),
+                most_recent_event_date=most_recent,
+                score=score,
+                score_breakdown=breakdown,
+                reason=reason,
+                evidence=evidence,
+                qualification_question=_qualification_question(
+                    _primary_signal(events), provider_cluster=cluster, territory=validated.name
+                ),
+                buyer_questions=_buyer_questions(_primary_signal(events)),
+            )
+        )
+
+    # Deterministic ordering: score desc, then most-recent event desc, then
+    # name, then location id. Every key is total and stable.
+    candidates.sort(
+        key=lambda o: (
+            -o.score,
+            -(o.most_recent_event_date.toordinal() if o.most_recent_event_date else 0),
+            o.organisation_name.casefold(),
+            o.location_id,
+        )
+    )
+    # The first location in the total ranking represents its provider: highest
+    # score, then newest event, then name and lexicographically smallest ID.
+    # Deduplicate before slicing so duplicates cannot consume shortlist slots.
+    seen_providers: set[str] = set()
+    unique_candidates: list[RankedOrganisation] = []
+    for candidate in candidates:
+        if not candidate.provider_id or candidate.provider_id in seen_providers:
+            continue
+        seen_providers.add(candidate.provider_id)
+        unique_candidates.append(candidate)
+    shortlist_rows = unique_candidates[: validated.shortlist_target]
+    shortlist = tuple(
+        RankedOrganisation(**{**org.__dict__, "rank": i})
+        for i, org in enumerate(shortlist_rows, start=1)
+    )
+
+    insights = _territory_insights(list(shortlist), all_event_rows=per_row_events, scope=validated)
+    insights["rating_date_coverage"] = {
+        "undated_locations": undated_ratings,
+        "recent_rating_changes_available": undated_ratings == 0,
+        "limitation": (
+            "Recent rating changes unavailable: undated rating evidence cannot measure recency. "
+            "Dated movements, if any, cover only records with published dates."
+            if undated_ratings else "Only CQC-dated rating movements are counted."
+        ),
+    }
+    actions = _next_actions(insights, list(shortlist), validated)
+
+    exec_summary = _executive_summary(
+        provider_group=provider_group,
+        scope=validated,
+        as_of=as_of,
+        generated_on=generated_on,
+        window_start=window_start,
+        window_end=window_end,
+        considered=len(per_row_events),
+        territory_locations=territory_locations,
+        shortlist=shortlist,
+        insights=insights,
+    )
+
+    caveats = (
+        insights["rating_date_coverage"]["limitation"],
+        "Rating freshness is measured against the generation date, separately from the source "
+        "window. Stale RI records remain visible in evidence coverage, outside the shortlist "
+        "when they have no in-window signal. Missing metadata describes the supplied snapshot, "
+        "not a claim that CQC never published it.",
+        f"This brief reflects the published CQC register edition dated {as_of.isoformat()} "
+        f"(the newest date present in the source), not a live API lookup.",
+        "The register carries the latest rating and its report date. Where no rating history is "
+        "present a change cannot be derived, so a first/refreshed rating is reported as a new "
+        "inspection report rather than a rating change.",
+        "Organisations with incomplete provider identifiers or names in the source are excluded "
+        "from the shortlist rather than shown with gaps.",
+        "Opportunity signals indicate where to investigate first; they are not statements about a "
+        "provider's quality, finances, or intent.",
+        OGL_ATTRIBUTION + ".",
+    )
+    group_note = (
+        f" Provider group: {PROVIDER_GROUP_LABELS[provider_group]}, taken from the same "
+        f"directory query as the coverage check; each member carries its documented group "
+        f"state as evidence."
+        if provider_group else ""
+    )
+    methodology = (
+        f"Scope: {validated.kind.replace('_', ' ')} = {validated.name}.{group_note} "
+        f"Window: {window_start.isoformat()} to {window_end.isoformat()} inclusive "
+        f"({validated.window_days} days), anchored to the newest source date.",
+        "Supported events: new CQC registration in-window (excluding dormant locations); overall "
+        "rating change in-window (derived from ordered historic/current ratings); new inspection "
+        "report in-window where no change can be derived.",
+        "Score recency is measured against generation, not the source window. "
+        "Score = base weight per event x recency multiplier (1.5 within 30 days, 1.2 within 90, "
+        "1.05 within 180) + rating-direction adjustment (downgrade +16, upgrade +9) + a bed-count "
+        "size factor + a provider-cluster bonus where the same provider has multiple locations "
+        "moving. Scores are capped at 100.",
+        "One location represents each provider: highest score, then most recent event date, "
+        "then organisation name, then lexicographically smallest CQC location id. "
+        "Deduplication happens before the shortlist limit. Ties break by those same keys, so "
+        "the same source data always yields the same ranking.",
+    )
+
+    provenance = {
+        "source_page": CQC_DATA_PAGE,
+        "locations_snapshot": locations_label,
+        "providers_snapshot": providers_label,
+        "snapshot_edition_date": as_of.isoformat(),
+        "generator": "api.services.territory_brief.generate_territory_opportunity_brief",
+        "generated_at": purchase_context.generated_at.astimezone(timezone.utc).isoformat(),
+        "licence": OGL_ATTRIBUTION,
+        "licence_url": "https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/",
+    }
+
+    return TerritoryBrief(
+        scope=validated,
+        purchase_context=purchase_context,
+        as_of_date=as_of,
+        window_start=window_start,
+        window_end=window_end,
+        considered_locations=len(per_row_events),
+        territory_locations=territory_locations,
+        shortlist=shortlist,
+        executive_summary=exec_summary,
+        territory_insights=insights,
+        next_actions=actions,
+        methodology_notes=methodology,
+        data_caveats=caveats,
+        source_provenance=provenance,
+        evidence_coverage=coverage,
+    )
+
+
+def _current_rating_evidence(row):
+    resolved = resolve_rating(row)
+    return resolved["value"], _parse_date(resolved["publication_date"])
+
+
+def _evidence_coverage(rows, *, generated_on, window_start, window_end):
+    """Keep current-state rating and provenance gaps visible outside ranking.
+
+    Dates and metadata are copied from the snapshot, never inferred from the
+    snapshot's retrieval time. A constructed CQC link is a reference, not proof
+    that recorded source URL/hash metadata exists.
+    """
+    coverage = []
+    try:
+        cutoff = generated_on.replace(year=generated_on.year - 1)
+    except ValueError:  # 29 February: prior year has no leap day.
+        cutoff = generated_on.replace(year=generated_on.year - 1, day=28)
+    for row in rows:
+        rating, publication = _current_rating_evidence(row)
+        registration = _parse_date(row.get("registrationDate"))
+        missing = []
+        if not row.get("source_url"):
+            missing.append("source URL")
+        if not row.get("source_snapshot_sha256"):
+            missing.append("source hash")
+        if not registration:
+            missing.append("registration date")
+        freshness = "unknown (no publication date)"
+        if publication:
+            freshness = "future publication date" if publication > generated_on else (
+                "within 12 months" if publication >= cutoff else "stale (over 12 months)"
+            )
+        coverage.append({
+            "location_id": str(row.get("locationId") or ""),
+            "provider_id": str(row.get("providerId") or ""),
+            "location_name": str(row.get("name") or ""),
+            "current_rating": rating,
+            "rating_resolution": resolve_rating(row),
+            "rating_publication_date": publication.isoformat() if publication else None,
+            "rating_freshness": freshness,
+            "registration_date": registration.isoformat() if registration else None,
+            "recorded_source_url": row.get("source_url"),
+            "recorded_source_hash": row.get("source_snapshot_sha256"),
+            "registration_metadata_gaps": missing,
+            "reference_url": CQC_PROFILE_URL.format(location_id=row.get("locationId") or ""),
+        })
+    return tuple(sorted(coverage, key=lambda item: (item["provider_id"], item["location_id"])))
+
+
+def _latest_source_date(rows: list[dict[str, Any]]) -> date | None:
+    latest: date | None = None
+    for row in rows:
+        cand = _parse_date(row.get("registrationDate"))
+        if cand and (latest is None or cand > latest):
+            latest = cand
+        resolved_date = _parse_date(resolve_rating(row)['publication_date'])
+        if resolved_date and (latest is None or resolved_date > latest):
+            latest = resolved_date
+        for report_date, _rating in _rating_sequence(row):
+            if latest is None or report_date > latest:
+                latest = report_date
+    return latest
+
+
+def _executive_summary(
+    *,
+    provider_group: str | None = None,
+    scope: TerritoryScope,
+    as_of: date,
+    generated_on: date,
+    window_start: date,
+    window_end: date,
+    considered: int,
+    territory_locations: int,
+    shortlist: tuple[RankedOrganisation, ...],
+    insights: dict[str, Any],
+) -> dict[str, Any]:
+    by_type = insights["events_by_type"]
+    top3 = [
+        f"{o.organisation_name} ({o.location_name}) - {o.primary_signal.lower()}"
+        for o in shortlist[:3]
+    ]
+    if provider_group and provider_group != "new_90":
+        headline = (
+            f"{considered} location(s) in {scope.name} are in the provider group "
+            f"'{PROVIDER_GROUP_LABELS[provider_group]}' on the source edition dated "
+            f"{as_of.strftime('%d %b %Y')}; {len(shortlist)} are shortlisted and ranked."
+        )
+    else:
+        headline = (
+            f"{considered} location(s) in {scope.name} show a supported opportunity signal in the "
+            f"{scope.window_days}-day window ending {window_end.strftime('%d %b %Y')}; "
+            f"{len(shortlist)} are shortlisted and ranked."
+        )
+    movement = []
+    if by_type.get("new_registration"):
+        movement.append(f"{by_type['new_registration']} new registration(s)")
+    if by_type.get("rating_changed"):
+        movement.append(f"{by_type['rating_changed']} rating change(s)")
+    if by_type.get("rating_published"):
+        movement.append(f"{by_type['rating_published']} new inspection report(s)")
+    if by_type.get("rating_current"):
+        movement.append(f"{by_type['rating_current']} location(s) with the selected current rating")
+    if by_type.get("not_yet_inspected"):
+        movement.append(f"{by_type['not_yet_inspected']} location(s) with no published rating")
+    if by_type.get("stale_inspection"):
+        movement.append(f"{by_type['stale_inspection']} location(s) with no inspection in the last 3 years or none recorded")
+    return {
+        "provider_group": PROVIDER_GROUP_LABELS.get(provider_group) if provider_group else None,
+        "territory": scope.name,
+        "territory_kind": scope.kind.replace("_", " "),
+        "date_generated": generated_on.isoformat(),
+        "source_edition": as_of.isoformat(),
+        "window": f"{window_start.isoformat()} to {window_end.isoformat()}",
+        "territory_locations_in_source": territory_locations,
+        "opportunity_set_size": considered,
+        "shortlisted": len(shortlist),
+        "headline": headline,
+        "movement_summary": ", ".join(movement) if movement else "no supported movement in window",
+        "strongest_opportunities": top3,
+        "limitations": (
+            "Reflects the published CQC register edition, not a live lookup; opportunity signals "
+            "show where to look first, not provider quality or intent."
+        ),
+        "shortfall_notice": shortfall_notice(len(shortlist), scope.shortlist_target),
+    }
+
+
+def shortfall_notice(shortlisted: int, target: int) -> str | None:
+    """Disclose a shortage against the buyer's requested organisation count.
+
+    The generator never pads a shortlist; a small territory is reported as it is,
+    and the buyer is told so in the PDF and the CSV.
+    """
+    if shortlisted >= target:
+        return None
+    return (
+        f"Shortfall: this territory has {shortlisted} organisation(s) with a supported signal in "
+        f"the window, fewer than the requested shortlist of {target}. "
+        "All of them are included; none have been added to make up the number."
+    )
+
+
+# --------------------------------------------------------------------------- #
+# Supporting exports
+# --------------------------------------------------------------------------- #
+
+
+def brief_to_csv(brief: TerritoryBrief) -> str:
+    """CRM-ready shortlist CSV. Supporting evidence, not the whole product."""
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow(
+        [
+            "rank",
+            "organisation",
+            "location",
+            "cqc_location_id",
+            "cqc_provider_id",
+            "local_authority",
+            "region",
+            "postcode",
+            "service_types",
+            "number_of_beds",
+            "current_rating",
+            "primary_signal",
+            "most_recent_event_date",
+            "opportunity_score",
+            "reason",
+            "qualification_question",
+            *(f"{buyer}_question" for buyer in BUYER_QUESTION_TYPES),
+            "evidence_events",
+            "cqc_record_url",
+            "rating_evidence_date",
+            "rating_freshness",
+            "rating_status", "rating_source", "rating_provenance_json",
+            "registration_metadata_gaps",
+            "shortlist_notice",
+            "licence",
+        ]
+    )
+    notice = brief.executive_summary.get("shortfall_notice") or ""
+    coverage_by_location = {row["location_id"]: row for row in brief.evidence_coverage}
+    for org in brief.shortlist:
+        evidence_events = " | ".join(
+            f"{e['event_type']} {e['effective_date']}"
+            + (f" ({e['old_value']}->{e['new_value']})" if e.get("old_value") else "")
+            for e in org.evidence
+        )
+        writer.writerow(
+            [
+                org.rank,
+                org.organisation_name,
+                org.location_name,
+                org.location_id,
+                org.provider_id,
+                org.local_authority,
+                org.region,
+                org.postcode,
+                "; ".join(org.service_types),
+                org.number_of_beds if org.number_of_beds is not None else "",
+                org.current_rating or "",
+                org.primary_signal,
+                org.most_recent_event_date.isoformat() if org.most_recent_event_date else "",
+                org.score,
+                org.reason,
+                org.qualification_question,
+                *(dict(org.buyer_questions).get(buyer, "") for buyer in BUYER_QUESTION_TYPES),
+                evidence_events,
+                CQC_PROFILE_URL.format(location_id=org.location_id),
+                coverage_by_location.get(org.location_id, {}).get("rating_publication_date") or "",
+                coverage_by_location.get(org.location_id, {}).get("rating_freshness") or "not assessed",
+                (org.rating_resolution or {}).get("status", "unresolved"),
+                (org.rating_resolution or {}).get("source") or "",
+                json.dumps(org.rating_resolution, sort_keys=True),
+                "; ".join(coverage_by_location.get(org.location_id, {}).get("registration_metadata_gaps", [])),
+                notice,
+                OGL_ATTRIBUTION,
+            ]
+        )
+    return buf.getvalue()

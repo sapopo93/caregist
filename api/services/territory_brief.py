@@ -26,12 +26,16 @@ from __future__ import annotations
 
 import csv
 import io
+import json
 import re
 from collections import Counter
 from dataclasses import asdict, dataclass
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Iterable, Literal
+
+from api.service_taxonomy import resolve_service_filter
+from api.services.territory_rating import resolve_rating, rating_label, rating_scope_eligible
 
 from tools.generate_radar_territory_sample import (
     _load_ndjson,
@@ -165,6 +169,7 @@ class RankedOrganisation:
     score_breakdown: dict[str, float]
     reason: str
     evidence: tuple[dict[str, Any], ...]
+    rating_resolution: dict[str, Any] | None = None
     qualification_question: str = ""
     # Buyer-specific follow-ups keyed by BUYER_QUESTION_TYPES, asked after the
     # general question above. Like it, each one asks and never asserts need.
@@ -323,9 +328,8 @@ def _service_types(row: dict[str, Any]) -> tuple[str, ...]:
 
 
 def _in_scope(row: dict[str, Any], scope: TerritoryScope) -> bool:
-    if scope.service_type and scope.service_type.casefold() not in {
-        t.casefold() for t in _service_types(row)
-    }:
+    aliases = resolve_service_filter(scope.service_type)
+    if aliases and not set(aliases).intersection(t.casefold() for t in _service_types(row)):
         return False
     if scope.kind == "local_authority":
         return str(row.get("localAuthority") or "").strip().casefold() == scope.name.casefold()
@@ -574,7 +578,7 @@ def _reason(
             # A "new registration" that already carries a rating/history is a
             # re-registration - an ownership, legal-entity or management change.
             rating_note = (
-                f" It carries an inherited overall rating of {current_rating}."
+                f" It carries an overall rating of {current_rating}."
                 if current_rating
                 else ""
             )
@@ -616,21 +620,14 @@ def _reason(
         ev = published[0]
         parts.append(
             f"CQC published an inspection report on {ev.effective_date.strftime('%d %b %Y')} "
-            f"(current rating {ev.new_value}). Verify its age and supporting evidence before contact."
+            f"(published overall rating {ev.new_value}). Verify its age and supporting evidence before contact."
         )
 
     for ev in events:
         if ev.event_type == "rating_current":
-            dated = (
-                f"in the report published {ev.effective_date.strftime('%d %b %Y')}"
-                if "date not recorded" not in ev.detail
-                else "(report date not recorded in the source)"
-            )
-            parts.append(
-                f"Currently rated {ev.new_value} overall by CQC {dated}. This is the published "
-                f"overall rating, not a statement about the service today; read the report "
-                f"before any contact."
-            )
+            # The resolved label carries the actual publication date (or its
+            # absence). Scoring/inspection dates cannot supply a publication date.
+            parts.append(ev.detail + ". Read the source evidence before contact.")
         elif ev.event_type == "not_yet_inspected":
             # The group means "no published rating"; the record cannot show whether or
             # when an inspection will happen, so the text claims neither.
@@ -943,20 +940,18 @@ def _provider_group_event(row: dict[str, Any], group: str, *, as_of: date) -> Or
     Window events only cover recent movement; a group such as "currently rated
     Inadequate" is a standing state, so each member carries it as evidence.
     """
+    if not rating_scope_eligible(row):
+        return None
     location_id = str(row.get("locationId") or "").strip()
     url = CQC_PROFILE_URL.format(location_id=location_id) if location_id else CQC_DATA_PAGE
     registered = _parse_date(row.get("registrationDate"))
     last_inspection = _parse_date((row.get("lastInspection") or {}).get("date"))
     if group in ("inadequate", "requires_improvement"):
         rating, report_date = _current_rating_evidence(row)
-        if not rating:
+        if rating != {"inadequate": "Inadequate", "requires_improvement": "Requires improvement"}[group]:
             return None
         effective = report_date or last_inspection
-        detail = (
-            f"Current overall rating {rating} (report {effective.isoformat()})"
-            if effective
-            else f"Current overall rating {rating} (report date not recorded in source)"
-        )
+        detail = rating_label(resolve_rating(row))
         return OrgEvent(
             event_type="rating_current",
             effective_date=effective or as_of,
@@ -964,9 +959,11 @@ def _provider_group_event(row: dict[str, Any], group: str, *, as_of: date) -> Or
             new_value=rating,
             detail=detail,
             source_url=url,
-            source_field="location.currentRatings.overall",
+            source_field="location.rating_resolution",
         )
     if group == "not_yet_inspected":
+        if resolve_rating(row)["status"] != "unrated":
+            return None
         return OrgEvent(
             event_type="not_yet_inspected",
             effective_date=registered or as_of,
@@ -1079,6 +1076,9 @@ def generate_brief_from_rows(
         scoped_rows = [
             row for row in scoped_rows if str(row.get("locationId") or "").strip() in allowed_ids
         ]
+    if provider_group in ("inadequate", "requires_improvement", "not_yet_inspected"):
+        scoped_rows = [row for row in scoped_rows
+                       if _provider_group_event(row, provider_group, as_of=as_of) is not None]
     territory_locations = len(scoped_rows)
     generated_on = purchase_context.generated_at.astimezone(timezone.utc).date()
     coverage = _evidence_coverage(
@@ -1120,11 +1120,8 @@ def generate_brief_from_rows(
         except (TypeError, ValueError):
             beds = None
         service_types = _service_types(row)
-        current_ratings = row.get("currentRatings") or {}
-        overall = current_ratings.get("overall") if isinstance(current_ratings, dict) else None
-        current_rating = (
-            str(overall.get("rating") or "").strip() or None if isinstance(overall, dict) else None
-        )
+        resolution = resolve_rating(row)
+        current_rating = resolution["value"]
         has_history = bool(_rating_sequence(row))
         score, breakdown = _score(
             events, beds=beds, provider_cluster=cluster, as_of=generated_on,
@@ -1142,6 +1139,11 @@ def generate_brief_from_rows(
             has_rating_history=has_history,
             as_of=generated_on,
         )
+        if resolution['status'] in ('unresolved', 'inherited'):
+            reason = (f"Current-provider overall rating is {resolution['status']}. "
+                      "The supplied evidence does not establish a current-provider inspection; "
+                      "review the CQC profile and retained source evidence before qualification.")
+        reason += " Rating evidence: " + rating_label(resolution) + "."
         evidence = tuple(
             {
                 "event_type": e.event_type,
@@ -1169,6 +1171,7 @@ def generate_brief_from_rows(
                 service_types=service_types,
                 number_of_beds=beds,
                 current_rating=current_rating,
+                rating_resolution=resolution,
                 primary_signal=_primary_signal(events),
                 most_recent_event_date=most_recent,
                 score=score,
@@ -1305,19 +1308,12 @@ def generate_brief_from_rows(
 
 
 def _current_rating_evidence(row):
-    current = row.get("currentRatings")
-    if not isinstance(current, dict):
-        return None, None
-    overall = current.get("overall")
-    if not isinstance(overall, dict):
-        return None, None
-    return overall.get("rating"), _parse_date(
-        current.get("reportDate") or overall.get("reportDate") or overall.get("date")
-    )
+    resolved = resolve_rating(row)
+    return resolved["value"], _parse_date(resolved["publication_date"])
 
 
 def _evidence_coverage(rows, *, generated_on, window_start, window_end):
-    """Keep RI context and registration provenance gaps visible outside ranking.
+    """Keep current-state rating and provenance gaps visible outside ranking.
 
     Dates and metadata are copied from the snapshot, never inferred from the
     snapshot's retrieval time. A constructed CQC link is a reference, not proof
@@ -1331,10 +1327,6 @@ def _evidence_coverage(rows, *, generated_on, window_start, window_end):
     for row in rows:
         rating, publication = _current_rating_evidence(row)
         registration = _parse_date(row.get("registrationDate"))
-        is_ri = str(rating or "").strip().casefold() == "requires improvement"
-        in_window = registration is not None and window_start <= registration <= window_end
-        if not is_ri and not in_window:
-            continue
         missing = []
         if not row.get("source_url"):
             missing.append("source URL")
@@ -1352,6 +1344,7 @@ def _evidence_coverage(rows, *, generated_on, window_start, window_end):
             "provider_id": str(row.get("providerId") or ""),
             "location_name": str(row.get("name") or ""),
             "current_rating": rating,
+            "rating_resolution": resolve_rating(row),
             "rating_publication_date": publication.isoformat() if publication else None,
             "rating_freshness": freshness,
             "registration_date": registration.isoformat() if registration else None,
@@ -1369,6 +1362,9 @@ def _latest_source_date(rows: list[dict[str, Any]]) -> date | None:
         cand = _parse_date(row.get("registrationDate"))
         if cand and (latest is None or cand > latest):
             latest = cand
+        resolved_date = _parse_date(resolve_rating(row)['publication_date'])
+        if resolved_date and (latest is None or resolved_date > latest):
+            latest = resolved_date
         for report_date, _rating in _rating_sequence(row):
             if latest is None or report_date > latest:
                 latest = report_date
@@ -1486,6 +1482,7 @@ def brief_to_csv(brief: TerritoryBrief) -> str:
             "cqc_record_url",
             "rating_evidence_date",
             "rating_freshness",
+            "rating_status", "rating_source", "rating_provenance_json",
             "registration_metadata_gaps",
             "shortlist_notice",
             "licence",
@@ -1522,6 +1519,9 @@ def brief_to_csv(brief: TerritoryBrief) -> str:
                 CQC_PROFILE_URL.format(location_id=org.location_id),
                 coverage_by_location.get(org.location_id, {}).get("rating_publication_date") or "",
                 coverage_by_location.get(org.location_id, {}).get("rating_freshness") or "not assessed",
+                (org.rating_resolution or {}).get("status", "unresolved"),
+                (org.rating_resolution or {}).get("source") or "",
+                json.dumps(org.rating_resolution, sort_keys=True),
                 "; ".join(coverage_by_location.get(org.location_id, {}).get("registration_metadata_gaps", [])),
                 notice,
                 OGL_ATTRIBUTION,

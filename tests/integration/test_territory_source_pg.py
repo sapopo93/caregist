@@ -191,3 +191,83 @@ async def test_paid_fulfilment_uses_pinned_postgres_source(source_db, tmp_path, 
     assert uploads['pdf'].startswith(b'%PDF')
     assert b'rating_changed' in uploads['csv']
     assert await conn.fetchval('SELECT count(*) FROM territory_brief_download_tokens WHERE order_id=$1', order_id) == 2
+
+
+async def test_rating_contract_sidecar_pinned_and_scope_consistent(source_db, tmp_path):
+    """Public SQL and generated Brief classify the same frozen edition."""
+    import subprocess
+    from pathlib import Path
+    from api.services.territory_rating import resolve_rating
+    from api.services.territory_brief import generate_brief_from_rows, PurchaseContext
+    conn, url = source_db
+    root = Path(__file__).resolve().parents[2]
+    packet = root / 'artifacts/rating-resolution/2026-10-29'
+    rows = json.loads((packet / 'fixtures.json').read_text())
+    supplemental = json.loads((packet / 'rating-evidence.json').read_text())
+    for row in rows:
+        for key in supplemental[row['locationId']]:
+            row.pop(key, None)
+        row.update(localAuthority='Testshire', region='Test Region')
+    loc = tmp_path / 'locations.ndjson'
+    prov = tmp_path / 'providers.ndjson'
+    loc.write_text('\n'.join(json.dumps(r) for r in rows))
+    names = {r['providerId']:r['name'] for r in rows}
+    prov.write_text('\n'.join(json.dumps({'providerId':k, 'name':v}) for k,v in names.items()))
+    db = psycopg2.connect(url)
+    try:
+        edition = import_edition(db, loc, prov, datetime.now(timezone.utc), packet / 'rating-evidence.json')
+    finally:
+        db.close()
+    scope, selected, loaded, names = await source.load_source(SCOPE, edition_id=edition)
+    assert all(r['rating_resolution'] == resolve_rating(r) for r in loaded)
+    for group, value in [('inadequate', 'Inadequate'), ('requires_improvement', 'Requires improvement')]:
+        sql = subprocess.check_output([
+            'node', '--experimental-strip-types', '--input-type=module', '-e',
+            "import {territoryRatingCoverageSql as sql} from './frontend/lib/territory-rating-coverage.ts';"
+            f"process.stdout.write(sql('{group}'));"], cwd=root, text=True)
+        coverage = await conn.fetchrow(sql, 'Test Region', [])
+        expected = {r['providerId'] for r in loaded if resolve_rating(r)['value'] == value}
+        assert coverage['provider_count'] == len(expected)
+        assert coverage['source_edition_id'] == str(edition)
+        brief = generate_brief_from_rows(scope, PurchaseContext(order_reference='test', generated_at=datetime.now(timezone.utc)),
+            location_rows=loaded, provider_names=names, locations_label='test', providers_label='test',
+            source_as_of=selected['source_as_of'], provider_group=group)
+        assert all(o.provider_id in expected for o in brief.shortlist)
+        assert brief.territory_insights  # generation completed against identical edition
+        from api.service_taxonomy import resolve_service_filter
+        aliases = list(resolve_service_filter('care-home-with-nursing'))
+        narrowed = await conn.fetchrow(sql, 'Test Region', aliases)
+        matching = {r['providerId'] for r in loaded if resolve_rating(r)['value'] == value
+                    and set(aliases).intersection(t['description'].casefold() for t in r.get('gacServiceTypes', []))}
+        assert narrowed['provider_count'] == len(matching)
+        narrowed_brief = generate_brief_from_rows({**SCOPE, 'service_type':'care-home-with-nursing'},
+            PurchaseContext(order_reference='test', generated_at=datetime.now(timezone.utc)),
+            location_rows=loaded, provider_names=names, locations_label='test', providers_label='test',
+            source_as_of=selected['source_as_of'], provider_group=group)
+        assert all(o.provider_id in matching for o in narrowed_brief.shortlist)
+
+
+async def test_sidecar_dates_define_edition_and_reject_future(source_db, tmp_path):
+    conn, url = source_db
+    loc, prov, retrieved = snapshot(tmp_path, count=1)
+    row = json.loads(loc.read_text())
+    row['currentRatings'] = {}
+    row['historicRatings'] = []
+    row['registrationDate'] = '2025-01-01'
+    loc.write_text(json.dumps(row))
+    publication = (retrieved - timedelta(days=1)).date().isoformat()
+    sidecar = tmp_path / 'rating-evidence.json'
+    evidence = {'L0':{'file_overall_rating':'Good', 'file_overall_rating_date':publication,
+                      'file_rating_source':'fixture', 'file_rating_source_sha256':'a'*64}}
+    sidecar.write_text(json.dumps(evidence))
+    db = psycopg2.connect(url)
+    try:
+        edition = import_edition(db, loc, prov, retrieved, sidecar)
+        assert await conn.fetchval('SELECT source_as_of FROM territory_brief_source_editions WHERE id=$1', edition) == datetime.fromisoformat(publication).date()
+        evidence['L0']['file_overall_rating_date'] = (retrieved + timedelta(days=1)).date().isoformat()
+        sidecar.write_text(json.dumps(evidence))
+        with pytest.raises(ValueError, match='after retrieval'):
+            import_edition(db, loc, prov, retrieved, sidecar)
+        assert await conn.fetchval('SELECT count(*) FROM territory_brief_source_editions') == 1
+    finally:
+        db.close()

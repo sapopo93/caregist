@@ -1,0 +1,17 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.12.13, pytest-9.1.1, pluggy-1.6.0
+rootdir: /Users/user/CareGist
+configfile: pytest.ini
+plugins: cov-5.0.0, asyncio-1.4.0, anyio-4.14.2
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
+collected 128 items
+
+tests/test_territory_rating_resolution.py .............................. [ 23%]
+..............                                                           [ 34%]
+tests/test_territory_brief.py .......................................... [ 67%]
+..                                                                       [ 68%]
+tests/test_territory_brief_integration.py .......                        [ 74%]
+tests/test_territory_brief_fulfilment.py ............................... [ 98%]
+..                                                                       [100%]
+
+============================= 128 passed in 1.41s ==============================

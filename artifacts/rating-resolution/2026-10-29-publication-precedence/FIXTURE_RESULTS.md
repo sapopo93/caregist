@@ -1,0 +1,30 @@
+- 1-546202187: Good; matches CQC's published rating as of 2026-03-31; source CQC ratings file
+- 1-2761140569: Good; matches CQC's published rating as of 2025-07-23; source CQC ratings file
+- 1-546109592: Good; matches CQC's published rating as of 2025-07-11; source CQC ratings file
+- 1-19058724680: Good; matches CQC's published rating as of 2026-07-24; source CQC ratings file
+- 1-11270646845: Good; matches CQC's published rating as of 2025-03-14; source CQC ratings file
+- 1-2352094536: Requires improvement; matches CQC's published rating as of 2025-10-16; source CQC ratings file
+- 1-15297949474: Requires improvement; matches CQC's published rating as of 2025-08-12; source CQC ratings file
+- 1-27003473742: Requires improvement; matches CQC's published rating as of 2026-06-03; source CQC ratings file
+- 1-407665280: Requires improvement; matches CQC's published rating as of 2026-04-22; source CQC ratings file
+- 1-13937101349: Requires improvement; matches CQC's published rating as of 2025-08-19; source CQC ratings file
+- 1-130890582: Outstanding; matches CQC's published rating as of 2026-06-03; source CQC ratings file
+- 1-2467326262: Outstanding; matches CQC's published rating as of 2025-07-18; source CQC ratings file
+- 1-10192918971: Outstanding; matches CQC's published rating as of 2025-07-29; source CQC ratings file
+- 1-16491295796: unresolved; no accepted source; see candidate evidence; publication date unresolved
+- 1-16516340886: Outstanding; matches CQC's published rating as of 2026-08-27; source CQC ratings file
+- 1-142705508: Inadequate; matches CQC's published rating as of 2026-07-08; source CQC ratings file
+- 1-456354523: Inadequate; matches CQC's published rating as of 2026-01-06; source CQC ratings file
+- 1-113028260: Inadequate; matches CQC's published rating as of 2025-10-27; source CQC ratings file
+- 1-125730630: Requires improvement; matches CQC's published rating as of 2026-10-13; source CQC website
+- 1-10615519904: Inadequate; matches CQC's published rating as of 2026-09-18; source CQC ratings file
+- 1-152721284: Requires improvement; matches CQC's published rating as of 2026-05-20; source CQC ratings file + CQC website
+- 1-19886383752: unresolved; no accepted source; see candidate evidence; publication date unresolved
+- 1-22160036426: Good; matches CQC's published rating as of 2026-03-11; source CQC ratings file + CQC website
+- 1-390976877: Requires improvement; matches CQC's published rating as of 2025-12-11; source CQC ratings file + CQC website
+- 1-552527797: Requires improvement; matches CQC's published rating as of 2025-03-05; source CQC website
+- 1-12566526711: unrated; no accepted source; see candidate evidence; publication date unresolved
+- 1-199649069: unrated; no accepted source; see candidate evidence; publication date unresolved
+- 1-29650851551: unrated; no accepted source; see candidate evidence; publication date unresolved
+- RHARA: unrated; no accepted source; see candidate evidence; publication date unresolved
+- 1-5588555895: unrated; no accepted source; see candidate evidence; publication date unresolved

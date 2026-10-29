@@ -1,0 +1,173 @@
+{
+  "locationId": "1-22160036426",
+  "providerId": "1-116992858",
+  "organisationType": "Location",
+  "type": "Social Care Org",
+  "name": "Irchester 170",
+  "brandId": "BD519",
+  "brandName": "BRAND Achieve Together",
+  "onspdCcgCode": "E38000242",
+  "onspdCcgName": "NHS Northamptonshire CCG",
+  "onspdIcbCode": "E54000059",
+  "onspdIcbName": "NHS Northamptonshire Integrated Care Board",
+  "odsCode": "VMAXX",
+  "registrationStatus": "Registered",
+  "registrationDate": "2025-11-05",
+  "dormancy": "N",
+  "onspdLatitude": 52.2819821,
+  "onspdLongitude": -0.6357384,
+  "careHome": "Y",
+  "inspectionDirectorate": "Adult social care",
+  "postalAddressLine1": "170 Station Road",
+  "postalAddressLine2": "Irchester",
+  "postalAddressTownCity": "Wellingborough",
+  "postalAddressCounty": "Northamptonshire",
+  "region": "East Midlands",
+  "postalCode": "NN29 7EW",
+  "uprn": "100031212643",
+  "mainPhoneNumber": "01604811838",
+  "numberOfBeds": 6,
+  "constituency": "Wellingborough and Rushden",
+  "localAuthority": "North Northamptonshire",
+  "lastReport": {
+    "publicationDate": "2022-03-04"
+  },
+  "relationships": [
+    {
+      "relatedLocationId": "1-123630928",
+      "relatedLocationName": "Alderwood L.L.A. Limited - Irchester",
+      "type": "HSCA Predecessor",
+      "reason": "New Provider"
+    }
+  ],
+  "locationTypes": [],
+  "regulatedActivities": [
+    {
+      "name": "Accommodation for persons who require nursing or personal care",
+      "code": "RA2",
+      "contacts": [
+        {
+          "personTitle": "Miss",
+          "personGivenName": "Gabrielle May",
+          "personFamilyName": "Kilpatrick Rawlings",
+          "personRoles": [
+            "Registered Manager"
+          ]
+        }
+      ]
+    }
+  ],
+  "gacServiceTypes": [
+    {
+      "name": "Residential homes",
+      "description": "Care home service without nursing"
+    }
+  ],
+  "specialisms": [
+    {
+      "name": "Caring for adults under 65 yrs"
+    },
+    {
+      "name": "Learning disabilities"
+    }
+  ],
+  "inspectionCategories": [
+    {
+      "code": "S1",
+      "primary": "true",
+      "name": "Residential social care"
+    }
+  ],
+  "inspectionAreas": [],
+  "currentRatings": {
+    "overall": {
+      "rating": "Outstanding",
+      "reportDate": "2018-03-07",
+      "reportLinkId": "ef1ebd72-1105-4ff1-ad5a-18e81dbea47d",
+      "keyQuestionRatings": [
+        {
+          "name": "Safe",
+          "rating": "Good",
+          "reportDate": "2018-03-07",
+          "reportLinkId": "ef1ebd72-1105-4ff1-ad5a-18e81dbea47d",
+          "organisationId": "1-123630928"
+        },
+        {
+          "name": "Well-led",
+          "rating": "Outstanding",
+          "reportDate": "2018-03-07",
+          "reportLinkId": "ef1ebd72-1105-4ff1-ad5a-18e81dbea47d",
+          "organisationId": "1-123630928"
+        },
+        {
+          "name": "Caring",
+          "rating": "Good",
+          "reportDate": "2018-03-07",
+          "reportLinkId": "ef1ebd72-1105-4ff1-ad5a-18e81dbea47d",
+          "organisationId": "1-123630928"
+        },
+        {
+          "name": "Responsive",
+          "rating": "Outstanding",
+          "reportDate": "2018-03-07",
+          "reportLinkId": "ef1ebd72-1105-4ff1-ad5a-18e81dbea47d",
+          "organisationId": "1-123630928"
+        },
+        {
+          "name": "Effective",
+          "rating": "Good",
+          "reportDate": "2018-03-07",
+          "reportLinkId": "ef1ebd72-1105-4ff1-ad5a-18e81dbea47d",
+          "organisationId": "1-123630928"
+        }
+      ]
+    },
+    "reportDate": "2018-03-07"
+  },
+  "historicRatings": [
+    {
+      "reportDate": "2022-03-04",
+      "reportLinkId": "d48dc90e-d5f5-43e9-a77e-7338c2c151d6",
+      "organisationId": "1-123630928",
+      "overall": {
+        "rating": "Inspected but not rated",
+        "keyQuestionRatings": [
+          {
+            "name": "Safe",
+            "rating": "Inspected but not rated"
+          }
+        ]
+      }
+    },
+    {
+      "reportDate": "2016-01-27",
+      "reportLinkId": "40e55e97-ba38-465a-8e74-fee5a00b6e65",
+      "organisationId": "1-123630928",
+      "overall": {
+        "rating": "Good",
+        "keyQuestionRatings": [
+          {
+            "name": "Safe",
+            "rating": "Good"
+          },
+          {
+            "name": "Well-led",
+            "rating": "Outstanding"
+          },
+          {
+            "name": "Caring",
+            "rating": "Good"
+          },
+          {
+            "name": "Responsive",
+            "rating": "Good"
+          },
+          {
+            "name": "Effective",
+            "rating": "Good"
+          }
+        ]
+      }
+    }
+  ]
+}

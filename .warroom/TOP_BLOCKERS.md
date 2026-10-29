@@ -1,3 +1,13 @@
+## 2026-10-29 publication precedence amendment — LOCAL / PARTIAL
+
+Contract v2 compares dated CQC file/website publications only; undated website fills gaps; API fills gaps only and never wins by its date. Unresolvable conflicts retain candidate evidence. Labels show source and publication-as-of date; undated publication dates stay unavailable. [Updated frozen packet and checks](../artifacts/rating-resolution/2026-10-29-publication-precedence/README.md). Required [Grok then independent-model reviews remain queued locally](../artifacts/rating-resolution/2026-10-29-publication-precedence/REVIEW_QUEUE.md), not run. No production writes, merges or deployment; checkout/delivery and all commercial gates unchanged. Prior packet is historical evidence, not the current review target.
+
+## 2026-10-29 Territory Brief resolved-rating candidate — LOCAL / PARTIAL
+
+Local implementation and acceptance evidence are frozen in [rating-resolution packet](../artifacts/rating-resolution/2026-10-29/README.md). 120 backend, 8 isolated Postgres and 9 frontend tests passed; TypeScript check passed. Four stale API conflicts select newer evidence; Chestnuts uses the 13 October website evidence; Tillingham and Check House remain unresolved. All original API/file evidence is retained. File edition is the 2 October CQC download label; actual data cutoff remains unverified.
+
+Next: [queued Grok retest, then independent approved-provider different-model challenge](../artifacts/rating-resolution/2026-10-29/REVIEW_QUEUE.md). Queued locally only; neither required review has run. Existing editions without the new contract require a separate new evidence import before use. No production write/import, merge or deploy; all commercial gates unchanged. DeepSeek prohibited. This is local acceptance, not release approval or a national/live accuracy claim.
+
 ## 2026-10-22 quarantine release preparation
 
 Production read-only verification confirms migration 067 is already applied, with three unresolved quarantined location IDs and 59,382 stored location rows. `db/apply_migrations.py --target production --check` reports no pending migrations for this release candidate. No production migration or source-row mutation was performed. Current-main integration adds persistent quarantine to pipeline evidence/logs and keeps source freshness partial while quarantined ACTIVE records remain; Data Status exposes their count. Local finalizer tests include resolved, manifest-present, inactive, missing-provider and missing-schema cases. Deployment and preview activation still require the exact candidate's CI and independent review. This supersedes older statements below that migration 067 was unapplied; commercial gates remain closed.

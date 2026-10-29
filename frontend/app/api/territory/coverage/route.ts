@@ -76,6 +76,7 @@ export async function POST(request: Request) {
     {
       scope,
       coverage: result,
+      sourceEditionId: coverageRow.sourceEditionId ?? null,
       price: { currency: "GBP", amount: TERRITORY_BRIEF_PRICE_GBP },
       checkedAt: new Date().toISOString(),
       release: { gitSha: releaseGitSha() },

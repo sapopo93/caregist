@@ -1,0 +1,602 @@
+[
+  {
+    "id": "1-546202187",
+    "kind": "detail",
+    "url": "https://www.caregist.co.uk/provider/village-surgery-sunderland",
+    "observed_at": "2026-10-22T20:44:54.994913+00:00",
+    "status": 200,
+    "final_url": "https://www.caregist.co.uk/provider/village-surgery-sunderland",
+    "path": "/Users/user/CareGist/artifacts/rating-audit/2026-10-22/raw/1-546202187-detail.html",
+    "sha256": "8fa847cf218877ffaa1394cfba64bcfd72be1ee81b36b3e079e11886c6cc0f81"
+  },
+  {
+    "id": "1-546202187",
+    "kind": "api",
+    "url": "https://api.service.cqc.org.uk/public/v1/locations/1-546202187",
+    "observed_at": "2026-10-22T20:44:54.995316+00:00",
+    "status": 200,
+    "final_url": "https://api.service.cqc.org.uk/public/v1/locations/1-546202187",
+    "path": "/Users/user/CareGist/artifacts/rating-audit/2026-10-22/raw/1-546202187-api.json",
+    "sha256": "3aae3c77cdded1202d8ef51d6dbf2d68e3d8797990b68a4c0e739fb6f6bc15d5"
+  },
+  {
+    "id": "1-2761140569",
+    "kind": "detail",
+    "url": "https://www.caregist.co.uk/provider/wytham-house-oxford-1-2761140569",
+    "observed_at": "2026-10-22T20:44:54.995396+00:00",
+    "status": 200,
+    "final_url": "https://www.caregist.co.uk/provider/wytham-house-oxford-1-2761140569",
+    "path": "/Users/user/CareGist/artifacts/rating-audit/2026-10-22/raw/1-2761140569-detail.html",
+    "sha256": "922d688d149f62543255938578b9cb1ba2f01fa09d500525cb552c5454484ef3"
+  },
+  {
+    "id": "1-2761140569",
+    "kind": "api",
+    "url": "https://api.service.cqc.org.uk/public/v1/locations/1-2761140569",
+    "observed_at": "2026-10-22T20:44:54.995448+00:00",
+    "status": 200,
+    "final_url": "https://api.service.cqc.org.uk/public/v1/locations/1-2761140569",
+    "path": "/Users/user/CareGist/artifacts/rating-audit/2026-10-22/raw/1-2761140569-api.json",
+    "sha256": "32b4b3f205176abce57f6b5316ce164553cb3ca050a67bcd1c55a86f5df2964e"
+  },
+  {
+    "id": "1-546109592",
+    "kind": "detail",
+    "url": "https://www.caregist.co.uk/provider/crawley-road-medical-centre-london",
+    "observed_at": "2026-10-22T20:44:55.195766+00:00",
+    "status": 200,
+    "final_url": "https://www.caregist.co.uk/provider/crawley-road-medical-centre-london",
+    "path": "/Users/user/CareGist/artifacts/rating-audit/2026-10-22/raw/1-546109592-detail.html",
+    "sha256": "ebb27b815d03cb49645e021a110e5325ac1efccd4d21741211fc46f2b940566b"
+  },
+  {
+    "id": "1-546109592",
+    "kind": "api",
+    "url": "https://api.service.cqc.org.uk/public/v1/locations/1-546109592",
+    "observed_at": "2026-10-22T20:44:55.205339+00:00",
+    "status": 200,
+    "final_url": "https://api.service.cqc.org.uk/public/v1/locations/1-546109592",
+    "path": "/Users/user/CareGist/artifacts/rating-audit/2026-10-22/raw/1-546109592-api.json",
+    "sha256": "ecc0eb8e1976cb7214c0a3f2a5a07db4b01ef2649c1686274b1e77a1b065cddd"
+  },
+  {
+    "id": "1-19058724680",
+    "kind": "detail",
+    "url": "https://www.caregist.co.uk/provider/hallmark-willingdon-park-manor-luxury-care-home-eastbourne",
+    "observed_at": "2026-10-22T20:44:55.323154+00:00",
+    "status": 200,
+    "final_url": "https://www.caregist.co.uk/provider/hallmark-willingdon-park-manor-luxury-care-home-eastbourne",
+    "path": "/Users/user/CareGist/artifacts/rating-audit/2026-10-22/raw/1-19058724680-detail.html",
+    "sha256": "45d233fef3267b7603dac1c1559a69e149d48578fea9b7e03f22ffaead0596b7"
+  },
+  {
+    "id": "1-19058724680",
+    "kind": "api",
+    "url": "https://api.service.cqc.org.uk/public/v1/locations/1-19058724680",
+    "observed_at": "2026-10-22T20:44:55.356653+00:00",
+    "status": 200,
+    "final_url": "https://api.service.cqc.org.uk/public/v1/locations/1-19058724680",
+    "path": "/Users/user/CareGist/artifacts/rating-audit/2026-10-22/raw/1-19058724680-api.json",
+    "sha256": "a975b2f8f3249ad060b03a401208cb49151b69be3fd2bcb683eb4d972aa99b17"
+  },
+  {
+    "id": "1-11270646845",
+    "kind": "detail",
+    "url": "https://www.caregist.co.uk/provider/kelly-healthcare-services-limited-tipton",
+    "observed_at": "2026-10-22T20:44:55.530526+00:00",
+    "status": 200,
+    "final_url": "https://www.caregist.co.uk/provider/kelly-healthcare-services-limited-tipton",
+    "path": "/Users/user/CareGist/artifacts/rating-audit/2026-10-22/raw/1-11270646845-detail.html",
+    "sha256": "e454a8d4025489059c1840194b494ef55cd55f04dea4cec5cbe8784c6fe2fc38"
+  },
+  {
+    "id": "1-11270646845",
+    "kind": "api",
+    "url": "https://api.service.cqc.org.uk/public/v1/locations/1-11270646845",
+    "observed_at": "2026-10-22T20:44:56.334871+00:00",
+    "status": 200,
+    "final_url": "https://api.service.cqc.org.uk/public/v1/locations/1-11270646845",
+    "path": "/Users/user/CareGist/artifacts/rating-audit/2026-10-22/raw/1-11270646845-api.json",
+    "sha256": "29bd7fa5f18024ee0297244b4df876abc65700a8d554f33371fb0551c5ea5026"
+  },
+  {
+    "id": "1-2352094536",
+    "kind": "detail",
+    "url": "https://www.caregist.co.uk/provider/lucketts-farm-canterbury",
+    "observed_at": "2026-10-22T20:44:56.491918+00:00",
+    "status": 200,
+    "final_url": "https://www.caregist.co.uk/provider/lucketts-farm-canterbury",
+    "path": "/Users/user/CareGist/artifacts/rating-audit/2026-10-22/raw/1-2352094536-detail.html",
+    "sha256": "beae8e1c74d5ff9e97e1ad10dc83e010547a2b120a37104bb246877ba80ae557"
+  },
+  {
+    "id": "1-2352094536",
+    "kind": "api",
+    "url": "https://api.service.cqc.org.uk/public/v1/locations/1-2352094536",
+    "observed_at": "2026-10-22T20:44:57.226424+00:00",
+    "status": 200,
+    "final_url": "https://api.service.cqc.org.uk/public/v1/locations/1-2352094536",
+    "path": "/Users/user/CareGist/artifacts/rating-audit/2026-10-22/raw/1-2352094536-api.json",
+    "sha256": "8d0279d9c79ff326d4359acb5f6962e8c711f4fda3158c21ec857965fe7c619a"
+  },
+  {
+    "id": "1-15297949474",
+    "kind": "detail",
+    "url": "https://www.caregist.co.uk/provider/rose-court-care-home-london",
+    "observed_at": "2026-10-22T20:44:57.295957+00:00",
+    "status": 200,
+    "final_url": "https://www.caregist.co.uk/provider/rose-court-care-home-london",
+    "path": "/Users/user/CareGist/artifacts/rating-audit/2026-10-22/raw/1-15297949474-detail.html",
+    "sha256": "f6fef194eaf5f68c661b45b81b96ca138719206220e33725191a0b0729e8c83a"
+  },
+  {
+    "id": "1-15297949474",
+    "kind": "api",
+    "url": "https://api.service.cqc.org.uk/public/v1/locations/1-15297949474",
+    "observed_at": "2026-10-22T20:44:57.368737+00:00",
+    "status": 200,
+    "final_url": "https://api.service.cqc.org.uk/public/v1/locations/1-15297949474",
+    "path": "/Users/user/CareGist/artifacts/rating-audit/2026-10-22/raw/1-15297949474-api.json",
+    "sha256": "b016ecdec06db5073a8a7d802137a48f8e43a5c10a778b19b2294f9cdcc27807"
+  },
+  {
+    "id": "1-27003473742",
+    "kind": "detail",
+    "url": "https://www.caregist.co.uk/provider/eskdale-house-supported-living-service-kendal",
+    "observed_at": "2026-10-22T20:44:57.387734+00:00",
+    "status": 200,
+    "final_url": "https://www.caregist.co.uk/provider/eskdale-house-supported-living-service-kendal",
+    "path": "/Users/user/CareGist/artifacts/rating-audit/2026-10-22/raw/1-27003473742-detail.html",
+    "sha256": "33a7ac8ebcac2746dfd9f68bb1d25f4b6ccbc42d51fe60419e6c1761f810d726"
+  },
+  {
+    "id": "1-27003473742",
+    "kind": "api",
+    "url": "https://api.service.cqc.org.uk/public/v1/locations/1-27003473742",
+    "observed_at": "2026-10-22T20:44:57.521893+00:00",
+    "status": 200,
+    "final_url": "https://api.service.cqc.org.uk/public/v1/locations/1-27003473742",
+    "path": "/Users/user/CareGist/artifacts/rating-audit/2026-10-22/raw/1-27003473742-api.json",
+    "sha256": "4d673f0ef36244255595e345d649c7fa546bf8fa5a1caa545480c9565e44af74"
+  },
+  {
+    "id": "1-407665280",
+    "kind": "detail",
+    "url": "https://www.caregist.co.uk/provider/angel-home-care-service-private-limited-cheadle",
+    "observed_at": "2026-10-22T20:44:57.523987+00:00",
+    "status": 200,
+    "final_url": "https://www.caregist.co.uk/provider/angel-home-care-service-private-limited-cheadle",
+    "path": "/Users/user/CareGist/artifacts/rating-audit/2026-10-22/raw/1-407665280-detail.html",
+    "sha256": "cf5e591d603af835c3814b6030f638765e31c4281ff9e4bd904a2f76f8572ce8"
+  },
+  {
+    "id": "1-407665280",
+    "kind": "api",
+    "url": "https://api.service.cqc.org.uk/public/v1/locations/1-407665280",
+    "observed_at": "2026-10-22T20:44:57.673992+00:00",
+    "status": 200,
+    "final_url": "https://api.service.cqc.org.uk/public/v1/locations/1-407665280",
+    "path": "/Users/user/CareGist/artifacts/rating-audit/2026-10-22/raw/1-407665280-api.json",
+    "sha256": "117a696a4533cf35e4a0a0940bd710470fc1550e1d706ac68011e785de8c074a"
+  },
+  {
+    "id": "1-13937101349",
+    "kind": "detail",
+    "url": "https://www.caregist.co.uk/provider/network-healthcare-harrow-edgware",
+    "observed_at": "2026-10-22T20:44:58.053043+00:00",
+    "status": 200,
+    "final_url": "https://www.caregist.co.uk/provider/network-healthcare-harrow-edgware",
+    "path": "/Users/user/CareGist/artifacts/rating-audit/2026-10-22/raw/1-13937101349-detail.html",
+    "sha256": "3d4ff1127e173e683914ddfbcaec71fccadae6327c2125a545c274bd3d7ec659"
+  },
+  {
+    "id": "1-13937101349",
+    "kind": "api",
+    "url": "https://api.service.cqc.org.uk/public/v1/locations/1-13937101349",
+    "observed_at": "2026-10-22T20:44:58.145608+00:00",
+    "status": 200,
+    "final_url": "https://api.service.cqc.org.uk/public/v1/locations/1-13937101349",
+    "path": "/Users/user/CareGist/artifacts/rating-audit/2026-10-22/raw/1-13937101349-api.json",
+    "sha256": "70aa25a7ea4710aaa84e9906769abbb8f2611132fe70de0fdea080fe82a1d15f"
+  },
+  {
+    "id": "1-130890582",
+    "kind": "detail",
+    "url": "https://www.caregist.co.uk/provider/carlton-house-leeds",
+    "observed_at": "2026-10-22T20:44:58.146963+00:00",
+    "status": 200,
+    "final_url": "https://www.caregist.co.uk/provider/carlton-house-leeds",
+    "path": "/Users/user/CareGist/artifacts/rating-audit/2026-10-22/raw/1-130890582-detail.html",
+    "sha256": "8c9a68df6c3118a27d8934191b36abd13c527c7477eca7ccc4856c08b5e1f17b"
+  },
+  {
+    "id": "1-130890582",
+    "kind": "api",
+    "url": "https://api.service.cqc.org.uk/public/v1/locations/1-130890582",
+    "observed_at": "2026-10-22T20:44:58.296982+00:00",
+    "status": 200,
+    "final_url": "https://api.service.cqc.org.uk/public/v1/locations/1-130890582",
+    "path": "/Users/user/CareGist/artifacts/rating-audit/2026-10-22/raw/1-130890582-api.json",
+    "sha256": "979ccb81c1cb2c2e097905a934641489c2462706bc2198d942c2ef5d7929c81a"
+  },
+  {
+    "id": "1-2467326262",
+    "kind": "detail",
+    "url": "https://www.caregist.co.uk/provider/milford-del-support-agency-sandown",
+    "observed_at": "2026-10-22T20:44:58.441791+00:00",
+    "status": 200,
+    "final_url": "https://www.caregist.co.uk/provider/milford-del-support-agency-sandown",
+    "path": "/Users/user/CareGist/artifacts/rating-audit/2026-10-22/raw/1-2467326262-detail.html",
+    "sha256": "895662456f386744d7f74717b14c42658d5faab282ca915fda973db777a4097b"
+  },
+  {
+    "id": "1-2467326262",
+    "kind": "api",
+    "url": "https://api.service.cqc.org.uk/public/v1/locations/1-2467326262",
+    "observed_at": "2026-10-22T20:44:58.472058+00:00",
+    "status": 200,
+    "final_url": "https://api.service.cqc.org.uk/public/v1/locations/1-2467326262",
+    "path": "/Users/user/CareGist/artifacts/rating-audit/2026-10-22/raw/1-2467326262-api.json",
+    "sha256": "4d30f3e794dd1463c93291553fd40d83f1c8c20492c5d02d6eff1d6d2d1e7255"
+  },
+  {
+    "id": "1-10192918971",
+    "kind": "detail",
+    "url": "https://www.caregist.co.uk/provider/woodways-barnsley",
+    "observed_at": "2026-10-22T20:44:58.639304+00:00",
+    "status": 200,
+    "final_url": "https://www.caregist.co.uk/provider/woodways-barnsley",
+    "path": "/Users/user/CareGist/artifacts/rating-audit/2026-10-22/raw/1-10192918971-detail.html",
+    "sha256": "da4eedf982bc31b7717cd234ae8027b411f2ca79678a84bb059a6861d080ab5a"
+  },
+  {
+    "id": "1-10192918971",
+    "kind": "api",
+    "url": "https://api.service.cqc.org.uk/public/v1/locations/1-10192918971",
+    "observed_at": "2026-10-22T20:44:59.176916+00:00",
+    "status": 200,
+    "final_url": "https://api.service.cqc.org.uk/public/v1/locations/1-10192918971",
+    "path": "/Users/user/CareGist/artifacts/rating-audit/2026-10-22/raw/1-10192918971-api.json",
+    "sha256": "9cbb832797ecbae9e3fb34ae66d42d4af307652ec4c1f7ca54994d3f1d15f763"
+  },
+  {
+    "id": "1-16491295796",
+    "kind": "detail",
+    "url": "https://www.caregist.co.uk/provider/tillingham-medical-centre-southminster",
+    "observed_at": "2026-10-22T20:44:59.200938+00:00",
+    "status": 200,
+    "final_url": "https://www.caregist.co.uk/provider/tillingham-medical-centre-southminster",
+    "path": "/Users/user/CareGist/artifacts/rating-audit/2026-10-22/raw/1-16491295796-detail.html",
+    "sha256": "7374bebc6ab97046342040a851679cf3b0ae8692644d2dedb2f0765145523af0"
+  },
+  {
+    "id": "1-16491295796",
+    "kind": "api",
+    "url": "https://api.service.cqc.org.uk/public/v1/locations/1-16491295796",
+    "observed_at": "2026-10-22T20:44:59.335368+00:00",
+    "status": 200,
+    "final_url": "https://api.service.cqc.org.uk/public/v1/locations/1-16491295796",
+    "path": "/Users/user/CareGist/artifacts/rating-audit/2026-10-22/raw/1-16491295796-api.json",
+    "sha256": "78104a5dd11b4adce7b46390bd7ff5e3a49203c0082904fa69723fa871b436d8"
+  },
+  {
+    "id": "1-16516340886",
+    "kind": "detail",
+    "url": "https://www.caregist.co.uk/provider/collegiate-house-sheffield",
+    "observed_at": "2026-10-22T20:44:59.441059+00:00",
+    "status": 200,
+    "final_url": "https://www.caregist.co.uk/provider/collegiate-house-sheffield",
+    "path": "/Users/user/CareGist/artifacts/rating-audit/2026-10-22/raw/1-16516340886-detail.html",
+    "sha256": "f2ef421ae8fa771a60bf353587b7a387c2697ae7f1b31f6365a9a95feab91175"
+  },
+  {
+    "id": "1-16516340886",
+    "kind": "api",
+    "url": "https://api.service.cqc.org.uk/public/v1/locations/1-16516340886",
+    "observed_at": "2026-10-22T20:44:59.531198+00:00",
+    "status": 200,
+    "final_url": "https://api.service.cqc.org.uk/public/v1/locations/1-16516340886",
+    "path": "/Users/user/CareGist/artifacts/rating-audit/2026-10-22/raw/1-16516340886-api.json",
+    "sha256": "b05797cd869268d02bd0b4768c009750f3217f4461369db35c6655e4227515ca"
+  },
+  {
+    "id": "1-142705508",
+    "kind": "detail",
+    "url": "https://www.caregist.co.uk/provider/silverdale-nursing-home-newcastle-under-lyme",
+    "observed_at": "2026-10-22T20:44:59.781734+00:00",
+    "status": 200,
+    "final_url": "https://www.caregist.co.uk/provider/silverdale-nursing-home-newcastle-under-lyme",
+    "path": "/Users/user/CareGist/artifacts/rating-audit/2026-10-22/raw/1-142705508-detail.html",
+    "sha256": "3f2f65d7e11336869cce2cce8bd80547ec481d47f20804402ea7079290b405cc"
+  },
+  {
+    "id": "1-142705508",
+    "kind": "api",
+    "url": "https://api.service.cqc.org.uk/public/v1/locations/1-142705508",
+    "observed_at": "2026-10-22T20:44:59.921950+00:00",
+    "status": 200,
+    "final_url": "https://api.service.cqc.org.uk/public/v1/locations/1-142705508",
+    "path": "/Users/user/CareGist/artifacts/rating-audit/2026-10-22/raw/1-142705508-api.json",
+    "sha256": "5b75a0e6242070f61da5d9b250f091e221dc9533fd089cfb7fc26cb131c94647"
+  },
+  {
+    "id": "1-456354523",
+    "kind": "detail",
+    "url": "https://www.caregist.co.uk/provider/florence-house-great-yarmouth",
+    "observed_at": "2026-10-22T20:45:00.244555+00:00",
+    "status": 200,
+    "final_url": "https://www.caregist.co.uk/provider/florence-house-great-yarmouth",
+    "path": "/Users/user/CareGist/artifacts/rating-audit/2026-10-22/raw/1-456354523-detail.html",
+    "sha256": "d48038bf19cb9ed3a3272dbd94220b4edcd03972c6025bc1e6ef594b19e27661"
+  },
+  {
+    "id": "1-456354523",
+    "kind": "api",
+    "url": "https://api.service.cqc.org.uk/public/v1/locations/1-456354523",
+    "observed_at": "2026-10-22T20:45:00.321878+00:00",
+    "status": 200,
+    "final_url": "https://api.service.cqc.org.uk/public/v1/locations/1-456354523",
+    "path": "/Users/user/CareGist/artifacts/rating-audit/2026-10-22/raw/1-456354523-api.json",
+    "sha256": "ca95130761e12bdbd220e0bc06ddd1b575f2fcdc0efe0b4b0276b61e0c623607"
+  },
+  {
+    "id": "1-113028260",
+    "kind": "detail",
+    "url": "https://www.caregist.co.uk/provider/fairfield-nursing-home-wirral",
+    "observed_at": "2026-10-22T20:45:00.327252+00:00",
+    "status": 200,
+    "final_url": "https://www.caregist.co.uk/provider/fairfield-nursing-home-wirral",
+    "path": "/Users/user/CareGist/artifacts/rating-audit/2026-10-22/raw/1-113028260-detail.html",
+    "sha256": "0c3bf1a510a26948409c0cd2bf0dfa6eca5bfba37a735d8aa1dd91ac53c5b0a8"
+  },
+  {
+    "id": "1-113028260",
+    "kind": "api",
+    "url": "https://api.service.cqc.org.uk/public/v1/locations/1-113028260",
+    "observed_at": "2026-10-22T20:45:00.499128+00:00",
+    "status": 200,
+    "final_url": "https://api.service.cqc.org.uk/public/v1/locations/1-113028260",
+    "path": "/Users/user/CareGist/artifacts/rating-audit/2026-10-22/raw/1-113028260-api.json",
+    "sha256": "b3dcdbe451d8659349fabfe1907c01d9a01f9174306ddbfdca9d4db03e2d1df3"
+  },
+  {
+    "id": "1-125730630",
+    "kind": "detail",
+    "url": "https://www.caregist.co.uk/provider/welcome-house-the-chestnuts-rochester",
+    "observed_at": "2026-10-22T20:45:00.652253+00:00",
+    "status": 200,
+    "final_url": "https://www.caregist.co.uk/provider/welcome-house-the-chestnuts-rochester",
+    "path": "/Users/user/CareGist/artifacts/rating-audit/2026-10-22/raw/1-125730630-detail.html",
+    "sha256": "f4d9239f8e85b87ce8e0d7759dd0852eb873391acb4bfda21c504c443ce0a115"
+  },
+  {
+    "id": "1-125730630",
+    "kind": "api",
+    "url": "https://api.service.cqc.org.uk/public/v1/locations/1-125730630",
+    "observed_at": "2026-10-22T20:45:00.684061+00:00",
+    "status": 200,
+    "final_url": "https://api.service.cqc.org.uk/public/v1/locations/1-125730630",
+    "path": "/Users/user/CareGist/artifacts/rating-audit/2026-10-22/raw/1-125730630-api.json",
+    "sha256": "ac93445be49bde1969a4c05cc3d4b03d31f0f96cdeeace8b20589f4bb36fa93f"
+  },
+  {
+    "id": "1-10615519904",
+    "kind": "detail",
+    "url": "https://www.caregist.co.uk/provider/silverjen-limited-leatherhead",
+    "observed_at": "2026-10-22T20:45:00.840549+00:00",
+    "status": 200,
+    "final_url": "https://www.caregist.co.uk/provider/silverjen-limited-leatherhead",
+    "path": "/Users/user/CareGist/artifacts/rating-audit/2026-10-22/raw/1-10615519904-detail.html",
+    "sha256": "03c9f41ac853cc5d8db6daf359b2bd0fe4238f7c2252c1435351ef0f792d76dc"
+  },
+  {
+    "id": "1-10615519904",
+    "kind": "api",
+    "url": "https://api.service.cqc.org.uk/public/v1/locations/1-10615519904",
+    "observed_at": "2026-10-22T20:45:01.163491+00:00",
+    "status": 200,
+    "final_url": "https://api.service.cqc.org.uk/public/v1/locations/1-10615519904",
+    "path": "/Users/user/CareGist/artifacts/rating-audit/2026-10-22/raw/1-10615519904-api.json",
+    "sha256": "ceb498724f7026ebb2b6869577b5fc85dad1c7d05dc37f4b6cebc72a02bc16fb"
+  },
+  {
+    "id": "1-152721284",
+    "kind": "detail",
+    "url": "https://www.caregist.co.uk/provider/st-stephens-nursing-home-dover",
+    "observed_at": "2026-10-22T20:45:01.326936+00:00",
+    "status": 200,
+    "final_url": "https://www.caregist.co.uk/provider/st-stephens-nursing-home-dover",
+    "path": "/Users/user/CareGist/artifacts/rating-audit/2026-10-22/raw/1-152721284-detail.html",
+    "sha256": "c9b1a28f3ae350e799f09e9d4cdf687096d586219c180cd25b0795fd806df83d"
+  },
+  {
+    "id": "1-152721284",
+    "kind": "api",
+    "url": "https://api.service.cqc.org.uk/public/v1/locations/1-152721284",
+    "observed_at": "2026-10-22T20:45:01.399407+00:00",
+    "status": 200,
+    "final_url": "https://api.service.cqc.org.uk/public/v1/locations/1-152721284",
+    "path": "/Users/user/CareGist/artifacts/rating-audit/2026-10-22/raw/1-152721284-api.json",
+    "sha256": "d4806c03e19f98f1083d4813550a3ed08dc0ce20e4ee259d5c57074305219b1d"
+  },
+  {
+    "id": "1-19886383752",
+    "kind": "detail",
+    "url": "https://www.caregist.co.uk/provider/the-check-house-seaton",
+    "observed_at": "2026-10-22T20:45:01.408755+00:00",
+    "status": 200,
+    "final_url": "https://www.caregist.co.uk/provider/the-check-house-seaton",
+    "path": "/Users/user/CareGist/artifacts/rating-audit/2026-10-22/raw/1-19886383752-detail.html",
+    "sha256": "57d693a97ba25f72d49194ab85ebf9b10782f79e2383f9016a8742baef1e8183"
+  },
+  {
+    "id": "1-19886383752",
+    "kind": "api",
+    "url": "https://api.service.cqc.org.uk/public/v1/locations/1-19886383752",
+    "observed_at": "2026-10-22T20:45:01.517362+00:00",
+    "status": 200,
+    "final_url": "https://api.service.cqc.org.uk/public/v1/locations/1-19886383752",
+    "path": "/Users/user/CareGist/artifacts/rating-audit/2026-10-22/raw/1-19886383752-api.json",
+    "sha256": "6bc17372e58ed221ddc56d98ce2d6505c98f7eccbd88a3ae56bbebaf49b47cbd"
+  },
+  {
+    "id": "1-22160036426",
+    "kind": "detail",
+    "url": "https://www.caregist.co.uk/provider/irchester-170-wellingborough",
+    "observed_at": "2026-10-22T20:45:01.617370+00:00",
+    "status": 200,
+    "final_url": "https://www.caregist.co.uk/provider/irchester-170-wellingborough",
+    "path": "/Users/user/CareGist/artifacts/rating-audit/2026-10-22/raw/1-22160036426-detail.html",
+    "sha256": "6ee4c1313d44ad2d20164016f9075c699d2d8a50495406ad557992481c7f207b"
+  },
+  {
+    "id": "1-22160036426",
+    "kind": "api",
+    "url": "https://api.service.cqc.org.uk/public/v1/locations/1-22160036426",
+    "observed_at": "2026-10-22T20:45:01.671788+00:00",
+    "status": 200,
+    "final_url": "https://api.service.cqc.org.uk/public/v1/locations/1-22160036426",
+    "path": "/Users/user/CareGist/artifacts/rating-audit/2026-10-22/raw/1-22160036426-api.json",
+    "sha256": "eca3baf8747d15e5ae110a85183a8d5bf550787bc7beea597374d58369ab2c08"
+  },
+  {
+    "id": "1-390976877",
+    "kind": "detail",
+    "url": "https://www.caregist.co.uk/provider/althorp-grange-northampton",
+    "observed_at": "2026-10-22T20:45:01.726266+00:00",
+    "status": 200,
+    "final_url": "https://www.caregist.co.uk/provider/althorp-grange-northampton",
+    "path": "/Users/user/CareGist/artifacts/rating-audit/2026-10-22/raw/1-390976877-detail.html",
+    "sha256": "2ac4db529d564c3788973cab260858ab9028b78408cdfa496f145581b255887d"
+  },
+  {
+    "id": "1-390976877",
+    "kind": "api",
+    "url": "https://api.service.cqc.org.uk/public/v1/locations/1-390976877",
+    "observed_at": "2026-10-22T20:45:01.780020+00:00",
+    "status": 200,
+    "final_url": "https://api.service.cqc.org.uk/public/v1/locations/1-390976877",
+    "path": "/Users/user/CareGist/artifacts/rating-audit/2026-10-22/raw/1-390976877-api.json",
+    "sha256": "f704a7781026dea05c6a2275c60fdc8a0dfc09c9851e07bd1b9d4f720d9569dc"
+  },
+  {
+    "id": "1-552527797",
+    "kind": "detail",
+    "url": "https://www.caregist.co.uk/provider/the-chesser-surgery-carshalton",
+    "observed_at": "2026-10-22T20:45:01.881338+00:00",
+    "status": 200,
+    "final_url": "https://www.caregist.co.uk/provider/the-chesser-surgery-carshalton",
+    "path": "/Users/user/CareGist/artifacts/rating-audit/2026-10-22/raw/1-552527797-detail.html",
+    "sha256": "ba25eb381b65e30102c383dc91bce380c3b1e5b6b0a63c35469f3dae2fe7f3b7"
+  },
+  {
+    "id": "1-552527797",
+    "kind": "api",
+    "url": "https://api.service.cqc.org.uk/public/v1/locations/1-552527797",
+    "observed_at": "2026-10-22T20:45:01.917562+00:00",
+    "status": 200,
+    "final_url": "https://api.service.cqc.org.uk/public/v1/locations/1-552527797",
+    "path": "/Users/user/CareGist/artifacts/rating-audit/2026-10-22/raw/1-552527797-api.json",
+    "sha256": "03c5720c204e78981988ba86633890dbeb0d9f09fef331af9185fd05c7c9f913"
+  },
+  {
+    "id": "1-12566526711",
+    "kind": "detail",
+    "url": "https://www.caregist.co.uk/provider/candela-healthcare-ltd-hereford",
+    "observed_at": "2026-10-22T20:45:01.991103+00:00",
+    "status": 200,
+    "final_url": "https://www.caregist.co.uk/provider/candela-healthcare-ltd-hereford",
+    "path": "/Users/user/CareGist/artifacts/rating-audit/2026-10-22/raw/1-12566526711-detail.html",
+    "sha256": "4b396de57fa4a6d265e6bf7b3152995f29e2fed25a9e7d96da2cb346f91e3463"
+  },
+  {
+    "id": "1-12566526711",
+    "kind": "api",
+    "url": "https://api.service.cqc.org.uk/public/v1/locations/1-12566526711",
+    "observed_at": "2026-10-22T20:45:02.025408+00:00",
+    "status": 200,
+    "final_url": "https://api.service.cqc.org.uk/public/v1/locations/1-12566526711",
+    "path": "/Users/user/CareGist/artifacts/rating-audit/2026-10-22/raw/1-12566526711-api.json",
+    "sha256": "8db09699492bbcdaf7956197be3d43fe33dfd8b7ec5ed085f79fdfce500feeb1"
+  },
+  {
+    "id": "1-199649069",
+    "kind": "detail",
+    "url": "https://www.caregist.co.uk/provider/belle-vale-dental-centre-liverpool",
+    "observed_at": "2026-10-22T20:45:02.030846+00:00",
+    "status": 200,
+    "final_url": "https://www.caregist.co.uk/provider/belle-vale-dental-centre-liverpool",
+    "path": "/Users/user/CareGist/artifacts/rating-audit/2026-10-22/raw/1-199649069-detail.html",
+    "sha256": "6cb4459b57428875e7cb8673d92d0e7308908d68e72c1049212dfa7b4c546437"
+  },
+  {
+    "id": "1-199649069",
+    "kind": "api",
+    "url": "https://api.service.cqc.org.uk/public/v1/locations/1-199649069",
+    "observed_at": "2026-10-22T20:45:02.132095+00:00",
+    "status": 200,
+    "final_url": "https://api.service.cqc.org.uk/public/v1/locations/1-199649069",
+    "path": "/Users/user/CareGist/artifacts/rating-audit/2026-10-22/raw/1-199649069-api.json",
+    "sha256": "46972cf7e3aee1fae5e1c4b05f3d25274dbe21eb48b3c252b375366984bcdba1"
+  },
+  {
+    "id": "1-29650851551",
+    "kind": "detail",
+    "url": "https://www.caregist.co.uk/provider/nead-support-ltd-remote-clinical-service-altrincham",
+    "observed_at": "2026-10-22T20:45:02.270481+00:00",
+    "status": 200,
+    "final_url": "https://www.caregist.co.uk/provider/nead-support-ltd-remote-clinical-service-altrincham",
+    "path": "/Users/user/CareGist/artifacts/rating-audit/2026-10-22/raw/1-29650851551-detail.html",
+    "sha256": "7c5c7420406352be1299bc4d360c29b8c214eec565f2d09cab9456472ef18774"
+  },
+  {
+    "id": "1-29650851551",
+    "kind": "api",
+    "url": "https://api.service.cqc.org.uk/public/v1/locations/1-29650851551",
+    "observed_at": "2026-10-22T20:45:02.440943+00:00",
+    "status": 200,
+    "final_url": "https://api.service.cqc.org.uk/public/v1/locations/1-29650851551",
+    "path": "/Users/user/CareGist/artifacts/rating-audit/2026-10-22/raw/1-29650851551-api.json",
+    "sha256": "bf743d4573c63213c80e9b8683be0740d0f7cb6fcdb6950f10b8d087dc94aacd"
+  },
+  {
+    "id": "RHARA",
+    "kind": "detail",
+    "url": "https://www.caregist.co.uk/provider/nottingham-university-hospital-nottingham",
+    "observed_at": "2026-10-22T20:45:02.566218+00:00",
+    "status": 200,
+    "final_url": "https://www.caregist.co.uk/provider/nottingham-university-hospital-nottingham",
+    "path": "/Users/user/CareGist/artifacts/rating-audit/2026-10-22/raw/RHARA-detail.html",
+    "sha256": "4beacb33006f1968028e45fd4ffabbed4ce809882dbe118e03d84ad493e50c9d"
+  },
+  {
+    "id": "RHARA",
+    "kind": "api",
+    "url": "https://api.service.cqc.org.uk/public/v1/locations/RHARA",
+    "observed_at": "2026-10-22T20:45:02.741203+00:00",
+    "status": 200,
+    "final_url": "https://api.service.cqc.org.uk/public/v1/locations/RHARA",
+    "path": "/Users/user/CareGist/artifacts/rating-audit/2026-10-22/raw/RHARA-api.json",
+    "sha256": "8ffb3a9be0a3fa2cd22f1c91ef03d265b9ceded4f20f7a2d99960edd53a296e0"
+  },
+  {
+    "id": "1-5588555895",
+    "kind": "detail",
+    "url": "https://www.caregist.co.uk/provider/the-doctors-laboratory-london-1-5588555895",
+    "observed_at": "2026-10-22T20:45:02.853257+00:00",
+    "status": 200,
+    "final_url": "https://www.caregist.co.uk/provider/the-doctors-laboratory-london-1-5588555895",
+    "path": "/Users/user/CareGist/artifacts/rating-audit/2026-10-22/raw/1-5588555895-detail.html",
+    "sha256": "af64598581532fab1117bde7b44cfeb16472bf62830a1082399d14b6edd0fc1c"
+  },
+  {
+    "id": "1-5588555895",
+    "kind": "api",
+    "url": "https://api.service.cqc.org.uk/public/v1/locations/1-5588555895",
+    "observed_at": "2026-10-22T20:45:02.858766+00:00",
+    "status": 200,
+    "final_url": "https://api.service.cqc.org.uk/public/v1/locations/1-5588555895",
+    "path": "/Users/user/CareGist/artifacts/rating-audit/2026-10-22/raw/1-5588555895-api.json",
+    "sha256": "a7e2fde82eb9dc8acdddd8c003dec6d48b0e3848fb55187643d1be304519e26c"
+  }
+]

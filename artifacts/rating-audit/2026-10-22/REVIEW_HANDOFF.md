@@ -1,0 +1,9 @@
+# Frozen independent-review handoff
+
+Task: audit 30 distinct ACTIVE locations (20 file-backed, five per rating; all five API/file conflicts; five without a stored API/file numerical overall). Verify CQC IDs, website rating/report date, stored and live API values, file values/date/hash, live search badge/source label and relevant filter membership. Trace the deployed Territory Brief's tables, narrative, coverage and exports. Recommend one bounded fix; do not implement it or change commercial gates.
+
+Start with MANIFEST.sha256 verification, sample.json, audit.csv and raw source evidence. Treat REPORT.md as producer conclusions to challenge, not authority. Read exact release source under source/, not the older dirty checkout. All observations are dated and mutable upstream pages may have changed since collection.
+
+Challenge: reconstruct denominators; distinguish current numerical ratings from explicitly inherited ones and absent ratings; examine the five conflicts individually; verify whether newer file dates actually justify current-state claims; test whether 1 October is established as the file cutoff; reproduce the Brief reader omission; check the public coverage/generator distinction; identify any overclaim about runtime output or source targeting. Do not infer national accuracy from this stratified sample. Validate whether the proposed next fix is narrow enough and preserves current/inherited/unresolved semantics and provenance without fabricating rating-change history.
+
+Use an independent reviewer model from an approved provider under AGENTS.md. DeepSeek is prohibited. Review has not run as part of this audit, and no gate is approved. Return PASS/FAIL/PARTIAL per claim, with raw references, affected location IDs and concrete acceptance checks. Do not contact customers, mutate production, merge, deploy, open gates or reuse private data with an unapproved provider.

@@ -1,0 +1,1085 @@
+{
+  "locationId": "1-546202187",
+  "providerId": "1-199692139",
+  "organisationType": "Location",
+  "type": "Primary Medical Services",
+  "name": "Village Surgery",
+  "onspdCcgCode": "E38000176",
+  "onspdCcgName": "NHS Sunderland CCG",
+  "odsCcgCode": "00P",
+  "odsCcgName": "NHS North East and North Cumbria Icb - 00P",
+  "onspdIcbCode": "E54000050",
+  "onspdIcbName": "NHS North East and North Cumbria Integrated Care Board",
+  "odsCode": "A89011",
+  "registrationStatus": "Registered",
+  "registrationDate": "2013-04-01",
+  "dormancy": "N",
+  "onspdLatitude": 54.8709624,
+  "onspdLongitude": -1.4072302,
+  "careHome": "N",
+  "inspectionDirectorate": "Primary medical services",
+  "postalAddressLine1": "Silksworth Health Centre",
+  "postalAddressLine2": "Silksworth",
+  "postalAddressTownCity": "Sunderland",
+  "postalAddressCounty": "Tyne and Wear",
+  "region": "North East",
+  "postalCode": "SR3 2AN",
+  "uprn": "45076032",
+  "mainPhoneNumber": "01915212282",
+  "numberOfBeds": 0,
+  "constituency": "Houghton and Sunderland South",
+  "localAuthority": "Sunderland",
+  "lastInspection": {
+    "date": "2016-04-19"
+  },
+  "relationships": [],
+  "locationTypes": [
+    {
+      "type": "GP Practice"
+    }
+  ],
+  "regulatedActivities": [
+    {
+      "name": "Maternity and midwifery services",
+      "code": "RA11",
+      "contacts": [
+        {
+          "personTitle": "Dr",
+          "personGivenName": "Sanjaya Uthpala",
+          "personFamilyName": "Samarasekera",
+          "personRoles": [
+            "Registered Manager"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Family planning",
+      "code": "RA15",
+      "contacts": [
+        {
+          "personTitle": "Dr",
+          "personGivenName": "Sanjaya Uthpala",
+          "personFamilyName": "Samarasekera",
+          "personRoles": [
+            "Registered Manager"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Treatment of disease, disorder or injury",
+      "code": "RA5",
+      "contacts": [
+        {
+          "personTitle": "Dr",
+          "personGivenName": "Sanjaya Uthpala",
+          "personFamilyName": "Samarasekera",
+          "personRoles": [
+            "Registered Manager"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Diagnostic and screening procedures",
+      "code": "RA8",
+      "contacts": [
+        {
+          "personTitle": "Dr",
+          "personGivenName": "Sanjaya Uthpala",
+          "personFamilyName": "Samarasekera",
+          "personRoles": [
+            "Registered Manager"
+          ]
+        }
+      ]
+    }
+  ],
+  "gacServiceTypes": [
+    {
+      "name": "Doctors/Gps",
+      "description": "Doctors consultation service"
+    }
+  ],
+  "specialisms": [
+    {
+      "name": "Services for everyone"
+    }
+  ],
+  "inspectionCategories": [
+    {
+      "code": "P2",
+      "primary": "true",
+      "name": "GP Practices"
+    }
+  ],
+  "inspectionAreas": [
+    {
+      "inspectionAreaId": "conditions",
+      "inspectionAreaName": "People with long term conditions",
+      "status": "Active (Rated)"
+    },
+    {
+      "inspectionAreaId": "mothers",
+      "inspectionAreaName": "Families, children and young people",
+      "status": "Active (Rated)"
+    },
+    {
+      "inspectionAreaId": "old",
+      "inspectionAreaName": "Older people",
+      "status": "Active (Rated)"
+    },
+    {
+      "inspectionAreaId": "population",
+      "inspectionAreaName": "Working age people (including those recently retired and students)",
+      "status": "Active (Rated)"
+    },
+    {
+      "inspectionAreaId": "problems",
+      "inspectionAreaName": "People experiencing poor mental health (including people with dementia)",
+      "status": "Active (Rated)"
+    },
+    {
+      "inspectionAreaId": "vulnerable",
+      "inspectionAreaName": "People whose circumstances may make them vulnerable",
+      "status": "Active (Rated)"
+    }
+  ],
+  "currentRatings": {
+    "reportDate": "2016-06-13",
+    "serviceRatings": [
+      {
+        "name": "conditions",
+        "rating": "Good",
+        "reportDate": "2015-12-24",
+        "reportLinkId": "3ffa6dbf-fb25-4e39-83b4-3b7d5a747e3e"
+      },
+      {
+        "name": "mothers",
+        "rating": "Good",
+        "reportDate": "2015-12-24",
+        "reportLinkId": "3ffa6dbf-fb25-4e39-83b4-3b7d5a747e3e"
+      },
+      {
+        "name": "old",
+        "rating": "Good",
+        "reportDate": "2015-12-24",
+        "reportLinkId": "3ffa6dbf-fb25-4e39-83b4-3b7d5a747e3e"
+      },
+      {
+        "name": "population",
+        "rating": "Good",
+        "reportDate": "2015-12-24",
+        "reportLinkId": "3ffa6dbf-fb25-4e39-83b4-3b7d5a747e3e"
+      },
+      {
+        "name": "problems",
+        "rating": "Good",
+        "reportDate": "2015-12-24",
+        "reportLinkId": "3ffa6dbf-fb25-4e39-83b4-3b7d5a747e3e"
+      },
+      {
+        "name": "vulnerable",
+        "rating": "Good",
+        "reportDate": "2015-12-24",
+        "reportLinkId": "3ffa6dbf-fb25-4e39-83b4-3b7d5a747e3e"
+      }
+    ]
+  },
+  "historicRatings": [
+    {
+      "reportDate": "2016-06-13",
+      "reportLinkId": "4dfa9b04-1b51-4d01-8fcb-a9553ebb907a",
+      "overall": {
+        "rating": "Inspected but not rated"
+      }
+    },
+    {
+      "reportDate": "2015-12-24",
+      "reportLinkId": "3ffa6dbf-fb25-4e39-83b4-3b7d5a747e3e",
+      "overall": {
+        "rating": "Good",
+        "keyQuestionRatings": [
+          {
+            "name": "Safe",
+            "rating": "Good"
+          },
+          {
+            "name": "Well-led",
+            "rating": "Good"
+          },
+          {
+            "name": "Caring",
+            "rating": "Good"
+          },
+          {
+            "name": "Responsive",
+            "rating": "Good"
+          },
+          {
+            "name": "Effective",
+            "rating": "Good"
+          }
+        ]
+      }
+    }
+  ],
+  "reports": [
+    {
+      "linkId": "4dfa9b04-1b51-4d01-8fcb-a9553ebb907a",
+      "reportDate": "2016-06-13",
+      "firstVisitDate": "2016-04-19",
+      "reportUri": "/reports/4dfa9b04-1b51-4d01-8fcb-a9553ebb907a?20210123103108",
+      "reportType": "Location"
+    },
+    {
+      "linkId": "3ffa6dbf-fb25-4e39-83b4-3b7d5a747e3e",
+      "reportDate": "2015-12-24",
+      "firstVisitDate": "2015-09-15",
+      "reportUri": "/reports/3ffa6dbf-fb25-4e39-83b4-3b7d5a747e3e?20210124201557",
+      "reportType": "Location"
+    }
+  ],
+  "assessmentServiceGroup": [
+    {
+      "assessmentServiceId": "276",
+      "assessmentServiceName": "General Practice",
+      "status": "Active"
+    }
+  ],
+  "assessment": [
+    {
+      "assessmentPlanPublishedDateTime": "2026-03-31 15:33:53",
+      "ratings": {
+        "asgRatings": [
+          {
+            "assessmentPlanId": "AP13994",
+            "title": "Ongoing Assessment for Village Surgery",
+            "assessmentDate": "2025-06-13",
+            "assessmentPlanStatus": "Active",
+            "name": "General Practice",
+            "rating": "Good",
+            "status": "Current",
+            "commentary": "\u003Cp\u003EDate of Assessment: 9 January 2026 to 13 January 2026.\u003C/p\u003E\u003Cp\u003EVillage Surgery is a GP practice and delivers services to 4850 patients under a contract held with NHS England. Information published by Office for Health Improvement and Disparities shows that deprivation within the practice population group is in the fourth decile (4 of 10). The lower the decile, the more deprived the practice population is relative to others. \u003C/p\u003E\u003Cp\u003EThis assessment considered the demographics of the people using the service, the context the service was working within and how this impacted service delivery. For example, according to the National General Practice profile data; the practice had a higher-than-average male patient population aged between 55-59 at 3.7% as against PCN (primary care network) average of 3.4% or the national average of 3.2%. Where relevant, further commentary is provided in the quality statements section of this report.\u003C/p\u003E",
+            "commentaryDate": "2026-03-11",
+            "narrative": "The service is performing well and meeting our expectations.",
+            "overallPeopleExperience": "\u003Cp\u003EPeople were positive about the quality of their care and treatment. Recent survey results, including from the National GP Patient Survey and the NHS Friends and Family Test, showed people were satisfied with services. For example, 86% of patients who responded to the National GP Patient Survey described their overall experience with the practice as good. This compares to the ICS (Integrated Care Systems) average of 79% and a national average of 75%. Also, 89% of respondents find the reception and administrative staff very helpful. This is against ICS average of 86% or the national average of 81%. \u003C/p\u003E\u003Cp\u003EThe practice provided care to local care homes, and feedback from these services was consistently positive. \u003C/p\u003E\u003Cp\u003E\u00A0\u003C/p\u003E\u003Cp\u003E\u00A0\u003C/p\u003E",
+            "overallPeopleExperienceDate": "2026-03-11",
+            "keyQuestionRatings": [
+              {
+                "name": "Caring",
+                "rating": "Good",
+                "status": "Assessed",
+                "commentary": "\u003Cp\u003EPeople were treated with kindness and compassion. Staff protected their privacy and dignity. They treated them as individuals and supported their preferences. People had choice in their care and treatment. The service supported staff wellbeing.\u003C/p\u003E\u003Cp\u003EWe looked for evidence that the service involved people and treated them with compassion, kindness, dignity and respect.\u003C/p\u003E\u003Cp\u003EAt our last assessment, we rated this key question as good. At this assessment, the rating remains the same.\u003C/p\u003E",
+                "commentaryDate": "2026-03-11",
+                "narrative": "This service is caring",
+                "percentageScore": "75",
+                "topicareas": [
+                  {
+                    "name": "Independence, choice and control",
+                    "qualityStatementId": "17",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe service promoted people\u2019s independence, so people knew their rights and had choice and control over their own care, treatment and wellbeing.\u003C/p\u003E\u003Cp\u003EPeople were supported to understand their rights by using different ways to communicate. Their understanding was reviewed throughout their care and treatment. This was documented comprehensively in patient notes and use of digital flags on the patient records. \u003C/p\u003E\u003Cp\u003EPeople were supported to maintain relationships and networks that were important to them. This includes the practice providing access to mental health support and effective signposting to other services. \u003C/p\u003E",
+                        "commentaryDate": "2026-03-11"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Kindness, compassion and dignity",
+                    "qualityStatementId": "15",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "\u003Cp\u003EThe service always treated people with kindness, empathy and compassion and respected their privacy and dignity. Staff treated colleagues from other organisations with kindness and respect.\u003C/p\u003E\u003Cp\u003EArrangements were in place to promote patients\u2019 privacy. The practice had a separate room available for patients that could be used as another waiting room or so that confidential conversations could take place. \u003C/p\u003E\u003Cp\u003ENational GP Patient Survey data reflected people felt listened to and were treated with kindness. For example, 94% responded positively to the survey that healthcare professionals were good at listening to them, against a local average of 89% or national average of 81%. \u003C/p\u003E\u003Cp\u003EStaff we spoke with understood Gillick competency and there was a process to ensure young adults had control over their own privacy and the amount of parental involvement in managing their care and support. \u003C/p\u003E",
+                        "commentaryDate": "2026-03-11"
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "4",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Responding to people\u2019s immediate needs",
+                    "qualityStatementId": "18",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "\u003Cp\u003EThe service listened to and understood people\u2019s needs, views and wishes. Staff responded to people\u2019s needs in the moment and acted to minimise any discomfort, concern or distress.\u003C/p\u003E\u003Cp\u003EThere was a system for appointment triage that ensured people with immediate needs had access to services. Staff we spoke with knew the process for referral to emergency support, including mental health crisis teams.\u003C/p\u003E\u003Cp\u003EStaff could quickly recognise when people needed urgent help or support and use appropriate tools and technology to assist. \u003C/p\u003E",
+                        "commentaryDate": "2026-03-11"
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Treating people as individuals",
+                    "qualityStatementId": "16",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe service treated people as individuals and made sure people\u2019s care, support and treatment met people\u2019s needs and preferences. They took account of people\u2019s strengths, abilities, aspirations, culture and unique backgrounds and protected characteristics.\u003C/p\u003E\u003Cp\u003EPatients\u2019 personal, cultural, social, religious and equality characteristics needs were understood and met. Patient communication needs were met to enable them to be fully involved in their care. This included access to translation services, and the practice had a hearing loop system. A policy to support transgender patients was being drafted.\u003C/p\u003E",
+                        "commentaryDate": "2026-03-11"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Workforce wellbeing and enablement",
+                    "qualityStatementId": "19",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe service cared about and promoted the wellbeing of their staff and supported and enabled staff to deliver person-centred care.\u003C/p\u003E\u003Cp\u003EPeople\u2019s experience of the service was driven by a culture which prioritised good wellbeing through inclusivity, active listening, and open conversations. This empowered staff to do their job well and to be well. Staff told us they were valued by leaders.\u003C/p\u003E\u003Cp\u003ELeaders had taken steps to recognise and meet the wellbeing needs of staff, which included the necessary resources and facilities for safe working. Staff reported being supported if they were struggling at work. \u003C/p\u003E\u003Cp\u003EFollowing feedback from staff, leaders added an additional staff member to reception duties in the mornings. Leaders reviewed this change and there were positive responses from staff and patients and productivity increased. Leaders assured us they always want staff to feel comfortable with making these kinds of suggestions. \u003C/p\u003E\u003Cp\u003ELeaders told us that other changes that they had made included the more effective use of internal digital system so all staff could see rotas, holidays and training in one place. This increased transparency, efficiency and planning. Staff had also been given personal alarm systems following a significant event as leaders wanted to act quickly to safeguard staff against similar situations happening again. \u003C/p\u003E\u003Cp\u003E\u00A0\u003C/p\u003E\u003Cp\u003E\u00A0\u003C/p\u003E\u003Cp\u003E\u00A0\u003C/p\u003E\u003Cp\u003E\u00A0\u003C/p\u003E\u003Cp\u003E\u00A0\u003C/p\u003E",
+                        "commentaryDate": "2026-03-11"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  }
+                ]
+              },
+              {
+                "name": "Effective",
+                "rating": "Good",
+                "status": "Assessed",
+                "commentary": "\u003Cp\u003EPeople were involved in assessments of their needs. Staff reviewed assessments taking account of people\u2019s communication, personal and health needs. Care was based on latest evidence and good practice. Staff worked with all agencies involved in people\u2019s care for the best outcomes and smooth transitions when moving services. Staff made sure people understood their care and treatment to enable them to give informed consent. For people who lacked capacity, appropriate processes were in place to ensure people\u2019s best interests were considered.\u003C/p\u003E\u003Cp\u003E\u00A0\u003C/p\u003E\u003Cp\u003EWe looked for evidence that staff involved people in decisions about their care and treatment and provided them advice and support. Staff regularly reviewed people\u2019s care and worked with other services to achieve this.\u003C/p\u003E\u003Cp\u003EAt our last assessment, we rated this key question as good. At this assessment, the rating remains the same.\u003C/p\u003E",
+                "commentaryDate": "2026-03-11",
+                "narrative": "This service is effective",
+                "percentageScore": "79",
+                "topicareas": [
+                  {
+                    "name": "Assessing needs",
+                    "qualityStatementId": "9",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe service made sure people\u2019s care and treatment was effective by assessing and reviewing their health, care, wellbeing and communication needs with them.\u003C/p\u003E\u003Cp\u003EFeedback from people using the service was positive. People felt involved in any assessment of their needs and felt confident that staff understood their individual and cultural needs. All staff were aware of the needs of the local community. Reception staff used digital flags within the care records system to highlight any specific individual needs, such as the requirement for longer appointments or for a translator to be present. Staff checked people\u2019s health, care, and wellbeing needs during health reviews. Clinical staff used templates when conducting care reviews to support the review of people\u2019s wider health and wellbeing. These templates were regularly reviewed by practice leaders. \u003C/p\u003E\u003Cp\u003EThe provider had effective systems to identify people with previously undiagnosed conditions. The practice had recently carried out an audit regarding carers within the practice to ensure this was up to date and accurate.\u003C/p\u003E\u003Cp\u003EStaff could refer people with social needs, such as those experiencing social isolation or housing difficulties, to a social prescriber.\u003C/p\u003E",
+                        "commentaryDate": "2026-03-11"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Consent to care and treatment",
+                    "qualityStatementId": "14",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe service told people about their rights around consent and respected these when delivering person-centred care and treatment.\u003C/p\u003E\u003Cp\u003EStaff understood and applied legislation relating to consent and recorded this appropriately. Do not attempt cardiopulmonary resuscitation (DNACPR) decisions were appropriate and were made in line with relevant legislation. Staff training was all up to date. \u003C/p\u003E\u003Cp\u003EWe saw evidence to confirm that people\u0027s capacity and ability to consent was taken into account, and they, or a person lawfully acting on their behalf, were involved in planning, managing and reviewing their care and treatment. \u003C/p\u003E",
+                        "commentaryDate": "2026-03-11"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Delivering evidence-based care and treatment",
+                    "qualityStatementId": "10",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe service planned and delivered people\u2019s care and treatment with them, including what was important to them. They did this in line with legislation and current evidence-based good practice and standards. We reviewed documentation of reviews taking place which were written in a holistic manner. \u003C/p\u003E\u003Cp\u003ESystems were in place to ensure staff were up to date with evidence-based guidance and legislation. Clinical records we saw demonstrated care was provided in line with current guidance. Clinicians had time set aside for peer review of clinical notes and conduct meaningful feedback sessions with their colleagues. \u003C/p\u003E",
+                        "commentaryDate": "2026-03-11"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "How staff, teams and services work together",
+                    "qualityStatementId": "11",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "3",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe service worked well across teams and services to support people. They made sure people only needed to tell their story once by sharing their assessment of needs when people moved between different services. The practice had strong links within the PCN (Primary Care Network) with access to out of hours provision, access in terms of appointments with clinicians and others at different locations. The practice linked in well with other services offered across the area including vaccination programmes, sexual health clinics and lifestyle advice. \u003C/p\u003E\u003Cp\u003EStaff had access to the information they needed to appropriately assess, plan, and deliver people\u2019s care, treatment, and support. The practice worked with other services to ensure continuity of care, including where clinical tasks were delegated to other services. The practice had a particularly good reputation in the local community for safeguarding and sharing appropriate information in the best interests of patients and their families. \u003C/p\u003E",
+                        "commentaryDate": "2026-03-11"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Monitoring and improving outcomes",
+                    "qualityStatementId": "13",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe service routinely monitored people\u2019s care and treatment to continuously improve it. They ensured that outcomes were positive and consistent, and that they met both clinical expectations and the expectations of people themselves.\u003C/p\u003E\u003Cp\u003EThe practice met national targets for screening and immunisations. From the clinical notes we reviewed, we found that people who used the service experienced positive outcomes as set out in legislation, standards, and evidence-based clinical guidance.\u003C/p\u003E\u003Cp\u003EThere was a commitment and culture of working collaboratively and staff and teams had found innovative and efficient ways to deliver more joined-up care and support to people. For example, the practice introduced novelty reminders for breast screening and cervical smears (bras and butterflies) that staff could give to patients and were also put around the practice as visual reminders. They had relevant contact details on to book appointments as well as very brief overviews of the importance to attend. The practice introduced them following a review of the health needs of patients as well as recognition that the practice wasn\u2019t achieving national targets. The practice had seen a steady increase in engagement from patients; from NHS England snapshot in 2024 stating 73% of women aged 25-49 (against a national target of 80%) to unverified practice data from January 2026 stating 81% of women aged 25-49 had a smear test. \u003C/p\u003E\u003Cp\u003EAll staff were aware to remind patients at all opportunities the positives about attending cancer screenings and the importance of immunisations particularly for children and elderly patients. \u003C/p\u003E",
+                        "commentaryDate": "2026-03-11"
+                      },
+                      {
+                        "evidenceCategoryId": "6",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Supporting people to live healthier lives",
+                    "qualityStatementId": "12",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe service supported people to manage their health and wellbeing to maximise their independence, choice and control. The service supported people to live healthier lives and where possible, reduce their future needs for care and support.\u003C/p\u003E\u003Cp\u003EStaff focussed on identifying risks to patients\u2019 health, including those in the last 12 months of their lives, patients at risk of developing a long-term condition and those with caring responsibilities. Staff supported national priorities and initiatives to improve population health, including stopping smoking and tackling obesity. \u003C/p\u003E\u003Cp\u003EThe practice utilised space in the waiting rooms to advocate for healthy living and signposting to services and support for patients. This included visuals on the importance of healthy eating, smoking cessation and exercise. For example, the practice signposted patients struggling with weight loss to a health coach. They advocated for all age ranges and sexes to get involved and the benefits to them. Patient feedback we saw showed they appreciated the hard work practice staff put in to advocate healthy choices. \u003C/p\u003E\u003Cp\u003EThe practice, recognising the importance of advocacy, had designated leads for veterans, cancer, carers, sepsis and domestic abuse. These named leads had enhanced training and had access to support networks across the PCN to be able to source and tailor support for patients. For example, the practice was able to provide support to a patient they understood to be homeless and engaged with a local homeless charity. The practice engaged with the local authority on behalf this patient to try and get an appropriate outcome. \u003C/p\u003E\u003Cp\u003EThe practice organised walks for all patients as part of the practices \u2018feel good and get-well initiative\u2019 and staff from the practice went into local schools to engage with students on the services the practice provided, highlighting the benefits of a career in primary care. \u003C/p\u003E",
+                        "commentaryDate": "2026-03-11"
+                      }
+                    ],
+                    "qualityStatementscore": "4 - Evidence shows an exceptional standard of care"
+                  }
+                ]
+              },
+              {
+                "name": "Responsive",
+                "rating": "Good",
+                "status": "Assessed",
+                "commentary": "\u003Cp\u003EThe service provided information people could understand. People knew how to give feedback and were confident the service took it seriously and acted on it. The service was easy to access and worked to eliminate discrimination. People received fair and equal care and treatment. The service worked to reduce health and care inequalities through training and feedback. People were involved in planning their care and understood options around choosing to withdraw or not receive care.\u003C/p\u003E\u003Cp\u003EWe looked for evidence that the service met people\u2019s needs, and that staff treated people equally and without discrimination. \u003C/p\u003E\u003Cp\u003EAt our last assessment, we rated this key question as Good. At this assessment, the rating remains the same.\u003C/p\u003E",
+                "commentaryDate": "2026-03-11",
+                "narrative": "This service is responsive",
+                "percentageScore": "75",
+                "topicareas": [
+                  {
+                    "name": "Care provision, Integration and continuity",
+                    "qualityStatementId": "21",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "3",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe service understood the diverse health and care needs of people and their local communities, so care was joined-up, flexible and supported choice and continuity.\u003C/p\u003E\u003Cp\u003EWe saw the practice worked in partnership with other services to meet the needs of its patient population. The practice had tailored its services to meet the diverse needs of its community, for example, building relationships with community groups to promote the take up of screening programmes. There were established mechanisms for engaging with the community healthcare provider.\u003C/p\u003E\u003Cp\u003EThe practice understood the history of the local community particularly as a coal mining area and actively engaged in a regional research project on lung disease, Chronic Obstructive Pulmonary Disease. This involved in-depth reviews of relevant patients, targeted clinics and meetings with patients. Patients met with smoking cessation groups, instructors on the use of inhalers, vaccination groups, exercise groups and educators on self-management alongside conversations with clinicians. \u003C/p\u003E",
+                        "commentaryDate": "2026-03-11"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Equity in access",
+                    "qualityStatementId": "24",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe service made sure that people could access the care, support and treatment they needed when they needed it.\u003C/p\u003E\u003Cp\u003EIn response to the National GP Patient Survey data and from feedback from members of the community the provider had identified changes to improve access to the service. For example, they had extended appointments for people with a learning disability. People could access the service to suit their needs for example online, in person and by telephone. Treatment rooms were available on the ground floor, and a ramp and automatic door had been fitted to the entrance. The practice had a lift also for those patients who needed it. \u003C/p\u003E\u003Cp\u003EThe practice wanted to maximise the use of digital systems, like the NHS app, where possible. Particularly those systems of benefit to patients and staff in terms of access and efficient care. The NHS app was also one of the central planks of the NHS 10-year plan. Administrative staff assisted patients in setting up the application for those who needed it. The practice made sure other processes were in place for those who didn\u2019t have access to digital systems.\u003C/p\u003E",
+                        "commentaryDate": "2026-03-11"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Equity in experiences and outcomes",
+                    "qualityStatementId": "25",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EStaff and leaders actively listened to information about people who are most likely to experience inequality in experience or outcomes and tailored their care, support and treatment in response to this.\u003C/p\u003E\u003Cp\u003EFeedback provided by people using the service, both to the provider as well as to CQC, was positive. Staff treated people equally and without discrimination. Leaders proactively sought ways to address any barriers to improving people\u2019s experience and worked with local organisations, including within the voluntary sector, to address any local health inequalities. Staff understood the importance of providing an inclusive approach to care and to adjust this to support equity in people\u2019s experience and outcomes. The practice had a zero-tolerance policy, and we heard from leaders\u2019 examples where this had been enforced. \u003C/p\u003E\u003Cp\u003EThe practice was also honest with patients when they asked for changes, whether by feedback or through the PPG (patient participation group) if it wasn\u2019t a feasible option. For example, changes to the car park outside the practice. \u003C/p\u003E\u003Cp\u003EThe provider had processes to ensure people could register at the practice, including those in vulnerable circumstances such as homeless people and Travellers. Staff used appropriate systems to capture and review feedback from people using the service, including those who did not speak English or have access to the internet. \u003C/p\u003E",
+                        "commentaryDate": "2026-03-11"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Listening to and involving people",
+                    "qualityStatementId": "23",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe service made it easy for people to share feedback and ideas, or raise complaints about their care, treatment and support. They involved people in decisions about their care and told them what had changed as a result.\u003C/p\u003E\u003Cp\u003EWe saw complaints were managed in line with the practice\u2019s policy. Learning from complaints was evident and staff were able to identify changes made because of patient feedback, including complaints. This included better use of digital sign-in screens and signage for clinical rooms. \u003C/p\u003E\u003Cp\u003EThe care homes we spoke highly about the \u2018personal touch\u2019 they felt they received from the practice, with bespoke contact pathways and engagement from senior leaders. When feedback had to be given on processes, they felt listened to and action was taken promptly. \u003C/p\u003E",
+                        "commentaryDate": "2026-03-11"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Person-centred Care",
+                    "qualityStatementId": "20",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "\u003Cp\u003EThe service made sure people were at the centre of their care and treatment choices and they decided, in partnership with people, how to respond to any relevant changes in people\u2019s needs.\u003C/p\u003E\u003Cp\u003ECare plans reflected physical, mental, emotional, and social needs of patients including those related to protected characteristics under the Equality Act. Our review of clinical records showed patients were supported to understand their condition and were involved in planning for their care needs. \u003C/p\u003E\u003Cp\u003EPeople could receive the most appropriate care and treatment for them as the service make reasonable adjustments where necessary. This included the use of longer appointments if needed. \u003C/p\u003E",
+                        "commentaryDate": "2026-03-11"
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Planning for the future",
+                    "qualityStatementId": "26",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EPeople were supported to plan for important life changes, so they could have enough time to make informed decisions about their future.\u003C/p\u003E\u003Cp\u003EOur records review showed people were supported to consider their wishes for their end-of-life care, including cardiopulmonary resuscitation. This information was shared with other services when necessary.\u003C/p\u003E",
+                        "commentaryDate": "2026-03-11"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Providing Information",
+                    "qualityStatementId": "22",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe service supplied appropriate, accurate and up-to-date information in formats that were tailored to individual needs.\u003C/p\u003E\u003Cp\u003EInformation to promote the take up of screening and immunisation programmes was available in a range of languages. The practice had access to interpreter services, including British Sign Language. Information provided by the service met the Accessible Information Standard. Patients were informed as to how to access their care records including their legal rights and the practices responsibilities. \u003C/p\u003E",
+                        "commentaryDate": "2026-03-11"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  }
+                ]
+              },
+              {
+                "name": "Safe",
+                "rating": "Good",
+                "status": "Assessed",
+                "commentary": "\u003Cp\u003EThe service had a good learning culture and people could raise concerns. Managers investigated incidents thoroughly. People were protected and kept safe. Staff understood and managed risks. The facilities and equipment met the needs of people, were clean and well-maintained and any risks mitigated. There were enough staff with the right skills, qualifications and experience. Managers made sure staff received training and regular appraisals to maintain high-quality care. Staff managed medicines well and involved people in planning any changes.\u003C/p\u003E\u003Cp\u003EWe looked for evidence that people were protected from abuse and avoidable harm.\u003C/p\u003E\u003Cp\u003EAt our last assessment, we rated this key question as good, at this assessment, the rating remains the same.\u003C/p\u003E",
+                "commentaryDate": "2026-03-11",
+                "narrative": "This service is safe",
+                "percentageScore": "75",
+                "topicareas": [
+                  {
+                    "name": "Infection prevention and control",
+                    "qualityStatementId": "7",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "4",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe service assessed and managed the risk of infection. They detected and controlled the risk of it spreading and shared concerns with appropriate agencies promptly.\u003C/p\u003E\u003Cp\u003EThe practice had a designated infection, prevention and control lead and all staff had had relevant training. Cleaning schedules were in place and followed. Risk assessments and audits were completed, and actions taken to mitigate risks. There was a clear plan for further audits to be undertaken, and the infection control lead told us leaders were supportive in her development. The practice was clean and consultation rooms were tidy. \u003C/p\u003E",
+                        "commentaryDate": "2026-03-11"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Involving people to manage risks",
+                    "qualityStatementId": "4",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe service worked with people to understand and manage risks by thinking holistically. They provided care to meet people\u2019s needs that was safe, supportive and enabled people to do the things that mattered to them. The practice had regular clinical meetings to discuss people with complex needs. \u003C/p\u003E\u003Cp\u003EEmergency equipment was available and regularly checked. Staff could recognise a deteriorating patient and knew of action to take. Patients were advised on risks related to their condition and actions to take if their condition deteriorated. All staff were trained in recognising signs of sepsis. \u003C/p\u003E",
+                        "commentaryDate": "2026-03-11"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Learning culture",
+                    "qualityStatementId": "1",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "\u003Cp\u003EThe service had a proactive and positive culture of safety, based on openness and honesty. They listened to concerns about safety and investigated and reported safety events. Lessons were learnt to continually identify and embed good practice.\u003C/p\u003E\u003Cp\u003EPeople felt supported to raise concerns and felt staff treated them with compassion and understanding. Managers encouraged staff to raise concerns when things went wrong, and staff told us they were assured it would be acted on. During staff meetings, the whole team discussed and learnt from clinical issues. \u003C/p\u003E\u003Cp\u003EStaff felt there was an open culture, and that safety was a top priority. The provider had processes for staff to report incidents, near misses and safety events. There was a system to record and investigate complaints, and when things went wrong, staff apologised and gave people support. Learning from incidents and complaints resulted in changes that improved care for others. We reviewed minutes of significant events meetings, which showed incidents had been analysed and learning from these were put into practice and audited. \u003C/p\u003E",
+                        "commentaryDate": "2026-03-11"
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Medicines optimisation",
+                    "qualityStatementId": "8",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "4",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe service made sure that medicines and treatments were safe and met people\u2019s needs, capacities and preferences. They involved people in planning, including when changes happened.\u003C/p\u003E\u003Cp\u003EStaff involved people in reviews of their medicines and helped them understand how to manage their medicines safely. People knew what to do and who to contact if their condition did not improve or they experienced any unexpected symptoms. Staff received regular training, were competency assessed on medicines optimisation, and felt confident managing the storage, administration and recording of medicines. \u003C/p\u003E\u003Cp\u003EStaff managed prescription stationery appropriately and securely. Staff regularly checked the stock levels and expiry dates for all medicines, including emergency medicines and vaccines. Staff stored medical gases, such as oxygen, safely and completed required safety risk assessments. Staff followed established processes to ensure people prescribed medicines with specific risks received recommended monitoring. Staff took steps to ensure they prescribed medicines appropriately to optimise care outcomes, including antibiotics. There was a programme of regular clinical audits of prescribing that focused on improving care and treatment. For example, the practice undertook a systemic review of antipsychotics prescription/usage. This multi-cycle review looked at what drugs were being prescribed by clinicians, effects on patients physical and mental wellbeing and cross referenced against local and national guidance. This review concluded with recommendations regarding practices monitoring procedures including offering patients ECGs. This had now been put into effect, with overall positive patient outcomes. \u003C/p\u003E",
+                        "commentaryDate": "2026-03-11"
+                      },
+                      {
+                        "evidenceCategoryId": "6",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Safe and effective staffing",
+                    "qualityStatementId": "6",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe service made sure there were enough qualified, skilled and experienced staff, who received effective support, supervision and development. They worked together well to provide safe care that met people\u2019s individual needs. The practice was a training practice, which had medical students, trainee GP\u2019s and student nurses.\u003C/p\u003E\u003Cp\u003EThere were a range of clinical and non-clinical roles within the practice. We found training was up to date, learning needs and development of staff was managed appropriately, and staff were working within their agreed areas of competence. Safe recruitment practices were followed. Leaders encouraged staff to develop both in terms of career development and training opportunities. \u003C/p\u003E",
+                        "commentaryDate": "2026-03-11"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Safe environments",
+                    "qualityStatementId": "5",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "4",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe service detected and controlled potential risks in the care environment. They made sure equipment, facilities and technology supported the delivery of safe care.\u003C/p\u003E\u003Cp\u003EContracts were in place to ensure the premises were maintained. Health and safety risk assessments and audits had been undertaken and risks identified had been addressed. There was a business continuity plan in place which was monitored and reviewed. The practice had undertaken fire drills. Fire Wardens were in place. \u003C/p\u003E",
+                        "commentaryDate": "2026-03-11"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Safe systems, pathways and transitions",
+                    "qualityStatementId": "2",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "3",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe service worked with people and healthcare partners to establish and maintain safe systems of care, in which safety was managed or monitored. They made sure there was continuity of care, including when people moved between different services. The practice was part of a proactive Primary Care Network (PCN) which worked well together. Referrals to secondary care were monitored. There was a clear process for tracking results, and a buddy system was in place for clinicians. \u003C/p\u003E\u003Cp\u003EThere were systems in place for processing information relating to new patients. The service worked with other providers to deliver shared care and when patients moved between services. Referrals and test results were managed in a timely way.\u003C/p\u003E",
+                        "commentaryDate": "2026-03-11"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Safeguarding",
+                    "qualityStatementId": "3",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "3",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe service worked with people and healthcare partners to understand what being safe meant to them and the best way to achieve that. They concentrated on improving people\u2019s lives while protecting their right to live in safety, free from bullying, harassment, abuse, discrimination, avoidable harm and neglect. The service shared concerns quickly and appropriately. The practice had a good relationship with local authority safeguarding leads who they could access for advice when needed.\u003C/p\u003E\u003Cp\u003ESafeguarding policies were in place and known to staff, who were appropriately trained in safeguarding procedures. The practice maintained a list of vulnerable people and acted on concerns working in partnership with other organisations. We reviewed evidence of safeguarding meetings happening within the practice. A member of the practice attended a wider safeguarding meeting. Patients were coded appropriately. There was a safeguarding lead in place, and staff all had an awareness of who this was. The practice also had a domestic abuse lead in place. \u003C/p\u003E",
+                        "commentaryDate": "2026-03-11"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  }
+                ]
+              },
+              {
+                "name": "Well-led",
+                "rating": "Good",
+                "status": "Assessed",
+                "commentary": "\u003Cp\u003ELeaders and staff had a shared vision and culture based on listening, learning and trust. Leaders were visible, knowledgeable and supportive, helping staff develop in their roles. Staff felt supported to give feedback and were treated equally, free from bullying or harassment. Staff understood their roles and responsibilities. Managers worked with the local community to deliver the best possible care and were receptive to new ideas. There was a culture of continuous improvement with staff given time and resources to try new ideas.\u003C/p\u003E\u003Cp\u003EWe looked for evidence that service leadership, management and governance assured high-quality, person-centred care; supported learning and innovation; and promoted an open, fair culture.\u003C/p\u003E\u003Cp\u003EAt our last assessment, we rated this key question as Good. At this assessment, the rating remains the same.\u003C/p\u003E",
+                "commentaryDate": "2026-03-11",
+                "narrative": "This service is well-led",
+                "percentageScore": "75",
+                "topicareas": [
+                  {
+                    "name": "Capable, compassionate and inclusive leaders",
+                    "qualityStatementId": "28",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe service had inclusive leaders at all levels who understood the context in which they delivered care, treatment and support and embodied the culture and values of their workforce and organisation. Leaders had the skills, knowledge, experience and credibility to lead effectively. They did so with integrity, openness and honesty.\u003C/p\u003E\u003Cp\u003EStaff told us leaders in the practice was approachable and responded to any concerns raised. Staff also told us leaders modelled the values of the practice. We saw the leadership team worked with other practices in the primary care network and were engaged in the development of primary care services within the local area. \u003C/p\u003E",
+                        "commentaryDate": "2026-03-11"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Freedom to speak up",
+                    "qualityStatementId": "29",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe service fostered a positive culture where people felt they could speak up and their voice would be heard.\u003C/p\u003E\u003Cp\u003EThe practice had established Freedom to Speak up arrangements with the ICB (Integrated Care Board). Staff were aware of how to raise concerns.\u003C/p\u003E",
+                        "commentaryDate": "2026-03-11"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Governance, management and sustainability",
+                    "qualityStatementId": "31",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe service had clear responsibilities, roles, systems of accountability and good governance. They used these to manage and deliver good quality, sustainable care, treatment and support. They acted on the best information about risk, performance and outcomes, and shared this securely with others when appropriate.\u003C/p\u003E\u003Cp\u003ELeaders and managers supported staff, and all staff we spoke with were clear on their individual roles and responsibilities. Managers met with staff regularly to complete appraisals and performance reviews. The provider had established governance processes that were appropriate for their service. Staff could access all required policies and procedures. Leaders showed us where they had made improvements/updates to internal digital systems to make engagement and communication with staff better.\u003C/p\u003E\u003Cp\u003EManagers held regular practice meetings with staff, during which they discussed clinical concerns and emerging risks. Managers clearly recorded any actions arising from these meetings and ensured they shared these with staff. Staff took patient confidentiality and information security seriously.\u003C/p\u003E",
+                        "commentaryDate": "2026-03-11"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Learning, improvement and innovation",
+                    "qualityStatementId": "33",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe service focused on continuous learning, innovation and improvement across the organisation and local system. They encouraged creative ways of delivering equality of experience, outcome and quality of life for people. They actively contribute to safe, effective practice and research.\u003C/p\u003E\u003Cp\u003EThe practice had a quality improvement plan in place to help drive improvements in services. This focussed on the appointment system. All staff were encouraged to put forward and test out new ways of working.\u003C/p\u003E",
+                        "commentaryDate": "2026-03-11"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Partnerships and communities",
+                    "qualityStatementId": "32",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "3",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe service understood their duty to collaborate and work in partnership, so services worked seamlessly for people. They shared information and learning with partners and collaborated for improvement.\u003C/p\u003E\u003Cp\u003EThe provider worked with other practices within their primary care network to offer extended access, and flu and covid vaccination programmes. Staff had made adjustments to improve coordination of their service with community healthcare services, including through recently established weekly meetings centred on the care of those at higher risk of hospital admission. \u003C/p\u003E",
+                        "commentaryDate": "2026-03-11"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Shared direction and culture",
+                    "qualityStatementId": "27",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe service had a shared vision, strategy and culture. This was based on transparency, equity, equality and human rights, diversity and inclusion, engagement, and understanding challenges and the needs of people and their communities.\u003C/p\u003E\u003Cp\u003EAll staff had contributed to the development of the practice vision and strategy, which was kept under review. Feedback from staff that we received noted the friendly, family atmosphere within the practice and that leaders took pains to maintain. \u003C/p\u003E",
+                        "commentaryDate": "2026-03-11"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Workforce equality, diversity and inclusion",
+                    "qualityStatementId": "30",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe service valued diversity in their workforce. They worked towards an inclusive and fair culture by improving equality and equity for people who work for them.\u003C/p\u003E\u003Cp\u003EPolicies and procedures to promote diversity and equality were in place. We saw senior leaders had addressed concerns related to discrimination. Adjustments had been made to ensure all staff were valued, for example we saw adjustments to support disabled staff were in place.\u003C/p\u003E",
+                        "commentaryDate": "2026-03-11"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

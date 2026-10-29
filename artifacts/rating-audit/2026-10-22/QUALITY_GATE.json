@@ -1,0 +1,18 @@
+{
+  "decision": "PASS for bounded audit evidence and trace; PARTIAL for source accuracy; not independent approval",
+  "requests": 150,
+  "request_errors": 0,
+  "distinct_active_ids": 30,
+  "live_api_id_matches": 30,
+  "implementation_matches": 30,
+  "file_labels": 20,
+  "current_numerical_website_matches": 18,
+  "numerical_mismatches": 5,
+  "context_exceptions": 2,
+  "no_numerical_overall_visible": 5,
+  "source_file_checksum_matches": true,
+  "raw_request_hashes_verified": 150,
+  "independent_review": "pending",
+  "full_customer_pack": "not exercised",
+  "report_limitations": "See REPORT.md; no national accuracy estimate or current inherited-rating decision"
+}

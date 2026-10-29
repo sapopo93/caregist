@@ -1,0 +1,204 @@
+{
+  "locationId": "1-552527797",
+  "providerId": "1-199747356",
+  "organisationType": "Location",
+  "type": "Primary Medical Services",
+  "name": "The Chesser Surgery",
+  "onspdCcgCode": "E38000245",
+  "onspdCcgName": "NHS South West London CCG",
+  "odsCcgCode": "36L",
+  "odsCcgName": "NHS South West London Icb - 36L",
+  "onspdIcbCode": "E54000031",
+  "onspdIcbName": "NHS South West London Integrated Care Board",
+  "odsCode": "H85021",
+  "registrationStatus": "Registered",
+  "registrationDate": "2013-04-01",
+  "dormancy": "N",
+  "onspdLatitude": 51.374926,
+  "onspdLongitude": -0.1772779,
+  "careHome": "N",
+  "inspectionDirectorate": "Primary medical services",
+  "postalAddressLine1": "121 Wrythe Lane",
+  "postalAddressTownCity": "Carshalton",
+  "postalAddressCounty": "Surrey",
+  "region": "London",
+  "postalCode": "SM5 2RT",
+  "uprn": "5870054020",
+  "mainPhoneNumber": "02086442727",
+  "registeredManagerAbsentDate": "2026-03-04",
+  "website": "www.chesser.biz",
+  "numberOfBeds": 0,
+  "constituency": "Carshalton and Wallington",
+  "localAuthority": "Sutton",
+  "lastInspection": {
+    "date": "2016-10-04"
+  },
+  "lastReport": {
+    "publicationDate": "2016-11-10"
+  },
+  "relationships": [],
+  "locationTypes": [
+    {
+      "type": "GP Practice"
+    }
+  ],
+  "regulatedActivities": [
+    {
+      "name": "Maternity and midwifery services",
+      "code": "RA11",
+      "contacts": []
+    },
+    {
+      "name": "Treatment of disease, disorder or injury",
+      "code": "RA5",
+      "contacts": []
+    },
+    {
+      "name": "Surgical procedures",
+      "code": "RA7",
+      "contacts": []
+    },
+    {
+      "name": "Diagnostic and screening procedures",
+      "code": "RA8",
+      "contacts": []
+    }
+  ],
+  "gacServiceTypes": [
+    {
+      "name": "Doctors/Gps",
+      "description": "Doctors consultation service"
+    }
+  ],
+  "specialisms": [
+    {
+      "name": "Services for everyone"
+    }
+  ],
+  "inspectionCategories": [
+    {
+      "code": "P2",
+      "primary": "true",
+      "name": "GP Practices"
+    }
+  ],
+  "inspectionAreas": [
+    {
+      "inspectionAreaId": "conditions",
+      "inspectionAreaName": "People with long term conditions",
+      "status": "Active (Rated)"
+    },
+    {
+      "inspectionAreaId": "mothers",
+      "inspectionAreaName": "Families, children and young people",
+      "status": "Active (Rated)"
+    },
+    {
+      "inspectionAreaId": "old",
+      "inspectionAreaName": "Older people",
+      "status": "Active (Rated)"
+    },
+    {
+      "inspectionAreaId": "population",
+      "inspectionAreaName": "Working age people (including those recently retired and students)",
+      "status": "Active (Rated)"
+    },
+    {
+      "inspectionAreaId": "problems",
+      "inspectionAreaName": "People experiencing poor mental health (including people with dementia)",
+      "status": "Active (Rated)"
+    },
+    {
+      "inspectionAreaId": "vulnerable",
+      "inspectionAreaName": "People whose circumstances may make them vulnerable",
+      "status": "Active (Rated)"
+    }
+  ],
+  "currentRatings": {
+    "overall": {
+      "rating": "Good",
+      "reportDate": "2016-11-10",
+      "reportLinkId": "6b1d8c84-5740-42f4-b743-24cf9f4e5bcb",
+      "keyQuestionRatings": [
+        {
+          "name": "Safe",
+          "rating": "Good",
+          "reportDate": "2016-11-10",
+          "reportLinkId": "6b1d8c84-5740-42f4-b743-24cf9f4e5bcb"
+        },
+        {
+          "name": "Well-led",
+          "rating": "Good",
+          "reportDate": "2016-11-10",
+          "reportLinkId": "6b1d8c84-5740-42f4-b743-24cf9f4e5bcb"
+        },
+        {
+          "name": "Caring",
+          "rating": "Good",
+          "reportDate": "2016-11-10",
+          "reportLinkId": "6b1d8c84-5740-42f4-b743-24cf9f4e5bcb"
+        },
+        {
+          "name": "Responsive",
+          "rating": "Good",
+          "reportDate": "2016-11-10",
+          "reportLinkId": "6b1d8c84-5740-42f4-b743-24cf9f4e5bcb"
+        },
+        {
+          "name": "Effective",
+          "rating": "Good",
+          "reportDate": "2016-11-10",
+          "reportLinkId": "6b1d8c84-5740-42f4-b743-24cf9f4e5bcb"
+        }
+      ]
+    },
+    "reportDate": "2016-11-10",
+    "serviceRatings": [
+      {
+        "name": "conditions",
+        "rating": "Good",
+        "reportDate": "2016-11-10",
+        "reportLinkId": "6b1d8c84-5740-42f4-b743-24cf9f4e5bcb"
+      },
+      {
+        "name": "mothers",
+        "rating": "Good",
+        "reportDate": "2016-11-10",
+        "reportLinkId": "6b1d8c84-5740-42f4-b743-24cf9f4e5bcb"
+      },
+      {
+        "name": "old",
+        "rating": "Good",
+        "reportDate": "2016-11-10",
+        "reportLinkId": "6b1d8c84-5740-42f4-b743-24cf9f4e5bcb"
+      },
+      {
+        "name": "population",
+        "rating": "Good",
+        "reportDate": "2016-11-10",
+        "reportLinkId": "6b1d8c84-5740-42f4-b743-24cf9f4e5bcb"
+      },
+      {
+        "name": "problems",
+        "rating": "Good",
+        "reportDate": "2016-11-10",
+        "reportLinkId": "6b1d8c84-5740-42f4-b743-24cf9f4e5bcb"
+      },
+      {
+        "name": "vulnerable",
+        "rating": "Good",
+        "reportDate": "2016-11-10",
+        "reportLinkId": "6b1d8c84-5740-42f4-b743-24cf9f4e5bcb"
+      }
+    ]
+  },
+  "reports": [
+    {
+      "linkId": "6b1d8c84-5740-42f4-b743-24cf9f4e5bcb",
+      "reportDate": "2016-11-10",
+      "firstVisitDate": "2016-10-04",
+      "reportUri": "/reports/6b1d8c84-5740-42f4-b743-24cf9f4e5bcb?20210121224033",
+      "reportType": "Location"
+    }
+  ]
+}

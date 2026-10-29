@@ -1,0 +1,1029 @@
+{
+  "locationId": "1-2467326262",
+  "providerId": "1-101646656",
+  "organisationType": "Location",
+  "type": "Social Care Org",
+  "name": "Milford Del Support Agency",
+  "onspdCcgCode": "E38000253",
+  "onspdCcgName": "NHS Hampshire, Southampton and Isle of Wight CCG",
+  "onspdIcbCode": "E54000067",
+  "onspdIcbName": "NHS Hampshire and Isle of Wight Integrated Care Board",
+  "odsCode": "VN0MK",
+  "registrationStatus": "Registered",
+  "registrationDate": "2016-02-11",
+  "dormancy": "N",
+  "onspdLatitude": 50.6462384,
+  "onspdLongitude": -1.1688461,
+  "careHome": "N",
+  "inspectionDirectorate": "Adult social care",
+  "postalAddressLine1": "77 Sandown Road",
+  "postalAddressTownCity": "Sandown",
+  "region": "South East",
+  "postalCode": "PO36 9LE",
+  "uprn": "100062437205",
+  "mainPhoneNumber": "01983405321",
+  "numberOfBeds": 0,
+  "constituency": "Isle of Wight East",
+  "localAuthority": "Isle of Wight",
+  "lastInspection": {
+    "date": "2023-03-15"
+  },
+  "lastReport": {
+    "publicationDate": "2023-06-01"
+  },
+  "relationships": [
+    {
+      "relatedLocationId": "1-116939325",
+      "relatedLocationName": "Milford Del Support Agency Limited",
+      "type": "HSCA Predecessor",
+      "reason": "Location Move"
+    }
+  ],
+  "locationTypes": [],
+  "regulatedActivities": [
+    {
+      "name": "Personal care",
+      "code": "RA1",
+      "contacts": [
+        {
+          "personGivenName": "Donna Louise",
+          "personFamilyName": "Longmore",
+          "personRoles": [
+            "Registered Manager"
+          ]
+        }
+      ]
+    }
+  ],
+  "gacServiceTypes": [
+    {
+      "name": "Homecare agencies",
+      "description": "Domiciliary care service"
+    },
+    {
+      "name": "Supported living",
+      "description": "Supported living service"
+    }
+  ],
+  "specialisms": [
+    {
+      "name": "Caring for adults over 65 yrs"
+    },
+    {
+      "name": "Caring for adults under 65 yrs"
+    },
+    {
+      "name": "Caring for children"
+    },
+    {
+      "name": "Learning disabilities"
+    },
+    {
+      "name": "Mental health conditions"
+    },
+    {
+      "name": "Physical disabilities"
+    },
+    {
+      "name": "Services for everyone"
+    }
+  ],
+  "inspectionCategories": [
+    {
+      "code": "S2",
+      "primary": "true",
+      "name": "Community based adult social care services"
+    }
+  ],
+  "inspectionAreas": [],
+  "historicRatings": [
+    {
+      "reportDate": "2018-09-08",
+      "reportLinkId": "e4f7f9f2-6522-4ad8-b81b-d247549354c2",
+      "overall": {
+        "rating": "Good",
+        "keyQuestionRatings": [
+          {
+            "name": "Safe",
+            "rating": "Good"
+          },
+          {
+            "name": "Well-led",
+            "rating": "Good"
+          },
+          {
+            "name": "Effective",
+            "rating": "Good"
+          }
+        ]
+      }
+    },
+    {
+      "reportDate": "2017-04-25",
+      "reportLinkId": "b6794317-f3e8-4228-90a2-fe47ed97aa37",
+      "overall": {
+        "rating": "Requires improvement",
+        "keyQuestionRatings": [
+          {
+            "name": "Safe",
+            "rating": "Requires improvement"
+          },
+          {
+            "name": "Well-led",
+            "rating": "Requires improvement"
+          },
+          {
+            "name": "Caring",
+            "rating": "Good"
+          },
+          {
+            "name": "Responsive",
+            "rating": "Requires improvement"
+          },
+          {
+            "name": "Effective",
+            "rating": "Requires improvement"
+          }
+        ]
+      }
+    },
+    {
+      "reportDate": "2023-06-01",
+      "reportLinkId": "26694945-fd6a-46aa-a8aa-56b3dfbfe802",
+      "overall": {
+        "rating": "Requires improvement",
+        "keyQuestionRatings": [
+          {
+            "name": "Safe",
+            "rating": "Requires improvement"
+          },
+          {
+            "name": "Well-led",
+            "rating": "Requires improvement"
+          },
+          {
+            "name": "Caring",
+            "rating": "Good"
+          },
+          {
+            "name": "Responsive",
+            "rating": "Good"
+          },
+          {
+            "name": "Effective",
+            "rating": "Requires improvement"
+          }
+        ]
+      }
+    }
+  ],
+  "reports": [
+    {
+      "linkId": "26694945-fd6a-46aa-a8aa-56b3dfbfe802",
+      "reportDate": "2023-06-01",
+      "firstVisitDate": "2023-03-13",
+      "reportUri": "/reports/26694945-fd6a-46aa-a8aa-56b3dfbfe802?20230719120000",
+      "reportType": "Location"
+    },
+    {
+      "linkId": "e4f7f9f2-6522-4ad8-b81b-d247549354c2",
+      "reportDate": "2018-09-08",
+      "firstVisitDate": "2018-07-23",
+      "reportUri": "/reports/e4f7f9f2-6522-4ad8-b81b-d247549354c2?20211030120000",
+      "reportType": "Location"
+    },
+    {
+      "linkId": "b6794317-f3e8-4228-90a2-fe47ed97aa37",
+      "reportDate": "2017-04-25",
+      "firstVisitDate": "2017-03-01",
+      "reportUri": "/reports/b6794317-f3e8-4228-90a2-fe47ed97aa37?20211030120000",
+      "reportType": "Location"
+    }
+  ],
+  "assessmentServiceGroup": [
+    {
+      "assessmentServiceId": "272",
+      "assessmentServiceName": "Homecare",
+      "status": "Active"
+    }
+  ],
+  "assessment": [
+    {
+      "assessmentPlanPublishedDateTime": "2025-07-18 16:46:36",
+      "ratings": {
+        "asgRatings": [
+          {
+            "assessmentPlanId": "AP11969",
+            "title": "Ongoing Assessment for Milford Del Support Agency",
+            "assessmentDate": "2025-04-08",
+            "assessmentPlanStatus": "Active",
+            "name": "Homecare",
+            "rating": "Outstanding",
+            "status": "Current",
+            "commentary": "\u003Cp\u003EDate of assessment 22 April to 07 May 2025.\u003C/p\u003E\u003Cp\u003EWe carried out this assessment to gain an up-to-date view of the service. The provider was previously in breach of the legal regulations in relation to safe care and treatment, safeguarding people from abuse, staffing and good governance. The provider employed a new nominated individual and registered manager following our previous inspection and significant improvements were found at this inspection and the provider was no longer in breach of regulations.\u003C/p\u003E\u003Cp\u003EWe assessed the service against \u201CRight support, right care, right culture\u201D guidance to make judgements about whether the provider guaranteed people with a learning disability and autistic people respect, equality, dignity, choices, independence and good access to local communities that most people take for granted. We found there was overwhelming evidence that the core values of choice, promotion of independence and community inclusion were at the centre of people\u0027s day-to-day support.\u003C/p\u003E\u003Cp\u003EThe provider had a positive learning culture where people could raise concerns and feel confident, they would be heard. The management team investigated incidents thoroughly to learn and improve outcomes for people. People were supported to live fulfilled lives and take positive risks. Staff understood their safeguarding responsibilities to ensure people were protected from abuse.\u003C/p\u003E\u003Cp\u003EThere was a genuine person-centred culture, where staff displayed empathy and worked with people and their family members to understand how best to support them. The attitude and knowledge of staff and management clearly had a positive impact on people and their families.\u003C/p\u003E\u003Cp\u003EThere was a strong emphasis on continuity of care to maximise the opportunities for people. Training and guidance for families was provided free of charge to assist with their understanding and to support their relative to have continuity of care. People were provided with core staff teams to help provide them with continuity of care and develop trusting relationships. \u003C/p\u003E\u003Cp\u003EPeople were supported by staff who were highly skilled, and knowledgeable in caring for people with additional needs. Staff were skilled in helping people to express their views and communicated with them in ways they could understand.\u003C/p\u003E\u003Cp\u003EStaff understood and followed the principles of the Mental Capacity Act 2005 (MCA) and were aware of people\u0027s rights to refuse care. The management team and staff worked to ensure that people\u0027s choices and wishes were respected.\u003C/p\u003E",
+            "commentaryDate": "2025-07-15",
+            "narrative": "The service is performing exceptionally well.",
+            "overallPeopleExperience": "\u003Cp\u003EPeople were living in supported living and had their own tenancies; people were extremely positive about the quality of care and support they received. They told us they felt safe, listened to and were able to speak up. \u003C/p\u003E\u003Cp\u003EPeople were fully involved in the planning of their care and supported to review and change their support plan as needed. One person told us, \u201CI wrote my support plan myself with [manager], staff really listen and support me\u201D.\u003C/p\u003E\u003Cp\u003EPeople were encouraged to maintain and develop personal relationships, by meeting and engaging with people who shared similar life experiences, interests and hobbies. \u003C/p\u003E\u003Cp\u003EPeople told us they trusted the staff team and chose their own staff with the help of the site manager. People told us staff were kind, caring, knowledgeable and passionate. Several people told us how much they had achieved and how their wellbeing and self-confidence had improved since using the service. One person told us \u201CAll the carers are on time and support me very well. I feel very happy living at [service] and wouldn\u2019t change it for the world. There is a good management team, it is the best place I have ever lived, my confidence has improved, and I have done things I never thought were possible\u201D. \u003C/p\u003E\u003Cp\u003EPeople were fully involved in running the service and recruiting staff. One person told us, \u201CWe have meetings at the office once a month, we talk about all kinds of things, I have had help to understand things and feel able to make suggestions\u201D. \u003C/p\u003E\u003Cp\u003EPeople were encouraged and enabled to be fully involved in their local community and access the services and facilities. Staff empowered people to maintain or develop their independence and take responsibility for their lives. \u003C/p\u003E\u003Cp\u003EPeople were supported to find voluntary or paid employment and attend vocational courses to develop job skills for the future. \u003C/p\u003E",
+            "overallPeopleExperienceDate": "2025-07-15",
+            "keyQuestionRatings": [
+              {
+                "name": "Caring",
+                "rating": "Outstanding",
+                "status": "Assessed",
+                "commentary": "\u003Cp\u003ECaring \u2013 this means we looked for evidence that the provider involved people and treated them with compassion, kindness, dignity and respect. \u003C/p\u003E\u003Cp\u003EAt our last assessment we rated this key question Good. At this assessment the rating has improved to Outstanding.\u003C/p\u003E\u003Cp\u003EThis meant people were truly respected and valued as individuals, treated with dignity and respect; and empowered as partners in their care in an exceptional service. People\u2019s feedback described it as attentive and adaptive.\u003C/p\u003E\u003Cp\u003E\u00A0\u003C/p\u003E",
+                "commentaryDate": "2025-07-15",
+                "narrative": "This service is exceptionally caring",
+                "percentageScore": "100",
+                "topicareas": [
+                  {
+                    "name": "Independence, choice and control",
+                    "qualityStatementId": "17",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe service was exceptional at promoting people\u2019s independence, so people knew their rights and had choice and control over their own care and wellbeing.\u003C/p\u003E\u003Cp\u003EThe service supported a person\u2019s relationship and ensured they had privacy by adapting their home and garden. One person told us, \u201CIt is amazing, I can spend time alone with [person] and see them whenever I want\u201D.\u003C/p\u003E\u003Cp\u003EA person who loved animals but became anxious when away from home, was encouraged to care for a dog and regularly took them on long walks. The person\u2019s anxiety had decreased, and they were working towards owning their own dog.\u003C/p\u003E\u003Cp\u003EThe service employed a sexual safety expert who supported people to explore personal relationships and sexuality. We saw people were empowered to explore and develop personal relationships that benefited their emotional wellbeing. As a result, they were supported to have choice and control; and to make independent decisions about their wellbeing.\u003C/p\u003E\u003Cp\u003EWhen staff identified that a group of people loved football, they worked with another agency to plan a tournament. This enabled people to develop strong relationships and networks with people who had a shared interest in something that was important to them.\u003C/p\u003E",
+                        "commentaryDate": "2025-07-18"
+                      }
+                    ],
+                    "qualityStatementscore": "4 - Evidence shows an exceptional standard of care"
+                  },
+                  {
+                    "name": "Kindness, compassion and dignity",
+                    "qualityStatementId": "15",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "\u003Cp\u003EThe provider was exceptional at treating people with kindness, empathy and compassion and in how they respected people\u2019s privacy and dignity. Staff always treated colleagues from other organisations with kindness and respect.\u003C/p\u003E\u003Cp\u003EWe saw many examples where staff had gone above and beyond to provide compassionate care.\u003C/p\u003E\u003Cp\u003EThe service fully funded and provided support staff to enable people to go on a dream holiday which would not have been possible otherwise. \u003C/p\u003E\u003Cp\u003EWhere specialist equipment would improve people\u2019s quality of life, staff supported them to raise money, and staff took part in fundraising in their own time. A person showed us how their equipment helped them in their everyday life. \u003C/p\u003E\u003Cp\u003EStaff supported people with empathy when they were worried or feeling low and did all they could to help. One person was supported on an overnight stay to see their family, as the person was worried about their family. Following this, staff observed the person was back to their normal self. Staff went above expectations to care for people and their families, for example when a family member needed help, staff provided support to them straight away without hesitation. \u003C/p\u003E\u003Cp\u003EAll the people we spoke with were very positive about the kindness of the staff and how they made them feel. Comments included, \u201CI like my staff, they are the best, I don\u2019t know what I would do without them\u201D, and \u201CThey are all really, really nice, patient, kind and calming\u201D. \u003C/p\u003E\u003Cp\u003EIn feedback to the provider, people had rated staff as \u2018excellent\u2019 regarding \u2018kindness\u2019 and \u2018protecting their dignity\u2019. \u003C/p\u003E",
+                        "commentaryDate": "2025-07-15"
+                      },
+                      {
+                        "evidenceCategoryId": "3",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      }
+                    ],
+                    "qualityStatementscore": "4 - Evidence shows an exceptional standard of care"
+                  },
+                  {
+                    "name": "Responding to people\u2019s immediate needs",
+                    "qualityStatementId": "18",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "\u003Cp\u003EThe service was exceptional in how they listened to and understood people\u2019s needs, views and wishes. Staff responded to people\u2019s needs in the moment and acted to minimise any discomfort, concern or distress.\u003C/p\u003E\u003Cp\u003EStaff recognised when people\u2019s communication skills were deteriorating and immediately sourced clinical support and specialist training. We saw examples of staff implementing creative methods to support people\u2019s communication and enabled them to recognise their needs and wishes. This meant people were able to maintain positive relationships with staff and their families. \u003C/p\u003E\u003Cp\u003EWe observed staff enable people to effectively communicate, people\u2019s skills had significantly improved in the last 12 months, this meant people\u2019s frustrations and anxieties had decreased and we observed people were engaging with other people and staff. We saw people were smiling and laughing, singing and dancing and enjoying other activities where previously they were unable to do so. \u003C/p\u003E\u003Cp\u003EWe saw people\u2019s wellbeing had improved significantly since the last inspection. Staff were able to effectively engage with people. The use of restraint was no longer needed. This was a significant improvement and had a positive impact, because previously people were subject to routine and frequent physical interventions. \u003C/p\u003E\u003Cp\u003EThe service supported a member of the public who approached them, they had a learning disability and could not verbally communicate and lived at home with their family. When the person told staff they felt lonely, staff met with the person and helped them set up a friendship group. The person told us, \u201C I have two friends [name and name] it makes me feel normal to have my own friends to have a friend is important that\u2019s why I wanted to start the friendship club to help others [Nominated individual and registered manager] listened and now it\u2019s going to be a real thing I am going to run it which will be so exciting I feel heard that I am making a difference, I have so much to give and [nominated individual] sees that and listens and then makes it happen\u201D. We saw that staff were alert to people\u2019s needs and took time to engage them in discussions about meeting these needs. \u003C/p\u003E",
+                        "commentaryDate": "2025-07-15"
+                      }
+                    ],
+                    "qualityStatementscore": "4 - Evidence shows an exceptional standard of care"
+                  },
+                  {
+                    "name": "Treating people as individuals",
+                    "qualityStatementId": "16",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe service treated people as individuals and focused on ensuring that people\u2019s care and support met people\u2019s needs and preferences. The leadership team took account of people\u2019s strengths, abilities, aspirations, culture and unique backgrounds and protected characteristics.\u003C/p\u003E\u003Cp\u003EPeople told us the team taught life skills and enabled them to make choices and progress; one person said they have done things that they never thought was possible. People were supported to becoming more independent. For example, people who previously were unable to access the kitchen, were able to prepare meals and bake cakes. As a result, they were now able to choose when and what they wanted to eat.\u003C/p\u003E\u003Cp\u003EStaff removed barriers that prevented people participating in activities they enjoyed due to environmental factors, for example, staff approached business owners of local attractions to plan for people to attend outside normal business hours. This had a positive impact on their wellbeing.\u003C/p\u003E\u003Cp\u003EStaff thought of creative ways that enabled people to enjoy their hobbies, where their sensory needs prevented them from attending loud or busy environments. For example, people were supported to attend at quieter times or source similar alternatives. As a result, people continued to experience actives that were important to them.\u003C/p\u003E",
+                        "commentaryDate": "2025-07-18"
+                      }
+                    ],
+                    "qualityStatementscore": "4 - Evidence shows an exceptional standard of care"
+                  },
+                  {
+                    "name": "Workforce wellbeing and enablement",
+                    "qualityStatementId": "19",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe provider, managers and staff were compassionate and caring towards each other, and we saw the provider had enhanced staff wellbeing. \u003C/p\u003E\u003Cp\u003EWhere staff were experiencing difficulties at work or in their personal lives, the provider supported them, to access a wide range of private medical practitioners, which provided timely appropriate support. \u003C/p\u003E\u003Cp\u003EWe received some positive feedback from staff, where they shared examples that demonstrated the provider had supported them. For example, a staff member told us, \u201CI have worked in many care settings and I have not experienced this kind of care and support before, and for that I am very grateful.\u201D\u003C/p\u003E\u003Cp\u003ESpecial occasions were celebrated and staff received gifts. from the provider. Good practice and positive outcomes were recognised, and staff spoke highly of each other and the provider. We saw that people\u2019s experience of the service was driven by a culture that normalised good wellbeing through inclusivity, active listening and open conversations. This enabled staff to do their job well and to be well.\u003C/p\u003E\u003Cp\u003E\u00A0\u003C/p\u003E",
+                        "commentaryDate": "2025-07-15"
+                      }
+                    ],
+                    "qualityStatementscore": "4 - Evidence shows an exceptional standard of care"
+                  }
+                ]
+              },
+              {
+                "name": "Effective",
+                "rating": "Good",
+                "status": "Assessed",
+                "commentary": "\u003Cp\u003EEffective \u2013 this means we looked for evidence that people\u2019s care, treatment and support achieved good outcomes and promoted a good quality of life, based on best available evidence. \u003C/p\u003E\u003Cp\u003EAt our last assessment we rated this key question Requires Improvement. At this assessment the rating has improved to Good.\u003C/p\u003E\u003Cp\u003EThis meant people\u2019s outcomes were consistently good and frequently better than expected compared to similar services, and people\u2019s feedback described it as very safe and personalised. \u003C/p\u003E",
+                "commentaryDate": "2025-07-15",
+                "narrative": "This service is effective",
+                "percentageScore": "75",
+                "topicareas": [
+                  {
+                    "name": "Assessing needs",
+                    "qualityStatementId": "9",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe provider made sure people\u2019s care was effective by assessing and reviewing their health, care, wellbeing and communication needs with them.\u003C/p\u003E\u003Cp\u003EPeople\u2019s risk assessments were person-centred and detailed support people needed to safely manage all areas of their health and wellbeing. For example, in relation to diabetes, eating and drinking, skin integrity and mental health. Guidance included how to recognise early signs of declining health, and what action to take. This meant people had timely access to the right support and helped people remain safe. \u003C/p\u003E",
+                        "commentaryDate": "2025-07-15"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Consent to care and treatment",
+                    "qualityStatementId": "14",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe provider told people about their rights around consent and respected these when delivering person-centred care and treatment.\u003C/p\u003E\u003Cp\u003EStaff followed the principles of the Mental Capacity Act 2005 (MCA). The MCA provides a legal framework for making particular decisions on behalf of people who may lack the mental capacity to do so for themselves. The Act requires that as far as possible people make their own decisions and are helped to do so when needed. When they lack mental capacity to take particular decisions, any decisions made on their behalf must be in their best interests and as least restrictive as possible. We found assessments of people\u0027s capacity had been completed when needed. Records showed where people lacked capacity, decisions made on their behalf were made in line with the MCA. \u003C/p\u003E\u003Cp\u003EPeople and their families told us that staff sought consent before providing care or support. Consent forms were accessible in picture and written format to support people to make informed choices about their care.\u003C/p\u003E\u003Cp\u003E\u00A0\u003C/p\u003E",
+                        "commentaryDate": "2025-07-15"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Delivering evidence-based care and treatment",
+                    "qualityStatementId": "10",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe provider planned and delivered people\u2019s care and treatment with them, including what was important and mattered to them. They did this in line with legislation and current evidence-based good practice and standards.\u003C/p\u003E\u003Cp\u003EThe service provided therapeutic support, tailored to individual needs. It focused on helping people adopt safe behaviours while reducing those that could cause harm, enabling people to express their needs more effectively and confidently. People told us as a result, individuals experienced a better quality of life.\u003C/p\u003E",
+                        "commentaryDate": "2025-07-15"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "How staff, teams and services work together",
+                    "qualityStatementId": "11",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "3",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe provider worked well across teams and services to support people. They made sure people only needed to tell their story once by sharing their assessment of needs when people moved between different services.\u003C/p\u003E\u003Cp\u003EThe service partnered with another local support provider, allowing people to access activities that would have otherwise been unavailable to increase people\u2019s access to sporting events, an animal petting zoo and boat trips. The service also contributed to a night club for people with a learning disability This contributed to a higher quality of life.\u003C/p\u003E",
+                        "commentaryDate": "2025-07-15"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Monitoring and improving outcomes",
+                    "qualityStatementId": "13",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe provider routinely monitored people\u2019s care to continuously improve it. They ensured that outcomes were positive and consistent, and that they met both clinical expectations and the expectations of people themselves.\u003C/p\u003E\u003Cp\u003EPeople\u2019s skills, life experiences, and personal strengths were actively discussed with them and their support teams to help shape meaningful, achievable outcomes. This approach allowed individuals to take ownership of their goals and understand the steps needed to reach them. Support plans focused on what people could do, rather than perceived barriers, which helped maintain both physical and mental wellbeing. This led to increased self-confidence, greater independence, and an improved quality of life.\u003C/p\u003E",
+                        "commentaryDate": "2025-07-15"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Supporting people to live healthier lives",
+                    "qualityStatementId": "12",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "\u003Cp\u003EThe provider supported people to manage their health and wellbeing to maximise their independence, choice and control. Staff supported people to live healthier lives and where possible, reduce their future needs for care and support.\u003C/p\u003E\u003Cp\u003ESome people who used the service had multiple health needs and life limiting conditions. Information about people\u0027s health needs and how these should be managed was clearly documented in people\u0027s care plans. For example, a person\u2019s epilepsy care plan provided staff with detailed information to identify pre-seizure signs, types of seizures and actions for staff to take. Staff kept clear records of any visits or correspondence with healthcare professionals, which documented the reasons for the visit, actions and the outcome. This helped to ensure that medical advice was followed.\u003C/p\u003E\u003Cp\u003E\u00A0\u003C/p\u003E\u003Cp\u003EPeople and their families told us they were supported to understand clinical advice and discuss any concerns with the relevant medical professionals. For example, we observed people with multiple health needs being supported to maintain adequate nutrition and hydration as advised by their consultant. Staff could describe people\u2019s needs in detail and how they used nationally recognised tools to assess and monitor people\u2019s nutrition and hydration needs. This meant people were receiving evidence-based care that supported their wellbeing. records showed clear progress had been made, behaviours communicating distress had decreased, while people\u2019s abilities had improved\u003C/p\u003E\u003Cp\u003EPeople had robust hospital passports and emergency bags. These contained essential information to ensure people would be supported safely in an emergency.\u003C/p\u003E\u003Cp\u003E\u00A0\u003C/p\u003E",
+                        "commentaryDate": "2025-07-15"
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  }
+                ]
+              },
+              {
+                "name": "Responsive",
+                "rating": "Outstanding",
+                "status": "Assessed",
+                "commentary": "\u003Cp\u003EResponsive \u2013 this means we looked for evidence that the provider met people\u2019s needs.\u003C/p\u003E\u003Cp\u003EAt our last assessment we rated this key question Good. At this assessment the rating has improved to outstanding.\u003C/p\u003E\u003Cp\u003EThis meant services were tailored to meet the needs of individuals and delivered to ensure flexibility, choice and continuity of care.\u003C/p\u003E",
+                "commentaryDate": "2025-07-15",
+                "narrative": "This service is exceptionally responsive",
+                "percentageScore": "89",
+                "topicareas": [
+                  {
+                    "name": "Care provision, Integration and continuity",
+                    "qualityStatementId": "21",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "\u003Cp\u003EThe provider understood the diverse health and care needs of people and their local communities, so care was joined-up, flexible and supported choice and continuity.\u003C/p\u003E\u003Cp\u003EPeople had a core staff team to help provide them with continuity of care and developing trusting relationships. This helped to reduce anxiety, and people could do things they wanted to do without restriction. A family member told us, \u201Cthe core team have been fantastic, they really understand [person\u2019s] needs, [person] is engaging more, doing activities and household chores, they are even enjoying cooking\u201D. \u003C/p\u003E\u003Cp\u003EPeople were actively involved in staff recruitment and choosing members of their core team. This meant people were supported by staff who had the correct experience, knowledge, skills and training to support them effectively. A person told us \u201CInterviewing and choosing my core staff has made a massive difference to my life, I fully trust the staff I have chosen, they have helped me go out independently, something I never thought was possible.\u201D \u003C/p\u003E",
+                        "commentaryDate": "2025-07-15"
+                      },
+                      {
+                        "evidenceCategoryId": "3",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      }
+                    ],
+                    "qualityStatementscore": "4 - Evidence shows an exceptional standard of care"
+                  },
+                  {
+                    "name": "Equity in access",
+                    "qualityStatementId": "24",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "\u003Cp\u003EThe provider made sure that people could access the care, support and treatment they needed when they needed it.\u003C/p\u003E\u003Cp\u003EWhen the provider moved as their office wasn\u2019t accessible to some people, they made sure the new office was fully accessible. This meant people could use the office for social gatherings, meetings, training and employment. \u003C/p\u003E\u003Cp\u003EThe service was able to recruit people using the service to work in the office, where this had previously not been possible. Bespoke support was provided to people all the way through the recruitment process, reasonable adjustments were made to enable people to fully participate in the recruitment process. Once people had begun working in the office, they were fully supported with their training and induction, a number of people gained part time paid employment and are thriving in the workplace. A person told us \u201C I have a real paid job and I feel normal, it\u2019s amazing\u201D. \u003C/p\u003E\u003Cp\u003EThe provider worked with the MDT to research medical advances that could benefit individuals. This information was shared with the person and their families. This meant people had access to life changing treatment as soon as it became available to them. \u003C/p\u003E",
+                        "commentaryDate": "2025-07-15"
+                      },
+                      {
+                        "evidenceCategoryId": "3",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Equity in experiences and outcomes",
+                    "qualityStatementId": "25",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EStaff and leaders actively listened to information about people who are most likely to experience inequality in experience or outcomes and tailored their care, support and treatment in response to this.\u003C/p\u003E\u003Cp\u003EPeople\u2019s desired outcomes were documented, and staff supported them to achieve their goals. Some people were supported with step by step guidelines to help them complete activities and increase their independence.\u003C/p\u003E\u003Cp\u003EWe saw evidence of how the service worked to ensure that the delivery of care promoted equality and removed barriers. For example, people wanted staff to fully understand their diagnosis and how this affected them and so they worked with staff to develop training which went beyond general information and was person centred. \u003C/p\u003E",
+                        "commentaryDate": "2025-07-15"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Listening to and involving people",
+                    "qualityStatementId": "23",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe provider enabled people to share feedback and ideas; or raise complaints about their care, treatment and support. Staff always involved people in decisions about their care and told them what had changed as a result.\u003C/p\u003E\u003Cp\u003EThe service involved people in aspects of their care, support and their lives. People were encouraged to attend a monthly meeting to share ideas and make improvements to the service. Feedback from people about the meetings included, \u201CI\u0027ve been in need of care support for 25 years this September and have never had the opportunity to share, which in my opinion is a much needed place to discuss any worries, stresses or put across any ideas, positive or negative and know you\u0027ll be listened to. I feel that it\u0027s a much needed lifeline and think that other care support agencies would do well to take on board this amazing idea and follow by example\u201D, and \u201CI like [name of the meeting] and being involved in decision making to be heard not ignored and included is all we ask\u201D.\u003C/p\u003E\u003Cp\u003EPeople were supported to complete audits, which were used to develop action plans and improve the service. People worked with the provider to agree what the focus of the audit would be and were given training to support identifying any concerns or good practice. This meant people had a clear understanding and were empowered to raise concerns where needed. \u003C/p\u003E\u003Cp\u003EThe provider had a complaints policy and procedure, which was displayed in an easy read and picture format. There was also an app people could use to provide feedback on their care. A family member said, \u0022When there have been things that have gone wrong or things that I haven\u0027t been happy with, the registered manager and her team are always keen to help and solve any issues as quickly as possible.\u0022 Complaints received by the service were investigated and appropriate actions were taken when required.\u003C/p\u003E\u003Cp\u003EWhere people wanted staff to fully understand their diagnosis and how this affected them, staff worked with the person to develop bespoke training for their staff. People told us \u201CMy team now understands how to support me and how my mental health affects me, rather than just having general information that isn\u2019t always true for me\u201D. \u003C/p\u003E\u003Cp\u003EAdvocates who worked with people told us, \u201CThe service goes above and beyond to ensure peoples voices are heard, even if the person is not able to communicate verbally, they intuitively know when people are dissatisfied, and look how issues can be quickly resolved\u201D. \u003C/p\u003E",
+                        "commentaryDate": "2025-07-15"
+                      }
+                    ],
+                    "qualityStatementscore": "4 - Evidence shows an exceptional standard of care"
+                  },
+                  {
+                    "name": "Person-centred Care",
+                    "qualityStatementId": "20",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "\u003Cp\u003EThere was a genuine person-centred culture, where staff worked with people and their families to truly understand how to support them. People were at the centre of everything staff did to ensure their needs, wishes and goals were understood and they were supported to live fulfilled lives. The provider ensured the service was exceeding the standards in \u201CRight support, right care, right culture\u201D guidance.\u003C/p\u003E\u003Cp\u003EThe service developed a multi-disciplinary team (MDT). Members of the MDT included a speech and language therapist, occupational therapist, specialist nurse, psychologist, psychiatrist and a counsellor. The provider paid for the service of the MDT.\u003C/p\u003E\u003Cp\u003EThe MDT regularly assessed people and held meetings with them, their families and their core staff team. This resulted in people receiving timely, person-centred support. We saw people were experiencing improved quality of life as their mental wellbeing had improved. . A professional told us, \u201CThe service\u2019s MDT is phenomenal, people have almost instant access to clinical assessments and treatments, they would otherwise have to wait over 18 months to receive or sometimes would never have been available to them. The MDT is reassuring and reflective, where everyone can share ideas.\u201D A person told us, \u201CThe MDT has been brilliant, I have always been included, I have been properly diagnosed and have a better understanding of my condition.\u201D A relative told us, \u201CThe MDT monthly meeting has been exceptionally good for [person\u2019s] health and wellbeing. Having all the right people in place means we can make dynamic decisions and get input from everyone to make sure we are heading in the best direction. [Person\u2019s] best interests are front and centre in every meeting. I have been consulted on every decision and event, but this is the first time I have ever felt the results coming from the meetings - that normally I would be feeling alone and arguing the case for - are unfolding naturally, sometimes without even needing me involved. Because everyone is seeing what I am seeing before I even say anything. The feeling is of everyone being on the same page.\u201D.\u003C/p\u003E\u003Cp\u003EPeople were actively encouraged to achieve their goals and live their life beyond the service. We saw many examples where people\u2019s independence and quality of life had greatly improved. For example, when a person did not feel safe or confident to go out alone, staff worked with them to use assistive technology to gradually reduce the staff support needed, until the person was happy going out all day on their own. The person was also being supported to plan a holiday. Staff told us, \u201C[Person] has come such a long way, you can see how much their self-confidence has grown.\u201D The person told us, \u201CI feel safe when it comes to times that I struggle as there is always a plan in place as to what to do, this has meant I can go out on my own, I am so happy\u201D.\u003C/p\u003E\u003Cp\u003EWe received a large amount of positive feedback about how the service ensured people received person-centred care. For example, \u201CMy staff are very friendly and approachable. I feel like my care is very person centred, and I have never felt unsafe.\u201D \u201CMy staff provide attentive care and are adaptive, my advanced conditions are discussed and dealt with professionally and in a person centred way.\u201D A professional told us, \u201CMilford Del is an outstanding care company that consistently places the needs and well-being of their clients [people] at the heart of everything they do. Their team is incredibly responsive, compassionate, and dedicated to providing high-quality, person-centred support. They go above and beyond to ensure clients[people] feel valued, safe, and well cared for. Milford Del sets a high standard in the care sector and is a truly supportive and reliable organisation.\u201D.\u003C/p\u003E",
+                        "commentaryDate": "2025-07-18"
+                      }
+                    ],
+                    "qualityStatementscore": "4 - Evidence shows an exceptional standard of care"
+                  },
+                  {
+                    "name": "Planning for the future",
+                    "qualityStatementId": "26",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "\u003Cp\u003EPeople were supported to plan for important life changes, so they could have enough time to make informed decisions about their future, including at the end of their life.\u003C/p\u003E\u003Cp\u003EAt the time of the inspection, no one using the service was receiving end of life care, but some people had life limiting conditions. The registered manager worked closely with the local hospice, healthcare professionals and family members to help ensure people\u0027s needs could be met and they would receive appropriate support at the end of their lives.\u003C/p\u003E",
+                        "commentaryDate": "2025-07-15"
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Providing Information",
+                    "qualityStatementId": "22",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "\u003Cp\u003EThe provider was exceptional at developing appropriate, accurate and up-to-date information in formats that were tailored to individual needs.\u003C/p\u003E\u003Cp\u003EInformation was available in different formats, depending on individual needs. We saw people accessing their care plans electronically using a \u2018read aloud\u2019 mode, some were in \u2018easy read\u2019 and others contained signs and symbols. This enabled people to be actively involved in communication and decision making. A person told us \u201CThis service has been transformed and is like a totally different place. Communication is so much better, and I am able to control how I am supported that has made a world of difference to my quality of life\u201D. \u003C/p\u003E\u003Cp\u003EStaff communicated effectively with people through difficult transitions. For example, staff researched the characters and learnt the language used in a person\u2019s favourite computer game and used this to help them understand a transition plan. This meant the person was able to understand each stage of the transition, develop their own support plans and achieve their goals. A professional told us, \u201CThe team were phenomenal, we only had 12 days\u2026 the way they effectively communicated and engaged with [person] had a huge impact on the successful outcome, furthermore staff have enabled [person] to go out for the day, this is the first time [person] has done this in 12 years.\u201D \u003C/p\u003E",
+                        "commentaryDate": "2025-07-15"
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      }
+                    ],
+                    "qualityStatementscore": "4 - Evidence shows an exceptional standard of care"
+                  }
+                ]
+              },
+              {
+                "name": "Safe",
+                "rating": "Good",
+                "status": "Assessed",
+                "commentary": "\u003Cp\u003ESafe \u2013 this means we looked for evidence that people were protected from abuse and avoidable harm.\u003C/p\u003E\u003Cp\u003EAt our last assessment we rated this key question Requires Improvement. At this assessment the rating has improved to Good.\u003C/p\u003E\u003Cp\u003EGood: This meant people were safe and protected from avoidable harm.\u003C/p\u003E\u003Cp\u003EThe provider was previously in breach of the legal regulations in relation to safe care and treatment, safeguarding people from abuse and staffing. Significant improvements were found at this inspection and the provider was no longer in breach of regulations. \u003C/p\u003E",
+                "commentaryDate": "2025-07-15",
+                "narrative": "This service is safe",
+                "percentageScore": "75",
+                "topicareas": [
+                  {
+                    "name": "Infection prevention and control",
+                    "qualityStatementId": "7",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe provider assessed and managed the risk of infection. They detected and controlled the risk of it spreading and shared concerns with appropriate agencies promptly.\u003C/p\u003E\u003Cp\u003EStaff supported people to keep their homes clean and safe from infection. Staff used Personal Protective Equipment when needed, understood how to stop infections spreading and spot checks were completed regularly. Staff encouraged people to maintain their personal hygiene, keep their homes clean, some people had developed their skills and could tell us how to stop germs spreading and stay safe. \u003C/p\u003E",
+                        "commentaryDate": "2025-07-15"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Involving people to manage risks",
+                    "qualityStatementId": "4",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe provider worked with people to understand and manage risks by thinking holistically. Staff provided care to meet people\u2019s needs that was safe, supportive and enabled people to do the things that mattered to them.\u003C/p\u003E\u003Cp\u003ERisk assessments were clear, detailed, and reviewed often to keep people safe. \u003C/p\u003E\u003Cp\u003EPeople were fully involved and supported to take positive risks. For example, a person who had long expressed a wish to live independently was helped to work towards their goal through small, manageable steps. The person and their core staff team held weekly meetings to track progress and carefully manage potential risks. Over time, the person had become able to spend half the day without direct support. Previously, they had required continuous staff assistance throughout the day.\u003C/p\u003E",
+                        "commentaryDate": "2025-07-15"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Learning culture",
+                    "qualityStatementId": "1",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe provider had a proactive and positive culture of safety, based on openness and honesty. Staff listened to concerns about safety and investigated and reported safety events. Lessons were learnt to continually identify and embed good practice.\u003C/p\u003E\u003Cp\u003EIncidents, accidents and \u2018near misses\u2019 were clearly recorded and regularly reviewed by the registered manager.\u003C/p\u003E\u003Cp\u003EThe quality manager also analysed this information and provided a report to the provider, to identify and implement improvements. \u003C/p\u003E",
+                        "commentaryDate": "2025-07-15"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Medicines optimisation",
+                    "qualityStatementId": "8",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe provider made sure that medicines were safe and met people\u2019s needs, and preferences. Staff involved people in planning, including when changes happened.\u003C/p\u003E\u003Cp\u003EStaff safely supported people with their medicines and kept clear records. When people were prescribed medicines to take \u2018when required\u2019 for periods of agitation or distress, staff had clear, person-centred guidance on how and when to administer them. We saw evidence people were supported in line with this guidance, to ensure they were only administered as a last resort. Staff knew how to report medicine concerns and followed guidance. Creams were used with clear body maps to ensure people had creams administered safely. Staff were trained, competent, and regularly assessed to make sure best practice was followed and people received their medicines safely. \u003C/p\u003E",
+                        "commentaryDate": "2025-07-15"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Safe and effective staffing",
+                    "qualityStatementId": "6",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe provider made sure there were enough qualified, skilled and experienced staff, who received effective support, supervision and development. They worked together well to provide safe care that met people\u2019s individual needs.\u003C/p\u003E\u003Cp\u003EThe service had recruitment checks, in line with legal requirements, to make sure only suitable staff were hired. Staff were placed in teams and given training tailored to the needs of people they were supporting, this included suitable training in working with autistic people, people with a learning disability, positive behaviour support and person cantered care, This meant people were supported by skilled staff who understood their needs.\u003C/p\u003E\u003Cp\u003E\u00A0\u003C/p\u003E",
+                        "commentaryDate": "2025-07-15"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Safe environments",
+                    "qualityStatementId": "5",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "\u003Cp\u003EThe provider detected and controlled potential risks in the care environment. They made sure equipment, facilities and technology supported the delivery of safe care.\u003C/p\u003E\u003Cp\u003EPeople were encouraged to take part in checking the safety of their homes and the equipment they used. For individuals who felt anxious about fire alarms, tailored support was provided to build understanding and reduce fear. By involving them in alarm testing at home and the local office, one person successfully gained the confidence and ability to evacuate independently when the alarm sounded.\u003C/p\u003E\u003Cp\u003E\u00A0\u003C/p\u003E",
+                        "commentaryDate": "2025-07-15"
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Safe systems, pathways and transitions",
+                    "qualityStatementId": "2",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "3",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe provider worked with people and healthcare partners to establish and maintain safe systems of care, in which safety was managed or monitored. They made sure there was continuity of care, including when people moved between different services.\u003C/p\u003E\u003Cp\u003EThe service supported people and families to be fully involved when moving between services, completed comprehensive strength-based assessments and established core staff teams. We saw people had consistent person centred support and transitions went smoothly. A person told us, \u201CI was worried about leaving hospital and being supported at home, but Milford Del were great, the staff visited me frequently in hospital and we got to know each other. I had trust in them and could look forward to going back home, staff have my back and support me to discuss my views with my clinical team\u201D. \u003C/p\u003E",
+                        "commentaryDate": "2025-07-15"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Safeguarding",
+                    "qualityStatementId": "3",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "\u003Cp\u003EThe provider worked with people and healthcare partners to understand what being safe meant to them and the best way to achieve that. Staff concentrated on improving people\u2019s lives while protecting their right to live in safety, free from bullying, harassment, abuse, discrimination, avoidable harm and neglect. The provider shared concerns quickly and appropriately.\u003C/p\u003E\u003Cp\u003EThere were appropriate policies in place to protect people from abuse and staff had training in safeguarding adults and children. Staff could describe actions they would take if they suspected or saw abuse. Contact numbers for the management team, the local authority safeguarding team and Care Quality Commission were also available to staff. The registered manager told us there was always a manager on call outside of office hours, in case of emergencies. The management team knew what action to take if concerns or safeguarding issues were passed to them. Records showed the registered manager had reported and investigated incidents appropriately and promptly when required. \u003C/p\u003E\u003Cp\u003EWhere restrictive practice was being used, they were legally justified, proportionate, necessary and as a last resort. There was a clear commitment to reducing them. All restrictive practices were recorded in people\u2019s Deprivation of Liberty Safeguards. Deprivation of Liberty Safeguards (DoLS) are a legal framework within the Mental Capacity Act 2005 in England and Wales, designed to protect vulnerable adults who lack the mental capacity to consent to their care or treatment and who may be deprived of their liberty as a result.\u003C/p\u003E",
+                        "commentaryDate": "2025-07-15"
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  }
+                ]
+              },
+              {
+                "name": "Well-led",
+                "rating": "Outstanding",
+                "status": "Assessed",
+                "commentary": "\u003Cp\u003EWell-led \u2013 this means we looked for evidence that service leadership, management and governance assured high-quality, person-centred care; supported learning and innovation; and promoted an open, fair culture.\u003C/p\u003E\u003Cp\u003EAt our last assessment we rated this key question Requires Improvement. At this assessment the rating has improved to outstanding.\u003C/p\u003E\u003Cp\u003EThis meant service leadership was exceptional and distinctive. Leaders and the culture they created drove and improved high-quality, person-centred care.\u003C/p\u003E\u003Cp\u003EThe provider was previously in breach of the legal regulation in relation to the governance of the service. We found the service had significantly improved and was no longer in breach of regulation. \u003C/p\u003E\u003Cp\u003E\u00A0\u003C/p\u003E",
+                "commentaryDate": "2025-07-15",
+                "narrative": "This service is exceptionally well-led",
+                "percentageScore": "93",
+                "topicareas": [
+                  {
+                    "name": "Capable, compassionate and inclusive leaders",
+                    "qualityStatementId": "28",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe provider had exceptionally inclusive leaders at all levels who understood the context in which they delivered care, treatment and support and embodied the culture and values of their workforce and organisation. Leaders had the skills, knowledge, experience and credibility to lead effectively. They always did so with integrity, openness and honesty.\u003C/p\u003E\u003Cp\u003EThe leadership team had changed since our previous inspection. The current leadership team were experts in their field and shared their knowledge and experience with each other and with the staff. This had enabled them to turn around a failing service and fully embed outstanding practices, where staff felt empowered and supported to make a difference to people\u2019s lives. A staff member told us, \u201C\u2026I knew of Milford Del\u2019s previous CQC rating and so knew there would need to be a lot of hard work for the company to be brought back up to a satisfactory standard. What I have seen since working for the company is not a satisfactory standard, because it does in fact, far exceed satisfactory standards. The management team have worked tirelessly to bring the company up and along the way have continued to support the teams to a very high standard.\u201D\u003C/p\u003E\u003Cp class=\u0022MsoNoSpacing\u0022\u003E\u00A0\u003C/p\u003E\u003Cp\u003EPeople shared very positive feedback about the improvements made since the last inspection. They said the service became stronger, with excellent support for people. Staff talked about outstanding person-centred care, more life opportunities and stronger reporting. A staff member told us, \u201CI left the company two years ago and came back a year ago and the changes that have been put in place now is amazing it is such a great company to work for... it\u0027s such a pleasure to work here especially with our wonderful management team at [name]\u201D, Another staff member said, \u201CThe whole vibe around Milford Del has changed since [nominated individual] has taken over. Everyone appears to be singing from the same sheet, and this is reflected within the support delivered.\u201D\u003C/p\u003E\u003Cp\u003EThere was an effective on-call system in place and staff who were on call knew people well. We observed the registered manager respond to an emergency whilst we were on site, they were very efficient and arranged for additional support. This meant the person and the staff were supported quickly and this prevented a potential hospital admission. A staff member said, \u201CIt\u0027s always refreshing to see such a hands on management team\u2026 Managers, Registered Managers who will drop everything to support on the floor when needs arise.\u201D\u003C/p\u003E",
+                        "commentaryDate": "2025-07-15"
+                      }
+                    ],
+                    "qualityStatementscore": "4 - Evidence shows an exceptional standard of care"
+                  },
+                  {
+                    "name": "Freedom to speak up",
+                    "qualityStatementId": "29",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe provider was exceptional at fostering a positive culture where people knew they could speak up and their voice would be heard.\u003C/p\u003E\u003Cp\u003EThe provider supported people to take part in human rights training at the office, which covered abuse, hate crime, and mate crime. People said they learnt how to speak up if they felt something was not right or if they felt unsafe. One person proudly showed us a certificate and said, \u201CIt was really good, I learnt so much and feel safer.\u201D\u003C/p\u003E\u003Cp\u003EThe service created an app for people to give feedback, which people said was simple to use. The leadership team checked the app often and replied quickly. The nominated individual said people were more willing to speak up, both to raise concerns and to thank staff.\u003C/p\u003E\u003Cp\u003EThe service used creative tools to help people with multiple needs speak up. They used assistive technology and personal methods like stickers, pictures, and games. One person used a picture board with staff photos and pictures to show how they felt. The feedback was recorded and shared with the manager. Families and advocates were involved when appropriate.\u003C/p\u003E\u003Cp\u003EPeople and families had regular meetings and felt safe sharing concerns. They said they could speak openly with the manager and leadership team. Concerns were dealt with quickly. A family member said, \u201CWe meet with the manager every week. Communication is open, and I fully trust Milford Del\u2014they are always responsive and honest.\u201D \u003C/p\u003E\u003Cp\u003EWhen staff raised concerns, these were investigated, and actions were taken to maintain people\u2019s safety and wellbeing. After any investigation, feedback was provided and lessons learnt were shared.\u003C/p\u003E\u003Cp\u003EA staff member told us \u201CThe company is very responsive with any concerns that both the clients [people] and staff have and will implement any changes needed at the earliest opportunity- immediately if the situation requires it.\u201D\u003C/p\u003E\u003Cp\u003E\u00A0\u003C/p\u003E",
+                        "commentaryDate": "2025-07-15"
+                      }
+                    ],
+                    "qualityStatementscore": "4 - Evidence shows an exceptional standard of care"
+                  },
+                  {
+                    "name": "Governance, management and sustainability",
+                    "qualityStatementId": "31",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EOur previous inspection found the service was using outdated practices, the provider developed new creative systems to improve and continuously monitor the effectiveness of the support being delivered. \u003C/p\u003E\u003Cp\u003EThe provider had effective quality assurance procedures to monitor quality of care. This included accident and incident analysis, behaviour records analysis, use of \u2018when required\u2019 medicines, health monitoring records and daily records. This had helped the staff record effectively and helped the team provide holistic support that safeguarded people from abuse. The weekly report was shared with the person, or their families. A family member told us \u201CThe care core teams are providing to individuals is incredible, granted there will always be obstacles to overcome through daily living however I feel Milford Del Support services strive to continually develop and better themselves. \u201CAnother family member said \u201C... The data [quality manager] provides really helps with a client like [person] who is so busy and behaviours constantly changing, it means we have the longer term and wider picture and can see what is really happening, rather than trying to make decisions from anecdotal day to day views where sometimes you can lose sight of the wood for the trees\u201D.\u003C/p\u003E\u003Cp\u003EThe service completed robust quality assurance audits that were completed regularly by the quality team and the management team which provided feedback on their findings and ongoing learning and development. They developed an action plan which was monitored and continuously developed. The service had up to date and appropriate policies in place to aid with the running of the service. For example, there was a whistle-blowing policy in place which provided details of external organisations where staff could raise concerns if they felt unable to raise them internally. The registered manager understood their responsibilities and was aware of the need to notify the Care Quality Commission (CQC) of significant events in line with the regulations. The rating from the previous inspection report was displayed prominently in the service and on the provider\u0027s website. \u003C/p\u003E\u003Cp\u003EA staff member told us, \u201CA whole new quality framework has been implemented to audit the level of care and support being provided. Previously quality assurance appeared non-existent.\u201D \u003C/p\u003E",
+                        "commentaryDate": "2025-07-15"
+                      }
+                    ],
+                    "qualityStatementscore": "4 - Evidence shows an exceptional standard of care"
+                  },
+                  {
+                    "name": "Learning, improvement and innovation",
+                    "qualityStatementId": "33",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe provider focused on continuous learning, innovation and improvement across the organisation and local system. They encouraged creative ways of delivering equality of experience, outcome and quality of life for people. They actively contributed to safe, effective practice and research.\u003C/p\u003E\u003Cp\u003EThe provider engaged people, their families, professionals and staff in the running of the service and invited feedback through informal chats, regular meetings and specific focus groups. Staff were also encouraged to regularly feedback via an online portal about the service delivery and share ideas and suggestions on how the service could be improved. Anonymous quality assurance questionnaires were sent to people, their families, staff and professionals once a year, and we saw the provider used this feedback to make improvements. \u003C/p\u003E\u003Cp\u003EWe also saw that the service had developed a multi-disciplinary team which had identified innovative ideas, resulting in better outcomes for people. \u003C/p\u003E",
+                        "commentaryDate": "2025-07-15"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  },
+                  {
+                    "name": "Partnerships and communities",
+                    "qualityStatementId": "32",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "1",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "3",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe provider clearly understood and carried out their duty to collaborate and worked in partnership, and services worked seamlessly for people. They always shared information and learning with partners and collaborated for improvement.\u003C/p\u003E\u003Cp\u003EThe provider had a strong working relationship with a local care agency. The provider ensured the agency staff worked with the same teams and received training specific to their needs, so as to ensure people had consistent support. This also enabled the provider to take on emergency care packages for people with multiple support needs. \u003C/p\u003E\u003Cp\u003E\u00A0\u003C/p\u003E\u003Cp\u003EThe provider worked closely with local housing associations and spoke up for people when their needs changed. As a result, we saw housing associations made changes to people\u2019s homes to prevent them from having to move and they could stay safe and comfortable in the future. \u003C/p\u003E\u003Cp\u003E\u00A0\u003C/p\u003E\u003Cp\u003EThe service held fundraising events for a local charity that supported disabled people and their families. The charity told us,\u201D ,,,,,, this has enabled us to provide support to hundreds of disabled children and their families across the island. Milford Del\u2019s director is going to complete a 9,000 mile bike ride to raise additional funds\u2026\u201D\u003C/p\u003E\u003Cp\u003EThe service helped another local provider without charging them when there was an emergency evacuation of vulnerable people. The management team arrived at the scene within five minutes. They quickly found emergency accommodation for five people, helped them collect their personal belongings, and made sure they were safe. The people were happy with the support they received.\u003C/p\u003E\u003Cp\u003EWe saw numerous examples of where staff and leaders engaged with people to share learning that resulted in continuous improvements to the service. For example, regular audits and monthly engagement meetings. \u003C/p\u003E",
+                        "commentaryDate": "2025-07-15"
+                      }
+                    ],
+                    "qualityStatementscore": "4 - Evidence shows an exceptional standard of care"
+                  },
+                  {
+                    "name": "Shared direction and culture",
+                    "qualityStatementId": "27",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe provider had a very clear shared vision, strategy and culture. This was based on transparency, equity, equality and human rights, diversity and inclusion, engagement, and an exceptional understanding of the challenges and the needs of people and their communities. \u003C/p\u003E\u003Cp\u003EThe culture of the service had significantly improved since our last inspection. The provider had implemented and embedded a person-centred culture, where people were supported to live fulfilled lives. A person told us, \u201CMilford del is like a totally different place, my staff and my manager help me, I am less anxious and distressed, and my mental health has improved, this wouldn\u2019t have happened before the new management team took over\u201D. \u003C/p\u003E\u003Cp\u003EOur previous inspection found the service was using outdated practices. Staff received expert training, support and mentoring from qualified leaders., This was an improvement since the last inspection and had led to a complete shift in the staff culture. Previously, staff were trained to focus on controlling people\u2019s behaviour, instead of using a supportive approach. This change had contributed to a significant reduction of restraint, and increased people\u2019s quality of life. \u003C/p\u003E\u003Cp\u003EStaff and leaders now demonstrated a positive, compassionate, listening culture that promoted trust and understanding between them and people using the service.\u003C/p\u003E\u003Cp\u003EFor example, leaders and staff helped people to increase their independence and live full, active lives. People were supported to make their own daily choices. The team worked closely together. Feedback showed people felt in control and happy with their support.\u003C/p\u003E\u003Cp\u003EPeople and families took part in regular meetings about their support. These meetings helped people stay involved in planning and decision-making. Feedback showed open, honest communication. Concerns were handled quickly, and ideas were shared.\u003C/p\u003E\u003Cp\u003EThe service completed daily audits for people who were supported by the MDT. These looked at any incidents and made changes when needed, with help from families and clinical teams. We saw many examples where peoples\u2019 communication and self-calming skills had improved. This meant people no longer required 3:1 staff support to go out, they were able to go out anytime they chose as the support they needed was readily available. \u003C/p\u003E\u003Cp\u003EA staff member said, \u201CThe co-production and working together ethic of Milford Del is refreshing to see, there is no \u0027us and them\u0027 culture, more an \u0027all as one\u0027 culture through the company. Managers actively seeking to engage support staff in all aspects of care for our people supported, not just the hands on side that would typically be the expectation of a support worker. The company strove to encourage staff to develop on their skills and progress to levels they want to achieve.\u201D \u003C/p\u003E",
+                        "commentaryDate": "2025-07-15"
+                      }
+                    ],
+                    "qualityStatementscore": "4 - Evidence shows an exceptional standard of care"
+                  },
+                  {
+                    "name": "Workforce equality, diversity and inclusion",
+                    "qualityStatementId": "30",
+                    "status": "Assessed",
+                    "evidenceCategory": [
+                      {
+                        "evidenceCategoryId": "2",
+                        "commentary": "",
+                        "commentaryDate": ""
+                      },
+                      {
+                        "evidenceCategoryId": "5",
+                        "commentary": "\u003Cp\u003EThe provider valued diversity in their workforce. They worked towards an inclusive and fair culture by improving equality and equity for people who worked for them.\u003C/p\u003E\u003Cp\u003EMost staff said they felt supported and trusted the management team. Staff described the CEO and managers as inclusive, and reasonable adjustments were made to support staff to carry out their roles well. Staff were given chances to grow in their roles. There was a staff app with updates about policies, support options, and wellbeing. Staff also had access to a counsellor and employee assistance programme and were helped to use them when needed. A staff member said, \u201C\u2026at Milford Del, I\u0027ve found a company that truly recognises the importance of invisible challenges. That level of empathy and understanding doesn\u0027t just stop at staff\u2014it\u0027s embedded in the way we deliver care.\u201D\u003C/p\u003E\u003Cp\u003EWe saw evidence that leaders took steps to ensure equality of opportunity and experience for the workforce within their place of work.\u003C/p\u003E\u003Cp\u003E\u00A0\u003C/p\u003E",
+                        "commentaryDate": "2025-07-15"
+                      }
+                    ],
+                    "qualityStatementscore": "3 - Evidence shows a good standard of care"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

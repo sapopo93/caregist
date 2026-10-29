@@ -1,0 +1,158 @@
+{
+  "locationId": "1-5588555895",
+  "providerId": "1-126776320",
+  "organisationType": "Location",
+  "type": "Independent Healthcare Org",
+  "name": "The Doctors Laboratory",
+  "onspdCcgCode": "E38000240",
+  "onspdCcgName": "NHS North Central London CCG",
+  "onspdIcbCode": "E54000071",
+  "onspdIcbName": "NHS West and North London Integrated Care Board",
+  "registrationStatus": "Registered",
+  "registrationDate": "2018-08-08",
+  "dormancy": "N",
+  "onspdLatitude": 51.5280354,
+  "onspdLongitude": -0.1281211,
+  "careHome": "N",
+  "inspectionDirectorate": "Hospitals",
+  "postalAddressLine1": "The Halo Building",
+  "postalAddressLine2": "1 Mabledon Place",
+  "postalAddressTownCity": "London",
+  "region": "London",
+  "postalCode": "WC1H 9AX",
+  "uprn": "5086845",
+  "mainPhoneNumber": "02073077342",
+  "website": "www.tdlpathology.com",
+  "numberOfBeds": 0,
+  "constituency": "Holborn and St Pancras",
+  "localAuthority": "Camden",
+  "lastInspection": {
+    "date": "2022-03-25"
+  },
+  "lastReport": {
+    "publicationDate": "2022-05-25"
+  },
+  "relationships": [
+    {
+      "relatedLocationId": "1-206892812",
+      "relatedLocationName": "The Doctors Laboratory - Whitfield Street",
+      "type": "HSCA Predecessor",
+      "reason": "Location Move"
+    }
+  ],
+  "locationTypes": [],
+  "regulatedActivities": [
+    {
+      "name": "Diagnostic and screening procedures",
+      "code": "RA8",
+      "contacts": [
+        {
+          "personTitle": "Mr",
+          "personGivenName": "Timothy",
+          "personFamilyName": "Herriman",
+          "personRoles": [
+            "Registered Manager"
+          ]
+        }
+      ]
+    }
+  ],
+  "gacServiceTypes": [
+    {
+      "name": "Diagnosis/screening",
+      "description": "Diagnostic and/or screening service"
+    }
+  ],
+  "specialisms": [
+    {
+      "name": "Services for everyone"
+    }
+  ],
+  "inspectionCategories": [
+    {
+      "code": "H4",
+      "primary": "true",
+      "name": "Acute hospital - Independent specialist"
+    }
+  ],
+  "inspectionAreas": [
+    {
+      "inspectionAreaId": "medlabs",
+      "inspectionAreaName": "Medical laboratories",
+      "status": "Active (Not rated)"
+    }
+  ],
+  "currentRatings": {
+    "overall": {
+      "rating": "Inspected but not rated",
+      "reportDate": "2022-05-25",
+      "reportLinkId": "72888b4f-9b54-4158-8fe4-00a475922405",
+      "keyQuestionRatings": [
+        {
+          "name": "Safe",
+          "rating": "Inspected but not rated",
+          "reportDate": "2022-05-25",
+          "reportLinkId": "72888b4f-9b54-4158-8fe4-00a475922405"
+        },
+        {
+          "name": "Well-led",
+          "rating": "Inspected but not rated",
+          "reportDate": "2022-05-25",
+          "reportLinkId": "72888b4f-9b54-4158-8fe4-00a475922405"
+        },
+        {
+          "name": "Caring",
+          "rating": "No published rating"
+        },
+        {
+          "name": "Responsive",
+          "rating": "Inspected but not rated",
+          "reportDate": "2022-05-25",
+          "reportLinkId": "72888b4f-9b54-4158-8fe4-00a475922405"
+        },
+        {
+          "name": "Effective",
+          "rating": "Inspected but not rated",
+          "reportDate": "2022-05-25",
+          "reportLinkId": "72888b4f-9b54-4158-8fe4-00a475922405"
+        }
+      ]
+    },
+    "reportDate": "2022-05-25",
+    "serviceRatings": [
+      {
+        "name": "medlabs",
+        "rating": "Inspected but not rated",
+        "reportDate": "2022-05-25",
+        "reportLinkId": "72888b4f-9b54-4158-8fe4-00a475922405",
+        "keyQuestionRatings": [
+          {
+            "name": "Effective",
+            "rating": "Inspected but not rated"
+          },
+          {
+            "name": "Responsive",
+            "rating": "Inspected but not rated"
+          },
+          {
+            "name": "Safe",
+            "rating": "Inspected but not rated"
+          },
+          {
+            "name": "Well-led",
+            "rating": "Inspected but not rated"
+          }
+        ]
+      }
+    ]
+  },
+  "reports": [
+    {
+      "linkId": "72888b4f-9b54-4158-8fe4-00a475922405",
+      "reportDate": "2022-05-25",
+      "firstVisitDate": "2022-03-25",
+      "reportUri": "/reports/72888b4f-9b54-4158-8fe4-00a475922405?20220525070057",
+      "reportType": "Location"
+    }
+  ]
+}
