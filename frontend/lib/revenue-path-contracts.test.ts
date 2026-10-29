@@ -76,6 +76,27 @@ describe("revenue path contracts", () => {
     });
   });
 
+  it("describes the Brief as organisations to investigate, not leads or a CRM-ready import", () => {
+    const briefCopyFiles = [
+      "app/page.tsx",
+      "app/pricing/page.tsx",
+      "app/search/page.tsx",
+      "app/signup/page.tsx",
+      "app/territory-opportunity-brief/page.tsx",
+      "app/terms/page.tsx",
+      "lib/caregist-config.ts",
+    ];
+
+    for (const file of briefCopyFiles) {
+      const copy = source(file);
+      assert.doesNotMatch(copy, /CRM(?:-import)?-ready/i, file);
+      assert.doesNotMatch(copy, /worth\s+approaching/i, file);
+      assert.doesNotMatch(copy, /ranked shortlist|ranks the accounts|priority organisations/i, file);
+      assert.match(copy, /organisations\s+to\s+investigate/, file);
+    }
+    assert.match(source("lib/caregist-config.ts"), /check your CRM field mapping before promising an import/);
+  });
+
   it("keeps one-off requests out of signup and keeps roadmap products non-purchasable", () => {
     const pricingCta = source("components/PricingCTA.tsx");
 

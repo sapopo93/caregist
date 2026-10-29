@@ -126,8 +126,8 @@ export default async function SearchPage({
             <h2 className="mt-2 text-2xl font-bold text-bark">Need to know what changes next?</h2>
             <p className="mt-3 text-sm leading-6 text-dusk">
               The Weekly Digest follows new registrations and rating changes for one England
-              region week by week. The Territory Opportunity Brief ranks the accounts worth
-              approaching there.
+              region week by week. The Territory Opportunity Brief shortlists the organisations
+              to investigate there.
             </p>
             <Link
               href="/pricing"
