@@ -31,7 +31,10 @@ written into the selection, manifest, and confirmation PDF. Publication refuses 
 
 Territory Brief rows are deduplicated by CQC provider ID before the confirmed cap is applied. Conflicting names,
 duplicate final records, empty selections, and selections above 50 or above the buyer's cap fail closed; rows are
-never silently truncated or padded. Tests cover 1, 8, 24, and 50 distinct providers.
+never silently truncated or padded by the package layer. The product generator's documented deterministic top-N
+selection states both the eligible-provider count and selected count in the PDF and every CSV row. The final
+provider IDs, names, and locations must exactly match `providers.csv`; malformed CSV or incomplete PDF bytes fail
+closed. Tests cover 1, 8, 24, and 50 distinct providers.
 
 A completed researched dossier must contain published findings, subsequent evidence, a buyer question,
 comparative reason, disconfirming evidence, next step, owner role, and decision effect. Every other record is
@@ -50,7 +53,8 @@ Each version includes both the selection hash and a content hash. Identical retr
 including concurrent workers. Changed content creates a new version without overwriting the old one. Interrupted or
 tampered publication fails closed and leaves no live partial directory. Blob uploads that fail part-way can leave
 private orphan objects (an existing platform limitation), but the database transaction does not mark delivery or
-queue an email.
+queue an email. Stripe retries derive the confirmation time from durable `paid_at` evidence or the authoritative
+Checkout Session creation time, so a retry does not create a new selection hash merely because wall-clock time moved.
 
 ## Preview and verification
 

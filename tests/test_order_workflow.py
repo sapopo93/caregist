@@ -44,7 +44,7 @@ def world(monkeypatch, tmp_path):
         if args.stage == "deliver":
             checks.add("matches_quote", 30 >= (args.quoted_count or 0), "ok")
         pdf = order_dir / "brief.pdf"
-        pdf.write_bytes(b"%PDF")
+        pdf.write_bytes(b"%PDF-1.4 test\n%%EOF\n")
         csv_path = order_dir / "brief.csv"
         csv_path.write_text(
             "cqc_provider_id,cqc_location_id,organisation_name\n"
@@ -62,9 +62,12 @@ def world(monkeypatch, tmp_path):
         checks = po.Checks()
         checks.add("digest_built", True, "ok")
         pdf = order_dir / f"issue{args.issue}.pdf"
-        pdf.write_bytes(b"%PDF")
+        pdf.write_bytes(b"%PDF-1.4 test\n%%EOF\n")
         csv_path = order_dir / f"issue{args.issue}.csv"
-        csv_path.write_text("event_type,count\nnew_registration,4\n", encoding="utf-8")
+        csv_path.write_text(
+            "section,date,location_id,name,local_authority,detail,cqc_url\n",
+            encoding="utf-8",
+        )
         manifest = order_dir / f"issue{args.issue}.json"
         manifest.write_text('{"generated_at":"2026-10-16"}', encoding="utf-8")
         return checks, {"new_registrations": 4, "ratings_published": 0}, [pdf, csv_path, manifest]

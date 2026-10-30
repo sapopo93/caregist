@@ -1228,6 +1228,7 @@ def generate_brief_from_rows(
         window_start=window_start,
         window_end=window_end,
         considered=len(per_row_events),
+        eligible_providers=len(unique_candidates),
         territory_locations=territory_locations,
         shortlist=shortlist,
         insights=insights,
@@ -1384,6 +1385,7 @@ def _executive_summary(
     window_start: date,
     window_end: date,
     considered: int,
+    eligible_providers: int,
     territory_locations: int,
     shortlist: tuple[RankedOrganisation, ...],
     insights: dict[str, Any],
@@ -1428,6 +1430,14 @@ def _executive_summary(
         "territory_locations_in_source": territory_locations,
         "opportunity_set_size": considered,
         "shortlisted": len(shortlist),
+        "eligible_provider_candidates": eligible_providers,
+        "selection_notice": (
+            f"Selection method: the top {len(shortlist)} of {eligible_providers} distinct eligible providers "
+            "were selected by the documented deterministic ranking; no providers were added to fill the cap."
+            if eligible_providers > len(shortlist)
+            else f"Selection method: all {eligible_providers} distinct eligible providers were included; "
+            "no providers were added to fill the cap."
+        ),
         "headline": headline,
         "movement_summary": ", ".join(movement) if movement else "no supported movement in window",
         "strongest_opportunities": top3,
@@ -1460,12 +1470,13 @@ def shortfall_notice(shortlisted: int, target: int) -> str | None:
 
 
 def brief_to_csv(brief: TerritoryBrief) -> str:
-    """CRM-ready shortlist CSV. Supporting evidence, not the whole product."""
+    """CRM-ready candidate CSV. Supporting evidence, not a researched dossier."""
     buf = io.StringIO()
     writer = csv.writer(buf)
     writer.writerow(
         [
             "rank",
+            "qualification_status",
             "organisation",
             "location",
             "cqc_location_id",
@@ -1487,6 +1498,7 @@ def brief_to_csv(brief: TerritoryBrief) -> str:
             "rating_evidence_date",
             "rating_freshness",
             "registration_metadata_gaps",
+            "selection_notice",
             "shortlist_notice",
             "licence",
         ]
@@ -1502,6 +1514,7 @@ def brief_to_csv(brief: TerritoryBrief) -> str:
         writer.writerow(
             [
                 org.rank,
+                "Qualification incomplete",
                 org.organisation_name,
                 org.location_name,
                 org.location_id,
@@ -1523,6 +1536,7 @@ def brief_to_csv(brief: TerritoryBrief) -> str:
                 coverage_by_location.get(org.location_id, {}).get("rating_publication_date") or "",
                 coverage_by_location.get(org.location_id, {}).get("rating_freshness") or "not assessed",
                 "; ".join(coverage_by_location.get(org.location_id, {}).get("registration_metadata_gaps", [])),
+                brief.executive_summary["selection_notice"],
                 notice,
                 OGL_ATTRIBUTION,
             ]

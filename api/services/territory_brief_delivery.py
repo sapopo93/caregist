@@ -143,6 +143,7 @@ async def generate_pack(order_row: dict[str, Any], connection=None) -> Generated
             "evidence_coverage": list(brief.evidence_coverage),
             "window_start": brief.window_start.isoformat(),
             "window_end": brief.window_end.isoformat(),
+            "selection_notice": brief.executive_summary["selection_notice"],
         },
     )
 

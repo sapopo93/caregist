@@ -16,7 +16,7 @@ _DISCLAIMER = (
     "CareGist is independent of the Care Quality Commission. This brief is compiled from the "
     "published CQC register and is provided for business research. It is not regulatory, legal, "
     "financial, or investment advice, and it makes no statement about any provider's quality, "
-    "solvency, or intentions. Opportunity signals indicate where a buyer may wish to investigate "
+    "solvency, or intentions. Candidate signals indicate where a buyer may wish to investigate "
     "first. Verify every organisation's current status directly with CQC before acting. "
     "Contains public sector information licensed under the Open Government Licence v3.0."
 )
@@ -41,8 +41,8 @@ def render_brief_pdf(brief: TerritoryBrief) -> bytes:
             f"Prepared for order {brief.purchase_context.order_reference}",
             f"Opportunity window: {_fmt_date(brief.window_start)} to {_fmt_date(brief.window_end)} "
             f"({scope.window_days} days)",
-            f"Organisations considered: {brief.considered_locations}   "
-            f"Shortlisted: {len(brief.shortlist)}   "
+            f"Locations considered: {brief.considered_locations}   "
+            f"Qualification-incomplete candidates: {len(brief.shortlist)}   "
             f"Territory locations in source: {brief.territory_locations}",
             f"Source: CQC public register edition {brief.as_of_date.isoformat()}. "
             f"Product: Territory Opportunity Brief (GBP {brief.purchase_context.price_gbp}).",
@@ -56,6 +56,7 @@ def render_brief_pdf(brief: TerritoryBrief) -> bytes:
     pdf.paragraph(es["headline"])
     if es.get("shortfall_notice"):
         pdf.paragraph(es["shortfall_notice"])
+    pdf.paragraph(es["selection_notice"])
     pdf.key_values(
         [
             ("Territory", f'{es["territory"]} ({es["territory_kind"]})'),
@@ -63,27 +64,28 @@ def render_brief_pdf(brief: TerritoryBrief) -> bytes:
             ("Source edition", es["source_edition"]),
             ("Window", es["window"]),
             ("Opportunity set", str(es["opportunity_set_size"])),
-            ("Shortlisted & ranked", str(es["shortlisted"])),
+            ("Candidate register (Qualification incomplete)", str(es["shortlisted"])),
             ("Movement in window", es["movement_summary"]),
         ]
     )
     pdf.spacer(2)
-    pdf.paragraph("Highest-ranked organisations:")
-    pdf.bullets(list(es["strongest_opportunities"]) or ["No shortlisted organisations in this window."])
+    pdf.paragraph("Highest-ranked qualification-incomplete candidates:")
+    pdf.bullets(list(es["strongest_opportunities"]) or ["No candidate organisations in this window."])
     pdf.paragraph(f"Limitations: {es['limitations']}", muted=True)
 
-    # 2. Ranked shortlist
-    pdf.heading("2. Ranked opportunity shortlist")
+    # 2. Ranked candidate register
+    pdf.heading("2. Ranked candidate register - Qualification incomplete")
     pdf.paragraph(
-        "Ranked by a deterministic opportunity score (see section 6). Every row carries a stated "
-        "reason and links to the underlying CQC record. The same source data always produces this "
-        "same order."
+        "These are candidates for further research, not completed dossiers. They are ranked by a "
+        "deterministic signal score (see section 6). Every row is labelled Qualification incomplete, "
+        "carries a stated reason to investigate, and links to the underlying CQC record."
     )
     rows = []
     for o in brief.shortlist:
         rows.append(
             [
                 o.rank,
+                "Qualification incomplete",
                 f"{o.organisation_name}\n{o.location_name}",
                 o.local_authority or o.region,
                 f"{o.primary_signal}\n{o.most_recent_event_date.isoformat() if o.most_recent_event_date else ''}",
@@ -91,9 +93,9 @@ def render_brief_pdf(brief: TerritoryBrief) -> bytes:
             ]
         )
     pdf.table(
-        ["#", "Organisation / location", "Area", "Primary signal", "Score"],
+        ["#", "Status", "Organisation / location", "Area", "Primary signal", "Score"],
         rows,
-        widths=[0.32, 2.5, 1.15, 1.5, 0.5],
+        widths=[0.28, 1.05, 1.75, 0.9, 1.35, 0.45],
     )
 
     # 3. How to read the shortlist (short; detail is in Appendix A)
@@ -178,7 +180,7 @@ def render_brief_pdf(brief: TerritoryBrief) -> bytes:
     # tail page; the heading marks the boundary.
     pdf.spacer(6)
     pdf.rule()
-    pdf.heading("Appendix A. Reason and evidence, by rank")
+    pdf.heading("Appendix A. Qualification-incomplete candidate evidence, by rank")
     pdf.paragraph(
         "One entry per shortlisted organisation, in the same order as section 2. Every entry "
         "has a non-empty, evidence-bound reason and links to the underlying CQC record.",
@@ -197,6 +199,7 @@ def render_brief_pdf(brief: TerritoryBrief) -> bytes:
         meta.append(f"score {o.score:.0f}")
         pdf.spacer(3)
         pdf.paragraph(f"{o.rank}. {o.organisation_name} - {o.location_name}")
+        pdf.paragraph("   Qualification incomplete")
         pdf.paragraph("   " + "  |  ".join(m for m in meta if m), muted=True)
         pdf.paragraph("   " + o.reason)
         pdf.paragraph("   Qualification question: " + o.qualification_question)

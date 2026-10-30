@@ -47,12 +47,15 @@ def brief_snapshot(*, customer: str = "buyer@example.test", cap: int = 50, previ
     )
 
 
-def brief_artifacts() -> dict[str, PackageArtifact]:
+def brief_artifacts(count: int = 1) -> dict[str, PackageArtifact]:
+    csv_text = "provider_id,location_id,organisation_name\n" + "".join(
+        f"P{index:03d},L{index:03d},Provider {index}\n" for index in range(count)
+    )
     return {
-        "brief.pdf": PackageArtifact("brief.pdf", b"%PDF-1.4 test brief", "application/pdf"),
+        "brief.pdf": PackageArtifact("brief.pdf", b"%PDF-1.4 test brief\n%%EOF\n", "application/pdf"),
         "providers.csv": PackageArtifact(
             "providers.csv",
-            b"provider_id,location_id,organisation_name\nP1,L1,Provider One\n",
+            csv_text.encode(),
             "text/csv; charset=utf-8",
         ),
     }
@@ -74,7 +77,7 @@ def providers(count: int) -> list[dict[str, object]]:
 def test_brief_builds_exact_distinct_provider_cohorts(count: int) -> None:
     built = build_package_bytes(
         brief_snapshot(cap=count),
-        brief_artifacts(),
+        brief_artifacts(count),
         provider_records=providers(count),
     )
 
@@ -154,6 +157,31 @@ def test_package_contains_only_confirmed_payloads_and_hashes() -> None:
 def test_missing_requested_core_output_fails_closed() -> None:
     with pytest.raises(PackageBuildError, match="payload mismatch"):
         build_package_bytes(brief_snapshot(), {"brief.pdf": brief_artifacts()["brief.pdf"]})
+
+
+def test_customer_csv_must_match_validated_provider_roster() -> None:
+    mismatched = brief_artifacts()
+    mismatched["providers.csv"] = PackageArtifact(
+        "providers.csv",
+        b"provider_id,location_id,organisation_name\nOTHER,L9,Other Provider\n",
+        "text/csv; charset=utf-8",
+    )
+    with pytest.raises(ProviderSelectionError, match="does not match"):
+        build_package_bytes(brief_snapshot(), mismatched, provider_records=providers(1))
+
+
+def test_malformed_customer_csv_and_pdf_fail_closed() -> None:
+    malformed_csv = brief_artifacts()
+    malformed_csv["providers.csv"] = PackageArtifact(
+        "providers.csv",
+        b"provider_id,location_id,organisation_name\nP000,,Provider 0\n",
+        "text/csv; charset=utf-8",
+    )
+    with pytest.raises(ProviderSelectionError, match="missing provider ID"):
+        build_package_bytes(brief_snapshot(), malformed_csv, provider_records=providers(1))
+
+    with pytest.raises(PackageBuildError, match="not a complete PDF"):
+        PackageArtifact("brief.pdf", b"not a pdf", "application/pdf")
 
 
 def test_unpaid_build_requires_explicit_preview() -> None:
@@ -264,7 +292,7 @@ def test_changed_artifact_publishes_a_new_version_without_overwriting(tmp_path) 
     first = build_package_bytes(snapshot, brief_artifacts(), provider_records=providers(1))
     changed_artifacts = brief_artifacts()
     changed_artifacts["brief.pdf"] = PackageArtifact(
-        "brief.pdf", b"%PDF-1.4 corrected brief", "application/pdf"
+        "brief.pdf", b"%PDF-1.4 corrected brief\n%%EOF\n", "application/pdf"
     )
     second = build_package_bytes(snapshot, changed_artifacts, provider_records=providers(1))
 

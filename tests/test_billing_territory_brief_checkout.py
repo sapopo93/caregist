@@ -267,7 +267,7 @@ async def test_generate_pack_maps_brief_to_generated_pack(monkeypatch):
     assert pack.scope_name == "Southampton"
     assert pack.shortlisted > 0
     assert pack.considered >= pack.shortlisted
-    assert "rank,organisation" in pack.csv_text.splitlines()[0]
+    assert "rank,qualification_status,organisation" in pack.csv_text.splitlines()[0]
 
 
 @pytest.mark.asyncio

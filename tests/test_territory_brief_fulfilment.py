@@ -7,6 +7,7 @@ fake and every collaborator is injected.
 from __future__ import annotations
 
 import hashlib
+from datetime import datetime, timezone
 
 import pytest
 
@@ -87,6 +88,7 @@ def _order(**over):
         "stripe_payment_intent_id": None,
         "amount_total": None,
         "currency": None,
+        "paid_at": None,
     }
     row.update(over)
     return row
@@ -134,6 +136,20 @@ def _session(**over):
     return base
 
 
+def test_selection_confirmation_time_is_stable_across_retries() -> None:
+    session = _session(created=1_700_000_000)
+    first = fulfil._stable_payment_time(
+        _order(), session, datetime(2026, 10, 30, 10, tzinfo=timezone.utc)
+    )
+    retry = fulfil._stable_payment_time(
+        _order(), session, datetime(2026, 10, 31, 10, tzinfo=timezone.utc)
+    )
+    assert first == retry == datetime.fromtimestamp(1_700_000_000, tz=timezone.utc)
+
+    persisted = datetime(2026, 10, 29, 9, tzinfo=timezone.utc)
+    assert fulfil._stable_payment_time(_order(paid_at=persisted), session, retry) == persisted
+
+
 def _deps(*, session=None, generate=None, fail_uploads=False, fail_upload_kind=None, failures=None, audits=None):
     failures = failures if failures is not None else []
     audits = audits if audits is not None else []
@@ -144,8 +160,9 @@ def _deps(*, session=None, generate=None, fail_uploads=False, fail_upload_kind=N
         if callable(generate):
             return generate(order_row)
         return GeneratedPack(
-            pdf_bytes=b"%PDF-1.4 fake",
-            csv_text="rank,organisation\n1,Acme Care Ltd\n",
+            pdf_bytes=b"%PDF-1.4 fake\n%%EOF\n",
+            csv_text="provider_id,location_id,organisation_name\n"
+            + "".join(f"P{index:02d},L{index:02d},Provider {index}\n" for index in range(30)),
             scope_name=order_row["scope_name"],
             considered=38,
             shortlisted=30,
@@ -267,7 +284,7 @@ async def test_duplicate_provider_in_generated_final_list_never_uploads_or_fulfi
         "qualification_status": "Qualification incomplete",
     }
     pack = GeneratedPack(
-        b"%PDF",
+        b"%PDF-1.4 duplicate test\n%%EOF\n",
         "provider_id,location_id,organisation_name\nP1,L1,Provider One\n",
         "Southampton",
         2,

@@ -61,7 +61,8 @@ async def test_email_counts_and_attribution():
     conn = await _fulfil()
     body = _email(conn)[3]
 
-    assert "covers 38 organisation(s)" in body and "30 are shortlisted and ranked" in body
+    assert "38 location(s) with a supported signal" in body
+    assert "30 are ranked candidates marked Qualification incomplete" in body
     assert "Contains public sector information licensed under the Open Government Licence v3.0" in body
     assert "business-terms-2.2" in body
     assert "You expressly requested immediate supply" in body
