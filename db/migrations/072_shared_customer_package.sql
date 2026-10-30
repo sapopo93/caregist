@@ -18,8 +18,22 @@ ALTER TABLE territory_brief_orders
   ADD CONSTRAINT territory_brief_orders_package_version_check
     CHECK (package_version IS NULL OR (package_version = BTRIM(package_version) AND package_version <> ''));
 
-ALTER TABLE territory_brief_download_tokens
-  DROP CONSTRAINT territory_brief_download_tokens_artifact_kind_check;
+-- Production's artifact_kind CHECK is not under the default name (the first
+-- apply on 30 Oct 2026 failed on it). Drop whichever CHECK
+-- constrains artifact_kind, then add one under a known name.
+DO $$
+DECLARE
+  existing RECORD;
+BEGIN
+  FOR existing IN
+    SELECT conname FROM pg_constraint
+    WHERE conrelid = 'territory_brief_download_tokens'::regclass
+      AND contype = 'c'
+      AND pg_get_constraintdef(oid) LIKE '%artifact_kind%'
+  LOOP
+    EXECUTE format('ALTER TABLE territory_brief_download_tokens DROP CONSTRAINT %I', existing.conname);
+  END LOOP;
+END $$;
 
 ALTER TABLE territory_brief_download_tokens
   ADD CONSTRAINT territory_brief_download_tokens_artifact_kind_check
