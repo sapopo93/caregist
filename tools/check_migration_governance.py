@@ -36,6 +36,10 @@ FROZEN_APPROVED_DESTRUCTIVE_MIGRATIONS = frozenset(
         "047_expand_analytics_provider_reference.sql",
         "059_widen_provider_phone.sql",
         "065_pipeline_runs_timestamptz.sql",
+        # Approved by the founder on 2026-10-30: drops and recreates the five
+        # Territory Brief tables only where they predate 060's design, and
+        # refuses if any of them holds a row.
+        "073_rebuild_territory_brief_tables.sql",
     }
 )
 
