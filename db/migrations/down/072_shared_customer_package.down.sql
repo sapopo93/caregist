@@ -1,7 +1,7 @@
 DELETE FROM territory_brief_download_tokens WHERE artifact_kind = 'zip';
 
 ALTER TABLE territory_brief_download_tokens
-  DROP CONSTRAINT territory_brief_download_tokens_artifact_kind_check;
+  DROP CONSTRAINT IF EXISTS territory_brief_download_tokens_artifact_kind_check;
 
 ALTER TABLE territory_brief_download_tokens
   ADD CONSTRAINT territory_brief_download_tokens_artifact_kind_check
