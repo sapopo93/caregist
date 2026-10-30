@@ -13,5 +13,5 @@ cryptography>=43.0.0
 redis>=5.0.0
 twilio>=9.0.0
 python-multipart>=0.0.20
-pypdf==6.18.1
+pypdf==6.21.2
 svix==1.99.1

@@ -29,7 +29,7 @@ redis>=5.0.0
 twilio>=9.0.0
 phonenumbers==8.13.0
 # Strict PDF validation of customer packages (api/services/customer_package.py).
-pypdf==6.18.1
+pypdf==6.21.2
 svix==1.99.1
 # Prometheus metrics exposed at /metrics (api/metrics.py).
 prometheus-client==0.26.0

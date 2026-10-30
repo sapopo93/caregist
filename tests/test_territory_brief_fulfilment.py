@@ -20,6 +20,7 @@ from api.services.territory_brief_fulfilment import (
     build_checkout_metadata,
     fulfil_territory_brief_order,
 )
+from tests import package_fixtures
 
 TERMS_SHA = "a" * 64
 CONSENT_SHA = "b" * 64
@@ -131,6 +132,7 @@ def _session(**over):
         "payment_intent": "pi_test_123",
         "amount_total": 74500,
         "currency": "gbp",
+        "created": 1_761_800_000,
     }
     base.update(over)
     return base
@@ -158,7 +160,7 @@ def _deps(*, session=None, generate=None, fail_uploads=False, fail_upload_kind=N
         if callable(generate):
             return generate(order_row)
         return GeneratedPack(
-            pdf_bytes=b"%PDF-1.4 fake\n%%EOF\n",
+            pdf_bytes=package_fixtures.brief_pdf(order_row["id"], package_fixtures.roster(30, width=2)),
             csv_text="provider_id,location_id,organisation_name\n"
             + "".join(f"P{index:02d},L{index:02d},Provider {index}\n" for index in range(30)),
             scope_name=order_row["scope_name"],
@@ -282,7 +284,7 @@ async def test_duplicate_provider_in_generated_final_list_never_uploads_or_fulfi
         "qualification_status": "Qualification incomplete",
     }
     pack = GeneratedPack(
-        b"%PDF-1.4 duplicate test\n%%EOF\n",
+        package_fixtures.brief_pdf(ORDER_ID, [duplicate]),
         "provider_id,location_id,organisation_name\nP1,L1,Provider One\n",
         "Southampton",
         2,

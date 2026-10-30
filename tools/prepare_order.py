@@ -841,9 +841,10 @@ def build_customer_delivery_package(
         criteria = (f"issue {args.issue} of 4", f"week ending {args.week_ending}")
         service_types = ()
 
+    customer_reference = packages.customer_email_reference(args.buyer_email)
     snapshot = packages.verified_snapshot(
         order_reference=args.order_ref,
-        customer_reference=args.buyer_email,
+        customer_reference=customer_reference,
         product_id=product_id,
         payment_reference=payment["session"],
         template_version=template_version,
@@ -866,7 +867,7 @@ def build_customer_delivery_package(
         built,
         root=args.out_base / "packages",
         order_reference=args.order_ref,
-        customer_reference=args.buyer_email,
+        customer_reference=customer_reference,
     )
     summary["package"] = {
         "path": str(package_path),
@@ -1278,8 +1279,8 @@ def _main(argv: list[str] | None = None) -> int:
             )
             files.append(package_path)
             checks.add("customer_package", True, f"bound ZIP {package_path.name}")
-        except (OSError, ValueError, RuntimeError) as exc:
-            checks.add("customer_package", False, str(exc))
+        except Exception as exc:  # noqa: BLE001 - any build failure must block the draft, not crash the run
+            checks.add("customer_package", False, f"{type(exc).__name__}: {exc}")
 
     report = {
         "order_ref": args.order_ref,

@@ -11,6 +11,7 @@ from pathlib import Path
 
 import pytest
 
+from tests import package_fixtures
 from tools import order_ledger as ledger
 from tools import orders
 from tools import prepare_order as po
@@ -44,7 +45,7 @@ def world(monkeypatch, tmp_path):
         if args.stage == "deliver":
             checks.add("matches_quote", 30 >= (args.quoted_count or 0), "ok")
         pdf = order_dir / "brief.pdf"
-        pdf.write_bytes(b"%PDF-1.4 test\n%%EOF\n")
+        pdf.write_bytes(package_fixtures.brief_pdf(args.order_ref, package_fixtures.roster(30)))
         csv_path = order_dir / "brief.csv"
         csv_path.write_text(
             "cqc_provider_id,cqc_location_id,organisation_name\n"
@@ -62,7 +63,7 @@ def world(monkeypatch, tmp_path):
         checks = po.Checks()
         checks.add("digest_built", True, "ok")
         pdf = order_dir / f"issue{args.issue}.pdf"
-        pdf.write_bytes(b"%PDF-1.4 test\n%%EOF\n")
+        pdf.write_bytes(package_fixtures.plain_pdf(f"Digest issue {args.issue}"))
         csv_path = order_dir / f"issue{args.issue}.csv"
         csv_path.write_text(
             "section,date,location_id,name,local_authority,detail,cqc_url\n",
@@ -134,6 +135,36 @@ def test_delivery_takes_only_the_order_ref_and_uses_the_recorded_buyer_and_scope
         "brief-manifest.json",
         next(path.name for path in (world["out"] / "packages" / ref).rglob("*.zip")),
     }
+
+
+def test_manual_package_binds_a_hashed_buyer_not_the_plain_email(world):
+    import json
+    import zipfile
+
+    ref = quote_brief(world, "a@example.com")
+    pay(world, "a@example.com", 74500)
+    assert run(world, "deliver", "--order-ref", ref) == 0
+
+    package = next((world["out"] / "packages" / ref).rglob("*.zip"))
+    with zipfile.ZipFile(package) as archive:
+        texts = {name: archive.read(name) for name in archive.namelist()}
+    manifest = json.loads(texts["manifest.json"])
+    assert manifest["customer_reference"].startswith("email-sha256:")
+    # PDF streams are compressed, so read their text rather than the raw bytes.
+    readable = {
+        name: (_pdf_text(data) if name.endswith(".pdf") else data.decode("utf-8", "replace"))
+        for name, data in texts.items()
+    }
+    assert "Prepared for: email-sha256:" in readable["selection-confirmation.pdf"]
+    assert not any("a@example.com" in text for text in readable.values())
+
+
+def _pdf_text(data: bytes) -> str:
+    import io
+
+    from pypdf import PdfReader
+
+    return "\n".join(page.extract_text() or "" for page in PdfReader(io.BytesIO(data)).pages)
 
 
 @pytest.mark.parametrize("typed", [["--region", "London"], ["--buyer-email", "b@example.com"], ["--provider-group", "inadequate"]])

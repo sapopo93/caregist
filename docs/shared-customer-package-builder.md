@@ -72,7 +72,7 @@ Local verification on 30 October 2026:
 
 ## Current limits
 
-- This change does not deploy, apply migration `068`, or enable any fail-closed commercial gate.
+- This change does not deploy, apply migration `072`, or enable any fail-closed commercial gate.
 - Weekly Digest remains the existing operator-led IMAP draft workflow; the shared builder does not automate sends.
 - Applying the migration and exercising the Postgres integration tests require the normal staged migration/recovery
   procedure and a disposable integration database.

@@ -9,6 +9,8 @@ from datetime import datetime, timezone
 
 import pytest
 
+from tests import package_fixtures
+
 from api.services.customer_package import (
     DOSSIER_FIELDS,
     PackageArtifact,
@@ -18,6 +20,7 @@ from api.services.customer_package import (
     TERRITORY_TEMPLATE_VERSION,
     WEEKLY_DIGEST_TEMPLATE_VERSION,
     build_package_bytes,
+    customer_email_reference,
     provider_cohort_from_locations,
     provider_records_from_csv,
     publish_package_atomically,
@@ -47,12 +50,16 @@ def brief_snapshot(*, customer: str = "buyer@example.test", cap: int = 50, previ
     )
 
 
+def brief_pdf(count: int = 1, *, note: str = "test brief") -> bytes:
+    return package_fixtures.brief_pdf("CG-BRIEF-TEST", package_fixtures.roster(count, width=3), note=note)
+
+
 def brief_artifacts(count: int = 1) -> dict[str, PackageArtifact]:
     csv_text = "provider_id,location_id,organisation_name\n" + "".join(
         f"P{index:03d},L{index:03d},Provider {index}\n" for index in range(count)
     )
     return {
-        "brief.pdf": PackageArtifact("brief.pdf", b"%PDF-1.4 test brief\n%%EOF\n", "application/pdf"),
+        "brief.pdf": PackageArtifact("brief.pdf", brief_pdf(count), "application/pdf"),
         "providers.csv": PackageArtifact(
             "providers.csv",
             csv_text.encode(),
@@ -180,8 +187,47 @@ def test_malformed_customer_csv_and_pdf_fail_closed() -> None:
     with pytest.raises(ProviderSelectionError, match="missing provider ID"):
         build_package_bytes(brief_snapshot(), malformed_csv, provider_records=providers(1))
 
-    with pytest.raises(PackageBuildError, match="not a complete PDF"):
+    with pytest.raises(PackageBuildError, match="not an openable PDF"):
         PackageArtifact("brief.pdf", b"not a pdf", "application/pdf")
+
+
+def test_brief_pdf_must_carry_the_validated_roster_hash() -> None:
+    artifacts = brief_artifacts()
+    artifacts["brief.pdf"] = PackageArtifact("brief.pdf", package_fixtures.plain_pdf("CG-BRIEF-TEST"), "application/pdf")
+    with pytest.raises(ProviderSelectionError, match="roster hash"):
+        build_package_bytes(brief_snapshot(), artifacts, provider_records=providers(1))
+
+    other_roster = brief_artifacts()
+    other_roster["brief.pdf"] = PackageArtifact("brief.pdf", brief_pdf(2), "application/pdf")
+    with pytest.raises(ProviderSelectionError, match="roster hash"):
+        build_package_bytes(brief_snapshot(), other_roster, provider_records=providers(1))
+
+
+def test_brief_pdf_must_name_the_selected_order() -> None:
+    artifacts = brief_artifacts()
+    artifacts["brief.pdf"] = PackageArtifact(
+        "brief.pdf",
+        package_fixtures.brief_pdf("CG-OTHER-ORDER", package_fixtures.roster(1, width=3)),
+        "application/pdf",
+    )
+    with pytest.raises(PackageBindingError, match="order reference"):
+        build_package_bytes(brief_snapshot(), artifacts, provider_records=providers(1))
+
+
+def test_duplicate_provider_location_row_in_csv_is_rejected() -> None:
+    with pytest.raises(ProviderSelectionError, match="duplicate provider/location row"):
+        provider_records_from_csv(
+            "provider_id,location_id,organisation_name\nP1,L1,One\nP1,L1,One\n", provider_cap=5
+        )
+
+
+def test_customer_email_reference_is_a_normalised_hash() -> None:
+    reference = customer_email_reference("  Buyer@Example.TEST ")
+    assert reference == customer_email_reference("buyer@example.test")
+    assert reference.startswith("email-sha256:") and len(reference) == len("email-sha256:") + 64
+    assert "example" not in reference
+    with pytest.raises(PackageBindingError):
+        customer_email_reference("  ")
 
 
 def test_unpaid_build_requires_explicit_preview() -> None:
@@ -292,7 +338,7 @@ def test_changed_artifact_publishes_a_new_version_without_overwriting(tmp_path) 
     first = build_package_bytes(snapshot, brief_artifacts(), provider_records=providers(1))
     changed_artifacts = brief_artifacts()
     changed_artifacts["brief.pdf"] = PackageArtifact(
-        "brief.pdf", b"%PDF-1.4 corrected brief\n%%EOF\n", "application/pdf"
+        "brief.pdf", brief_pdf(note="corrected brief"), "application/pdf"
     )
     second = build_package_bytes(snapshot, changed_artifacts, provider_records=providers(1))
 

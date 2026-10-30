@@ -109,6 +109,19 @@ def _sha256(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
+def customer_email_reference(email: str) -> str:
+    """The customer binding every package carries: a hash, never the plain address.
+
+    The reference appears in selection.json, manifest.json and the
+    "Prepared for" line of the confirmation PDF, so a forwarded package must
+    not expose the buyer's email.
+    """
+    cleaned = str(email or "").strip().lower()
+    if not cleaned:
+        raise PackageBindingError("customer email is required for the package binding")
+    return f"email-sha256:{_sha256(cleaned.encode('utf-8'))}"
+
+
 def _pdf_text(data: bytes, filename: str) -> str:
     try:
         reader = PdfReader(io.BytesIO(data), strict=True)

@@ -426,7 +426,7 @@ async def fulfil_territory_brief_order(
             pack = await pack
         from api.services import customer_package as packages
 
-        customer_binding = hashlib.sha256(order["customer_email"].strip().lower().encode("utf-8")).hexdigest()
+        customer_binding = packages.customer_email_reference(order["customer_email"])
         providers = list(pack.provider_records)
         if not providers:
             providers = packages.provider_records_from_csv(
@@ -439,7 +439,7 @@ async def fulfil_territory_brief_order(
             )
         snapshot = packages.verified_snapshot(
             order_reference=str(order_id),
-            customer_reference=f"email-sha256:{customer_binding}",
+            customer_reference=customer_binding,
             product_id="territory-opportunity-brief",
             payment_reference=payment_intent,
             template_version=packages.TERRITORY_TEMPLATE_VERSION,
