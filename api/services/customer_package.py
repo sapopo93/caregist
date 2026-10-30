@@ -25,6 +25,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable, Mapping
 
+from pypdf import PdfReader
+
 from api.services.pdf_writer import PdfBuilder
 
 PACKAGE_SCHEMA_VERSION = "1.0"
@@ -107,6 +109,16 @@ def _sha256(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
+def _pdf_text(data: bytes, filename: str) -> str:
+    try:
+        reader = PdfReader(io.BytesIO(data), strict=True)
+        if not reader.pages:
+            raise ValueError("PDF has no pages")
+        return "\n".join(page.extract_text() or "" for page in reader.pages)
+    except Exception as exc:
+        raise PackageBuildError(f"artifact {filename} is not an openable PDF") from exc
+
+
 def _clean_text(value: Any, field: str, *, required: bool = True) -> str | None:
     if value is None and not required:
         return None
@@ -178,10 +190,8 @@ class PackageArtifact:
             raise PackageBuildError(f"unsafe artifact filename {self.filename!r}")
         if not self.data:
             raise PackageBuildError(f"artifact {self.filename} is empty")
-        if self.filename.endswith(".pdf") and (
-            not self.data.startswith(b"%PDF-") or b"%%EOF" not in self.data[-1024:]
-        ):
-            raise PackageBuildError(f"artifact {self.filename} is not a complete PDF")
+        if self.filename.endswith(".pdf"):
+            _pdf_text(self.data, self.filename)
         if self.filename.endswith(".csv"):
             try:
                 text = self.data.decode("utf-8-sig")
@@ -281,6 +291,7 @@ def provider_records_from_csv(csv_text: str, *, provider_cap: int) -> list[dict[
     if not reader.fieldnames:
         raise ProviderSelectionError("provider CSV has no header")
     locations = []
+    seen_rows: set[tuple[str, str]] = set()
     for row_number, row in enumerate(reader, start=2):
         if not any(str(value or "").strip() for value in row.values()):
             continue
@@ -296,10 +307,30 @@ def provider_records_from_csv(csv_text: str, *, provider_cap: int) -> list[dict[
             raise ProviderSelectionError(
                 f"provider CSV row {row_number} is missing provider ID, location ID or organisation name"
             )
+        row_identity = (str(provider_id).strip(), str(location_id).strip())
+        if row_identity in seen_rows:
+            raise ProviderSelectionError(
+                f"provider CSV contains duplicate provider/location row {row_identity[0]}/{row_identity[1]}"
+            )
+        seen_rows.add(row_identity)
         locations.append({"provider_id": provider_id, "location_id": location_id, "provider_name": name})
     if not locations:
         raise ProviderSelectionError("provider CSV contains no provider rows")
     return provider_cohort_from_locations(locations, provider_cap=provider_cap)
+
+
+def provider_roster_sha256(records: Iterable[Mapping[str, Any]]) -> str:
+    roster = [
+        {
+            "provider_id": _clean_text(row.get("provider_id"), "provider_id"),
+            "provider_name": _clean_text(row.get("provider_name"), "provider_name"),
+            "location_ids": sorted(
+                {_clean_text(item, "location_id") for item in row.get("location_ids", ())}
+            ),
+        }
+        for row in records
+    ]
+    return _sha256(_canonical_json(sorted(roster, key=lambda row: row["provider_id"] or "")))
 
 
 def _reconcile_provider_csv(
@@ -432,6 +463,12 @@ def build_package_bytes(
             providers,
             provider_cap=snapshot.provider_cap or 0,
         )
+        pdf_text = _pdf_text(artifacts["brief.pdf"].data, "brief.pdf")
+        roster_hash = provider_roster_sha256(providers)
+        if f"Provider roster SHA-256: {roster_hash}" not in pdf_text:
+            raise ProviderSelectionError("brief.pdf does not carry the validated provider roster hash")
+        if snapshot.order_reference not in pdf_text:
+            raise PackageBindingError("brief.pdf does not match the selected order reference")
     else:
         _validate_digest_csv(artifacts["digest.csv"])
     researched = [row for row in providers if row["qualification_status"] == "Researched"]

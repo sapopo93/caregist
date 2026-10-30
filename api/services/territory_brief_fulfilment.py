@@ -146,7 +146,7 @@ def _validated_payment_intent(value: Any) -> str:
     return value.strip()
 
 
-def _stable_payment_time(order: Any, session: dict[str, Any], fallback: datetime) -> datetime:
+def _stable_payment_time(order: Any, session: dict[str, Any]) -> datetime:
     """Return durable payment evidence so retries preserve one selection hash."""
     paid_at = order["paid_at"]
     if isinstance(paid_at, datetime):
@@ -154,7 +154,9 @@ def _stable_payment_time(order: Any, session: dict[str, Any], fallback: datetime
     created = session.get("created")
     if isinstance(created, (int, float)) and created > 0:
         return datetime.fromtimestamp(created, tz=timezone.utc)
-    return fallback
+    raise TerritoryBriefFulfilmentError(
+        "territory-brief checkout has no durable timestamp for an immutable selection"
+    )
 
 
 def validate_existing_payment_evidence(
@@ -360,7 +362,7 @@ async def fulfil_territory_brief_order(
             f"territory-brief order {order_id} exceeded {_MAX_GENERATION_ATTEMPTS} generation attempts; needs manual review"
         )
 
-    selection_confirmed_at = _stable_payment_time(order, authoritative, payment_evidence_at)
+    selection_confirmed_at = _stable_payment_time(order, authoritative)
     failure_context["paid_at"] = selection_confirmed_at
 
     try:

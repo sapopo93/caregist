@@ -138,16 +138,14 @@ def _session(**over):
 
 def test_selection_confirmation_time_is_stable_across_retries() -> None:
     session = _session(created=1_700_000_000)
-    first = fulfil._stable_payment_time(
-        _order(), session, datetime(2026, 10, 30, 10, tzinfo=timezone.utc)
-    )
-    retry = fulfil._stable_payment_time(
-        _order(), session, datetime(2026, 10, 31, 10, tzinfo=timezone.utc)
-    )
+    first = fulfil._stable_payment_time(_order(), session)
+    retry = fulfil._stable_payment_time(_order(), session)
     assert first == retry == datetime.fromtimestamp(1_700_000_000, tz=timezone.utc)
 
     persisted = datetime(2026, 10, 29, 9, tzinfo=timezone.utc)
-    assert fulfil._stable_payment_time(_order(paid_at=persisted), session, retry) == persisted
+    assert fulfil._stable_payment_time(_order(paid_at=persisted), session) == persisted
+    with pytest.raises(TerritoryBriefFulfilmentError, match="no durable timestamp"):
+        fulfil._stable_payment_time(_order(), _session(created=None))
 
 
 def _deps(*, session=None, generate=None, fail_uploads=False, fail_upload_kind=None, failures=None, audits=None):
