@@ -45,9 +45,17 @@ def world(monkeypatch, tmp_path):
             checks.add("matches_quote", 30 >= (args.quoted_count or 0), "ok")
         pdf = order_dir / "brief.pdf"
         pdf.write_bytes(b"%PDF")
+        csv_path = order_dir / "brief.csv"
+        csv_path.write_text(
+            "cqc_provider_id,cqc_location_id,organisation_name\n"
+            + "".join(f"P{i},L{i},Provider {i}\n" for i in range(30)),
+            encoding="utf-8",
+        )
+        manifest = order_dir / "brief-manifest.json"
+        manifest.write_text('{"generated_at":"2026-10-16"}', encoding="utf-8")
         summary = {"region": args.region, "provider_group": "Not yet inspected", "service_type": "All",
                    "locations_in_scope": 1221, "shortlisted": 30, "source_edition": "2026-10-16", "export": "x"}
-        return checks, summary, [pdf]
+        return checks, summary, [pdf, csv_path, manifest]
 
     def build_digest_issue(args, *, env, order_dir, now):
         state["built"].append(("digest", args.order_ref, args.issue, args.week_ending))
@@ -55,7 +63,11 @@ def world(monkeypatch, tmp_path):
         checks.add("digest_built", True, "ok")
         pdf = order_dir / f"issue{args.issue}.pdf"
         pdf.write_bytes(b"%PDF")
-        return checks, {"new_registrations": 4, "ratings_published": 0}, [pdf]
+        csv_path = order_dir / f"issue{args.issue}.csv"
+        csv_path.write_text("event_type,count\nnew_registration,4\n", encoding="utf-8")
+        manifest = order_dir / f"issue{args.issue}.json"
+        manifest.write_text('{"generated_at":"2026-10-16"}', encoding="utf-8")
+        return checks, {"new_registrations": 4, "ratings_published": 0}, [pdf, csv_path, manifest]
 
     monkeypatch.setattr(po, "list_payments", list_payments)
     monkeypatch.setattr(po, "payment_still_valid", lambda env, session: state["invalid"].get(session))
@@ -113,7 +125,12 @@ def test_delivery_takes_only_the_order_ref_and_uses_the_recorded_buyer_and_scope
     assert world["built"][-1] == ("brief", ref, "a@example.com", "North East", "not_yet_inspected")
     assert world["drafts"][-1]["to"] == "a@example.com"
     assert f"(ref {ref})" in world["drafts"][-1]["subject"]
-    assert world["drafts"][-1]["files"] == ["brief.pdf"]
+    assert set(world["drafts"][-1]["files"]) == {
+        "brief.pdf",
+        "brief.csv",
+        "brief-manifest.json",
+        next(path.name for path in (world["out"] / "packages" / ref).rglob("*.zip")),
+    }
 
 
 @pytest.mark.parametrize("typed", [["--region", "London"], ["--buyer-email", "b@example.com"], ["--provider-group", "inadequate"]])

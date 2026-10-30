@@ -29,7 +29,7 @@ def _email(conn) -> tuple:
     return next(c for c in conn.execches if "INSERT INTO pending_emails" in c[0])
 
 
-# CG-AT-007 happy: one email, to the paying address, with a separate download link for PDF and CSV.
+# CG-AT-007 happy: one email, to the paying address, with complete ZIP plus separate PDF/CSV links.
 @pytest.mark.asyncio
 async def test_delivery_email_has_distinct_pdf_and_csv_links_to_the_buyer():
     conn = await _fulfil()
@@ -39,8 +39,9 @@ async def test_delivery_email_has_distinct_pdf_and_csv_links_to_the_buyer():
     assert subject == "Your CareGist Territory Opportunity Brief is ready"
     assert key == f"territory-brief-delivery:{ORDER_ID}"
     links = re.findall(r'href="(https://www\.caregist\.co\.uk/api/export\?token=[A-Za-z0-9_-]{43})"', body)
-    assert len(links) == 2 and links[0] != links[1]
-    assert "Download the brief (PDF)" in body and "Download the shortlist (CSV)" in body
+    assert len(links) == 3 and len(set(links)) == 3
+    assert "Download the complete customer package (ZIP)" in body
+    assert "Download the brief only (PDF)" in body and "Download the shortlist (CSV)" in body
 
 
 # CG-AT-007 contract: the lifetime and cap in the email equal what is written to the token rows.
@@ -91,7 +92,7 @@ async def test_raw_tokens_are_not_written_to_the_database():
     raw_tokens = re.findall(r"token=([A-Za-z0-9_-]{43})", body)
     stored = [c[1] for c in conn.execches if "INSERT INTO territory_brief_download_tokens" in c[0]]
 
-    assert len(raw_tokens) == 2 and len(stored) == 2
+    assert len(raw_tokens) == 3 and len(stored) == 3
     for raw in raw_tokens:
         assert raw not in stored
     assert all(re.fullmatch(r"[0-9a-f]{64}", h) for h in stored)

@@ -121,12 +121,29 @@ async def generate_pack(order_row: dict[str, Any], connection=None) -> Generated
         scope, edition_id=order_row["source_edition_id"], connection=connection,
     )
     brief = build_brief(validated, edition, locations, names, context)
+    provider_records = tuple(
+        {
+            "provider_id": organisation.provider_id,
+            "provider_name": organisation.organisation_name,
+            "location_ids": [organisation.location_id],
+            "qualification_status": "Qualification incomplete",
+        }
+        for organisation in brief.shortlist
+    )
     return GeneratedPack(
         pdf_bytes=render_brief_pdf(brief),
         csv_text=brief_to_csv(brief),
         scope_name=brief.scope.name,
         considered=brief.considered_locations,
         shortlisted=len(brief.shortlist),
+        source_version=f"postgres-cqc-edition-{edition['id']}",
+        provider_records=provider_records,
+        evidence={
+            "source_provenance": brief.source_provenance,
+            "evidence_coverage": list(brief.evidence_coverage),
+            "window_start": brief.window_start.isoformat(),
+            "window_end": brief.window_end.isoformat(),
+        },
     )
 
 

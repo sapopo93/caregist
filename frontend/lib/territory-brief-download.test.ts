@@ -22,3 +22,13 @@ test("returns the entitled artifact without accepting a client-selected path", a
   const artifact = { blob_pathname: "territory-briefs/order/private/brief.pdf", filename: "territory-opportunity-brief.pdf", content_type: "application/pdf" };
   assert.deepEqual(await consumeTerritoryBriefDownload("a".repeat(43), async () => ({ rows: [artifact] })), artifact);
 });
+
+test("the complete ZIP package is a server-selected entitlement", async () => {
+  const artifact = { blob_pathname: "territory-briefs/order/private/brief.zip", filename: "territory-opportunity-brief.zip", content_type: "application/zip" };
+  const result = await consumeTerritoryBriefDownload("a".repeat(43), async (sql) => {
+    assert.match(sql, /WHEN 'zip' THEN purchase\.blob_zip_pathname/);
+    assert.match(sql, /ELSE 'application\/zip'/);
+    return { rows: [artifact] };
+  });
+  assert.deepEqual(result, artifact);
+});

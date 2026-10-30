@@ -684,6 +684,95 @@ def build_digest_issue(args: argparse.Namespace, *, env: dict[str, str], order_d
     return checks, {"region": args.region, "issue": args.issue, **counts}, files
 
 
+def build_customer_delivery_package(
+    args: argparse.Namespace,
+    *,
+    summary: dict[str, Any],
+    files: list[Path],
+    payment: dict[str, Any],
+) -> Path:
+    """Bind generated files to the recorded order and verified payment in one ZIP."""
+    from api.services import customer_package as packages
+
+    pdf = next((path for path in files if path.suffix == ".pdf"), None)
+    csv_path = next((path for path in files if path.suffix == ".csv"), None)
+    manifest_path = next((path for path in files if path.name.endswith(".json")), None)
+    if not pdf or not csv_path or not manifest_path:
+        raise CheckFailed("the generated product is missing its PDF, CSV or source manifest")
+    try:
+        source_evidence = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise CheckFailed(f"the generated source manifest is unreadable ({type(exc).__name__})") from exc
+
+    if args.product == "brief":
+        product_id = "territory-opportunity-brief"
+        template_version = packages.TERRITORY_TEMPLATE_VERSION
+        provider_cap = int(args.quoted_count or summary.get("shortlisted") or MAX_SHORTLIST)
+        providers = packages.provider_records_from_csv(
+            csv_path.read_text(encoding="utf-8"), provider_cap=provider_cap
+        )
+        if len(providers) != int(summary.get("shortlisted") or 0):
+            raise CheckFailed(
+                "the CRM CSV does not contain exactly the distinct providers stated in the generated brief"
+            )
+        artifacts = {
+            "brief.pdf": packages.PackageArtifact("brief.pdf", pdf.read_bytes(), "application/pdf"),
+            "providers.csv": packages.PackageArtifact(
+                "providers.csv", csv_path.read_bytes(), "text/csv; charset=utf-8"
+            ),
+        }
+        criteria = (summary.get("provider_group") or args.provider_group,)
+        service_types = () if not args.service_type else (args.service_type,)
+    else:
+        product_id = "weekly-digest"
+        template_version = packages.WEEKLY_DIGEST_TEMPLATE_VERSION
+        provider_cap = None
+        providers = []
+        artifacts = {
+            "digest.pdf": packages.PackageArtifact("digest.pdf", pdf.read_bytes(), "application/pdf"),
+            "digest.csv": packages.PackageArtifact(
+                "digest.csv", csv_path.read_bytes(), "text/csv; charset=utf-8"
+            ),
+        }
+        criteria = (f"issue {args.issue} of 4", f"week ending {args.week_ending}")
+        service_types = ()
+
+    snapshot = packages.verified_snapshot(
+        order_reference=args.order_ref,
+        customer_reference=args.buyer_email,
+        product_id=product_id,
+        payment_reference=payment["session"],
+        template_version=template_version,
+        source_version=str(summary.get("source_edition") or source_evidence.get("generated_at") or "not recorded"),
+        geography=args.region,
+        service_types=service_types,
+        rating_context_criteria=criteria,
+        provider_cap=provider_cap,
+        buyer_objective=getattr(args, "buyer_objective", None) or getattr(args, "buyer_type", None),
+        requested_files=getattr(args, "requested_files", None),
+        confirmed_at=datetime.fromisoformat(str(payment["paid_at"]).replace("Z", "+00:00")),
+    )
+    built = packages.build_package_bytes(
+        snapshot,
+        artifacts,
+        provider_records=providers,
+        evidence={"generator_manifest": source_evidence},
+    )
+    package_path = packages.publish_package_atomically(
+        built,
+        root=args.out_base / "packages",
+        order_reference=args.order_ref,
+        customer_reference=args.buyer_email,
+    )
+    summary["package"] = {
+        "path": str(package_path),
+        "sha256": built.sha256,
+        "selection_sha256": snapshot.sha256,
+        "version": built.version,
+    }
+    return package_path
+
+
 def digest_delivery_email(args: argparse.Namespace, summary: dict[str, Any]) -> tuple[str, str]:
     subject = f"Your CareGist Weekly Digest: {args.region}, issue {args.issue} of 4 (ref {args.order_ref})"
     body = f"""Hi {args.buyer_name or 'there'},
@@ -716,12 +805,38 @@ def record_in_ledger(
 
     if args.product == "brief":
         scope = f"{args.region} · {summary.get('provider_group', args.provider_group)} · {args.service_type or 'All services'}"
-        scope_args = {"region": args.region, "provider_group": args.provider_group, "service_type": args.service_type}
+        scope_args = {
+            "region": args.region,
+            "provider_group": args.provider_group,
+            "service_type": args.service_type,
+            "buyer_objective": getattr(args, "buyer_objective", ""),
+            "requested_files": [
+                "brief.pdf",
+                "providers.csv",
+                "selection-confirmation.pdf",
+                "selection.json",
+                "evidence.json",
+                "manifest.json",
+            ],
+        }
         amount = BRIEF_AMOUNT_PENCE
         quoted = summary.get("shortlisted") if args.stage == "quote" else None
     else:
         scope = f"{args.region} · from {args.start_date}" if args.start_date else args.region
-        scope_args = {"region": args.region, "start_date": args.start_date, "buyer_type": args.buyer_type}
+        scope_args = {
+            "region": args.region,
+            "start_date": args.start_date,
+            "buyer_type": args.buyer_type,
+            "buyer_objective": getattr(args, "buyer_objective", ""),
+            "requested_files": [
+                "digest.pdf",
+                "digest.csv",
+                "selection-confirmation.pdf",
+                "selection.json",
+                "evidence.json",
+                "manifest.json",
+            ],
+        }
         amount = DIGEST_AMOUNT_PENCE
         quoted = None
     order_ledger.record_email(
@@ -771,7 +886,7 @@ USAGE = """
 
 DELIVER_FORBIDDEN = (
     "region", "buyer_email", "buyer_name", "company", "provider_group", "service_type",
-    "start_date", "buyer_type", "week_ending", "issue", "expected_count",
+    "start_date", "buyer_type", "buyer_objective", "week_ending", "issue", "expected_count",
 )
 
 
@@ -796,6 +911,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p.add_argument("--buyer-email", default=None)
     p.add_argument("--buyer-name", default=None)
     p.add_argument("--company", default=None)
+    p.add_argument("--buyer-objective", default=None, help="the buyer's stated decision or commercial objective")
     p.add_argument("--export-dir", type=Path, default=None)
     p.add_argument("--out-base", type=Path, default=REPO_ROOT / ".tmp" / "orders")
     p.add_argument("--no-draft", action="store_true", help="write the .eml only")
@@ -840,6 +956,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     args.buyer_name = args.buyer_name or ""
     args.company = args.company or ""
     args.buyer_type = args.buyer_type or ""
+    args.buyer_objective = args.buyer_objective or ""
     return args
 
 
@@ -865,6 +982,8 @@ def _load_for_delivery(args: argparse.Namespace, today: date) -> str | None:
     args.buyer_name = order["buyer_name"] or ""
     args.company = order["company"] or ""
     scope = order["scope_args"]
+    args.buyer_objective = scope.get("buyer_objective") or ""
+    args.requested_files = tuple(scope.get("requested_files") or ())
     args.region = scope.get("region")
     if not order_ledger.live(order["emails"], "quote"):
         return f"{args.order_ref} has no quote on record; quote it first."
@@ -1045,6 +1164,19 @@ def _main(argv: list[str] | None = None) -> int:
     except CheckFailed as exc:
         checks.add("inputs", False, str(exc))
 
+    if args.stage == "deliver" and payment is not None and checks.ok:
+        try:
+            package_path = build_customer_delivery_package(
+                args,
+                summary=summary,
+                files=files,
+                payment=payment,
+            )
+            files.append(package_path)
+            checks.add("customer_package", True, f"bound ZIP {package_path.name}")
+        except (OSError, ValueError, RuntimeError) as exc:
+            checks.add("customer_package", False, str(exc))
+
     report = {
         "order_ref": args.order_ref,
         "product": args.product,
@@ -1075,7 +1207,7 @@ def _main(argv: list[str] | None = None) -> int:
         subject, body = digest_quote_email(args)
     else:
         subject, body = digest_delivery_email(args, summary)
-        attachments = [p for p in files if p.suffix in (".pdf", ".csv")]
+        attachments = [p for p in files if p.suffix in (".pdf", ".csv", ".zip")]
 
     message = build_email(to=args.buyer_email, subject=subject, body=body, attachments=attachments)
     eml = order_dir / "email.eml"
