@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from datetime import date, timezone
 
+from api.services.customer_package import provider_roster_sha256
 from api.services.pdf_writer import PdfBuilder
 from api.services.territory_brief import CQC_PROFILE_URL, TerritoryBrief
 
@@ -29,6 +30,14 @@ def _fmt_date(value: date) -> str:
 def render_brief_pdf(brief: TerritoryBrief) -> bytes:
     scope = brief.scope
     es = brief.executive_summary
+    roster_hash = provider_roster_sha256(
+        {
+            "provider_id": row.provider_id,
+            "provider_name": row.organisation_name,
+            "location_ids": [row.location_id],
+        }
+        for row in brief.shortlist
+    )
     pdf = PdfBuilder(
         title="Territory Opportunity Brief",
         footer=f"CareGist  |  {scope.name}  |  Confidential to order {brief.purchase_context.order_reference}",
@@ -46,6 +55,7 @@ def render_brief_pdf(brief: TerritoryBrief) -> bytes:
             f"Territory locations in source: {brief.territory_locations}",
             f"Source: CQC public register edition {brief.as_of_date.isoformat()}. "
             f"Product: Territory Opportunity Brief (GBP {brief.purchase_context.price_gbp}).",
+            f"Provider roster SHA-256: {roster_hash}",
             "Contents: sections 1-7 are the executive brief; Appendix A carries the "
             "reason and evidence for every shortlisted organisation.",
         ],
