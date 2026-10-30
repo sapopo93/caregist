@@ -25,17 +25,20 @@ export async function consumeTerritoryBriefDownload(token: string, query: Query)
         AND CASE token.artifact_kind
           WHEN 'pdf' THEN purchase.blob_pdf_pathname
           WHEN 'csv' THEN purchase.blob_csv_pathname
+          WHEN 'zip' THEN purchase.blob_zip_pathname
         END IS NOT NULL
       RETURNING token.artifact_kind,
         CASE token.artifact_kind
           WHEN 'pdf' THEN purchase.blob_pdf_pathname
           WHEN 'csv' THEN purchase.blob_csv_pathname
+          WHEN 'zip' THEN purchase.blob_zip_pathname
         END AS blob_pathname
     )
     SELECT blob_pathname,
       'territory-opportunity-brief.' || artifact_kind AS filename,
       CASE artifact_kind WHEN 'pdf' THEN 'application/pdf'
-        ELSE 'text/csv; charset=utf-8' END AS content_type
+        WHEN 'csv' THEN 'text/csv; charset=utf-8'
+        ELSE 'application/zip' END AS content_type
     FROM consumed
   `, [hash]);
   return result.rows[0] ?? null;

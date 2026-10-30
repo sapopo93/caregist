@@ -71,6 +71,16 @@ async def test_full_fulfilment_against_real_postgres():
             scope_name=brief.scope.name,
             considered=brief.considered_locations,
             shortlisted=len(brief.shortlist),
+            source_version="fixture-edition",
+            provider_records=tuple(
+                {
+                    "provider_id": row.provider_id,
+                    "provider_name": row.organisation_name,
+                    "location_ids": [row.location_id],
+                    "qualification_status": "Qualification incomplete",
+                }
+                for row in brief.shortlist
+            ),
         )
 
     uploads: list[tuple] = []
@@ -115,6 +125,7 @@ async def test_full_fulfilment_against_real_postgres():
             "payment_intent": "pi_pg_itest",
             "amount_total": 74500,
             "currency": "gbp",
+            "created": 1_761_800_000,
         }
         deps = tbf.FulfilmentDeps(
             generate=_generate,
@@ -129,7 +140,8 @@ async def test_full_fulfilment_against_real_postgres():
 
         row = await conn.fetchrow("SELECT * FROM territory_brief_orders WHERE id = $1", order_id)
         assert row["status"] == "fulfilled"
-        assert row["blob_pdf_pathname"] and row["blob_csv_pathname"]
+        assert row["blob_pdf_pathname"] and row["blob_csv_pathname"] and row["blob_zip_pathname"]
+        assert row["package_sha256"] and row["selection_sha256"] and row["package_manifest"]
         assert row["artifact_sha256"] and len(row["artifact_sha256"]) == 64
         assert row["paid_at"] is not None and row["fulfilled_at"] is not None
 
@@ -142,7 +154,7 @@ async def test_full_fulfilment_against_real_postgres():
             "SELECT artifact_kind FROM territory_brief_download_tokens WHERE order_id = $1 ORDER BY artifact_kind",
             order_id,
         )
-        assert [t["artifact_kind"] for t in tokens] == ["csv", "pdf"]
+        assert [t["artifact_kind"] for t in tokens] == ["csv", "pdf", "zip"]
 
         emails = await conn.fetch(
             "SELECT idempotency_key, to_email FROM pending_emails WHERE idempotency_key = $1",
@@ -150,13 +162,13 @@ async def test_full_fulfilment_against_real_postgres():
         )
         assert len(emails) == 1 and emails[0]["to_email"] == "buyer@example.com"
 
-        assert {u[0] for u in uploads} == {"pdf", "csv"}
+        assert {u[0] for u in uploads} == {"pdf", "csv", "zip"}
         assert audit_calls and audit_calls[0]["action"] == "billing.territory_brief.fulfil"
 
         # 2. idempotent re-run: no duplicates, no error
         await tbf.fulfil_territory_brief_order(conn, session, cfg=cfg, deps=deps)
         assert await conn.fetchval("SELECT count(*) FROM territory_brief_consents WHERE order_id = $1", order_id) == 1
-        assert await conn.fetchval("SELECT count(*) FROM territory_brief_download_tokens WHERE order_id = $1", order_id) == 2
+        assert await conn.fetchval("SELECT count(*) FROM territory_brief_download_tokens WHERE order_id = $1", order_id) == 3
         assert (
             await conn.fetchval(
                 "SELECT count(*) FROM pending_emails WHERE idempotency_key = $1",

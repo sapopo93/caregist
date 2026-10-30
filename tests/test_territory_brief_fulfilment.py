@@ -7,6 +7,7 @@ fake and every collaborator is injected.
 from __future__ import annotations
 
 import hashlib
+from datetime import datetime, timezone
 
 import pytest
 
@@ -19,6 +20,7 @@ from api.services.territory_brief_fulfilment import (
     build_checkout_metadata,
     fulfil_territory_brief_order,
 )
+from tests import package_fixtures
 
 TERMS_SHA = "a" * 64
 CONSENT_SHA = "b" * 64
@@ -87,6 +89,7 @@ def _order(**over):
         "stripe_payment_intent_id": None,
         "amount_total": None,
         "currency": None,
+        "paid_at": None,
     }
     row.update(over)
     return row
@@ -129,12 +132,25 @@ def _session(**over):
         "payment_intent": "pi_test_123",
         "amount_total": 74500,
         "currency": "gbp",
+        "created": 1_761_800_000,
     }
     base.update(over)
     return base
 
 
-def _deps(*, session=None, generate=None, fail_uploads=False, failures=None, audits=None):
+def test_selection_confirmation_time_is_stable_across_retries() -> None:
+    session = _session(created=1_700_000_000)
+    first = fulfil._stable_payment_time(_order(), session)
+    retry = fulfil._stable_payment_time(_order(), session)
+    assert first == retry == datetime.fromtimestamp(1_700_000_000, tz=timezone.utc)
+
+    persisted = datetime(2026, 10, 29, 9, tzinfo=timezone.utc)
+    assert fulfil._stable_payment_time(_order(paid_at=persisted), session) == persisted
+    with pytest.raises(TerritoryBriefFulfilmentError, match="no durable timestamp"):
+        fulfil._stable_payment_time(_order(), _session(created=None))
+
+
+def _deps(*, session=None, generate=None, fail_uploads=False, fail_upload_kind=None, failures=None, audits=None):
     failures = failures if failures is not None else []
     audits = audits if audits is not None else []
 
@@ -144,15 +160,26 @@ def _deps(*, session=None, generate=None, fail_uploads=False, failures=None, aud
         if callable(generate):
             return generate(order_row)
         return GeneratedPack(
-            pdf_bytes=b"%PDF-1.4 fake",
-            csv_text="rank,organisation\n1,Acme Care Ltd\n",
+            pdf_bytes=package_fixtures.brief_pdf(order_row["id"], package_fixtures.roster(30, width=2)),
+            csv_text="provider_id,location_id,organisation_name\n"
+            + "".join(f"P{index:02d},L{index:02d},Provider {index}\n" for index in range(30)),
             scope_name=order_row["scope_name"],
             considered=38,
             shortlisted=30,
+            source_version="test-edition-1",
+            provider_records=tuple(
+                {
+                    "provider_id": f"P{index:02d}",
+                    "provider_name": f"Provider {index}",
+                    "location_ids": [f"L{index:02d}"],
+                    "qualification_status": "Qualification incomplete",
+                }
+                for index in range(30)
+            ),
         )
 
     def _upload(order_id, kind, data, content_type):
-        if fail_uploads:
+        if fail_uploads or kind == fail_upload_kind:
             raise RuntimeError("blob down")
         return fulfil.BlobRef(pathname=f"territory-briefs/{order_id}/xyz/brief.{kind}")
 
@@ -184,8 +211,8 @@ async def test_happy_path_generates_uploads_entitles_and_emails():
     assert "INSERT INTO territory_brief_consents" in sql
     assert "SET status = 'fulfilled'" in sql
     token_inserts = [c for c in conn.execches if "territory_brief_download_tokens" in c[0]]
-    assert len(token_inserts) == 2
-    assert {c[3] for c in token_inserts} == {"pdf", "csv"}
+    assert len(token_inserts) == 3
+    assert {c[3] for c in token_inserts} == {"pdf", "csv", "zip"}
     email_insert = next(c for c in conn.execches if "INSERT INTO pending_emails" in c[0])
     assert "Southampton" in email_insert[3]
     assert email_insert[4] == f"territory-brief-delivery:{ORDER_ID}"
@@ -246,6 +273,56 @@ async def test_blob_upload_failure_is_treated_as_retryable_failure():
     await error.value.record_failure()
     assert "SET status = 'fulfilled'" not in conn.sql_log()
     assert failures
+
+
+@pytest.mark.asyncio
+async def test_duplicate_provider_in_generated_final_list_never_uploads_or_fulfils():
+    duplicate = {
+        "provider_id": "P1",
+        "provider_name": "Provider One",
+        "location_ids": ["L1"],
+        "qualification_status": "Qualification incomplete",
+    }
+    pack = GeneratedPack(
+        package_fixtures.brief_pdf(ORDER_ID, [duplicate]),
+        "provider_id,location_id,organisation_name\nP1,L1,Provider One\n",
+        "Southampton",
+        2,
+        2,
+        source_version="test-edition",
+        provider_records=(duplicate, duplicate),
+    )
+    conn = FakeConn(_order())
+    uploads: list[str] = []
+    deps = _deps(generate=lambda _order: pack)
+    deps = FulfilmentDeps(
+        **{
+            **deps.__dict__,
+            "upload": lambda _order, kind, _data, _content_type: uploads.append(kind),
+        }
+    )
+
+    with pytest.raises(fulfil.TerritoryBriefGenerationError, match="duplicate provider"):
+        await fulfil_territory_brief_order(conn, {"id": "cs_test_123"}, cfg=CFG, deps=deps)
+
+    assert uploads == []
+    assert "SET status = 'fulfilled'" not in conn.sql_log()
+
+
+@pytest.mark.asyncio
+async def test_zip_upload_failure_never_fulfils_or_emails() -> None:
+    conn = FakeConn(_order())
+
+    with pytest.raises(fulfil.TerritoryBriefGenerationError, match="blob down"):
+        await fulfil_territory_brief_order(
+            conn,
+            {"id": "cs_test_123"},
+            cfg=CFG,
+            deps=_deps(fail_upload_kind="zip"),
+        )
+
+    assert "SET status = 'fulfilled'" not in conn.sql_log()
+    assert "INSERT INTO pending_emails" not in conn.sql_log()
 
 
 @pytest.mark.asyncio
@@ -334,7 +411,7 @@ async def test_database_failure_after_both_uploads_carries_recovery_context():
     )
     with pytest.raises(fulfil.TerritoryBriefGenerationError) as error:
         await fulfil_territory_brief_order(conn, {"id": "cs_test_123"}, cfg=CFG, deps=deps)
-    assert uploads == ["pdf", "csv"]
+    assert uploads == ["pdf", "csv", "zip"]
     await error.value.record_failure()
     assert failures[0][2]["payment_intent"] == "pi_test_123"
 

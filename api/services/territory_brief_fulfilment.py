@@ -28,6 +28,7 @@ from __future__ import annotations
 import hashlib
 import inspect
 import html
+import json
 import logging
 import secrets
 from dataclasses import dataclass
@@ -85,6 +86,9 @@ class GeneratedPack:
     scope_name: str
     considered: int
     shortlisted: int
+    source_version: str | None = None
+    provider_records: tuple[dict[str, Any], ...] = ()
+    evidence: dict[str, Any] | None = None
 
     @property
     def sha256(self) -> str:
@@ -140,6 +144,19 @@ def _validated_payment_intent(value: Any) -> str:
     if not isinstance(value, str) or len(value.strip()) <= 3 or not value.strip().startswith("pi_"):
         raise TerritoryBriefFulfilmentError("territory-brief checkout has no valid authoritative payment intent")
     return value.strip()
+
+
+def _stable_payment_time(order: Any, session: dict[str, Any]) -> datetime:
+    """Return durable payment evidence so retries preserve one selection hash."""
+    paid_at = order["paid_at"]
+    if isinstance(paid_at, datetime):
+        return paid_at.astimezone(timezone.utc)
+    created = session.get("created")
+    if isinstance(created, (int, float)) and created > 0:
+        return datetime.fromtimestamp(created, tz=timezone.utc)
+    raise TerritoryBriefFulfilmentError(
+        "territory-brief checkout has no durable timestamp for an immutable selection"
+    )
 
 
 def validate_existing_payment_evidence(
@@ -305,7 +322,7 @@ async def fulfil_territory_brief_order(
                generation_attempts, stripe_payment_intent_id, amount_total, currency,
                (SELECT v.id::text FROM territory_brief_scope_versions v
                  WHERE v.order_id = territory_brief_orders.id AND v.version = 1) AS bound_scope_ref,
-               source_edition_id
+               source_edition_id, paid_at
         FROM territory_brief_orders
         WHERE id = $1 AND stripe_checkout_session_id = $2
         FOR UPDATE
@@ -344,6 +361,9 @@ async def fulfil_territory_brief_order(
         raise TerritoryBriefFulfilmentError(
             f"territory-brief order {order_id} exceeded {_MAX_GENERATION_ATTEMPTS} generation attempts; needs manual review"
         )
+
+    selection_confirmed_at = _stable_payment_time(order, authoritative)
+    failure_context["paid_at"] = selection_confirmed_at
 
     try:
         # generation_attempts is maintained by the post-rollback recorder. All
@@ -404,8 +424,49 @@ async def fulfil_territory_brief_order(
         )
         if inspect.isawaitable(pack):
             pack = await pack
+        from api.services import customer_package as packages
+
+        customer_binding = packages.customer_email_reference(order["customer_email"])
+        providers = list(pack.provider_records)
+        if not providers:
+            providers = packages.provider_records_from_csv(
+                pack.csv_text,
+                provider_cap=int(order["scope_shortlist_target"]),
+            )
+        if len(providers) != pack.shortlisted:
+            raise TerritoryBriefFulfilmentError(
+                "generated shortlist does not match the distinct provider evidence used by the customer package"
+            )
+        snapshot = packages.verified_snapshot(
+            order_reference=str(order_id),
+            customer_reference=customer_binding,
+            product_id="territory-opportunity-brief",
+            payment_reference=payment_intent,
+            template_version=packages.TERRITORY_TEMPLATE_VERSION,
+            source_version=pack.source_version or f"postgres-cqc-edition-{order['source_edition_id']}",
+            geography=pack.scope_name,
+            rating_context_criteria=(
+                f"{order['scope_window_days']}-day supported-signal window",
+                f"up to {order['scope_shortlist_target']} distinct providers",
+            ),
+            provider_cap=int(order["scope_shortlist_target"]),
+            buyer_objective="Territory opportunity prioritisation",
+            confirmed_at=selection_confirmed_at,
+        )
+        customer_package = packages.build_package_bytes(
+            snapshot,
+            {
+                "brief.pdf": packages.PackageArtifact("brief.pdf", pack.pdf_bytes, "application/pdf"),
+                "providers.csv": packages.PackageArtifact(
+                    "providers.csv", pack.csv_text.encode("utf-8"), "text/csv; charset=utf-8"
+                ),
+            },
+            provider_records=providers,
+            evidence=pack.evidence,
+        )
         pdf_ref = deps.upload(order_id, "pdf", pack.pdf_bytes, "application/pdf")
         csv_ref = deps.upload(order_id, "csv", pack.csv_text.encode("utf-8"), "text/csv; charset=utf-8")
+        zip_ref = deps.upload(order_id, "zip", customer_package.zip_bytes, "application/zip")
 
         await conn.execute(
             """
@@ -414,6 +475,12 @@ async def fulfil_territory_brief_order(
             blob_pdf_pathname = $1,
             blob_csv_pathname = $2,
             artifact_sha256 = $3,
+            blob_zip_pathname = $5,
+            package_sha256 = $6,
+            selection_snapshot = $7::jsonb,
+            selection_sha256 = $8,
+            package_manifest = $9::jsonb,
+            package_version = $10,
             fulfilled_at = COALESCE(fulfilled_at, NOW()),
             updated_at = NOW()
         WHERE id = $4
@@ -422,6 +489,12 @@ async def fulfil_territory_brief_order(
             csv_ref.pathname,
             pack.sha256,
             order_id,
+            zip_ref.pathname,
+            customer_package.sha256,
+            json.dumps(customer_package.selection, sort_keys=True),
+            snapshot.sha256,
+            json.dumps(customer_package.manifest, sort_keys=True),
+            customer_package.version,
         )
 
         if bound_scope_ref:
@@ -431,7 +504,8 @@ async def fulfil_territory_brief_order(
 
         raw_pdf, hash_pdf = new_download_token()
         raw_csv, hash_csv = new_download_token()
-        for token_hash, kind in ((hash_pdf, "pdf"), (hash_csv, "csv")):
+        raw_zip, hash_zip = new_download_token()
+        for token_hash, kind in ((hash_pdf, "pdf"), (hash_csv, "csv"), (hash_zip, "zip")):
             await conn.execute(
                 """
             INSERT INTO territory_brief_download_tokens (token_hash, order_id, artifact_kind, expires_at)
@@ -445,14 +519,16 @@ async def fulfil_territory_brief_order(
 
         pdf_url = html.escape(f"{cfg.app_url}/api/export?token={raw_pdf}", quote=True)
         csv_url = html.escape(f"{cfg.app_url}/api/export?token={raw_csv}", quote=True)
+        zip_url = html.escape(f"{cfg.app_url}/api/export?token={raw_zip}", quote=True)
         safe_version = html.escape(cfg.terms_version)
         email_body = (
             f"<p>Your Territory Opportunity Brief for {html.escape(pack.scope_name)} is ready.</p>"
-            f'<p><a href="{pdf_url}">Download the brief (PDF)</a> &nbsp;|&nbsp; '
+            f'<p><a href="{zip_url}">Download the complete customer package (ZIP)</a></p>'
+            f'<p><a href="{pdf_url}">Download the brief only (PDF)</a> &nbsp;|&nbsp; '
             f'<a href="{csv_url}">Download the shortlist (CSV)</a></p>'
             f"<p>Each link works for 30 days and up to 5 downloads. The brief covers "
-            f"{pack.considered} organisation(s) with a supported opportunity signal; "
-            f"{pack.shortlisted} are shortlisted and ranked.</p>"
+            f"{pack.considered} location(s) with a supported signal; "
+            f"{pack.shortlisted} are ranked candidates marked Qualification incomplete.</p>"
             f"<p>You expressly requested immediate supply and acknowledged that your statutory right "
             f"to cancel would be lost once the completed Brief was made available (Business Terms "
             f"{safe_version}). This does not affect your rights if the Brief is faulty or not as "
@@ -482,6 +558,9 @@ async def fulfil_territory_brief_order(
                 "session_id": session_id,
                 "scope": f"{order['scope_kind']}:{order['scope_name']}",
                 "artifact_sha256": pack.sha256,
+                "package_sha256": customer_package.sha256,
+                "selection_sha256": snapshot.sha256,
+                "package_version": customer_package.version,
                 "shortlisted": pack.shortlisted,
             },
             conn=conn,

@@ -12,6 +12,7 @@ import pytest
 from api.routers import billing
 from api.services import territory_brief_delivery as delivery
 from api.services import territory_brief_fulfilment as fulfil
+from tests import package_fixtures
 from tests.integration.conftest import apply_full_schema, asyncpg
 
 
@@ -47,6 +48,7 @@ def _authoritative(order_id: str) -> dict:
         "payment_intent": "pi_generation_recovery",
         "amount_total": 74500,
         "currency": "gbp",
+        "created": 1_761_800_000,
     }
 
 
@@ -97,11 +99,26 @@ def _successful_deps(
     def generate(order):
         generated.append("attempted")
         return fulfil.GeneratedPack(
-            pdf_bytes=b"%PDF-1.4 synthetic",
-            csv_text="rank,organisation\n1,Synthetic Care\n",
+            pdf_bytes=package_fixtures.brief_pdf(
+                str(order["id"]),
+                [{"provider_id": "P-SYNTHETIC", "provider_name": "Synthetic Care", "location_ids": ["L-SYNTHETIC"]}],
+            ),
+            csv_text=(
+                "provider_id,location_id,organisation_name\n"
+                "P-SYNTHETIC,L-SYNTHETIC,Synthetic Care\n"
+            ),
             scope_name=order["scope_name"],
             considered=1,
             shortlisted=1,
+            source_version="synthetic-edition",
+            provider_records=(
+                {
+                    "provider_id": "P-SYNTHETIC",
+                    "provider_name": "Synthetic Care",
+                    "location_ids": ["L-SYNTHETIC"],
+                    "qualification_status": "Qualification incomplete",
+                },
+            ),
         )
 
     def upload(order_id, kind, _data, _content_type):
@@ -422,7 +439,7 @@ async def test_post_upload_database_failure_recovers_evidence_then_refund_blocks
             await tx.rollback()
 
         assert generated == ["attempted"]
-        assert uploads == ["pdf", "csv"]
+        assert uploads == ["pdf", "csv", "zip"]
         await _assert_no_delivery(conn, order_id)
         monkeypatch.setattr(
             "api.database.get_connection",
@@ -465,7 +482,7 @@ async def test_post_upload_database_failure_recovers_evidence_then_refund_blocks
                     deps=_successful_deps(authoritative, generated, uploads),
                 )
         assert generated == ["attempted"]
-        assert uploads == ["pdf", "csv"]
+        assert uploads == ["pdf", "csv", "zip"]
         await _assert_no_delivery(conn, order_id)
     finally:
         await conn.close()
