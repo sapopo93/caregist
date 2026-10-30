@@ -167,7 +167,7 @@ async def test_paid_fulfilment_uses_pinned_postgres_source(source_db, tmp_path, 
     session = dict(id='cs_test', metadata=fulfilment.build_checkout_metadata(str(order_id), SCOPE, cfg),
                    payment_status='paid', consent={'terms_of_service': 'accepted'},
                    line_items={'data': [{'price': {'id': 'price_test'}, 'quantity': 1}]},
-                   payment_intent='pi_test', amount_total=74500, currency='gbp')
+                   payment_intent='pi_test', amount_total=74500, currency='gbp', created=1_761_800_000)
     uploads = {}
     def upload(order_id, kind, data, content_type):
         uploads[kind] = data
@@ -190,7 +190,7 @@ async def test_paid_fulfilment_uses_pinned_postgres_source(source_db, tmp_path, 
     assert row['source_edition_id'] == edition
     assert uploads['pdf'].startswith(b'%PDF')
     assert b'rating_changed' in uploads['csv']
-    assert await conn.fetchval('SELECT count(*) FROM territory_brief_download_tokens WHERE order_id=$1', order_id) == 2
+    assert await conn.fetchval('SELECT count(*) FROM territory_brief_download_tokens WHERE order_id=$1', order_id) == 3
 
 
 async def test_edition_freezes_the_rating_rule_and_the_brief_serves_it(source_db, tmp_path):

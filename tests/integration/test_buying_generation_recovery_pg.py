@@ -12,6 +12,7 @@ import pytest
 from api.routers import billing
 from api.services import territory_brief_delivery as delivery
 from api.services import territory_brief_fulfilment as fulfil
+from tests import package_fixtures
 from tests.integration.conftest import apply_full_schema, asyncpg
 
 
@@ -47,6 +48,7 @@ def _authoritative(order_id: str) -> dict:
         "payment_intent": "pi_generation_recovery",
         "amount_total": 74500,
         "currency": "gbp",
+        "created": 1_761_800_000,
     }
 
 
@@ -97,7 +99,10 @@ def _successful_deps(
     def generate(order):
         generated.append("attempted")
         return fulfil.GeneratedPack(
-            pdf_bytes=b"%PDF-1.4 synthetic\n%%EOF\n",
+            pdf_bytes=package_fixtures.brief_pdf(
+                str(order["id"]),
+                [{"provider_id": "P-SYNTHETIC", "provider_name": "Synthetic Care", "location_ids": ["L-SYNTHETIC"]}],
+            ),
             csv_text=(
                 "provider_id,location_id,organisation_name\n"
                 "P-SYNTHETIC,L-SYNTHETIC,Synthetic Care\n"

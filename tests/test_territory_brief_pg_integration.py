@@ -125,6 +125,7 @@ async def test_full_fulfilment_against_real_postgres():
             "payment_intent": "pi_pg_itest",
             "amount_total": 74500,
             "currency": "gbp",
+            "created": 1_761_800_000,
         }
         deps = tbf.FulfilmentDeps(
             generate=_generate,
@@ -167,7 +168,7 @@ async def test_full_fulfilment_against_real_postgres():
         # 2. idempotent re-run: no duplicates, no error
         await tbf.fulfil_territory_brief_order(conn, session, cfg=cfg, deps=deps)
         assert await conn.fetchval("SELECT count(*) FROM territory_brief_consents WHERE order_id = $1", order_id) == 1
-        assert await conn.fetchval("SELECT count(*) FROM territory_brief_download_tokens WHERE order_id = $1", order_id) == 2
+        assert await conn.fetchval("SELECT count(*) FROM territory_brief_download_tokens WHERE order_id = $1", order_id) == 3
         assert (
             await conn.fetchval(
                 "SELECT count(*) FROM pending_emails WHERE idempotency_key = $1",
