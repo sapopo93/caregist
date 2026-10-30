@@ -178,6 +178,17 @@ class PackageArtifact:
             raise PackageBuildError(f"unsafe artifact filename {self.filename!r}")
         if not self.data:
             raise PackageBuildError(f"artifact {self.filename} is empty")
+        if self.filename.endswith(".pdf") and (
+            not self.data.startswith(b"%PDF-") or b"%%EOF" not in self.data[-1024:]
+        ):
+            raise PackageBuildError(f"artifact {self.filename} is not a complete PDF")
+        if self.filename.endswith(".csv"):
+            try:
+                text = self.data.decode("utf-8-sig")
+            except UnicodeDecodeError as exc:
+                raise PackageBuildError(f"artifact {self.filename} is not UTF-8 CSV") from exc
+            if not next(csv.reader(io.StringIO(text)), []):
+                raise PackageBuildError(f"artifact {self.filename} has no CSV header")
 
 
 @dataclass(frozen=True)
@@ -266,9 +277,13 @@ def validate_provider_records(
 
 
 def provider_records_from_csv(csv_text: str, *, provider_cap: int) -> list[dict[str, Any]]:
-    reader = csv.DictReader(io.StringIO(csv_text))
+    reader = csv.DictReader(io.StringIO(csv_text.lstrip("\ufeff")))
+    if not reader.fieldnames:
+        raise ProviderSelectionError("provider CSV has no header")
     locations = []
-    for row in reader:
+    for row_number, row in enumerate(reader, start=2):
+        if not any(str(value or "").strip() for value in row.values()):
+            continue
         provider_id = row.get("provider_id") or row.get("cqc_provider_id")
         location_id = row.get("location_id") or row.get("cqc_location_id")
         name = (
@@ -277,9 +292,60 @@ def provider_records_from_csv(csv_text: str, *, provider_cap: int) -> list[dict[
             or row.get("provider_name")
             or row.get("name")
         )
-        if provider_id and location_id and name:
-            locations.append({"provider_id": provider_id, "location_id": location_id, "provider_name": name})
+        if not provider_id or not location_id or not name:
+            raise ProviderSelectionError(
+                f"provider CSV row {row_number} is missing provider ID, location ID or organisation name"
+            )
+        locations.append({"provider_id": provider_id, "location_id": location_id, "provider_name": name})
+    if not locations:
+        raise ProviderSelectionError("provider CSV contains no provider rows")
     return provider_cohort_from_locations(locations, provider_cap=provider_cap)
+
+
+def _reconcile_provider_csv(
+    artifact: PackageArtifact,
+    providers: list[dict[str, Any]],
+    *,
+    provider_cap: int,
+) -> None:
+    csv_providers = provider_records_from_csv(
+        artifact.data.decode("utf-8-sig"),
+        provider_cap=provider_cap,
+    )
+    expected = {
+        row["provider_id"]: (
+            str(row.get("provider_name") or "").strip().casefold(),
+            frozenset(row.get("location_ids") or ()),
+        )
+        for row in providers
+    }
+    actual = {
+        row["provider_id"]: (
+            str(row.get("provider_name") or "").strip().casefold(),
+            frozenset(row.get("location_ids") or ()),
+        )
+        for row in csv_providers
+    }
+    if actual != expected:
+        raise ProviderSelectionError(
+            "providers.csv does not match the validated provider IDs, names and locations"
+        )
+
+
+def _validate_digest_csv(artifact: PackageArtifact) -> None:
+    reader = csv.DictReader(io.StringIO(artifact.data.decode("utf-8-sig")))
+    required = {"section", "date", "location_id", "name", "local_authority", "detail", "cqc_url"}
+    missing = sorted(required - set(reader.fieldnames or ()))
+    if missing:
+        raise PackageBuildError(f"digest.csv is missing required column(s): {', '.join(missing)}")
+    allowed_sections = {"new_registration", "rating_published"}
+    for row_number, row in enumerate(reader, start=2):
+        if not any(str(value or "").strip() for value in row.values()):
+            continue
+        if row.get("section") not in allowed_sections:
+            raise PackageBuildError(f"digest.csv row {row_number} has an unsupported section")
+        if not str(row.get("date") or "").strip() or not str(row.get("location_id") or "").strip():
+            raise PackageBuildError(f"digest.csv row {row_number} is missing date or location_id")
 
 
 def _selection_confirmation_pdf(
@@ -360,6 +426,14 @@ def build_package_bytes(
         raise ProviderSelectionError("a Territory Opportunity Brief cannot contain an empty provider selection")
     if snapshot.product_id == "weekly-digest" and providers:
         raise ProviderSelectionError("a Weekly Digest cannot contain Territory Brief provider records")
+    if snapshot.product_id == "territory-opportunity-brief":
+        _reconcile_provider_csv(
+            artifacts["providers.csv"],
+            providers,
+            provider_cap=snapshot.provider_cap or 0,
+        )
+    else:
+        _validate_digest_csv(artifacts["digest.csv"])
     researched = [row for row in providers if row["qualification_status"] == "Researched"]
     incomplete = [row for row in providers if row["qualification_status"] == "Qualification incomplete"]
     evidence_payload = {

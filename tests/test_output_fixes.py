@@ -72,7 +72,9 @@ def isle_of_wight():
 
 
 def test_pdf_states_the_real_generation_date_and_the_source_edition(southampton, tmp_path):
-    front = _pdf_text(southampton, tmp_path).split("2. Ranked opportunity shortlist")[0]
+    front = _pdf_text(southampton, tmp_path).split(
+        "2. Ranked candidate register - Qualification incomplete"
+    )[0]
     assert "generated 08 October 2026" in front
     assert "generated 18 February 2026" not in front
     assert southampton.executive_summary["date_generated"] == "2026-10-08"
@@ -174,7 +176,7 @@ def test_executive_text_points_at_the_right_sections(southampton, tmp_path):
     assert "(see section 6)" in text and "(see section 5)" not in text
     assert "sections 1-7 are the executive brief" in text
     assert "Strongest areas of movement" not in text
-    assert "Highest-ranked organisations:" in text
+    assert "Highest-ranked qualification-incomplete candidates:" in text
     # A local-authority brief has one parent region, so the table would only
     # repeat the territory.
     assert len(southampton.territory_insights["activity_by_sub_area"]) == 1

@@ -715,7 +715,7 @@ def brief_delivery_email(args: argparse.Namespace, summary: dict[str, Any]) -> t
 
 Thank you for your order. Your Territory Opportunity Brief is attached:
 
-- the PDF brief ({summary['shortlisted']} ranked organisations with the reason and CQC evidence for each);
+- the PDF brief ({summary['shortlisted']} ranked candidates, each marked Qualification incomplete, with a reason and CQC evidence);
 - the CSV dataset, ready to map into your CRM;
 - the source manifest recording the CQC edition ({summary['source_edition']}) behind every entry.
 

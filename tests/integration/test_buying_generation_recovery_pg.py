@@ -97,8 +97,11 @@ def _successful_deps(
     def generate(order):
         generated.append("attempted")
         return fulfil.GeneratedPack(
-            pdf_bytes=b"%PDF-1.4 synthetic",
-            csv_text="rank,organisation\n1,Synthetic Care\n",
+            pdf_bytes=b"%PDF-1.4 synthetic\n%%EOF\n",
+            csv_text=(
+                "provider_id,location_id,organisation_name\n"
+                "P-SYNTHETIC,L-SYNTHETIC,Synthetic Care\n"
+            ),
             scope_name=order["scope_name"],
             considered=1,
             shortlisted=1,

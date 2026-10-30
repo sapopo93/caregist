@@ -351,7 +351,13 @@ def test_csv_has_expected_columns_and_no_blank_reason(tmp_path):
     ], [{"providerId": "1-P1", "name": "P1 Ltd"}, {"providerId": "1-P2", "name": "P2 Ltd"}])
     csv_text = brief_to_csv(brief)
     header, *rows = csv_text.strip().splitlines()
-    assert header.split(",")[:4] == ["rank", "organisation", "location", "cqc_location_id"]
+    assert header.split(",")[:5] == [
+        "rank",
+        "qualification_status",
+        "organisation",
+        "location",
+        "cqc_location_id",
+    ]
     assert "reason" in header and "cqc_record_url" in header
     assert len(rows) == 2
     for row in rows:

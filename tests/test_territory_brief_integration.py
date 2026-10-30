@@ -56,6 +56,8 @@ def test_shortlist_is_populated_and_in_promised_band(brief):
     assert 10 <= len(brief.shortlist) <= 50
     assert brief.considered_locations >= len(brief.shortlist)
     assert brief.territory_locations > len(brief.shortlist)
+    assert brief.executive_summary["eligible_provider_candidates"] >= len(brief.shortlist)
+    assert brief.executive_summary["selection_notice"].startswith("Selection method:")
 
 
 def test_ranks_are_dense_and_ordered(brief):
@@ -92,6 +94,8 @@ def test_csv_round_trips_and_matches_shortlist(brief):
     assert len(rows) == len(brief.shortlist)
     assert rows[0]["organisation"] == brief.shortlist[0].organisation_name
     for row in rows:
+        assert row["qualification_status"] == "Qualification incomplete"
+        assert row["selection_notice"].startswith("Selection method:")
         assert row["reason"].strip()
         assert row["cqc_record_url"].startswith("https://www.cqc.org.uk/location/")
 
@@ -125,12 +129,12 @@ def test_rendered_pdf_is_valid_and_well_formed(brief, tmp_path):
         for marker in [
             "Territory Opportunity Brief",
             "1. Executive summary",
-            "2. Ranked opportunity shortlist",
+            "2. Ranked candidate register - Qualification incomplete",
             "4. Territory insights",
             "5. Recommended next actions",
             "6. Methodology and data notes",
             "7. Limitations and disclaimer",
-            "Appendix A. Reason and evidence",
+            "Appendix A. Qualification-incomplete candidate evidence",
             "Open Government Licence",
         ]:
             assert marker in text, f"missing section: {marker!r}"

@@ -146,6 +146,17 @@ def _validated_payment_intent(value: Any) -> str:
     return value.strip()
 
 
+def _stable_payment_time(order: Any, session: dict[str, Any], fallback: datetime) -> datetime:
+    """Return durable payment evidence so retries preserve one selection hash."""
+    paid_at = order["paid_at"]
+    if isinstance(paid_at, datetime):
+        return paid_at.astimezone(timezone.utc)
+    created = session.get("created")
+    if isinstance(created, (int, float)) and created > 0:
+        return datetime.fromtimestamp(created, tz=timezone.utc)
+    return fallback
+
+
 def validate_existing_payment_evidence(
     order: dict[str, Any] | Any,
     context: dict[str, Any],
@@ -309,7 +320,7 @@ async def fulfil_territory_brief_order(
                generation_attempts, stripe_payment_intent_id, amount_total, currency,
                (SELECT v.id::text FROM territory_brief_scope_versions v
                  WHERE v.order_id = territory_brief_orders.id AND v.version = 1) AS bound_scope_ref,
-               source_edition_id
+               source_edition_id, paid_at
         FROM territory_brief_orders
         WHERE id = $1 AND stripe_checkout_session_id = $2
         FOR UPDATE
@@ -348,6 +359,9 @@ async def fulfil_territory_brief_order(
         raise TerritoryBriefFulfilmentError(
             f"territory-brief order {order_id} exceeded {_MAX_GENERATION_ATTEMPTS} generation attempts; needs manual review"
         )
+
+    selection_confirmed_at = _stable_payment_time(order, authoritative, payment_evidence_at)
+    failure_context["paid_at"] = selection_confirmed_at
 
     try:
         # generation_attempts is maintained by the post-rollback recorder. All
@@ -435,7 +449,7 @@ async def fulfil_territory_brief_order(
             ),
             provider_cap=int(order["scope_shortlist_target"]),
             buyer_objective="Territory opportunity prioritisation",
-            confirmed_at=payment_evidence_at,
+            confirmed_at=selection_confirmed_at,
         )
         customer_package = packages.build_package_bytes(
             snapshot,
@@ -511,8 +525,8 @@ async def fulfil_territory_brief_order(
             f'<p><a href="{pdf_url}">Download the brief only (PDF)</a> &nbsp;|&nbsp; '
             f'<a href="{csv_url}">Download the shortlist (CSV)</a></p>'
             f"<p>Each link works for 30 days and up to 5 downloads. The brief covers "
-            f"{pack.considered} organisation(s) with a supported opportunity signal; "
-            f"{pack.shortlisted} are shortlisted and ranked.</p>"
+            f"{pack.considered} location(s) with a supported signal; "
+            f"{pack.shortlisted} are ranked candidates marked Qualification incomplete.</p>"
             f"<p>You expressly requested immediate supply and acknowledged that your statutory right "
             f"to cancel would be lost once the completed Brief was made available (Business Terms "
             f"{safe_version}). This does not affect your rights if the Brief is faulty or not as "
