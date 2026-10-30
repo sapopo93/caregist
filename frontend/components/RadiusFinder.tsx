@@ -34,18 +34,21 @@ const RATINGS = [
   { label: "Good", value: "Good" },
   { label: "Requires Improvement", value: "Requires improvement" },
 ];
+// The radius API matches `service_types ILIKE '%value%'`, and rows hold CQC's
+// long-form names ("Care home service without nursing", "Dental service").
+// The short API aliases ("Residential Homes", "Dentist") matched nothing.
 const SERVICE_TYPES = [
   { label: "All", value: "" },
-  { label: "Care Homes", value: "Residential Homes" },
-  { label: "Home Care", value: "Homecare Agencies" },
-  { label: "Nursing Homes", value: "Nursing Homes" },
-  { label: "Supported Living", value: "Supported Living" },
-  { label: "GP Surgeries", value: "Doctors/Gps" },
-  { label: "Dental", value: "Dentist" },
+  { label: "Care Homes", value: "Care home service without nursing" },
+  { label: "Home Care", value: "Domiciliary care" },
+  { label: "Nursing Homes", value: "Care home service with nursing" },
+  { label: "Supported Living", value: "Supported living" },
+  { label: "GP Surgeries", value: "Doctors" },
+  { label: "Dental", value: "Dental" },
   { label: "Hospitals", value: "Hospital" },
   { label: "Hospice", value: "Hospice" },
-  { label: "Community Healthcare", value: "Community Services - Healthcare" },
-  { label: "Mental Health", value: "Community Services - Mental Health" },
+  { label: "Community Healthcare", value: "Community health" },
+  { label: "Mental Health", value: "mental health" },
 ];
 
 export default function RadiusFinder() {

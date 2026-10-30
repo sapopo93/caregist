@@ -44,6 +44,7 @@ jobs:
           cache: "pip"
           cache-dependency-path: |
             requirements.txt
+            requirements-pipeline.txt
             requirements-dev.txt
             requirements-worker.txt
             requirements-worker-model.txt
@@ -51,7 +52,7 @@ jobs:
       - name: Install backend dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt -r requirements-dev.txt -r requirements-worker.txt
+          pip install -r requirements-pipeline.txt -r requirements-dev.txt -r requirements-worker.txt
           pip install --no-deps --require-hashes -r requirements-worker-model.txt
 
       - name: Install pdftotext for the Territory Brief PDF checks
@@ -89,6 +90,7 @@ jobs:
         # Fail the build on known CVEs in backend deps.
         run: |
           pip-audit --requirement requirements.txt --strict
+          pip-audit --requirement requirements-pipeline.txt --strict
           pip-audit --requirement requirements-api.txt --strict
           pip-audit --requirement requirements-worker.txt --strict
 
@@ -119,12 +121,12 @@ jobs:
         with:
           python-version: "3.12"
           cache: "pip"
-          cache-dependency-path: requirements.txt
+          cache-dependency-path: requirements-pipeline.txt
 
       - name: Install backend dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install -r requirements-pipeline.txt
 
       - name: Install local media test tooling
         run: |

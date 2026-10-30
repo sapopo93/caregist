@@ -10,7 +10,7 @@
   {"slug":"community-mental-health","name":"Community Mental Health Services","category":"Community healthcare","aliases":["Community based services for people with mental health needs","Community Services - Mental Health"]},
   {"slug":"independent-midwifery","name":"Independent Midwifery","category":"Community healthcare","aliases":["Community health care services - Independent Midwives"]},
   {"slug":"community-healthcare","name":"Community Healthcare","category":"Community healthcare","aliases":["Community Health Service","Community healthcare service","Community Services - Healthcare"]},
-  {"slug":"community-nursing","name":"Community Nursing","category":"Community healthcare","aliases":["Community Services - Nursing"]},
+  {"slug":"community-nursing","name":"Community Nursing","category":"Community healthcare","aliases":["Community Services - Nursing","Community health care services - Nurses Agency only"]},
   {"slug":"dental-services","name":"Dental Services","category":"Primary care","aliases":["Dental service","Dentist"]},
   {"slug":"diagnostic-screening","name":"Diagnostic and Screening Services","category":"Diagnostics","aliases":["Diagnosis/Screening","Diagnostic and/or screening service"]},
   {"slug":"primary-medical-care","name":"GP and Primary Medical Services","category":"Primary care","aliases":["Doctors consultation service","Doctors treatment service","Doctors/Gps"]},

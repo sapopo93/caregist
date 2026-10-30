@@ -24,7 +24,10 @@ export function normalizeExternalHttpUrl(value: string | null | undefined): stri
   }
 }
 
-/** Use a verified CQC host, falling back to the official location's reports page. */
+/**
+ * Use a verified CQC host, falling back to the official location page. The
+ * `/reports` sub-page returns an error for locations CQC has not inspected yet.
+ */
 export function cqcEvidenceUrl(value: string | null | undefined, locationId: string): string | null {
   const absolute = value && !value.trim().startsWith("/")
     ? normalizeExternalHttpUrl(value)
@@ -34,6 +37,6 @@ export function cqcEvidenceUrl(value: string | null | undefined, locationId: str
     if (url.hostname === "cqc.org.uk" || url.hostname.endsWith(".cqc.org.uk")) return absolute;
   }
   return /^\d+-\d+$/.test(locationId)
-    ? `https://www.cqc.org.uk/location/${locationId}/reports`
+    ? `https://www.cqc.org.uk/location/${locationId}`
     : null;
 }

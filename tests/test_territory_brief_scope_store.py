@@ -203,10 +203,11 @@ async def test_fulfilment_passes_private_rules_to_generation_and_starts_retentio
     ref = await store.insert_scope_version(store_conn, ORDER_ID, RULES)
     conn = ScopedConn(_order(bound_scope_ref=ref), store_conn)
     seen = {}
+    default_generate = _deps().generate
 
     def generate(order_row):
         seen.update(order_row["scope_rules"])
-        return fulfil.GeneratedPack(b"%PDF", "a,b\n", "Southampton", 10, 5)
+        return default_generate(order_row)
 
     deps = _deps(session=_session(metadata={"scope_ref": ref}), generate=generate)
     await fulfil.fulfil_territory_brief_order(conn, {"id": "cs_test_123"}, cfg=CFG, deps=deps)

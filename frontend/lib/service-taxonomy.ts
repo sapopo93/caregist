@@ -17,10 +17,26 @@ export function canonicalServices(): CanonicalService[] {
   return services;
 }
 
+/** Display name for a service slug; unknown values (legacy aliases) pass through. */
+export function serviceTypeLabel(value: string): string {
+  return bySlug.get(value.trim())?.name ?? value;
+}
+
 export function resolveServiceAliases(value: string): string[] {
   const cleaned = value.trim();
   const entry = bySlug.get(cleaned) ?? byAlias.get(cleaned.toLocaleLowerCase("en-GB"));
   return entry?.aliases ?? (cleaned ? [cleaned] : []);
+}
+
+/**
+ * Canonical slugs that have at least one live source label. The search dropdown
+ * is built from this so an option never offers a filter that returns nothing.
+ */
+export function canonicalSlugsWithLiveRows(liveLabels: string[]): string[] {
+  const live = new Set(liveLabels.map((label) => label.trim().toLocaleLowerCase("en-GB")));
+  return services
+    .filter((entry) => entry.aliases.some((alias) => live.has(alias.trim().toLocaleLowerCase("en-GB"))))
+    .map((entry) => entry.slug);
 }
 
 export function canonicalizeServiceCounts(rows: Array<{ service_type: string; provider_count: number }>) {

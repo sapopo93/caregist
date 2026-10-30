@@ -11,6 +11,7 @@ from pathlib import Path
 
 import pytest
 
+from tests import package_fixtures
 from tools import order_ledger as ledger
 from tools import orders
 from tools import prepare_order as po
@@ -44,18 +45,33 @@ def world(monkeypatch, tmp_path):
         if args.stage == "deliver":
             checks.add("matches_quote", 30 >= (args.quoted_count or 0), "ok")
         pdf = order_dir / "brief.pdf"
-        pdf.write_bytes(b"%PDF")
+        pdf.write_bytes(package_fixtures.brief_pdf(args.order_ref, package_fixtures.roster(30)))
+        csv_path = order_dir / "brief.csv"
+        csv_path.write_text(
+            "cqc_provider_id,cqc_location_id,organisation_name\n"
+            + "".join(f"P{i},L{i},Provider {i}\n" for i in range(30)),
+            encoding="utf-8",
+        )
+        manifest = order_dir / "brief-manifest.json"
+        manifest.write_text('{"generated_at":"2026-10-16"}', encoding="utf-8")
         summary = {"region": args.region, "provider_group": "Not yet inspected", "service_type": "All",
                    "locations_in_scope": 1221, "shortlisted": 30, "source_edition": "2026-10-16", "export": "x"}
-        return checks, summary, [pdf]
+        return checks, summary, [pdf, csv_path, manifest]
 
     def build_digest_issue(args, *, env, order_dir, now):
         state["built"].append(("digest", args.order_ref, args.issue, args.week_ending))
         checks = po.Checks()
         checks.add("digest_built", True, "ok")
         pdf = order_dir / f"issue{args.issue}.pdf"
-        pdf.write_bytes(b"%PDF")
-        return checks, {"new_registrations": 4, "ratings_published": 0}, [pdf]
+        pdf.write_bytes(package_fixtures.plain_pdf(f"Digest issue {args.issue}"))
+        csv_path = order_dir / f"issue{args.issue}.csv"
+        csv_path.write_text(
+            "section,date,location_id,name,local_authority,detail,cqc_url\n",
+            encoding="utf-8",
+        )
+        manifest = order_dir / f"issue{args.issue}.json"
+        manifest.write_text('{"generated_at":"2026-10-16"}', encoding="utf-8")
+        return checks, {"new_registrations": 4, "ratings_published": 0}, [pdf, csv_path, manifest]
 
     monkeypatch.setattr(po, "list_payments", list_payments)
     monkeypatch.setattr(po, "payment_still_valid", lambda env, session: state["invalid"].get(session))
@@ -113,7 +129,42 @@ def test_delivery_takes_only_the_order_ref_and_uses_the_recorded_buyer_and_scope
     assert world["built"][-1] == ("brief", ref, "a@example.com", "North East", "not_yet_inspected")
     assert world["drafts"][-1]["to"] == "a@example.com"
     assert f"(ref {ref})" in world["drafts"][-1]["subject"]
-    assert world["drafts"][-1]["files"] == ["brief.pdf"]
+    assert set(world["drafts"][-1]["files"]) == {
+        "brief.pdf",
+        "brief.csv",
+        "brief-manifest.json",
+        next(path.name for path in (world["out"] / "packages" / ref).rglob("*.zip")),
+    }
+
+
+def test_manual_package_binds_a_hashed_buyer_not_the_plain_email(world):
+    import json
+    import zipfile
+
+    ref = quote_brief(world, "a@example.com")
+    pay(world, "a@example.com", 74500)
+    assert run(world, "deliver", "--order-ref", ref) == 0
+
+    package = next((world["out"] / "packages" / ref).rglob("*.zip"))
+    with zipfile.ZipFile(package) as archive:
+        texts = {name: archive.read(name) for name in archive.namelist()}
+    manifest = json.loads(texts["manifest.json"])
+    assert manifest["customer_reference"].startswith("email-sha256:")
+    # PDF streams are compressed, so read their text rather than the raw bytes.
+    readable = {
+        name: (_pdf_text(data) if name.endswith(".pdf") else data.decode("utf-8", "replace"))
+        for name, data in texts.items()
+    }
+    assert "Prepared for: email-sha256:" in readable["selection-confirmation.pdf"]
+    assert not any("a@example.com" in text for text in readable.values())
+
+
+def _pdf_text(data: bytes) -> str:
+    import io
+
+    from pypdf import PdfReader
+
+    return "\n".join(page.extract_text() or "" for page in PdfReader(io.BytesIO(data)).pages)
 
 
 @pytest.mark.parametrize("typed", [["--region", "London"], ["--buyer-email", "b@example.com"], ["--provider-group", "inadequate"]])
