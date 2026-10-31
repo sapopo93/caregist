@@ -44,9 +44,9 @@ export default function DirectoryProviderCard({ provider, returnTo }: { provider
   const href = `${getProviderHref(provider)}${returnTo ? `?returnTo=${encodeURIComponent(directoryReturnHref(returnTo))}` : ""}`;
 
   return (
-    <article className="group relative grid min-w-0 grid-cols-[0.375rem_1fr] overflow-hidden rounded-lg border border-stone bg-cream transition hover:border-clay hover:shadow-md">
+    <article className="@container group relative grid min-w-0 grid-cols-[0.375rem_1fr] overflow-hidden rounded-lg border border-stone bg-cream transition hover:border-clay hover:shadow-md">
       <span aria-hidden className={`${ratingToneClass(provider.overall_rating)}`} />
-      <div className="grid min-w-0 gap-x-6 gap-y-2 p-4 md:grid-cols-[minmax(0,1fr)_11rem_9rem_auto] md:items-center">
+      <div className="grid min-w-0 gap-x-6 gap-y-2 p-4 @2xl:grid-cols-[minmax(0,1fr)_11rem_9rem_auto] @2xl:items-center">
         <div className="min-w-0">
           <h3 className="break-words text-lg font-bold leading-snug text-bark">
             <a href={href} className="after:absolute after:inset-0 hover:text-clay">
@@ -65,7 +65,7 @@ export default function DirectoryProviderCard({ provider, returnTo }: { provider
           {provider.number_of_beds ? <div className="flex gap-1.5"><dt className="font-semibold text-bark">Beds</dt><dd>{provider.number_of_beds}</dd></div> : null}
         </dl>
 
-        <div className="md:text-right">
+        <div className="@2xl:text-right">
           <p className="text-sm font-semibold text-bark">
             {provider.overall_rating ?? "Rating not published"}
           </p>
@@ -74,7 +74,7 @@ export default function DirectoryProviderCard({ provider, returnTo }: { provider
           )}
         </div>
 
-        <div className="relative z-10 md:justify-self-end">
+        <div className="relative z-10 @2xl:justify-self-end">
           <CompareButton slug={provider.slug ?? provider.id} name={provider.name} />
         </div>
       </div>
