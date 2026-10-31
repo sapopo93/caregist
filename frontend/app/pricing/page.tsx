@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 
 import PricingCTA from "@/components/PricingCTA";
+import HowToOrder from "@/components/HowToOrder";
 import PricingGlance from "@/components/PricingGlance";
 import RetainedPlanFocus from "@/components/RetainedPlanFocus";
 import {
@@ -56,13 +57,7 @@ export default async function PricingPage() {
 
       <PricingGlance />
 
-      <aside className="mb-8 rounded-xl border border-stone bg-parchment p-6 text-sm leading-6 text-bark">
-        <h2 className="mb-2 text-lg font-bold">How to order</h2>
-        <p>For a Territory Opportunity Brief, choose your region, review matching
-        organisations, then email your scope for review. For the Weekly Digest, choose your
-        England region below, then continue to prepare your enquiry and add your preferred start date. Online ordering is not
-        available. Neither route places an order or takes payment by itself.</p>
-      </aside>
+      <HowToOrder />
 
       <Suspense fallback={null}>
         <RetainedPlanFocus />
