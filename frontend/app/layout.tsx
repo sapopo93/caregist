@@ -171,38 +171,39 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               </a>{" "}
               or call 03000 616161.
             </p>
-            <div className="mt-4 flex flex-wrap gap-4 text-stone">
-              <Link href="/privacy" className="underline hover:text-cream">
-                Privacy Policy
-              </Link>
-              <Link href="/terms" className="underline hover:text-cream">
-                Terms of Service
-              </Link>
-              <Link href="/acceptable-use" className="underline hover:text-cream">
-                Acceptable Use
-              </Link>
-              <Link href="/cookies" className="underline hover:text-cream">
-                Cookies
-              </Link>
-              <Link href="/data-status" className="underline hover:text-cream">
-                Data Status
-              </Link>
-              <Link href="/search" className="underline hover:text-cream">
-                Directory
-              </Link>
-              <Link href="/find-care" className="underline hover:text-cream">
-                Find Care
-              </Link>
-              <Link href="/pricing" className="underline hover:text-cream">
-                Pricing
-              </Link>
-              <Link href="/why-caregist" className="underline hover:text-cream">
-                Why CareGist
-              </Link>
-              <a href="mailto:support@caregist.co.uk" className="underline hover:text-cream">
-                Contact
-              </a>
-            </div>
+            <nav aria-label="Footer" className="mt-8 grid gap-8 border-t border-stone/20 pt-8 sm:grid-cols-2 lg:grid-cols-4">
+              <div>
+                <p className="mb-3 font-mono text-xs uppercase tracking-[0.18em] text-amber">Products</p>
+                <ul className="space-y-2">
+                  <li><Link href="/pricing" className="hover:text-cream hover:underline">Pricing</Link></li>
+                  <li><Link href="/pricing/territory" className="hover:text-cream hover:underline">Check your territory</Link></li>
+                  <li><Link href="/why-caregist" className="hover:text-cream hover:underline">Why CareGist</Link></li>
+                </ul>
+              </div>
+              <div>
+                <p className="mb-3 font-mono text-xs uppercase tracking-[0.18em] text-amber">Directory</p>
+                <ul className="space-y-2">
+                  <li><Link href="/search" className="hover:text-cream hover:underline">Search providers</Link></li>
+                  <li><Link href="/find-care" className="hover:text-cream hover:underline">Find care</Link></li>
+                  <li><Link href="/data-status" className="hover:text-cream hover:underline">Data status</Link></li>
+                </ul>
+              </div>
+              <div>
+                <p className="mb-3 font-mono text-xs uppercase tracking-[0.18em] text-amber">Legal</p>
+                <ul className="space-y-2">
+                  <li><Link href="/privacy" className="hover:text-cream hover:underline">Privacy Policy</Link></li>
+                  <li><Link href="/terms" className="hover:text-cream hover:underline">Terms of Service</Link></li>
+                  <li><Link href="/acceptable-use" className="hover:text-cream hover:underline">Acceptable Use</Link></li>
+                  <li><Link href="/cookies" className="hover:text-cream hover:underline">Cookies</Link></li>
+                </ul>
+              </div>
+              <div>
+                <p className="mb-3 font-mono text-xs uppercase tracking-[0.18em] text-amber">Contact</p>
+                <ul className="space-y-2">
+                  <li><a href="mailto:support@caregist.co.uk" className="hover:text-cream hover:underline">support@caregist.co.uk</a></li>
+                </ul>
+              </div>
+            </nav>
           </div>
         </footer>
       </body>
