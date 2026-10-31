@@ -53,10 +53,22 @@ export default function WeeklyDigestEnquiry({ initialRegion }: { initialRegion: 
         Your email draft
         <textarea id="enquiry-draft" ref={draftRef} readOnly value={draft} rows={13} className={`${fieldClass} text-sm leading-6`} />
       </label>
-      <div className="flex flex-wrap items-center gap-4">
-        <button type="button" onClick={() => void copyDraft()} disabled={!region} className="cta-primary disabled:opacity-50">Copy enquiry email</button>
-        {region && <a href={mailto} className="text-sm text-clay underline">Open my email app instead</a>}
+      <div className="grid gap-3 sm:grid-cols-2">
+        <a
+          href={region ? mailto : undefined}
+          aria-disabled={!region}
+          className={`cta-primary ${region ? "" : "pointer-events-none opacity-50"}`}
+          onClick={(event) => { if (!region) event.preventDefault(); }}
+        >
+          Open in my email app
+        </a>
+        <button type="button" onClick={() => void copyDraft()} disabled={!region} className="cta-secondary disabled:opacity-50">
+          Copy for webmail (Gmail, Outlook.com)
+        </button>
       </div>
+      <p className="text-xs leading-5 text-dusk">
+        Either way, you send the email yourself. Pick the email app option if your computer opens a mail program for email links; pick copy if you use webmail in a browser.
+      </p>
       {!region && <p className="text-sm text-dusk">Choose an England region above to prepare your enquiry.</p>}
       <p role="status" className="text-sm leading-6 text-bark">{copyStatus}</p>
       <p className="text-sm leading-6 text-dusk">Nothing is submitted by this page. Your enquiry reaches CareGist only when you send the email. This does not place an order or take payment.</p>
