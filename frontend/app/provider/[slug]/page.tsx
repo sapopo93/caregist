@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import RatingScale from "@/components/RatingScale";
+import { DEFAULT_REGION_OPTIONS } from "@/lib/directory-constants";
 import { getDirectoryProvider } from "@/lib/directory-db";
 import { normalizeExternalHttpUrl, cqcEvidenceUrl } from "@/lib/external-url";
 import { getProviderHref, directoryReturnHref } from "@/lib/provider-path";
@@ -238,9 +239,17 @@ export default async function ProviderPage({ params, searchParams }: { params: P
                 the current CQC record. CareGist customers receive verified new-registration
                 and rating-change events with source evidence and observation times.
               </p>
+              {provider.region && DEFAULT_REGION_OPTIONS.includes(provider.region) ? (
+                <Link
+                  href={`/pricing/territory?region=${encodeURIComponent(provider.region)}`}
+                  className="cta-primary mt-5 w-full"
+                >
+                  Check coverage in {provider.region}
+                </Link>
+              ) : null}
               <Link
                 href="/pricing"
-                className="mt-5 block rounded-full bg-clay px-4 py-2 text-center text-sm font-semibold text-white hover:bg-bark"
+                className="mt-3 block rounded-full border border-clay px-4 py-2 text-center text-sm font-semibold text-clay hover:bg-clay hover:text-white"
               >
                 See the two products
               </Link>
