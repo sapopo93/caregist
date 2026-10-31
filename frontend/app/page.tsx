@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import { TERRITORY_BRIEF_PRICE_GBP, WEEKLY_DIGEST_PILOT_PRICE_GBP } from "@/lib/caregist-config";
 import Link from "next/link";
 
 import DirectorySearchForm from "@/components/directory/DirectorySearchForm";
 import EmailCaptureStrip from "@/components/EmailCaptureStrip";
 import TrackEventOnMount from "@/components/TrackEventOnMount";
 import TrustSignal from "@/components/TrustSignal";
+import PricingGlance from "@/components/PricingGlance";
 import EvidenceTrail from "@/components/home/EvidenceTrail";
 import EnglandBoard from "@/components/home/EnglandBoard";
 import { getDirectoryFilterOptions, getDirectoryOpportunityStats, getDirectoryRegionSnapshot } from "@/lib/directory-db";
@@ -132,18 +132,6 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="border-b border-stone px-6 py-12">
-        <div className="mx-auto max-w-6xl">
-          <DirectorySearchForm
-            action="/search"
-            options={filterOptions}
-            title="Search the free CQC directory"
-            description="Filter factual CQC location records by geography, service type, rating, registration recency, or provider name. Always confirm operational decisions against the linked official source."
-            submitLabel="Search providers"
-          />
-        </div>
-      </section>
-
       <section id="products" className="border-b border-stone px-6 py-12">
         <div className="mx-auto max-w-6xl">
           <div className="mb-7 max-w-3xl">
@@ -154,26 +142,19 @@ export default async function HomePage() {
               and a one-off brief on the organisations to investigate in a territory.
             </p>
           </div>
-          <div className="grid gap-4 md:grid-cols-2">
-            <article className="rounded-xl border border-stone bg-cream p-6">
-              <p className="font-mono text-xs uppercase tracking-wider text-clay">Weekly</p>
-              <h3 className="mt-3 text-2xl font-bold text-bark">Weekly Digest &middot; &pound;{WEEKLY_DIGEST_PILOT_PRICE_GBP}</h3>
-              <p className="mt-3 text-sm leading-6 text-dusk">
-                Four weekly digests covering one England region: new registrations, rating
-                changes, and closures, each linking to the official CQC record.
-              </p>
-              <Link href="/pricing" className="cta-secondary mt-5">See the Weekly Digest</Link>
-            </article>
-            <article className="rounded-xl border border-stone bg-cream p-6">
-              <p className="font-mono text-xs uppercase tracking-wider text-clay">Territory</p>
-              <h3 className="mt-3 text-2xl font-bold text-bark">Territory Opportunity Brief &middot; &pound;{TERRITORY_BRIEF_PRICE_GBP}</h3>
-              <p className="mt-3 text-sm leading-6 text-dusk">
-                A shortlist of up to 50 organisations to investigate, plus a brief on territory
-                size, structure, and notable movements, with the source evidence behind each one.
-              </p>
-              <Link href="/pricing/territory" className="cta-primary mt-5">Check your territory</Link>
-            </article>
-          </div>
+          <PricingGlance />
+        </div>
+      </section>
+
+      <section className="border-b border-stone px-6 py-12">
+        <div className="mx-auto max-w-6xl">
+          <DirectorySearchForm
+            action="/search"
+            options={filterOptions}
+            title="Search the free CQC directory"
+            description="Filter factual CQC location records by geography, service type, rating, registration recency, or provider name. Always confirm operational decisions against the linked official source."
+            submitLabel="Search providers"
+          />
         </div>
       </section>
 

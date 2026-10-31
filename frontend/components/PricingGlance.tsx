@@ -31,7 +31,7 @@ export default function PricingGlance() {
         return (
           <a
             key={tier.tier}
-            href={id ? `#${id}` : undefined}
+            href={id ? `/pricing#${id}` : "/pricing"}
             className={`group flex flex-col justify-between gap-6 p-6 transition ${
               tier.recommended ? "bg-bark text-cream" : "bg-cream hover:bg-white"
             }`}
