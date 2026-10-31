@@ -136,7 +136,9 @@ async def test_073_rebuilds_empty_pre_060_tables(fresh_db):
         rebuilt_signature = await _schema_signature(conn)
         # Compare all columns/defaults/nullability and constraints with a clean
         # chain, so columns added between 060 and 072 cannot silently disappear.
-        async with conn.transaction():
+        comparison = conn.transaction()
+        await comparison.start()
+        try:
             for table in ("territory_brief_scope_exclusions", "territory_brief_scope_versions",
                           "territory_brief_consents", "territory_brief_download_tokens",
                           "territory_brief_orders"):
@@ -155,6 +157,10 @@ async def test_073_rebuilds_empty_pre_060_tables(fresh_db):
                     sql = path.read_text().replace("CREATE FUNCTION ", "CREATE OR REPLACE FUNCTION ")
                     await conn.execute(sql)
             assert await _schema_signature(conn) == rebuilt_signature
+        finally:
+            # Exercise ZIP/uniqueness/triggers below against the actual 073
+            # rebuild, rather than leaving the comparison schema in place.
+            await comparison.rollback()
 
         await _insert_current_order_with_zip_token(conn)
         order_id = await conn.fetchval("SELECT id FROM territory_brief_orders")
