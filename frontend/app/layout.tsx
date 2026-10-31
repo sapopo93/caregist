@@ -93,6 +93,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
       </head>
       <body className="flex min-h-screen flex-col">
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:rounded-lg focus:bg-cream focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-bark focus:shadow-lg"
+        >
+          Skip to main content
+        </a>
         <header className="sticky top-0 z-40 border-b border-charcoal/30 bg-bark px-6 py-2.5 text-cream shadow-sm">
           <div className="mx-auto flex max-w-6xl items-center justify-between gap-4">
             <Link href="/" className="flex items-center">
@@ -136,7 +142,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           </div>
         </header>
 
-        <main className="flex-1">{children}</main>
+        <main id="main-content" tabIndex={-1} className="flex-1 focus:outline-none">{children}</main>
 
         <CompareBar />
         <CookieConsent />
