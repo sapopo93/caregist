@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import ActiveFilters, { type ActiveFilter } from "@/components/directory/ActiveFilters";
 import DirectoryPagination from "@/components/directory/DirectoryPagination";
 import DirectoryProviderCard from "@/components/directory/DirectoryProviderCard";
 import DirectorySearchForm from "@/components/directory/DirectorySearchForm";
@@ -28,6 +29,13 @@ export default async function SearchPage({
     if (value) returnParams.set(key, value);
   }
   const returnTo = `/search?${returnParams}`;
+  const activeFilters: ActiveFilter[] = [
+    filters.query ? { param: "q", label: "Name or town", value: filters.query } : null,
+    filters.opportunity ? { param: "opportunity", label: "Segment", value: getDirectoryOpportunity(filters.opportunity)?.shortLabel ?? filters.opportunity } : null,
+    filters.region ? { param: "region", label: "Region", value: filters.region } : null,
+    filters.serviceType ? { param: "service_type", label: "Service", value: filters.serviceType } : null,
+    filters.rating ? { param: "rating", label: "Rating", value: filters.rating } : null,
+  ].filter((f): f is ActiveFilter => f !== null);
   const opportunity = getDirectoryOpportunity(filters.opportunity);
   const [optionsResult, resultsResult] = await Promise.allSettled([
     getDirectoryFilterOptions(),
@@ -67,6 +75,10 @@ export default async function SearchPage({
 
           {!error && results ? (
             <>
+              <ActiveFilters
+                filters={activeFilters}
+                params={Object.fromEntries(returnParams.entries())}
+              />
               <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-clay">
