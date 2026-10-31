@@ -7,6 +7,7 @@ import EmailCaptureStrip from "@/components/EmailCaptureStrip";
 import TrackEventOnMount from "@/components/TrackEventOnMount";
 import TrustSignal from "@/components/TrustSignal";
 import PricingGlance from "@/components/PricingGlance";
+import ContinueRegion from "@/components/home/ContinueRegion";
 import IntentTiles from "@/components/home/IntentTiles";
 import RecentlyViewed from "@/components/RecentlyViewed";
 import EvidenceTrail from "@/components/home/EvidenceTrail";
@@ -98,6 +99,7 @@ export default async function HomePage() {
                 Search the free directory
               </Link>
             </div>
+            <ContinueRegion />
           </div>
           <EnglandBoard regions={regionSnapshot} />
         </div>

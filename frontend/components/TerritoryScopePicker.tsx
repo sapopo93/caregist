@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 import TerritorySignalPreview from "@/components/TerritorySignalPreview";
 import { trackEvent } from "@/lib/analytics";
+import { rememberRegion } from "@/lib/last-region";
 import { DEFAULT_SERVICE_TYPE_OPTIONS } from "@/lib/directory-constants";
 import {
   TERRITORY_BRIEF_PRICE_GBP,
@@ -56,6 +57,7 @@ export default function TerritoryScopePicker() {
       if (value) params.set(key, value);
       else params.delete(key);
     }
+    if (region) rememberRegion(region);
     const query = params.toString();
     window.history.replaceState(null, "", `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash}`);
   }, [interactive, region, buyerType, serviceType]);
