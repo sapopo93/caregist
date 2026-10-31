@@ -27,9 +27,17 @@ export default function RegionBriefing({ snapshot }: { snapshot: DirectoryRegion
           </p>
           <p className="mt-1 text-sm text-dusk">active CQC-registered locations</p>
         </div>
-        <Link href={`/pricing/territory?region=${encodeURIComponent(snapshot.region)}`} className="cta-primary">
-          Check coverage in {snapshot.region}
-        </Link>
+        <div className="flex flex-col items-start gap-2 sm:items-end">
+          <Link href={`/pricing/territory?region=${encodeURIComponent(snapshot.region)}`} className="cta-primary">
+            Check coverage in {snapshot.region}
+          </Link>
+          <Link
+            href={`/pricing/weekly-digest/enquiry?region=${encodeURIComponent(snapshot.region)}`}
+            className="text-sm font-semibold text-clay underline underline-offset-4 hover:text-bark"
+          >
+            Or ask about the Weekly Digest for {snapshot.region}
+          </Link>
+        </div>
       </div>
 
       <div
