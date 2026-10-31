@@ -125,7 +125,7 @@ export default async function HomePage() {
               Built to support a decision, not to sell rows
             </h2>
             <p className="mt-3 text-sm leading-6 text-dusk">
-              Change, not catalogue churn: every signal carries its evidence from the CQC record to your inbox.
+              Change, not catalogue churn: every signal carries its evidence from the CQC record to your inbox. Reconciled snapshot metadata, including a checksum when available, is reported on Data Status.
             </p>
           </div>
           <EvidenceTrail />
