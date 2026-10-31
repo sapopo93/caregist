@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 
 import PricingCTA from "@/components/PricingCTA";
+import PricingFaq from "@/components/PricingFaq";
 import HowToOrder from "@/components/HowToOrder";
 import PricingGlance from "@/components/PricingGlance";
 import RetainedPlanFocus from "@/components/RetainedPlanFocus";
@@ -136,6 +137,8 @@ export default async function PricingPage() {
           );
         })}
       </section>
+
+      <PricingFaq />
 
       <section className="mt-10 rounded-xl border border-stone bg-parchment p-6">
         <h2 className="mb-2 text-xl font-bold text-bark">What we do not sell</h2>
