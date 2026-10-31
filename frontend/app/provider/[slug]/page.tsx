@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import RememberProvider from "@/components/RememberProvider";
 import RatingScale from "@/components/RatingScale";
 import { DEFAULT_REGION_OPTIONS } from "@/lib/directory-constants";
 import { getDirectoryProvider } from "@/lib/directory-db";
@@ -90,6 +91,12 @@ export default async function ProviderPage({ params, searchParams }: { params: P
 
   return (
     <div className="mx-auto max-w-5xl px-6 py-10">
+      <RememberProvider
+        href={getProviderHref(provider)}
+        name={provider.name}
+        rating={provider.overall_rating ?? null}
+        place={[provider.town, provider.postcode].filter(Boolean).join(", ")}
+      />
       <Link href={returnTo} className="text-sm font-medium text-clay hover:text-bark">
         Back to search
       </Link>

@@ -7,6 +7,7 @@ import EmailCaptureStrip from "@/components/EmailCaptureStrip";
 import TrackEventOnMount from "@/components/TrackEventOnMount";
 import TrustSignal from "@/components/TrustSignal";
 import PricingGlance from "@/components/PricingGlance";
+import RecentlyViewed from "@/components/RecentlyViewed";
 import EvidenceTrail from "@/components/home/EvidenceTrail";
 import EnglandBoard from "@/components/home/EnglandBoard";
 import { getDirectoryFilterOptions, getDirectoryOpportunityStats, getDirectoryRegionSnapshot } from "@/lib/directory-db";
@@ -100,7 +101,9 @@ export default async function HomePage() {
           <EnglandBoard regions={regionSnapshot} />
         </div>
 
-        <dl className="mx-auto mt-10 grid max-w-6xl gap-px overflow-hidden rounded-xl border border-stone bg-stone sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mx-auto mt-10 max-w-6xl"><RecentlyViewed /></div>
+
+        <dl className="mx-auto grid max-w-6xl gap-px overflow-hidden rounded-xl border border-stone bg-stone sm:grid-cols-2 lg:grid-cols-4">
           {FACT_LINKS.map((item) => (
             <Link key={item.href} href={item.href} className="group bg-cream p-4 transition hover:bg-white">
               <dt className="text-xs font-semibold uppercase tracking-[0.14em] text-clay">{item.label}</dt>

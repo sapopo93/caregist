@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import ActiveFilters, { type ActiveFilter } from "@/components/directory/ActiveFilters";
+import RecentlyViewed from "@/components/RecentlyViewed";
 import CollapsibleOnMobile from "@/components/directory/CollapsibleOnMobile";
 import DirectoryPagination from "@/components/directory/DirectoryPagination";
 import DirectoryProviderCard from "@/components/directory/DirectoryProviderCard";
@@ -49,6 +50,7 @@ export default async function SearchPage({
 
   return (
     <div className="mx-auto max-w-6xl overflow-x-hidden px-4 py-8 sm:px-6 sm:py-10">
+      <RecentlyViewed />
       <CollapsibleOnMobile summary="Filters" activeCount={activeFilters.length}>
       <DirectorySearchForm
           action="/search"
