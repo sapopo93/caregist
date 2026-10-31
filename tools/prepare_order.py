@@ -30,6 +30,7 @@ Examples:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import asyncio
 import imaplib
 import json
@@ -607,6 +608,9 @@ def build_brief(args: argparse.Namespace, *, env: dict[str, str], order_dir: Pat
     export_dir = args.export_dir or latest_export(REPO_ROOT / ".tmp")
     receipt = export_receipt(export_dir)
     check_export_fresh(checks, receipt, now)
+    from tools.build_weekly_digest_pilot import sha256_file
+    source_files = {name: sha256_file(export_dir / name)
+                    for name in ("_locations_detail.ndjson", "_providers_detail.ndjson")}
 
     ids = asyncio.run(
         fetch_scope_location_ids(env["DATABASE_URL"], args.region, args.provider_group, args.service_type)
@@ -668,7 +672,13 @@ def build_brief(args: argparse.Namespace, *, env: dict[str, str], order_dir: Pat
     manifest = order_dir / f"territory-opportunity-brief-{slug}-source-manifest.json"
     pdf.write_bytes(render_brief_pdf(brief))
     csv_path.write_text(brief_to_csv(brief), encoding="utf-8")
-    manifest.write_text(json.dumps(brief.to_json(), indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    checks.add("source_unchanged", all(sha256_file(export_dir / name) == digest
+        for name, digest in source_files.items()), "Source files must remain unchanged throughout generation; retry from a completed export if they changed")
+    source_version = "cqc-export-sha256:" + hashlib.sha256(
+        json.dumps(source_files, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+    manifest.write_text(json.dumps({**brief.to_json(), "source_files": source_files,
+        "source_retrieved_at": receipt["source_retrieved_at"]}, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
     summary = {
         "region": args.region,
@@ -677,6 +687,7 @@ def build_brief(args: argparse.Namespace, *, env: dict[str, str], order_dir: Pat
         "locations_in_scope": len(ids),
         "shortlisted": len(brief.shortlist),
         "source_edition": brief.as_of_date.isoformat(),
+        "source_version": source_version,
         "export": str(export_dir),
     }
     return checks, summary, [pdf, csv_path, manifest]
@@ -693,7 +704,7 @@ Confirmed scope (this email is the order form under our Business Terms v2.3):
 - Territory: {summary['region']}
 - Provider group: {summary['provider_group']}
 - Service type: {summary['service_type']}
-- Organisations in scope: {summary['locations_in_scope']}
+- Matching locations in scope: {summary['locations_in_scope']}
 - Ranked shortlist: {summary['shortlisted']} organisations (the exact number your Brief will contain), each with a stated reason and its CQC source
 - Source: CQC published register edition dated {summary['source_edition']}
 - Delivery: by email within {DELIVERY_WORKING_DAYS} working days of payment (if paid today, by {delivery.strftime('%A %d %B %Y')})
@@ -715,11 +726,12 @@ def brief_delivery_email(args: argparse.Namespace, summary: dict[str, Any]) -> t
 
 Thank you for your order. Your Territory Opportunity Brief is attached:
 
-- the PDF brief ({summary['shortlisted']} ranked candidates, each marked Qualification incomplete, with a reason and CQC evidence);
-- the CSV dataset, ready to map into your CRM;
+- the PDF brief ({summary['shortlisted']} organisations to investigate, each marked Qualification incomplete, with a reason and CQC evidence);
+- the CSV dataset (CRM field mapping needs checking before import);
 - the source manifest recording the CQC edition ({summary['source_edition']}) behind every entry.
 
 The Brief reflects the published CQC register edition, not a live lookup. Please check each organisation's current CQC page before contacting it.
+These candidates are not completed researched dossiers. Historic ratings do not establish a current deficiency, budget, need or buying intention. The ZIP also contains the confirmed selection and file manifest.
 
 If anything in the pack does not match the scope we agreed, reply to this email and we will put it right.
 
@@ -760,6 +772,7 @@ Best wishes,
 
 def build_digest_issue(args: argparse.Namespace, *, env: dict[str, str], order_dir: Path, now: datetime) -> tuple[Checks, dict[str, Any], list[Path]]:
     from tools import build_weekly_digest_pilot as digest
+    from api.services.customer_package import customer_email_reference
 
     checks = Checks()
     export_dir = args.export_dir or latest_export(REPO_ROOT / ".tmp")
@@ -773,14 +786,15 @@ def build_digest_issue(args: argparse.Namespace, *, env: dict[str, str], order_d
     )
     if not checks.ok:
         return checks, {}, []
-    os.environ.setdefault("DATABASE_URL", env["DATABASE_URL"])
     code = digest.main([
         "--region", args.region, "--week-ending", args.week_ending, "--issue", str(args.issue),
-        "--customer", args.company or args.buyer_name or args.buyer_email,
+        "--customer", args.company or args.buyer_name or "CareGist customer",
+        "--order-ref", args.order_ref,
+        "--customer-reference", customer_email_reference(args.buyer_email),
         "--locations-source", str(export_dir / "_locations_detail.ndjson"),
         "--source-retrieved-at", receipt["source_retrieved_at"],
         "--out-dir", str(order_dir),
-    ])
+    ], database_url=env["DATABASE_URL"])
     checks.add("digest_built", code == 0, f"build_weekly_digest_pilot exit code {code}")
     files = sorted(order_dir.glob(f"weekly-digest-*-issue{args.issue}.*"))
     manifest = next((p for p in files if p.name.endswith(".manifest.json")), None)
@@ -848,7 +862,9 @@ def build_customer_delivery_package(
         product_id=product_id,
         payment_reference=payment["session"],
         template_version=template_version,
-        source_version=str(summary.get("source_edition") or source_evidence.get("generated_at") or "not recorded"),
+        source_version=str(summary.get("source_version") or summary.get("source_edition") or
+            ("cqc-sources-sha256:" + hashlib.sha256(json.dumps(source_evidence["sources"], sort_keys=True).encode()).hexdigest()
+             if source_evidence.get("sources") else source_evidence.get("generated_at") or "not recorded")),
         geography=args.region,
         service_types=service_types,
         rating_context_criteria=criteria,
@@ -884,7 +900,7 @@ def digest_delivery_email(args: argparse.Namespace, summary: dict[str, Any]) -> 
 
 Issue {args.issue} of 4 of your Weekly Digest for {args.region} is attached (PDF and CSV), covering the week ending {args.week_ending}.
 
-This week: {summary.get('new_registrations', 0)} new registration(s) and {summary.get('ratings_published', 0)} newly published rating(s). Every item links to its CQC record. The digest reflects the published CQC register, not a live feed.
+This week: {summary.get('new_registrations', 0)} new registration(s), {summary.get('ratings_published', 0)} rating publication(s) found in the supplied snapshot, and {summary.get('registration_endings', 0)} registration ending(s). Endings are classified separately from confirmed business closures. Every item links to its CQC record. The digest reflects the published CQC register, not a live feed or a complete report-history search.
 
 Best wishes,
 """

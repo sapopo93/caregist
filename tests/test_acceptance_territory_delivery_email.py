@@ -76,7 +76,10 @@ async def test_email_escapes_a_hostile_scope_name():
 
     def _generate(order_row):
         pack = base.generate(order_row)
-        return replace(pack, scope_name="<script>alert(1)</script>")
+        from tests import package_fixtures
+        hostile = "<script>alert(1)</script>"
+        return replace(pack, scope_name=hostile, pdf_bytes=package_fixtures.brief_pdf(
+            order_row["id"], pack.provider_records, geography=hostile))
 
     conn = await _fulfil(deps=replace(base, generate=_generate))
     body = _email(conn)[3]

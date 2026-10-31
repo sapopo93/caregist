@@ -45,7 +45,7 @@ def world(monkeypatch, tmp_path):
         if args.stage == "deliver":
             checks.add("matches_quote", 30 >= (args.quoted_count or 0), "ok")
         pdf = order_dir / "brief.pdf"
-        pdf.write_bytes(package_fixtures.brief_pdf(args.order_ref, package_fixtures.roster(30)))
+        pdf.write_bytes(package_fixtures.brief_pdf(args.order_ref, package_fixtures.roster(30), geography=args.region))
         csv_path = order_dir / "brief.csv"
         csv_path.write_text(
             "cqc_provider_id,cqc_location_id,organisation_name\n"
@@ -63,14 +63,20 @@ def world(monkeypatch, tmp_path):
         checks = po.Checks()
         checks.add("digest_built", True, "ok")
         pdf = order_dir / f"issue{args.issue}.pdf"
-        pdf.write_bytes(package_fixtures.plain_pdf(f"Digest issue {args.issue}"))
+
         csv_path = order_dir / f"issue{args.issue}.csv"
         csv_path.write_text(
             "section,date,location_id,name,local_authority,detail,cqc_url\n",
             encoding="utf-8",
         )
         manifest = order_dir / f"issue{args.issue}.json"
-        manifest.write_text('{"generated_at":"2026-10-16"}', encoding="utf-8")
+        from api.services.customer_package import digest_binding, customer_email_reference
+        import json
+        binding = digest_binding(order_reference=args.order_ref,
+            customer_reference=customer_email_reference(args.buyer_email), region=args.region,
+            issue=args.issue, week_ending=args.week_ending, csv_bytes=csv_path.read_bytes())
+        pdf.write_bytes(package_fixtures.digest_pdf(binding))
+        manifest.write_text(json.dumps({"generated_at": "2026-10-16", "binding": binding}), encoding="utf-8")
         return checks, {"new_registrations": 4, "ratings_published": 0}, [pdf, csv_path, manifest]
 
     monkeypatch.setattr(po, "list_payments", list_payments)

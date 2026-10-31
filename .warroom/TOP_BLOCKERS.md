@@ -1,3 +1,9 @@
+## 2026-10-31 — two-product builder/report-quality follow-up
+
+The prescribed Grok customer-journey retest is unavailable in this session. Do not reuse the bounded 072/073 migration exception for this report/builder release. Independently review the frozen follow-up, then obtain a bounded substitution or execute Grok before production. Premium dossiers, a staff website builder and live four-week Digest receipts are separate unpassed requirements.
+
+---
+
 ## 2026-10-24 report-readiness blockers (branch feat/report-readiness-20261024, unmerged)
 
 1. **Status lag:** 51 locations that CQC's 20 Oct export shows as deregistered on 13–16 Oct are still ACTIVE in the directory, and none of the 19 sampled is quarantined. The new report generators exclude them; the directory still serves them. Fixing that needs a reconciliation run (a production write, not done).

@@ -63,6 +63,7 @@ def render_brief_pdf(brief: TerritoryBrief) -> bytes:
         subtitle=f"{scope.name} ({scope.kind.replace('_', ' ')}) - generated {_fmt_date(generated_on)}",
         meta_lines=[
             f"Prepared for order {brief.purchase_context.order_reference}",
+            f"Scope geography: {scope.name}",
             f"Opportunity window: {_fmt_date(brief.window_start)} to {_fmt_date(brief.window_end)} "
             f"({scope.window_days} days)",
             f"Locations considered: {brief.considered_locations}   "
@@ -90,8 +91,8 @@ def render_brief_pdf(brief: TerritoryBrief) -> bytes:
             ("Source edition", es["source_edition"]),
             ("Window", es["window"]),
             ("Opportunity set", str(es["opportunity_set_size"])),
-            ("Candidate register (Qualification incomplete)", str(es["shortlisted"])),
-            ("Movement in window", es["movement_summary"]),
+            ("Selected candidates", str(es["shortlisted"])),
+            ("Evidence in scope", es["movement_summary"]),
         ]
     )
     pdf.spacer(2)
@@ -106,8 +107,13 @@ def render_brief_pdf(brief: TerritoryBrief) -> bytes:
         "deterministic signal score (see section 6). Every row is labelled Qualification incomplete, "
         "carries a stated reason to investigate, and links to the underlying CQC record."
     )
+    if len(brief.shortlist) > 8:
+        pdf.paragraph(
+            f"Executive overview: the first 8 of {len(brief.shortlist)} selected providers are shown here. "
+            "Appendix A and the CSV contain every selected provider; the selection has not been reduced."
+        )
     rows = []
-    for o in brief.shortlist:
+    for o in brief.shortlist[:8]:
         rows.append(
             [
                 o.rank,
@@ -127,11 +133,13 @@ def render_brief_pdf(brief: TerritoryBrief) -> bytes:
     # 3. How to read the shortlist (short; detail is in Appendix A)
     pdf.heading("3. How the shortlist was built")
     pdf.paragraph(
-        "Each organisation reached this list because of at least one supported event in the "
-        "window: a new CQC registration, an overall rating change, or a newly published "
-        "inspection report. The opportunity score combines the event type, how recent it is, "
+        "Organisations qualify through the confirmed provider-group criteria or a supported event "
+        "in the observation window, such as a new CQC registration, an overall rating change, or "
+        "a newly published inspection report. Standing group evidence, including a recorded rating, "
+        "may predate the window and is not described as a new event. The opportunity score combines "
+        "the evidence type, how recent it is, "
         "the direction of any rating move, the size of the location, and whether the same "
-        "provider has several locations moving at once. Appendix A gives the full reason and "
+        "provider has several locations carrying qualifying evidence. Appendix A gives the full reason and "
         "the evidence for every organisation, in rank order."
     )
 
@@ -141,7 +149,7 @@ def render_brief_pdf(brief: TerritoryBrief) -> bytes:
     pdf.paragraph("Aggregate view of the whole opportunity set (not just the shortlist).")
     pdf.key_values(
         [
-            ("Events by type", ", ".join(f"{k}: {v}" for k, v in ins["events_by_type"].items()) or "none"),
+            ("Evidence by type", ", ".join(f"{k}: {v}" for k, v in ins["events_by_type"].items()) or "none"),
             ("Rating moves", (
                 ins["rating_date_coverage"]["limitation"]
                 if not ins["rating_date_coverage"]["recent_rating_changes_available"]
@@ -154,26 +162,26 @@ def render_brief_pdf(brief: TerritoryBrief) -> bytes:
     # A single row only repeats the territory itself, so it is not shown.
     if len(ins["activity_by_sub_area"]) > 1:
         pdf.spacer(2)
-        pdf.paragraph("Activity by sub-area:")
+        pdf.paragraph("Qualifying evidence by sub-area (including standing group evidence):")
         pdf.table(
-            ["Area", "Qualifying events"],
+            ["Area", "Evidence items"],
             [[a["area"], a["events"]] for a in ins["activity_by_sub_area"]],
             widths=[3, 1],
         )
     if ins["service_type_mix"]:
         pdf.paragraph("Service-type mix in the opportunity set:")
         pdf.table(
-            ["Service type", "Organisations"],
-            [[s["service_type"], s["organisations"]] for s in ins["service_type_mix"]],
+            ["Service type", "Locations"],
+            [[s["service_type"], s["locations"]] for s in ins["service_type_mix"]],
             widths=[3, 1],
         )
     if ins["most_active_providers"]:
-        pdf.paragraph("Providers with more than one location moving (account-level opportunities):")
+        pdf.paragraph("Providers with multiple locations carrying qualifying evidence:")
         pdf.bullets(
             [f"{p['provider']} - {p['locations_moving']} locations" for p in ins["most_active_providers"]]
         )
     else:
-        pdf.paragraph("No single provider has more than one location moving in this window.", muted=True)
+        pdf.paragraph("No single provider has multiple locations carrying qualifying evidence in this scope.", muted=True)
 
     # 5. Recommended next actions
     pdf.heading("5. Recommended next actions")
@@ -239,11 +247,21 @@ def render_brief_pdf(brief: TerritoryBrief) -> bytes:
     if brief.evidence_coverage:
         pdf.heading("Appendix B. Evidence dates and metadata coverage")
         pdf.paragraph(
-            "RI context remains visible even without an in-window event. Freshness is measured "
+            "Evidence dates for the selected provider locations only. Territory-wide coverage remains "
+            "in the structured evidence manifest. RI context remains visible even without an in-window event. Freshness is measured "
             "at generation. Metadata gaps refer to the supplied snapshot; constructed reference "
             "links do not replace missing recorded source metadata.", muted=True,
         )
-        for row in brief.evidence_coverage:
+        selected_ids = {o.location_id for o in brief.shortlist}
+        coverage_rows = [row for row in brief.evidence_coverage if row["location_id"] in selected_ids]
+        if not selected_ids:
+            coverage_rows = list(brief.evidence_coverage[:8])
+            pdf.paragraph(
+                f"No providers were selected. Showing {len(coverage_rows)} contextual source records "
+                f"of {len(brief.evidence_coverage)} metadata records; these are not a researched shortlist. "
+                "The complete metadata coverage remains in the structured evidence manifest."
+            )
+        for row in coverage_rows:
             pdf.paragraph(f"{row['location_name']} ({row['location_id']}; provider {row['provider_id']})")
             pdf.paragraph(
                 f"Rating evidence date: {row['rating_publication_date'] or 'not supplied'}; "

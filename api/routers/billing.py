@@ -329,7 +329,7 @@ class TerritoryBriefCheckoutRequest(BaseModel):
     scope_kind: Literal["local_authority", "region"]
     scope_name: str = Field(min_length=2, max_length=80)
     window_days: int = Field(90, ge=7, le=365)
-    shortlist_target: int = Field(30, ge=10, le=50)
+    shortlist_target: int = Field(30, ge=1, le=50)
     # Optional agreed buyer rules. Stored privately; only an opaque reference
     # reaches Stripe. Identifiers only: names are never matched.
     buyer_objective: str | None = Field(None, max_length=300)

@@ -1,0 +1,51 @@
+{
+  ".tmp/report-quality/HISTORICAL-PREVIEW-DIGEST/digest.pdf": {
+    "pages": 3,
+    "sha256": "5adae2aacf081698295e096ee7c95d911ffb4351fa48a9c4cf021c251ff57a3b",
+    "every_page_marked_preview": true
+  },
+  ".tmp/report-quality/HISTORICAL-PREVIEW-DIGEST/selection-confirmation.pdf": {
+    "pages": 1,
+    "sha256": "a3f3560a51eb00f4465b31b8b549e6a126bb7b4bdc3e2a01972b59d808988555",
+    "every_page_marked_preview": true
+  },
+  ".tmp/report-quality/HISTORICAL-PREVIEW-NW-50/brief.pdf": {
+    "pages": 33,
+    "sha256": "a382bc976a6056bace84909589315e03250fbbdd12d2fffa15c2195362ef36b1",
+    "every_page_marked_preview": true,
+    "source_membership_verified": true,
+    "counts": {
+      "providers": 50,
+      "qualification_incomplete": 50,
+      "researched_shortlist": 0
+    },
+    "executive_pages": 4
+  },
+  ".tmp/report-quality/HISTORICAL-PREVIEW-NW-50/selection-confirmation.pdf": {
+    "pages": 1,
+    "sha256": "6e2099a96cff41977971bf165bf34904327fb75859e410e103b6f5f2aa46ac53",
+    "every_page_marked_preview": true
+  },
+  ".tmp/report-quality/HISTORICAL-PREVIEW-NW-8/brief.pdf": {
+    "pages": 9,
+    "sha256": "029f35df9803c499a02f8bf01869b175b8afa2a394cb2ad05eae399fe77e0651",
+    "every_page_marked_preview": true,
+    "source_membership_verified": true,
+    "counts": {
+      "providers": 8,
+      "qualification_incomplete": 8,
+      "researched_shortlist": 0
+    },
+    "executive_pages": 4
+  },
+  ".tmp/report-quality/HISTORICAL-PREVIEW-NW-8/selection-confirmation.pdf": {
+    "pages": 1,
+    "sha256": "b1618505fedc8c6045304e8abde120423365ff138966f8863f82d7f3f50701a8",
+    "every_page_marked_preview": true
+  },
+  "sources": {
+    "_locations_detail.ndjson": "60f19f8f5e6504a7437206025a3e50c65061ad95ebce3cbb698b80c2feb8fc76",
+    "_providers_detail.ndjson": "f094016ab969565f734e70b88f29f3c8461e77855451ec951861945466abe5f6",
+    "RECEIPT.json": "230b64d50b6b5636ee8293a6003e214cdf767da6a04cc81e860c740554836c3e"
+  }
+}

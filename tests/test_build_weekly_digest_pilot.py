@@ -84,3 +84,43 @@ def test_rejects_unknown_region():
     with pytest.raises(SystemExit):
         digest.parse_args(["--region", "Narnia", "--week-ending", "2026-10-19", "--issue", "1",
                            "--customer", "x", "--locations-source", "x", "--source-retrieved-at", "x", "--out-dir", "x"])
+
+
+def test_endings_distinguish_closure_candidate_from_successor_and_dormancy():
+    rows = [
+        {"locationId": "closed", "registrationStatus": "Deregistered", "region": "North West",
+         "deregistrationDate": "2026-10-15", "name": "Closed", "postalCode": "M1 1AA"},
+        {"locationId": "moved", "registrationStatus": "Deregistered", "region": "North West",
+         "deregistrationDate": "2026-10-16", "relationships": [
+             {"type": "HSCA Successor", "relatedLocationId": "new", "reason": "Location Move"}]},
+        {"locationId": "dormant", "registrationStatus": "Deregistered", "region": "North West",
+         "deregistrationDate": "2026-10-17", "dormancy": "Y"},
+        {"locationId": "old", "registrationStatus": "Deregistered", "region": "North West",
+         "deregistrationDate": "1999-01-01"},
+        {"locationId": "elsewhere", "registrationStatus": "Deregistered", "region": "London",
+         "deregistrationDate": "2026-10-17"},
+    ]
+    endings = digest.select_registration_endings(rows, region="North West", window=WINDOW)
+    assert [(r["location_id"], r["classification"]) for r in endings] == [
+        ("closed", "closure_candidate"), ("moved", "re_registration"), ("dormant", "dormant")]
+    csv_bytes = digest.digest_csv_bytes([], [], endings)
+    assert csv_bytes.count(b"registration_ended") == 3
+    assert b"Location Move" in csv_bytes
+
+
+def test_source_changed_during_generation_is_refused_before_publication(monkeypatch, tmp_path, capsys):
+    source = tmp_path / 'locations.ndjson'
+    source.write_text('')
+
+    async def fetch(*args):
+        source.write_text('{}\n')
+        return [], {'source_published_at': '2026-10-14'}
+
+    monkeypatch.setattr(digest, 'fetch_from_database', fetch)
+    out = tmp_path / 'out'
+    code = digest.main(['--region', 'North West', '--week-ending', '2026-10-19', '--issue', '1',
+        '--customer', 'Synthetic', '--locations-source', str(source),
+        '--source-retrieved-at', '2026-10-20T12:00:00+00:00', '--out-dir', str(out)],
+        database_url='postgresql://unused')
+    assert code == 2 and not out.exists()
+    assert 'changed during generation' in capsys.readouterr().err

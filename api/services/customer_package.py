@@ -21,11 +21,12 @@ import shutil
 import tempfile
 import zipfile
 from dataclasses import asdict, dataclass
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Iterable, Mapping
 
-from pypdf import PdfReader
+from pypdf import PdfReader, PdfWriter
+from pypdf.generic import DecodedStreamObject, DictionaryObject, NameObject
 
 from api.services.pdf_writer import PdfBuilder
 
@@ -65,7 +66,7 @@ PRODUCTS: dict[str, ProductDefinition] = {
         price_pence=74500,
         promise=(
             "One buyer-specific England territory research pack with a shortlist of up to 50 providers, "
-            "a CRM-ready CSV and dated public-CQC evidence."
+            "a CSV for agreed CRM field mapping and dated public-CQC evidence."
         ),
         required_payloads=("brief.pdf", "providers.csv"),
     ),
@@ -76,7 +77,7 @@ PRODUCTS: dict[str, ProductDefinition] = {
         price_pence=15000,
         promise=(
             "Four weekly issues for one England region, covering new registrations and newly published "
-            "ratings with the observation window and source edition stated."
+            "ratings and classified registration endings with the observation window and source edition stated."
         ),
         required_payloads=("digest.pdf", "digest.csv"),
     ),
@@ -132,6 +133,36 @@ def _pdf_text(data: bytes, filename: str) -> str:
         raise PackageBuildError(f"artifact {filename} is not an openable PDF") from exc
 
 
+def _preview_pdf(data: bytes) -> bytes:
+    """Mark every page, including a separately extracted primary report."""
+    reader = PdfReader(io.BytesIO(data), strict=True)
+    writer = PdfWriter(clone_from=reader)
+    for page in writer.pages:
+        resources = page["/Resources"].get_object()
+        fonts = resources.get("/Font")
+        fonts = fonts.get_object() if fonts else DictionaryObject()
+        resources[NameObject("/Font")] = fonts
+        fonts[NameObject("/CGPreview")] = DictionaryObject({
+            NameObject("/Type"): NameObject("/Font"),
+            NameObject("/Subtype"): NameObject("/Type1"),
+            NameObject("/BaseFont"): NameObject("/Helvetica-Bold"),
+        })
+        stream = DecodedStreamObject()
+        y = float(page.mediabox.top) - 22
+        stream.set_data((f"q 1 1 1 rg 45 {y-3} 510 15 re f 0.65 0 0 rg "
+                         f"BT /CGPreview 9 Tf 56 {y} Td "
+                         "(PREVIEW - NOT FOR CUSTOMER DELIVERY) Tj ET Q").encode())
+        # Merge an isolated overlay so existing resources and contents stay intact.
+        from pypdf import PageObject
+        overlay = PageObject.create_blank_page(width=float(page.mediabox.width), height=float(page.mediabox.height))
+        overlay[NameObject("/Resources")] = DictionaryObject({NameObject("/Font"): fonts})
+        overlay[NameObject("/Contents")] = stream
+        page.merge_page(overlay)
+    output = io.BytesIO()
+    writer.write(output)
+    return output.getvalue()
+
+
 def _clean_text(value: Any, field: str, *, required: bool = True) -> str | None:
     if value is None and not required:
         return None
@@ -158,6 +189,7 @@ class SelectionSnapshot:
     requested_files: tuple[str, ...]
     confirmed_at: str
     preview: bool = False
+    scope_rules_json: str = "{}"
 
     def __post_init__(self) -> None:
         _clean_text(self.order_reference, "order_reference")
@@ -171,6 +203,8 @@ class SelectionSnapshot:
         _clean_text(self.template_version, "template_version")
         _clean_text(self.source_version, "source_version")
         _clean_text(self.geography, "geography")
+        if not isinstance(json.loads(self.scope_rules_json), dict):
+            raise PackageBuildError("scope_rules must be an object")
         if self.provider_cap is not None and not 1 <= self.provider_cap <= MAX_PROVIDERS:
             raise PackageBuildError(f"provider_cap must be between 1 and {MAX_PROVIDERS}")
         if self.product_id == "territory-opportunity-brief" and self.provider_cap is None:
@@ -376,13 +410,43 @@ def _reconcile_provider_csv(
         )
 
 
-def _validate_digest_csv(artifact: PackageArtifact) -> None:
+def digest_binding(*, order_reference: str, customer_reference: str, region: str,
+                   issue: int, week_ending: str, csv_bytes: bytes) -> dict[str, Any]:
+    try:
+        end = date.fromisoformat(week_ending)
+    except (TypeError, ValueError) as exc:
+        raise PackageBuildError("Digest requires a valid ISO week-ending date") from exc
+    if issue not in (1, 2, 3, 4):
+        raise PackageBuildError("Digest issue must be between 1 and 4")
+    context = {
+        "order_reference": order_reference, "customer_reference": customer_reference,
+        "region": region, "issue": issue,
+        "window_start": (end - timedelta(days=6)).isoformat(), "window_end": end.isoformat(),
+        "csv_sha256": _sha256(csv_bytes),
+    }
+    return {**context, "sha256": _sha256(_canonical_json(context))}
+
+
+def retained_scope_rules(rules: Mapping[str, Any] | None) -> dict[str, Any]:
+    """Keep exclusion parity without defeating the private store's ID purge."""
+    if not rules:
+        return {}
+    result = {key: rules[key] for key in ("scope_ref", "rule_version", "buyer_objective") if key in rules}
+    for kind in ("provider", "location"):
+        ids = sorted(set(rules.get(f"excluded_{kind}_ids") or []))
+        result[f"excluded_{kind}_count"] = len(ids)
+        result[f"excluded_{kind}_sha256"] = _sha256(_canonical_json(ids))
+    return result
+
+
+def _validate_digest_csv(artifact: PackageArtifact, binding: Mapping[str, Any]) -> None:
     reader = csv.DictReader(io.StringIO(artifact.data.decode("utf-8-sig")))
     required = {"section", "date", "location_id", "name", "local_authority", "detail", "cqc_url"}
     missing = sorted(required - set(reader.fieldnames or ()))
     if missing:
         raise PackageBuildError(f"digest.csv is missing required column(s): {', '.join(missing)}")
-    allowed_sections = {"new_registration", "rating_published"}
+    allowed_sections = {"new_registration", "rating_published", "registration_ended"}
+    seen = set()
     for row_number, row in enumerate(reader, start=2):
         if not any(str(value or "").strip() for value in row.values()):
             continue
@@ -390,6 +454,64 @@ def _validate_digest_csv(artifact: PackageArtifact) -> None:
             raise PackageBuildError(f"digest.csv row {row_number} has an unsupported section")
         if not str(row.get("date") or "").strip() or not str(row.get("location_id") or "").strip():
             raise PackageBuildError(f"digest.csv row {row_number} is missing date or location_id")
+        try:
+            day = date.fromisoformat(row["date"])
+        except ValueError as exc:
+            raise PackageBuildError(f"digest.csv row {row_number} has an invalid date") from exc
+        if not binding["window_start"] <= day.isoformat() <= binding["window_end"]:
+            raise PackageBindingError(f"digest.csv row {row_number} is outside the confirmed window")
+        identity = (row["section"], row["location_id"], row["date"])
+        if identity in seen:
+            raise PackageBuildError(f"digest.csv row {row_number} duplicates an event")
+        seen.add(identity)
+        if row["cqc_url"] != f"https://www.cqc.org.uk/location/{row['location_id']}":
+            raise PackageBuildError(f"digest.csv row {row_number} has no matching official CQC link")
+
+
+def _validate_digest(snapshot, artifacts, evidence) -> None:
+    manifest = (evidence or {}).get("generator_manifest", {})
+    binding = manifest.get("binding")
+    if not isinstance(binding, dict):
+        raise PackageBindingError("Digest is missing its canonical order/scope/content binding; regenerate it")
+    expected = digest_binding(
+        order_reference=snapshot.order_reference, customer_reference=snapshot.customer_reference,
+        region=snapshot.geography, issue=binding.get("issue"), week_ending=binding.get("window_end"),
+        csv_bytes=artifacts["digest.csv"].data,
+    )
+    if binding != expected:
+        raise PackageBindingError("Digest files do not match the confirmed order, customer, scope or content")
+    criteria = set(snapshot.rating_context_criteria)
+    if not {f"issue {binding['issue']} of 4", f"week ending {binding['window_end']}"} <= criteria:
+        raise PackageBindingError("Digest issue/window does not match the confirmed selection")
+    _validate_digest_csv(artifacts["digest.csv"], binding)
+    text = _pdf_text(artifacts["digest.pdf"].data, "digest.pdf")
+    if f"Digest content SHA-256: {expected['sha256']}" not in text:
+        raise PackageBindingError("digest.pdf does not carry the validated content binding")
+    if f"Order: {snapshot.order_reference}" not in text:
+        raise PackageBindingError("digest.pdf does not match the selected order reference")
+    normalized = " ".join(text.split())
+    end = date.fromisoformat(binding["window_end"])
+    start = date.fromisoformat(binding["window_start"])
+    for expected_line in (
+        f"{snapshot.geography} - issue {binding['issue']} of 4",
+        f"Observation window: {start:%d %B %Y} to {end:%d %B %Y}",
+    ):
+        if expected_line not in normalized:
+            raise PackageBindingError("digest.pdf geography, issue or observation window does not match the selection")
+    rows = list(csv.DictReader(io.StringIO(artifacts["digest.csv"].data.decode("utf-8-sig"))))
+    expected_ids = []
+    for row in rows:
+        identity = f"{row['section']}|{row['location_id']}|{row['date']}"
+        expected_ids.append(identity)
+        expected_block = " ".join((f"Event ID: {identity}", f"Name: {row['name']}",
+            f"Local authority: {row['local_authority']}", f"Date: {row['date']}",
+            f"Detail: {row['detail']}", f"CQC source: {row['cqc_url']}"))
+        if " ".join(expected_block.split()) not in normalized:
+            raise PackageBindingError(f"digest.pdf is missing or contradicts CSV event {identity}")
+    import re
+    actual_ids = re.findall(r"Event ID: (\S+)", normalized)
+    if sorted(actual_ids) != sorted(expected_ids):
+        raise PackageBindingError("digest.pdf event roster differs from digest.csv")
 
 
 def _selection_confirmation_pdf(
@@ -421,6 +543,7 @@ def _selection_confirmation_pdf(
         f"Buyer objective: {snapshot.buyer_objective or 'Not supplied by the buyer'}",
         f"Source version: {snapshot.source_version}",
         f"Template version: {snapshot.template_version}",
+        f"Confirmed buyer rules: {snapshot.scope_rules_json}",
     ]
     if snapshot.product_id == "territory-opportunity-brief":
         lines.extend(
@@ -441,8 +564,6 @@ def _selection_confirmation_pdf(
         "Qualification incomplete are candidates for further research; a historic rating alone does not "
         "establish a current deficiency, budget, need or buying intention."
     )
-    if snapshot.preview:
-        pdf.paragraph("ADMIN PREVIEW. This package is not proof of payment or delivery.")
     return pdf.build()
 
 
@@ -480,10 +601,12 @@ def build_package_bytes(
         roster_hash = provider_roster_sha256(providers)
         if f"Provider roster SHA-256: {roster_hash}" not in pdf_text:
             raise ProviderSelectionError("brief.pdf does not carry the validated provider roster hash")
-        if snapshot.order_reference not in pdf_text:
+        if f"Prepared for order {snapshot.order_reference}" not in pdf_text.splitlines():
             raise PackageBindingError("brief.pdf does not match the selected order reference")
+        if f"Scope geography: {snapshot.geography}" not in pdf_text.splitlines():
+            raise PackageBindingError("brief.pdf does not match the confirmed geography")
     else:
-        _validate_digest_csv(artifacts["digest.csv"])
+        _validate_digest(snapshot, artifacts, evidence)
     researched = [row for row in providers if row["qualification_status"] == "Researched"]
     incomplete = [row for row in providers if row["qualification_status"] == "Qualification incomplete"]
     evidence_payload = {
@@ -510,6 +633,8 @@ def build_package_bytes(
     )
     payloads["selection.json"] = _canonical_json(selection_payload)
     payloads["evidence.json"] = _canonical_json(evidence_payload)
+    if snapshot.preview:
+        payloads = {name: _preview_pdf(data) if name.endswith(".pdf") else data for name, data in payloads.items()}
 
     file_entries = [
         {"name": name, "bytes": len(data), "sha256": _sha256(data)}
@@ -527,6 +652,7 @@ def build_package_bytes(
         "selection_sha256": snapshot.sha256,
         "content_sha256": content_sha256,
         "preview": snapshot.preview,
+        "quality_status": ("research_incomplete" if incomplete else "content_review_required"),
         "counts": {
             "providers": len(providers),
             "researched_shortlist": len(researched),
@@ -643,6 +769,7 @@ def verified_snapshot(
     requested_files: Iterable[str] | None = None,
     confirmed_at: datetime | None = None,
     preview: bool = False,
+    scope_rules: Mapping[str, Any] | None = None,
 ) -> SelectionSnapshot:
     product = PRODUCTS.get(product_id)
     if not product:
@@ -669,4 +796,5 @@ def verified_snapshot(
         requested_files=files,
         confirmed_at=when.astimezone(timezone.utc).isoformat(),
         preview=preview,
+        scope_rules_json=_canonical_json(dict(scope_rules or {})).decode("utf-8"),
     )

@@ -65,7 +65,7 @@ _RATING_RANK = {
 
 MIN_WINDOW_DAYS = 7
 MAX_WINDOW_DAYS = 365
-MIN_SHORTLIST = 10
+MIN_SHORTLIST = 1
 MAX_SHORTLIST = 50
 DEFAULT_SHORTLIST = 30
 DEFAULT_WINDOW_DAYS = 90
@@ -403,10 +403,16 @@ def _service_types(row: dict[str, Any]) -> tuple[str, ...]:
 
 
 def _in_scope(row: dict[str, Any], scope: TerritoryScope) -> bool:
-    if scope.service_type and scope.service_type.casefold() not in {
-        t.casefold() for t in _service_types(row)
-    }:
-        return False
+    if scope.service_type:
+        from api.service_taxonomy import resolve_service_filter
+        aliases = set(resolve_service_filter(scope.service_type) or ())
+        actual = {
+            str(item.get(key) or "").strip().casefold()
+            for item in row.get("gacServiceTypes") or [] if isinstance(item, dict)
+            for key in ("name", "description")
+        }
+        if not aliases.intersection(actual):
+            return False
     if scope.kind == "local_authority":
         return str(row.get("localAuthority") or "").strip().casefold() == scope.name.casefold()
     return str(row.get("region") or "").strip().casefold() == scope.name.casefold()
@@ -604,9 +610,9 @@ def _recency_phrase(event_date: date, as_of: date) -> str:
     if age < 0:
         return "on a source date after generation (recency unverified)"
     if age <= 21:
-        return "in the last three weeks, so it is still standing up policies, training and systems"
+        return "in the last three weeks; its current policies, training and supplier arrangements require verification"
     if age <= 60:
-        return "in the last two months, so onboarding decisions are still open"
+        return "in the last two months; the record does not establish whether onboarding decisions remain open"
     if age <= 120:
         return "within the last four months"
     return f"about {age // 30} months ago"
@@ -752,8 +758,8 @@ def _reason(
 
     if provider_cluster >= 2:
         parts.append(
-            f"The provider behind this location has {provider_cluster} locations moving in "
-            f"{territory} in this window, so it is an account-level opportunity, not a one-off."
+            f"The provider behind this location has {provider_cluster} locations carrying qualifying evidence in "
+            f"{territory}. Consider an account-level opportunity review; this does not establish demand."
         )
 
     if not parts:
@@ -817,7 +823,7 @@ def _qualification_question(primary_signal: str, *, provider_cluster: int, terri
         "What is this organisation's current supplier arrangement, and who decides changes?",
     )
     if provider_cluster >= 2:
-        question += f" Is that decided centrally across its {provider_cluster} moving locations in {territory}?"
+        question += f" Is that decided centrally across its {provider_cluster} qualifying locations in {territory}?"
     return question
 
 
@@ -961,7 +967,7 @@ def _territory_insights(
             for area, count in subarea_counts.most_common(8)
         ],
         "service_type_mix": [
-            {"service_type": svc, "organisations": count}
+            {"service_type": svc, "locations": count}
             for svc, count in service_counts.most_common(6)
         ],
         "most_active_providers": most_active_providers,
@@ -996,14 +1002,14 @@ def _next_actions(insights: dict[str, Any], ranked: list[RankedOrganisation], sc
     if insights["most_active_providers"]:
         top = insights["most_active_providers"][0]["provider"]
         actions.append(
-            f"Treat {top} as an account, not a lead: multiple of their locations are moving in "
-            f"this window, so target the provider's central quality lead."
+            f"Review {top} at organisation level: multiple locations carry qualifying evidence. "
+            "Verify whether decisions sit with a central quality lead before considering contact."
         )
     top_area = insights["activity_by_sub_area"][0]["area"] if insights["activity_by_sub_area"] else None
     if top_area and scope.kind == "region":
         actions.append(
-            f"Concentrate field time on {top_area}: it has the highest count of qualifying "
-            f"events in {scope.name} this window."
+            f"Prioritise source verification for {top_area}: it has the highest count of qualifying "
+            f"evidence items in {scope.name}, including standing group evidence where selected."
         )
     actions.append(
         "Verify each organisation's current status on the linked CQC page before outreach - this "
@@ -1086,6 +1092,32 @@ def _provider_group_event(row: dict[str, Any], group: str, *, as_of: date) -> Or
             source_field="location.lastInspection",
         )
     return None
+
+
+def _matches_provider_group(row: dict[str, Any], group: str, *, as_of: date) -> bool:
+    """Recheck membership even when a caller supplied a prefiltered ID list."""
+    if row.get("registrationStatus") != "Registered":
+        return False
+    resolved = row.get("_resolved_rating")
+    if group in _GROUP_RATING:
+        if isinstance(resolved, ResolvedRating):
+            return resolved.is_current and resolved.value == _GROUP_RATING[group]
+        rating, published = _current_rating_evidence(row)
+        registered = _parse_date(row.get("registrationDate"))
+        # A rating older than this registration can describe a predecessor.
+        # Without resolved provenance it cannot prove current group membership.
+        return (rating == _GROUP_RATING[group] and published is not None
+                and registered is not None and published >= registered)
+    if group == "not_yet_inspected":
+        rating = resolved.value if isinstance(resolved, ResolvedRating) else _current_rating_evidence(row)[0]
+        return str(rating or "").strip().casefold() in ("", "not yet inspected", "no published rating")
+    if group == "stale_inspection":
+        inspected = _parse_date((row.get("lastInspection") or {}).get("date"))
+        return inspected is None or (as_of - inspected).days > 3 * 365
+    if group == "new_90":
+        registered = _parse_date(row.get("registrationDate"))
+        return registered is not None and 0 <= (as_of - registered).days < 90
+    return False
 
 
 _GROUP_RATING = {"inadequate": "Inadequate", "requires_improvement": "Requires improvement"}
@@ -1365,6 +1397,8 @@ def generate_brief_from_rows(
             for row in scoped_rows
         ]
     rating_resolution = _rating_resolution_summary(scoped_rows, provider_group) if resolving else None
+    if provider_group:
+        scoped_rows = [row for row in scoped_rows if _matches_provider_group(row, provider_group, as_of=as_of)]
     territory_locations = len(scoped_rows)
     generated_on = purchase_context.generated_at.astimezone(timezone.utc).date()
     coverage = _evidence_coverage(
@@ -1562,8 +1596,11 @@ def generate_brief_from_rows(
     caveats = (
         insights["rating_date_coverage"]["limitation"],
         "Rating freshness is measured against the generation date, separately from the source "
-        "window. Stale RI records remain visible in evidence coverage, outside the shortlist "
-        "when they have no in-window signal. Missing metadata describes the supplied snapshot, "
+        "window. Standing provider-group evidence may qualify an organisation even when its "
+        "publication date predates that window. Without a selected standing group, older records "
+        "without an in-window signal remain contextual evidence rather than shortlist entries. "
+        "Undated or pre-registration ratings do not establish current membership of a rating-based "
+        "group without resolved provenance. Missing metadata describes the supplied snapshot, "
         "not a claim that CQC never published it.",
         f"This brief reflects the published CQC register edition dated {as_of.isoformat()} "
         f"(the newest date present in the source), not a live API lookup.",
@@ -1605,8 +1642,8 @@ def generate_brief_from_rows(
         )
     group_note = (
         f" Provider group: {PROVIDER_GROUP_LABELS[provider_group]}, taken from the same "
-        f"directory query as the coverage check; each member carries its documented group "
-        f"state as evidence."
+        f"confirmed source criteria; membership is rechecked against the supplied snapshot. "
+        f"Each member carries its documented group state as evidence."
         if provider_group else ""
     )
     methodology = (
@@ -1620,7 +1657,7 @@ def generate_brief_from_rows(
         "Score = base weight per event x recency multiplier (1.5 within 30 days, 1.2 within 90, "
         "1.05 within 180) + rating-direction adjustment (downgrade +16, upgrade +9) + a bed-count "
         "size factor + a provider-cluster bonus where the same provider has multiple locations "
-        "moving. Scores are capped at 100.",
+        "carrying qualifying evidence. Standing group evidence may predate the window. Scores are capped at 100.",
         "One location represents each provider: highest score, then most recent event date, "
         "then organisation name, then lexicographically smallest CQC location id. "
         "Deduplication happens before the shortlist limit. Ties break by those same keys, so "
@@ -1835,8 +1872,8 @@ def shortfall_notice(shortlisted: int, target: int) -> str | None:
     if shortlisted >= target:
         return None
     return (
-        f"Shortfall: this territory has {shortlisted} organisation(s) with a supported signal in "
-        f"the window, fewer than the requested shortlist of {target}. "
+        f"Shortfall: this territory has {shortlisted} organisation(s) meeting the confirmed evidence "
+        f"criteria, fewer than the requested shortlist of {target}. "
         "All of them are included; none have been added to make up the number."
     )
 

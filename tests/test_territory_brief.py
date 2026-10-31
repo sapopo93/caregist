@@ -114,7 +114,7 @@ def test_validate_scope_rejects_unknown_territory():
         {"kind": "local_authority", "name": "Kent'; DROP TABLE providers;--"},
         {"kind": "local_authority", "name": "Kent", "window_days": 0},
         {"kind": "local_authority", "name": "Kent", "window_days": 5000},
-        {"kind": "local_authority", "name": "Kent", "shortlist_target": 3},
+        {"kind": "local_authority", "name": "Kent", "shortlist_target": 0},
         {"kind": "local_authority", "name": "Kent", "shortlist_target": 500},
         "not-an-object",
     ],
@@ -609,3 +609,66 @@ def test_file_rating_is_the_main_source_and_the_api_fills_only_its_gaps(tmp_path
     assert by_name["Api Rated Home"].current_rating == "Inadequate"
     assert "Withheld Home" not in by_name
     assert any("published latest-ratings file" in c for c in brief.data_caveats)
+
+@pytest.mark.parametrize("cap", [1, 8, 24, 50])
+def test_confirmed_cap_supports_smaller_provider_cohorts(tmp_path, cap):
+    rows = [_loc(locationId=f"1-CAP-{i}", providerId=f"1-PCAP-{i}", registrationDate="2026-02-10") for i in range(cap)]
+    brief = _generate(tmp_path, rows, shortlist_target=cap)
+    assert len(brief.shortlist) == cap
+    assert len({o.provider_id for o in brief.shortlist}) == cap
+
+
+def test_service_filter_matches_cqc_api_name_as_well_as_description(tmp_path):
+    row = _loc(gacServiceTypes=[{"name": "Homecare agencies", "description": "Domiciliary care service"}], registrationDate="2026-02-10")
+    brief = _generate(tmp_path, [row], service_type="Homecare Agencies")
+    assert len(brief.shortlist) == 1
+
+
+def test_rating_group_cannot_be_widened_by_another_signal_or_deregistered_record(tmp_path):
+    locs = [
+        _loc(locationId="ri", providerId="ri", registrationDate="2020-01-01",
+             currentRatings=_rating_block("Requires improvement", "2025-08-01")),
+        _loc(locationId="good", providerId="good", registrationDate="2026-02-10",
+             currentRatings=_rating_block("Good", "2025-08-01")),
+        _loc(locationId="ended", providerId="ended", registrationStatus="Deregistered",
+             currentRatings=_rating_block("Requires improvement", "2025-08-01")),
+    ]
+    paths = _write_snapshot(tmp_path, locs, [])
+    brief = generate_territory_opportunity_brief(
+        {"kind": "local_authority", "name": "Testershire", "window_days": 90}, CONTEXT,
+        locations_source=paths[0], providers_source=paths[1], provider_group="requires_improvement")
+    assert {o.location_id for o in brief.shortlist} == {"ri"}
+    assert brief.territory_locations == 1
+
+
+def test_report_does_not_relabel_standing_rating_as_an_in_window_event(tmp_path):
+    paths = _write_snapshot(tmp_path, [
+        _loc(registrationDate="2020-01-01", currentRatings=_rating_block("Requires improvement", "2023-01-01")),
+        _loc(locationId="anchor", providerId="anchor", dormancy="Y", registrationDate="2026-02-10"),
+    ], [])
+    brief = generate_territory_opportunity_brief(
+        {"kind": "local_authority", "name": "Testershire", "window_days": 90}, CONTEXT,
+        locations_source=paths[0], providers_source=paths[1], provider_group="requires_improvement")
+    from api.services.customer_package import _pdf_text
+    text = ' '.join(_pdf_text(render_brief_pdf(brief), 'brief.pdf').split())
+    assert "may predate the window and is not described as a new event" in text
+    assert "Movement in window" not in text and "Qualifying events" not in text
+    assert "Evidence in scope" in text
+    assert "Each organisation reached this list because of at least one supported event in the window" not in text
+
+
+def test_raw_pre_registration_or_undated_rating_cannot_prove_current_group(tmp_path):
+    rows = [
+        _loc(locationId="inherited", providerId="old", registrationDate="2026-02-10",
+             currentRatings=_rating_block("Requires improvement", "2024-01-01")),
+        _loc(locationId="undated", providerId="none", registrationDate="2020-01-01",
+             currentRatings={"overall": {"rating": "Requires improvement"}}),
+        _loc(locationId="current", providerId="current", registrationDate="2020-01-01",
+             currentRatings=_rating_block("Requires improvement", "2025-01-01")),
+    ]
+    paths = _write_snapshot(tmp_path, rows, [])
+    brief = generate_territory_opportunity_brief(
+        {"kind": "local_authority", "name": "Testershire", "window_days": 90}, CONTEXT,
+        locations_source=paths[0], providers_source=paths[1], provider_group="requires_improvement")
+    assert {o.location_id for o in brief.shortlist} == {"current"}
+    assert any("predates that window" in note for note in brief.data_caveats)

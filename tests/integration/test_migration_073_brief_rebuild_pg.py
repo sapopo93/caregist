@@ -109,7 +109,7 @@ async def test_073_rebuilds_empty_pre_060_tables(fresh_db):
         await apply_full_schema(conn, through="059_widen_provider_phone.sql")
         await conn.execute(PRE_060_TABLES)
 
-        applied = await _apply_from(conn, "060")
+        applied = await _apply_from(conn, "060", "073_rebuild_territory_brief_tables.sql")
         assert applied[-1] == "073_rebuild_territory_brief_tables.sql"
         assert "072_shared_customer_package.sql" in applied
 

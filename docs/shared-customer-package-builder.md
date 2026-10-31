@@ -77,3 +77,14 @@ Local verification on 30 October 2026:
 - Applying the migration and exercising the Postgres integration tests require the normal staged migration/recovery
   procedure and a disposable integration database.
 - Release approval still requires the independent review and customer-journey gates in `AGENTS.md`.
+
+## 31 October follow-up
+
+The earlier “not deployed” status above is historical: PR #153 is already on main
+and production. The dated follow-up audit is
+`artifacts/report-quality/2026-10-31/REVIEW.md`. It separates bounded engineering
+verification from the unpassed premium report and operational acceptance gates.
+New migration 074 permits confirmed provider caps of 1–50. Digest generation now
+uses a content-bound source register, preserves registration-ending uncertainty,
+and refuses mismatched scope, dates, customer/order or event content. Exclusion
+parity is retained as counts/hashes rather than duplicating purge-controlled IDs.
