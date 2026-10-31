@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import DirectoryPagination from "@/components/directory/DirectoryPagination";
 import DirectoryProviderCard from "@/components/directory/DirectoryProviderCard";
@@ -37,6 +38,15 @@ export default async function SearchPage({
   const options = optionsResult.status === "fulfilled" ? optionsResult.value : null;
   const results = resultsResult.status === "fulfilled" ? resultsResult.value : null;
   const error = resultsResult.status === "rejected";
+
+  // A page past the end returns no rows, and the window count comes back 0 with
+  // them ("0 providers, page 31 of 1"). Send the visitor to the first page of
+  // the same search instead.
+  if (results && results.providers.length === 0 && filters.page > 1) {
+    returnParams.delete("page");
+    const firstPage = returnParams.toString();
+    redirect(firstPage ? `/search?${firstPage}` : "/search");
+  }
 
   return (
     <div className="mx-auto max-w-6xl overflow-x-hidden px-4 py-8 sm:px-6 sm:py-10">

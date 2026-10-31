@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { getDirectoryProvider } from "@/lib/directory-db";
 import { normalizeExternalHttpUrl, cqcEvidenceUrl } from "@/lib/external-url";
 import { getProviderHref, directoryReturnHref } from "@/lib/provider-path";
+import { domainRatingLabel, providerMetaDescription, publishedRating } from "@/lib/provider-meta";
 import { ratingSourceNote } from "@/lib/rating-source";
 import { getSiteUrl } from "@/lib/site";
 
@@ -53,11 +54,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
   return {
     title: provider.meta_title || `${provider.name} | CareGist`,
-    description:
-      provider.meta_description ||
-      `${provider.name} is a CQC-registered ${provider.type?.toLowerCase() ?? "care provider"} in ${
-        provider.town ?? "England"
-      }.`,
+    description: providerMetaDescription(provider),
     alternates: { canonical: `${getSiteUrl()}${getProviderHref(provider)}` },
   };
 }
@@ -103,7 +100,7 @@ export default async function ProviderPage({ params, searchParams }: { params: P
 
           <div className="flex flex-col items-end gap-1">
             <div className="rounded-full border border-stone bg-white px-4 py-2 text-sm font-semibold text-bark">
-              {provider.overall_rating ?? "Rating not published"}
+              {publishedRating(provider.overall_rating) ?? "Rating not published"}
             </div>
             {ratingSourceNote(provider.rating_source, provider.rating_source_date) && (
               <p className="max-w-xs text-right text-xs text-dusk">{ratingSourceNote(provider.rating_source, provider.rating_source_date)}</p>
@@ -139,7 +136,7 @@ export default async function ProviderPage({ params, searchParams }: { params: P
                       {dimension.label}
                     </p>
                     <p className="mt-2 text-sm text-dusk">
-                      {provider[dimension.key] ?? "Not published"}
+                      {domainRatingLabel(provider[dimension.key])}
                     </p>
                   </div>
                 ))}
