@@ -2,13 +2,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import CompareButton from "@/components/CompareButton";
 import Breadcrumbs, { regionSlug } from "@/components/Breadcrumbs";
 import RememberProvider from "@/components/RememberProvider";
 import RatingScale from "@/components/RatingScale";
 import { DEFAULT_REGION_OPTIONS } from "@/lib/directory-constants";
 import { getDirectoryProvider } from "@/lib/directory-db";
 import { normalizeExternalHttpUrl, cqcEvidenceUrl } from "@/lib/external-url";
-import { getProviderHref, directoryReturnHref } from "@/lib/provider-path";
+import { getProviderHref, getProviderPathKey, directoryReturnHref } from "@/lib/provider-path";
 import { ratingToneClass } from "@/lib/rating-tone";
 import { ratingSourceNote } from "@/lib/rating-source";
 import { getSiteUrl } from "@/lib/site";
@@ -125,6 +126,9 @@ export default async function ProviderPage({ params, searchParams }: { params: P
           </div>
 
           <div className="flex flex-col items-end gap-1">
+            {getProviderPathKey(provider) ? (
+              <CompareButton slug={getProviderPathKey(provider)!} name={provider.name} />
+            ) : null}
             <div className="rounded-full border border-stone bg-white px-4 py-2 text-sm font-semibold text-bark">
               {provider.overall_rating ?? "Rating not published"}
             </div>
