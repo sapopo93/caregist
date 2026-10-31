@@ -40,14 +40,32 @@ export default async function ComparePage({
 
   if (slugs.length < 2) {
     return (
-      <div className="max-w-4xl mx-auto px-6 py-12 text-center">
-        <h1 className="text-2xl font-bold text-bark mb-4">Compare Providers</h1>
-        <p className="text-dusk mb-6">
-          Select 2 or 3 providers to compare side by side. Use the &quot;+ Compare&quot; button on any provider card.
+      <div className="max-w-3xl mx-auto px-6 py-12">
+        <h1 className="text-4xl font-extrabold text-bark">Compare providers side by side</h1>
+        <p className="mt-3 text-dusk">
+          Put two or three providers next to each other: overall rating, the five CQC key questions and the facts that matter.
         </p>
-        <Link href="/search" className="px-6 py-3 bg-clay text-white rounded-lg font-medium hover:bg-bark transition-colors">
-          Search Providers
-        </Link>
+        <ol className="mt-8 grid gap-4 sm:grid-cols-3">
+          {[
+            ["1", "Find providers", "Search the directory, or open a provider page."],
+            ["2", "Press + Compare", "Add up to three. They collect in the bar at the bottom of the screen."],
+            ["3", "Open the comparison", "Choose Compare in that bar to see them side by side."],
+          ].map(([n, title, body]) => (
+            <li key={n} className="rounded-xl border border-stone bg-cream p-5">
+              <span className="font-mono text-xs font-semibold text-clay">STEP {n}</span>
+              <p className="mt-2 text-lg font-bold text-bark">{title}</p>
+              <p className="mt-1 text-sm leading-6 text-dusk">{body}</p>
+            </li>
+          ))}
+        </ol>
+        <div className="mt-8 flex flex-wrap gap-3">
+          <Link href="/search" className="px-6 py-3 bg-clay text-white rounded-lg font-medium hover:bg-bark transition-colors">
+            Search providers
+          </Link>
+          <Link href="/find-care" className="px-6 py-3 border border-clay text-clay rounded-lg font-medium hover:bg-clay hover:text-white transition-colors">
+            Find care near a postcode
+          </Link>
+        </div>
       </div>
     );
   }

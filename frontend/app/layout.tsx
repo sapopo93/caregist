@@ -8,6 +8,8 @@ import "./globals.css";
 
 import AuthNav from "@/components/AuthNav";
 import CompareBar from "@/components/CompareBar";
+import CommandPalette from "@/components/CommandPalette";
+import PaletteHint from "@/components/PaletteHint";
 import CookieConsent from "@/components/CookieConsent";
 import SupportWidgetMount from "@/components/SupportWidgetMount";
 
@@ -38,6 +40,28 @@ const getDataCurrentAsOf = unstable_cache(async (): Promise<string | null> => {
     return null;
   }
 }, ["caregist-data-current-as-of"], { revalidate: 3600 });
+
+type FreshnessChip = { state: "fresh" | "not-fresh"; label: string } | null;
+
+/** Header trust chip. Unlike the footer line it also reports a non-fresh source, so staleness is never hidden.
+ *  Relies on fetch revalidation (1h) rather than unstable_cache so a transient failure is not cached as "no data". */
+async function getFreshnessChip(): Promise<FreshnessChip> {
+  try {
+    const response = await fetch(`${getServerApiBase()}/api/v1/health/freshness`, {
+      next: { revalidate: 3600 },
+      signal: AbortSignal.timeout(5000),
+    });
+    if (response.status !== 200 && response.status !== 503) return null;
+    const data = await response.json();
+    if (data?.status !== "fresh") return { state: "not-fresh", label: "Check data status" };
+    const retrieved = new Date(data?.sourceRetrievedAt);
+    if (Number.isNaN(retrieved.getTime())) return null;
+    const day = retrieved.toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
+    return { state: "fresh", label: `Data as of ${day}` };
+  } catch {
+    return null;
+  }
+}
 
 const dmSans = localFont({
   src: "./fonts/dm-sans-latin-wght-normal.woff2",
@@ -86,6 +110,7 @@ export const metadata: Metadata = {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   await connection();
   const dataCurrentAsOf = await getDataCurrentAsOf();
+  const freshnessChip = await getFreshnessChip();
 
   return (
     <html lang="en" className={`${dmSans.variable} ${playfairDisplay.variable}`}>
@@ -105,23 +130,32 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <img src="/logo-lockup-reverse.svg" alt="CareGist" className="h-9 w-auto md:h-10" />
             </Link>
 
-            <form action="/search" method="get" role="search" className="hidden min-w-0 flex-1 md:block lg:max-w-sm">
+            <form action="/search" method="get" role="search" className="relative hidden min-w-0 flex-1 md:block lg:max-w-sm">
               <label htmlFor="site-search" className="sr-only">Search care providers by name, town or postcode</label>
               <input
                 id="site-search"
                 name="q"
                 type="search"
                 placeholder="Search providers by name, town or postcode"
-                className="h-9 w-full rounded-full border border-cream/20 bg-charcoal/40 px-4 text-sm text-cream placeholder:text-cream/60 focus:border-amber focus:bg-charcoal/60 focus:outline-none"
+                className="h-9 w-full rounded-full border border-cream/20 bg-charcoal/40 px-4 pr-14 text-sm text-cream placeholder:text-cream/60 focus:border-amber focus:bg-charcoal/60 focus:outline-none"
               />
+              <PaletteHint />
             </form>
 
-            <div className="flex items-center justify-end gap-3">
+            {freshnessChip ? (
               <Link
-                href="/pricing"
-                className="rounded-full bg-amber px-4 py-2 text-sm font-semibold text-charcoal transition hover:bg-cream md:hidden"
+                href="/data-status"
+                title="Open Data Status for the source dates behind every figure"
+                className="hidden shrink-0 items-center gap-2 whitespace-nowrap rounded-full border border-cream/25 px-3 py-1 text-xs text-cream/90 transition hover:border-amber hover:text-amber xl:inline-flex"
               >
-                Products
+                <span aria-hidden className={`h-2 w-2 rounded-full ${freshnessChip.state === "fresh" ? "bg-sage" : "bg-amber"}`} />
+                {freshnessChip.label}
+              </Link>
+            ) : null}
+
+            <div className="flex items-center justify-end gap-3">
+              <Link href="/pricing/territory" className="cta-primary cta-primary--sm whitespace-nowrap !gap-1 !px-3 !text-[0.8rem] md:hidden">
+                Check territory
               </Link>
               <nav aria-label="Primary" className="hidden items-center gap-5 text-sm font-medium md:flex">
                 <Link href="/search" className="hover:text-amber">
@@ -144,6 +178,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
         <main id="main-content" tabIndex={-1} className="flex-1 focus:outline-none">{children}</main>
 
+        <CommandPalette />
         <CompareBar />
         <CookieConsent />
         <SupportWidgetMount />

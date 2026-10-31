@@ -2,11 +2,16 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import RelatedLinks from "@/components/RelatedLinks";
+import ProviderActions from "@/components/ProviderActions";
+import CompareButton from "@/components/CompareButton";
+import Breadcrumbs, { regionSlug } from "@/components/Breadcrumbs";
+import RememberProvider from "@/components/RememberProvider";
 import RatingScale from "@/components/RatingScale";
 import { DEFAULT_REGION_OPTIONS } from "@/lib/directory-constants";
 import { getDirectoryProvider } from "@/lib/directory-db";
 import { normalizeExternalHttpUrl, cqcEvidenceUrl } from "@/lib/external-url";
-import { getProviderHref, directoryReturnHref } from "@/lib/provider-path";
+import { getProviderHref, getProviderPathKey, directoryReturnHref } from "@/lib/provider-path";
 import { ratingToneClass } from "@/lib/rating-tone";
 import { ratingSourceNote } from "@/lib/rating-source";
 import { getSiteUrl } from "@/lib/site";
@@ -90,9 +95,26 @@ export default async function ProviderPage({ params, searchParams }: { params: P
 
   return (
     <div className="mx-auto max-w-5xl px-6 py-10">
-      <Link href={returnTo} className="text-sm font-medium text-clay hover:text-bark">
-        Back to search
-      </Link>
+      <RememberProvider
+        href={getProviderHref(provider)}
+        name={provider.name}
+        rating={provider.overall_rating ?? null}
+        place={[provider.town, provider.postcode].filter(Boolean).join(", ")}
+      />
+      <div className="flex flex-wrap items-baseline justify-between gap-x-6">
+        <Breadcrumbs
+          crumbs={[
+            { label: "Directory", href: returnTo },
+            ...(provider.region && DEFAULT_REGION_OPTIONS.includes(provider.region)
+              ? [{ label: provider.region, href: `/region/${regionSlug(provider.region)}` }]
+              : []),
+            { label: provider.name },
+          ]}
+        />
+        <Link href={returnTo} className="mb-4 text-sm font-medium text-clay hover:text-bark print:hidden">
+          Back to search
+        </Link>
+      </div>
 
       <div className="relative mt-4 overflow-hidden rounded-3xl border border-stone bg-cream p-8 pt-10 shadow-sm">
         <span aria-hidden className={`absolute inset-x-0 top-0 h-2 ${ratingToneClass(provider.overall_rating)}`} />
@@ -103,9 +125,13 @@ export default async function ProviderPage({ params, searchParams }: { params: P
             </p>
             <h1 className="mt-2 text-4xl font-extrabold leading-tight text-bark">{provider.name}</h1>
             <p className="mt-3 max-w-3xl text-sm leading-6 text-dusk">{location}</p>
+            <ProviderActions locationId={provider.id} name={provider.name} pageUrl={`${getSiteUrl()}${getProviderHref(provider)}`} />
           </div>
 
           <div className="flex flex-col items-end gap-1">
+            {getProviderPathKey(provider) ? (
+              <CompareButton slug={getProviderPathKey(provider)!} name={provider.name} />
+            ) : null}
             <div className="rounded-full border border-stone bg-white px-4 py-2 text-sm font-semibold text-bark">
               {provider.overall_rating ?? "Rating not published"}
             </div>
@@ -257,6 +283,8 @@ export default async function ProviderPage({ params, searchParams }: { params: P
           </div>
         </div>
       </div>
+
+      <RelatedLinks town={provider.town} region={provider.region} rating={provider.overall_rating} />
     </div>
   );
 }
