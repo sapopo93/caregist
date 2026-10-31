@@ -93,11 +93,22 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
       </head>
       <body className="flex min-h-screen flex-col">
-        <header className="relative border-b border-stone bg-bark px-6 py-4 text-cream">
+        <header className="sticky top-0 z-40 border-b border-charcoal/30 bg-bark px-6 py-2.5 text-cream shadow-sm">
           <div className="mx-auto flex max-w-6xl items-center justify-between gap-4">
             <Link href="/" className="flex items-center">
-              <img src="/logo-lockup-reverse.svg" alt="CareGist" className="h-12 w-auto md:h-14" />
+              <img src="/logo-lockup-reverse.svg" alt="CareGist" className="h-9 w-auto md:h-10" />
             </Link>
+
+            <form action="/search" method="get" role="search" className="hidden min-w-0 flex-1 md:block lg:max-w-sm">
+              <label htmlFor="site-search" className="sr-only">Search care providers by name, town or postcode</label>
+              <input
+                id="site-search"
+                name="q"
+                type="search"
+                placeholder="Search providers by name, town or postcode"
+                className="h-9 w-full rounded-full border border-cream/20 bg-charcoal/40 px-4 text-sm text-cream placeholder:text-cream/60 focus:border-amber focus:bg-charcoal/60 focus:outline-none"
+              />
+            </form>
 
             <div className="flex items-center justify-end gap-3">
               <Link
