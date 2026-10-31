@@ -6,6 +6,7 @@ import DirectorySearchForm from "@/components/directory/DirectorySearchForm";
 import EmailCaptureStrip from "@/components/EmailCaptureStrip";
 import TrackEventOnMount from "@/components/TrackEventOnMount";
 import TrustSignal from "@/components/TrustSignal";
+import EvidenceTrail from "@/components/home/EvidenceTrail";
 import EnglandBoard from "@/components/home/EnglandBoard";
 import { getDirectoryFilterOptions, getDirectoryOpportunityStats, getDirectoryRegionSnapshot } from "@/lib/directory-db";
 
@@ -46,22 +47,6 @@ const FACT_LINKS: Array<{
     href: "/search?rating=No%20published%20rating",
     valueKey: "noPublishedRating",
     note: "Locations currently carrying this exact overall CQC rating",
-  },
-];
-
-const DIFFERENCE = [
-  {
-    title: "Change, not catalogue churn",
-    body: "CareGist is built around canonical events with stable CQC location IDs, rather than repeated exports of mutable provider rows.",
-  },
-  {
-    title: "Evidence travels with the signal",
-    body: "Source URL, observation times, and entity level support traceability. Reconciled snapshot metadata, including a checksum when available, is reported on Data Status.",
-    href: "/data-status",
-  },
-  {
-    title: "Safe when intelligence is incomplete",
-    body: "A verified raw event still ships if an explanation cannot meet the evidence gate. CareGist does not fill gaps with speculation.",
   },
 ];
 
@@ -132,25 +117,18 @@ export default async function HomePage() {
         </dl>
       </section>
 
-      <section className="border-b border-stone px-6 py-12">
+      <section className="border-b border-stone px-6 py-14">
         <div className="mx-auto max-w-6xl">
-          <div className="mb-7 max-w-3xl">
+          <div className="mb-9 max-w-3xl">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-clay">Why CareGist</p>
-            <h2 className="mt-3 text-3xl font-bold text-bark">Built to support a decision, not to sell rows</h2>
+            <h2 className="mt-3 text-3xl font-bold text-bark md:text-4xl">
+              Built to support a decision, not to sell rows
+            </h2>
+            <p className="mt-3 text-sm leading-6 text-dusk">
+              Change, not catalogue churn: every signal carries its evidence from the CQC record to your inbox.
+            </p>
           </div>
-          <div className="grid gap-4 md:grid-cols-3">
-            {DIFFERENCE.map((item) => (
-              <article key={item.title} className="rounded-xl border border-stone bg-cream p-6 shadow-sm">
-                <h3 className="text-xl font-bold text-bark">{item.title}</h3>
-                <p className="mt-3 text-sm leading-6 text-dusk">{item.body}</p>
-                {"href" in item && item.href ? (
-                  <Link href={item.href} className="mt-4 inline-flex text-sm font-semibold text-clay underline">
-                    Review Data Status
-                  </Link>
-                ) : null}
-              </article>
-            ))}
-          </div>
+          <EvidenceTrail />
         </div>
       </section>
 
