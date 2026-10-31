@@ -8,6 +8,8 @@ import "./globals.css";
 
 import AuthNav from "@/components/AuthNav";
 import CompareBar from "@/components/CompareBar";
+import CommandPalette from "@/components/CommandPalette";
+import PaletteHint from "@/components/PaletteHint";
 import CookieConsent from "@/components/CookieConsent";
 import SupportWidgetMount from "@/components/SupportWidgetMount";
 
@@ -105,15 +107,16 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <img src="/logo-lockup-reverse.svg" alt="CareGist" className="h-9 w-auto md:h-10" />
             </Link>
 
-            <form action="/search" method="get" role="search" className="hidden min-w-0 flex-1 md:block lg:max-w-sm">
+            <form action="/search" method="get" role="search" className="relative hidden min-w-0 flex-1 md:block lg:max-w-sm">
               <label htmlFor="site-search" className="sr-only">Search care providers by name, town or postcode</label>
               <input
                 id="site-search"
                 name="q"
                 type="search"
                 placeholder="Search providers by name, town or postcode"
-                className="h-9 w-full rounded-full border border-cream/20 bg-charcoal/40 px-4 text-sm text-cream placeholder:text-cream/60 focus:border-amber focus:bg-charcoal/60 focus:outline-none"
+                className="h-9 w-full rounded-full border border-cream/20 bg-charcoal/40 px-4 pr-14 text-sm text-cream placeholder:text-cream/60 focus:border-amber focus:bg-charcoal/60 focus:outline-none"
               />
+              <PaletteHint />
             </form>
 
             <div className="flex items-center justify-end gap-3">
@@ -144,6 +147,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
         <main id="main-content" tabIndex={-1} className="flex-1 focus:outline-none">{children}</main>
 
+        <CommandPalette />
         <CompareBar />
         <CookieConsent />
         <SupportWidgetMount />
