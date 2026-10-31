@@ -336,14 +336,17 @@ export async function getFallbackRegionSnapshot() {
   const providers = await loadActiveProviders();
   const byRegion = new Map<
     string,
-    { region: string; total: number; inadequate: number; requiresImprovement: number; newLast90Days: number }
+    { region: string; total: number; outstanding: number; good: number; inadequate: number; requiresImprovement: number; newLast90Days: number }
   >();
   for (const provider of providers) {
     if (!provider.region) continue;
     const row =
       byRegion.get(provider.region) ??
-      { region: provider.region, total: 0, inadequate: 0, requiresImprovement: 0, newLast90Days: 0 };
+      { region: provider.region, total: 0, outstanding: 0, good: 0, inadequate: 0, requiresImprovement: 0, newLast90Days: 0 };
     row.total += 1;
+    const rating = String(provider.overall_rating ?? "").trim().toLowerCase();
+    if (rating === "outstanding") row.outstanding += 1;
+    if (rating === "good") row.good += 1;
     if (matchesOpportunity(provider, "inadequate")) row.inadequate += 1;
     if (matchesOpportunity(provider, "requires_improvement")) row.requiresImprovement += 1;
     if (matchesOpportunity(provider, "new_90")) row.newLast90Days += 1;
