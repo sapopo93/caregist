@@ -6,7 +6,8 @@ import DirectorySearchForm from "@/components/directory/DirectorySearchForm";
 import EmailCaptureStrip from "@/components/EmailCaptureStrip";
 import TrackEventOnMount from "@/components/TrackEventOnMount";
 import TrustSignal from "@/components/TrustSignal";
-import { getDirectoryFilterOptions, getDirectoryOpportunityStats } from "@/lib/directory-db";
+import EnglandBoard from "@/components/home/EnglandBoard";
+import { getDirectoryFilterOptions, getDirectoryOpportunityStats, getDirectoryRegionSnapshot } from "@/lib/directory-db";
 
 export const metadata: Metadata = {
   title: "CareGist | Evidence-linked CQC Signal Intelligence",
@@ -69,9 +70,10 @@ function formatCount(value: number) {
 }
 
 export default async function HomePage() {
-  const [filterOptions, stats] = await Promise.all([
+  const [filterOptions, stats, regionSnapshot] = await Promise.all([
     getDirectoryFilterOptions().catch(() => null),
     getDirectoryOpportunityStats(),
+    getDirectoryRegionSnapshot().catch(() => []),
   ]);
 
   const getStat = (key: StatKey) => formatCount(Number(stats[key] ?? 0));
@@ -80,60 +82,54 @@ export default async function HomePage() {
     <div className="bg-parchment">
       <TrackEventOnMount eventType="homepage_view" eventSource="homepage" />
 
-      <section className="border-b border-stone bg-charcoal px-6 py-12 text-cream md:py-16">
-        <div className="mx-auto grid max-w-6xl gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
+      <section className="border-b border-stone px-6 pb-10 pt-12 md:pt-16">
+        <div className="mx-auto grid max-w-6xl gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-start">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-amber">
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-clay">
               CQC signal intelligence
             </p>
-            <h1 className="mt-4 max-w-3xl text-4xl font-extrabold leading-[1.04] md:text-6xl">
-              Know what changed. See the evidence. Decide what to do next.
+            <h1 className="mt-4 max-w-3xl text-5xl font-extrabold leading-[0.98] tracking-tight text-charcoal md:text-7xl">
+              Know what changed. <span className="text-clay">See the evidence.</span> Decide what next.
             </h1>
-            <p className="mt-5 max-w-2xl text-base leading-7 text-stone">
+            <p className="mt-6 max-w-xl text-base leading-7 text-dusk">
               CareGist follows verified CQC new registrations, rating changes, and
               closures for one England region at a time, with the published record behind
               every item. The directory remains free for discovery and source checking.
             </p>
-            <div className="mt-7 flex flex-wrap gap-3">
+            <div className="mt-7 flex flex-wrap items-center gap-3">
               <Link href="/pricing/territory" className="cta-primary">
                 Check your territory
               </Link>
-              <Link
-                href="/pricing"
-                className="inline-flex min-h-12 items-center rounded-xl border-2 border-cream/40 px-5 py-3 text-sm font-semibold transition hover:bg-white/10"
-              >
+              <Link href="/pricing" className="cta-secondary">
                 See the two products
               </Link>
               <Link
                 href="/search"
-                className="inline-flex min-h-12 items-center px-2 py-3 text-sm font-semibold text-stone underline underline-offset-4 transition hover:text-cream"
+                className="inline-flex min-h-12 items-center px-2 py-3 text-sm font-semibold text-dusk underline underline-offset-4 transition hover:text-bark"
               >
                 Search the free directory
               </Link>
             </div>
           </div>
-
-          <div className="grid gap-3 sm:grid-cols-2">
-            {FACT_LINKS.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="rounded-xl border border-white/12 bg-cream p-5 text-charcoal shadow-sm transition hover:border-amber"
-              >
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-clay">{item.label}</p>
-                <p className="mt-3 text-4xl font-extrabold text-bark">{getStat(item.valueKey)}</p>
-                <p className="mt-2 text-sm leading-6 text-dusk">{item.note}</p>
-                {item.valueKey === "inadequate" && Number(stats.inadequateInCqcFile) > Number(stats.inadequate) ? (
-                  <p className="mt-2 text-xs leading-5 text-dusk">
-                    CQC&apos;s public API currently returns a rating for this many. CQC&apos;s own published ratings file
-                    lists {formatCount(Number(stats.inadequateInCqcFile))} active locations as Inadequate; the API
-                    omits the rest, so this figure understates CQC&apos;s.
-                  </p>
-                ) : null}
-              </Link>
-            ))}
-          </div>
+          <EnglandBoard regions={regionSnapshot} />
         </div>
+
+        <dl className="mx-auto mt-10 grid max-w-6xl gap-px overflow-hidden rounded-xl border border-stone bg-stone sm:grid-cols-2 lg:grid-cols-4">
+          {FACT_LINKS.map((item) => (
+            <Link key={item.href} href={item.href} className="group bg-cream p-4 transition hover:bg-white">
+              <dt className="text-xs font-semibold uppercase tracking-[0.14em] text-clay">{item.label}</dt>
+              <dd className="mt-1 text-3xl font-extrabold text-bark group-hover:text-clay">{getStat(item.valueKey)}</dd>
+              <p className="mt-1 text-xs leading-5 text-dusk">{item.note}</p>
+              {item.valueKey === "inadequate" && Number(stats.inadequateInCqcFile) > Number(stats.inadequate) ? (
+                <p className="mt-2 text-xs leading-5 text-dusk">
+                  CQC&apos;s public API currently returns a rating for this many. CQC&apos;s own published ratings file
+                  lists {formatCount(Number(stats.inadequateInCqcFile))} active locations as Inadequate; the API
+                  omits the rest, so this figure understates CQC&apos;s.
+                </p>
+              ) : null}
+            </Link>
+          ))}
+        </dl>
       </section>
 
       <section className="border-b border-stone px-6 py-12">
