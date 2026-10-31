@@ -1,0 +1,26 @@
+The following is a diff from the previous accessibility tree for Window: "Neon Console" with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
++										625 container
++											626 text 5:03 PM
++											627 text 10:03 PM
++											628 text 3:03 AM
++											629 text 8:03 AM
++											630 text 1:03 PM
++											631 text 5:03 PM
++											632 text 10:03 PM
++											633 text 3:03 AM
++											634 text 8:03 AM
++											635 text 1:03 PM
++											636 text 0
++											637 text 1
++											638 text 2
++											639 text RAM (GB)
++											640 text 0
++											641 text .25
++											642 text .5
++											643 text CU
++											644 content list
++												645 button ENDPOINT INACTIVE
++												646 button ALLOCATED CU
++												647 button RAM USAGE
+~					623 tab (selected, settable, boolean) Neon Console - Memory usage - 252 MB, Value: on
+The focused UI element is 454 HTML content Neon Console, URL: console.neon.tech/app/projects/purple-voice-97710924/branches/br-floral-paper-abjaq0oa/

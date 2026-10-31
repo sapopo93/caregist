@@ -1,0 +1,9 @@
+HEALTH: OK - status=ok operatingMode=database readMode=database writeMode=database notificationMode=email databaseReason=ok gitSha=2502be72f1773921f708ee15f1b2a18f84257731
+DATA_STATUS: OK - /data-status rendered
+BACKEND_BINDING: OK - freshnessStatus=fresh activeLocationCount=57107 gitSha=2502be72f1773921f708ee15f1b2a18f84257731
+PROVIDER_SITEMAP: OK - provider sitemap index rendered
+SEARCH: OK - found 'London Care (East London)' for q='East London' service_type='Homecare Agencies'
+PROVIDER: OK - /provider/london-care-east-london-london rendered 'London Care (East London)'
+PROVIDER_API: OK - search API returned 1 row(s); detail API rendered 'London Care (East London)'
+EXPORT_GUARD: OK - anonymous export access is blocked with HTTP 401
+EXPORT: SKIPPED - set CAREGIST_LEAD_EMAIL for a full lead/export smoke, or CAREGIST_EXPORT_TOKEN to verify a pre-issued token

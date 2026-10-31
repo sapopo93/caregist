@@ -1,0 +1,18 @@
+{
+  "checked_at": "2026-10-31T17:07:57.418844+00:00",
+  "required_migration": "071_territory_brief_buyer_scope.sql",
+  "latest_migration": "071_territory_brief_buyer_scope.sql",
+  "counts": {
+    "provider_rows": 59498,
+    "active_provider_rows": 57240,
+    "duplicate_location_ids": 0
+  },
+  "checks": {
+    "required_migration_present": true,
+    "provider_rows_at_least_baseline": true,
+    "active_provider_rows_at_least_baseline": true,
+    "location_ids_unique": true,
+    "source_snapshot_identity_present": true
+  },
+  "ok": true
+}

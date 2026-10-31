@@ -1,0 +1,7 @@
+{
+  "application": "caregist-api",
+  "version": "1.0.0",
+  "release": {
+    "git_sha": "2502be72f1773921f708ee15f1b2a18f84257731"
+  }
+}

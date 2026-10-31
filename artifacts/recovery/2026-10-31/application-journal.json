@@ -1,0 +1,14 @@
+{
+  "candidate": "73613c03a8fa9bb1eb6691fb17d16094ee211138",
+  "recovery_branch": "br-floral-paper-abjaq0oa",
+  "applied": [
+    {
+      "filename": "072_shared_customer_package.sql",
+      "sha256": "e7307bcff25f47c6492f84b16ea9a86f8876022e8237bce5a6a496d01e53f177"
+    },
+    {
+      "filename": "073_rebuild_territory_brief_tables.sql",
+      "sha256": "7e7b3821c0547a9abd5ca9760bbfdde71ba04d8520d91741c165acf6091c77c3"
+    }
+  ]
+}

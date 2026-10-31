@@ -1,0 +1,12 @@
+pypdf=6.21.4; candidate73613c03a8fa9bb1eb6691fb17d16094ee211138
+============================= test session starts ==============================
+platform darwin -- Python 3.12.13, pytest-9.1.1, pluggy-1.6.0
+rootdir: /private/tmp/caregist-migrations-072-073
+configfile: pytest.ini
+plugins: cov-5.0.0, asyncio-1.4.0, anyio-4.14.2
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
+collected 1 item
+
+tests/test_territory_brief_pg_integration.py .                           [100%]
+
+============================== 1 passed in 10.52s ==============================

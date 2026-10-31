@@ -1,0 +1,16 @@
+{
+  "status": "ok",
+  "checkedAt": "2026-10-31T17:05:21.515Z",
+  "release": {
+    "gitSha": "2502be72f1773921f708ee15f1b2a18f84257731"
+  },
+  "capabilities": {
+    "operatingMode": "database",
+    "readMode": "database",
+    "writeMode": "database",
+    "notificationMode": "email",
+    "fallbackDatasetAvailable": true,
+    "databaseAvailable": true,
+    "databaseReason": "ok"
+  }
+}

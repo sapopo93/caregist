@@ -1,0 +1,1 @@
+provider 'xai' is disabled in config (providers.xai.enabled: false)
