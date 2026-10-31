@@ -65,7 +65,7 @@ _RATING_RANK = {
 
 MIN_WINDOW_DAYS = 7
 MAX_WINDOW_DAYS = 365
-MIN_SHORTLIST = 10
+MIN_SHORTLIST = 1
 MAX_SHORTLIST = 50
 DEFAULT_SHORTLIST = 30
 DEFAULT_WINDOW_DAYS = 90
@@ -403,10 +403,16 @@ def _service_types(row: dict[str, Any]) -> tuple[str, ...]:
 
 
 def _in_scope(row: dict[str, Any], scope: TerritoryScope) -> bool:
-    if scope.service_type and scope.service_type.casefold() not in {
-        t.casefold() for t in _service_types(row)
-    }:
-        return False
+    if scope.service_type:
+        from api.service_taxonomy import resolve_service_filter
+        aliases = set(resolve_service_filter(scope.service_type) or ())
+        actual = {
+            str(item.get(key) or "").strip().casefold()
+            for item in row.get("gacServiceTypes") or [] if isinstance(item, dict)
+            for key in ("name", "description")
+        }
+        if not aliases.intersection(actual):
+            return False
     if scope.kind == "local_authority":
         return str(row.get("localAuthority") or "").strip().casefold() == scope.name.casefold()
     return str(row.get("region") or "").strip().casefold() == scope.name.casefold()
@@ -1088,6 +1094,27 @@ def _provider_group_event(row: dict[str, Any], group: str, *, as_of: date) -> Or
     return None
 
 
+def _matches_provider_group(row: dict[str, Any], group: str, *, as_of: date) -> bool:
+    """Recheck membership even when a caller supplied a prefiltered ID list."""
+    if row.get("registrationStatus") != "Registered":
+        return False
+    resolved = row.get("_resolved_rating")
+    if group in _GROUP_RATING:
+        if isinstance(resolved, ResolvedRating):
+            return resolved.is_current and resolved.value == _GROUP_RATING[group]
+        return _current_rating_evidence(row)[0] == _GROUP_RATING[group]
+    if group == "not_yet_inspected":
+        rating = resolved.value if isinstance(resolved, ResolvedRating) else _current_rating_evidence(row)[0]
+        return str(rating or "").strip().casefold() in ("", "not yet inspected", "no published rating")
+    if group == "stale_inspection":
+        inspected = _parse_date((row.get("lastInspection") or {}).get("date"))
+        return inspected is None or (as_of - inspected).days > 3 * 365
+    if group == "new_90":
+        registered = _parse_date(row.get("registrationDate"))
+        return registered is not None and 0 <= (as_of - registered).days < 90
+    return False
+
+
 _GROUP_RATING = {"inadequate": "Inadequate", "requires_improvement": "Requires improvement"}
 _SOURCE_LABEL = {
     SOURCE_API: "CQC API",
@@ -1365,6 +1392,8 @@ def generate_brief_from_rows(
             for row in scoped_rows
         ]
     rating_resolution = _rating_resolution_summary(scoped_rows, provider_group) if resolving else None
+    if provider_group:
+        scoped_rows = [row for row in scoped_rows if _matches_provider_group(row, provider_group, as_of=as_of)]
     territory_locations = len(scoped_rows)
     generated_on = purchase_context.generated_at.astimezone(timezone.utc).date()
     coverage = _evidence_coverage(

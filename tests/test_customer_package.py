@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import io
+from dataclasses import replace
 import json
 import zipfile
 from concurrent.futures import ThreadPoolExecutor
@@ -51,7 +52,7 @@ def brief_snapshot(*, customer: str = "buyer@example.test", cap: int = 50, previ
 
 
 def brief_pdf(count: int = 1, *, note: str = "test brief") -> bytes:
-    return package_fixtures.brief_pdf("CG-BRIEF-TEST", package_fixtures.roster(count, width=3), note=note)
+    return package_fixtures.brief_pdf("CG-BRIEF-TEST", package_fixtures.roster(count, width=3), note=note, geography="North East")
 
 
 def brief_artifacts(count: int = 1) -> dict[str, PackageArtifact]:
@@ -396,7 +397,7 @@ def test_real_territory_generator_flows_through_shared_builder() -> None:
     csv_text = brief_to_csv(brief)
     provider_records = provider_records_from_csv(csv_text, provider_cap=30)
     built = build_package_bytes(
-        brief_snapshot(cap=30),
+        replace(brief_snapshot(cap=30), geography="Southampton"),
         {
             "brief.pdf": PackageArtifact("brief.pdf", render_brief_pdf(brief), "application/pdf"),
             "providers.csv": PackageArtifact(
@@ -418,24 +419,16 @@ def test_real_digest_renderer_flows_through_shared_builder() -> None:
     ratings = select_published_ratings(
         load_ndjson(FIXTURE / "locations_detail.jsonl"), region="South East", window=window
     )
+    from api.services.customer_package import digest_binding
+    from tools.build_weekly_digest_pilot import digest_csv_bytes
+    csv_bytes = digest_csv_bytes([], ratings)
+    binding = digest_binding(order_reference="CG-DIGEST-TEST", customer_reference="buyer@example.test",
+        region="South East", issue=1, week_ending="2024-02-29", csv_bytes=csv_bytes)
     pdf = render_pdf(
-        region="South East",
-        window=window,
-        issue=1,
-        customer="Integration test",
-        registrations=[],
-        ratings=ratings,
-        edition={"source_published_at": "2024-02-29"},
-        ratings_source_retrieved_at="2024-03-01T12:00:00+00:00",
+        region="South East", window=window, issue=1, customer="Integration test",
+        registrations=[], ratings=ratings, edition={"source_published_at": "2024-02-29"},
+        ratings_source_retrieved_at="2024-03-01T12:00:00+00:00", binding=binding,
     )
-    csv_bytes = (
-        "section,date,location_id,name,local_authority,detail,cqc_url\n"
-        + "".join(
-            f"rating_published,{row['published']},{row['location_id']},{row['name']},"
-            f"{row['local_authority']},{row['rating']},{row['cqc_url']}\n"
-            for row in ratings
-        )
-    ).encode()
     snapshot = verified_snapshot(
         order_reference="CG-DIGEST-TEST",
         customer_reference="buyer@example.test",
@@ -453,9 +446,105 @@ def test_real_digest_renderer_flows_through_shared_builder() -> None:
             "digest.pdf": PackageArtifact("digest.pdf", pdf, "application/pdf"),
             "digest.csv": PackageArtifact("digest.csv", csv_bytes, "text/csv; charset=utf-8"),
         },
-        evidence={"ratings": ratings},
+        evidence={"generator_manifest": {"binding": binding}, "ratings": ratings},
     )
 
     assert ratings
     assert built.manifest["product"]["internal_id"] == "weekly_digest_pilot"
     assert set(built.selection["requested_files"]) == set(snapshot.requested_files)
+
+
+def digest_case(*, csv_bytes=None):
+    from api.services.customer_package import digest_binding
+    from tools.build_weekly_digest_pilot import digest_csv_bytes
+    csv_bytes = csv_bytes if csv_bytes is not None else digest_csv_bytes([], [])
+    binding = digest_binding(order_reference="CG-DIGEST-TEST", customer_reference="buyer@example.test",
+        region="North West", issue=1, week_ending="2026-10-29", csv_bytes=csv_bytes)
+    snapshot = verified_snapshot(order_reference="CG-DIGEST-TEST", customer_reference="buyer@example.test",
+        product_id="weekly-digest", payment_reference="cs_paid_digest", template_version=WEEKLY_DIGEST_TEMPLATE_VERSION,
+        source_version="fixture", geography="North West", confirmed_at=NOW,
+        rating_context_criteria=("issue 1 of 4", "week ending 2026-10-29"))
+    artifacts = {"digest.pdf": PackageArtifact("digest.pdf", package_fixtures.digest_pdf(binding, csv_bytes), "application/pdf"),
+                 "digest.csv": PackageArtifact("digest.csv", csv_bytes, "text/csv")}
+    return snapshot, artifacts, {"generator_manifest": {"binding": binding}}
+
+
+@pytest.mark.parametrize("field,value", [("order_reference", "OTHER"), ("customer_reference", "OTHER"),
+    ("region", "South East"), ("issue", 2), ("window_end", "2026-10-28"), ("csv_sha256", "0" * 64)])
+def test_digest_refuses_cross_order_scope_week_and_content(field, value):
+    snapshot, artifacts, evidence = digest_case()
+    evidence["generator_manifest"]["binding"][field] = value
+    with pytest.raises(PackageBindingError):
+        build_package_bytes(snapshot, artifacts, evidence=evidence)
+
+
+def test_digest_refuses_wrong_pdf_and_missing_evidence():
+    snapshot, artifacts, evidence = digest_case()
+    artifacts["digest.pdf"] = PackageArtifact("digest.pdf", package_fixtures.plain_pdf("Another buyer"), "application/pdf")
+    with pytest.raises(PackageBindingError, match="content binding"):
+        build_package_bytes(snapshot, artifacts, evidence=evidence)
+    with pytest.raises(PackageBindingError, match="missing its canonical"):
+        build_package_bytes(snapshot, artifacts)
+
+
+@pytest.mark.parametrize("bad_date", ["1999-01-01", "2026-10-30", "not-a-date"])
+def test_digest_rejects_out_of_window_and_invalid_dates(bad_date):
+    csv_bytes = ("section,date,location_id,name,local_authority,detail,cqc_url\n"
+        f"new_registration,{bad_date},L1,One,Manchester,Homecare,https://www.cqc.org.uk/location/L1\n").encode()
+    snapshot, artifacts, evidence = digest_case(csv_bytes=csv_bytes)
+    with pytest.raises(PackageBuildError):
+        build_package_bytes(snapshot, artifacts, evidence=evidence)
+
+
+def test_digest_rejects_duplicate_events():
+    row = "new_registration,2026-10-29,L1,One,Manchester,Homecare,https://www.cqc.org.uk/location/L1\n"
+    snapshot, artifacts, evidence = digest_case(csv_bytes=(
+        "section,date,location_id,name,local_authority,detail,cqc_url\n" + row * 2).encode())
+    with pytest.raises(PackageBuildError, match="duplicates an event"):
+        build_package_bytes(snapshot, artifacts, evidence=evidence)
+
+
+def test_bound_buyer_rules_are_immutable_and_visible():
+    from dataclasses import replace
+    rules = {"buyer_objective": "Assess compliance support", "rule_version": 2,
+             "excluded_provider_ids": ["P9"], "excluded_location_ids": []}
+    snapshot = replace(brief_snapshot(), buyer_objective=rules["buyer_objective"], scope_rules_json=json.dumps(rules))
+    built = build_package_bytes(snapshot, brief_artifacts(), provider_records=providers(1))
+    assert json.loads(built.selection["scope_rules_json"]) == rules
+    assert built.selection["buyer_objective"] == rules["buyer_objective"]
+    assert built.manifest["quality_status"] == "research_incomplete"
+    with zipfile.ZipFile(io.BytesIO(built.zip_bytes)) as archive:
+        from api.services.customer_package import _pdf_text
+        text = _pdf_text(archive.read("selection-confirmation.pdf"), "confirmation.pdf")
+    assert "Assess compliance support" in text and "P9" in text
+    assert replace(snapshot, scope_rules_json="{}").sha256 != snapshot.sha256
+
+
+def test_digest_rejects_forged_hash_marker_without_scope_or_event_content():
+    snapshot, artifacts, evidence = digest_case()
+    binding = evidence["generator_manifest"]["binding"]
+    from api.services.pdf_writer import PdfBuilder
+    pdf = PdfBuilder(title="Another region and customer")
+    pdf.title_block("wrong", [f"Order: {binding['order_reference']}", f"Digest content SHA-256: {binding['sha256']}"])
+    artifacts["digest.pdf"] = PackageArtifact("digest.pdf", pdf.build(), "application/pdf")
+    with pytest.raises(PackageBindingError, match="geography, issue or observation window"):
+        build_package_bytes(snapshot, artifacts, evidence=evidence)
+
+
+def test_digest_rejects_mismatched_event_details_even_with_expected_marker():
+    header = "section,date,location_id,name,local_authority,detail,cqc_url\n"
+    good = (header + "new_registration,2026-10-29,L1,Correct,Manchester,Homecare,https://www.cqc.org.uk/location/L1\n").encode()
+    snapshot, artifacts, evidence = digest_case(csv_bytes=good)
+    binding = evidence["generator_manifest"]["binding"]
+    bad = good.replace(b"Correct", b"Wrong customer report")
+    artifacts["digest.pdf"] = PackageArtifact("digest.pdf", package_fixtures.digest_pdf(binding, bad), "application/pdf")
+    with pytest.raises(PackageBindingError, match="missing or contradicts"):
+        build_package_bytes(snapshot, artifacts, evidence=evidence)
+
+
+def test_preview_watermark_survives_extracting_the_primary_report():
+    from api.services.customer_package import _pdf_text
+    built = build_package_bytes(brief_snapshot(preview=True), brief_artifacts(), provider_records=providers(1))
+    with zipfile.ZipFile(io.BytesIO(built.zip_bytes)) as archive:
+        text = _pdf_text(archive.read("brief.pdf"), "brief.pdf")
+    assert "PREVIEW - NOT FOR CUSTOMER DELIVERY" in text

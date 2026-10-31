@@ -63,6 +63,7 @@ def render_brief_pdf(brief: TerritoryBrief) -> bytes:
         subtitle=f"{scope.name} ({scope.kind.replace('_', ' ')}) - generated {_fmt_date(generated_on)}",
         meta_lines=[
             f"Prepared for order {brief.purchase_context.order_reference}",
+            f"Scope geography: {scope.name}",
             f"Opportunity window: {_fmt_date(brief.window_start)} to {_fmt_date(brief.window_end)} "
             f"({scope.window_days} days)",
             f"Locations considered: {brief.considered_locations}   "
@@ -106,8 +107,13 @@ def render_brief_pdf(brief: TerritoryBrief) -> bytes:
         "deterministic signal score (see section 6). Every row is labelled Qualification incomplete, "
         "carries a stated reason to investigate, and links to the underlying CQC record."
     )
+    if len(brief.shortlist) > 8:
+        pdf.paragraph(
+            f"Executive overview: the first 8 of {len(brief.shortlist)} selected providers are shown here. "
+            "Appendix A and the CSV contain every selected provider; the selection has not been reduced."
+        )
     rows = []
-    for o in brief.shortlist:
+    for o in brief.shortlist[:8]:
         rows.append(
             [
                 o.rank,
@@ -239,11 +245,21 @@ def render_brief_pdf(brief: TerritoryBrief) -> bytes:
     if brief.evidence_coverage:
         pdf.heading("Appendix B. Evidence dates and metadata coverage")
         pdf.paragraph(
-            "RI context remains visible even without an in-window event. Freshness is measured "
+            "Evidence dates for the selected provider locations only. Territory-wide coverage remains "
+            "in the structured evidence manifest. RI context remains visible even without an in-window event. Freshness is measured "
             "at generation. Metadata gaps refer to the supplied snapshot; constructed reference "
             "links do not replace missing recorded source metadata.", muted=True,
         )
-        for row in brief.evidence_coverage:
+        selected_ids = {o.location_id for o in brief.shortlist}
+        coverage_rows = [row for row in brief.evidence_coverage if row["location_id"] in selected_ids]
+        if not selected_ids:
+            coverage_rows = list(brief.evidence_coverage[:8])
+            pdf.paragraph(
+                f"No providers were selected. Showing {len(coverage_rows)} contextual source records "
+                f"of {len(brief.evidence_coverage)} metadata records; these are not a researched shortlist. "
+                "The complete metadata coverage remains in the structured evidence manifest."
+            )
+        for row in coverage_rows:
             pdf.paragraph(f"{row['location_name']} ({row['location_id']}; provider {row['provider_id']})")
             pdf.paragraph(
                 f"Rating evidence date: {row['rating_publication_date'] or 'not supplied'}; "

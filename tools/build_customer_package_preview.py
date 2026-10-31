@@ -28,6 +28,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--csv", type=Path, required=True)
     parser.add_argument("--provider-cap", type=int)
     parser.add_argument("--buyer-objective")
+    parser.add_argument("--evidence", type=Path, help="Generator manifest JSON; required for a Digest")
     parser.add_argument("--out", type=Path, default=Path(".tmp/customer-package-previews"))
     return parser.parse_args()
 
@@ -48,6 +49,10 @@ def main() -> int:
         template = packages.WEEKLY_DIGEST_TEMPLATE_VERSION
         names = ("digest.pdf", "digest.csv")
         providers = []
+        if not args.evidence:
+            raise SystemExit("--evidence is required for a Digest preview; use its bound generator manifest")
+    manifest = json.loads(args.evidence.read_text()) if args.evidence else {}
+    binding = manifest.get("binding", {})
     snapshot = packages.verified_snapshot(
         order_reference=args.order_ref,
         customer_reference=args.customer_ref,
@@ -58,6 +63,10 @@ def main() -> int:
         geography=args.geography,
         provider_cap=args.provider_cap,
         buyer_objective=args.buyer_objective,
+        rating_context_criteria=(
+            (f"issue {binding['issue']} of 4", f"week ending {binding['window_end']}")
+            if args.product == "weekly-digest" else ()
+        ),
         confirmed_at=datetime.now(timezone.utc),
         preview=True,
     )
@@ -70,6 +79,7 @@ def main() -> int:
             ),
         },
         provider_records=providers,
+        evidence={"generator_manifest": manifest},
     )
     package = packages.publish_package_atomically(
         built,

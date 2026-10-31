@@ -33,6 +33,7 @@ import argparse
 import asyncio
 import csv
 import hashlib
+import io
 import json
 import os
 import sys
@@ -152,6 +153,46 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
+def select_registration_endings(rows, *, region: str, window: Window):
+    """Report dated endings, preserving succession/dormancy uncertainty."""
+    from api.services.registration_endings import EndingIndex, classify_ending
+
+    rows = list(rows)
+    index = EndingIndex.build(rows)
+    selected = []
+    for row in rows:
+        if row.get("region") != region:
+            continue
+        ending = classify_ending(row, index)
+        if not ending or not window.contains(ending.end_date):
+            continue
+        selected.append({
+            "location_id": str(row["locationId"]), "name": row.get("name") or "",
+            "local_authority": row.get("localAuthority") or "", "date": ending.end_date.isoformat(),
+            "classification": "closure_candidate" if ending.ending_class == "confirmed_closure" else ending.ending_class,
+            "detail": ending.reason + (" in the supplied snapshot; business closure not confirmed" if ending.ending_class == "confirmed_closure" else ""),
+            "cqc_url": f"https://www.cqc.org.uk/location/{row['locationId']}",
+        })
+    return sorted(selected, key=lambda r: (r["date"], r["location_id"]))
+
+
+def digest_csv_bytes(registrations, ratings, endings=()) -> bytes:
+    output = io.StringIO(newline="")
+    writer = csv.writer(output)
+    writer.writerow(["section", "date", "location_id", "name", "local_authority", "detail", "cqc_url"])
+    for row in registrations:
+        writer.writerow(["new_registration", row["effective_date"], row["location_id"], row["name"],
+                         row["local_authority"], row["service_types"],
+                         f"https://www.cqc.org.uk/location/{row['location_id']}"])
+    for row in ratings:
+        writer.writerow(["rating_published", row["published"], row["location_id"], row["name"],
+                         row["local_authority"], row["rating"], row["cqc_url"]])
+    for row in endings:
+        writer.writerow(["registration_ended", row["date"], row["location_id"], row["name"],
+                         row["local_authority"], f"{row['classification']}: {row['detail']}", row["cqc_url"]])
+    return output.getvalue().encode("utf-8")
+
+
 def render_pdf(
     *,
     region: str,
@@ -162,6 +203,9 @@ def render_pdf(
     ratings: list[dict[str, Any]],
     edition: dict[str, Any],
     ratings_source_retrieved_at: str,
+    endings: list[dict[str, Any]] | None = None,
+    binding: dict[str, Any] | None = None,
+    registrations_checked: bool = True,
 ) -> bytes:
     pdf = PdfBuilder(
         title=f"CareGist Weekly Digest - {region}",
@@ -174,10 +218,14 @@ def render_pdf(
             f"Observation window: {window.start:%d %B %Y} to {window.end:%d %B %Y}",
             f"CQC directory edition: {edition.get('source_published_at') or 'not recorded'}",
             f"Ratings source retrieved: {ratings_source_retrieved_at}",
+            *([f"Order: {binding['order_reference']}",
+               f"Digest content SHA-256: {binding['sha256']}"] if binding else []),
         ],
     )
-    pdf.heading(f"New registrations ({len(registrations)})")
-    if registrations:
+    pdf.heading(f"New registrations ({len(registrations)})" if registrations_checked else "New registrations - not checked")
+    if not registrations_checked:
+        pdf.paragraph("The registration ledger was not queried for this preview. No registration count or completeness claim is made.")
+    elif registrations:
         pdf.table(
             ["Registered", "Name", "Local authority", "Service types"],
             [
@@ -191,7 +239,7 @@ def render_pdf(
             ],
         )
     else:
-        pdf.paragraph("No new registrations were published for this region in the window.")
+        pdf.paragraph("No in-window new registrations were found in the queried ledger for this region.")
     pdf.heading(f"Newly published ratings ({len(ratings)})")
     if ratings:
         pdf.table(
@@ -199,15 +247,39 @@ def render_pdf(
             [[r["published"], str(r["name"] or ""), str(r["local_authority"] or ""), r["rating"]] for r in ratings],
         )
     else:
-        pdf.paragraph("No overall ratings were published for this region in the window.")
+        pdf.paragraph("No in-window overall rating publication was found in the supplied CQC snapshot. This is not a complete publication-history search.")
+    pdf.heading(f"Registration endings ({len(endings or [])})")
+    if endings:
+        pdf.table(["Date", "Name", "Classification", "Evidence"], [
+            [r["date"], r["name"], r["classification"].replace("_", " "), r["detail"]] for r in endings
+        ])
+    else:
+        pdf.paragraph("No dated registration endings were found for this region in the supplied snapshot.")
     pdf.heading("How to read this digest", level=2)
     pdf.bullets(
         [
             "Each item comes from CQC's published register; the CSV gives the CQC link for every location.",
             "Dates are the CQC registration date and the CQC report publication date.",
             "This digest does not state or imply vacancies, budgets or buying intent.",
+            "A registration ending is not proof that a business closed. Successor links, ownership changes, moves and dormancy are distinguished where the supplied records support them. Closure classifications remain bounded to this snapshot; verify the linked CQC record before acting.",
         ]
     )
+    # The same canonical event rows appear in the CSV and the source appendix.
+    # Packaging validates these labelled blocks, not just a caller-supplied hash.
+    if binding:
+        csv_bytes = digest_csv_bytes(registrations, ratings, endings or [])
+        if hashlib.sha256(csv_bytes).hexdigest() != binding["csv_sha256"]:
+            raise ValueError("Digest renderer inputs differ from the bound CSV")
+        reader = csv.DictReader(io.StringIO(csv_bytes.decode("utf-8")))
+        events = list(reader)
+        if events:
+            pdf.page_break()
+            pdf.heading("Official-source event register")
+        for event in events:
+            pdf.heading(f"Event ID: {event['section']}|{event['location_id']}|{event['date']}", level=2)
+            for label, field in (("Name", "name"), ("Local authority", "local_authority"),
+                                 ("Date", "date"), ("Detail", "detail"), ("CQC source", "cqc_url")):
+                pdf.paragraph(f"{label}: {event[field]}")
     return pdf.build()
 
 
@@ -231,15 +303,17 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p.add_argument("--week-ending", required=True, type=date.fromisoformat)
     p.add_argument("--issue", required=True, type=int, choices=(1, 2, 3, 4))
     p.add_argument("--customer", required=True)
+    p.add_argument("--order-ref")
+    p.add_argument("--customer-reference")
     p.add_argument("--locations-source", required=True, type=Path)
     p.add_argument("--source-retrieved-at", required=True, help="ISO timestamp from the extract run")
     p.add_argument("--out-dir", required=True, type=Path)
     return p.parse_args(argv)
 
 
-def main(argv: list[str] | None = None) -> int:
+def main(argv: list[str] | None = None, *, database_url: str | None = None) -> int:
     args = parse_args(argv)
-    database_url = os.environ.get("DATABASE_URL")
+    database_url = database_url or os.environ.get("DATABASE_URL")
     if not database_url:
         print("ERROR: DATABASE_URL is required.", file=sys.stderr)
         return 2
@@ -259,8 +333,17 @@ def main(argv: list[str] | None = None) -> int:
         print(f"ERROR: {args.locations_source} not found.", file=sys.stderr)
         return 2
 
-    ratings = select_published_ratings(load_ndjson(args.locations_source), region=args.region, window=window)
+    source_rows = list(load_ndjson(args.locations_source))
+    ratings = select_published_ratings(source_rows, region=args.region, window=window)
+    endings = select_registration_endings(source_rows, region=args.region, window=window)
     registrations, edition = asyncio.run(fetch_from_database(database_url, args.region, window))
+    csv_bytes = digest_csv_bytes(registrations, ratings, endings)
+    from api.services.customer_package import digest_binding
+    binding = digest_binding(
+        order_reference=args.order_ref or "UNBOUND-PREVIEW",
+        customer_reference=args.customer_reference or "UNBOUND-PREVIEW",
+        region=args.region, issue=args.issue, week_ending=window.end.isoformat(), csv_bytes=csv_bytes,
+    )
 
     args.out_dir.mkdir(parents=True, exist_ok=True)
     stem = f"weekly-digest-{args.region.lower().replace(' & ', '-').replace(' ', '-')}-{window.end.isoformat()}-issue{args.issue}"
@@ -278,26 +361,19 @@ def main(argv: list[str] | None = None) -> int:
             ratings=ratings,
             edition=edition,
             ratings_source_retrieved_at=args.source_retrieved_at,
+            endings=endings,
+            binding=binding,
         )
     )
-    with csv_path.open("w", newline="", encoding="utf-8") as fh:
-        writer = csv.writer(fh)
-        writer.writerow(["section", "date", "location_id", "name", "local_authority", "detail", "cqc_url"])
-        for row in registrations:
-            writer.writerow([
-                "new_registration", row["effective_date"], row["location_id"], row["name"],
-                row["local_authority"], row["service_types"],
-                f"https://www.cqc.org.uk/location/{row['location_id']}",
-            ])
-        for r in ratings:
-            writer.writerow(["rating_published", r["published"], r["location_id"], r["name"], r["local_authority"], r["rating"], r["cqc_url"]])
+    csv_path.write_bytes(csv_bytes)
     manifest = {
         "product": "weekly_digest_pilot",
         "region": args.region,
         "issue": args.issue,
         "customer": args.customer,
         "window": {"start": window.start.isoformat(), "end": window.end.isoformat()},
-        "counts": {"new_registrations": len(registrations), "ratings_published": len(ratings)},
+        "binding": binding,
+        "counts": {"new_registrations": len(registrations), "ratings_published": len(ratings), "registration_endings": len(endings)},
         "sources": {
             "new_registrations": "trusted_event_ledger (production, read-only)",
             "directory_edition": {k: (v.isoformat() if hasattr(v, "isoformat") else v) for k, v in edition.items()},

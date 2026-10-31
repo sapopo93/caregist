@@ -450,7 +450,8 @@ async def fulfil_territory_brief_order(
                 f"up to {order['scope_shortlist_target']} distinct providers",
             ),
             provider_cap=int(order["scope_shortlist_target"]),
-            buyer_objective="Territory opportunity prioritisation",
+            buyer_objective=(generation_row.get("scope_rules") or {}).get("buyer_objective"),
+            scope_rules=packages.retained_scope_rules(generation_row.get("scope_rules")),
             confirmed_at=selection_confirmed_at,
         )
         customer_package = packages.build_package_bytes(

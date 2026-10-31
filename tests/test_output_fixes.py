@@ -108,7 +108,7 @@ def test_csv_carries_open_government_licence_on_every_row(southampton):
 
 def test_short_brief_carries_a_plain_shortfall_notice_in_pdf_and_csv(isle_of_wight, tmp_path):
     shortlisted = len(isle_of_wight.shortlist)
-    assert shortlisted < MIN_SHORTLIST  # floor unchanged; the brief is not padded
+    assert MIN_SHORTLIST <= shortlisted < isle_of_wight.scope.shortlist_target  # no padding
     notice = isle_of_wight.executive_summary["shortfall_notice"]
     assert notice and f"{shortlisted} organisation(s)" in notice
     assert f"requested shortlist of {isle_of_wight.scope.shortlist_target}" in notice

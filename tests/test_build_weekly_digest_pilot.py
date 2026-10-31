@@ -84,3 +84,25 @@ def test_rejects_unknown_region():
     with pytest.raises(SystemExit):
         digest.parse_args(["--region", "Narnia", "--week-ending", "2026-10-19", "--issue", "1",
                            "--customer", "x", "--locations-source", "x", "--source-retrieved-at", "x", "--out-dir", "x"])
+
+
+def test_endings_distinguish_closure_candidate_from_successor_and_dormancy():
+    rows = [
+        {"locationId": "closed", "registrationStatus": "Deregistered", "region": "North West",
+         "deregistrationDate": "2026-10-15", "name": "Closed", "postalCode": "M1 1AA"},
+        {"locationId": "moved", "registrationStatus": "Deregistered", "region": "North West",
+         "deregistrationDate": "2026-10-16", "relationships": [
+             {"type": "HSCA Successor", "relatedLocationId": "new", "reason": "Location Move"}]},
+        {"locationId": "dormant", "registrationStatus": "Deregistered", "region": "North West",
+         "deregistrationDate": "2026-10-17", "dormancy": "Y"},
+        {"locationId": "old", "registrationStatus": "Deregistered", "region": "North West",
+         "deregistrationDate": "1999-01-01"},
+        {"locationId": "elsewhere", "registrationStatus": "Deregistered", "region": "London",
+         "deregistrationDate": "2026-10-17"},
+    ]
+    endings = digest.select_registration_endings(rows, region="North West", window=WINDOW)
+    assert [(r["location_id"], r["classification"]) for r in endings] == [
+        ("closed", "closure_candidate"), ("moved", "re_registration"), ("dormant", "dormant")]
+    csv_bytes = digest.digest_csv_bytes([], [], endings)
+    assert csv_bytes.count(b"registration_ended") == 3
+    assert b"Location Move" in csv_bytes

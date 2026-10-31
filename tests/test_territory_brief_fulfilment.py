@@ -474,3 +474,32 @@ def test_build_checkout_metadata_is_flat_strings():
     assert meta["type"] == fulfil.METADATA_TYPE
     assert all(isinstance(v, str) for v in meta.values())
     assert meta["terms_sha256"] == TERMS_SHA
+
+
+@pytest.mark.asyncio
+async def test_package_retains_bound_objective_and_exclusion_hashes_without_ids(monkeypatch):
+    import json
+    from api.services import territory_brief_scope_store as store
+    rules = {"scope_ref": "scope-test", "rule_version": 3,
+             "buyer_objective": "Assess compliance implementation support",
+             "excluded_provider_ids": ["1-SECRET-EXCLUSION"], "excluded_location_ids": ["1-PRIVATE-LOCATION"]}
+
+    async def load(*args):
+        return rules
+
+    async def purge(*args):
+        pass
+
+    monkeypatch.setattr(store, "load_scope_rules", load)
+    monkeypatch.setattr(store, "schedule_exclusion_purge", purge)
+    conn = FakeConn(_order(bound_scope_ref="scope-test"))
+    await fulfil_territory_brief_order(conn, {"id": "cs_test_123"}, cfg=CFG,
+        deps=_deps(session=_session(metadata={"scope_ref": "scope-test"})))
+    write = next(c for c in conn.execches if "selection_snapshot = $7" in c[0])
+    snapshot = json.loads(write[7])
+    assert snapshot["buyer_objective"] == rules["buyer_objective"]
+    retained = json.loads(snapshot["scope_rules_json"])
+    assert retained["rule_version"] == 3
+    assert retained["excluded_provider_count"] == retained["excluded_location_count"] == 1
+    assert "1-SECRET-EXCLUSION" not in write[7] and "1-PRIVATE-LOCATION" not in write[7]
+    assert len(retained["excluded_provider_sha256"]) == 64

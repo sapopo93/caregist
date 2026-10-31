@@ -1,3 +1,9 @@
+## 2026-10-31 — two-product builder/report-quality follow-up
+
+No staff website creation interface or reviewed-dossier ingestion is implemented by this follow-up. Preview Briefs contain 0 researched dossiers and explicitly label 8/50 candidates Qualification incomplete. XLSX and real four-week paid delivery are unverified/unsupported. Grok retest and production migration/release of this follow-up remain unfinished. See artifacts/report-quality/2026-10-31/REVIEW.md.
+
+---
+
 ## 2026-10-22 quarantine release preparation
 
 Production read-only verification confirms migration 067 is already applied, with three unresolved quarantined location IDs and 59,382 stored location rows. `db/apply_migrations.py --target production --check` reports no pending migrations for this release candidate. No production migration or source-row mutation was performed. Current-main integration adds persistent quarantine to pipeline evidence/logs and keeps source freshness partial while quarantined ACTIVE records remain; Data Status exposes their count. Local finalizer tests include resolved, manifest-present, inactive, missing-provider and missing-schema cases. Deployment and preview activation still require the exact candidate's CI and independent review. This supersedes older statements below that migration 067 was unapplied; commercial gates remain closed.

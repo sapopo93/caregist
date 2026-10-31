@@ -1,3 +1,9 @@
+## 2026-10-31 — two-product builder/report-quality follow-up
+
+Next single bounded step: independent review of the frozen codex/package-production-quality follow-up and its actual historical report previews. Subject to that review, resolve the Grok gate before merging, applying 074 through recovery/staging, and verifying production. Keep checkout, delivery, collectors, exports and outbound gates unchanged.
+
+---
+
 ## 2026-10-24 next bounded action — independent review of report-readiness packet
 
 Independent approved-provider review of [REPORT_READINESS_EVIDENCE.md](REPORT_READINESS_EVIDENCE.md) and its PR (branch `feat/report-readiness-20261024`), using the checklist in that file. Review it together with open PR #123, whose API-else-file precedence this resolver contract replaces. Keep `resolved_rating_contract_enabled`, `competitor_scan_enabled` and `p12_list_enabled` false.

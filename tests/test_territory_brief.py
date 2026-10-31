@@ -114,7 +114,7 @@ def test_validate_scope_rejects_unknown_territory():
         {"kind": "local_authority", "name": "Kent'; DROP TABLE providers;--"},
         {"kind": "local_authority", "name": "Kent", "window_days": 0},
         {"kind": "local_authority", "name": "Kent", "window_days": 5000},
-        {"kind": "local_authority", "name": "Kent", "shortlist_target": 3},
+        {"kind": "local_authority", "name": "Kent", "shortlist_target": 0},
         {"kind": "local_authority", "name": "Kent", "shortlist_target": 500},
         "not-an-object",
     ],
@@ -609,3 +609,33 @@ def test_file_rating_is_the_main_source_and_the_api_fills_only_its_gaps(tmp_path
     assert by_name["Api Rated Home"].current_rating == "Inadequate"
     assert "Withheld Home" not in by_name
     assert any("published latest-ratings file" in c for c in brief.data_caveats)
+
+@pytest.mark.parametrize("cap", [1, 8, 24, 50])
+def test_confirmed_cap_supports_smaller_provider_cohorts(tmp_path, cap):
+    rows = [_loc(locationId=f"1-CAP-{i}", providerId=f"1-PCAP-{i}", registrationDate="2026-02-10") for i in range(cap)]
+    brief = _generate(tmp_path, rows, shortlist_target=cap)
+    assert len(brief.shortlist) == cap
+    assert len({o.provider_id for o in brief.shortlist}) == cap
+
+
+def test_service_filter_matches_cqc_api_name_as_well_as_description(tmp_path):
+    row = _loc(gacServiceTypes=[{"name": "Homecare agencies", "description": "Domiciliary care service"}], registrationDate="2026-02-10")
+    brief = _generate(tmp_path, [row], service_type="Homecare Agencies")
+    assert len(brief.shortlist) == 1
+
+
+def test_rating_group_cannot_be_widened_by_another_signal_or_deregistered_record(tmp_path):
+    locs = [
+        _loc(locationId="ri", providerId="ri", registrationDate="2026-02-10",
+             currentRatings=_rating_block("Requires improvement", "2025-08-01")),
+        _loc(locationId="good", providerId="good", registrationDate="2026-02-10",
+             currentRatings=_rating_block("Good", "2025-08-01")),
+        _loc(locationId="ended", providerId="ended", registrationStatus="Deregistered",
+             currentRatings=_rating_block("Requires improvement", "2025-08-01")),
+    ]
+    paths = _write_snapshot(tmp_path, locs, [])
+    brief = generate_territory_opportunity_brief(
+        {"kind": "local_authority", "name": "Testershire", "window_days": 90}, CONTEXT,
+        locations_source=paths[0], providers_source=paths[1], provider_group="requires_improvement")
+    assert {o.location_id for o in brief.shortlist} == {"ri"}
+    assert brief.territory_locations == 1

@@ -1,3 +1,9 @@
+## 2026-10-31 — two-product builder/report-quality follow-up
+
+PARTIAL — shared builder already live at 0653003; follow-up code/report audit is local on codex/package-production-quality. Engineering tests pass (1,897 Python; 166 real-Postgres plus one skipped; 212 frontend), but full premium dossier, staff creation UI and real delivery acceptance remain unpassed. Migration 074 only local-tested. No commercial gate has been opened.
+
+---
+
 ## 2026-10-22 quarantine release preparation
 
 Production read-only verification confirms migration 067 is already applied, with three unresolved quarantined location IDs and 59,382 stored location rows. `db/apply_migrations.py --target production --check` reports no pending migrations for this release candidate. No production migration or source-row mutation was performed. Current-main integration adds persistent quarantine to pipeline evidence/logs and keeps source freshness partial while quarantined ACTIVE records remain; Data Status exposes their count. Local finalizer tests include resolved, manifest-present, inactive, missing-provider and missing-schema cases. Deployment and preview activation still require the exact candidate's CI and independent review. This supersedes older statements below that migration 067 was unapplied; commercial gates remain closed.
