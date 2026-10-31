@@ -31,8 +31,13 @@ export default function TerritoryScopePicker() {
   const [region, setRegion] = useState("");
   useEffect(() => {
     setInteractive(true);
-    const preset = new URLSearchParams(window.location.search).get("region");
-    if (preset && TERRITORY_REGION_OPTIONS.includes(preset)) setRegion(preset);
+    const params = new URLSearchParams(window.location.search);
+    const presetRegion = params.get("region");
+    if (presetRegion && TERRITORY_REGION_OPTIONS.includes(presetRegion)) setRegion(presetRegion);
+    const presetGroup = params.get("group");
+    if (presetGroup && TERRITORY_BUYER_TYPES.some((b) => b.value === presetGroup)) setBuyerType(presetGroup);
+    const presetService = params.get("service");
+    if (presetService && DEFAULT_SERVICE_TYPE_OPTIONS.includes(presetService)) setServiceType(presetService);
   }, []);
   const [buyerType, setBuyerType] = useState("");
   const [serviceType, setServiceType] = useState("");
@@ -42,6 +47,29 @@ export default function TerritoryScopePicker() {
   const [result, setResult] = useState<CoverageResponse | null>(null);
 
   const requestVersion = useRef(0);
+
+  // Keep the address bar in step with the selection so a scope can be shared as a link.
+  useEffect(() => {
+    if (!interactive) return;
+    const params = new URLSearchParams(window.location.search);
+    for (const [key, value] of [["region", region], ["group", buyerType], ["service", serviceType]] as const) {
+      if (value) params.set(key, value);
+      else params.delete(key);
+    }
+    const query = params.toString();
+    window.history.replaceState(null, "", `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash}`);
+  }, [interactive, region, buyerType, serviceType]);
+
+  const [linkCopied, setLinkCopied] = useState(false);
+  async function copyScopeLink() {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setLinkCopied(true);
+      window.setTimeout(() => setLinkCopied(false), 2500);
+    } catch {
+      setLinkCopied(false);
+    }
+  }
 
   function changeSelection(setValue: (value: string) => void, value: string) {
     requestVersion.current += 1;
@@ -203,6 +231,11 @@ export default function TerritoryScopePicker() {
       >
         {loading ? "Checking the record…" : "Check this territory"}
       </button>
+      {region ? (
+        <button type="button" onClick={() => void copyScopeLink()} className={styles.buttonOutline} style={{ marginLeft: 12 }}>
+          {linkCopied ? "Link copied" : "Copy link to this scope"}
+        </button>
+      ) : null}
 
       {error && (
         <p role="alert" className={styles.error}>
