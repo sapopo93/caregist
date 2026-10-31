@@ -92,3 +92,18 @@ migration 072/073 exception was explicitly bounded to that migration and is not
 reused here. An independent approved reviewer must challenge a frozen candidate;
 a model usage-limit error is not a completed review. Commercial/report readiness
 must not be inferred from a bounded maintenance-release decision.
+
+## Independent challenge and final corrections
+
+Independent GPT-6.1 Terra inspected the frozen implementation, actual PDF previews
+and 135 focused checks. It confirmed the Digest/retention/closure corrections and
+found no additional blocker for a strictly gated maintenance release, conditional
+on all release/migration/Grok gates being separately met. It did not approve full
+commercial/report readiness or attest production settings.
+
+Its further report findings were corrected before the final freeze: section 3 now
+explicitly distinguishes standing group evidence from recent events, so an older
+rating is not represented as a new 90-day event. The executive count label was
+shortened to prevent overlap. A new temporal-claim regression and the affected
+report suite passed (77 checks). The final preview hashes in `verification.json`
+refer to these corrected files. The general premium-dossier limitation remains.

@@ -91,7 +91,7 @@ def render_brief_pdf(brief: TerritoryBrief) -> bytes:
             ("Source edition", es["source_edition"]),
             ("Window", es["window"]),
             ("Opportunity set", str(es["opportunity_set_size"])),
-            ("Candidate register (Qualification incomplete)", str(es["shortlisted"])),
+            ("Selected candidates", str(es["shortlisted"])),
             ("Movement in window", es["movement_summary"]),
         ]
     )
@@ -133,9 +133,11 @@ def render_brief_pdf(brief: TerritoryBrief) -> bytes:
     # 3. How to read the shortlist (short; detail is in Appendix A)
     pdf.heading("3. How the shortlist was built")
     pdf.paragraph(
-        "Each organisation reached this list because of at least one supported event in the "
-        "window: a new CQC registration, an overall rating change, or a newly published "
-        "inspection report. The opportunity score combines the event type, how recent it is, "
+        "Organisations qualify through the confirmed provider-group criteria or a supported event "
+        "in the observation window, such as a new CQC registration, an overall rating change, or "
+        "a newly published inspection report. Standing group evidence, including a recorded rating, "
+        "may predate the window and is not described as a new event. The opportunity score combines "
+        "the evidence type, how recent it is, "
         "the direction of any rating move, the size of the location, and whether the same "
         "provider has several locations moving at once. Appendix A gives the full reason and "
         "the evidence for every organisation, in rank order."

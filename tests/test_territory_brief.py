@@ -639,3 +639,17 @@ def test_rating_group_cannot_be_widened_by_another_signal_or_deregistered_record
         locations_source=paths[0], providers_source=paths[1], provider_group="requires_improvement")
     assert {o.location_id for o in brief.shortlist} == {"ri"}
     assert brief.territory_locations == 1
+
+
+def test_report_does_not_relabel_standing_rating_as_an_in_window_event(tmp_path):
+    paths = _write_snapshot(tmp_path, [
+        _loc(registrationDate="2020-01-01", currentRatings=_rating_block("Requires improvement", "2023-01-01")),
+        _loc(locationId="anchor", providerId="anchor", dormancy="Y", registrationDate="2026-02-10"),
+    ], [])
+    brief = generate_territory_opportunity_brief(
+        {"kind": "local_authority", "name": "Testershire", "window_days": 90}, CONTEXT,
+        locations_source=paths[0], providers_source=paths[1], provider_group="requires_improvement")
+    from api.services.customer_package import _pdf_text
+    text = ' '.join(_pdf_text(render_brief_pdf(brief), 'brief.pdf').split())
+    assert "may predate the window and is not described as a new event" in text
+    assert "Each organisation reached this list because of at least one supported event in the window" not in text
