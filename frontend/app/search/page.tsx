@@ -89,7 +89,7 @@ export default async function SearchPage({
               </div>
 
               {results.providers.length > 0 ? (
-                <div className="grid gap-4">
+                <div className="grid gap-2">
                   {results.providers.map((provider) => (
                     <DirectoryProviderCard key={provider.id} provider={provider} returnTo={returnTo} />
                   ))}
