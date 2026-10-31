@@ -2,6 +2,7 @@ import type { DirectoryProviderSummary } from "@/lib/directory-db";
 import CompareButton from "@/components/CompareButton";
 import { getProviderHref, directoryReturnHref } from "@/lib/provider-path";
 import { ratingSourceNote } from "@/lib/rating-source";
+import { ratingToneClass } from "@/lib/rating-tone";
 
 function splitPipeValue(value: string | null): string[] {
   return (value ?? "")
@@ -38,29 +39,13 @@ function formatRegistrationDate(date: string | null) {
   });
 }
 
-/** Left spine colour keyed to the published CQC overall rating. */
-function spineClass(rating: string | null) {
-  switch ((rating ?? "").trim().toLowerCase()) {
-    case "outstanding":
-      return "bg-moss";
-    case "good":
-      return "bg-sage";
-    case "requires improvement":
-      return "bg-amber";
-    case "inadequate":
-      return "bg-alert";
-    default:
-      return "bg-stone";
-  }
-}
-
 export default function DirectoryProviderCard({ provider, returnTo }: { provider: DirectoryProviderSummary; returnTo?: string }) {
   const services = splitPipeValue(provider.service_types).slice(0, 2);
   const href = `${getProviderHref(provider)}${returnTo ? `?returnTo=${encodeURIComponent(directoryReturnHref(returnTo))}` : ""}`;
 
   return (
     <article className="group relative grid min-w-0 grid-cols-[0.375rem_1fr] overflow-hidden rounded-lg border border-stone bg-cream transition hover:border-clay hover:shadow-md">
-      <span aria-hidden className={`${spineClass(provider.overall_rating)}`} />
+      <span aria-hidden className={`${ratingToneClass(provider.overall_rating)}`} />
       <div className="grid min-w-0 gap-x-6 gap-y-2 p-4 md:grid-cols-[minmax(0,1fr)_11rem_9rem_auto] md:items-center">
         <div className="min-w-0">
           <h3 className="break-words text-lg font-bold leading-snug text-bark">
