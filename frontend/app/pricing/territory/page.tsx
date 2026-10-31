@@ -72,6 +72,18 @@ export default function TerritoryScopePage() {
 
       <hr className={styles.rule} />
 
+      <section className={styles.section} id="check-coverage">
+        <div className={styles.kicker}>Check coverage first</div>
+        <h2>See how many care locations match your scope</h2>
+        <p className={styles.sectionLead}>
+          Pick a region and provider group below. We check the published CQC record for that exact
+          scope before you email us — this is free, and it does not place an order.
+        </p>
+        <TerritoryScopePicker />
+      </section>
+
+      <hr className={styles.rule} />
+
       <section className={styles.section}>
         <div className={styles.kicker}>What you receive</div>
         <h2>A clear account-research starting point</h2>
@@ -114,16 +126,6 @@ export default function TerritoryScopePage() {
             </p>
           </article>
         </div>
-      </section>
-
-      <section className={styles.section} id="check-coverage">
-        <div className={styles.kicker}>Check coverage first</div>
-        <h2>See how many care locations match your scope</h2>
-        <p className={styles.sectionLead}>
-          Pick a region and provider group below. We check the published CQC record for that exact
-          scope before you email us — this is free, and it does not place an order.
-        </p>
-        <TerritoryScopePicker />
       </section>
 
       <section className={styles.section}>
