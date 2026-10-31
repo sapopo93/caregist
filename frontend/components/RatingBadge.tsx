@@ -1,8 +1,8 @@
 const ratingColors: Record<string, string> = {
   Outstanding: "bg-moss text-white",
-  Good: "bg-sage text-white",
-  "Requires Improvement": "bg-amber text-white",
-  "Requires improvement": "bg-amber text-white",
+  Good: "bg-sage text-charcoal",
+  "Requires Improvement": "bg-amber text-charcoal",
+  "Requires improvement": "bg-amber text-charcoal",
   Inadequate: "bg-alert text-white",
   "Not Yet Inspected": "bg-dusk text-white",
   "Inspected But Not Rated": "bg-dusk text-white",

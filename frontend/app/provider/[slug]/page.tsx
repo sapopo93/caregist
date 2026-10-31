@@ -2,9 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import RatingScale from "@/components/RatingScale";
+import { DEFAULT_REGION_OPTIONS } from "@/lib/directory-constants";
 import { getDirectoryProvider } from "@/lib/directory-db";
 import { normalizeExternalHttpUrl, cqcEvidenceUrl } from "@/lib/external-url";
 import { getProviderHref, directoryReturnHref } from "@/lib/provider-path";
+import { ratingToneClass } from "@/lib/rating-tone";
 import { ratingSourceNote } from "@/lib/rating-source";
 import { getSiteUrl } from "@/lib/site";
 
@@ -91,7 +94,8 @@ export default async function ProviderPage({ params, searchParams }: { params: P
         Back to search
       </Link>
 
-      <div className="mt-4 rounded-3xl border border-stone bg-cream p-8 shadow-sm">
+      <div className="relative mt-4 overflow-hidden rounded-3xl border border-stone bg-cream p-8 pt-10 shadow-sm">
+        <span aria-hidden className={`absolute inset-x-0 top-0 h-2 ${ratingToneClass(provider.overall_rating)}`} />
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-clay">
@@ -111,39 +115,37 @@ export default async function ProviderPage({ params, searchParams }: { params: P
           </div>
         </div>
 
-        <div className="mt-6 grid gap-4 md:grid-cols-3">
-          <div className="rounded-2xl border border-stone bg-white p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-clay">Inspection</p>
-            <p className="mt-2 text-sm text-dusk">Last inspection: {formatDate(provider.last_inspection_date)}</p>
+        <dl className="mt-6 grid divide-y divide-stone rounded-2xl border border-stone bg-white md:grid-cols-3 md:divide-x md:divide-y-0">
+          <div className="p-4">
+            <dt className="text-xs font-semibold uppercase tracking-[0.14em] text-clay">Last inspection</dt>
+            <dd className="mt-1 text-sm font-semibold text-bark">{formatDate(provider.last_inspection_date)}</dd>
           </div>
-          <div className="rounded-2xl border border-stone bg-white p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-clay">Phone</p>
-            <p className="mt-2 text-sm text-dusk">{provider.phone ?? "Not published"}</p>
+          <div className="p-4">
+            <dt className="text-xs font-semibold uppercase tracking-[0.14em] text-clay">Phone</dt>
+            <dd className="mt-1 text-sm font-semibold text-bark">{provider.phone ?? "Not published"}</dd>
           </div>
-          <div className="rounded-2xl border border-stone bg-white p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-clay">Beds</p>
-            <p className="mt-2 text-sm text-dusk">
+          <div className="p-4">
+            <dt className="text-xs font-semibold uppercase tracking-[0.14em] text-clay">Beds</dt>
+            <dd className="mt-1 text-sm font-semibold text-bark">
               {provider.number_of_beds ? `${provider.number_of_beds} beds` : "Not published"}
-            </p>
+            </dd>
           </div>
-        </div>
+        </dl>
 
         <div className="mt-8 grid gap-6 lg:grid-cols-[1.25fr_0.75fr]">
           <div className="space-y-6">
             <section className="rounded-3xl border border-stone bg-cream p-6 shadow-sm">
               <h2 className="text-2xl font-bold text-bark">CQC ratings</h2>
-              <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="mt-5 space-y-4">
+                <RatingScale label="Overall" rating={provider.overall_rating} />
+                <div className="border-t border-stone" />
                 {ratingDimensions.map((dimension) => (
-                  <div key={dimension.key} className="rounded-2xl border border-stone bg-white p-4">
-                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-clay">
-                      {dimension.label}
-                    </p>
-                    <p className="mt-2 text-sm text-dusk">
-                      {provider[dimension.key] ?? "Not published"}
-                    </p>
-                  </div>
+                  <RatingScale key={dimension.key} label={dimension.label} rating={provider[dimension.key]} />
                 ))}
               </div>
+              <p className="mt-5 text-xs leading-5 text-dusk">
+                Published on CQC&apos;s four-step scale. An empty track means CQC has not published that rating.
+              </p>
             </section>
 
             <section className="rounded-3xl border border-stone bg-cream p-6 shadow-sm">
@@ -237,9 +239,17 @@ export default async function ProviderPage({ params, searchParams }: { params: P
                 the current CQC record. CareGist customers receive verified new-registration
                 and rating-change events with source evidence and observation times.
               </p>
+              {provider.region && DEFAULT_REGION_OPTIONS.includes(provider.region) ? (
+                <Link
+                  href={`/pricing/territory?region=${encodeURIComponent(provider.region)}`}
+                  className="cta-primary mt-5 w-full"
+                >
+                  Check coverage in {provider.region}
+                </Link>
+              ) : null}
               <Link
                 href="/pricing"
-                className="mt-5 block rounded-full bg-clay px-4 py-2 text-center text-sm font-semibold text-white hover:bg-bark"
+                className="mt-3 block rounded-full border border-clay px-4 py-2 text-center text-sm font-semibold text-clay hover:bg-clay hover:text-white"
               >
                 See the two products
               </Link>

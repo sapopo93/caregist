@@ -1,0 +1,1032 @@
+Refreshing run status every 30 seconds. Press Ctrl+C to quit.
+
+* claude/project-thread-ubem46 CI sapopo93/caregist#155 · 41223039921
+Triggered via pull_request less than a minute ago
+
+JOBS
+* Frontend (tsc + tests + build + audit) (ID 124601446230)
+  ✓ Set up job
+  ✓ Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+  ✓ Install frontend dependencies
+  ✓ Type-check
+  ✓ Unit tests
+  * Production build
+  * Production HTTP route contracts
+  * Start built app in degraded mode
+  * Degraded-mode smoke test
+  * Stop smoke server
+  * npm audit (high/critical only)
+  * Post Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+  * Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+* Container images (build + vulnerability scan) (ID 124601446522)
+  ✓ Set up job
+  ✓ Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  * Build production images
+  * Scan API image
+  * Scan worker image
+  * Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+* Migration replay (real Postgres + PostGIS) (ID 124601446597)
+  ✓ Set up job
+  * Initialize containers
+  * Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  * Run actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+  * Install backend dependencies
+  * Install local media test tooling
+  * Create non-superuser integration role
+  * Finalize guard discrimination (real Postgres)
+  * Buyer scope migration 071 and store (real Postgres)
+  * Replay init.sql + every migration, assert invariants
+  * Territory Brief paid fulfilment (real Postgres)
+  * Stop containers
+✓ Secret scan (full history) in 8s (ID 124601446602)
+  ✓ Set up job
+  ✓ Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Run gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7
+  ✓ Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Complete job
+* Backend (pytest + pip check + audit) (ID 124601446635)
+  ✓ Set up job
+  ✓ Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Run actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+  * Install backend dependencies
+  * Install pdftotext for the Territory Brief PDF checks
+  * pip check (dependency resolution)
+  * ruff (lint — real-bug ruleset)
+  * Evidence language guard
+  * Migration governance
+  * pytest
+  * pip-audit (vulnerabilities)
+  * Smoke verifier syntax
+  * Post Run actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+  * Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+ANNOTATIONS
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@11d5960a326750d5838078e36cf38b85af677262, gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+Secret scan (full history): .github#2
+
+- "The ubuntu-latest label will migrate to Ubuntu 26 beginning October 19, 2026. For more information, see https://github.com/actions/runner-images/issues/14748"
+Secret scan (full history): .github#1
+
+Refreshing run status every 30 seconds. Press Ctrl+C to quit.
+
+* claude/project-thread-ubem46 CI sapopo93/caregist#155 · 41223039921
+Triggered via pull_request about 1 minute ago
+
+JOBS
+✓ Frontend (tsc + tests + build + audit) in 50s (ID 124601446230)
+  ✓ Set up job
+  ✓ Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+  ✓ Install frontend dependencies
+  ✓ Type-check
+  ✓ Unit tests
+  ✓ Production build
+  ✓ Production HTTP route contracts
+  ✓ Start built app in degraded mode
+  ✓ Degraded-mode smoke test
+  ✓ Stop smoke server
+  ✓ npm audit (high/critical only)
+  ✓ Post Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+  ✓ Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Complete job
+* Container images (build + vulnerability scan) (ID 124601446522)
+  ✓ Set up job
+  ✓ Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  * Build production images
+  * Scan API image
+  * Scan worker image
+  * Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+* Migration replay (real Postgres + PostGIS) (ID 124601446597)
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Run actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+  * Install backend dependencies
+  * Install local media test tooling
+  * Create non-superuser integration role
+  * Finalize guard discrimination (real Postgres)
+  * Buyer scope migration 071 and store (real Postgres)
+  * Replay init.sql + every migration, assert invariants
+  * Territory Brief paid fulfilment (real Postgres)
+  * Post Run actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+  * Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  * Stop containers
+✓ Secret scan (full history) in 8s (ID 124601446602)
+  ✓ Set up job
+  ✓ Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Run gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7
+  ✓ Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Complete job
+* Backend (pytest + pip check + audit) (ID 124601446635)
+  ✓ Set up job
+  ✓ Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Run actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+  ✓ Install backend dependencies
+  ✓ Install pdftotext for the Territory Brief PDF checks
+  ✓ pip check (dependency resolution)
+  ✓ ruff (lint — real-bug ruleset)
+  ✓ Evidence language guard
+  ✓ Migration governance
+  * pytest
+  * pip-audit (vulnerabilities)
+  * Smoke verifier syntax
+  * Post Run actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+  * Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+ANNOTATIONS
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@11d5960a326750d5838078e36cf38b85af677262, gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+Secret scan (full history): .github#2
+
+- "The ubuntu-latest label will migrate to Ubuntu 26 beginning October 19, 2026. For more information, see https://github.com/actions/runner-images/issues/14748"
+Secret scan (full history): .github#1
+
+Refreshing run status every 30 seconds. Press Ctrl+C to quit.
+
+* claude/project-thread-ubem46 CI sapopo93/caregist#155 · 41223039921
+Triggered via pull_request about 1 minute ago
+
+JOBS
+✓ Frontend (tsc + tests + build + audit) in 50s (ID 124601446230)
+  ✓ Set up job
+  ✓ Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+  ✓ Install frontend dependencies
+  ✓ Type-check
+  ✓ Unit tests
+  ✓ Production build
+  ✓ Production HTTP route contracts
+  ✓ Start built app in degraded mode
+  ✓ Degraded-mode smoke test
+  ✓ Stop smoke server
+  ✓ npm audit (high/critical only)
+  ✓ Post Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+  ✓ Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Complete job
+* Container images (build + vulnerability scan) (ID 124601446522)
+  ✓ Set up job
+  ✓ Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  * Build production images
+  * Scan API image
+  * Scan worker image
+  * Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+* Migration replay (real Postgres + PostGIS) (ID 124601446597)
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Run actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+  ✓ Install backend dependencies
+  * Install local media test tooling
+  * Create non-superuser integration role
+  * Finalize guard discrimination (real Postgres)
+  * Buyer scope migration 071 and store (real Postgres)
+  * Replay init.sql + every migration, assert invariants
+  * Territory Brief paid fulfilment (real Postgres)
+  * Post Run actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+  * Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  * Stop containers
+✓ Secret scan (full history) in 8s (ID 124601446602)
+  ✓ Set up job
+  ✓ Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Run gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7
+  ✓ Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Complete job
+* Backend (pytest + pip check + audit) (ID 124601446635)
+  ✓ Set up job
+  ✓ Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Run actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+  ✓ Install backend dependencies
+  ✓ Install pdftotext for the Territory Brief PDF checks
+  ✓ pip check (dependency resolution)
+  ✓ ruff (lint — real-bug ruleset)
+  ✓ Evidence language guard
+  ✓ Migration governance
+  ✓ pytest
+  * pip-audit (vulnerabilities)
+  * Smoke verifier syntax
+  * Post Run actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+  * Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+ANNOTATIONS
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@11d5960a326750d5838078e36cf38b85af677262, gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+Secret scan (full history): .github#2
+
+- "The ubuntu-latest label will migrate to Ubuntu 26 beginning October 19, 2026. For more information, see https://github.com/actions/runner-images/issues/14748"
+Secret scan (full history): .github#1
+
+Refreshing run status every 30 seconds. Press Ctrl+C to quit.
+
+* claude/project-thread-ubem46 CI sapopo93/caregist#155 · 41223039921
+Triggered via pull_request about 2 minutes ago
+
+JOBS
+✓ Frontend (tsc + tests + build + audit) in 50s (ID 124601446230)
+  ✓ Set up job
+  ✓ Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+  ✓ Install frontend dependencies
+  ✓ Type-check
+  ✓ Unit tests
+  ✓ Production build
+  ✓ Production HTTP route contracts
+  ✓ Start built app in degraded mode
+  ✓ Degraded-mode smoke test
+  ✓ Stop smoke server
+  ✓ npm audit (high/critical only)
+  ✓ Post Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+  ✓ Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Complete job
+* Container images (build + vulnerability scan) (ID 124601446522)
+  ✓ Set up job
+  ✓ Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  * Build production images
+  * Scan API image
+  * Scan worker image
+  * Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+* Migration replay (real Postgres + PostGIS) (ID 124601446597)
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Run actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+  ✓ Install backend dependencies
+  * Install local media test tooling
+  * Create non-superuser integration role
+  * Finalize guard discrimination (real Postgres)
+  * Buyer scope migration 071 and store (real Postgres)
+  * Replay init.sql + every migration, assert invariants
+  * Territory Brief paid fulfilment (real Postgres)
+  * Post Run actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+  * Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  * Stop containers
+✓ Secret scan (full history) in 8s (ID 124601446602)
+  ✓ Set up job
+  ✓ Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Run gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7
+  ✓ Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Complete job
+* Backend (pytest + pip check + audit) (ID 124601446635)
+  ✓ Set up job
+  ✓ Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Run actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+  ✓ Install backend dependencies
+  ✓ Install pdftotext for the Territory Brief PDF checks
+  ✓ pip check (dependency resolution)
+  ✓ ruff (lint — real-bug ruleset)
+  ✓ Evidence language guard
+  ✓ Migration governance
+  ✓ pytest
+  * pip-audit (vulnerabilities)
+  * Smoke verifier syntax
+  * Post Run actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+  * Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+ANNOTATIONS
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@11d5960a326750d5838078e36cf38b85af677262, gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+Secret scan (full history): .github#2
+
+- "The ubuntu-latest label will migrate to Ubuntu 26 beginning October 19, 2026. For more information, see https://github.com/actions/runner-images/issues/14748"
+Secret scan (full history): .github#1
+
+Refreshing run status every 30 seconds. Press Ctrl+C to quit.
+
+* claude/project-thread-ubem46 CI sapopo93/caregist#155 · 41223039921
+Triggered via pull_request about 3 minutes ago
+
+JOBS
+✓ Frontend (tsc + tests + build + audit) in 50s (ID 124601446230)
+  ✓ Set up job
+  ✓ Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+  ✓ Install frontend dependencies
+  ✓ Type-check
+  ✓ Unit tests
+  ✓ Production build
+  ✓ Production HTTP route contracts
+  ✓ Start built app in degraded mode
+  ✓ Degraded-mode smoke test
+  ✓ Stop smoke server
+  ✓ npm audit (high/critical only)
+  ✓ Post Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+  ✓ Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Complete job
+* Container images (build + vulnerability scan) (ID 124601446522)
+  ✓ Set up job
+  ✓ Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Build production images
+  * Scan API image
+  * Scan worker image
+  * Post Scan API image
+  * Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+* Migration replay (real Postgres + PostGIS) (ID 124601446597)
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Run actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+  ✓ Install backend dependencies
+  ✓ Install local media test tooling
+  ✓ Create non-superuser integration role
+  * Finalize guard discrimination (real Postgres)
+  * Buyer scope migration 071 and store (real Postgres)
+  * Replay init.sql + every migration, assert invariants
+  * Territory Brief paid fulfilment (real Postgres)
+  * Post Run actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+  * Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  * Stop containers
+✓ Secret scan (full history) in 8s (ID 124601446602)
+  ✓ Set up job
+  ✓ Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Run gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7
+  ✓ Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Complete job
+✓ Backend (pytest + pip check + audit) in 2m13s (ID 124601446635)
+  ✓ Set up job
+  ✓ Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Run actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+  ✓ Install backend dependencies
+  ✓ Install pdftotext for the Territory Brief PDF checks
+  ✓ pip check (dependency resolution)
+  ✓ ruff (lint — real-bug ruleset)
+  ✓ Evidence language guard
+  ✓ Migration governance
+  ✓ pytest
+  ✓ pip-audit (vulnerabilities)
+  ✓ Smoke verifier syntax
+  ✓ Post Run actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+  ✓ Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Complete job
+
+ANNOTATIONS
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@11d5960a326750d5838078e36cf38b85af677262, gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+Secret scan (full history): .github#2
+
+- "The ubuntu-latest label will migrate to Ubuntu 26 beginning October 19, 2026. For more information, see https://github.com/actions/runner-images/issues/14748"
+Secret scan (full history): .github#1
+
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@11d5960a326750d5838078e36cf38b85af677262, actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+Backend (pytest + pip check + audit): .github#2
+
+- "The ubuntu-latest label will migrate to Ubuntu 26 beginning October 19, 2026. For more information, see https://github.com/actions/runner-images/issues/14748"
+Backend (pytest + pip check + audit): .github#1
+
+Refreshing run status every 30 seconds. Press Ctrl+C to quit.
+
+* claude/project-thread-ubem46 CI sapopo93/caregist#155 · 41223039921
+Triggered via pull_request about 3 minutes ago
+
+JOBS
+✓ Frontend (tsc + tests + build + audit) in 50s (ID 124601446230)
+  ✓ Set up job
+  ✓ Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+  ✓ Install frontend dependencies
+  ✓ Type-check
+  ✓ Unit tests
+  ✓ Production build
+  ✓ Production HTTP route contracts
+  ✓ Start built app in degraded mode
+  ✓ Degraded-mode smoke test
+  ✓ Stop smoke server
+  ✓ npm audit (high/critical only)
+  ✓ Post Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+  ✓ Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Complete job
+* Container images (build + vulnerability scan) (ID 124601446522)
+  ✓ Set up job
+  ✓ Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Build production images
+  ✓ Scan API image
+  * Scan worker image
+  * Post Scan worker image
+  * Post Scan API image
+  * Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+* Migration replay (real Postgres + PostGIS) (ID 124601446597)
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Run actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+  ✓ Install backend dependencies
+  ✓ Install local media test tooling
+  ✓ Create non-superuser integration role
+  ✓ Finalize guard discrimination (real Postgres)
+  ✓ Buyer scope migration 071 and store (real Postgres)
+  * Replay init.sql + every migration, assert invariants
+  * Territory Brief paid fulfilment (real Postgres)
+  * Post Run actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+  * Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  * Stop containers
+✓ Secret scan (full history) in 8s (ID 124601446602)
+  ✓ Set up job
+  ✓ Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Run gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7
+  ✓ Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Complete job
+✓ Backend (pytest + pip check + audit) in 2m13s (ID 124601446635)
+  ✓ Set up job
+  ✓ Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Run actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+  ✓ Install backend dependencies
+  ✓ Install pdftotext for the Territory Brief PDF checks
+  ✓ pip check (dependency resolution)
+  ✓ ruff (lint — real-bug ruleset)
+  ✓ Evidence language guard
+  ✓ Migration governance
+  ✓ pytest
+  ✓ pip-audit (vulnerabilities)
+  ✓ Smoke verifier syntax
+  ✓ Post Run actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+  ✓ Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Complete job
+
+ANNOTATIONS
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@11d5960a326750d5838078e36cf38b85af677262, gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+Secret scan (full history): .github#2
+
+- "The ubuntu-latest label will migrate to Ubuntu 26 beginning October 19, 2026. For more information, see https://github.com/actions/runner-images/issues/14748"
+Secret scan (full history): .github#1
+
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@11d5960a326750d5838078e36cf38b85af677262, actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+Backend (pytest + pip check + audit): .github#2
+
+- "The ubuntu-latest label will migrate to Ubuntu 26 beginning October 19, 2026. For more information, see https://github.com/actions/runner-images/issues/14748"
+Backend (pytest + pip check + audit): .github#1
+
+Refreshing run status every 30 seconds. Press Ctrl+C to quit.
+
+* claude/project-thread-ubem46 CI sapopo93/caregist#155 · 41223039921
+Triggered via pull_request about 4 minutes ago
+
+JOBS
+✓ Frontend (tsc + tests + build + audit) in 50s (ID 124601446230)
+  ✓ Set up job
+  ✓ Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+  ✓ Install frontend dependencies
+  ✓ Type-check
+  ✓ Unit tests
+  ✓ Production build
+  ✓ Production HTTP route contracts
+  ✓ Start built app in degraded mode
+  ✓ Degraded-mode smoke test
+  ✓ Stop smoke server
+  ✓ npm audit (high/critical only)
+  ✓ Post Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+  ✓ Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Complete job
+✓ Container images (build + vulnerability scan) in 3m24s (ID 124601446522)
+  ✓ Set up job
+  ✓ Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Build production images
+  ✓ Scan API image
+  ✓ Scan worker image
+  ✓ Post Scan worker image
+  ✓ Post Scan API image
+  ✓ Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Complete job
+* Migration replay (real Postgres + PostGIS) (ID 124601446597)
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Run actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+  ✓ Install backend dependencies
+  ✓ Install local media test tooling
+  ✓ Create non-superuser integration role
+  ✓ Finalize guard discrimination (real Postgres)
+  ✓ Buyer scope migration 071 and store (real Postgres)
+  * Replay init.sql + every migration, assert invariants
+  * Territory Brief paid fulfilment (real Postgres)
+  * Post Run actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+  * Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  * Stop containers
+✓ Secret scan (full history) in 8s (ID 124601446602)
+  ✓ Set up job
+  ✓ Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Run gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7
+  ✓ Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Complete job
+✓ Backend (pytest + pip check + audit) in 2m13s (ID 124601446635)
+  ✓ Set up job
+  ✓ Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Run actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+  ✓ Install backend dependencies
+  ✓ Install pdftotext for the Territory Brief PDF checks
+  ✓ pip check (dependency resolution)
+  ✓ ruff (lint — real-bug ruleset)
+  ✓ Evidence language guard
+  ✓ Migration governance
+  ✓ pytest
+  ✓ pip-audit (vulnerabilities)
+  ✓ Smoke verifier syntax
+  ✓ Post Run actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+  ✓ Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Complete job
+
+ANNOTATIONS
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@11d5960a326750d5838078e36cf38b85af677262, gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+Secret scan (full history): .github#2
+
+- "The ubuntu-latest label will migrate to Ubuntu 26 beginning October 19, 2026. For more information, see https://github.com/actions/runner-images/issues/14748"
+Secret scan (full history): .github#1
+
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@11d5960a326750d5838078e36cf38b85af677262, actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+Backend (pytest + pip check + audit): .github#2
+
+- "The ubuntu-latest label will migrate to Ubuntu 26 beginning October 19, 2026. For more information, see https://github.com/actions/runner-images/issues/14748"
+Backend (pytest + pip check + audit): .github#1
+
+Refreshing run status every 30 seconds. Press Ctrl+C to quit.
+
+* claude/project-thread-ubem46 CI sapopo93/caregist#155 · 41223039921
+Triggered via pull_request about 4 minutes ago
+
+JOBS
+✓ Frontend (tsc + tests + build + audit) in 50s (ID 124601446230)
+  ✓ Set up job
+  ✓ Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+  ✓ Install frontend dependencies
+  ✓ Type-check
+  ✓ Unit tests
+  ✓ Production build
+  ✓ Production HTTP route contracts
+  ✓ Start built app in degraded mode
+  ✓ Degraded-mode smoke test
+  ✓ Stop smoke server
+  ✓ npm audit (high/critical only)
+  ✓ Post Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+  ✓ Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Complete job
+✓ Container images (build + vulnerability scan) in 3m24s (ID 124601446522)
+  ✓ Set up job
+  ✓ Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Build production images
+  ✓ Scan API image
+  ✓ Scan worker image
+  ✓ Post Scan worker image
+  ✓ Post Scan API image
+  ✓ Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Complete job
+* Migration replay (real Postgres + PostGIS) (ID 124601446597)
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Run actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+  ✓ Install backend dependencies
+  ✓ Install local media test tooling
+  ✓ Create non-superuser integration role
+  ✓ Finalize guard discrimination (real Postgres)
+  ✓ Buyer scope migration 071 and store (real Postgres)
+  * Replay init.sql + every migration, assert invariants
+  * Territory Brief paid fulfilment (real Postgres)
+  * Post Run actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+  * Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  * Stop containers
+✓ Secret scan (full history) in 8s (ID 124601446602)
+  ✓ Set up job
+  ✓ Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Run gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7
+  ✓ Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Complete job
+✓ Backend (pytest + pip check + audit) in 2m13s (ID 124601446635)
+  ✓ Set up job
+  ✓ Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Run actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+  ✓ Install backend dependencies
+  ✓ Install pdftotext for the Territory Brief PDF checks
+  ✓ pip check (dependency resolution)
+  ✓ ruff (lint — real-bug ruleset)
+  ✓ Evidence language guard
+  ✓ Migration governance
+  ✓ pytest
+  ✓ pip-audit (vulnerabilities)
+  ✓ Smoke verifier syntax
+  ✓ Post Run actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+  ✓ Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Complete job
+
+ANNOTATIONS
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@11d5960a326750d5838078e36cf38b85af677262, gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+Secret scan (full history): .github#2
+
+- "The ubuntu-latest label will migrate to Ubuntu 26 beginning October 19, 2026. For more information, see https://github.com/actions/runner-images/issues/14748"
+Secret scan (full history): .github#1
+
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@11d5960a326750d5838078e36cf38b85af677262, actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+Backend (pytest + pip check + audit): .github#2
+
+- "The ubuntu-latest label will migrate to Ubuntu 26 beginning October 19, 2026. For more information, see https://github.com/actions/runner-images/issues/14748"
+Backend (pytest + pip check + audit): .github#1
+
+Refreshing run status every 30 seconds. Press Ctrl+C to quit.
+
+* claude/project-thread-ubem46 CI sapopo93/caregist#155 · 41223039921
+Triggered via pull_request about 5 minutes ago
+
+JOBS
+✓ Frontend (tsc + tests + build + audit) in 50s (ID 124601446230)
+  ✓ Set up job
+  ✓ Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+  ✓ Install frontend dependencies
+  ✓ Type-check
+  ✓ Unit tests
+  ✓ Production build
+  ✓ Production HTTP route contracts
+  ✓ Start built app in degraded mode
+  ✓ Degraded-mode smoke test
+  ✓ Stop smoke server
+  ✓ npm audit (high/critical only)
+  ✓ Post Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+  ✓ Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Complete job
+✓ Container images (build + vulnerability scan) in 3m24s (ID 124601446522)
+  ✓ Set up job
+  ✓ Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Build production images
+  ✓ Scan API image
+  ✓ Scan worker image
+  ✓ Post Scan worker image
+  ✓ Post Scan API image
+  ✓ Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Complete job
+* Migration replay (real Postgres + PostGIS) (ID 124601446597)
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Run actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+  ✓ Install backend dependencies
+  ✓ Install local media test tooling
+  ✓ Create non-superuser integration role
+  ✓ Finalize guard discrimination (real Postgres)
+  ✓ Buyer scope migration 071 and store (real Postgres)
+  * Replay init.sql + every migration, assert invariants
+  * Territory Brief paid fulfilment (real Postgres)
+  * Post Run actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+  * Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  * Stop containers
+✓ Secret scan (full history) in 8s (ID 124601446602)
+  ✓ Set up job
+  ✓ Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Run gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7
+  ✓ Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Complete job
+✓ Backend (pytest + pip check + audit) in 2m13s (ID 124601446635)
+  ✓ Set up job
+  ✓ Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Run actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+  ✓ Install backend dependencies
+  ✓ Install pdftotext for the Territory Brief PDF checks
+  ✓ pip check (dependency resolution)
+  ✓ ruff (lint — real-bug ruleset)
+  ✓ Evidence language guard
+  ✓ Migration governance
+  ✓ pytest
+  ✓ pip-audit (vulnerabilities)
+  ✓ Smoke verifier syntax
+  ✓ Post Run actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+  ✓ Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Complete job
+
+ANNOTATIONS
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@11d5960a326750d5838078e36cf38b85af677262, gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+Secret scan (full history): .github#2
+
+- "The ubuntu-latest label will migrate to Ubuntu 26 beginning October 19, 2026. For more information, see https://github.com/actions/runner-images/issues/14748"
+Secret scan (full history): .github#1
+
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@11d5960a326750d5838078e36cf38b85af677262, actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+Backend (pytest + pip check + audit): .github#2
+
+- "The ubuntu-latest label will migrate to Ubuntu 26 beginning October 19, 2026. For more information, see https://github.com/actions/runner-images/issues/14748"
+Backend (pytest + pip check + audit): .github#1
+
+Refreshing run status every 30 seconds. Press Ctrl+C to quit.
+
+* claude/project-thread-ubem46 CI sapopo93/caregist#155 · 41223039921
+Triggered via pull_request about 5 minutes ago
+
+JOBS
+✓ Frontend (tsc + tests + build + audit) in 50s (ID 124601446230)
+  ✓ Set up job
+  ✓ Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+  ✓ Install frontend dependencies
+  ✓ Type-check
+  ✓ Unit tests
+  ✓ Production build
+  ✓ Production HTTP route contracts
+  ✓ Start built app in degraded mode
+  ✓ Degraded-mode smoke test
+  ✓ Stop smoke server
+  ✓ npm audit (high/critical only)
+  ✓ Post Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+  ✓ Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Complete job
+✓ Container images (build + vulnerability scan) in 3m24s (ID 124601446522)
+  ✓ Set up job
+  ✓ Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Build production images
+  ✓ Scan API image
+  ✓ Scan worker image
+  ✓ Post Scan worker image
+  ✓ Post Scan API image
+  ✓ Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Complete job
+* Migration replay (real Postgres + PostGIS) (ID 124601446597)
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Run actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+  ✓ Install backend dependencies
+  ✓ Install local media test tooling
+  ✓ Create non-superuser integration role
+  ✓ Finalize guard discrimination (real Postgres)
+  ✓ Buyer scope migration 071 and store (real Postgres)
+  * Replay init.sql + every migration, assert invariants
+  * Territory Brief paid fulfilment (real Postgres)
+  * Post Run actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+  * Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  * Stop containers
+✓ Secret scan (full history) in 8s (ID 124601446602)
+  ✓ Set up job
+  ✓ Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Run gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7
+  ✓ Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Complete job
+✓ Backend (pytest + pip check + audit) in 2m13s (ID 124601446635)
+  ✓ Set up job
+  ✓ Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Run actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+  ✓ Install backend dependencies
+  ✓ Install pdftotext for the Territory Brief PDF checks
+  ✓ pip check (dependency resolution)
+  ✓ ruff (lint — real-bug ruleset)
+  ✓ Evidence language guard
+  ✓ Migration governance
+  ✓ pytest
+  ✓ pip-audit (vulnerabilities)
+  ✓ Smoke verifier syntax
+  ✓ Post Run actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+  ✓ Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Complete job
+
+ANNOTATIONS
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@11d5960a326750d5838078e36cf38b85af677262, gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+Secret scan (full history): .github#2
+
+- "The ubuntu-latest label will migrate to Ubuntu 26 beginning October 19, 2026. For more information, see https://github.com/actions/runner-images/issues/14748"
+Secret scan (full history): .github#1
+
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@11d5960a326750d5838078e36cf38b85af677262, actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+Backend (pytest + pip check + audit): .github#2
+
+- "The ubuntu-latest label will migrate to Ubuntu 26 beginning October 19, 2026. For more information, see https://github.com/actions/runner-images/issues/14748"
+Backend (pytest + pip check + audit): .github#1
+
+Refreshing run status every 30 seconds. Press Ctrl+C to quit.
+
+* claude/project-thread-ubem46 CI sapopo93/caregist#155 · 41223039921
+Triggered via pull_request about 6 minutes ago
+
+JOBS
+✓ Frontend (tsc + tests + build + audit) in 50s (ID 124601446230)
+  ✓ Set up job
+  ✓ Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+  ✓ Install frontend dependencies
+  ✓ Type-check
+  ✓ Unit tests
+  ✓ Production build
+  ✓ Production HTTP route contracts
+  ✓ Start built app in degraded mode
+  ✓ Degraded-mode smoke test
+  ✓ Stop smoke server
+  ✓ npm audit (high/critical only)
+  ✓ Post Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+  ✓ Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Complete job
+✓ Container images (build + vulnerability scan) in 3m24s (ID 124601446522)
+  ✓ Set up job
+  ✓ Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Build production images
+  ✓ Scan API image
+  ✓ Scan worker image
+  ✓ Post Scan worker image
+  ✓ Post Scan API image
+  ✓ Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Complete job
+* Migration replay (real Postgres + PostGIS) (ID 124601446597)
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Run actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+  ✓ Install backend dependencies
+  ✓ Install local media test tooling
+  ✓ Create non-superuser integration role
+  ✓ Finalize guard discrimination (real Postgres)
+  ✓ Buyer scope migration 071 and store (real Postgres)
+  * Replay init.sql + every migration, assert invariants
+  * Territory Brief paid fulfilment (real Postgres)
+  * Post Run actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+  * Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  * Stop containers
+✓ Secret scan (full history) in 8s (ID 124601446602)
+  ✓ Set up job
+  ✓ Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Run gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7
+  ✓ Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Complete job
+✓ Backend (pytest + pip check + audit) in 2m13s (ID 124601446635)
+  ✓ Set up job
+  ✓ Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Run actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+  ✓ Install backend dependencies
+  ✓ Install pdftotext for the Territory Brief PDF checks
+  ✓ pip check (dependency resolution)
+  ✓ ruff (lint — real-bug ruleset)
+  ✓ Evidence language guard
+  ✓ Migration governance
+  ✓ pytest
+  ✓ pip-audit (vulnerabilities)
+  ✓ Smoke verifier syntax
+  ✓ Post Run actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+  ✓ Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Complete job
+
+ANNOTATIONS
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@11d5960a326750d5838078e36cf38b85af677262, gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+Secret scan (full history): .github#2
+
+- "The ubuntu-latest label will migrate to Ubuntu 26 beginning October 19, 2026. For more information, see https://github.com/actions/runner-images/issues/14748"
+Secret scan (full history): .github#1
+
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@11d5960a326750d5838078e36cf38b85af677262, actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+Backend (pytest + pip check + audit): .github#2
+
+- "The ubuntu-latest label will migrate to Ubuntu 26 beginning October 19, 2026. For more information, see https://github.com/actions/runner-images/issues/14748"
+Backend (pytest + pip check + audit): .github#1
+
+Refreshing run status every 30 seconds. Press Ctrl+C to quit.
+
+* claude/project-thread-ubem46 CI sapopo93/caregist#155 · 41223039921
+Triggered via pull_request about 6 minutes ago
+
+JOBS
+✓ Frontend (tsc + tests + build + audit) in 50s (ID 124601446230)
+  ✓ Set up job
+  ✓ Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+  ✓ Install frontend dependencies
+  ✓ Type-check
+  ✓ Unit tests
+  ✓ Production build
+  ✓ Production HTTP route contracts
+  ✓ Start built app in degraded mode
+  ✓ Degraded-mode smoke test
+  ✓ Stop smoke server
+  ✓ npm audit (high/critical only)
+  ✓ Post Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+  ✓ Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Complete job
+✓ Container images (build + vulnerability scan) in 3m24s (ID 124601446522)
+  ✓ Set up job
+  ✓ Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Build production images
+  ✓ Scan API image
+  ✓ Scan worker image
+  ✓ Post Scan worker image
+  ✓ Post Scan API image
+  ✓ Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Complete job
+* Migration replay (real Postgres + PostGIS) (ID 124601446597)
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Run actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+  ✓ Install backend dependencies
+  ✓ Install local media test tooling
+  ✓ Create non-superuser integration role
+  ✓ Finalize guard discrimination (real Postgres)
+  ✓ Buyer scope migration 071 and store (real Postgres)
+  ✓ Replay init.sql + every migration, assert invariants
+  ✓ Territory Brief paid fulfilment (real Postgres)
+  ✓ Post Run actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+  * Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  * Stop containers
+✓ Secret scan (full history) in 8s (ID 124601446602)
+  ✓ Set up job
+  ✓ Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Run gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7
+  ✓ Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Complete job
+✓ Backend (pytest + pip check + audit) in 2m13s (ID 124601446635)
+  ✓ Set up job
+  ✓ Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Run actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+  ✓ Install backend dependencies
+  ✓ Install pdftotext for the Territory Brief PDF checks
+  ✓ pip check (dependency resolution)
+  ✓ ruff (lint — real-bug ruleset)
+  ✓ Evidence language guard
+  ✓ Migration governance
+  ✓ pytest
+  ✓ pip-audit (vulnerabilities)
+  ✓ Smoke verifier syntax
+  ✓ Post Run actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+  ✓ Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Complete job
+
+ANNOTATIONS
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@11d5960a326750d5838078e36cf38b85af677262, gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+Secret scan (full history): .github#2
+
+- "The ubuntu-latest label will migrate to Ubuntu 26 beginning October 19, 2026. For more information, see https://github.com/actions/runner-images/issues/14748"
+Secret scan (full history): .github#1
+
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@11d5960a326750d5838078e36cf38b85af677262, actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+Backend (pytest + pip check + audit): .github#2
+
+- "The ubuntu-latest label will migrate to Ubuntu 26 beginning October 19, 2026. For more information, see https://github.com/actions/runner-images/issues/14748"
+Backend (pytest + pip check + audit): .github#1
+
+✓ claude/project-thread-ubem46 CI sapopo93/caregist#155 · 41223039921
+Triggered via pull_request about 7 minutes ago
+
+JOBS
+✓ Frontend (tsc + tests + build + audit) in 50s (ID 124601446230)
+  ✓ Set up job
+  ✓ Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+  ✓ Install frontend dependencies
+  ✓ Type-check
+  ✓ Unit tests
+  ✓ Production build
+  ✓ Production HTTP route contracts
+  ✓ Start built app in degraded mode
+  ✓ Degraded-mode smoke test
+  ✓ Stop smoke server
+  ✓ npm audit (high/critical only)
+  ✓ Post Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+  ✓ Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Complete job
+✓ Container images (build + vulnerability scan) in 3m24s (ID 124601446522)
+  ✓ Set up job
+  ✓ Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Build production images
+  ✓ Scan API image
+  ✓ Scan worker image
+  ✓ Post Scan worker image
+  ✓ Post Scan API image
+  ✓ Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Complete job
+✓ Migration replay (real Postgres + PostGIS) in 6m30s (ID 124601446597)
+  ✓ Set up job
+  ✓ Initialize containers
+  ✓ Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Run actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+  ✓ Install backend dependencies
+  ✓ Install local media test tooling
+  ✓ Create non-superuser integration role
+  ✓ Finalize guard discrimination (real Postgres)
+  ✓ Buyer scope migration 071 and store (real Postgres)
+  ✓ Replay init.sql + every migration, assert invariants
+  ✓ Territory Brief paid fulfilment (real Postgres)
+  ✓ Post Run actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+  ✓ Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Stop containers
+  ✓ Complete job
+✓ Secret scan (full history) in 8s (ID 124601446602)
+  ✓ Set up job
+  ✓ Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Run gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7
+  ✓ Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Complete job
+✓ Backend (pytest + pip check + audit) in 2m13s (ID 124601446635)
+  ✓ Set up job
+  ✓ Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Run actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+  ✓ Install backend dependencies
+  ✓ Install pdftotext for the Territory Brief PDF checks
+  ✓ pip check (dependency resolution)
+  ✓ ruff (lint — real-bug ruleset)
+  ✓ Evidence language guard
+  ✓ Migration governance
+  ✓ pytest
+  ✓ pip-audit (vulnerabilities)
+  ✓ Smoke verifier syntax
+  ✓ Post Run actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+  ✓ Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+  ✓ Complete job
+
+ANNOTATIONS
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@11d5960a326750d5838078e36cf38b85af677262, gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+Secret scan (full history): .github#2
+
+- "The ubuntu-latest label will migrate to Ubuntu 26 beginning October 19, 2026. For more information, see https://github.com/actions/runner-images/issues/14748"
+Secret scan (full history): .github#1
+
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@11d5960a326750d5838078e36cf38b85af677262, actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+Backend (pytest + pip check + audit): .github#2
+
+- "The ubuntu-latest label will migrate to Ubuntu 26 beginning October 19, 2026. For more information, see https://github.com/actions/runner-images/issues/14748"
+Backend (pytest + pip check + audit): .github#1
+

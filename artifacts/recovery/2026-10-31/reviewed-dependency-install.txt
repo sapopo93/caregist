@@ -1,0 +1,8 @@
+Collecting pypdf==6.21.4
+  Downloading pypdf-6.21.4-py3-none-any.whl.metadata (7.6 kB)
+Downloading pypdf-6.21.4-py3-none-any.whl (410 kB)
+Installing collected packages: pypdf
+Successfully installed pypdf-6.21.4
+
+[notice] A new release of pip is available: 26.2.1 -> 26.2.2
+[notice] To update, run: /Users/user/CareGist/.venv/bin/python -m pip install --upgrade pip

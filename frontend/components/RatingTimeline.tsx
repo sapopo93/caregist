@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 
 const RATING_COLORS: Record<string, string> = {
   Outstanding: "bg-moss text-white",
-  Good: "bg-amber text-white",
-  "Requires Improvement": "bg-amber/60 text-charcoal",
+  Good: "bg-sage text-charcoal",
+  "Requires Improvement": "bg-amber text-charcoal",
   Inadequate: "bg-alert text-white",
 };
 

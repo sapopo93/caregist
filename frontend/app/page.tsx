@@ -6,7 +6,10 @@ import DirectorySearchForm from "@/components/directory/DirectorySearchForm";
 import EmailCaptureStrip from "@/components/EmailCaptureStrip";
 import TrackEventOnMount from "@/components/TrackEventOnMount";
 import TrustSignal from "@/components/TrustSignal";
-import { getDirectoryFilterOptions, getDirectoryOpportunityStats } from "@/lib/directory-db";
+import PricingGlance from "@/components/PricingGlance";
+import EvidenceTrail from "@/components/home/EvidenceTrail";
+import EnglandBoard from "@/components/home/EnglandBoard";
+import { getDirectoryFilterOptions, getDirectoryOpportunityStats, getDirectoryRegionSnapshot } from "@/lib/directory-db";
 
 export const metadata: Metadata = {
   title: "CareGist | Evidence-linked CQC Signal Intelligence",
@@ -48,30 +51,15 @@ const FACT_LINKS: Array<{
   },
 ];
 
-const DIFFERENCE = [
-  {
-    title: "Change, not catalogue churn",
-    body: "CareGist is built around canonical events with stable CQC location IDs, rather than repeated exports of mutable provider rows.",
-  },
-  {
-    title: "Evidence travels with the signal",
-    body: "Source URL, observation times, and entity level support traceability. Reconciled snapshot metadata, including a checksum when available, is reported on Data Status.",
-    href: "/data-status",
-  },
-  {
-    title: "Safe when intelligence is incomplete",
-    body: "A verified raw event still ships if an explanation cannot meet the evidence gate. CareGist does not fill gaps with speculation.",
-  },
-];
-
 function formatCount(value: number) {
   return value.toLocaleString("en-GB");
 }
 
 export default async function HomePage() {
-  const [filterOptions, stats] = await Promise.all([
+  const [filterOptions, stats, regionSnapshot] = await Promise.all([
     getDirectoryFilterOptions().catch(() => null),
     getDirectoryOpportunityStats(),
+    getDirectoryRegionSnapshot().catch(() => []),
   ]);
 
   const getStat = (key: StatKey) => formatCount(Number(stats[key] ?? 0));
@@ -80,81 +68,83 @@ export default async function HomePage() {
     <div className="bg-parchment">
       <TrackEventOnMount eventType="homepage_view" eventSource="homepage" />
 
-      <section className="border-b border-stone bg-charcoal px-6 py-12 text-cream md:py-16">
-        <div className="mx-auto grid max-w-6xl gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
+      <section className="border-b border-stone px-6 pb-10 pt-12 md:pt-16">
+        <div className="mx-auto grid max-w-6xl gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-start">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-amber">
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-clay">
               CQC signal intelligence
             </p>
-            <h1 className="mt-4 max-w-3xl text-4xl font-extrabold leading-[1.04] md:text-6xl">
-              Know what changed. See the evidence. Decide what to do next.
+            <h1 className="mt-4 max-w-3xl text-5xl font-extrabold leading-[0.98] tracking-tight text-charcoal md:text-7xl">
+              Know what changed. <span className="text-clay">See the evidence.</span> Decide what next.
             </h1>
-            <p className="mt-5 max-w-2xl text-base leading-7 text-stone">
+            <p className="mt-6 max-w-xl text-base leading-7 text-dusk">
               CareGist follows verified CQC new registrations, rating changes, and
               closures for one England region at a time, with the published record behind
               every item. The directory remains free for discovery and source checking.
             </p>
-            <div className="mt-7 flex flex-wrap gap-3">
+            <div className="mt-7 flex flex-wrap items-center gap-3">
               <Link href="/pricing/territory" className="cta-primary">
                 Check your territory
               </Link>
-              <Link
-                href="/pricing"
-                className="inline-flex min-h-12 items-center rounded-xl border-2 border-cream/40 px-5 py-3 text-sm font-semibold transition hover:bg-white/10"
-              >
+              <Link href="/pricing" className="cta-secondary">
                 See the two products
               </Link>
               <Link
                 href="/search"
-                className="inline-flex min-h-12 items-center px-2 py-3 text-sm font-semibold text-stone underline underline-offset-4 transition hover:text-cream"
+                className="inline-flex min-h-12 items-center px-2 py-3 text-sm font-semibold text-dusk underline underline-offset-4 transition hover:text-bark"
               >
                 Search the free directory
               </Link>
             </div>
           </div>
+          <EnglandBoard regions={regionSnapshot} />
+        </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            {FACT_LINKS.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="rounded-xl border border-white/12 bg-cream p-5 text-charcoal shadow-sm transition hover:border-amber"
-              >
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-clay">{item.label}</p>
-                <p className="mt-3 text-4xl font-extrabold text-bark">{getStat(item.valueKey)}</p>
-                <p className="mt-2 text-sm leading-6 text-dusk">{item.note}</p>
-                {item.valueKey === "inadequate" && Number(stats.inadequateInCqcFile) > Number(stats.inadequate) ? (
-                  <p className="mt-2 text-xs leading-5 text-dusk">
-                    CQC&apos;s public API currently returns a rating for this many. CQC&apos;s own published ratings file
-                    lists {formatCount(Number(stats.inadequateInCqcFile))} active locations as Inadequate; the API
-                    omits the rest, so this figure understates CQC&apos;s.
-                  </p>
-                ) : null}
-              </Link>
-            ))}
+        <dl className="mx-auto mt-10 grid max-w-6xl gap-px overflow-hidden rounded-xl border border-stone bg-stone sm:grid-cols-2 lg:grid-cols-4">
+          {FACT_LINKS.map((item) => (
+            <Link key={item.href} href={item.href} className="group bg-cream p-4 transition hover:bg-white">
+              <dt className="text-xs font-semibold uppercase tracking-[0.14em] text-clay">{item.label}</dt>
+              <dd className="mt-1 text-3xl font-extrabold text-bark group-hover:text-clay">{getStat(item.valueKey)}</dd>
+              <p className="mt-1 text-xs leading-5 text-dusk">{item.note}</p>
+              {item.valueKey === "inadequate" && Number(stats.inadequateInCqcFile) > Number(stats.inadequate) ? (
+                <p className="mt-2 text-xs leading-5 text-dusk">
+                  CQC&apos;s public API currently returns a rating for this many. CQC&apos;s own published ratings file
+                  lists {formatCount(Number(stats.inadequateInCqcFile))} active locations as Inadequate; the API
+                  omits the rest, so this figure understates CQC&apos;s.
+                </p>
+              ) : null}
+            </Link>
+          ))}
+        </dl>
+      </section>
+
+      <section className="border-b border-stone px-6 py-14">
+        <div className="mx-auto max-w-6xl">
+          <div className="mb-9 max-w-3xl">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-clay">Why CareGist</p>
+            <h2 className="mt-3 text-3xl font-bold text-bark md:text-4xl">
+              Built to support a decision, not to sell rows
+            </h2>
+            <p className="mt-3 text-sm leading-6 text-dusk">
+              Change, not catalogue churn: every signal carries its evidence from the CQC record to your inbox. Reconciled snapshot metadata, including a checksum when available, is reported on Data Status.
+            </p>
           </div>
+          <EvidenceTrail />
         </div>
       </section>
 
-      <section className="border-b border-stone px-6 py-12">
+      <section id="products" className="border-b border-stone px-6 py-12">
         <div className="mx-auto max-w-6xl">
           <div className="mb-7 max-w-3xl">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-clay">Why CareGist</p>
-            <h2 className="mt-3 text-3xl font-bold text-bark">Built to support a decision, not to sell rows</h2>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-clay">Products</p>
+            <h2 className="mt-3 text-3xl font-bold text-bark">Two products, both built on the published record</h2>
+            <p className="mt-3 text-sm leading-6 text-dusk">
+              CareGist sells two products: a Weekly Digest of movement in one England region
+              (&pound;{WEEKLY_DIGEST_PILOT_PRICE_GBP} for four weekly issues), and a one-off Territory
+              Opportunity Brief on the organisations to investigate (&pound;{TERRITORY_BRIEF_PRICE_GBP}).
+            </p>
           </div>
-          <div className="grid gap-4 md:grid-cols-3">
-            {DIFFERENCE.map((item) => (
-              <article key={item.title} className="rounded-xl border border-stone bg-cream p-6 shadow-sm">
-                <h3 className="text-xl font-bold text-bark">{item.title}</h3>
-                <p className="mt-3 text-sm leading-6 text-dusk">{item.body}</p>
-                {"href" in item && item.href ? (
-                  <Link href={item.href} className="mt-4 inline-flex text-sm font-semibold text-clay underline">
-                    Review Data Status
-                  </Link>
-                ) : null}
-              </article>
-            ))}
-          </div>
+          <PricingGlance />
         </div>
       </section>
 
@@ -167,39 +157,6 @@ export default async function HomePage() {
             description="Filter factual CQC location records by geography, service type, rating, registration recency, or provider name. Always confirm operational decisions against the linked official source."
             submitLabel="Search providers"
           />
-        </div>
-      </section>
-
-      <section id="products" className="border-b border-stone px-6 py-12">
-        <div className="mx-auto max-w-6xl">
-          <div className="mb-7 max-w-3xl">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-clay">Products</p>
-            <h2 className="mt-3 text-3xl font-bold text-bark">Two products, both built on the published record</h2>
-            <p className="mt-3 text-sm leading-6 text-dusk">
-              CareGist sells two products: a weekly digest of movement in one England region,
-              and a one-off brief on the organisations to investigate in a territory.
-            </p>
-          </div>
-          <div className="grid gap-4 md:grid-cols-2">
-            <article className="rounded-xl border border-stone bg-cream p-6">
-              <p className="font-mono text-xs uppercase tracking-wider text-clay">Weekly</p>
-              <h3 className="mt-3 text-2xl font-bold text-bark">Weekly Digest &middot; &pound;{WEEKLY_DIGEST_PILOT_PRICE_GBP}</h3>
-              <p className="mt-3 text-sm leading-6 text-dusk">
-                Four weekly digests covering one England region: new registrations, rating
-                changes, and closures, each linking to the official CQC record.
-              </p>
-              <Link href="/pricing" className="cta-secondary mt-5">See the Weekly Digest</Link>
-            </article>
-            <article className="rounded-xl border border-stone bg-cream p-6">
-              <p className="font-mono text-xs uppercase tracking-wider text-clay">Territory</p>
-              <h3 className="mt-3 text-2xl font-bold text-bark">Territory Opportunity Brief &middot; &pound;{TERRITORY_BRIEF_PRICE_GBP}</h3>
-              <p className="mt-3 text-sm leading-6 text-dusk">
-                A shortlist of up to 50 organisations to investigate, plus a brief on territory
-                size, structure, and notable movements, with the source evidence behind each one.
-              </p>
-              <Link href="/pricing/territory" className="cta-primary mt-5">Check your territory</Link>
-            </article>
-          </div>
         </div>
       </section>
 

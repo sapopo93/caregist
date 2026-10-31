@@ -1,3 +1,5 @@
+> HISTORICAL INVOICE-LAYOUT RECORD — NOT FOR CURRENT USE (28 October 2026). Financial-layout/history text below is preserved as evidence, not current payment instructions. The old ask-to-pay email in section 3 is retired. Current £150 Digest terms require source checks and written agreement before an invoice/payment link, and payment before the first digest. Use docs/customer-pack/enquiry-email-drafts-2026-10-16.md or 2026-09-01-ask-to-pay-script-stripe.md for current wording. Henry's approval to sell the existing £150 Digest stands.
+
 # Draft Invoice Layout + Ask-to-Pay Wording — FOR INSPECTION ONLY
 
 Status: `DRAFT — NOT FOR ISSUE`. Created for fresh-context inspection by henry-proof
@@ -73,39 +75,9 @@ Notes for the reviewer:
 
 ---
 
-## 3. Ask-to-pay wording (exact script, to be used when the buyer is asked to pay)
+## 3. Ask-to-pay email — superseded on 28 October 2026
 
-```
-Subject: Your CareGist Radar pilot: invoice and delivery confirmation
-
-Hi [CONTACT FIRST NAME] (or [ORGANISATION NAME] team),
-
-Here is the first weekly digest you approved as part of the CareGist Radar
-pilot pack: 4 weekly digests, £150.00 total, paid by bank transfer.
-
-[LINK OR ATTACHED PDF: first weekly digest]
-
-Invoice [INVOICE NUMBER] is attached. Payment is due within 14 days by bank
-transfer to [SETTLEMENT ACCOUNT], reference [INVOICE NUMBER].
-
-If you have any questions, reply to this email.
-
-Thank you,
-[HENRY MLALAZI / H-KAY LIMITED]
-```
-
-Wording constraints (recorded, do not change without Henry approval):
-- No claim that the digest is "current" unless the digest is compiled from a
-  verified live CQC route; otherwise it must be described as a dated sample.
-- No unsupported sample claim (e.g. "your competitors") — only the facts in
-  the digest.
-- No "you approved" unless the buyer actually approved the pack and the
-  delivery promise matches what was approved.
-- No invoice if the delivery stop rule applies (section 4).
-- `Hi [first name]` opener is only valid after the organisation-only route
-  approval; otherwise use `[ORGANISATION NAME] team` opener.
-
----
+The former email has been removed from operational use because it asked for bank transfer on 14-day terms after first delivery. Its original text is preserved in artifacts/draft-review/2026-10-28/originals. Use the refreshed payment-stage draft in `2026-09-01-ask-to-pay-script-stripe.md` or `docs/customer-pack/enquiry-email-drafts-2026-10-16.md`. Do not reuse payment instructions from the historical invoice-layout sections of this record.
 
 ## 4. Delivery stop rule (unchanged)
 

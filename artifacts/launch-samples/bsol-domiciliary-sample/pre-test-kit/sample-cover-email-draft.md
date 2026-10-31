@@ -1,29 +1,24 @@
-# Birmingham and Solihull sample cover email
+# Research sample cover email
 
-**DRAFT FOR HENRY TO SEND. Not authorised for automated sending.**
+Updated 28 October 2026. INTERNAL DRAFT — UNSENT. Complete only after checking the actual sample file, its source dates and sharing suitability. The historical Birmingham/Solihull sample was described as using a 28 March 2026 repository snapshot; this wording refresh does not make that sample current, verified or suitable for paid delivery. Do not send an old file as a current edition.
 
-**Subject:** Birmingham and Solihull domiciliary care sample
+Subject: CareGist research sample — [actual territory and edition]
 
-Hi [First name],
+Hi [First name or organisation team],
 
-Thank you for agreeing to review the sample.
+Please find [actual sample filename] for [actual territory and service scope]. It is a sample to illustrate the research format, with source edition dates [actual dates] and checks recorded on [actual check date]. Its limitations are [actual limitations].
 
-It covers domiciliary care in Birmingham and Solihull. You will find the territory dataset, a ranked shortlist with a stated reason for each account, and an executive brief on the structure of the territory and the next questions a recruitment sales team should test.
+The £745 one-off Territory Opportunity Brief is a separately agreed research pack. It includes up to 50 distinct provider organisations to investigate, the exact number confirmed before payment, factual selection reasons, a CSV dataset, a three to five page summary, and source links and observation dates. There is no subscription or automatic renewal.
 
-The sample is labelled not verified because it was built from a repository snapshot observed on 28 March 2026. It is for this pre-test only and is not ready for client delivery until the CQC data-path gate passes. It does not claim that a provider has a vacancy, staffing shortage, or buying intent.
+Does this format help with a decision your team needs to make? What information or context would make it more useful?
 
-When we speak on [date and time], I would like your direct view on three questions:
+Public CQC records do not establish vacancies, staffing shortages, budgets, contract timing or intent to buy. CareGist is independent of CQC and reuses public CQC information under the Open Government Licence v3.0.
 
-- Would you pay £745 for this?
-- What decision would it change for you?
-- What is missing?
+If you would like to discuss a Brief, please tell us the territory and research question. We would check source availability and agree scope and delivery arrangements in writing before sending a payment request.
 
-CQC information is reused under the Open Government Licence v3.0. CareGist is independent and is not affiliated with or endorsed by the Care Quality Commission.
-
-If you do not want any further messages from H-Kay Limited about CareGist, reply "opt out" and I will record that.
-
-Regards,
-
-Henry Mlalazi  
-H-Kay Limited  
+Kind regards,
+Henry Mlalazi
+H-Kay Limited | CareGist
 outreach@caregist.co.uk
+
+If you do not want further CareGist emails, reply “no thanks” and we will record your preference.

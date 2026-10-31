@@ -1,3 +1,9 @@
+## 2026-10-31 — migration 072/073 completed and verified
+
+PR [#155](https://github.com/sapopo93/caregist/pull/155) merged as `0653003270175aa24aa6652933c8dfad0a5f07be`. Production records 072 at 17:16:26 UTC and 073 at 17:16:27 UTC. Independent review caught and corrected loss of `source_edition_id` and the count/drop concurrency race before execution. Exact-candidate CI passed; staging package/replay passed; production row counts/status/access are unchanged and schema matches staging. Schema Drift [41223692699](https://github.com/sapopo93/caregist/actions/runs/41223692699) and Production Smoke [41223753262](https://github.com/sapopo93/caregist/actions/runs/41223753262) passed; both live services report the merged SHA. Recovery branch `br-floral-paper-abjaq0oa` remains retained and passes read-only invariants. Henry explicitly authorized a bounded independent-review/executable-evidence substitution for unavailable Grok for this migration. [Evidence](../artifacts/recovery/2026-10-31/README.md).
+
+Status: DONE for the five migration steps only. Checkout and delivery remain disabled; no commercial gate was opened. Do not repeat 072/073 or run the obsolete Mac script. No remaining action in this migration scope; other workstreams retain their own gates.
+
 ## 2026-10-24 next bounded action — independent review of report-readiness packet
 
 Independent approved-provider review of [REPORT_READINESS_EVIDENCE.md](REPORT_READINESS_EVIDENCE.md) and its PR (branch `feat/report-readiness-20261024`), using the checklist in that file. Review it together with open PR #123, whose API-else-file precedence this resolver contract replaces. Keep `resolved_rating_contract_enabled`, `competitor_scan_enabled` and `p12_list_enabled` false.

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 
 import PricingCTA from "@/components/PricingCTA";
+import PricingGlance from "@/components/PricingGlance";
 import RetainedPlanFocus from "@/components/RetainedPlanFocus";
 import {
   CQC_INDEPENDENCE_LINE,
@@ -52,6 +53,8 @@ export default async function PricingPage() {
           Both are one-off purchases, with no subscription or automatic renewal.
         </p>
       </header>
+
+      <PricingGlance />
 
       <aside className="mb-8 rounded-xl border border-stone bg-parchment p-6 text-sm leading-6 text-bark">
         <h2 className="mb-2 text-lg font-bold">How to order</h2>

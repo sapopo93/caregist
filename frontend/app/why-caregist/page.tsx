@@ -76,11 +76,12 @@ export default function WhyCareGistPage() {
 
       <section className="mb-12 grid gap-7 md:grid-cols-[1.15fr_0.85fr]">
         <div>
-          <h2 className="text-2xl font-bold text-bark">What CareGist deliberately does not claim</h2>
-          <ul className="mt-5 space-y-3">
+          <p className="font-mono text-xs uppercase tracking-[0.18em] text-alert">Our refusals</p>
+          <h2 className="mt-2 text-3xl font-extrabold leading-tight text-bark">What CareGist deliberately does not claim</h2>
+          <ul className="mt-6 divide-y divide-stone border-y border-stone">
             {BOUNDARIES.map((boundary) => (
-              <li key={boundary} className="flex gap-3 text-sm leading-6 text-charcoal">
-                <span aria-hidden="true" className="text-moss">✓</span>
+              <li key={boundary} className="flex gap-4 py-3.5 text-base leading-6 text-charcoal">
+                <span aria-hidden="true" className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-alert/10 text-sm font-bold text-alert">✕</span>
                 <span>{boundary}</span>
               </li>
             ))}

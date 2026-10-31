@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import SourceTimeline from "@/components/SourceTimeline";
 import { getServerApiBase } from "@/lib/server-api-config";
 
 export const revalidate = 3600;
@@ -76,7 +77,16 @@ export default async function DataStatusPage() {
           </span>
         </div>
 
-        <dl className="grid gap-5 sm:grid-cols-2">
+        <SourceTimeline
+          coverage={status?.coveragePercentage}
+          steps={[
+            { label: "Published by CQC", value: status?.sourcePublishedAt, display: formatDate(status?.sourcePublishedAt) },
+            { label: "Retrieved by CareGist", value: status?.sourceRetrievedAt, display: formatDate(status?.sourceRetrievedAt) },
+            { label: "Reconciled", value: status?.reconciledAt, display: formatDate(status?.reconciledAt) },
+          ]}
+        />
+
+        <dl className="grid gap-5 border-t border-stone pt-5 sm:grid-cols-2">
           <div className="sm:col-span-2"><dt className="text-xs uppercase tracking-wide text-dusk">Exact CQC source</dt><dd className="mt-1 break-all font-medium text-charcoal">{status?.source || "Not available"}</dd></div>
           <div><dt className="text-xs uppercase tracking-wide text-dusk">Published by CQC</dt><dd className="mt-1 font-medium text-charcoal">{formatDate(status?.sourcePublishedAt)}</dd></div>
           <div><dt className="text-xs uppercase tracking-wide text-dusk">Retrieved by CareGist</dt><dd className="mt-1 font-medium text-charcoal">{formatDate(status?.sourceRetrievedAt)}</dd></div>

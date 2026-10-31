@@ -37,6 +37,25 @@
   }
 }
 
+@layer base {
+  /* One visible focus treatment for keyboard users; mouse clicks are unaffected. */
+  :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+    outline: 3px solid var(--color-amber);
+    outline-offset: 2px;
+  }
+  /* Anchor jumps land below the sticky header. */
+  html { scroll-padding-top: 5rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 @layer components {
   /* Primary call to action. One colour, used only for the action we want clicked. */
   .cta-primary {

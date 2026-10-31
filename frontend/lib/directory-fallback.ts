@@ -331,3 +331,23 @@ export async function listFallbackProvidersForExport(scope: DirectoryExportScope
       inspection_report_url: provider.inspection_report_url,
     }));
 }
+
+export async function getFallbackRegionSnapshot() {
+  const providers = await loadActiveProviders();
+  const byRegion = new Map<
+    string,
+    { region: string; total: number; inadequate: number; requiresImprovement: number; newLast90Days: number }
+  >();
+  for (const provider of providers) {
+    if (!provider.region) continue;
+    const row =
+      byRegion.get(provider.region) ??
+      { region: provider.region, total: 0, inadequate: 0, requiresImprovement: 0, newLast90Days: 0 };
+    row.total += 1;
+    if (matchesOpportunity(provider, "inadequate")) row.inadequate += 1;
+    if (matchesOpportunity(provider, "requires_improvement")) row.requiresImprovement += 1;
+    if (matchesOpportunity(provider, "new_90")) row.newLast90Days += 1;
+    byRegion.set(provider.region, row);
+  }
+  return [...byRegion.values()].sort((a, b) => a.region.localeCompare(b.region));
+}

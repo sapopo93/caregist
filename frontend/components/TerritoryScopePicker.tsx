@@ -28,8 +28,12 @@ const VERDICT_STYLES: Record<string, string> = {
 
 export default function TerritoryScopePicker() {
   const [interactive, setInteractive] = useState(false);
-  useEffect(() => setInteractive(true), []);
   const [region, setRegion] = useState("");
+  useEffect(() => {
+    setInteractive(true);
+    const preset = new URLSearchParams(window.location.search).get("region");
+    if (preset && TERRITORY_REGION_OPTIONS.includes(preset)) setRegion(preset);
+  }, []);
   const [buyerType, setBuyerType] = useState("");
   const [serviceType, setServiceType] = useState("");
   const [loading, setLoading] = useState(false);

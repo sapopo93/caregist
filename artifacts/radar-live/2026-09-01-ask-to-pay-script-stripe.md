@@ -1,50 +1,24 @@
-# CareGist founding-buyer pilot — Ask-to-Pay Script (CORRECTED: Stripe route)
+# Weekly Digest payment-request draft
 
-**File status:** `SCRIPT — NOT FOR USE`. Corrects the ask-to-pay script in `2026-08-25-draft-invoice-layout-ask-to-pay.md` §3: payment is **via Stripe (card), seller H-Kay Limited**, settling to **H-Kay Limited's Starling Bank account** (Henry's recorded approval 2026-08-25). The payment line below is **byte-for-byte identical** to the invoice payment block (`2026-09-01-draft-invoice-final.md`) and the email payment line (`2026-09-01-buyer-email-draft-stripe.md`).
+Updated 28 October 2026. INTERNAL DRAFT — UNSENT. Replaces the old invoice-after-first-delivery script. Current Terms v2.3 and Henry's approved £150 offer apply; no bank-transfer or 14-day-credit instruction is carried forward. Use the existing approved Stripe product. No invoice or payment request is issued by this file.
 
-**Pre-send gates still open:** Henry's 06:00 approval; buyer confirmed from the screened set; invoice number/date; live Stripe payment link issued by the founder. DO NOT USE until all gates are recorded.
+Use only after the buyer-specific source-path check, delivery availability and written agreement of region, start date and four delivery dates are recorded. Resolve every placeholder from those records. Recipient/contact and suppression checks still apply. Do not treat a generic draft as evidence that a buyer has agreed.
 
-Created: 2026-09-01 by CareGist pilot bundle producer (Hermes). No script has been used; no invoice issued.
+Subject: Your agreed CareGist Weekly Digest pilot — £150 total
 
----
+Dear [First name or organisation team],
 
-## Script — send when the buyer has agreed the pilot and the first digest is ready
+Following our written agreement of [scope reference and date], your Weekly Digest pilot covers [one agreed England region], with delivery by email and PDF on [four agreed dates] to [agreed recipient]. Each issue reports new registrations and newly published CQC ratings, with official source links, source edition dates and observation windows. Quiet weeks may have no matching items.
 
-**Subject:** Your first CareGist weekly digest + invoice [INVOICE NUMBER]
+The total is £150 for all four issues. The pilot ends after the fourth issue, with no subscription or automatic renewal. Payment is due in full before the first digest.
 
-**Body:**
+Please review https://www.caregist.co.uk/terms and use [buyer-specific invoice or payment link for the existing £150 Digest product].
 
-Hi [CONTACT FIRST NAME],
+If an agreed digest is not delivered within its agreed week, you may choose late delivery or a £37.50 refund for that issue, as set out in the terms.
 
-Here is the first weekly digest you approved as part of the CareGist Radar pilot pack: **4 weekly digests for [REGION], £150.00 total**.
+Kind regards,
+Sibongile Tshonga
+Client enquiries | CareGist, H-Kay Limited
+outreach@caregist.co.uk
 
-A reminder of what you're getting, exactly as we agreed:
-
-- **One England region:** [REGION];
-- **Four weekly digests**, delivered by email/PDF, this week's first;
-- **Based on public CQC register data only** — each digest states its register snapshot date and only reflects publicly visible signals at compile time;
-- **Quiet weeks possible:** if a week has no new registrations or rating changes in the region, the digest says so plainly rather than padding itself. You're paying for reliable monitoring, not invented items;
-- **No renewal:** the pilot ends after the four digests — nothing renews automatically.
-
-**Invoice [INVOICE NUMBER]** is attached. Payment is via Stripe (card) — the secure payment link is below.
-
-> Pay £150 via Stripe (card), seller H-Kay Limited. Funds settle to H-Kay Limited's Starling Bank account. Payment reference: [INVOICE NUMBER].
-
-[STRIPE PAYMENT LINK — founder to issue; never place a link that has not been created and verified]
-
-Once payment is confirmed you'll receive the remaining three digests on [WEEKLY DELIVERY DAY] for the next three weeks.
-
-If anything in the digest is unclear, reply and I'll explain it. Thank you for piloting CareGist.
-
-[HENRY MLALAZI / H-KAY LIMITED]
-
----
-
-## Conditions (recorded; do not deviate without Henry approval)
-
-1. Use only after the buyer has agreed the pilot AND the first digest is compiled, verified against its public source, and ready to attach.
-2. Payment line is byte-for-byte identical across email, script and invoice — do not alter in one document only.
-3. Invoice issued only under the approved terms: issued on completion of the first digest delivery; conditional on delivery of the four digests as described; payment due within 14 days of the invoice date.
-4. If the first digest cannot be delivered, do NOT issue the invoice or ask for payment; tell the buyer before any money moves.
-5. No urgency/exclusivity language; no renewal solicitation; no claims beyond the truthful promise wording above.
-6. Personal-data purpose is the pilot offer already stated at first contact; opt-out request anywhere in the thread stops further contact immediately.
+No assertion is made here that the first issue exists, a sample is verified, the source is live, or any payment or delivery has occurred. Do not add supplier-selection, vacancy or buying-intent claims. Current enquiry and initial-reply drafts are in docs/customer-pack/enquiry-email-drafts-2026-10-16.md.

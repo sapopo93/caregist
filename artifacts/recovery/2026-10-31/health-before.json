@@ -1,0 +1,178 @@
+{
+  "status": "healthy",
+  "generated_at": "2026-10-31T17:05:17.040130+00:00",
+  "readiness_ok": true,
+  "freshness_ok": true,
+  "source_fresh": true,
+  "feed_fresh": true,
+  "source": {
+    "source": "Care Quality Commission public directory",
+    "sourceUri": "https://www.cqc.org.uk/system/files/2026-10/22_October_2026_CQC_directory.csv",
+    "sourcePublishedAt": "2026-10-22",
+    "sourceRetrievedAt": "2026-10-28T08:31:09.149778+00:00",
+    "reconciledAt": "2026-10-28T12:44:10.604613+00:00",
+    "checksumSha256": "ea3f91aa39317acb5890d35b5fe7fdf82b60736e0198d4ab99c52e1efad795d3",
+    "sourceLocationCount": 57107,
+    "checkedLocationCount": 57107,
+    "successCount": 57107,
+    "failureCount": 0,
+    "coveragePercentage": 100.0,
+    "activeLocationCount": 57246,
+    "countsReconciled": true,
+    "freshnessStatus": "fresh",
+    "quarantinedLocationCount": 14,
+    "reason": null,
+    "ageHours": 80.6,
+    "slaHours": 192
+  },
+  "eventActivity": {
+    "latestObservedAt": "2026-10-30T22:16:06.322114+00:00",
+    "latestEffectiveDate": "2026-10-29",
+    "informational": true
+  },
+  "delivery": {
+    "enabled": false,
+    "healthy": true,
+    "pending": 0,
+    "stuck": 0,
+    "deadLetter": 0
+  },
+  "commercialReadiness": {
+    "checkoutReady": false,
+    "shadowCoveragePassed": true,
+    "ledgerLatencyPassed": true,
+    "deliveryEnabled": false,
+    "deliveryHealthy": true,
+    "explanationsRequired": false
+  },
+  "units": {
+    "locationRows": 59507,
+    "activeLocationRows": 57246,
+    "activeProviderOrganisations": 37203,
+    "groupedProviderOrganisations": 9962,
+    "namedGroupLabels": 9958,
+    "sourceActiveLocationRows": 57107,
+    "countsReconciled": true
+  },
+  "checks": [
+    {
+      "name": "canonical_signal_schema",
+      "ok": true,
+      "details": {
+        "pipelineSourceColumnsReady": true,
+        "trustedLedgerColumnsReady": true,
+        "sourceSnapshotsReady": true,
+        "sourceSnapshotIdentityReady": true,
+        "deliveryOutboxReady": true
+      }
+    },
+    {
+      "name": "cqc_source_watermark",
+      "ok": true,
+      "details": {
+        "source": "Care Quality Commission public directory",
+        "sourceUri": "https://www.cqc.org.uk/system/files/2026-10/22_October_2026_CQC_directory.csv",
+        "sourcePublishedAt": "2026-10-22",
+        "sourceRetrievedAt": "2026-10-28T08:31:09.149778+00:00",
+        "reconciledAt": "2026-10-28T12:44:10.604613+00:00",
+        "checksumSha256": "ea3f91aa39317acb5890d35b5fe7fdf82b60736e0198d4ab99c52e1efad795d3",
+        "sourceLocationCount": 57107,
+        "checkedLocationCount": 57107,
+        "successCount": 57107,
+        "failureCount": 0,
+        "coveragePercentage": 100.0,
+        "activeLocationCount": 57246,
+        "countsReconciled": true,
+        "freshnessStatus": "fresh",
+        "quarantinedLocationCount": 14,
+        "reason": null,
+        "ageHours": 80.6,
+        "slaHours": 192
+      }
+    },
+    {
+      "name": "source_count_reconciliation",
+      "ok": true,
+      "details": {
+        "sourceLocationCount": 57107,
+        "activeLocationCount": 57246
+      }
+    },
+    {
+      "name": "signal_poll_execution",
+      "ok": true,
+      "details": {
+        "latestStatus": "completed",
+        "latestStartedAt": "2026-10-31T09:55:38.972038+00:00",
+        "latestCompletedAt": "2026-10-31T10:18:39.109469+00:00",
+        "lastSuccessfulCompletedAt": "2026-10-31T10:18:39.109469+00:00",
+        "error": null,
+        "slaMinutes": 960
+      }
+    },
+    {
+      "name": "signal_poll_shadow_coverage",
+      "ok": true,
+      "details": {
+        "windowDays": 7,
+        "totalPolls": 39,
+        "completedPolls": 39,
+        "successRatio": 1.0,
+        "minimumPolls": 24,
+        "minimumSuccessRatio": 0.9
+      }
+    },
+    {
+      "name": "approved_source_to_ledger_latency",
+      "ok": true,
+      "details": {
+        "measuredEvents": 97,
+        "p95Minutes": 2.96,
+        "targetMinutes": 45
+      }
+    },
+    {
+      "name": "delivery_outbox_health",
+      "ok": true,
+      "details": {
+        "pending": 0,
+        "stuck": 0,
+        "deadLetter": 0,
+        "stuckAfterMinutes": 15
+      }
+    },
+    {
+      "name": "latest_signal_activity",
+      "ok": true,
+      "informational": true,
+      "details": {
+        "latestObservedAt": "2026-10-30T22:16:06.322114+00:00",
+        "latestEffectiveDate": "2026-10-29"
+      }
+    },
+    {
+      "name": "new_registration_feed_freshness",
+      "ok": true,
+      "details": {
+        "latestObservedAt": "2026-10-30T22:16:06.322114+00:00",
+        "latestEffectiveDate": "2026-10-29",
+        "collectorFresh": true,
+        "eventAgeIsInformational": true
+      }
+    }
+  ],
+  "crm_operations": {
+    "enabled": false,
+    "ok": true,
+    "calling": {
+      "enabled": true,
+      "crm_enabled": true,
+      "recording_enabled": false,
+      "ai_enabled": false,
+      "tps_automation_enabled": false
+    }
+  },
+  "release": {
+    "git_sha": "2502be72f1773921f708ee15f1b2a18f84257731"
+  }
+}

@@ -1,0 +1,40 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.12.13, pytest-9.1.1, pluggy-1.6.0
+rootdir: /private/tmp/caregist-migrations-072-073
+configfile: pytest.ini
+plugins: cov-5.0.0, asyncio-1.4.0, anyio-4.14.2
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
+collected 166 items
+
+tests/integration/test_acceptance_territory_download_pg.py ............  [  7%]
+tests/integration/test_buying_dataset_refund_pg.py ......                [ 10%]
+tests/integration/test_buying_generation_recovery_pg.py .....            [ 13%]
+tests/integration/test_buying_refund_pg.py ....                          [ 16%]
+tests/integration/test_buying_webhook_recovery_pg.py ...                 [ 18%]
+tests/integration/test_cqc_detail_unavailable_pg.py .................... [ 30%]
+                                                                         [ 30%]
+tests/integration/test_cqc_freshness_evidence.py ...                     [ 31%]
+tests/integration/test_crm_security_invariants.py .........              [ 37%]
+tests/integration/test_crm_transcription_local.py ..s                    [ 39%]
+tests/integration/test_data_lifecycle.py ....                            [ 41%]
+tests/integration/test_email_queue_gate_pg.py .                          [ 42%]
+tests/integration/test_finalize_guard_concurrency_pg.py .                [ 42%]
+tests/integration/test_finalize_guard_pg.py ..................           [ 53%]
+tests/integration/test_finalize_lock_retry_pg.py ..                      [ 54%]
+tests/integration/test_import_cqc_ratings_pg.py .                        [ 55%]
+tests/integration/test_migration_061_rating_state.py .......             [ 59%]
+tests/integration/test_migration_073_brief_rebuild_pg.py .....           [ 62%]
+tests/integration/test_migrations_apply_cleanly.py ....                  [ 65%]
+tests/integration/test_pipeline_health_latency.py ..                     [ 66%]
+tests/integration/test_public_change_frequency_queries.py .              [ 66%]
+tests/integration/test_rating_carry_forward_pg.py .......                [ 71%]
+tests/integration/test_rating_public_serving_pg.py ...............       [ 80%]
+tests/integration/test_rating_rule_pg.py ..........                      [ 86%]
+tests/integration/test_reconciliation_resume.py .                        [ 86%]
+tests/integration/test_stripe_reconciliation.py ...                      [ 88%]
+tests/integration/test_subscription_state.py ..........                  [ 94%]
+tests/integration/test_territory_fulfilment_pg.py .                      [ 95%]
+tests/integration/test_territory_preview_pg.py .                         [ 95%]
+tests/integration/test_territory_source_pg.py .......                    [100%]
+
+================== 165 passed, 1 skipped in 71.59s (0:01:11) ===================

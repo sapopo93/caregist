@@ -27,6 +27,7 @@ import {
   getFallbackServiceTypeCounts,
   getFallbackProvider,
   getFallbackOpportunityStats,
+  getFallbackRegionSnapshot,
   getFallbackStats,
   listFallbackProvidersForExport,
   searchFallbackProviders,
@@ -769,4 +770,49 @@ export async function listProvidersForExport(scope: DirectoryExportScope): Promi
 export async function consumePaidTerritoryBriefDownload(token: string) {
   assertDatabaseConfigured();
   return consumeTerritoryBriefDownload(token, (sql, values) => getSql().query(sql, values));
+}
+
+export interface DirectoryRegionSnapshot {
+  region: string;
+  total: number;
+  inadequate: number;
+  requiresImprovement: number;
+  newLast90Days: number;
+}
+
+/** Per-region active-location counts for the homepage England board. Empty when the database is unavailable. */
+export async function getDirectoryRegionSnapshot(): Promise<DirectoryRegionSnapshot[]> {
+  try {
+    assertDatabaseConfigured();
+    const result = await getSql().query<{
+      region: string;
+      total: number;
+      inadequate: number;
+      requires_improvement: number;
+      new_last_90_days: number;
+    }>(
+      `
+        SELECT
+          region,
+          COUNT(*)::int AS total,
+          COUNT(*) FILTER (WHERE overall_rating = 'Inadequate')::int AS inadequate,
+          COUNT(*) FILTER (WHERE lower(btrim(overall_rating)) = 'requires improvement')::int AS requires_improvement,
+          COUNT(*) FILTER (WHERE registration_date >= CURRENT_DATE - INTERVAL '90 days')::int AS new_last_90_days
+        FROM care_providers
+        WHERE status = 'ACTIVE' AND region IS NOT NULL AND region <> ''
+        GROUP BY region
+        ORDER BY region
+      `,
+    );
+    return result.rows.map((row) => ({
+      region: row.region,
+      total: row.total,
+      inadequate: row.inadequate,
+      requiresImprovement: row.requires_improvement,
+      newLast90Days: row.new_last_90_days,
+    }));
+  } catch (error) {
+    rethrowUnexpectedDatabaseError(error);
+    return getFallbackRegionSnapshot().catch(() => []);
+  }
 }

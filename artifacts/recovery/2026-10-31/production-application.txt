@@ -1,0 +1,4 @@
+Production preflight passed: exactly072/073 pending, five Brief tables empty, ownership/ACL/RLS match review.
+Applied 072_shared_customer_package.sql
+Applied 073_rebuild_territory_brief_tables.sql
+Verified migration ledger, schema parity with staging, source FK, zip check, unchanged counts and access.

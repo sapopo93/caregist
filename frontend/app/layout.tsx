@@ -93,11 +93,28 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
       </head>
       <body className="flex min-h-screen flex-col">
-        <header className="relative border-b border-stone bg-bark px-6 py-4 text-cream">
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:rounded-lg focus:bg-cream focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-bark focus:shadow-lg"
+        >
+          Skip to main content
+        </a>
+        <header className="sticky top-0 z-40 border-b border-charcoal/30 bg-bark px-6 py-2.5 text-cream shadow-sm">
           <div className="mx-auto flex max-w-6xl items-center justify-between gap-4">
             <Link href="/" className="flex items-center">
-              <img src="/logo-lockup-reverse.svg" alt="CareGist" className="h-12 w-auto md:h-14" />
+              <img src="/logo-lockup-reverse.svg" alt="CareGist" className="h-9 w-auto md:h-10" />
             </Link>
+
+            <form action="/search" method="get" role="search" className="hidden min-w-0 flex-1 md:block lg:max-w-sm">
+              <label htmlFor="site-search" className="sr-only">Search care providers by name, town or postcode</label>
+              <input
+                id="site-search"
+                name="q"
+                type="search"
+                placeholder="Search providers by name, town or postcode"
+                className="h-9 w-full rounded-full border border-cream/20 bg-charcoal/40 px-4 text-sm text-cream placeholder:text-cream/60 focus:border-amber focus:bg-charcoal/60 focus:outline-none"
+              />
+            </form>
 
             <div className="flex items-center justify-end gap-3">
               <Link
@@ -125,7 +142,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           </div>
         </header>
 
-        <main className="flex-1">{children}</main>
+        <main id="main-content" tabIndex={-1} className="flex-1 focus:outline-none">{children}</main>
 
         <CompareBar />
         <CookieConsent />
@@ -160,38 +177,39 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               </a>{" "}
               or call 03000 616161.
             </p>
-            <div className="mt-4 flex flex-wrap gap-4 text-stone">
-              <Link href="/privacy" className="underline hover:text-cream">
-                Privacy Policy
-              </Link>
-              <Link href="/terms" className="underline hover:text-cream">
-                Terms of Service
-              </Link>
-              <Link href="/acceptable-use" className="underline hover:text-cream">
-                Acceptable Use
-              </Link>
-              <Link href="/cookies" className="underline hover:text-cream">
-                Cookies
-              </Link>
-              <Link href="/data-status" className="underline hover:text-cream">
-                Data Status
-              </Link>
-              <Link href="/search" className="underline hover:text-cream">
-                Directory
-              </Link>
-              <Link href="/find-care" className="underline hover:text-cream">
-                Find Care
-              </Link>
-              <Link href="/pricing" className="underline hover:text-cream">
-                Pricing
-              </Link>
-              <Link href="/why-caregist" className="underline hover:text-cream">
-                Why CareGist
-              </Link>
-              <a href="mailto:support@caregist.co.uk" className="underline hover:text-cream">
-                Contact
-              </a>
-            </div>
+            <nav aria-label="Footer" className="mt-8 grid gap-8 border-t border-stone/20 pt-8 sm:grid-cols-2 lg:grid-cols-4">
+              <div>
+                <p className="mb-3 font-mono text-xs uppercase tracking-[0.18em] text-amber">Products</p>
+                <ul className="space-y-2">
+                  <li><Link href="/pricing" className="hover:text-cream hover:underline">Pricing</Link></li>
+                  <li><Link href="/pricing/territory" className="hover:text-cream hover:underline">Check your territory</Link></li>
+                  <li><Link href="/why-caregist" className="hover:text-cream hover:underline">Why CareGist</Link></li>
+                </ul>
+              </div>
+              <div>
+                <p className="mb-3 font-mono text-xs uppercase tracking-[0.18em] text-amber">Directory</p>
+                <ul className="space-y-2">
+                  <li><Link href="/search" className="hover:text-cream hover:underline">Search providers</Link></li>
+                  <li><Link href="/find-care" className="hover:text-cream hover:underline">Find care</Link></li>
+                  <li><Link href="/data-status" className="hover:text-cream hover:underline">Data status</Link></li>
+                </ul>
+              </div>
+              <div>
+                <p className="mb-3 font-mono text-xs uppercase tracking-[0.18em] text-amber">Legal</p>
+                <ul className="space-y-2">
+                  <li><Link href="/privacy" className="hover:text-cream hover:underline">Privacy Policy</Link></li>
+                  <li><Link href="/terms" className="hover:text-cream hover:underline">Terms of Service</Link></li>
+                  <li><Link href="/acceptable-use" className="hover:text-cream hover:underline">Acceptable Use</Link></li>
+                  <li><Link href="/cookies" className="hover:text-cream hover:underline">Cookies</Link></li>
+                </ul>
+              </div>
+              <div>
+                <p className="mb-3 font-mono text-xs uppercase tracking-[0.18em] text-amber">Contact</p>
+                <ul className="space-y-2">
+                  <li><a href="mailto:support@caregist.co.uk" className="hover:text-cream hover:underline">support@caregist.co.uk</a></li>
+                </ul>
+              </div>
+            </nav>
           </div>
         </footer>
       </body>
