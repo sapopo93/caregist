@@ -1102,7 +1102,12 @@ def _matches_provider_group(row: dict[str, Any], group: str, *, as_of: date) -> 
     if group in _GROUP_RATING:
         if isinstance(resolved, ResolvedRating):
             return resolved.is_current and resolved.value == _GROUP_RATING[group]
-        return _current_rating_evidence(row)[0] == _GROUP_RATING[group]
+        rating, published = _current_rating_evidence(row)
+        registered = _parse_date(row.get("registrationDate"))
+        # A rating older than this registration can describe a predecessor.
+        # Without resolved provenance it cannot prove current group membership.
+        return (rating == _GROUP_RATING[group] and published is not None
+                and registered is not None and published >= registered)
     if group == "not_yet_inspected":
         rating = resolved.value if isinstance(resolved, ResolvedRating) else _current_rating_evidence(row)[0]
         return str(rating or "").strip().casefold() in ("", "not yet inspected", "no published rating")
@@ -1591,8 +1596,11 @@ def generate_brief_from_rows(
     caveats = (
         insights["rating_date_coverage"]["limitation"],
         "Rating freshness is measured against the generation date, separately from the source "
-        "window. Stale RI records remain visible in evidence coverage, outside the shortlist "
-        "when they have no in-window signal. Missing metadata describes the supplied snapshot, "
+        "window. Standing provider-group evidence may qualify an organisation even when its "
+        "publication date predates that window. Without a selected standing group, older records "
+        "without an in-window signal remain contextual evidence rather than shortlist entries. "
+        "Undated or pre-registration ratings do not establish current membership of a rating-based "
+        "group without resolved provenance. Missing metadata describes the supplied snapshot, "
         "not a claim that CQC never published it.",
         f"This brief reflects the published CQC register edition dated {as_of.isoformat()} "
         f"(the newest date present in the source), not a live API lookup.",
@@ -1634,8 +1642,8 @@ def generate_brief_from_rows(
         )
     group_note = (
         f" Provider group: {PROVIDER_GROUP_LABELS[provider_group]}, taken from the same "
-        f"directory query as the coverage check; each member carries its documented group "
-        f"state as evidence."
+        f"confirmed source criteria; membership is rechecked against the supplied snapshot. "
+        f"Each member carries its documented group state as evidence."
         if provider_group else ""
     )
     methodology = (
@@ -1864,8 +1872,8 @@ def shortfall_notice(shortlisted: int, target: int) -> str | None:
     if shortlisted >= target:
         return None
     return (
-        f"Shortfall: this territory has {shortlisted} organisation(s) with a supported signal in "
-        f"the window, fewer than the requested shortlist of {target}. "
+        f"Shortfall: this territory has {shortlisted} organisation(s) meeting the confirmed evidence "
+        f"criteria, fewer than the requested shortlist of {target}. "
         "All of them are included; none have been added to make up the number."
     )
 

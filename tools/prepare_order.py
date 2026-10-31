@@ -30,6 +30,7 @@ Examples:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import asyncio
 import imaplib
 import json
@@ -607,6 +608,9 @@ def build_brief(args: argparse.Namespace, *, env: dict[str, str], order_dir: Pat
     export_dir = args.export_dir or latest_export(REPO_ROOT / ".tmp")
     receipt = export_receipt(export_dir)
     check_export_fresh(checks, receipt, now)
+    from tools.build_weekly_digest_pilot import sha256_file
+    source_files = {name: sha256_file(export_dir / name)
+                    for name in ("_locations_detail.ndjson", "_providers_detail.ndjson")}
 
     ids = asyncio.run(
         fetch_scope_location_ids(env["DATABASE_URL"], args.region, args.provider_group, args.service_type)
@@ -668,7 +672,13 @@ def build_brief(args: argparse.Namespace, *, env: dict[str, str], order_dir: Pat
     manifest = order_dir / f"territory-opportunity-brief-{slug}-source-manifest.json"
     pdf.write_bytes(render_brief_pdf(brief))
     csv_path.write_text(brief_to_csv(brief), encoding="utf-8")
-    manifest.write_text(json.dumps(brief.to_json(), indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    checks.add("source_unchanged", all(sha256_file(export_dir / name) == digest
+        for name, digest in source_files.items()), "Source files must remain unchanged throughout generation; retry from a completed export if they changed")
+    source_version = "cqc-export-sha256:" + hashlib.sha256(
+        json.dumps(source_files, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+    manifest.write_text(json.dumps({**brief.to_json(), "source_files": source_files,
+        "source_retrieved_at": receipt["source_retrieved_at"]}, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
     summary = {
         "region": args.region,
@@ -677,6 +687,7 @@ def build_brief(args: argparse.Namespace, *, env: dict[str, str], order_dir: Pat
         "locations_in_scope": len(ids),
         "shortlisted": len(brief.shortlist),
         "source_edition": brief.as_of_date.isoformat(),
+        "source_version": source_version,
         "export": str(export_dir),
     }
     return checks, summary, [pdf, csv_path, manifest]
@@ -851,7 +862,9 @@ def build_customer_delivery_package(
         product_id=product_id,
         payment_reference=payment["session"],
         template_version=template_version,
-        source_version=str(summary.get("source_edition") or source_evidence.get("generated_at") or "not recorded"),
+        source_version=str(summary.get("source_version") or summary.get("source_edition") or
+            ("cqc-sources-sha256:" + hashlib.sha256(json.dumps(source_evidence["sources"], sort_keys=True).encode()).hexdigest()
+             if source_evidence.get("sources") else source_evidence.get("generated_at") or "not recorded")),
         geography=args.region,
         service_types=service_types,
         rating_context_criteria=criteria,

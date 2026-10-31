@@ -1,6 +1,6 @@
 ## 2026-10-31 — two-product builder/report-quality follow-up
 
-PARTIAL — shared builder already live at 0653003; follow-up code/report audit is local on codex/package-production-quality. Engineering tests pass (1,898 Python; 166 real-Postgres plus one skipped; 212 frontend), but full premium dossier, staff creation UI and real delivery acceptance remain unpassed. Migration 074 only local-tested. No commercial gate has been opened.
+PARTIAL — shared builder already live at 0653003; follow-up code/report audit is local on codex/package-production-quality. Engineering tests pass (1,900 Python; 166 real-Postgres plus one skipped; 212 frontend), but full premium dossier, staff creation UI and real delivery acceptance remain unpassed. Migration 074 only local-tested. No commercial gate has been opened.
 
 ---
 

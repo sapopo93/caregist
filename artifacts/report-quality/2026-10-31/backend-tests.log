@@ -5,7 +5,7 @@ configfile: pytest.ini
 testpaths: tests
 plugins: cov-5.0.0, asyncio-1.4.0, anyio-4.14.2
 asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
-collected 2062 items
+collected 2064 items
 
 tests/integration/test_acceptance_territory_download_pg.py ssssssssssss  [  0%]
 tests/integration/test_buying_dataset_refund_pg.py ssssss                [  0%]
@@ -62,7 +62,7 @@ tests/test_billing_entitlements.py ........                              [ 18%]
 tests/test_billing_territory_brief_checkout.py ..................        [ 18%]
 tests/test_billing_webhook_handlers.py ............................      [ 20%]
 tests/test_blob_upload.py ........                                       [ 20%]
-tests/test_build_weekly_digest_pilot.py .......                          [ 21%]
+tests/test_build_weekly_digest_pilot.py ........                         [ 21%]
 tests/test_check_file_ratings_freshness.py .......                       [ 21%]
 tests/test_check_quarantined_locations.py .....                          [ 21%]
 tests/test_clean_cqc.py ..................................               [ 23%]
@@ -71,7 +71,7 @@ tests/test_competitor_scan.py ............                               [ 25%]
 tests/test_config_secrets.py ........................................... [ 27%]
 ......                                                                   [ 27%]
 tests/test_cqc_common.py ......................................          [ 29%]
-tests/test_cqc_detail_unavailable.py ............................        [ 30%]
+tests/test_cqc_detail_unavailable.py ............................        [ 31%]
 tests/test_cqc_evidence_completeness.py .....................            [ 32%]
 tests/test_cqc_freshness.py ........................                     [ 33%]
 tests/test_cqc_reconciliation_workflow.py .                              [ 33%]
@@ -159,7 +159,7 @@ tests/test_stripe_release_verifier.py ........                           [ 87%]
 tests/test_subscribe_product_boundaries.py ..                            [ 87%]
 tests/test_tenant_context.py ....                                        [ 87%]
 tests/test_territory_brief.py .......................................... [ 89%]
-..........                                                               [ 90%]
+...........                                                              [ 90%]
 tests/test_territory_brief_buyer_rules.py .............                  [ 90%]
 tests/test_territory_brief_fulfilment.py ............................... [ 92%]
 ......                                                                   [ 92%]
@@ -187,4 +187,4 @@ tests/test_codex_review_findings.py::test_do_not_contact_survives_sensitive_line
     from click.parser import split_arg_string
 
 -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
-================ 1898 passed, 164 skipped, 2 warnings in 14.60s ================
+================ 1900 passed, 164 skipped, 2 warnings in 14.85s ================

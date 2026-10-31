@@ -10,8 +10,8 @@
     "every_page_marked_preview": true
   },
   ".tmp/report-quality/HISTORICAL-PREVIEW-NW-50/brief.pdf": {
-    "pages": 34,
-    "sha256": "2f15296fccb042838c9d63ac210569a929ebf69022a4d174394dd0171e621f28",
+    "pages": 33,
+    "sha256": "a382bc976a6056bace84909589315e03250fbbdd12d2fffa15c2195362ef36b1",
     "every_page_marked_preview": true,
     "source_membership_verified": true,
     "counts": {
@@ -28,7 +28,7 @@
   },
   ".tmp/report-quality/HISTORICAL-PREVIEW-NW-8/brief.pdf": {
     "pages": 9,
-    "sha256": "02749b6b0aae7f76777f03ecc81168a6ea6cc8df41f448ba5094dabaaf7e7bdd",
+    "sha256": "029f35df9803c499a02f8bf01869b175b8afa2a394cb2ad05eae399fe77e0651",
     "every_page_marked_preview": true,
     "source_membership_verified": true,
     "counts": {

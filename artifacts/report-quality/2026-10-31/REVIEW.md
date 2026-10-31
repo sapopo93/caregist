@@ -6,7 +6,7 @@ The shared builder was already merged in PR #153 and is served by production SHA
 `0653003270175aa24aa6652933c8dfad0a5f07be` (read-only health check on 31 October).
 This follow-up is a bounded correctness/preview release, not approval of paid
 checkout, automated delivery, researched dossiers, exports or collectors.
-Those gates must remain closed. No live customer payment or delivery was exercised.
+Checkout and paid delivery must remain closed; no existing collector, export, claims or outbound configuration is changed. No live customer payment or delivery was exercised.
 
 The full handoff remains **PARTIAL**, not complete: there is no staff website
 builder screen, reviewed-dossier ingestion/rendering is not implemented, XLSX is
@@ -111,4 +111,14 @@ refer to these corrected files. The general premium-dossier limitation remains.
 The final wording pass also relabelled the executive totals and sub-area tables
 as evidence in scope, not in-window movements, and removed unsupported
 onboarding/central-decision assertions. Service-type counts are explicitly
-location counts. The final full Python suite passed 1,898 checks (164 skips).
+location counts. The final full Python suite passed 1,900 checks (164 skips; before adding the separately executed Digest integration case).
+
+Final source/provenance checks additionally reject raw rating-group membership
+when a rating is undated or precedes the current registration. The stale-record
+limitation now matches the actual standing-group selection logic. Manual paid
+packages bind source-file hashes, refuse changing exports, and Digest database
+reads use a repeatable snapshot. A new real-Postgres Digest test exercises ledger
+query, region exclusion, renderer, content validation, ZIP publication and wrong-
+customer refusal; all three tests in that paired-product integration file pass.
+The earlier full integration suite remains 166 passed/one skipped, with this
+additional Digest case separately recorded in `digest-postgres-tests.log`.

@@ -626,7 +626,7 @@ def test_service_filter_matches_cqc_api_name_as_well_as_description(tmp_path):
 
 def test_rating_group_cannot_be_widened_by_another_signal_or_deregistered_record(tmp_path):
     locs = [
-        _loc(locationId="ri", providerId="ri", registrationDate="2026-02-10",
+        _loc(locationId="ri", providerId="ri", registrationDate="2020-01-01",
              currentRatings=_rating_block("Requires improvement", "2025-08-01")),
         _loc(locationId="good", providerId="good", registrationDate="2026-02-10",
              currentRatings=_rating_block("Good", "2025-08-01")),
@@ -655,3 +655,20 @@ def test_report_does_not_relabel_standing_rating_as_an_in_window_event(tmp_path)
     assert "Movement in window" not in text and "Qualifying events" not in text
     assert "Evidence in scope" in text
     assert "Each organisation reached this list because of at least one supported event in the window" not in text
+
+
+def test_raw_pre_registration_or_undated_rating_cannot_prove_current_group(tmp_path):
+    rows = [
+        _loc(locationId="inherited", providerId="old", registrationDate="2026-02-10",
+             currentRatings=_rating_block("Requires improvement", "2024-01-01")),
+        _loc(locationId="undated", providerId="none", registrationDate="2020-01-01",
+             currentRatings={"overall": {"rating": "Requires improvement"}}),
+        _loc(locationId="current", providerId="current", registrationDate="2020-01-01",
+             currentRatings=_rating_block("Requires improvement", "2025-01-01")),
+    ]
+    paths = _write_snapshot(tmp_path, rows, [])
+    brief = generate_territory_opportunity_brief(
+        {"kind": "local_authority", "name": "Testershire", "window_days": 90}, CONTEXT,
+        locations_source=paths[0], providers_source=paths[1], provider_group="requires_improvement")
+    assert {o.location_id for o in brief.shortlist} == {"current"}
+    assert any("predates that window" in note for note in brief.data_caveats)

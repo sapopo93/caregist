@@ -288,7 +288,7 @@ async def fetch_from_database(database_url: str, region: str, window: Window):
 
     conn = await asyncpg.connect(database_url)
     try:
-        async with conn.transaction(readonly=True):
+        async with conn.transaction(readonly=True, isolation="repeatable_read"):
             registrations = [dict(r) for r in await conn.fetch(_NEW_REGISTRATIONS_SQL, region, window.start, window.end)]
             edition_row = await conn.fetchrow(_EDITION_SQL)
     finally:
@@ -333,10 +333,14 @@ def main(argv: list[str] | None = None, *, database_url: str | None = None) -> i
         print(f"ERROR: {args.locations_source} not found.", file=sys.stderr)
         return 2
 
+    source_hash = sha256_file(args.locations_source)
     source_rows = list(load_ndjson(args.locations_source))
     ratings = select_published_ratings(source_rows, region=args.region, window=window)
     endings = select_registration_endings(source_rows, region=args.region, window=window)
     registrations, edition = asyncio.run(fetch_from_database(database_url, args.region, window))
+    if sha256_file(args.locations_source) != source_hash:
+        print("ERROR: the source export changed during generation; retry from a completed export.", file=sys.stderr)
+        return 2
     csv_bytes = digest_csv_bytes(registrations, ratings, endings)
     from api.services.customer_package import digest_binding
     binding = digest_binding(
@@ -379,7 +383,7 @@ def main(argv: list[str] | None = None, *, database_url: str | None = None) -> i
             "directory_edition": {k: (v.isoformat() if hasattr(v, "isoformat") else v) for k, v in edition.items()},
             "ratings": {
                 "file": str(args.locations_source),
-                "sha256": sha256_file(args.locations_source),
+                "sha256": source_hash,
                 "retrieved_at": args.source_retrieved_at,
             },
         },
