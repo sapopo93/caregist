@@ -7,10 +7,10 @@ export default function NotFound() {
     <div className="mx-auto max-w-3xl px-6 py-16">
       <p className="font-mono text-xs uppercase tracking-[0.22em] text-clay">Error 404</p>
       <h1 className="mt-3 text-5xl font-extrabold leading-tight text-bark md:text-6xl">
-        That page is not on the register.
+        Page not found
       </h1>
       <p className="mt-4 max-w-xl text-dusk">
-        The address may be out of date. Look a provider up directly, or start from your region.
+        That address is not on the register and may be out of date. Look a provider up directly, or start from your region.
       </p>
 
       <form action="/search" method="get" role="search" className="mt-8 flex flex-col gap-3 sm:flex-row">

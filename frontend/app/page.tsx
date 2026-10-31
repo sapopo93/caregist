@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { TERRITORY_BRIEF_PRICE_GBP, WEEKLY_DIGEST_PILOT_PRICE_GBP } from "@/lib/caregist-config";
 import Link from "next/link";
 
 import DirectorySearchForm from "@/components/directory/DirectorySearchForm";
@@ -138,8 +139,9 @@ export default async function HomePage() {
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-clay">Products</p>
             <h2 className="mt-3 text-3xl font-bold text-bark">Two products, both built on the published record</h2>
             <p className="mt-3 text-sm leading-6 text-dusk">
-              CareGist sells two products: a weekly digest of movement in one England region,
-              and a one-off brief on the organisations to investigate in a territory.
+              CareGist sells two products: a Weekly Digest of movement in one England region
+              (&pound;{WEEKLY_DIGEST_PILOT_PRICE_GBP} for four weekly issues), and a one-off Territory
+              Opportunity Brief on the organisations to investigate (&pound;{TERRITORY_BRIEF_PRICE_GBP}).
             </p>
           </div>
           <PricingGlance />
