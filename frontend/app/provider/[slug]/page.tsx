@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import RatingScale from "@/components/RatingScale";
 import { getDirectoryProvider } from "@/lib/directory-db";
 import { normalizeExternalHttpUrl, cqcEvidenceUrl } from "@/lib/external-url";
 import { getProviderHref, directoryReturnHref } from "@/lib/provider-path";
@@ -132,18 +133,16 @@ export default async function ProviderPage({ params, searchParams }: { params: P
           <div className="space-y-6">
             <section className="rounded-3xl border border-stone bg-cream p-6 shadow-sm">
               <h2 className="text-2xl font-bold text-bark">CQC ratings</h2>
-              <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="mt-5 space-y-4">
+                <RatingScale label="Overall" rating={provider.overall_rating} />
+                <div className="border-t border-stone" />
                 {ratingDimensions.map((dimension) => (
-                  <div key={dimension.key} className="rounded-2xl border border-stone bg-white p-4">
-                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-clay">
-                      {dimension.label}
-                    </p>
-                    <p className="mt-2 text-sm text-dusk">
-                      {provider[dimension.key] ?? "Not published"}
-                    </p>
-                  </div>
+                  <RatingScale key={dimension.key} label={dimension.label} rating={provider[dimension.key]} />
                 ))}
               </div>
+              <p className="mt-5 text-xs leading-5 text-dusk">
+                Published on CQC&apos;s four-step scale. An empty track means CQC has not published that rating.
+              </p>
             </section>
 
             <section className="rounded-3xl border border-stone bg-cream p-6 shadow-sm">
