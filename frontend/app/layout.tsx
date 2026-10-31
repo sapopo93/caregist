@@ -154,11 +154,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             ) : null}
 
             <div className="flex items-center justify-end gap-3">
-              <Link
-                href="/pricing"
-                className="rounded-full bg-amber px-4 py-2 text-sm font-semibold text-charcoal transition hover:bg-cream md:hidden"
-              >
-                Products
+              <Link href="/pricing/territory" className="cta-primary cta-primary--sm whitespace-nowrap !gap-1 !px-3 !text-[0.8rem] md:hidden">
+                Check territory
               </Link>
               <nav aria-label="Primary" className="hidden items-center gap-5 text-sm font-medium md:flex">
                 <Link href="/search" className="hover:text-amber">
