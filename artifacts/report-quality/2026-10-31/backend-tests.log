@@ -5,7 +5,7 @@ configfile: pytest.ini
 testpaths: tests
 plugins: cov-5.0.0, asyncio-1.4.0, anyio-4.14.2
 asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=function, asyncio_default_test_loop_scope=function
-collected 2061 items
+collected 2062 items
 
 tests/integration/test_acceptance_territory_download_pg.py ssssssssssss  [  0%]
 tests/integration/test_buying_dataset_refund_pg.py ssssss                [  0%]
@@ -71,7 +71,7 @@ tests/test_competitor_scan.py ............                               [ 25%]
 tests/test_config_secrets.py ........................................... [ 27%]
 ......                                                                   [ 27%]
 tests/test_cqc_common.py ......................................          [ 29%]
-tests/test_cqc_detail_unavailable.py ............................        [ 31%]
+tests/test_cqc_detail_unavailable.py ............................        [ 30%]
 tests/test_cqc_evidence_completeness.py .....................            [ 32%]
 tests/test_cqc_freshness.py ........................                     [ 33%]
 tests/test_cqc_reconciliation_workflow.py .                              [ 33%]
@@ -97,7 +97,7 @@ tests/test_full_dataset_fulfilment.py .....                              [ 44%]
 tests/test_health.py ..................                                  [ 44%]
 tests/test_import_cqc_latest_ratings.py ...                              [ 45%]
 tests/test_incremental_list_scan.py .                                    [ 45%]
-tests/test_incremental_update.py ....................................... [ 47%]
+tests/test_incremental_update.py ....................................... [ 46%]
 .....................................................                    [ 49%]
 tests/test_internal_pipeline.py ...........                              [ 50%]
 tests/test_ip_rate_limit.py ......                                       [ 50%]
@@ -119,7 +119,7 @@ tests/test_pipeline_health.py .................                          [ 61%]
 tests/test_poll_report_index_health.py .........                         [ 61%]
 tests/test_postcode_geocode.py ..............                            [ 62%]
 tests/test_prepare_directory.py ...............................          [ 63%]
-tests/test_prepare_order.py .....................                        [ 65%]
+tests/test_prepare_order.py .....................                        [ 64%]
 tests/test_prepare_order_rating_contract.py ........                     [ 65%]
 tests/test_price_single_source.py ...                                    [ 65%]
 tests/test_provider_account_reads.py .                                   [ 65%]
@@ -159,7 +159,7 @@ tests/test_stripe_release_verifier.py ........                           [ 87%]
 tests/test_subscribe_product_boundaries.py ..                            [ 87%]
 tests/test_tenant_context.py ....                                        [ 87%]
 tests/test_territory_brief.py .......................................... [ 89%]
-.........                                                                [ 90%]
+..........                                                               [ 90%]
 tests/test_territory_brief_buyer_rules.py .............                  [ 90%]
 tests/test_territory_brief_fulfilment.py ............................... [ 92%]
 ......                                                                   [ 92%]
@@ -187,4 +187,4 @@ tests/test_codex_review_findings.py::test_do_not_contact_survives_sensitive_line
     from click.parser import split_arg_string
 
 -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
-================ 1897 passed, 164 skipped, 2 warnings in 14.74s ================
+================ 1898 passed, 164 skipped, 2 warnings in 14.60s ================

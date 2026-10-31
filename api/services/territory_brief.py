@@ -610,9 +610,9 @@ def _recency_phrase(event_date: date, as_of: date) -> str:
     if age < 0:
         return "on a source date after generation (recency unverified)"
     if age <= 21:
-        return "in the last three weeks, so it is still standing up policies, training and systems"
+        return "in the last three weeks; its current policies, training and supplier arrangements require verification"
     if age <= 60:
-        return "in the last two months, so onboarding decisions are still open"
+        return "in the last two months; the record does not establish whether onboarding decisions remain open"
     if age <= 120:
         return "within the last four months"
     return f"about {age // 30} months ago"
@@ -758,8 +758,8 @@ def _reason(
 
     if provider_cluster >= 2:
         parts.append(
-            f"The provider behind this location has {provider_cluster} locations moving in "
-            f"{territory} in this window, so it is an account-level opportunity, not a one-off."
+            f"The provider behind this location has {provider_cluster} locations carrying qualifying evidence in "
+            f"{territory}. Consider an account-level opportunity review; this does not establish demand."
         )
 
     if not parts:
@@ -823,7 +823,7 @@ def _qualification_question(primary_signal: str, *, provider_cluster: int, terri
         "What is this organisation's current supplier arrangement, and who decides changes?",
     )
     if provider_cluster >= 2:
-        question += f" Is that decided centrally across its {provider_cluster} moving locations in {territory}?"
+        question += f" Is that decided centrally across its {provider_cluster} qualifying locations in {territory}?"
     return question
 
 
@@ -967,7 +967,7 @@ def _territory_insights(
             for area, count in subarea_counts.most_common(8)
         ],
         "service_type_mix": [
-            {"service_type": svc, "organisations": count}
+            {"service_type": svc, "locations": count}
             for svc, count in service_counts.most_common(6)
         ],
         "most_active_providers": most_active_providers,
@@ -1002,14 +1002,14 @@ def _next_actions(insights: dict[str, Any], ranked: list[RankedOrganisation], sc
     if insights["most_active_providers"]:
         top = insights["most_active_providers"][0]["provider"]
         actions.append(
-            f"Treat {top} as an account, not a lead: multiple of their locations are moving in "
-            f"this window, so target the provider's central quality lead."
+            f"Review {top} at organisation level: multiple locations carry qualifying evidence. "
+            "Verify whether decisions sit with a central quality lead before considering contact."
         )
     top_area = insights["activity_by_sub_area"][0]["area"] if insights["activity_by_sub_area"] else None
     if top_area and scope.kind == "region":
         actions.append(
-            f"Concentrate field time on {top_area}: it has the highest count of qualifying "
-            f"events in {scope.name} this window."
+            f"Prioritise source verification for {top_area}: it has the highest count of qualifying "
+            f"evidence items in {scope.name}, including standing group evidence where selected."
         )
     actions.append(
         "Verify each organisation's current status on the linked CQC page before outreach - this "
@@ -1649,7 +1649,7 @@ def generate_brief_from_rows(
         "Score = base weight per event x recency multiplier (1.5 within 30 days, 1.2 within 90, "
         "1.05 within 180) + rating-direction adjustment (downgrade +16, upgrade +9) + a bed-count "
         "size factor + a provider-cluster bonus where the same provider has multiple locations "
-        "moving. Scores are capped at 100.",
+        "carrying qualifying evidence. Standing group evidence may predate the window. Scores are capped at 100.",
         "One location represents each provider: highest score, then most recent event date, "
         "then organisation name, then lexicographically smallest CQC location id. "
         "Deduplication happens before the shortlist limit. Ties break by those same keys, so "

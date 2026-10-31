@@ -92,7 +92,7 @@ def render_brief_pdf(brief: TerritoryBrief) -> bytes:
             ("Window", es["window"]),
             ("Opportunity set", str(es["opportunity_set_size"])),
             ("Selected candidates", str(es["shortlisted"])),
-            ("Movement in window", es["movement_summary"]),
+            ("Evidence in scope", es["movement_summary"]),
         ]
     )
     pdf.spacer(2)
@@ -139,7 +139,7 @@ def render_brief_pdf(brief: TerritoryBrief) -> bytes:
         "may predate the window and is not described as a new event. The opportunity score combines "
         "the evidence type, how recent it is, "
         "the direction of any rating move, the size of the location, and whether the same "
-        "provider has several locations moving at once. Appendix A gives the full reason and "
+        "provider has several locations carrying qualifying evidence. Appendix A gives the full reason and "
         "the evidence for every organisation, in rank order."
     )
 
@@ -149,7 +149,7 @@ def render_brief_pdf(brief: TerritoryBrief) -> bytes:
     pdf.paragraph("Aggregate view of the whole opportunity set (not just the shortlist).")
     pdf.key_values(
         [
-            ("Events by type", ", ".join(f"{k}: {v}" for k, v in ins["events_by_type"].items()) or "none"),
+            ("Evidence by type", ", ".join(f"{k}: {v}" for k, v in ins["events_by_type"].items()) or "none"),
             ("Rating moves", (
                 ins["rating_date_coverage"]["limitation"]
                 if not ins["rating_date_coverage"]["recent_rating_changes_available"]
@@ -162,26 +162,26 @@ def render_brief_pdf(brief: TerritoryBrief) -> bytes:
     # A single row only repeats the territory itself, so it is not shown.
     if len(ins["activity_by_sub_area"]) > 1:
         pdf.spacer(2)
-        pdf.paragraph("Activity by sub-area:")
+        pdf.paragraph("Qualifying evidence by sub-area (including standing group evidence):")
         pdf.table(
-            ["Area", "Qualifying events"],
+            ["Area", "Evidence items"],
             [[a["area"], a["events"]] for a in ins["activity_by_sub_area"]],
             widths=[3, 1],
         )
     if ins["service_type_mix"]:
         pdf.paragraph("Service-type mix in the opportunity set:")
         pdf.table(
-            ["Service type", "Organisations"],
-            [[s["service_type"], s["organisations"]] for s in ins["service_type_mix"]],
+            ["Service type", "Locations"],
+            [[s["service_type"], s["locations"]] for s in ins["service_type_mix"]],
             widths=[3, 1],
         )
     if ins["most_active_providers"]:
-        pdf.paragraph("Providers with more than one location moving (account-level opportunities):")
+        pdf.paragraph("Providers with multiple locations carrying qualifying evidence:")
         pdf.bullets(
             [f"{p['provider']} - {p['locations_moving']} locations" for p in ins["most_active_providers"]]
         )
     else:
-        pdf.paragraph("No single provider has more than one location moving in this window.", muted=True)
+        pdf.paragraph("No single provider has multiple locations carrying qualifying evidence in this scope.", muted=True)
 
     # 5. Recommended next actions
     pdf.heading("5. Recommended next actions")

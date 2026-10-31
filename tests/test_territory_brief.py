@@ -652,4 +652,6 @@ def test_report_does_not_relabel_standing_rating_as_an_in_window_event(tmp_path)
     from api.services.customer_package import _pdf_text
     text = ' '.join(_pdf_text(render_brief_pdf(brief), 'brief.pdf').split())
     assert "may predate the window and is not described as a new event" in text
+    assert "Movement in window" not in text and "Qualifying events" not in text
+    assert "Evidence in scope" in text
     assert "Each organisation reached this list because of at least one supported event in the window" not in text

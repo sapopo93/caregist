@@ -64,7 +64,7 @@ can be treated as a completed premium dossier. Passing code tests is not that re
 
 ## Verification
 
-- Full Python suite: **1,897 passed, 164 skipped**. Database-dependent skips are
+- Full Python suite: **1,898 passed, 164 skipped**. Database-dependent skips are
   separately exercised below; remaining skips are not passes.
 - Full isolated local PostgreSQL integration suite: **166 passed, 1 skipped**
   (opt-in model-backed local transcription). Creates disposable local databases;
@@ -76,7 +76,7 @@ can be treated as a completed premium dossier. Passing code tests is not that re
   unique provider IDs, geography/service/rating/registration membership and
   watermark checks are retained in `verification.json` and the local samples.
 - The Brief executive section is four pages in both samples. Total report
-  lengths are nine and 33 pages, including all candidate/source appendices.
+  lengths are nine and 34 pages, including all candidate/source appendices.
   They remain candidate registers: generic qualification questions do not
   satisfy the frozen template's report-section research standard.
 
@@ -107,3 +107,8 @@ rating is not represented as a new 90-day event. The executive count label was
 shortened to prevent overlap. A new temporal-claim regression and the affected
 report suite passed (77 checks). The final preview hashes in `verification.json`
 refer to these corrected files. The general premium-dossier limitation remains.
+
+The final wording pass also relabelled the executive totals and sub-area tables
+as evidence in scope, not in-window movements, and removed unsupported
+onboarding/central-decision assertions. Service-type counts are explicitly
+location counts. The final full Python suite passed 1,898 checks (164 skips).
