@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import RelatedLinks from "@/components/RelatedLinks";
 import ProviderActions from "@/components/ProviderActions";
 import CompareButton from "@/components/CompareButton";
 import Breadcrumbs, { regionSlug } from "@/components/Breadcrumbs";
@@ -282,6 +283,8 @@ export default async function ProviderPage({ params, searchParams }: { params: P
           </div>
         </div>
       </div>
+
+      <RelatedLinks town={provider.town} region={provider.region} rating={provider.overall_rating} />
     </div>
   );
 }
