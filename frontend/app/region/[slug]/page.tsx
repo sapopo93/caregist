@@ -4,6 +4,11 @@ import PrintButton from "@/components/PrintButton";
 import RatingDistributionBar from "@/components/RatingDistributionBar";
 import EmailCaptureStrip from "@/components/EmailCaptureStrip";
 import TrustSignal from "@/components/TrustSignal";
+import Breadcrumbs from "@/components/Breadcrumbs";
+import RememberRegion from "@/components/RememberRegion";
+import RegionSwitcher from "@/components/RegionSwitcher";
+import RegionBriefing from "@/components/RegionBriefing";
+import { getDirectoryRegionSnapshot } from "@/lib/directory-db";
 import { searchProviders, getRegionStats } from "@/lib/api";
 import { getProviderHref, getProviderPathKey } from "@/lib/provider-path";
 import Link from "next/link";
@@ -85,6 +90,9 @@ export default async function RegionPage({
     }
   }
 
+  const regionSnapshot = isRegion
+    ? (await getDirectoryRegionSnapshot().catch(() => [])).find((r) => r.region === REGION_MAP[slug]) ?? null
+    : null;
   const totalProviders = stats?.total_providers || results.meta.total;
   const pctGood = stats?.pct_good_or_outstanding;
 
@@ -121,6 +129,9 @@ export default async function RegionPage({
         </p>
       </section>}
 
+      <Breadcrumbs crumbs={[{ label: "Directory", href: "/search" }, { label: displayName }]} />
+      {isRegion ? <RegionSwitcher current={REGION_MAP[slug]} /> : null}
+      {isRegion ? <RememberRegion region={REGION_MAP[slug]} /> : null}
       <h1 className="text-3xl font-bold mb-2">CQC care providers in {displayName}</h1>
       <div className="flex items-center justify-between mb-6">
         <p className="text-dusk">{error ? "Provider count unavailable" : `${totalProviders.toLocaleString()} providers`}</p>
@@ -128,6 +139,8 @@ export default async function RegionPage({
           <PrintButton />
         </div>
       </div>
+
+      {regionSnapshot ? <RegionBriefing snapshot={regionSnapshot} /> : null}
 
       {/* Rating Distribution */}
       {stats?.rating_distribution && Object.keys(stats.rating_distribution).length > 0 && (

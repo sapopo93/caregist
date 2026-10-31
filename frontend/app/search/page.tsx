@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { regionSlug } from "@/components/Breadcrumbs";
 import ActiveFilters, { type ActiveFilter } from "@/components/directory/ActiveFilters";
+import RecentlyViewed from "@/components/RecentlyViewed";
 import CollapsibleOnMobile from "@/components/directory/CollapsibleOnMobile";
 import DirectoryPagination from "@/components/directory/DirectoryPagination";
 import DirectoryProviderCard from "@/components/directory/DirectoryProviderCard";
@@ -49,6 +51,7 @@ export default async function SearchPage({
 
   return (
     <div className="mx-auto max-w-6xl overflow-x-hidden px-4 py-8 sm:px-6 sm:py-10">
+      <RecentlyViewed />
       <CollapsibleOnMobile summary="Filters" activeCount={activeFilters.length}>
       <DirectorySearchForm
           action="/search"
@@ -110,12 +113,19 @@ export default async function SearchPage({
                   ))}
                 </div>
               ) : (
-                <div className="rounded-3xl border border-stone bg-cream p-8 text-center shadow-sm">
-                  <p className="text-lg font-semibold text-bark">No providers matched this search.</p>
+                <div className="rounded-2xl border border-stone bg-cream p-8 shadow-sm">
+                  <p className="text-2xl font-bold text-bark">No providers matched this search.</p>
                   <p className="mt-2 text-sm text-dusk">
-                    Try removing one filter or using a broader town or provider name.
+                    {activeFilters.length > 1
+                      ? "Several filters are combined, which narrows results quickly. Remove one and the list may reappear."
+                      : "Try a broader town or provider name, or check the spelling."}
                   </p>
-                  <Link href="/search" className="mt-4 inline-block font-semibold text-clay underline">Clear filters and start again</Link>
+                  <ul className="mt-5 grid gap-2 text-sm sm:grid-cols-3">
+                    <li><Link href="/find-care" className="block rounded-lg border border-stone bg-white p-3 font-semibold text-clay hover:border-clay">Search by postcode and radius →</Link></li>
+                    <li><Link href={filters.region ? `/region/${regionSlug(filters.region)}` : "/search"} className="block rounded-lg border border-stone bg-white p-3 font-semibold text-clay hover:border-clay">{filters.region ? `Browse all of ${filters.region} →` : "Browse the full directory →"}</Link></li>
+                    <li><Link href="/search" className="block rounded-lg border border-stone bg-white p-3 font-semibold text-clay hover:border-clay">Clear filters and start again →</Link></li>
+                  </ul>
+                  <p className="mt-4 text-xs text-dusk">Only active CQC-registered locations appear. A provider that has deregistered will not be listed.</p>
                 </div>
               )}
 
