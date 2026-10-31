@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import ActiveFilters, { type ActiveFilter } from "@/components/directory/ActiveFilters";
+import CollapsibleOnMobile from "@/components/directory/CollapsibleOnMobile";
 import DirectoryPagination from "@/components/directory/DirectoryPagination";
 import DirectoryProviderCard from "@/components/directory/DirectoryProviderCard";
 import DirectorySearchForm from "@/components/directory/DirectorySearchForm";
@@ -48,19 +49,21 @@ export default async function SearchPage({
 
   return (
     <div className="mx-auto max-w-6xl overflow-x-hidden px-4 py-8 sm:px-6 sm:py-10">
+      <CollapsibleOnMobile summary="Filters" activeCount={activeFilters.length}>
       <DirectorySearchForm
-        action="/search"
-        options={options}
-        query={filters.query}
-        region={filters.region}
-        serviceType={filters.serviceType}
-        rating={filters.rating}
-        opportunity={filters.opportunity}
-        titleHeading="h1"
-        title={opportunity ? opportunity.label : "Search CQC-registered care services"}
-        description="Filter factual CQC location records. Segment labels describe published registration or rating state and are not predictions or recommendations."
-        submitLabel="Update search"
-      />
+          action="/search"
+          options={options}
+          query={filters.query}
+          region={filters.region}
+          serviceType={filters.serviceType}
+          rating={filters.rating}
+          opportunity={filters.opportunity}
+          titleHeading="h1"
+          title={opportunity ? opportunity.label : "Search CQC-registered care services"}
+          description="Filter factual CQC location records. Segment labels describe published registration or rating state and are not predictions or recommendations."
+          submitLabel="Update search"
+        />
+      </CollapsibleOnMobile>
 
       <div className="mt-8 grid min-w-0 gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
         <section className="min-w-0">
