@@ -4,6 +4,7 @@ import PrintButton from "@/components/PrintButton";
 import RatingDistributionBar from "@/components/RatingDistributionBar";
 import EmailCaptureStrip from "@/components/EmailCaptureStrip";
 import TrustSignal from "@/components/TrustSignal";
+import Breadcrumbs from "@/components/Breadcrumbs";
 import RegionBriefing from "@/components/RegionBriefing";
 import { getDirectoryRegionSnapshot } from "@/lib/directory-db";
 import { searchProviders, getRegionStats } from "@/lib/api";
@@ -126,6 +127,7 @@ export default async function RegionPage({
         </p>
       </section>}
 
+      <Breadcrumbs crumbs={[{ label: "Directory", href: "/search" }, { label: displayName }]} />
       <h1 className="text-3xl font-bold mb-2">CQC care providers in {displayName}</h1>
       <div className="flex items-center justify-between mb-6">
         <p className="text-dusk">{error ? "Provider count unavailable" : `${totalProviders.toLocaleString()} providers`}</p>

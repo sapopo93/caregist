@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import Breadcrumbs, { regionSlug } from "@/components/Breadcrumbs";
 import RememberProvider from "@/components/RememberProvider";
 import RatingScale from "@/components/RatingScale";
 import { DEFAULT_REGION_OPTIONS } from "@/lib/directory-constants";
@@ -97,9 +98,20 @@ export default async function ProviderPage({ params, searchParams }: { params: P
         rating={provider.overall_rating ?? null}
         place={[provider.town, provider.postcode].filter(Boolean).join(", ")}
       />
-      <Link href={returnTo} className="text-sm font-medium text-clay hover:text-bark">
-        Back to search
-      </Link>
+      <div className="flex flex-wrap items-baseline justify-between gap-x-6">
+        <Breadcrumbs
+          crumbs={[
+            { label: "Directory", href: returnTo },
+            ...(provider.region && DEFAULT_REGION_OPTIONS.includes(provider.region)
+              ? [{ label: provider.region, href: `/region/${regionSlug(provider.region)}` }]
+              : []),
+            { label: provider.name },
+          ]}
+        />
+        <Link href={returnTo} className="mb-4 text-sm font-medium text-clay hover:text-bark print:hidden">
+          Back to search
+        </Link>
+      </div>
 
       <div className="relative mt-4 overflow-hidden rounded-3xl border border-stone bg-cream p-8 pt-10 shadow-sm">
         <span aria-hidden className={`absolute inset-x-0 top-0 h-2 ${ratingToneClass(provider.overall_rating)}`} />
