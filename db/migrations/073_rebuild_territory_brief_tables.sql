@@ -74,6 +74,7 @@ DECLARE
     ['territory_brief_orders', 'selection_sha256'],
     ['territory_brief_orders', 'package_manifest'],
     ['territory_brief_orders', 'package_version'],
+    ['territory_brief_orders', 'source_edition_id'],
     ['territory_brief_consents', 'order_id'],
     ['territory_brief_consents', 'stripe_checkout_session_id'],
     ['territory_brief_consents', 'terms_version'],
@@ -123,6 +124,14 @@ BEGIN
   RAISE NOTICE 'Territory Brief tables predate migration 060 (missing: %); rebuilding.',
     array_to_string(missing, ', ');
 
+  -- Prevent a writer from committing a new row between the emptiness check and
+  -- DROP. Take every lock first, then count under READ COMMITTED snapshots.
+  FOREACH tbl IN ARRAY brief_tables LOOP
+    IF to_regclass(tbl) IS NOT NULL THEN
+      EXECUTE format('LOCK TABLE %I IN ACCESS EXCLUSIVE MODE', tbl);
+    END IF;
+  END LOOP;
+
   FOREACH tbl IN ARRAY brief_tables LOOP
     IF to_regclass(tbl) IS NOT NULL THEN
       EXECUTE format('SELECT COUNT(*) FROM %I', tbl) INTO row_count;
@@ -168,6 +177,7 @@ BEGIN
     selection_sha256 CHAR(64),
     package_manifest JSONB,
     package_version TEXT,
+    source_edition_id BIGINT REFERENCES territory_brief_source_editions(id) ON DELETE RESTRICT,
     CHECK (customer_email = LOWER(BTRIM(customer_email))),
     CHECK (stripe_price_id LIKE 'price_%'),
     CHECK (amount_total IS NULL OR amount_total >= 0),
