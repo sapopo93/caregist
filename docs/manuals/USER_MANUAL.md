@@ -33,7 +33,7 @@ CareGist checks source availability, supported selection rules, distinct-provide
 
 The Brief delivery target is three English working days after both written scope confirmation and source-path checking are complete. Count from the later check, with the following working day as day one; weekends and English public holidays are excluded. This is not a promise of three days from the first enquiry. Payment must be verified before production and does not restart the clock. If the date becomes unachievable, an explicit revised date must be agreed.
 
-Digest sales remain on hold pending product-specific operative terms and fulfilment approval. The published offer is an enquiry route, not an approved paid service. The Weekly Digest needs its own agreed start date, region, four issue dates, format, terms and payment arrangements. Do not apply the Brief delivery clock to it. An enquiry or sample does not establish that either paid service is ready for your scope.
+Henry approved human-led Weekly Digest sales at £150 once on 28 October 2026 and confirmed the existing Stripe setup. See the [founder decision](../decisions/2026-10-28-weekly-digest-sales-approval.md). The website enquiry alone does not place an order or take payment. The Weekly Digest needs its own agreed start date, region, four issue dates, format, terms and payment arrangements. Do not apply the Brief delivery clock to it. An enquiry or sample does not establish that either paid service is ready for your scope.
 
 ## Open and use a Brief
 

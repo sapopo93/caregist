@@ -18,7 +18,7 @@ Use one approved restricted enquiry/order register and one private evidence fold
 
 G0 to G5 precede a paid commitment. G6 follows verified payment and final production. A paper exercise, successful build or generated sample cannot substitute for these receipts. Current public observations are in the [manual index](README.md); recheck them before a consequential action.
 
-Digest sales remain on hold until product-specific operative terms and fulfilment approval are evidenced. The Brief process below cannot supply those product-specific approvals.
+Henry approved human-led Weekly Digest sales at £150 once for four weekly issues on 28 October 2026 and confirmed that Stripe is already set up. Keep that existing Stripe setup; do not reprice or create duplicate products. See the [founder decision](../decisions/2026-10-28-weekly-digest-sales-approval.md). Confirm the buyer's region, start date, four issue dates, operative terms, recipient and handling owner for each order. The Brief process does not establish Digest fulfilment readiness; automated payment and delivery retain their named verification and release gates.
 
 ## Take an enquiry through production
 
