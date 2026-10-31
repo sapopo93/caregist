@@ -71,6 +71,16 @@ export default function AuthNav() {
       {/* Mobile menu dropdown */}
       {menuOpen && (
         <div className="absolute left-0 right-0 top-full z-50 flex flex-col gap-3 border-t border-cream/10 bg-bark px-6 py-4 text-sm shadow-xl md:hidden">
+          <form action="/search" method="get" role="search" onSubmit={() => setMenuOpen(false)}>
+            <label htmlFor="mobile-site-search" className="sr-only">Search care providers by name, town or postcode</label>
+            <input
+              id="mobile-site-search"
+              name="q"
+              type="search"
+              placeholder="Search providers by name, town or postcode"
+              className="h-11 w-full rounded-full border border-cream/25 bg-charcoal/40 px-4 text-base text-cream placeholder:text-cream/60 focus:border-amber focus:outline-none"
+            />
+          </form>
           <Link href="/search" className="hover:text-amber transition-colors" onClick={() => setMenuOpen(false)}>
             Directory
           </Link>
