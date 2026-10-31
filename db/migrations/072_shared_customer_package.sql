@@ -18,13 +18,23 @@ ALTER TABLE territory_brief_orders
   ADD CONSTRAINT territory_brief_orders_package_version_check
     CHECK (package_version IS NULL OR (package_version = BTRIM(package_version) AND package_version <> ''));
 
--- Production's artifact_kind CHECK is not under the default name (the first
--- apply on 30 Oct 2026 failed on it). Drop whichever CHECK
--- constrains artifact_kind, then add one under a known name.
+-- Production's token table predates migration 060's design and has no
+-- artifact_kind column at all (both 30 Oct 2026 applies failed on it). Migration
+-- 073 rebuilds that table, so here only touch the CHECK where the column exists.
+-- Elsewhere, drop whichever CHECK constrains artifact_kind (its name is not
+-- guaranteed) and add one under a known name.
 DO $$
 DECLARE
   existing RECORD;
 BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = current_schema()
+      AND table_name = 'territory_brief_download_tokens'
+      AND column_name = 'artifact_kind'
+  ) THEN
+    RETURN;
+  END IF;
   FOR existing IN
     SELECT conname FROM pg_constraint
     WHERE conrelid = 'territory_brief_download_tokens'::regclass
@@ -33,9 +43,7 @@ BEGIN
   LOOP
     EXECUTE format('ALTER TABLE territory_brief_download_tokens DROP CONSTRAINT %I', existing.conname);
   END LOOP;
+  ALTER TABLE territory_brief_download_tokens
+    ADD CONSTRAINT territory_brief_download_tokens_artifact_kind_check
+      CHECK (artifact_kind IN ('pdf', 'csv', 'zip'));
 END $$;
-
-ALTER TABLE territory_brief_download_tokens
-  ADD CONSTRAINT territory_brief_download_tokens_artifact_kind_check
-    CHECK (artifact_kind IN ('pdf', 'csv', 'zip'));
-
