@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import ProviderActions from "@/components/ProviderActions";
 import CompareButton from "@/components/CompareButton";
 import Breadcrumbs, { regionSlug } from "@/components/Breadcrumbs";
 import RememberProvider from "@/components/RememberProvider";
@@ -123,6 +124,7 @@ export default async function ProviderPage({ params, searchParams }: { params: P
             </p>
             <h1 className="mt-2 text-4xl font-extrabold leading-tight text-bark">{provider.name}</h1>
             <p className="mt-3 max-w-3xl text-sm leading-6 text-dusk">{location}</p>
+            <ProviderActions locationId={provider.id} name={provider.name} pageUrl={`${getSiteUrl()}${getProviderHref(provider)}`} />
           </div>
 
           <div className="flex flex-col items-end gap-1">
