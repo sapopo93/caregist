@@ -33,3 +33,5 @@ pypdf==6.21.4
 svix==1.99.1
 # Prometheus metrics exposed at /metrics (api/metrics.py).
 prometheus-client==0.26.0
+# Backend error reporting (no tracing/profiling or request-content capture).
+sentry-sdk[fastapi]==2.67.1
