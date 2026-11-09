@@ -13,6 +13,7 @@ import { getDirectoryProvider } from "@/lib/directory-db";
 import { normalizeExternalHttpUrl, cqcEvidenceUrl } from "@/lib/external-url";
 import { getProviderHref, getProviderPathKey, directoryReturnHref } from "@/lib/provider-path";
 import { ratingToneClass } from "@/lib/rating-tone";
+import { providerMetaDescription, publishedRating } from "@/lib/provider-meta";
 import { ratingSourceNote } from "@/lib/rating-source";
 import { getSiteUrl } from "@/lib/site";
 
@@ -61,11 +62,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
   return {
     title: provider.meta_title || `${provider.name} | CareGist`,
-    description:
-      provider.meta_description ||
-      `${provider.name} is a CQC-registered ${provider.type?.toLowerCase() ?? "care provider"} in ${
-        provider.town ?? "England"
-      }.`,
+    description: providerMetaDescription(provider),
     alternates: { canonical: `${getSiteUrl()}${getProviderHref(provider)}` },
   };
 }
@@ -133,7 +130,7 @@ export default async function ProviderPage({ params, searchParams }: { params: P
               <CompareButton slug={getProviderPathKey(provider)!} name={provider.name} />
             ) : null}
             <div className="rounded-full border border-stone bg-white px-4 py-2 text-sm font-semibold text-bark">
-              {provider.overall_rating ?? "Rating not published"}
+              {publishedRating(provider.overall_rating) ?? "Rating not published"}
             </div>
             {ratingSourceNote(provider.rating_source, provider.rating_source_date) && (
               <p className="max-w-xs text-right text-xs text-dusk">{ratingSourceNote(provider.rating_source, provider.rating_source_date)}</p>

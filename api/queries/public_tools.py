@@ -1,28 +1,35 @@
 """SQL queries for public tool endpoints."""
 
+from api.queries.providers import SERVED_RATING_COLUMN, SERVED_RATING_NORMALISED
 from api.services.cqc_reconciliation_evidence import BOUNDED_DETAIL_UNAVAILABLE_SQL
 
-NEARBY_PUBLIC_QUERY = """
-SELECT id, name, slug, type, town, postcode, overall_rating,
+# Find Care follows the same rating rule and ACTIVE filter as directory search
+# (api.queries.providers.SEARCH_WHERE), so a family never sees a different
+# rating from the provider page or a deregistered location.
+
+NEARBY_PUBLIC_QUERY = f"""
+SELECT id, name, slug, type, town, postcode, {SERVED_RATING_COLUMN},
        data_completeness_tier, service_types, last_inspection_date,
        ST_Distance(geom::geography, ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography) / 1609.34 AS distance_miles
 FROM care_providers
 WHERE geom IS NOT NULL
+  AND UPPER(status) = 'ACTIVE'
   AND ST_DWithin(geom::geography, ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography, $3 * 1609.34)
   AND ($4::text IS NULL OR type = $4)
-  AND ($5::text IS NULL OR LOWER(BTRIM(overall_rating)) = LOWER(BTRIM($5)))
+  AND ($5::text IS NULL OR {SERVED_RATING_NORMALISED} = LOWER(BTRIM($5)))
   AND ($6::text IS NULL OR service_types ILIKE '%' || $6 || '%')
 ORDER BY distance_miles ASC
 LIMIT $7
 """
 
-NEARBY_PUBLIC_COUNT = """
+NEARBY_PUBLIC_COUNT = f"""
 SELECT COUNT(*) as total
 FROM care_providers
 WHERE geom IS NOT NULL
+  AND UPPER(status) = 'ACTIVE'
   AND ST_DWithin(geom::geography, ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography, $3 * 1609.34)
   AND ($4::text IS NULL OR type = $4)
-  AND ($5::text IS NULL OR LOWER(BTRIM(overall_rating)) = LOWER(BTRIM($5)))
+  AND ($5::text IS NULL OR {SERVED_RATING_NORMALISED} = LOWER(BTRIM($5)))
   AND ($6::text IS NULL OR service_types ILIKE '%' || $6 || '%')
 """
 
