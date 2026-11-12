@@ -1,7 +1,7 @@
 name: Check sample homes (one-off)
 on:
   push:
-    branches: [claude/cqc-sample-check]
+    branches: [claude/project-thread-kncmuu]
     paths: [tools/check_sample_homes.py, .github/workflows/check-sample-homes.yml]
 permissions:
   contents: read
