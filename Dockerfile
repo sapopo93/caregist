@@ -1,7 +1,9 @@
 FROM python:3.12-alpine@sha256:b64631e04e4920160c50fbe8d8df828f7f35f06f425cb44aa09bca53e708a35a
 
-# Patch util-linux/libuuid past the pinned base image's CVE-2026-53612/53613/53614/76642/78408
-RUN apk add --no-cache --upgrade libuuid
+# Patch packages past the pinned base image's CVEs: util-linux/libuuid
+# (CVE-2026-53612/53613/53614/76642/78408), and krb5-libs, zlib and musl
+# (HIGH findings with fixed versions reported by Trivy on 11 Nov 2026)
+RUN apk add --no-cache --upgrade libuuid krb5-libs zlib musl musl-utils
 
 WORKDIR /app
 

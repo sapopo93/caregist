@@ -12,6 +12,7 @@ import CommandPalette from "@/components/CommandPalette";
 import PaletteHint from "@/components/PaletteHint";
 import CookieConsent from "@/components/CookieConsent";
 import SupportWidgetMount from "@/components/SupportWidgetMount";
+import WebAnalytics from "@/components/WebAnalytics";
 
 import { getServerApiBase } from "@/lib/server-api-config";
 
@@ -182,6 +183,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <CompareBar />
         <CookieConsent />
         <SupportWidgetMount />
+        <WebAnalytics />
 
         <footer className="bg-charcoal px-6 py-8 text-sm text-stone">
           <div className="mx-auto max-w-6xl">

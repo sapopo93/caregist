@@ -21,6 +21,7 @@ from api.queries.providers import (
     SERVED_RATING,
     SERVED_RATING_ABSENCE,
 )
+from api.queries.public_tools import NEARBY_PUBLIC_QUERY
 from api.services.rating_states import (
     NON_RATED_STATES,
     RATED,
@@ -43,7 +44,7 @@ def test_reason_is_a_basic_field_like_the_rating_it_explains():
     assert "rating_absence_reason" in BASIC_FIELDS
 
 
-@pytest.mark.parametrize("query", [SEARCH_SELECT, SEARCH_SELECT_RANKED, NEARBY_QUERY])
+@pytest.mark.parametrize("query", [SEARCH_SELECT, SEARCH_SELECT_RANKED, NEARBY_QUERY, NEARBY_PUBLIC_QUERY])
 def test_row_projections_carry_the_reason(query):
     assert "rating_absence_reason" in query
 

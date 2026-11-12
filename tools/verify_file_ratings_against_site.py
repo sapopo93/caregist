@@ -93,6 +93,8 @@ def main(argv=None) -> int:
     ap.add_argument("--targets", choices=("newer-reports", "file-rating"), default="newer-reports")
     ap.add_argument("--rating", default="Inadequate", choices=sorted(PUBLISHED),
                     help="with --targets file-rating: the file rating to check")
+    ap.add_argument("--ids", help="comma-separated location ids to check instead of a target set "
+                    "(prints each location's current site_check values first, so a write can be undone)")
     ap.add_argument("--limit", type=int, default=2000, help="most pages to read in one run")
     ap.add_argument("--delay", type=float, default=1.1, help="seconds between requests")
     ap.add_argument("--apply", action="store_true", help="write site_check_* columns")
@@ -104,7 +106,18 @@ def main(argv=None) -> int:
     load_dotenv()
     conn = psycopg2.connect(os.environ["DATABASE_URL"])
     with conn, conn.cursor() as cur:
-        if args.targets == "file-rating":
+        if args.ids:
+            ids = [i.strip() for i in args.ids.split(",") if i.strip()]
+            cur.execute(
+                "SELECT id, file_overall_rating, site_check_rating, site_check_at FROM care_providers "
+                "WHERE id = ANY(%s) ORDER BY id", (ids,))
+            rows = cur.fetchall()
+            for lid, file_rating, prev_site, prev_at in rows:
+                print(f"  before: {lid} file={file_rating} site_check={prev_site} at={prev_at}")
+            if len(rows) != len(ids):
+                print(f"  {len(ids) - len(rows)} id(s) not found", file=sys.stderr)
+            cur.execute("SELECT id, file_overall_rating FROM care_providers WHERE id = ANY(%s) ORDER BY id", (ids,))
+        elif args.targets == "file-rating":
             cur.execute(
                 """SELECT id, file_overall_rating FROM care_providers
                     WHERE file_overall_rating = %s AND status = 'ACTIVE'
@@ -120,13 +133,16 @@ def main(argv=None) -> int:
         seen: list[tuple[str, str]] = []
         for lid, file_rating in targets:
             site = fetch_site_rating(lid)
+            if args.ids:
+                print(f"  page: {lid} file={file_rating} page={site}")
             if site is None:
                 outcome["unreadable"] += 1
             else:
                 outcome["agrees" if site == file_rating else f"differs:{site}"] += 1
                 seen.append((lid, site))
             time.sleep(args.delay)
-        label = f"file-sourced {args.rating}" if args.targets == "file-rating" else "newer-report"
+        label = ("named" if args.ids else f"file-sourced {args.rating}" if args.targets == "file-rating"
+                 else "newer-report")
         print(f"checked {len(targets)} {label} locations:", dict(outcome))
         problem = implausible_none_share(seen)
         if problem:

@@ -1,28 +1,44 @@
 """SQL queries for public tool endpoints."""
 
+from api.queries.providers import (
+    RATING_SOURCE_COLUMNS,
+    SERVED_RATING_ABSENCE_COLUMN,
+    SERVED_RATING_COLUMN,
+    SERVED_RATING_NORMALISED,
+)
 from api.services.cqc_reconciliation_evidence import BOUNDED_DETAIL_UNAVAILABLE_SQL
 
-NEARBY_PUBLIC_QUERY = """
-SELECT id, name, slug, type, town, postcode, overall_rating,
+# The public radius tool serves the same rating as every other path: the CareGist
+# rating rule in api.queries.providers (CQC page check, then the monthly file, then
+# the API). It used to project the raw API ``overall_rating``, so a home that
+# CQC's page shows as unrated, or with only a previous provider's rating, could be
+# served as rated (found 12 Nov 2026 when a Clitheroe snapshot was checked against
+# CQC's pages: 5 of 23 homes differed). It also did not filter on status; only
+# ACTIVE locations are listed now, as in NEARBY_QUERY.
+NEARBY_PUBLIC_QUERY = f"""
+SELECT id, name, slug, type, town, postcode, {SERVED_RATING_COLUMN},
+       {SERVED_RATING_ABSENCE_COLUMN}, {RATING_SOURCE_COLUMNS},
        data_completeness_tier, service_types, last_inspection_date,
        ST_Distance(geom::geography, ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography) / 1609.34 AS distance_miles
 FROM care_providers
 WHERE geom IS NOT NULL
+  AND UPPER(status) = 'ACTIVE'
   AND ST_DWithin(geom::geography, ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography, $3 * 1609.34)
   AND ($4::text IS NULL OR type = $4)
-  AND ($5::text IS NULL OR LOWER(BTRIM(overall_rating)) = LOWER(BTRIM($5)))
+  AND ($5::text IS NULL OR {SERVED_RATING_NORMALISED} = LOWER(BTRIM($5)))
   AND ($6::text IS NULL OR service_types ILIKE '%' || $6 || '%')
 ORDER BY distance_miles ASC
 LIMIT $7
 """
 
-NEARBY_PUBLIC_COUNT = """
+NEARBY_PUBLIC_COUNT = f"""
 SELECT COUNT(*) as total
 FROM care_providers
 WHERE geom IS NOT NULL
+  AND UPPER(status) = 'ACTIVE'
   AND ST_DWithin(geom::geography, ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography, $3 * 1609.34)
   AND ($4::text IS NULL OR type = $4)
-  AND ($5::text IS NULL OR LOWER(BTRIM(overall_rating)) = LOWER(BTRIM($5)))
+  AND ($5::text IS NULL OR {SERVED_RATING_NORMALISED} = LOWER(BTRIM($5)))
   AND ($6::text IS NULL OR service_types ILIKE '%' || $6 || '%')
 """
 
