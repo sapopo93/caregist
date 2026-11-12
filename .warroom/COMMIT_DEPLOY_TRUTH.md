@@ -1,4 +1,22 @@
-## 2026-10-27 — production migrations 066 and 071 applied (schema only, no code release)
+## 2026-10-27 10:09 UTC — Territory Brief source and buyer scope released; migrations 066 and 071 applied
+
+Release at this time: `a60d530437b700997f1c7bec1a49c38eb95befa9` on GitHub main (merge of [#90](https://github.com/sapopo93/caregist/pull/90), 10:07 UTC), containing [#129](https://github.com/sapopo93/caregist/pull/129) (merge `64cff70`, 09:53 UTC). Production backend `/api/v1/version`, frontend `/api/health/directory` and the latest GitHub Production deployment (7355627248, 10:08 UTC) all match. Supersedes `18536de`, `8a26d8b` and `64cff70` as the release identity. Both merges were made at the founder's explicit instruction, each pinned to the PR head whose checks had been read (#129 `ac8461b`, #90 `8b759ac`). Independent release review is not evidenced here.
+
+Main runs at this SHA: [Production Smoke 40486204286](https://github.com/sapopo93/caregist/actions/runs/40486204286) PASS, [Schema Drift 40486078274](https://github.com/sapopo93/caregist/actions/runs/40486078274) PASS. [CI 40486078270](https://github.com/sapopo93/caregist/actions/runs/40486078270) was still running when this was written; the same code passed every check on both PR heads. Preview Smoke skipped, as on both PRs.
+
+Migrations: `066_territory_brief_source_editions.sql` (sha256 `7b5ff3427c85477ebbc7b99055f27ee300feb87d6923bf733e6fd75b6de59a22`) and `071_territory_brief_buyer_scope.sql` (sha256 `63adfdc3017347c60fb8f7922a778340cbfbf24691c627bea2dd9353f5496dfc`) were applied to production at about 06:44 UTC, staging first, each in its own transaction with a ledger entry, from the PR #90 head. Both files on main are byte-identical to what was applied (066 checked on main; 071 arrived with #90). One retained Neon recovery branch `recovery/pre-066-071-20261027` (`br-quiet-shape-absfw674`, expiry Never) was created first; this is a snapshot check, not a restore drill. Provider counts were unchanged (57,165 ACTIVE, 2,252 INACTIVE). Evidence: `artifacts/recovery/2026-10-27/`. #129's "Production schema is current" check had failed at 04:14 UTC on exactly this drift and passed on rerun after the migrations.
+
+What the release changes: the Postgres-backed Territory Brief source editions (#129), and private versioned buyer scope, buyer rules through the Brief PDF and CSV, and report-index health (#90). No gate flag changed. Live `/api/v1/health` after release: status=degraded, freshness_ok=false, source.freshnessStatus=partial from the same 15 quarantined locations, feed_fresh=true, checkoutReady=false, deliveryEnabled=false. The Freshness Watchdog run 40483081621 (09:44 UTC) reported that same partial state and is not new.
+
+Not established: the six protection triggers in the recovery README were not re-queried, and the Neon branch was not re-read. The earlier schema-only entry for this change, directly below, is superseded by this one. The Stripe Projects production environment still points at an older US database (read-only check only); unresolved. This is a release record, not independent product acceptance or first-sale approval.
+
+Later merges to main are not covered by this entry: #144 (dashboard layout, `0618b14`, production verified serving it at 10:48 UTC), then #145, #146, #150, #152 and #153, up to `061baa1`. Their production state has not been verified here.
+
+---
+
+## 2026-10-27 — production migrations 066 and 071 applied (schema only, no code release) — superseded by the 10:09 UTC entry above
+
+Superseded: the Territory Brief source-edition code this entry describes as undeployed was released at 10:08 UTC the same day in `a60d530`. The migration facts below stand.
 
 Applied to production Neon (London) by Codex under Henry's authorisation, after staging. Exact SQL taken from PR #90 head `8b759acd5aa9df2084444f3cb6aae598ca620e0a`: `066_territory_brief_source_editions.sql` (sha256 `7b5ff3427c85477ebbc7b99055f27ee300feb87d6923bf733e6fd75b6de59a22`) and `071_territory_brief_buyer_scope.sql` (sha256 `63adfdc3017347c60fb8f7922a778340cbfbf24691c627bea2dd9353f5496dfc`). Each file ran in its own transaction with a ledger entry. Evidence: `artifacts/recovery/2026-10-27/` (`README.md`, `before.json`, `after.json`, `staging.json`, `recovery-validation.json`, `health-after.json`).
 
