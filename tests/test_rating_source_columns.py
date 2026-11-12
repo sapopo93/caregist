@@ -23,11 +23,13 @@ from api.queries.providers import (
     SERVED_RATING_ABSENCE,
     WEBSITE_WINS,
 )
+from api.queries.public_tools import NEARBY_PUBLIC_QUERY
 from api.routers.providers import _row_to_dict
 
 
 @pytest.mark.parametrize(
-    "query", [SEARCH_SELECT, SEARCH_SELECT_RANKED, NEARBY_QUERY, DETAIL_BY_SLUG, CQC_ID_LOOKUP, COMPARE_QUERY]
+    "query",
+    [SEARCH_SELECT, SEARCH_SELECT_RANKED, NEARBY_QUERY, NEARBY_PUBLIC_QUERY, DETAIL_BY_SLUG, CQC_ID_LOOKUP, COMPARE_QUERY],
 )
 def test_every_projection_carries_source_date_and_conflict(query):
     assert "AS rating_source," in query

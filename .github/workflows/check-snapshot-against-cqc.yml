@@ -1,0 +1,55 @@
+name: Check snapshot against CQC
+
+# Read-only. Run before any snapshot, sample or report that quotes CQC ratings or
+# bed counts is delivered to a customer (rule of 12 Nov 2026: nothing goes out
+# until checked against the live CQC website). Reads each location's public CQC
+# page and, with CQC_API_KEY, the live CQC API for beds and registration status.
+# Writes nothing to any database. Fails when any location differs.
+
+on:
+  workflow_dispatch:
+    inputs:
+      snapshot:
+        description: "One location per entry, entries separated by ; or new lines: CQC id|rating|beds (rating 'Not yet rated' or empty for none), e.g. 1-18589594217|Good|28;1-25368808165|Not yet rated|68"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: check-snapshot-against-cqc
+  cancel-in-progress: false
+
+env:
+  PYTHON_VERSION: "3.12"
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Write the snapshot
+        env:
+          SNAPSHOT: ${{ inputs.snapshot }}
+        run: printf '%s\n' "$SNAPSHOT" | tr ';' '\n' > snapshot.txt
+      - name: Check against CQC
+        env:
+          CQC_API_KEY: ${{ secrets.CQC_API_KEY }}
+        run: python -m tools.check_snapshot_against_cqc --file snapshot.txt --report report.md --json report.json
+      - name: Publish the report
+        if: always()
+        run: |
+          if [ -f report.md ]; then cat report.md >> "$GITHUB_STEP_SUMMARY"; fi
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: snapshot-check-report
+          path: |
+            report.md
+            report.json
+          if-no-files-found: ignore
