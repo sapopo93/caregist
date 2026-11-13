@@ -78,7 +78,7 @@ def main(argv=None) -> int:
     dropped: list[str] = []
     unreadable: list[str] = []
     seen: list[tuple[str, str]] = []
-    for lid, name, town, postcode, db_beds, service_types, db_last, miles in candidates:
+    for lid, name, town, postcode, _db_beds, service_types, db_last, miles in candidates:
         page = read_page(lid)
         api_beds, status = read_api(lid, key)
         time.sleep(args.delay)
