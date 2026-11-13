@@ -56,6 +56,29 @@ def line(row: dict) -> str:
                     ("miles", "name", "town", "beds", "nursing", "rating", "last_inspection", "registered_on", "id"))
 
 
+def merge_dual_registrations(rows: list[dict]) -> tuple[list[dict], list[str]]:
+    """CQC lists a home registered with two providers as two location records. Count it once.
+
+    Records match on name, postcode and bed count. The one with a rating of its own is kept
+    (first in distance order if several), so a home is not shown unrated beside its rated twin.
+    """
+    unrated = ("Not yet rated", "No own rating (inherited)")
+    keep: dict[tuple, dict] = {}
+    merged: list[str] = []
+    for r in rows:
+        key = (r["name"].strip().lower(), r["postcode"], r["beds"])
+        if key not in keep:
+            keep[key] = r
+            continue
+        cur = keep[key]
+        if cur["rating"] in unrated and r["rating"] not in unrated:
+            keep[key] = r
+            cur, r = r, cur
+        merged.append(f"{r['id']} {r['name']} merged into {cur['id']}")
+    kept = {id(v) for v in keep.values()}
+    return [r for r in rows if id(r) in kept], merged
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--postcode", required=True)
@@ -101,6 +124,8 @@ def main(argv=None) -> int:
             "registered_on": page.registered_on or "?", "id": lid,
         })
 
+    rows, merged = merge_dual_registrations(rows)
+
     print(f"# Supply within {args.radius:g} miles of {args.postcode} (lat {lat:.5f}, lon {lon:.5f}), "
           f"read from CQC {time.strftime('%d %B %Y %H:%M UTC', time.gmtime())}")
     print("# miles|name|town|beds|nursing|rating|last_inspection|registered_on|id")
@@ -109,6 +134,8 @@ def main(argv=None) -> int:
         print(b)
     digest = hashlib.sha256("\n".join(body).encode()).hexdigest()
     print(f"# homes={len(rows)} beds={sum(r['beds'] for r in rows if isinstance(r['beds'], int))} sha256={digest}")
+    for m in merged:
+        print(f"# merged (same home under two CQC records, dual registration): {m}")
     for d in dropped:
         print(f"# dropped (not registered per CQC API): {d}")
     for u in unreadable:
