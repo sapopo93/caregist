@@ -17,7 +17,8 @@ import signal
 import sys
 import time
 from datetime import UTC, datetime
-from urllib.parse import urljoin
+from html.parser import HTMLParser
+from urllib.parse import parse_qs, urljoin, urlsplit
 
 import psycopg2
 from psycopg2.extras import execute_values
@@ -61,7 +62,7 @@ STALE_RUNNING_POLL_MINUTES = 40
 # poll fails closed with durable evidence instead of being force-killed into a
 # stale status='running' row that only a later poll would close.
 DEFAULT_POLL_TIME_BUDGET_SECONDS = 45 * 60
-LOCATION_ID_PATTERN = re.compile(r"/location/(?P<location_id>1-\d{5,12})(?:[/?#\"'])")
+LOCATION_ID_PATTERN = re.compile(r"/location/(?P<location_id>1-\d{5,12})(?:[/?#\"'\s])")
 
 
 class SignalPollInterrupted(RuntimeError):
@@ -104,26 +105,140 @@ def _close_stale_running_polls(cur, *, older_than_minutes: int = STALE_RUNNING_P
 _LAST_REPORT_INDEX_HEALTH: dict = {}
 
 
+MAX_REPORT_INDEX_PAGES = 30
+
+
+class ReportIndexSourceError(RuntimeError):
+    """Incomplete discovery must never become a verified source snapshot."""
+
+
+def _refuse_report_index(message: str):
+    _LAST_REPORT_INDEX_HEALTH.setdefault("status", REPORT_INDEX_UNEXPECTED_PAGE)
+    if _LAST_REPORT_INDEX_HEALTH.get("healthy"):
+        _LAST_REPORT_INDEX_HEALTH["status"] = REPORT_INDEX_PAGINATION_INCOMPLETE
+    _LAST_REPORT_INDEX_HEALTH["healthy"] = False
+    raise ReportIndexSourceError(message)
+
+
+class _ReportIndexLinks(HTMLParser):
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.location_ids: set[str] = set()
+        self.next_links: set[str] = set()
+        self.page_links: list[tuple[str, set[str]]] = []
+        self.text_parts: list[str] = []
+
+    def handle_data(self, data):
+        self.text_parts.append(data)
+
+    def handle_starttag(self, tag, attrs):
+        if tag != "a":
+            return
+        attr = dict(attrs)
+        href = (attr.get("href") or "").strip()
+        rel = set((attr.get("rel") or "").lower().split())
+        if "next" in rel:
+            self.next_links.add(href)
+        if "page" in parse_qs(urlsplit(href).query, keep_blank_values=True):
+            self.page_links.append((href, rel))
+        url = urlsplit(urljoin(REPORT_INDEX_URL, href))
+        # IDs on another host are not CQC source evidence.
+        if url.scheme != "https" or url.netloc != "www.cqc.org.uk":
+            return
+        match = re.fullmatch(r"/location/(1-\d{5,12})(?:/.*)?", url.path)
+        if match:
+            self.location_ids.add(match.group(1))
+
+
 def fetch_report_candidates() -> tuple[set[str], bytes, str]:
-    response = _request_with_retries(
-        REPORT_INDEX_URL,
-        headers={"Accept": "text/html", "User-Agent": "CareGist-Signal-Poller/1.0"},
-        params=REPORT_INDEX_PARAMS,
-        timeout=60,
-    )
-    content = response.content
-    location_ids = {match.group("location_id") for match in LOCATION_ID_PATTERN.finditer(response.text)}
-    headers = getattr(response, "headers", None) or {}
+    """Read every explicitly linked results page, with a hard request bound.
+
+    Preserve single-page bytes for existing provenance; multi-page evidence is
+    a deterministic, length-framed concatenation of the exact source bodies.
+    Any bad page, loop, unsafe next link or exhausted bound refuses the source.
+    """
     _LAST_REPORT_INDEX_HEALTH.clear()
-    _LAST_REPORT_INDEX_HEALTH.update(
-        classify_report_index(
-            response.text,
-            location_ids,
+    _LAST_REPORT_INDEX_HEALTH.update(status=REPORT_INDEX_UNEXPECTED_PAGE, healthy=False, pagesFetched=0)
+    location_ids: set[str] = set()
+    bodies: list[bytes] = []
+    visited: set[str] = set()
+    body_hashes: set[str] = set()
+    url = REPORT_INDEX_URL
+    first_url = url
+    expected_results: int | None = None
+    for page in range(MAX_REPORT_INDEX_PAGES):
+        try:
+            response = _request_with_retries(
+                url,
+                headers={"Accept": "text/html", "User-Agent": "CareGist-Signal-Poller/1.0"},
+                params=REPORT_INDEX_PARAMS if page == 0 else None,
+                timeout=60,
+            )
+        except ChangesFetchError as exc:
+            _LAST_REPORT_INDEX_HEALTH.update(status=REPORT_INDEX_UNEXPECTED_PAGE, healthy=False)
+            raise ReportIndexSourceError("report index page fetch failed") from exc
+        source_url = str(response.url or url)
+        if page == 0:
+            first_url = source_url
+        source = urlsplit(source_url)
+        if source.scheme != "https" or source.netloc != "www.cqc.org.uk" or source.path != "/search/all":
+            _refuse_report_index("report index redirected outside its approved source")
+        links = _ReportIndexLinks()
+        links.feed(response.text)
+        count = re.search(r"\bWe found\s+([\d,]+)\s+results?\b", " ".join(links.text_parts), re.IGNORECASE)
+        if count:
+            page_total = int(count.group(1).replace(",", ""))
+            if expected_results is not None and page_total != expected_results:
+                _refuse_report_index("report index result count changed during pagination")
+            expected_results = page_total
+        headers = getattr(response, "headers", None) or {}
+        health = classify_report_index(
+            response.text, links.location_ids,
             status_code=getattr(response, "status_code", None),
             content_type=headers.get("Content-Type") if hasattr(headers, "get") else None,
         )
-    )
-    return location_ids, content, str(response.url or REPORT_INDEX_URL)
+        bodies.append(response.content)
+        location_ids.update(links.location_ids)
+        health.update(pagesFetched=len(bodies), uniqueIds=len(location_ids), sourceResultCount=expected_results)
+        _LAST_REPORT_INDEX_HEALTH.update(health)
+        if health["status"] not in (REPORT_INDEX_OK, REPORT_INDEX_VERIFIED_ZERO, REPORT_INDEX_PAGINATION_INCOMPLETE):
+            _refuse_report_index(f"report index is not verified: {health['status']}")
+        body_hash = hashlib.sha256(response.content).hexdigest()
+        if source_url in visited or body_hash in body_hashes:
+            _refuse_report_index("report index pagination repeated a page")
+        visited.add(source_url)
+        body_hashes.add(body_hash)
+        if not links.next_links:
+            # A changed pager may omit rel=next. Numeric forward links and
+            # opaque cursors must not silently turn a partial page into a
+            # complete snapshot. Explicit prev and lower numeric pages are safe.
+            current_page = parse_qs(source.query).get("page", ["0"])[0]
+            for href, rel in links.page_links:
+                if "prev" in rel:
+                    continue
+                target_pages = parse_qs(urlsplit(href).query, keep_blank_values=True)["page"]
+                if (len(target_pages) != 1 or not target_pages[0].isdigit()
+                        or not current_page.isdigit()
+                        or int(target_pages[0]) > int(current_page)):
+                    _refuse_report_index("report index pagination has no explicit next link")
+            if expected_results is not None and expected_results != len(location_ids):
+                _refuse_report_index("report index IDs do not match the source result count")
+            _LAST_REPORT_INDEX_HEALTH.update(
+                status=REPORT_INDEX_OK if location_ids else REPORT_INDEX_VERIFIED_ZERO,
+                healthy=True, hasNextPage=False,
+            )
+            content = bodies[0] if len(bodies) == 1 else b"".join(
+                len(body).to_bytes(8, "big") + body for body in bodies
+            )
+            return location_ids, content, first_url
+        if len(links.next_links) != 1:
+            _refuse_report_index("report index has conflicting next links")
+        url = urljoin(source_url, next(iter(links.next_links)))
+        target = urlsplit(url)
+        if target.scheme != "https" or target.netloc != "www.cqc.org.uk" or target.path != "/search/all" or target.fragment:
+            _refuse_report_index("report index has an unsafe next link")
+    _LAST_REPORT_INDEX_HEALTH.update(status=REPORT_INDEX_PAGINATION_INCOMPLETE, healthy=False)
+    _refuse_report_index("report index exceeded its page limit")
 
 
 REPORT_INDEX_OK = "ok_with_results"
@@ -142,7 +257,7 @@ _CHALLENGE_PATTERN = re.compile(
     r"request blocked|unusual traffic)",
     re.IGNORECASE,
 )
-_NEXT_PAGE_PATTERN = re.compile(r"(?:rel=[\"']next[\"']|[?&]page=[1-9][0-9]*)", re.IGNORECASE)
+_NEXT_PAGE_PATTERN = re.compile(r"rel=[\"']next[\"']", re.IGNORECASE)
 
 
 def classify_report_index(
@@ -156,8 +271,8 @@ def classify_report_index(
 
     An empty parse is not automatically a quiet week: it is only a verified zero
     when the page positively says nothing matched. A 200 response alone is not
-    source success. Only page one is ever fetched, so a visible next-page link
-    is surfaced as ``pagination_incomplete`` rather than assumed away.
+    source success. This classifies one page; its explicit next link means
+    pagination is incomplete until the fetcher verifies the terminal page.
     """
     if status_code is not None and status_code != 200:
         status = REPORT_INDEX_UNEXPECTED_PAGE
