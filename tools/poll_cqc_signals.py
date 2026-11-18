@@ -26,6 +26,7 @@ from psycopg2.extras import execute_values
 from incremental_update import (
     DEFAULT_BASE_URL,
     ChangesFetchError,
+    _CQC_ID_RE,
     _fetch_all_cqc_location_stubs,
     _request_with_retries,
     clean_location,
@@ -124,6 +125,11 @@ class _ReportIndexLinks(HTMLParser):
     def __init__(self):
         super().__init__(convert_charrefs=True)
         self.location_ids: set[str] = set()
+        self.result_paths: set[str] = set()
+        self.result_cards = 0
+        self.invalid_result_card = False
+        self.result_card_paths: set[str] | None = None
+        self.in_result_title = False
         self.next_links: set[str] = set()
         self.page_links: list[tuple[str, set[str]]] = []
         self.text_parts: list[str] = []
@@ -132,9 +138,15 @@ class _ReportIndexLinks(HTMLParser):
         self.text_parts.append(data)
 
     def handle_starttag(self, tag, attrs):
+        attr = dict(attrs)
+        classes = (attr.get("class") or "").split()
+        if tag == "article" and "provider-services-list__list-item" in classes:
+            self.result_cards += 1
+            self.result_card_paths = set()
+        if tag == "h2":
+            self.in_result_title = self.result_card_paths is not None and "service-header__title" in classes
         if tag != "a":
             return
-        attr = dict(attrs)
         href = (attr.get("href") or "").strip()
         rel = set((attr.get("rel") or "").lower().split())
         if "next" in rel:
@@ -145,9 +157,24 @@ class _ReportIndexLinks(HTMLParser):
         # IDs on another host are not CQC source evidence.
         if url.scheme != "https" or url.netloc != "www.cqc.org.uk":
             return
-        match = re.fullmatch(r"/location/(1-\d{5,12})(?:/.*)?", url.path)
-        if match:
-            self.location_ids.add(match.group(1))
+        match = re.fullmatch(r"/(location|provider)/([^/]+)(?:/.*)?", url.path)
+        if not match:
+            return
+        entity, source_id = match.groups()
+        if not _CQC_ID_RE.fullmatch(source_id):
+            return
+        if self.in_result_title and self.result_card_paths is not None:
+            self.result_card_paths.add(f"/{entity}/{source_id}")
+        if entity == "location":
+            self.location_ids.add(source_id)
+
+    def handle_endtag(self, tag):
+        if tag == "h2":
+            self.in_result_title = False
+        if tag == "article" and self.result_card_paths is not None:
+            self.invalid_result_card |= len(self.result_card_paths) != 1
+            self.result_paths.update(self.result_card_paths)
+            self.result_card_paths = None
 
 
 def fetch_report_candidates() -> tuple[set[str], bytes, str]:
@@ -160,6 +187,7 @@ def fetch_report_candidates() -> tuple[set[str], bytes, str]:
     _LAST_REPORT_INDEX_HEALTH.clear()
     _LAST_REPORT_INDEX_HEALTH.update(status=REPORT_INDEX_UNEXPECTED_PAGE, healthy=False, pagesFetched=0)
     location_ids: set[str] = set()
+    result_paths: set[str] = set()
     bodies: list[bytes] = []
     visited: set[str] = set()
     body_hashes: set[str] = set()
@@ -191,15 +219,27 @@ def fetch_report_candidates() -> tuple[set[str], bytes, str]:
             if expected_results is not None and page_total != expected_results:
                 _refuse_report_index("report index result count changed during pagination")
             expected_results = page_total
+        # CQC counts provider cards in its total. Verify them as search results,
+        # but only location cards may seed location detail requests.
+        if links.result_cards:
+            if links.invalid_result_card or len(links.result_paths) != links.result_cards:
+                _refuse_report_index("report index has unrecognised or duplicate result cards")
+            page_results = links.result_paths
+        else:
+            page_results = {f"/location/{source_id}" for source_id in links.location_ids}
         headers = getattr(response, "headers", None) or {}
         health = classify_report_index(
-            response.text, links.location_ids,
+            response.text, page_results,
             status_code=getattr(response, "status_code", None),
             content_type=headers.get("Content-Type") if hasattr(headers, "get") else None,
         )
         bodies.append(response.content)
-        location_ids.update(links.location_ids)
-        health.update(pagesFetched=len(bodies), uniqueIds=len(location_ids), sourceResultCount=expected_results)
+        location_ids.update(path.removeprefix("/location/") for path in page_results if path.startswith("/location/"))
+        health.update(
+            pagesFetched=len(bodies),
+            uniqueIds=len(location_ids),
+            sourceResultCount=expected_results,
+        )
         _LAST_REPORT_INDEX_HEALTH.update(health)
         if health["status"] not in (REPORT_INDEX_OK, REPORT_INDEX_VERIFIED_ZERO, REPORT_INDEX_PAGINATION_INCOMPLETE):
             _refuse_report_index(f"report index is not verified: {health['status']}")
@@ -208,6 +248,11 @@ def fetch_report_candidates() -> tuple[set[str], bytes, str]:
             _refuse_report_index("report index pagination repeated a page")
         visited.add(source_url)
         body_hashes.add(body_hash)
+        if result_paths.intersection(page_results):
+            _refuse_report_index("report index pagination repeated a result")
+        result_paths.update(page_results)
+        _LAST_REPORT_INDEX_HEALTH["parsedResultCount"] = len(result_paths)
+        _LAST_REPORT_INDEX_HEALTH["providerResultCount"] = len(result_paths) - len(location_ids)
         if not links.next_links:
             # A changed pager may omit rel=next. Numeric forward links and
             # opaque cursors must not silently turn a partial page into a
@@ -221,10 +266,10 @@ def fetch_report_candidates() -> tuple[set[str], bytes, str]:
                         or not current_page.isdigit()
                         or int(target_pages[0]) > int(current_page)):
                     _refuse_report_index("report index pagination has no explicit next link")
-            if expected_results is not None and expected_results != len(location_ids):
-                _refuse_report_index("report index IDs do not match the source result count")
+            if expected_results is not None and expected_results != len(result_paths):
+                _refuse_report_index("report index cards do not match the source result count")
             _LAST_REPORT_INDEX_HEALTH.update(
-                status=REPORT_INDEX_OK if location_ids else REPORT_INDEX_VERIFIED_ZERO,
+                status=REPORT_INDEX_OK if result_paths else REPORT_INDEX_VERIFIED_ZERO,
                 healthy=True, hasNextPage=False,
             )
             content = bodies[0] if len(bodies) == 1 else b"".join(

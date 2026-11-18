@@ -189,3 +189,54 @@ def test_terminal_page_allows_lower_numbered_navigation_without_rel():
         ids, _, _ = poll.fetch_report_candidates()
     assert len(ids) == 2
     assert poll._LAST_REPORT_INDEX_HEALTH["healthy"] is True
+
+
+def _result_card(path: str) -> str:
+    return (
+        '<article class="provider-services-list__list-item">'
+        f'<h2 class="service-header__title"><a href=" \n{path}\n ">Result</a></h2>'
+        '<a href="/provider/1-43210">Provided and run by</a>'
+        '</article>'
+    )
+
+
+def test_result_total_includes_provider_cards_and_legacy_location_ids():
+    first = (
+        "<h1>We found 3 results</h1>"
+        + _result_card("/location/1-12345")
+        + _result_card("/location/ABC-123")
+        + '<a href="/location/1-44444">Unrelated link</a>'
+        + '<a rel="next" href="?page=2">Next</a>'
+    )
+    final = "<h1>We found 3 results</h1>" + _result_card("/provider/1-22222")
+    responses = [_response(first), _response(final, "https://www.cqc.org.uk/search/all?page=2")]
+    with patch.object(poll, "_request_with_retries", side_effect=responses):
+        ids, _, _ = poll.fetch_report_candidates()
+
+    assert ids == {"1-12345", "ABC-123"}
+    assert poll._LAST_REPORT_INDEX_HEALTH["parsedResultCount"] == 3
+    assert poll._LAST_REPORT_INDEX_HEALTH["providerResultCount"] == 1
+    assert poll._LAST_REPORT_INDEX_HEALTH["healthy"] is True
+
+
+def test_provider_attribution_link_cannot_substitute_for_unrecognised_result_card():
+    import pytest
+
+    page = "<h1>We found 1 result</h1>" + _result_card("/different/1-12345")
+    with patch.object(poll, "_request_with_retries", return_value=_response(page)):
+        with pytest.raises(poll.ReportIndexSourceError, match="unrecognised or duplicate result cards"):
+            poll.fetch_report_candidates()
+    assert poll._LAST_REPORT_INDEX_HEALTH["healthy"] is False
+
+
+def test_pagination_refuses_the_same_result_in_different_page_bodies():
+    import pytest
+
+    card = _result_card("/location/1-12345")
+    first = card + '<a rel="next" href="?page=2">Next</a>'
+    final = card + "<p>Last page</p>"
+    responses = [_response(first), _response(final, "https://www.cqc.org.uk/search/all?page=2")]
+    with patch.object(poll, "_request_with_retries", side_effect=responses):
+        with pytest.raises(poll.ReportIndexSourceError, match="repeated a result"):
+            poll.fetch_report_candidates()
+    assert poll._LAST_REPORT_INDEX_HEALTH["healthy"] is False
