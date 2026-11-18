@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import localFont from "next/font/local";
-import { unstable_cache } from "next/cache";
 import { connection } from "next/server";
 
 import "./globals.css";
@@ -14,55 +13,7 @@ import CookieConsent from "@/components/CookieConsent";
 import SupportWidgetMount from "@/components/SupportWidgetMount";
 import WebAnalytics from "@/components/WebAnalytics";
 
-import { getServerApiBase } from "@/lib/server-api-config";
-
 const SITE_URL = "https://www.caregist.co.uk";
-
-const getDataCurrentAsOf = unstable_cache(async (): Promise<string | null> => {
-  try {
-    const apiBase = getServerApiBase();
-    const response = await fetch(`${apiBase}/api/v1/health/freshness`, {
-      next: { revalidate: 3600 },
-      signal: AbortSignal.timeout(5000),
-    });
-    if (!response.ok) return null;
-    const data = await response.json();
-    if (data?.status !== "fresh") return null;
-    const retrievedAt = data?.sourceRetrievedAt;
-    if (!retrievedAt) return null;
-    const retrieved = new Date(retrievedAt);
-    if (Number.isNaN(retrieved.getTime())) return null;
-    return retrieved.toLocaleString("en-GB", {
-      dateStyle: "long",
-      timeStyle: "short",
-      timeZone: "UTC",
-    });
-  } catch {
-    return null;
-  }
-}, ["caregist-data-current-as-of"], { revalidate: 3600 });
-
-type FreshnessChip = { state: "fresh" | "not-fresh"; label: string } | null;
-
-/** Header trust chip. Unlike the footer line it also reports a non-fresh source, so staleness is never hidden.
- *  Relies on fetch revalidation (1h) rather than unstable_cache so a transient failure is not cached as "no data". */
-async function getFreshnessChip(): Promise<FreshnessChip> {
-  try {
-    const response = await fetch(`${getServerApiBase()}/api/v1/health/freshness`, {
-      next: { revalidate: 3600 },
-      signal: AbortSignal.timeout(5000),
-    });
-    if (response.status !== 200 && response.status !== 503) return null;
-    const data = await response.json();
-    if (data?.status !== "fresh") return { state: "not-fresh", label: "Check data status" };
-    const retrieved = new Date(data?.sourceRetrievedAt);
-    if (Number.isNaN(retrieved.getTime())) return null;
-    const day = retrieved.toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
-    return { state: "fresh", label: `Data as of ${day}` };
-  } catch {
-    return null;
-  }
-}
 
 const dmSans = localFont({
   src: "./fonts/dm-sans-latin-wght-normal.woff2",
@@ -110,8 +61,6 @@ export const metadata: Metadata = {
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   await connection();
-  const dataCurrentAsOf = await getDataCurrentAsOf();
-  const freshnessChip = await getFreshnessChip();
 
   return (
     <html lang="en" className={`${dmSans.variable} ${playfairDisplay.variable}`}>
@@ -143,16 +92,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <PaletteHint />
             </form>
 
-            {freshnessChip ? (
-              <Link
-                href="/data-status"
-                title="Open Data Status for the source dates behind every figure"
-                className="hidden shrink-0 items-center gap-2 whitespace-nowrap rounded-full border border-cream/25 px-3 py-1 text-xs text-cream/90 transition hover:border-amber hover:text-amber xl:inline-flex"
-              >
-                <span aria-hidden className={`h-2 w-2 rounded-full ${freshnessChip.state === "fresh" ? "bg-sage" : "bg-amber"}`} />
-                {freshnessChip.label}
-              </Link>
-            ) : null}
+            <Link
+              href="/data-status"
+              className="hidden shrink-0 items-center whitespace-nowrap rounded-full border border-cream/25 px-3 py-1 text-xs text-cream/90 transition hover:border-amber hover:text-amber xl:inline-flex"
+            >
+              Check data status
+            </Link>
 
             <div className="flex items-center justify-end gap-3">
               <Link href="/pricing/territory" className="cta-primary cta-primary--sm whitespace-nowrap !gap-1 !px-3 !text-[0.8rem] md:hidden">
@@ -199,11 +144,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               </a>
               .
             </p>
-            {dataCurrentAsOf && (
-              <p className="mb-2 text-dusk">
-                Data current as of {dataCurrentAsOf} UTC.
-              </p>
-            )}
             <p className="mb-2 text-stone">
               CareGist is not an official CQC service.
             </p>

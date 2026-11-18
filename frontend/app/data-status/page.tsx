@@ -2,8 +2,6 @@ import type { Metadata } from "next";
 import SourceTimeline from "@/components/SourceTimeline";
 import { getServerApiBase } from "@/lib/server-api-config";
 
-export const revalidate = 3600;
-
 export const metadata: Metadata = {
   title: "CQC Data Status | CareGist",
   description: "Current CareGist CQC source watermark, location count, and freshness status.",
@@ -25,14 +23,15 @@ type SourceStatus = {
   quarantinedLocationCount?: number | null;
   countsReconciled?: boolean;
   checksumSha256?: string | null;
-  reason?: string | null;
   message?: string | null;
 };
 
 async function loadStatus(): Promise<SourceStatus | null> {
   try {
     const response = await fetch(`${getServerApiBase()}/api/v1/health/freshness`, {
-      next: { revalidate: 3600 },
+      // An older 200 can mask a later stale or partial 503 in the Next.js data cache.
+      cache: "no-store",
+      signal: AbortSignal.timeout(5000),
     });
     if (response.status !== 200 && response.status !== 503) return null;
     return await response.json();
@@ -91,7 +90,7 @@ export default async function DataStatusPage() {
           <div><dt className="text-xs uppercase tracking-wide text-dusk">Published by CQC</dt><dd className="mt-1 font-medium text-charcoal">{formatDate(status?.sourcePublishedAt)}</dd></div>
           <div><dt className="text-xs uppercase tracking-wide text-dusk">Retrieved by CareGist</dt><dd className="mt-1 font-medium text-charcoal">{formatDate(status?.sourceRetrievedAt)}</dd></div>
           <div><dt className="text-xs uppercase tracking-wide text-dusk">Reconciled by CareGist</dt><dd className="mt-1 font-medium text-charcoal">{formatDate(status?.reconciledAt)}</dd></div>
-          <div><dt className="text-xs uppercase tracking-wide text-dusk">Coverage</dt><dd className="mt-1 font-mono font-bold text-charcoal">{status?.coveragePercentage != null ? `${status.coveragePercentage}%` : "Not available"}</dd></div>
+          <div><dt className="text-xs uppercase tracking-wide text-dusk">Snapshot check coverage</dt><dd className="mt-1 font-mono font-bold text-charcoal">{status?.coveragePercentage != null ? `${status.coveragePercentage}%` : "Not available"}</dd></div>
           <div><dt className="text-xs uppercase tracking-wide text-dusk">Source locations</dt><dd className="mt-1 font-mono font-bold text-charcoal">{status?.totalSourceLocations?.toLocaleString("en-GB") ?? "Not available"}</dd></div>
           <div><dt className="text-xs uppercase tracking-wide text-dusk">Checked locations</dt><dd className="mt-1 font-mono font-bold text-charcoal">{status?.checkedLocations?.toLocaleString("en-GB") ?? "Not available"}</dd></div>
           <div><dt className="text-xs uppercase tracking-wide text-dusk">Successful checks</dt><dd className="mt-1 font-mono font-bold text-charcoal">{status?.successCount?.toLocaleString("en-GB") ?? "Not available"}</dd></div>
@@ -104,7 +103,13 @@ export default async function DataStatusPage() {
         <p className="mt-6 border-t border-stone pt-4 text-sm text-charcoal">
           {status?.message || "Freshness cannot currently be confirmed."}
         </p>
-        {status?.reason && <p className="mt-2 text-xs text-dusk">Reason: {status.reason}</p>}
+
+        {(status?.quarantinedLocationCount ?? 0) > 0 && (
+          <p className="mt-4 text-sm text-charcoal">
+            Snapshot check coverage refers to the last reconciliation. Locations awaiting source verification
+            remain unresolved and are excluded from Territory previews.
+          </p>
+        )}
 
         <p className="mt-4 text-xs text-dusk">
           Units are CQC registered locations, not unique provider organisations or ownership groups. CQC states its directory files can lag while it changes source systems.
