@@ -64,7 +64,7 @@ export default async function DataStatusPage() {
         <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-clay">Data operations</p>
         <h1 className="text-4xl font-bold text-bark">CQC data status</h1>
         <p className="mt-3 text-dusk">
-          This page reports the source watermark CareGist has actually reconciled. It does not describe live CQC data.
+          See when CQC published the directory edition and when CareGist checked it. This does not describe live CQC data.
         </p>
       </div>
 
@@ -112,7 +112,10 @@ export default async function DataStatusPage() {
         )}
 
         <p className="mt-4 text-xs text-dusk">
-          Units are CQC registered locations, not unique provider organisations or ownership groups. CQC states its directory files can lag while it changes source systems.
+          Counts are for CQC-registered locations, not unique provider organisations or ownership groups. CQC reports delays updating its directory files during a systems change.
+        </p>
+        <p className="mt-2 text-xs text-dusk">
+          The seven-day publication cutoff used for product editions is separate from directory freshness.
         </p>
       </div>
     </div>
