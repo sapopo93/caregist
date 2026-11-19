@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import json
 import uuid
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from types import SimpleNamespace
 from typing import Any
 
@@ -48,9 +48,9 @@ MANIFEST_IDS = [f"1-{10000 + index}" for index in range(100)]
 # Rows the batch must deactivate: active in the database, absent from the manifest.
 ROGUE_IDS = ["1-90001", "1-90002"]
 SHARD_COUNT = 2
-SOURCE_PUBLISHED_AT = "2026-08-01"
+RETRIEVED_AT = datetime.now(timezone.utc) - timedelta(minutes=1)
+SOURCE_PUBLISHED_AT = RETRIEVED_AT.date().isoformat()
 SOURCE_CHECKSUM_SHA256 = "a" * 64
-RETRIEVED_AT = datetime(2026, 8, 2, tzinfo=timezone.utc)
 
 
 def _estate(**overrides: str | None) -> dict[str, str | None]:
@@ -771,3 +771,57 @@ async def test_finalizer_refuses_when_quarantine_schema_is_missing(tmp_path, fre
         assert await conn.fetchval("SELECT status FROM reconciliation_batches WHERE id=$1", batch_id) != "completed"
     finally:
         await conn.close()
+
+
+@pytest.mark.parametrize("status", ["failed", "completed"])
+async def test_finalizer_refuses_replaying_closed_batch(tmp_path, fresh_db, status):
+    conn = await asyncpg.connect(fresh_db)
+    try:
+        await apply_full_schema(conn)
+        estate = _estate()
+        await _seed(conn, estate)
+        batch_id = await _seed_batch(conn, tmp_path, statuses=estate)
+        await conn.execute("UPDATE reconciliation_batches SET status=$1 WHERE id=$2", status, batch_id)
+    finally:
+        await conn.close()
+    with pytest.raises(ChangesFetchError, match="cannot be replayed"):
+        _run_finalize(fresh_db, batch_id, tmp_path, dry_run=False)
+    conn = await asyncpg.connect(fresh_db)
+    try:
+        assert await conn.fetchval("SELECT counts_reconciled FROM pipeline_runs WHERE id=(SELECT pipeline_run_id FROM reconciliation_batches WHERE id=$1)", batch_id) is False
+    finally:
+        await conn.close()
+
+
+@pytest.mark.parametrize("days", [-9, 1])
+async def test_finalizer_refuses_rejected_source_dates(tmp_path, fresh_db, monkeypatch, days):
+    monkeypatch.setattr(__import__(__name__, fromlist=["SOURCE_PUBLISHED_AT"]), "SOURCE_PUBLISHED_AT", (datetime.now(timezone.utc).date() + timedelta(days=days)).isoformat())
+    conn = await asyncpg.connect(fresh_db)
+    try:
+        await apply_full_schema(conn)
+        estate = _estate()
+        await _seed(conn, estate)
+        batch_id = await _seed_batch(conn, tmp_path, statuses=estate)
+    finally:
+        await conn.close()
+    with pytest.raises(ChangesFetchError, match="freshness window|inconsistent"):
+        _run_finalize(fresh_db, batch_id, tmp_path, dry_run=False)
+    conn = await asyncpg.connect(fresh_db)
+    try:
+        row = await _batch_row(conn, batch_id)
+        assert row["counts_reconciled"] is False
+        assert row["status"] != "completed"
+    finally:
+        await conn.close()
+
+
+async def test_finalizer_refuses_quarantine_above_accepted_policy(tmp_path, fresh_db, monkeypatch):
+    batch_id = await _seed_rogue_candidates(tmp_path, fresh_db, {ROGUE_IDS[0]: {"registrationStatus": "Registered"}})
+    conn = await asyncpg.connect(fresh_db)
+    try:
+        await conn.execute("INSERT INTO reconciliation_quarantined_locations (location_id, reason, last_error) VALUES ($1, 'synthetic', 'fixture')", ROGUE_IDS[0])
+    finally:
+        await conn.close()
+    monkeypatch.setattr("incremental_update.QUARANTINE_EXCEPTION_CAP", 0)
+    with pytest.raises(ChangesFetchError, match="quarantined locations exceed cap"):
+        _run_finalize(fresh_db, batch_id, tmp_path, dry_run=False, api_key="synthetic")

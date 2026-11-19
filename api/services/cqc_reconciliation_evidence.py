@@ -2,6 +2,20 @@
 
 import json
 import os
+from datetime import date, timedelta
+
+
+FRESHNESS_SLA = timedelta(days=8)
+
+
+def publication_is_stale(published_on: date, today: date) -> bool:
+    """CQC directory editions carry a date, so use UTC calendar days."""
+    return published_on < today - FRESHNESS_SLA
+
+QUARANTINE_EXCEPTION_CAP = int(os.getenv("CQC_QUARANTINE_EXCEPTION_CAP", "25"))
+if QUARANTINE_EXCEPTION_CAP < 0:
+    raise ValueError("CQC_QUARANTINE_EXCEPTION_CAP must be non-negative")
+
 
 DETAIL_UNAVAILABLE_CAP = int(os.getenv("CQC_DETAIL_UNAVAILABLE_CAP", "25"))
 if DETAIL_UNAVAILABLE_CAP < 0:

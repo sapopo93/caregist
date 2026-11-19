@@ -70,7 +70,7 @@ def test_fresh_result_uses_only_persisted_authoritative_evidence():
         },
         "reason": None,
         "message": (
-            "CareGist data is current as of 10 August 2026 at 21:00 UTC. "
+            "The CQC edition is within the freshness window. "
             "The last successful CQC retrieval checked 56,742 of 56,742 active locations, "
             "reconciled successfully, and completed without collection errors."
         ),
@@ -406,3 +406,21 @@ def test_running_attempt_one_second_past_grace_boundary_is_partial():
 
     assert result["status"] == "partial"
     assert result["reason"] == "latest_authoritative_attempt_incomplete"
+
+
+
+def test_recent_retrieval_does_not_make_an_old_cqc_edition_fresh():
+    row = _run(source_published_at=date(2026, 8, 1))
+    result = build_cqc_freshness(row, row, now=NOW)
+    assert result["status"] == "stale"
+    assert result["reason"] == "source_publication_exceeds_freshness_sla"
+    assert result["sourcePublishedAt"] == "2026-08-01"
+    assert result["sourceRetrievedAt"] == "2026-08-10T21:00:00+00:00"
+
+
+@pytest.mark.parametrize("published", [None, date(2026, 8, 11)])
+def test_unproven_publication_date_cannot_be_fresh(published):
+    row = _run(source_published_at=published)
+    result = build_cqc_freshness(row, row, now=NOW)
+    assert result["status"] == "unknown"
+    assert result["reason"] == "source_publication_or_retrieval_date_invalid"

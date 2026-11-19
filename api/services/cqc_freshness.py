@@ -13,21 +13,18 @@ from typing import Any, Mapping
 import asyncpg
 
 from api.services.cqc_reconciliation_evidence import (
+    FRESHNESS_SLA,
+    QUARANTINE_EXCEPTION_CAP,
     bounded_detail_unavailable,
     detail_unavailable_evidence,
+    publication_is_stale,
 )
-
-
-FRESHNESS_SLA = timedelta(days=8)
 
 # Operator-reviewed quarantined locations are a bounded exception, like the
 # bounded detail-unavailable ids: up to this many unresolved rows are reported
 # beside a fresh watermark (they stay ACTIVE but are held out of Territory
 # previews). More than this means something systemic, and the watermark is
 # partial again.
-QUARANTINE_EXCEPTION_CAP = int(os.getenv("CQC_QUARANTINE_EXCEPTION_CAP", "25"))
-if QUARANTINE_EXCEPTION_CAP < 0:
-    raise ValueError("CQC_QUARANTINE_EXCEPTION_CAP must be non-negative")
 
 # A reconciliation normally runs ~4.5 h (8 shards, max-parallel 4). A running
 # attempt younger than this does not invalidate an existing in-SLA watermark.
@@ -323,6 +320,31 @@ def build_cqc_freshness(
             ),
         }
 
+    published = _value(watermark, "source_published_at")
+    published_on = published.date() if isinstance(published, datetime) else published
+    if (
+        not isinstance(published_on, date)
+        or published_on > retrieved_at.date()
+        or retrieved_at > now
+    ):
+        return {
+            "status": "unknown",
+            **common,
+            "reason": "source_publication_or_retrieval_date_invalid",
+            "message": "Freshness cannot currently be confirmed from the source dates.",
+        }
+
+    if publication_is_stale(published_on, now.astimezone(UTC).date()):
+        return {
+            "status": "stale",
+            **common,
+            "reason": "source_publication_exceeds_freshness_sla",
+            "message": (
+                f"CQC's {published_on.day} {published_on:%B %Y} directory edition is older "
+                "than the freshness window. Retrieving it again does not make the edition current."
+            ),
+        }
+
     if quarantined_count > QUARANTINE_EXCEPTION_CAP:
         return {
             "status": "partial",
@@ -357,7 +379,7 @@ def build_cqc_freshness(
         **common,
         "reason": None,
         "message": (
-            f"CareGist data is current as of {_display_utc(retrieved_at)}. "
+            f"The CQC edition is within the freshness window. "
             f"The last successful CQC retrieval checked {checked:,} of {total:,} active locations, "
             f"{completion_message}"
         ),
