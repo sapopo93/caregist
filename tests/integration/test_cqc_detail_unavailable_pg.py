@@ -68,9 +68,9 @@ async def test_finalize_cap_and_row_preservation(fresh_db, tmp_path, monkeypatch
             assert batch["records_inserted"] == 75
             assert json.loads(batch["deactivation_confirmation"])["detailUnavailableIds"] == sorted(unavailable)
             assert batch["records_deactivated"] == 0
-            # Fixture publication/retrieval is historical; use now at that source
-            # to test freshness validation independently of the eight-day SLA.
-            result = await get_cqc_freshness(conn, now=datetime(2026, 8, 2, 1, tzinfo=UTC))
+            # The seeded edition is retrieved a minute ago and published today, so
+            # it is current against the real clock without any hardcoded date.
+            result = await get_cqc_freshness(conn, now=datetime.now(UTC))
             assert result["status"] == "fresh"
             coverage = await conn.fetch(CHANGE_FREQUENCY_COLLECTION_COVERAGE, 3)
             assert sum(row["runs"] for row in coverage if row["status"] == "completed") == 1

@@ -37,7 +37,7 @@ from __future__ import annotations
 import json
 import threading
 import uuid
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from types import SimpleNamespace
 from typing import Any
 
@@ -68,9 +68,12 @@ SUBSTITUTED_OUT_ID = MANIFEST_IDS[7]
 #: The unexplained location the substitution puts into the ACTIVE set.
 SUBSTITUTED_IN_ID = "1-97001"
 SHARD_COUNT = 2
-SOURCE_PUBLISHED_AT = "2026-08-01"
+# Relative to the real clock so the finalizer's current-edition check
+# (retrieval within the freshness SLA, publication within eight days) passes
+# and the run reaches the verification window this module exists to pin.
+RETRIEVED_AT = datetime.now(timezone.utc) - timedelta(minutes=1)
+SOURCE_PUBLISHED_AT = RETRIEVED_AT.date().isoformat()
 SOURCE_CHECKSUM_SHA256 = "a" * 64
-RETRIEVED_AT = datetime(2026, 8, 2, tzinfo=timezone.utc)
 
 #: Bounded wait for the refused substitution. The window is held open by the pin
 #: until this attempt returns, so the wait is guaranteed to outlast the timeout:

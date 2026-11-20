@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import uuid
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from types import SimpleNamespace
 
 import psycopg2
@@ -26,10 +26,13 @@ pytestmark = pytest.mark.asyncio
 async def test_resume_preserves_checkpoint_and_refuses_a_second_wave(fresh_db, tmp_path):
     async_conn = await asyncpg.connect(fresh_db)
     batch_id = uuid.UUID("12345678-1234-5678-9234-567812345678")
+    # Resume re-checks that the stored edition is current, so the edition is
+    # derived from the real clock (retrieved a minute ago, published today).
+    retrieved_at = datetime.now(timezone.utc) - timedelta(minutes=1)
     snapshot = CqcActiveSnapshot(
         source_uri="https://www.cqc.org.uk/current.csv",
-        source_published_at="2026-08-01",
-        retrieved_at=datetime(2026, 8, 2, tzinfo=timezone.utc),
+        source_published_at=retrieved_at.date().isoformat(),
+        retrieved_at=retrieved_at,
         checksum_sha256="a" * 64,
         location_ids=frozenset({"1-10000", "1-10001", "1-10002", "1-10003"}),
     )

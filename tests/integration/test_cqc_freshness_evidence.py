@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
@@ -123,12 +123,13 @@ async def test_partial_reconciliation_does_not_advance_watermark(fresh_db):
             """
             INSERT INTO pipeline_runs (
               run_type, status, started_at, completed_at, source_uri,
-              source_retrieved_at, source_checksum_sha256,
+              source_published_at, source_retrieved_at, source_checksum_sha256,
               source_total_count, checked_count, success_count, failure_count,
               reconciled_at, counts_reconciled
             ) VALUES (
               'reconciliation', 'completed', NOW() - INTERVAL '2 hours', NOW() - INTERVAL '1 hour',
-              'https://api.service.cqc.org.uk/public/v1/locations', NOW() - INTERVAL '1 hour',
+              'https://api.service.cqc.org.uk/public/v1/locations',
+              ((NOW() - INTERVAL '1 hour') AT TIME ZONE 'UTC')::date, NOW() - INTERVAL '1 hour',
               $1, 2, 2, 2, 0, NOW() - INTERVAL '1 hour', TRUE
             ) RETURNING id
             """,
@@ -168,12 +169,13 @@ async def test_running_reconciliation_within_grace_keeps_watermark_fresh(fresh_d
             """
             INSERT INTO pipeline_runs (
               run_type, status, started_at, completed_at, source_uri,
-              source_retrieved_at, source_checksum_sha256,
+              source_published_at, source_retrieved_at, source_checksum_sha256,
               source_total_count, checked_count, success_count, failure_count,
               reconciled_at, counts_reconciled
             ) VALUES (
               'reconciliation', 'completed', NOW() - INTERVAL '2 hours', NOW() - INTERVAL '1 hour',
-              'https://api.service.cqc.org.uk/public/v1/locations', NOW() - INTERVAL '1 hour',
+              'https://api.service.cqc.org.uk/public/v1/locations',
+              ((NOW() - INTERVAL '1 hour') AT TIME ZONE 'UTC')::date, NOW() - INTERVAL '1 hour',
               $1, 2, 2, 2, 0, NOW() - INTERVAL '1 hour', TRUE
             ) RETURNING id
             """,
@@ -202,5 +204,49 @@ async def test_running_reconciliation_within_grace_keeps_watermark_fresh(fresh_d
         assert await conn.fetchval(
             "SELECT id FROM pipeline_runs WHERE counts_reconciled = TRUE ORDER BY source_retrieved_at DESC LIMIT 1"
         ) == watermark_id
+    finally:
+        await conn.close()
+
+
+@pytest.mark.parametrize(
+    ("published_days_ago", "status", "reason"),
+    [
+        (None, "unknown", "source_publication_or_retrieval_date_invalid"),
+        (12, "stale", "source_publication_exceeds_freshness_sla"),
+    ],
+)
+async def test_recent_retrieval_without_a_current_publication_date_is_never_fresh(
+    fresh_db, published_days_ago, status, reason
+):
+    """A complete, just-retrieved watermark is fresh only for a current edition."""
+    conn = await asyncpg.connect(fresh_db)
+    try:
+        await apply_full_schema(conn)
+        now = datetime.now(UTC)
+        retrieved_at = now - timedelta(hours=1)
+        published_on = (
+            None if published_days_ago is None
+            else retrieved_at.date() - timedelta(days=published_days_ago)
+        )
+        await conn.execute(
+            """
+            INSERT INTO pipeline_runs (
+              run_type, status, started_at, completed_at, source_uri,
+              source_published_at, source_retrieved_at, source_checksum_sha256,
+              source_total_count, checked_count, success_count, failure_count,
+              reconciled_at, counts_reconciled
+            ) VALUES (
+              'reconciliation', 'completed', $1, $2,
+              'https://api.service.cqc.org.uk/public/v1/locations',
+              $3, $2, $4, 2, 2, 2, 0, $2, TRUE
+            )
+            """,
+            retrieved_at - timedelta(hours=1), retrieved_at, published_on, "f" * 64,
+        )
+
+        result = await get_cqc_freshness(conn, now=now)
+        assert result["status"] == status
+        assert result["status"] != "fresh"
+        assert result["reason"] == reason
     finally:
         await conn.close()
