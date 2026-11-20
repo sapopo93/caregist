@@ -37,7 +37,6 @@ import pytest
 import yaml
 
 WORKFLOW = Path(".github/workflows/cqc-reconciliation.yml")
-PIPELINE_HEALTH = Path("api/services/pipeline_health.py")
 
 # Jobs that write to production. Each one must run on a schedule, and must say so
 # explicitly rather than relying on `inputs.dry_run == false` coercion of an empty
@@ -233,20 +232,25 @@ def evaluate(
 # --------------------------------------------------------------------------- #
 
 def _sla_days() -> int:
-    source = PIPELINE_HEALTH.read_text(encoding="utf-8")
-    marker = "SOURCE_FRESHNESS_SLA = timedelta("
-    assert marker in source, (
-        "SOURCE_FRESHNESS_SLA moved; the cadence below is justified by it, so this "
-        "test must be updated deliberately rather than skipped"
+    """Read the SOURCE retrieval/publication window from its single definition.
+
+    The cadence check below protects the 8-day window in which a CQC source
+    publication must be retrieved and published, so it reads that window from
+    `FRESHNESS_SLA` rather than restating it.
+    """
+    from api.services import pipeline_health
+    from api.services.cqc_reconciliation_evidence import FRESHNESS_SLA
+
+    assert pipeline_health.SOURCE_FRESHNESS_SLA == FRESHNESS_SLA, (
+        "pipeline_health.SOURCE_FRESHNESS_SLA no longer matches "
+        "cqc_reconciliation_evidence.FRESHNESS_SLA; the cadence below is justified "
+        "by that window, so this test must be updated deliberately rather than skipped"
     )
-    body = source.split(marker, 1)[1].split(")", 1)[0]
-    days = 0
-    for unit, factor in (("weeks", 7), ("days", 1), ("hours", 0), ("seconds", 0)):
-        if f"{unit}=" in body:
-            value = int(body.split(f"{unit}=", 1)[1].split(",")[0].split(")")[0])
-            days += value * factor
-    assert days > 0, f"could not read a day-granularity SLA from {body!r}"
-    return days
+    assert FRESHNESS_SLA.seconds == 0 and FRESHNESS_SLA.microseconds == 0, (
+        f"FRESHNESS_SLA must be a whole number of days, got {FRESHNESS_SLA!r}"
+    )
+    assert FRESHNESS_SLA.days > 0, f"FRESHNESS_SLA must be positive, got {FRESHNESS_SLA!r}"
+    return FRESHNESS_SLA.days
 
 
 def _cron_days(cron: str) -> set[int]:
