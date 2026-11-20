@@ -114,6 +114,16 @@ async def test_073_rebuilds_empty_pre_060_tables(fresh_db):
         assert "073_rebuild_territory_brief_tables.sql" in applied
         assert applied.index("073_rebuild_territory_brief_tables.sql") == applied.index("072_shared_customer_package.sql") + 1
         assert "072_shared_customer_package.sql" in applied
+        # Later migrations follow 073 in number order: Operator History (074, 075), then Region Monthly (076).
+        later = [
+            "074_operator_history.sql",
+            "075_operator_history_orders.sql",
+            "076_region_monthly_builds.sql",
+        ]
+        for name in later:
+            assert name in applied
+        positions = [applied.index(n) for n in ["073_rebuild_territory_brief_tables.sql", *later]]
+        assert positions == sorted(positions)
 
         orders = await _columns(conn, "territory_brief_orders")
         assert {"scope_kind", "generation_attempts", "blob_pdf_pathname", "package_sha256"} <= orders

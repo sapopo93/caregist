@@ -433,6 +433,11 @@ class Settings(BaseSettings):
     # new public claim surface, so it stays off until its copy and numbers have
     # had independent review (docs/territory-preview.md).
     territory_preview_enabled: bool = False
+    # Region Monthly (docs/region-monthly-v1.md): monthly counts for one England
+    # region and service. Stage 1 is a read-only coverage preview with no checkout,
+    # payment or download. It is a new public claim surface, so it stays off until
+    # its wording and numbers have had independent review.
+    region_monthly_enabled: bool = False
     # Operator History (stage 1): the free coverage preview of one operator's
     # CQC record, found by CQC Provider ID. A new public claim surface, so it is
     # off until its wording has independent review (docs/operator-history-v1.md).
