@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { regionSlug } from "@/components/Breadcrumbs";
 import ActiveFilters, { type ActiveFilter } from "@/components/directory/ActiveFilters";
+import DirectoryFreshnessNotice from "@/components/DirectoryFreshnessNotice";
 import RecentlyViewed from "@/components/RecentlyViewed";
 import CollapsibleOnMobile from "@/components/directory/CollapsibleOnMobile";
 import DirectoryPagination from "@/components/directory/DirectoryPagination";
@@ -11,6 +12,7 @@ import DirectorySearchForm from "@/components/directory/DirectorySearchForm";
 import { getDirectoryOpportunity } from "@/lib/directory-constants";
 import { getDirectoryFilterOptions, searchDirectoryProviders } from "@/lib/directory-db";
 import { parseDirectorySearchParams } from "@/lib/directory-filters";
+import { regionLinks, unsupportedRegionMessage } from "@/lib/region-navigation";
 
 export const dynamic = "force-dynamic";
 
@@ -40,6 +42,7 @@ export default async function SearchPage({
     filters.rating ? { param: "rating", label: "Rating", value: filters.rating } : null,
   ].filter((f): f is ActiveFilter => f !== null);
   const opportunity = getDirectoryOpportunity(filters.opportunity);
+  const unsupportedRegion = unsupportedRegionMessage(filters.region);
   const [optionsResult, resultsResult] = await Promise.allSettled([
     getDirectoryFilterOptions(),
     searchDirectoryProviders(filters),
@@ -67,6 +70,8 @@ export default async function SearchPage({
           submitLabel="Update search"
         />
       </CollapsibleOnMobile>
+
+      <DirectoryFreshnessNotice className="mt-6" />
 
       <div className="mt-8 grid min-w-0 gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
         <section className="min-w-0">
@@ -111,6 +116,19 @@ export default async function SearchPage({
                   {results.providers.map((provider) => (
                     <DirectoryProviderCard key={provider.id} provider={provider} returnTo={returnTo} />
                   ))}
+                </div>
+              ) : unsupportedRegion ? (
+                <div data-testid="unsupported-region" className="rounded-2xl border border-stone bg-cream p-8 shadow-sm">
+                  <p className="text-2xl font-bold text-bark">No providers matched this search.</p>
+                  <p className="mt-2 text-sm text-charcoal">{unsupportedRegion}</p>
+                  <ul className="mt-5 grid gap-2 text-sm sm:grid-cols-2 lg:grid-cols-3">
+                    {regionLinks().map((region) => (
+                      <li key={region.href}>
+                        <Link href={region.href} className="block rounded-lg border border-stone bg-white p-3 font-semibold text-clay hover:border-clay">{region.name} →</Link>
+                      </li>
+                    ))}
+                    <li><Link href="/search" className="block rounded-lg border border-stone bg-white p-3 font-semibold text-clay hover:border-clay">Search all of England →</Link></li>
+                  </ul>
                 </div>
               ) : (
                 <div className="rounded-2xl border border-stone bg-cream p-8 shadow-sm">
