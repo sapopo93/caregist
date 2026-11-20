@@ -26,7 +26,7 @@ import uuid
 import zlib
 from collections import Counter
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
 from pathlib import Path
 from typing import Any, Callable, Sequence
@@ -36,7 +36,7 @@ import psycopg2
 from psycopg2.extras import Json
 import requests
 
-from api.services.cqc_reconciliation_evidence import DETAIL_UNAVAILABLE_CAP
+from api.services.cqc_reconciliation_evidence import DETAIL_UNAVAILABLE_CAP, FRESHNESS_SLA, QUARANTINE_EXCEPTION_CAP, publication_is_stale
 from api.services.provider_state_events import ProviderStateEvent, build_provider_state_events
 from api.services.rating_states import (
     assess_location_rating,
@@ -1626,11 +1626,30 @@ def _sync_reconciliation_run_evidence(cur, batch_id: uuid.UUID) -> None:
     )
 
 
+def _require_current_edition(published_at: str, retrieved_at: datetime) -> None:
+    try:
+        published_on = date.fromisoformat(published_at)
+        if retrieved_at.tzinfo is None or retrieved_at.utcoffset() is None:
+            raise ValueError("retrieval timestamp must have a timezone")
+    except (TypeError, ValueError) as exc:
+        raise ChangesFetchError("CQC edition dates are invalid or unproven.") from exc
+    now = datetime.now(timezone.utc)
+    if retrieved_at > now or published_on > retrieved_at.astimezone(timezone.utc).date():
+        raise ChangesFetchError("CQC edition publication and retrieval dates are inconsistent.")
+    if now - retrieved_at > FRESHNESS_SLA:
+        raise ChangesFetchError("CQC directory retrieval is outside the freshness window.")
+    # prepare always takes the edition CQC's page lists at that moment, so a
+    # recent retrieval of an older edition is the newest one CQC offers.
+    if publication_is_stale(published_on, now.date()):
+        raise ChangesFetchError(f"CQC directory edition {published_on} is older than 31 days.")
+
+
 def _prepare_batch(args: argparse.Namespace, conn, cur) -> int:
     batch_id = _parse_batch_id(args.batch_id)
     manifest_path = _require_manifest_path(args.snapshot_manifest)
     validate_shard_coordinates(args.shard_count)
     snapshot = fetch_active_location_snapshot(args.data_page_url)
+    _require_current_edition(snapshot.source_published_at, snapshot.retrieved_at)
     manifest = build_snapshot_manifest(snapshot, batch_id, args.shard_count)
 
     cur.execute("SELECT id, status FROM care_providers")
@@ -1649,6 +1668,37 @@ def _prepare_batch(args: argparse.Namespace, conn, cur) -> int:
             f"DRY RUN — validated batch {batch_id}: {len(snapshot.location_ids)} locations, "
             f"{args.shard_count} shards; no files or database rows were written."
         )
+        return 0
+
+    # The batch commit precedes artifact publication. A killed process can leave
+    # a durable batch with no manifest; reconstruct only the exact stored edition,
+    # including its original retrieval timestamp, without reopening its state.
+    cur.execute("SELECT pg_advisory_xact_lock(hashtextextended('cqc-reconciliation-prepare', 0))")
+    cur.execute(
+        """SELECT source_uri, source_published_at, source_retrieved_at,
+                  source_checksum_sha256, manifest_checksum_sha256, shard_count, status
+           FROM reconciliation_batches WHERE id = %s FOR UPDATE""",
+        (str(batch_id),),
+    )
+    existing = cur.fetchone()
+    if existing:
+        if str(existing[6]) not in {"prepared", "running", "failed"}:
+            raise ChangesFetchError("Prepare replay refused: batch is already closed.")
+        if (str(existing[0]), str(existing[1]), str(existing[3]), int(existing[5])) != (
+            snapshot.source_uri, snapshot.source_published_at, snapshot.checksum_sha256, args.shard_count
+        ):
+            raise ChangesFetchError("Prepare replay refused: fetched edition differs from the immutable batch.")
+        _require_current_edition(str(existing[1]), existing[2])
+        recovered = build_snapshot_manifest(CqcActiveSnapshot(
+            source_uri=str(existing[0]), source_published_at=str(existing[1]),
+            retrieved_at=existing[2], checksum_sha256=str(existing[3]),
+            location_ids=snapshot.location_ids,
+        ), batch_id, args.shard_count)
+        if recovered["manifestChecksumSha256"] != str(existing[4]):
+            raise ChangesFetchError("Prepare replay refused: immutable manifest could not be reproduced.")
+        _write_manifest(manifest_path, recovered)
+        conn.rollback()
+        print(f"Restored immutable manifest for batch {batch_id}; batch status remains {existing[6]}.")
         return 0
 
     _ensure_no_active_reconciliation_batch(args, conn, cur)
@@ -1825,6 +1875,8 @@ def _resume_batch(args: argparse.Namespace, conn, cur) -> int:
     if int(cur.fetchone()[0]) > 0:
         raise ShardAlreadyRunning("A shard is still marked running; reconciliation resume refused.")
 
+    _require_current_edition(manifest["sourcePublishedAt"], datetime.fromisoformat(manifest["sourceRetrievedAt"]))
+
     resume_execution = json.dumps(
         {
             "gitSha": getattr(args, "release_sha", None),
@@ -1883,6 +1935,11 @@ def _run_shard(args: argparse.Namespace, conn, cur, api_key: str | None) -> int:
         raise ShardAlreadyRunning(f"Shard {shard_index} is already running.")
 
     try:
+        _require_current_edition(manifest["sourcePublishedAt"], datetime.fromisoformat(manifest["sourceRetrievedAt"]))
+        cur.execute("SELECT status FROM reconciliation_batches WHERE id = %s FOR UPDATE", (str(batch_id),))
+        batch_state = cur.fetchone()
+        if not batch_state or batch_state[0] not in {"prepared", "running"}:
+            raise ChangesFetchError("Shard refused: batch must be prepared or running; resume a failed batch explicitly.")
         cur.execute(
             """
             INSERT INTO reconciliation_shards (
@@ -2160,11 +2217,13 @@ def _finalize_batch(args: argparse.Namespace, conn, cur) -> int:
     written_ids = [value for value in ids if value not in unavailable_set]
     _progress("finalize: shard coverage proven")
 
-    batch_select = "SELECT active_records_before, pipeline_run_id FROM reconciliation_batches WHERE id = %s"
+    batch_select = "SELECT active_records_before, pipeline_run_id, status FROM reconciliation_batches WHERE id = %s"
     if not args.dry_run:
         batch_select += " FOR UPDATE"
     cur.execute(batch_select, (str(batch_id),))
     batch = cur.fetchone()
+    if not batch or batch[2] not in {"prepared", "running"}:
+        raise ChangesFetchError("Batch finalization refused: batch must be prepared or running; failed or completed batches cannot be replayed.")
     active_before, pipeline_run_id = int(batch[0]), int(batch[1])
     if active_before and max(active_before - location_count, 0) / active_before > MAX_ACTIVE_COUNT_DROP_RATIO:
         raise ChangesFetchError("Batch finalization refused: active-count drop exceeds the safety threshold.")
@@ -2237,8 +2296,11 @@ def _finalize_batch(args: argparse.Namespace, conn, cur) -> int:
         active_manifest_covered += len(unavailable_active_ids)
     expected_active = active_manifest_covered
 
+    _require_current_edition(
+        manifest["sourcePublishedAt"], datetime.fromisoformat(manifest["sourceRetrievedAt"])
+    )
     if args.dry_run:
-        print(f"DRY RUN — batch {batch_id} is finalizable; no deactivations or watermarks were written.")
+        print(f"DRY RUN — batch {batch_id} passed source-date and shard-coverage checks; candidate confirmation and publication guards remain untested. No deactivations or watermarks were written.")
         conn.rollback()
         return 0
 
@@ -2383,6 +2445,10 @@ def _finalize_batch(args: argparse.Namespace, conn, cur) -> int:
             "Batch finalization refused: the expected active identities are not disjoint "
             f"({len(expected_active_ids)} distinct ids for an expected {expected_active})."
         )
+    if len(set(quarantined_ids + unconfirmed_ids)) > QUARANTINE_EXCEPTION_CAP:
+        raise ChangesFetchError(
+            f"Batch finalization refused: quarantined locations exceed cap={QUARANTINE_EXCEPTION_CAP}."
+        )
     for location_id in deactivation_ids:
         upsert_provider(cur, {"id": location_id, "status": "INACTIVE"})
     deactivated = len(deactivation_ids)
@@ -2450,6 +2516,13 @@ def _finalize_batch(args: argparse.Namespace, conn, cur) -> int:
     _progress("finalize: taking table lock")
     _lock_care_providers_for_finalize(cur)
     cur.execute(
+        """SELECT COUNT(*) FROM reconciliation_quarantined_locations q
+           JOIN care_providers p ON p.id::text = q.location_id
+           WHERE q.resolved_at IS NULL AND UPPER(p.status) = 'ACTIVE'"""
+    )
+    if int(cur.fetchone()[0]) > QUARANTINE_EXCEPTION_CAP:
+        raise ChangesFetchError(f"Batch finalization refused: quarantined locations exceed cap={QUARANTINE_EXCEPTION_CAP}.")
+    cur.execute(
         "SELECT id::text FROM care_providers WHERE UPPER(status) = 'ACTIVE' ORDER BY id"
     )
     active_after_ids = {str(row[0]) for row in cur.fetchall()}
@@ -2502,6 +2575,8 @@ def _finalize_batch(args: argparse.Namespace, conn, cur) -> int:
         raise ChangesFetchError(message)
     inserted = sum(int(row[4]) for row in shards)
     updated = sum(int(row[5]) for row in shards)
+    _require_current_edition(manifest["sourcePublishedAt"], datetime.fromisoformat(manifest["sourceRetrievedAt"]))
+
     deactivation_record = {
         **deactivation_summary,
         "detailUnavailableIds": unavailable_ids,

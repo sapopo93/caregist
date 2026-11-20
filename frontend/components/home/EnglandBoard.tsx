@@ -24,7 +24,7 @@ export default function EnglandBoard({ regions }: { regions: DirectoryRegionSnap
   return (
     <div>
       <p className="text-xs font-semibold uppercase tracking-[0.2em] text-clay">
-        Pick your patch &middot; live from the CQC record
+        England directory snapshot
       </p>
       <ol className="mt-4 grid grid-cols-3 gap-2" aria-label="England regions">
         {BOARD_LAYOUT.map(({ region, col, row }) => {

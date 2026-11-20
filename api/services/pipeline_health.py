@@ -14,9 +14,7 @@ import asyncpg
 
 from api.monitoring_config import monitoring_settings
 from api.services.cqc_freshness import get_cqc_freshness
-
-
-SOURCE_FRESHNESS_SLA = timedelta(days=8)
+from api.services.cqc_reconciliation_evidence import FRESHNESS_SLA as SOURCE_FRESHNESS_SLA
 
 # The signal poll is scheduled four times a night (18:00, 21:00, 00:00, 03:00 UTC)
 # and nothing runs during the UK working day, so the newest completed poll is

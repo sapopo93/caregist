@@ -70,7 +70,8 @@ def test_fresh_result_uses_only_persisted_authoritative_evidence():
         },
         "reason": None,
         "message": (
-            "CareGist data is current as of 10 August 2026 at 21:00 UTC. "
+            "CareGist last checked CQC's directory on 10 August 2026 at 21:00 UTC. "
+            "The edition it holds was published on 10 August 2026. "
             "The last successful CQC retrieval checked 56,742 of 56,742 active locations, "
             "reconciled successfully, and completed without collection errors."
         ),
@@ -406,3 +407,84 @@ def test_running_attempt_one_second_past_grace_boundary_is_partial():
 
     assert result["status"] == "partial"
     assert result["reason"] == "latest_authoritative_attempt_incomplete"
+
+
+
+def test_edition_older_than_a_week_is_fresh_when_checked_recently():
+    # CQC publishes irregularly (gaps of 7 to 15 days). A 12-day-old edition that
+    # CareGist retrieved inside the 8-day window is the newest CQC listed.
+    row = _run(source_published_at=NOW.date() - timedelta(days=12))
+    result = build_cqc_freshness(row, row, now=NOW)
+    assert result["status"] == "fresh"
+    assert result["reason"] is None
+    assert result["sourcePublishedAt"] == "2026-07-29"
+    assert "29 July 2026" in result["message"]
+    assert "CareGist last checked CQC's directory on 10 August 2026 at 21:00 UTC" in result["message"]
+    assert "current" not in result["message"].lower()
+    assert "up to date" not in result["message"].lower()
+
+
+def test_edition_older_than_the_backstop_is_stale_even_after_a_recent_retrieval():
+    row = _run(source_published_at=date(2026, 7, 1))
+    result = build_cqc_freshness(row, row, now=NOW)
+    assert result["status"] == "stale"
+    assert result["reason"] == "source_publication_exceeds_backstop"
+    assert result["sourcePublishedAt"] == "2026-07-01"
+    assert result["sourceRetrievedAt"] == "2026-08-10T21:00:00+00:00"
+    assert result["message"] == (
+        "The CQC directory edition CareGist holds was published on 1 July 2026, "
+        "more than 31 days ago."
+    )
+
+
+@pytest.mark.parametrize(
+    ("days_old", "status"), [(31, "fresh"), (32, "stale")]
+)
+def test_backstop_boundary_is_thirty_one_calendar_days(days_old, status):
+    row = _run(source_published_at=NOW.date() - timedelta(days=days_old))
+    assert build_cqc_freshness(row, row, now=NOW)["status"] == status
+
+
+def test_old_retrieval_is_stale_even_for_a_brand_new_edition():
+    retrieved = NOW - timedelta(days=8, minutes=1)
+    row = _run(
+        source_published_at=retrieved.date(),
+        source_retrieved_at=retrieved,
+        started_at=retrieved - timedelta(hours=2),
+        completed_at=retrieved + timedelta(minutes=5),
+        reconciled_at=retrieved + timedelta(minutes=5),
+    )
+    result = build_cqc_freshness(row, row, now=NOW)
+    assert result["status"] == "stale"
+    assert result["reason"] == "latest_successful_retrieval_exceeds_freshness_sla"
+
+
+def test_retrieval_inside_the_window_is_not_stale():
+    retrieved = NOW - timedelta(days=7, hours=23)
+    row = _run(
+        source_published_at=retrieved.date(),
+        source_retrieved_at=retrieved,
+        started_at=retrieved - timedelta(hours=2),
+        completed_at=retrieved + timedelta(minutes=5),
+        reconciled_at=retrieved + timedelta(minutes=5),
+    )
+    assert build_cqc_freshness(row, row, now=NOW)["status"] == "fresh"
+
+
+def test_freshness_window_is_eight_days_and_the_backstop_is_longer():
+    from api.services.cqc_reconciliation_evidence import (
+        EDITION_PUBLICATION_BACKSTOP,
+        FRESHNESS_SLA,
+    )
+
+    # The reconciliation cadence test and the public SLA rely on exactly 8 days.
+    assert FRESHNESS_SLA == timedelta(days=8)
+    assert EDITION_PUBLICATION_BACKSTOP > FRESHNESS_SLA
+
+
+@pytest.mark.parametrize("published", [None, date(2026, 8, 11)])
+def test_unproven_publication_date_cannot_be_fresh(published):
+    row = _run(source_published_at=published)
+    result = build_cqc_freshness(row, row, now=NOW)
+    assert result["status"] == "unknown"
+    assert result["reason"] == "source_publication_or_retrieval_date_invalid"

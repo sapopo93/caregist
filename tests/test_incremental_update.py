@@ -4,7 +4,7 @@ import argparse
 import json
 import sys
 import uuid
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
@@ -319,8 +319,8 @@ def test_snapshot_manifest_checksum_changes_with_shard_count():
 def test_resume_requires_failed_batch_and_consumes_one_wave(tmp_path):
     snapshot = CqcActiveSnapshot(
         source_uri="https://www.cqc.org.uk/current.csv",
-        source_published_at="2026-08-01",
-        retrieved_at=datetime(2026, 8, 2, tzinfo=timezone.utc),
+        source_published_at=datetime.now(timezone.utc).date().isoformat(),
+        retrieved_at=datetime.now(timezone.utc) - timedelta(seconds=1),
         checksum_sha256="a" * 64,
         location_ids=frozenset({"1-10000"}),
     )
@@ -441,10 +441,11 @@ def test_resume_rejects_different_prepare_lineage(tmp_path, release_sha, source_
 
 
 def test_prepare_dry_run_performs_database_reads_without_writes(tmp_path, monkeypatch):
+    retrieved_at = datetime.now(timezone.utc) - timedelta(minutes=1)
     snapshot = CqcActiveSnapshot(
         source_uri="https://www.cqc.org.uk/current.csv",
-        source_published_at="2026-08-01",
-        retrieved_at=datetime(2026, 8, 2, tzinfo=timezone.utc),
+        source_published_at=retrieved_at.date().isoformat(),
+        retrieved_at=retrieved_at,
         checksum_sha256="a" * 64,
         location_ids=frozenset({"1-10000"}),
     )
@@ -653,7 +654,7 @@ def test_finalizer_refuses_a_same_date_source_checksum_conflict(tmp_path):
     manifest, batch_id, shards = _finalize_fixture(tmp_path)
     cursor = _finalize_cursor(manifest, shards, active_manifest_count=100)
     inner = cursor.fetchone.side_effect
-    watermark = (date(2026, 8, 1), "0" * 64)
+    watermark = (date.fromisoformat(manifest["sourcePublishedAt"]), "0" * 64)
 
     def _next_row():
         statement = " ".join(str(cursor.execute.call_args_list[-1].args[0]).split()).upper()
@@ -1083,10 +1084,11 @@ def test_finalizer_fails_closed_when_shard_coverage_is_incomplete(tmp_path):
 
 def _finalize_fixture(tmp_path, location_count=100, shard_count=2):
     location_ids = frozenset(f"1-{10000 + index}" for index in range(location_count))
+    retrieved_at = datetime.now(timezone.utc) - timedelta(minutes=1)
     snapshot = CqcActiveSnapshot(
         source_uri="https://www.cqc.org.uk/current.csv",
-        source_published_at="2026-08-01",
-        retrieved_at=datetime(2026, 8, 2, tzinfo=timezone.utc),
+        source_published_at=retrieved_at.date().isoformat(),
+        retrieved_at=retrieved_at,
         checksum_sha256="a" * 64,
         location_ids=location_ids,
     )
@@ -1157,10 +1159,12 @@ def _finalize_cursor(
             )
         if "COUNT(*)" in statement and "ID = ANY(%S)" in statement:
             return (active_manifest_count, inactive_manifest_count)
+        if "COUNT(*)" in statement and "RECONCILIATION_QUARANTINED_LOCATIONS" in statement:
+            return (len(quarantined_ids),)
         if "COUNT(*)" in statement:
             return (active_after if active_after is not None else active_manifest_count,)
         if "ACTIVE_RECORDS_BEFORE" in statement:
-            return (len(shards), 1)
+            return (len(shards), 1, "running")
         if "FROM PIPELINE_RUNS" in statement:
             return None
         return validation_row
@@ -1698,3 +1702,57 @@ def test_detail_identity_must_match_requested_manifest_location(monkeypatch, pay
     monkeypatch.setattr(iu.requests, "get", lambda *args, **kwargs: SimpleNamespace(status_code=200, headers={}, json=lambda: payload))
     with pytest.raises(ChangesFetchError, match="identity mismatch"):
         fetch_location_detail(iu.DEFAULT_BASE_URL, "synthetic", "1-123456", directory_member=True)
+
+
+@pytest.mark.parametrize(
+    "days,valid",
+    [(8, True), (12, True), (31, True), (32, False), (40, False), (-1, False)],
+)
+def test_edition_guard_accepts_a_recently_retrieved_edition_until_the_backstop(days, valid):
+    # CQC publishes irregularly, and prepare always takes the edition CQC lists
+    # at that moment, so only the 31-day backstop refuses an old edition.
+    from incremental_update import _require_current_edition
+    retrieved = datetime.now(timezone.utc) - timedelta(seconds=1)
+    published = (retrieved.date() - timedelta(days=days)).isoformat()
+    if valid:
+        _require_current_edition(published, retrieved)
+    else:
+        with pytest.raises(ChangesFetchError):
+            _require_current_edition(published, retrieved)
+
+
+def test_edition_guard_names_the_backstop_for_an_old_edition():
+    from incremental_update import _require_current_edition
+    retrieved = datetime.now(timezone.utc) - timedelta(seconds=1)
+    published = (retrieved.date() - timedelta(days=40)).isoformat()
+    with pytest.raises(ChangesFetchError, match="older than 31 days"):
+        _require_current_edition(published, retrieved)
+
+
+@pytest.mark.parametrize("age", [timedelta(days=8, minutes=1), timedelta(days=9), timedelta(days=20)])
+def test_edition_guard_refuses_a_retrieval_older_than_the_freshness_window(age):
+    from incremental_update import _require_current_edition
+    retrieved = datetime.now(timezone.utc) - age
+    # A brand-new edition does not rescue a retrieval that is itself too old.
+    with pytest.raises(ChangesFetchError, match="retrieval is outside the freshness window"):
+        _require_current_edition(retrieved.date().isoformat(), retrieved)
+
+
+def test_edition_guard_accepts_a_retrieval_just_inside_the_freshness_window():
+    from incremental_update import _require_current_edition
+    retrieved = datetime.now(timezone.utc) - timedelta(days=7, hours=23)
+    _require_current_edition((retrieved.date() - timedelta(days=12)).isoformat(), retrieved)
+
+
+def test_edition_guard_refuses_a_future_publication_date():
+    from incremental_update import _require_current_edition
+    retrieved = datetime.now(timezone.utc) - timedelta(seconds=1)
+    published = (retrieved.date() + timedelta(days=1)).isoformat()
+    with pytest.raises(ChangesFetchError, match="inconsistent"):
+        _require_current_edition(published, retrieved)
+
+
+def test_edition_guard_refuses_a_naive_retrieval_timestamp():
+    from incremental_update import _require_current_edition
+    with pytest.raises(ChangesFetchError, match="invalid or unproven"):
+        _require_current_edition(datetime.now(timezone.utc).date().isoformat(), datetime.now())
