@@ -21,7 +21,7 @@ from api.logging_config import setup_logging
 
 # Structured JSON logs in production, human-readable locally
 setup_logging(json_output="localhost" not in settings.database_url)
-from api.routers import admin, analytics, api_applications, auth, billing, city_pages, claims, comparisons, crm, crm_extended, cron, enquiries, feed, groups, health, internal, operator_history, operator_history_orders, provider_profile, providers, public_tools, radar, region_monthly, region_stats, regions, reviews, sitemaps, subscribe, territory_preview, webhooks
+from api.routers import admin, analytics, api_applications, auth, billing, city_pages, claims, comparisons, crm, crm_extended, cron, enquiries, feed, groups, health, internal, operator_history, operator_history_orders, provider_profile, providers, public_tools, radar, region_monthly, region_monthly_orders, region_stats, regions, reviews, sitemaps, subscribe, territory_preview, webhooks
 
 _logger = logging.getLogger("caregist.app")
 
@@ -179,6 +179,7 @@ app.include_router(territory_preview.router)
 app.include_router(operator_history.router)
 app.include_router(operator_history_orders.router)
 app.include_router(region_monthly.router)
+app.include_router(region_monthly_orders.router)
 app.include_router(region_stats.router)
 app.include_router(city_pages.router)
 app.include_router(sitemaps.router)
