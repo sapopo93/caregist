@@ -429,6 +429,11 @@ class Settings(BaseSettings):
     # new public claim surface, so it stays off until its copy and numbers have
     # had independent review (docs/territory-preview.md).
     territory_preview_enabled: bool = False
+    # Region Monthly (docs/region-monthly-v1.md): monthly counts for one England
+    # region and service. Stage 1 is a read-only coverage preview with no checkout,
+    # payment or download. It is a new public claim surface, so it stays off until
+    # its wording and numbers have had independent review.
+    region_monthly_enabled: bool = False
     # Report-readiness outputs (.warroom/REPORT_READINESS_BRIEF.md). Each is a
     # new customer-facing claim surface, so each stays off until its evidence
     # packet has independent review. None opens checkout, delivery or export.
