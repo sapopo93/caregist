@@ -548,7 +548,7 @@ def test_the_design_note_carries_the_limits_and_every_refusal_code_verbatim():
         assert f"| `{code}` | {svc.REFUSAL_STATUS[code]} | {template} |" in note
     for label in svc.METRIC_LABELS.values():
         assert label in note
-    assert "074_region_monthly_builds.sql" in note and "4900" in note and "24500" in note and "44500" in note
+    assert "076_region_monthly_builds.sql" in note and "4900" in note and "24500" in note and "44500" in note
 
 
 def test_repo_language_guard_accepts_the_new_customer_facing_files():

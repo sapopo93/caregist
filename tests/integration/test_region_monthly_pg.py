@@ -373,9 +373,9 @@ async def test_versions_form_an_unbroken_chain_and_the_key_covers_all_services(c
     assert await conn.fetchval("SELECT COUNT(*) FROM region_monthly_builds") == 5
 
 
-async def test_migration_074_has_a_working_down_script_and_can_be_reapplied(conn):
-    up = (MIGRATIONS_DIR / "074_region_monthly_builds.sql").read_text(encoding="utf-8")
-    down = (MIGRATIONS_DIR / "down" / "074_region_monthly_builds.down.sql").read_text(encoding="utf-8")
+async def test_migration_076_has_a_working_down_script_and_can_be_reapplied(conn):
+    up = (MIGRATIONS_DIR / "076_region_monthly_builds.sql").read_text(encoding="utf-8")
+    down = (MIGRATIONS_DIR / "down" / "076_region_monthly_builds.down.sql").read_text(encoding="utf-8")
     await svc.store_build(conn, await build(conn, SEPT))
     await conn.execute(down)
     assert not await conn.fetchval(q.BUILDS_TABLE_PRESENT)

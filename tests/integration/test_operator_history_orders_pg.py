@@ -753,8 +753,8 @@ async def test_migration_075_applies_cleanly_and_its_down_script_reverses_it(fre
     conn = await asyncpg.connect(fresh_db)
     try:
         applied = await apply_full_schema(conn)
-        assert applied[-1] == "075_operator_history_orders.sql"
-        assert applied[-2] == "074_operator_history.sql"
+        # Later migrations may follow; 075 must come straight after 074.
+        assert applied.index("075_operator_history_orders.sql") == applied.index("074_operator_history.sql") + 1
         tables = {"operator_history_orders", "operator_history_artefacts"}
         present = {r["tablename"] for r in await conn.fetch("SELECT tablename FROM pg_tables WHERE schemaname = 'public'")}
         assert tables <= present

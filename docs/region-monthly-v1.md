@@ -75,7 +75,7 @@ A test fails if the limits, the metric definitions or the refusal messages conta
 
 ## The store: `region_monthly_builds`
 
-Migration `074_region_monthly_builds.sql` (down script `db/migrations/down/074_region_monthly_builds.down.sql`). One row is one build of one month for one region and service.
+Migration `076_region_monthly_builds.sql` (down script `db/migrations/down/076_region_monthly_builds.down.sql`). One row is one build of one month for one region and service.
 
 - Columns: `period_month` (first of month), `region`, `service_slug` (NULL means all services), `build_version`, `supersedes_build_version`, `correction_reason`, `schema_version`, `built_at`, `built_from_data_cutoff`, `metrics` (JSONB), `coverage` (JSONB), `limits` (JSONB array), `content_sha256`.
 - Unique on (`period_month`, `region`, `COALESCE(service_slug, '')`, `build_version`). The COALESCE is needed because a plain UNIQUE treats NULLs as distinct.
@@ -84,7 +84,7 @@ Migration `074_region_monthly_builds.sql` (down script `db/migrations/down/074_r
 - A rerun with identical content writes nothing. Changed content is stored only when the command is given `--correction-reason`.
 - Entitlements and orders are not stored here. That is stage 2.
 
-Rollback: the down script drops the triggers, the two functions and the table. Under `db/migrations/README.md`, never run it on production as an ordinary rollback. A built month is a published record: turn the flag off, use a forward-fix migration, and take a verified Neon recovery point before any production migration. Production migration number: both this branch and the Operator History branch (`claude/p5b-operator-history-20261120`) use 074. Whichever merges second must be renumbered to the next free number before it merges.
+Rollback: the down script drops the triggers, the two functions and the table. Under `db/migrations/README.md`, never run it on production as an ordinary rollback. A built month is a published record: turn the flag off, use a forward-fix migration, and take a verified Neon recovery point before any production migration. Migration number: Operator History keeps 074 and 075, so Region Monthly is 076.
 
 ## Purchase rules (`resolve_purchase`, no charge)
 
@@ -147,4 +147,4 @@ A purchase is a kind, a first month, a region and a service. The months are cons
 6. Whether to turn on the build schedule, and who sets `REGION_MONTHLY_BUILD_APPROVED`.
 7. Whether the "active locations at month end" figure should be added once CareGist stores a monthly snapshot, and from which month.
 8. Wording review: the eight limit templates, the four metric definitions and the refusal messages need independent review before the flag is turned on.
-9. Migration number: this and the Operator History branch both use 074.
+9. Migration number: settled. Operator History uses 074 and 075; Region Monthly uses 076.
