@@ -429,6 +429,12 @@ class Settings(BaseSettings):
     # new public claim surface, so it stays off until its copy and numbers have
     # had independent review (docs/territory-preview.md).
     territory_preview_enabled: bool = False
+    # Operator History (stage 1): the free coverage preview of one operator's
+    # CQC record, found by CQC Provider ID. A new public claim surface, so it is
+    # off until its wording has independent review (docs/operator-history-v1.md).
+    # Off returns the same 404 as an unknown route. It opens no checkout,
+    # delivery or export path.
+    operator_history_enabled: bool = False
     # Report-readiness outputs (.warroom/REPORT_READINESS_BRIEF.md). Each is a
     # new customer-facing claim surface, so each stays off until its evidence
     # packet has independent review. None opens checkout, delivery or export.
