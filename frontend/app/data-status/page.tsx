@@ -64,7 +64,11 @@ export default async function DataStatusPage() {
         <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-clay">Data operations</p>
         <h1 className="text-4xl font-bold text-bark">CQC data status</h1>
         <p className="mt-3 text-dusk">
-          See when CQC published the directory edition and when CareGist checked it. This does not describe live CQC data.
+          See when CQC published the directory edition and when CareGist last checked it. This does not describe live CQC data.
+        </p>
+        <p className="mt-3 text-sm text-dusk">
+          CQC publishes its directory at irregular intervals, so the publication date can be more than a week old.
+          CareGist checks CQC at least twice a week and holds the newest edition CQC lists at each check.
         </p>
       </div>
 
@@ -115,7 +119,8 @@ export default async function DataStatusPage() {
           Counts are for CQC-registered locations, not unique provider organisations or ownership groups. CQC reports delays updating its directory files during a systems change.
         </p>
         <p className="mt-2 text-xs text-dusk">
-          The seven-day publication cutoff used for product editions is separate from directory freshness.
+          The status above depends on when CareGist last checked CQC, with a separate warning if CQC&apos;s own edition is more than 31 days old.
+          The seven-day publication cutoff used for product editions is separate from this status.
         </p>
       </div>
     </div>

@@ -212,13 +212,14 @@ async def test_running_reconciliation_within_grace_keeps_watermark_fresh(fresh_d
     ("published_days_ago", "status", "reason"),
     [
         (None, "unknown", "source_publication_or_retrieval_date_invalid"),
-        (12, "stale", "source_publication_exceeds_freshness_sla"),
+        (12, "fresh", None),
+        (40, "stale", "source_publication_exceeds_backstop"),
     ],
 )
-async def test_recent_retrieval_without_a_current_publication_date_is_never_fresh(
+async def test_publication_date_is_judged_against_the_backstop_and_never_missing(
     fresh_db, published_days_ago, status, reason
 ):
-    """A complete, just-retrieved watermark is fresh only for a current edition."""
+    """A just-retrieved watermark needs a publication date no older than the 31-day backstop."""
     conn = await asyncpg.connect(fresh_db)
     try:
         await apply_full_schema(conn)
@@ -246,7 +247,8 @@ async def test_recent_retrieval_without_a_current_publication_date_is_never_fres
 
         result = await get_cqc_freshness(conn, now=now)
         assert result["status"] == status
-        assert result["status"] != "fresh"
         assert result["reason"] == reason
+        if published_days_ago is None:
+            assert result["status"] != "fresh"
     finally:
         await conn.close()

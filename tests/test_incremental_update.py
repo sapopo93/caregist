@@ -1704,8 +1704,13 @@ def test_detail_identity_must_match_requested_manifest_location(monkeypatch, pay
         fetch_location_detail(iu.DEFAULT_BASE_URL, "synthetic", "1-123456", directory_member=True)
 
 
-@pytest.mark.parametrize("days,valid", [(8, True), (9, False), (-1, False)])
-def test_edition_guard_uses_publication_date_even_after_a_recent_retrieval(days, valid):
+@pytest.mark.parametrize(
+    "days,valid",
+    [(8, True), (12, True), (31, True), (32, False), (40, False), (-1, False)],
+)
+def test_edition_guard_accepts_a_recently_retrieved_edition_until_the_backstop(days, valid):
+    # CQC publishes irregularly, and prepare always takes the edition CQC lists
+    # at that moment, so only the 31-day backstop refuses an old edition.
     from incremental_update import _require_current_edition
     retrieved = datetime.now(timezone.utc) - timedelta(seconds=1)
     published = (retrieved.date() - timedelta(days=days)).isoformat()
@@ -1714,6 +1719,37 @@ def test_edition_guard_uses_publication_date_even_after_a_recent_retrieval(days,
     else:
         with pytest.raises(ChangesFetchError):
             _require_current_edition(published, retrieved)
+
+
+def test_edition_guard_names_the_backstop_for_an_old_edition():
+    from incremental_update import _require_current_edition
+    retrieved = datetime.now(timezone.utc) - timedelta(seconds=1)
+    published = (retrieved.date() - timedelta(days=40)).isoformat()
+    with pytest.raises(ChangesFetchError, match="older than 31 days"):
+        _require_current_edition(published, retrieved)
+
+
+@pytest.mark.parametrize("age", [timedelta(days=8, minutes=1), timedelta(days=9), timedelta(days=20)])
+def test_edition_guard_refuses_a_retrieval_older_than_the_freshness_window(age):
+    from incremental_update import _require_current_edition
+    retrieved = datetime.now(timezone.utc) - age
+    # A brand-new edition does not rescue a retrieval that is itself too old.
+    with pytest.raises(ChangesFetchError, match="retrieval is outside the freshness window"):
+        _require_current_edition(retrieved.date().isoformat(), retrieved)
+
+
+def test_edition_guard_accepts_a_retrieval_just_inside_the_freshness_window():
+    from incremental_update import _require_current_edition
+    retrieved = datetime.now(timezone.utc) - timedelta(days=7, hours=23)
+    _require_current_edition((retrieved.date() - timedelta(days=12)).isoformat(), retrieved)
+
+
+def test_edition_guard_refuses_a_future_publication_date():
+    from incremental_update import _require_current_edition
+    retrieved = datetime.now(timezone.utc) - timedelta(seconds=1)
+    published = (retrieved.date() + timedelta(days=1)).isoformat()
+    with pytest.raises(ChangesFetchError, match="inconsistent"):
+        _require_current_edition(published, retrieved)
 
 
 def test_edition_guard_refuses_a_naive_retrieval_timestamp():

@@ -69,7 +69,7 @@ SUBSTITUTED_OUT_ID = MANIFEST_IDS[7]
 SUBSTITUTED_IN_ID = "1-97001"
 SHARD_COUNT = 2
 # Relative to the real clock so the finalizer's current-edition check
-# (retrieval within the freshness SLA, publication within eight days) passes
+# (retrieval within the freshness SLA, publication within 31 days) passes
 # and the run reaches the verification window this module exists to pin.
 RETRIEVED_AT = datetime.now(timezone.utc) - timedelta(minutes=1)
 SOURCE_PUBLISHED_AT = RETRIEVED_AT.date().isoformat()

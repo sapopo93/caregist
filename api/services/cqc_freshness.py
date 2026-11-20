@@ -337,10 +337,10 @@ def build_cqc_freshness(
         return {
             "status": "stale",
             **common,
-            "reason": "source_publication_exceeds_freshness_sla",
+            "reason": "source_publication_exceeds_backstop",
             "message": (
-                f"CQC's {published_on.day} {published_on:%B %Y} directory edition is older "
-                "than the freshness window. Retrieving it again does not make the edition current."
+                f"The CQC directory edition CareGist holds was published on "
+                f"{published_on.day} {published_on:%B %Y}, more than 31 days ago."
             ),
         }
 
@@ -378,7 +378,8 @@ def build_cqc_freshness(
         **common,
         "reason": None,
         "message": (
-            f"The CQC edition is within the freshness window. "
+            f"CareGist last checked CQC's directory on {_display_utc(retrieved_at)}. "
+            f"The edition it holds was published on {published_on.day} {published_on:%B %Y}. "
             f"The last successful CQC retrieval checked {checked:,} of {total:,} active locations, "
             f"{completion_message}"
         ),

@@ -793,9 +793,21 @@ async def test_finalizer_refuses_replaying_closed_batch(tmp_path, fresh_db, stat
         await conn.close()
 
 
-@pytest.mark.parametrize("days", [-9, 1])
-async def test_finalizer_refuses_rejected_source_dates(tmp_path, fresh_db, monkeypatch, days):
-    monkeypatch.setattr(__import__(__name__, fromlist=["SOURCE_PUBLISHED_AT"]), "SOURCE_PUBLISHED_AT", (datetime.now(timezone.utc).date() + timedelta(days=days)).isoformat())
+def _use_edition_dates(monkeypatch, *, published_days_ago: int, retrieved_ago: timedelta) -> None:
+    module = __import__(__name__, fromlist=["SOURCE_PUBLISHED_AT"])
+    retrieved = datetime.now(timezone.utc) - retrieved_ago
+    monkeypatch.setattr(module, "RETRIEVED_AT", retrieved)
+    monkeypatch.setattr(
+        module, "SOURCE_PUBLISHED_AT", (retrieved.date() - timedelta(days=published_days_ago)).isoformat()
+    )
+
+
+@pytest.mark.parametrize("published_days_ago", [12, 31])
+async def test_finalizer_accepts_an_edition_older_than_a_week_retrieved_recently(
+    tmp_path, fresh_db, monkeypatch, published_days_ago
+):
+    # CQC publishes irregularly; the edition prepare took is the newest it listed.
+    _use_edition_dates(monkeypatch, published_days_ago=published_days_ago, retrieved_ago=timedelta(minutes=1))
     conn = await asyncpg.connect(fresh_db)
     try:
         await apply_full_schema(conn)
@@ -804,7 +816,39 @@ async def test_finalizer_refuses_rejected_source_dates(tmp_path, fresh_db, monke
         batch_id = await _seed_batch(conn, tmp_path, statuses=estate)
     finally:
         await conn.close()
-    with pytest.raises(ChangesFetchError, match="freshness window|inconsistent"):
+    assert _run_finalize(fresh_db, batch_id, tmp_path, dry_run=False) == 0
+    conn = await asyncpg.connect(fresh_db)
+    try:
+        row = await _batch_row(conn, batch_id)
+        assert row["status"] == "completed"
+        assert row["counts_reconciled"] is True
+    finally:
+        await conn.close()
+
+
+@pytest.mark.parametrize(
+    ("published_days_ago", "retrieved_ago", "message"),
+    [
+        (40, timedelta(minutes=1), "older than 31 days"),
+        (32, timedelta(minutes=1), "older than 31 days"),
+        (-1, timedelta(minutes=1), "inconsistent"),
+        (0, timedelta(days=9), "retrieval is outside the freshness window"),
+        (12, timedelta(days=8, minutes=1), "retrieval is outside the freshness window"),
+    ],
+)
+async def test_finalizer_refuses_rejected_source_dates(
+    tmp_path, fresh_db, monkeypatch, published_days_ago, retrieved_ago, message
+):
+    _use_edition_dates(monkeypatch, published_days_ago=published_days_ago, retrieved_ago=retrieved_ago)
+    conn = await asyncpg.connect(fresh_db)
+    try:
+        await apply_full_schema(conn)
+        estate = _estate()
+        await _seed(conn, estate)
+        batch_id = await _seed_batch(conn, tmp_path, statuses=estate)
+    finally:
+        await conn.close()
+    with pytest.raises(ChangesFetchError, match=message):
         _run_finalize(fresh_db, batch_id, tmp_path, dry_run=False)
     conn = await asyncpg.connect(fresh_db)
     try:

@@ -5,12 +5,18 @@ import os
 from datetime import date, timedelta
 
 
+# How recently CareGist must have retrieved and checked CQC's directory.
 FRESHNESS_SLA = timedelta(days=8)
+
+# A safety net that flags a source CQC itself has not updated for over a month.
+# It is NOT the freshness window: CQC publishes irregularly (gaps of 7 to 15
+# days have been seen), so an edition's age alone does not mean CareGist is late.
+EDITION_PUBLICATION_BACKSTOP = timedelta(days=31)
 
 
 def publication_is_stale(published_on: date, today: date) -> bool:
-    """CQC directory editions carry a date, so use UTC calendar days."""
-    return published_on < today - FRESHNESS_SLA
+    """True when the edition is older than the backstop (UTC calendar days)."""
+    return published_on < today - EDITION_PUBLICATION_BACKSTOP
 
 QUARANTINE_EXCEPTION_CAP = int(os.getenv("CQC_QUARANTINE_EXCEPTION_CAP", "25"))
 if QUARANTINE_EXCEPTION_CAP < 0:

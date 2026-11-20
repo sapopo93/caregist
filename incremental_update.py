@@ -1638,8 +1638,10 @@ def _require_current_edition(published_at: str, retrieved_at: datetime) -> None:
         raise ChangesFetchError("CQC edition publication and retrieval dates are inconsistent.")
     if now - retrieved_at > FRESHNESS_SLA:
         raise ChangesFetchError("CQC directory retrieval is outside the freshness window.")
+    # prepare always takes the edition CQC's page lists at that moment, so a
+    # recent retrieval of an older edition is the newest one CQC offers.
     if publication_is_stale(published_on, now.date()):
-        raise ChangesFetchError(f"CQC directory edition {published_on} is outside the freshness window.")
+        raise ChangesFetchError(f"CQC directory edition {published_on} is older than 31 days.")
 
 
 def _prepare_batch(args: argparse.Namespace, conn, cur) -> int:
