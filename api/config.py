@@ -42,6 +42,7 @@ SECRET_ENV_NAMES = {
     "stripe_price_radar_national": "STRIPE_PRICE_RADAR_NATIONAL",
     "stripe_price_intelligence_feed": "STRIPE_PRICE_INTELLIGENCE_FEED",
     "stripe_price_territory_brief": "STRIPE_PRICE_TERRITORY_BRIEF",
+    "stripe_price_operator_history": "STRIPE_PRICE_OPERATOR_HISTORY",
     "blob_read_write_token": "BLOB_READ_WRITE_TOKEN",
     "resend_api_key": "RESEND_API_KEY",
     "resend_webhook_secret": "RESEND_WEBHOOK_SECRET",
@@ -362,6 +363,9 @@ class Settings(BaseSettings):
     # One-off Territory Opportunity Brief (GBP 745). Optional until the
     # self-serve feature flag is turned on; loadable earlier for webhook replay.
     stripe_price_territory_brief: str = ""
+    # One-off Operator History (GBP 95.00). Optional until its checkout switch is
+    # on; loadable earlier so a payment event can still be reconciled.
+    stripe_price_operator_history: str = ""
     # Vercel Blob RW token, used by the fulfilment worker to upload the
     # generated brief/CSV to private Blob storage.
     blob_read_write_token: str = ""
@@ -434,6 +438,19 @@ class Settings(BaseSettings):
     # payment or download. It is a new public claim surface, so it stays off until
     # its wording and numbers have had independent review.
     region_monthly_enabled: bool = False
+    # Operator History (stage 1): the free coverage preview of one operator's
+    # CQC record, found by CQC Provider ID. A new public claim surface, so it is
+    # off until its wording has independent review (docs/operator-history-v1.md).
+    # Off returns the same 404 as an unknown route, for the preview and for the
+    # stage 2 order, status and download routes. On, it opens no checkout by itself:
+    # that needs operator_history_checkout_enabled below.
+    operator_history_enabled: bool = False
+    # Operator History stage 2: the paid checkout, delivery and refund handling.
+    # Fail-closed. It needs operator_history_enabled and billing_checkout_enabled as
+    # well, plus the Price, the approved B2B terms and the source-freshness gate.
+    # The signed payment webhook keeps working whatever this is set to, so an
+    # order already paid for can still be delivered or refunded.
+    operator_history_checkout_enabled: bool = False
     # Report-readiness outputs (.warroom/REPORT_READINESS_BRIEF.md). Each is a
     # new customer-facing claim surface, so each stays off until its evidence
     # packet has independent review. None opens checkout, delivery or export.
@@ -682,6 +699,23 @@ class Settings(BaseSettings):
             if missing:
                 raise RuntimeError(
                     f"FATAL: Radar checkout is enabled without {', '.join(missing)}."
+                )
+
+        if self.operator_history_checkout_enabled:
+            if not (self.billing_checkout_enabled and self.operator_history_enabled):
+                raise RuntimeError(
+                    "FATAL: OPERATOR_HISTORY_CHECKOUT_ENABLED requires BILLING_CHECKOUT_ENABLED "
+                    "and OPERATOR_HISTORY_ENABLED."
+                )
+            required_operator_history_values = {
+                "STRIPE_PRICE_OPERATOR_HISTORY": self.stripe_price_operator_history,
+                "B2B_TERMS_VERSION": self.b2b_terms_version,
+                "B2B_TERMS_SHA256": self.b2b_terms_sha256,
+            }
+            missing = [name for name, value in required_operator_history_values.items() if not value]
+            if missing:
+                raise RuntimeError(
+                    f"FATAL: Operator History checkout is enabled without {', '.join(missing)}."
                 )
 
         if self.territory_self_serve_checkout_enabled:
