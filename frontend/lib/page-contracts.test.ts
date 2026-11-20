@@ -273,4 +273,34 @@ describe("page contracts", () => {
     assert.doesNotMatch(source, /Store your API key/i);
     assert.match(source, /No password, API key, or signing secret is intentionally stored/);
   });
+
+  it("shows the data freshness notice on every directory page and survives an unreachable API", () => {
+    for (const path of ["app/search/page.tsx", "app/find-care/page.tsx", "app/region/[slug]/page.tsx", "app/provider/[slug]/page.tsx"]) {
+      assert.match(readAppFile(path), /<DirectoryFreshnessNotice/, path);
+    }
+    const notice = readAppFile("components/DirectoryFreshnessNotice.tsx");
+    assert.match(notice, /revalidate: 300/);
+    assert.match(notice, /AbortSignal\.timeout\(5000\)/);
+    assert.match(notice, /catch\s*\{\s*return null;/);
+    assert.match(notice, /data-testid="directory-freshness-notice"/);
+    assert.match(notice, /role="note"/);
+    assert.match(notice, /href="\/data-status"/);
+  });
+
+  it("offers region pages service-type and postcode navigation without checkout prompts", () => {
+    const source = readAppFile("app/region/[slug]/page.tsx");
+    const block = source.slice(source.indexOf('aria-labelledby="browse-by-service"'), source.indexOf("{/* Rating Distribution */}"));
+
+    assert.match(block, /regionServiceLinks\(REGION_MAP\[slug\]\)/);
+    assert.match(block, /href="\/find-care"/);
+    assert.doesNotMatch(block, /pricing|checkout|billing/);
+  });
+
+  it("explains an unsupported region on the search page", () => {
+    const source = readAppFile("app/search/page.tsx");
+
+    assert.match(source, /unsupportedRegionMessage\(filters\.region\)/);
+    assert.match(source, /Search all of England/);
+    assert.doesNotMatch(source, /dangerouslySetInnerHTML/);
+  });
 });

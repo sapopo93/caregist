@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import DirectoryFreshnessNotice from "@/components/DirectoryFreshnessNotice";
 import RelatedLinks from "@/components/RelatedLinks";
 import ProviderActions from "@/components/ProviderActions";
 import CompareButton from "@/components/CompareButton";
@@ -115,6 +116,8 @@ export default async function ProviderPage({ params, searchParams }: { params: P
           Back to search
         </Link>
       </div>
+
+      <DirectoryFreshnessNotice className="mt-2 print:hidden" />
 
       <div className="relative mt-4 overflow-hidden rounded-3xl border border-stone bg-cream p-8 pt-10 shadow-sm">
         <span aria-hidden className={`absolute inset-x-0 top-0 h-2 ${ratingToneClass(provider.overall_rating)}`} />
