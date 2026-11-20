@@ -43,6 +43,9 @@ SECRET_ENV_NAMES = {
     "stripe_price_intelligence_feed": "STRIPE_PRICE_INTELLIGENCE_FEED",
     "stripe_price_territory_brief": "STRIPE_PRICE_TERRITORY_BRIEF",
     "stripe_price_operator_history": "STRIPE_PRICE_OPERATOR_HISTORY",
+    "stripe_price_region_monthly_single": "STRIPE_PRICE_REGION_MONTHLY_SINGLE",
+    "stripe_price_region_monthly_six": "STRIPE_PRICE_REGION_MONTHLY_SIX",
+    "stripe_price_region_monthly_twelve": "STRIPE_PRICE_REGION_MONTHLY_TWELVE",
     "blob_read_write_token": "BLOB_READ_WRITE_TOKEN",
     "resend_api_key": "RESEND_API_KEY",
     "resend_webhook_secret": "RESEND_WEBHOOK_SECRET",
@@ -366,6 +369,12 @@ class Settings(BaseSettings):
     # One-off Operator History (GBP 95.00). Optional until its checkout switch is
     # on; loadable earlier so a payment event can still be reconciled.
     stripe_price_operator_history: str = ""
+    # One-off Region Monthly (GBP 49.00 one month, 245.00 six months, 445.00 twelve
+    # months). Optional until its checkout switch is on; loadable earlier so a
+    # payment event can still be reconciled.
+    stripe_price_region_monthly_single: str = ""
+    stripe_price_region_monthly_six: str = ""
+    stripe_price_region_monthly_twelve: str = ""
     # Vercel Blob RW token, used by the fulfilment worker to upload the
     # generated brief/CSV to private Blob storage.
     blob_read_write_token: str = ""
@@ -438,6 +447,12 @@ class Settings(BaseSettings):
     # payment or download. It is a new public claim surface, so it stays off until
     # its wording and numbers have had independent review.
     region_monthly_enabled: bool = False
+    # Region Monthly stage 2: the paid checkout, entitlements and refund handling.
+    # Fail-closed. It needs region_monthly_enabled and billing_checkout_enabled as
+    # well, plus the three Stripe Prices, the approved B2B terms and the
+    # source-freshness gate. The signed payment webhook keeps working whatever this
+    # is set to, so an order already paid for can still be granted or refunded.
+    region_monthly_checkout_enabled: bool = False
     # Operator History (stage 1): the free coverage preview of one operator's
     # CQC record, found by CQC Provider ID. A new public claim surface, so it is
     # off until its wording has independent review (docs/operator-history-v1.md).
@@ -716,6 +731,25 @@ class Settings(BaseSettings):
             if missing:
                 raise RuntimeError(
                     f"FATAL: Operator History checkout is enabled without {', '.join(missing)}."
+                )
+
+        if self.region_monthly_checkout_enabled:
+            if not (self.billing_checkout_enabled and self.region_monthly_enabled):
+                raise RuntimeError(
+                    "FATAL: REGION_MONTHLY_CHECKOUT_ENABLED requires BILLING_CHECKOUT_ENABLED "
+                    "and REGION_MONTHLY_ENABLED."
+                )
+            required_region_monthly_values = {
+                "STRIPE_PRICE_REGION_MONTHLY_SINGLE": self.stripe_price_region_monthly_single,
+                "STRIPE_PRICE_REGION_MONTHLY_SIX": self.stripe_price_region_monthly_six,
+                "STRIPE_PRICE_REGION_MONTHLY_TWELVE": self.stripe_price_region_monthly_twelve,
+                "B2B_TERMS_VERSION": self.b2b_terms_version,
+                "B2B_TERMS_SHA256": self.b2b_terms_sha256,
+            }
+            missing = [name for name, value in required_region_monthly_values.items() if not value]
+            if missing:
+                raise RuntimeError(
+                    f"FATAL: Region Monthly checkout is enabled without {', '.join(missing)}."
                 )
 
         if self.territory_self_serve_checkout_enabled:

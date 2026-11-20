@@ -1,8 +1,8 @@
-# Region Monthly, stage 1 (design note)
+# Region Monthly (design note: stage 1 and stage 2)
 
-Region Monthly is a monthly, versioned set of counts for one England region and one service type, for one UK calendar month. Customers will buy access to specific months: £49 for one month, £245 for six consecutive months and £445 for twelve consecutive months. This stage builds the month rules, the counting query, the immutable store, the purchase rules, the free coverage preview and the build command. It has no checkout, no payment, no entitlement storage and no download. Terms, tax and refund wording are not decided here.
+Region Monthly is a monthly, versioned set of counts for one England region and one service type, for one UK calendar month. Customers will buy access to specific months: £49 for one month, £245 for six consecutive months and £445 for twelve consecutive months. Stage 1 built the month rules, the counting query, the immutable store, the purchase rules, the free coverage preview and the build command. Stage 2 (section "Stage 2: orders, entitlements and download" below) adds the paid checkout, the signed payment event, per-month entitlements, the account-scoped download and refund handling. Terms, tax and refund wording are not decided here.
 
-Status: code only, behind `REGION_MONTHLY_ENABLED` (`region_monthly_enabled`, default false). Off returns the same plain 404 as an unknown route and reads nothing. It stays off until the wording and the numbers have had independent review. The build workflow cannot be scheduled (see "Schedule and backfill").
+Status: code only, behind `REGION_MONTHLY_ENABLED` (`region_monthly_enabled`, default false) and, for the paid path, `REGION_MONTHLY_CHECKOUT_ENABLED` (`region_monthly_checkout_enabled`, default false). `REGION_MONTHLY_ENABLED` off returns the same plain 404 as an unknown route and reads nothing. Both stay off until the wording and the numbers have had independent review. The build workflow cannot be scheduled (see "Schedule and backfill"). No real payment has been taken and no Stripe account was called while building stage 2.
 
 Every figure is a count, a date or a quoted CQC value. There are no scores, predictions, rankings or trend claims. The archive is never described as complete.
 
@@ -82,13 +82,13 @@ Migration `076_region_monthly_builds.sql` (down script `db/migrations/down/076_r
 - Triggers reject UPDATE, DELETE and TRUNCATE. A correction is a new row with the next `build_version`, a `correction_reason` and `supersedes_build_version` set. The old row is never touched, so no UPDATE is ever needed: "superseded" means "a row with a higher version exists". An insert trigger refuses a version with no predecessor, and CHECK constraints refuse a region outside the nine, a non-first-of-month date, a malformed slug or hash, and a broken version chain.
 - `content_sha256` is the SHA-256 of canonical JSON (sorted keys, compact separators) of: schema version, month, region, service, metrics, coverage and limits. It holds no generation time, no `built_at`, no version and no row id. The same data gives the same hash whatever order the rows were inserted in (tested).
 - A rerun with identical content writes nothing. Changed content is stored only when the command is given `--correction-reason`.
-- Entitlements and orders are not stored here. That is stage 2.
+- Entitlements and orders are not stored here. They are stored by migration 077 (stage 2, below).
 
 Rollback: the down script drops the triggers, the two functions and the table. Under `db/migrations/README.md`, never run it on production as an ordinary rollback. A built month is a published record: turn the flag off, use a forward-fix migration, and take a verified Neon recovery point before any production migration. Migration number: Operator History keeps 074 and 075, so Region Monthly is 076.
 
 ## Purchase rules (`resolve_purchase`, no charge)
 
-Prices live in one place, `PURCHASE_KINDS` in `api/services/region_monthly.py`: `single` 1 month 4900 pence, `six` 6 months 24500 pence, `twelve` 12 months 44500 pence (GBP, held as pence like the other products). Stage 2 must read prices from there. The wording about VAT ("no VAT added" on the Territory Brief) is not decided for this product.
+Prices live in one place, `PURCHASE_KINDS` in `api/services/region_monthly.py`: `single` 1 month 4900 pence, `six` 6 months 24500 pence, `twelve` 12 months 44500 pence (GBP, held as pence like the other products). Stage 2 reads prices from there and nowhere else. The wording about VAT ("no VAT added" on the Territory Brief) is not decided for this product.
 
 A purchase is a kind, a first month, a region and a service. The months are consecutive from the first month. Each month is either built (a stored build exists) or future (not buildable yet; available on the 7th of the following month). A bundle may include future months only when the buyer accepts them explicitly (`accept_future_months`), and a future month can be downloaded only after it is built. Everything that can fail fails before any charge.
 
@@ -129,13 +129,98 @@ A purchase is a kind, a first month, a region and a service. The months are cons
 - CareGist holds only the locations in its tables. Locations CQC registered and removed before CareGist held them are not there.
 - A months-old build is not rewritten when later data arrives. A correction is a new version.
 
-## Entitlement rules (for stage 2, not built)
+## Stage 2: orders, entitlements and download
 
-- An entitlement is a set of specific months for one region and one service, bought as one, six or twelve consecutive months.
-- A built month is downloadable at once. A future month included in the purchase is downloadable only after it is built, on or after the 7th of the following month.
+Code: `api/routers/region_monthly_orders.py` (checkout, status, download), `api/services/region_monthly_orders.py` (orders, payment event, entitlements, refunds), `api/services/region_monthly_render.py` (CSV and PDF), `api/queries/region_monthly_orders.py`, `tools/retry_region_monthly_entitlements.py`, migration `077_region_monthly_orders.sql`. It follows Operator History stage 2 (`docs/operator-history-v1.md`) in design.
+
+### Gates
+
+| Gate | Off means |
+|---|---|
+| `REGION_MONTHLY_ENABLED` | Every stage 2 route answers the same plain 404 as an unknown route, before authentication, and nothing is read. |
+| `BILLING_CHECKOUT_ENABLED` and `REGION_MONTHLY_CHECKOUT_ENABLED` | Checkout answers a plain 503 and makes no Stripe call. Status and download keep working, so turning checkout off never strands a customer who has paid. |
+| `STRIPE_SECRET_KEY` and the three Prices `STRIPE_PRICE_REGION_MONTHLY_SINGLE`, `_SIX`, `_TWELVE` | A plain 503 if any is missing. |
+| `B2B_TERMS_VERSION` and `B2B_TERMS_SHA256` | A plain 503 ("awaiting approved B2B terms"); a wrong version is 409; an unconfirmed business use is 422. |
+| Source-freshness gate | A plain 503. It uses the same pipeline-health snapshot as Operator History and Radar (readiness checks passed, CQC source fresh, counts reconciled). It leaves out Operator History's check of the stored CQC edition, because that edition supplies provider names and Region Monthly does not read it, and adds a check that the stored builds table exists. |
+
+`validate_production` refuses to start with checkout on unless `BILLING_CHECKOUT_ENABLED`, `REGION_MONTHLY_ENABLED`, the three Prices, `B2B_TERMS_VERSION` and `B2B_TERMS_SHA256` are set. The signed payment webhook keeps working whatever the checkout switch says.
+
+### Endpoints and HTTP codes
+
+`POST /api/v1/billing/region-monthly-checkout` needs a signed-in browser session with a verified email. An API key is refused (403). The body holds `region`, optional `service` (a canonical slug), `kind` (`single`, `six` or `twelve`), `first_month` (`YYYY-MM`), `accept_future_months` (default false), `email`, `terms_version` and `business_use_confirmed`. There is no price field and no other field (422). The price is never read from the client.
+
+Order of checks, each before the next and all before any Stripe call: 404 (module off); 503 (checkout switches, key, Prices); terms (503, 409, 422); session and verified email (403, 401); email matches the account (403); 503 (source-freshness gate); the stage 1 purchase rules (`resolve_purchase`, the refusal table above, with `{"detail": {"code", "message"}}`); the months the account already holds (409 `months_already_held`); the pending order; the Stripe Price check (503); then the Checkout Session (502 if Stripe refuses, with "No payment has been taken").
+
+`GET /api/v1/region-monthly/orders/{order_id}` returns the order state and each month: `available`, `will_be_available` (with the date), `not_built` (its day has passed and no build exists), `not_paid`, `refunded` or `being_set_up`. It never returns Stripe identifiers or the terms hash.
+
+`GET /api/v1/region-monthly/orders/{order_id}/months/{YYYY-MM}/download?format=csv|pdf`:
+
+| Code | Meaning |
+|---|---|
+| 200 | The file, with `X-Content-SHA256` (of the bytes), `X-Build-Version`, `X-Build-Content-SHA256` (of the stored build), `Cache-Control: private, no-store`. |
+| 402 | The order is not paid (pending or expired). |
+| 404 | An unknown order, another account's order, a malformed order id, a month that is not in the order or a malformed month. All have the same body, `{"detail": "Order not found."}`. |
+| 409 | `month_not_available_yet` (a future month with no build; includes `available_from`), `month_not_built` (its day has passed and no build exists; includes `available_from`), or `access_being_set_up` (paid, entitlement not yet created). |
+| 410 | The order was refunded. |
+| 422 | A format other than `csv` or `pdf`. |
+| 500 | The stored build no longer matches its `content_sha256`; nothing is served. |
+
+### Order states
+
+`pending_payment` (created at checkout) moves to `paid` (signed payment event), `expired` (checkout lifetime ended, replaced by a different purchase, or its session could not be recorded) or, if a full refund arrives before the payment event, `refunded`. `expired` can still move to `paid` if Stripe reports payment for its session later. `paid` moves to `refunded` on a full refund. Nothing else moves; the database enforces this. A new order is always created as `pending_payment`.
+
+### Flow
+
+1. Checkout resolves the purchase, takes an advisory lock for the account and scope (region and service), expires a pending order past its one-hour lifetime and refuses months the account already holds in a paid order. A repeated identical request returns the one pending order and its one session (`reused: true`). A different purchase in the same scope replaces it, after Stripe has expired the earlier session; if Stripe cannot, nothing changes and the buyer gets a plain 409 (`checkout_still_open`). A later deliberate purchase of the same scope, after the earlier one is paid, is a new order with its own idempotency key `caregist-region-monthly-<order id>`.
+2. The Checkout Session is made with that idempotency key, so a lost response is recovered: the same request finds the same session. The order pins the region, service, kind, the exact ordered list of months, which months were future with their availability dates, the price, the Stripe Price id and the terms.
+3. The Stripe Price is read before the session is made. It must be active, GBP, one-time, carry the lookup key `region_monthly_<kind>_gbp_oneoff_v1`, have a live product, and its amount must equal the central price.
+4. The signed `checkout.session.completed` (or `async_payment_succeeded`) event is verified by the shared webhook and deduplicated in `stripe_processed_events`. `region_monthly_orders.handle_checkout_completed` reads the authoritative session from Stripe and checks its metadata (user, region, service, kind, months, price), amount, currency, line item, payment intent and the stored B2B acceptance against the pinned order. It marks the order paid and creates one entitlement per purchased month in the same transaction. Nothing is rendered at payment time: delivery means entitlement.
+5. A download needs a paid order, the month's entitlement and a stored build at that moment. A month that was future at purchase is downloadable only after a build exists for it, even if its date has not been reached. The latest build version of the month is served and named in the file and the `X-Build-Version` header.
+
+### Webhook wiring (`api/routers/billing.py`)
+
+Four small edits, the same four as Operator History: the import gains `region_monthly_orders`; `_handle_checkout_completed` dispatches metadata type `region_monthly` to `region_monthly_orders.handle_checkout_completed`; the `except` in `stripe_webhook` also catches `region_monthly_orders.EntitlementError`, so its failure recorder runs after the transaction rolls back; `_handle_refund` calls `region_monthly_orders.mark_refunded` inside the full-refund branch.
+
+### Tables and migration 077
+
+`region_monthly_orders` holds the buying account (`user_id`), region, service (NULL means all), kind, month count, `months` (the exact list), `future_months` with `future_available_from`, whether future months were accepted, state, price, currency, Stripe Price id, the terms version and hash, the acceptance reference, Stripe session and payment ids, attempts and last error, and timestamps. `region_monthly_entitlements` has one row per order and month (unique). The guard trigger refuses any change to the purchased months, price, terms, scope or payment evidence, any delete, and any state move outside the list above, and checks that months are consecutive first days of a month. An entitlement can be inserted only for a month of a paid order, and cannot be updated, deleted or truncated. A refund changes `state` and `refunded_at` and nothing else. Only one pending order can exist per account, region and service (partial unique index).
+
+Rollback: `db/migrations/down/077_region_monthly_orders.down.sql` drops the triggers, functions and the two tables and leaves `region_monthly_builds` alone. As with every migration it is for non-production verification only. A paid order is a financial record: on production, turn the flags off and use a forward-fix migration, and take a verified Neon recovery point before applying 077 (`db/migrations/README.md`). The migration is additive and idempotent.
+
+### Refunds
+
+A full refund (`charge.refunded` with the whole amount refunded) moves a paid order to `refunded`; downloads answer 410 and the order and its entitlement rows are not changed. A full refund that arrives before the payment event is remembered, so the later payment event marks the order refunded and grants nothing. A replayed payment event cannot revive a refunded order. A partial refund changes nothing: the order stays paid and downloadable. This is the documented default and is flagged for the owner (open question 10).
+
+### Failure and recovery
+
+- Payment event for an unknown or mismatching order, a wrong amount or currency, an unexpected line item, a missing or different B2B acceptance: the webhook answers 500 and rolls back. The order stays `pending_payment`, nothing is granted, and Stripe redelivers.
+- Entitlement creation fails after payment: the transaction rolls back, then the failure recorder (fresh connection) restores the payment evidence, leaves the order `paid` with `last_error` and counts the attempt. Downloads answer 409 `access_being_set_up`. Stripe's redelivery of the same event finishes the order; so does `python tools/retry_region_monthly_entitlements.py` (dry run) and `--apply`. Entitlements are unique per order and month and the audit event `region_monthly.order.paid` is written only when rows are created, so nothing is created twice.
+- Two payments for the same months (both sessions paid): both are honoured and the audit event `region_monthly.order.overlap_paid` is written for the owner to refund one.
+- A session that cannot be recorded after Stripe made it is expired at Stripe and its order closed.
+- A stored build whose hash no longer matches is never served (500) and is logged.
+
+### What is stubbed and what is real
+
+Real in the tests: Postgres 15 (the full migration set), the FastAPI app, the shared webhook with real HMAC signing and verification, the guard triggers, the PDF writer. Stubbed: the Stripe gateway (`RegionMonthlyStripeStub` replaces `Session.create`, `retrieve`, `expire` and `Price.retrieve`; no network). Never exercised: a real Stripe account, test or live; Stripe Tax; invoice delivery (`invoice_creation` is requested but not observed); the hosted frontend (there are no order or checkout pages yet; the success and cancel URLs point at `/region-monthly/orders/<id>` and `/region-monthly`).
+
+### Hosted test-mode steps still required
+
+Owner steps, in order, on a preview deployment with an isolated database, never production. Variable names only; values are set by the owner and never written in the repository.
+
+1. Take a verified Neon recovery point, then apply migration 077 to the preview database.
+2. In Stripe test mode create three one-time GBP Prices with lookup keys `region_monthly_single_gbp_oneoff_v1` (4900 pence), `region_monthly_six_gbp_oneoff_v1` (24500) and `region_monthly_twelve_gbp_oneoff_v1` (44500), each on an active product.
+3. Set `STRIPE_SECRET_KEY` (a test key), `STRIPE_WEBHOOK_SECRET` (the preview endpoint's signing secret), `STRIPE_PRICE_REGION_MONTHLY_SINGLE`, `STRIPE_PRICE_REGION_MONTHLY_SIX`, `STRIPE_PRICE_REGION_MONTHLY_TWELVE`, `B2B_TERMS_VERSION`, `B2B_TERMS_SHA256`, `B2B_EVIDENCE_HASH_KEY` (optional), `APP_URL`, `BILLING_CHECKOUT_ENABLED`, `REGION_MONTHLY_ENABLED` and `REGION_MONTHLY_CHECKOUT_ENABLED`. Point a test-mode webhook endpoint at `/api/v1/billing/webhook` for `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.expired` and `charge.refunded`.
+4. Build some months on the preview database with `tools/build_region_monthly.py --write`.
+5. Run in test mode: a one-month purchase of a built month, a six-month purchase that includes a future month, a double submit, a repeated webhook delivery, a card needing authentication, an expired session, a full refund and a partial refund. Check the order status, each download's SHA-256 against `X-Content-SHA256`, and the audit log.
+6. Confirm the invoice and receipt wording and the VAT line (open question 11) before any live key is used.
+
+### Entitlement rules (as built)
+
+- An entitlement is a set of specific months for one region and one service, bought as one, six or twelve consecutive months, held by the buying account.
+- A built month is downloadable at once. A future month included in the purchase is downloadable only once a build exists for it.
 - A download serves the latest build version of the month at the time, and says which version it is. Older versions stay stored.
-- The price is read from `PURCHASE_KINDS` and is checked again against the payment provider's price in stage 2, as the Territory Brief does.
-- Nothing is charged for a request that `resolve_purchase` refuses.
+- The price is read from `PURCHASE_KINDS` and is checked again against the payment provider's price at checkout and at payment.
+- Nothing is charged for a request that `resolve_purchase` refuses or for months the account already holds.
 
 ## Open questions for the owner
 
@@ -148,3 +233,10 @@ A purchase is a kind, a first month, a region and a service. The months are cons
 7. Whether the "active locations at month end" figure should be added once CareGist stores a monthly snapshot, and from which month.
 8. Wording review: the eight limit templates, the four metric definitions and the refusal messages need independent review before the flag is turned on.
 9. Migration number: settled. Operator History uses 074 and 075; Region Monthly uses 076.
+10. Refunds: a full refund withdraws access to every month of the order, including months already downloaded. Should a partial refund change anything (for example, withdraw months pro rata), or stay as built (no change)? Should months already downloaded be refundable at all? The terms need an immediate-supply or cancellation clause.
+11. VAT and invoices: the Checkout Session requests an invoice. The wording ("no VAT added" on the Territory Brief) is not decided for this product, and neither is whether Stripe Tax applies.
+12. Price records: are the three catalogue prices (4900, 24500, 44500 pence) final, and who creates and signs off the Stripe Prices and their lookup keys?
+13. Retention: how long are paid orders, entitlements and acceptances kept, and what is told to a buyer who asks for erasure? Orders are never deleted by the product.
+14. Terms: which B2B terms version and hash apply, and does Region Monthly need its own (the shared B2B terms are used as built)?
+15. Overlap and replacement: buying a month the account already holds is refused. Should a refunded or a corrected month be re-sold, and should a buyer be told when a corrected version replaces one they downloaded (open question 5)?
+16. Checkout flag behaviour: with `REGION_MONTHLY_CHECKOUT_ENABLED` off the checkout answers a plain 503 (as Operator History does) rather than the 404 used when the whole module is off. Which should it be?

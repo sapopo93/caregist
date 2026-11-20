@@ -25,7 +25,7 @@ from api.config import (
     settings,
 )
 from api.database import get_connection
-from api.services import operator_history_orders, territory_brief_delivery, territory_brief_fulfilment
+from api.services import operator_history_orders, region_monthly_orders, territory_brief_delivery, territory_brief_fulfilment
 from api.services.pipeline_health import get_pipeline_health
 from api.utils.audit import actor_from_auth, write_audit_log
 from api.utils.stripe_compat import stripe_dict
@@ -1668,6 +1668,7 @@ async def stripe_webhook(request: Request) -> dict:
     except (
         territory_brief_fulfilment.TerritoryBriefGenerationError,
         operator_history_orders.DeliveryError,
+        region_monthly_orders.EntitlementError,
     ) as exc:
         # Both transaction and connection contexts have exited, releasing the
         # order lock before the independent failure-counter write.
@@ -1953,6 +1954,9 @@ async def _handle_checkout_completed(conn, session: dict) -> None:
         return
     if metadata.get("type") == operator_history_orders.METADATA_TYPE:
         await operator_history_orders.handle_checkout_completed(conn, session)
+        return
+    if metadata.get("type") == region_monthly_orders.METADATA_TYPE:
+        await region_monthly_orders.handle_checkout_completed(conn, session)
         return
     if _is_manual_payment_link_sale(session, metadata):
         await _record_manual_payment_link_sale(conn, session)
@@ -2342,6 +2346,7 @@ async def _handle_refund(conn, charge: dict) -> None:
             )
 
         await operator_history_orders.mark_refunded(conn, payment_intent)
+        await region_monthly_orders.mark_refunded(conn, payment_intent)
 
     await write_audit_log(
         action="billing.charge.refund",
