@@ -172,6 +172,9 @@ class HeldName:
     source_as_of: date
     providers_sha256: str
     locations_sha256: str
+    # The stored edition's own row id. It is never written into the record (so the
+    # record hash holds no database serial number); a paid order pins it separately.
+    edition_id: int | None = None
 
 
 @dataclass(frozen=True)
@@ -465,6 +468,7 @@ async def _resolve_by_provider_id(conn, provider_id: str) -> ResolvedOperator:
             source_as_of=row["source_as_of"],
             providers_sha256=row["providers_sha256"],
             locations_sha256=row["locations_sha256"],
+            edition_id=row["edition_id"],
         )
         for row in held_rows
     )
