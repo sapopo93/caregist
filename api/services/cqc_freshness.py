@@ -6,7 +6,6 @@ Live provider timestamps and request time are deliberately not evidence.
 
 from __future__ import annotations
 
-import os
 from datetime import UTC, date, datetime, timedelta
 from typing import Any, Mapping
 
