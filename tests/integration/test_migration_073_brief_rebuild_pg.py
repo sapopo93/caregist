@@ -110,7 +110,9 @@ async def test_073_rebuilds_empty_pre_060_tables(fresh_db):
         await conn.execute(PRE_060_TABLES)
 
         applied = await _apply_from(conn, "060")
-        assert applied[-1] == "073_rebuild_territory_brief_tables.sql"
+        # 073 must run last of the Brief migrations; later migrations may follow it.
+        assert "073_rebuild_territory_brief_tables.sql" in applied
+        assert applied.index("073_rebuild_territory_brief_tables.sql") == applied.index("072_shared_customer_package.sql") + 1
         assert "072_shared_customer_package.sql" in applied
 
         orders = await _columns(conn, "territory_brief_orders")
