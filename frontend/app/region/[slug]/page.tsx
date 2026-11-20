@@ -3,11 +3,12 @@ import ProviderCard from "@/components/ProviderCard";
 import PrintButton from "@/components/PrintButton";
 import RatingDistributionBar from "@/components/RatingDistributionBar";
 import EmailCaptureStrip from "@/components/EmailCaptureStrip";
-import TrustSignal from "@/components/TrustSignal";
+import DirectoryFreshnessNotice from "@/components/DirectoryFreshnessNotice";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import RememberRegion from "@/components/RememberRegion";
 import RegionSwitcher from "@/components/RegionSwitcher";
 import RegionBriefing from "@/components/RegionBriefing";
+import { regionServiceLinks } from "@/lib/region-navigation";
 import { getDirectoryRegionSnapshot } from "@/lib/directory-db";
 import { searchProviders, getRegionStats } from "@/lib/api";
 import { getProviderHref, getProviderPathKey } from "@/lib/provider-path";
@@ -140,7 +141,30 @@ export default async function RegionPage({
         </div>
       </div>
 
+      <DirectoryFreshnessNotice className="mb-6" />
+
       {regionSnapshot ? <RegionBriefing snapshot={regionSnapshot} /> : null}
+
+      {isRegion ? (
+        <section aria-labelledby="browse-by-service" className="mb-8 rounded-2xl border border-stone bg-cream p-6 shadow-sm print:hidden">
+          <h2 id="browse-by-service" className="text-xl font-bold text-bark">Browse {displayName} by service</h2>
+          <ul className="mt-4 grid gap-2 text-sm sm:grid-cols-2 lg:grid-cols-3">
+            {regionServiceLinks(REGION_MAP[slug]).map((link) => (
+              <li key={link.serviceType}>
+                <Link href={link.href} className="block rounded-lg border border-stone bg-white p-3 font-semibold text-clay hover:border-clay">
+                  {link.label} in {displayName} →
+                </Link>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-4 text-sm text-dusk">
+            Looking for a place close to a particular address?{" "}
+            <Link href="/find-care" className="font-semibold text-clay underline underline-offset-2 hover:text-bark">
+              Find care near a postcode
+            </Link>
+          </p>
+        </section>
+      ) : null}
 
       {/* Rating Distribution */}
       {stats?.rating_distribution && Object.keys(stats.rating_distribution).length > 0 && (
@@ -232,9 +256,9 @@ export default async function RegionPage({
         />
       </div>
 
-      <div className="mt-4">
-        <TrustSignal />
-      </div>
+      <p className="mt-4 text-center text-xs text-dusk">
+        Data sourced from the CQC public register.
+      </p>
     </div>
   );
 }

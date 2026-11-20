@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import RadiusFinder from "@/components/RadiusFinder";
-import TrustSignal from "@/components/TrustSignal";
+import DirectoryFreshnessNotice from "@/components/DirectoryFreshnessNotice";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -18,6 +18,8 @@ export default function FindCarePage() {
         services, fees, suitability, and the current regulatory record directly with the
         provider and CQC before making a care decision.
       </p>
+
+      <DirectoryFreshnessNotice className="mb-8" />
 
       <Suspense>
         <RadiusFinder />
@@ -47,9 +49,9 @@ export default function FindCarePage() {
         </div>
       </div>
 
-      <div className="mt-8">
-        <TrustSignal />
-      </div>
+      <p className="mt-8 text-center text-xs text-dusk">
+        Data sourced from the CQC public register.
+      </p>
     </div>
   );
 }

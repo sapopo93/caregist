@@ -1,14 +1,13 @@
 import Link from "next/link";
 
+import { regionSlug } from "@/lib/region-navigation";
+
 export interface Crumb {
   label: string;
   href?: string;
 }
 
-/** Region name to its /region/ slug, e.g. "Yorkshire & Humberside" to "yorkshire-humberside". */
-export function regionSlug(region: string): string {
-  return region.toLowerCase().replace(/&/g, "").trim().replace(/\s+/g, "-");
-}
+export { regionSlug };
 
 export default function Breadcrumbs({ crumbs }: { crumbs: Crumb[] }) {
   return (

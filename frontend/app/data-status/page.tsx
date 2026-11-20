@@ -1,29 +1,12 @@
 import type { Metadata } from "next";
 import SourceTimeline from "@/components/SourceTimeline";
+import { formatDate, type SourceStatus } from "@/lib/data-freshness";
 import { getServerApiBase } from "@/lib/server-api-config";
 
 export const metadata: Metadata = {
   title: "CQC Data Status | CareGist",
   description: "Current CareGist CQC source watermark, location count, and freshness status.",
   robots: { index: false, follow: true },
-};
-
-type SourceStatus = {
-  status?: "fresh" | "stale" | "partial" | "unknown";
-  source?: string | null;
-  sourcePublishedAt?: string | null;
-  sourceRetrievedAt?: string | null;
-  reconciledAt?: string | null;
-  totalSourceLocations?: number | null;
-  checkedLocations?: number | null;
-  successfullyCheckedLocations?: number | null;
-  coveragePercentage?: number | null;
-  successCount?: number | null;
-  failureCount?: number | null;
-  quarantinedLocationCount?: number | null;
-  countsReconciled?: boolean;
-  checksumSha256?: string | null;
-  message?: string | null;
 };
 
 async function loadStatus(): Promise<SourceStatus | null> {
@@ -38,20 +21,6 @@ async function loadStatus(): Promise<SourceStatus | null> {
   } catch {
     return null;
   }
-}
-
-function formatDate(value?: string | null) {
-  if (!value) return "Not available";
-  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-    const [year, month, day] = value.split("-").map(Number);
-    return new Intl.DateTimeFormat("en-GB", {
-      dateStyle: "long",
-      timeZone: "UTC",
-    }).format(new Date(Date.UTC(year, month - 1, day)));
-  }
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleString("en-GB", { dateStyle: "long", timeStyle: "short", timeZone: "UTC" });
 }
 
 export default async function DataStatusPage() {
