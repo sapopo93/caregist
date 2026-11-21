@@ -168,7 +168,7 @@ These were identified but not built. Assess feasibility and prioritise:
 
 ## DB connection
 ```
-postgresql://neondb_owner:npg_peob3Oh5UcIQ@ep-wandering-grass-abgnc3qe-pooler.eu-west-2.aws.neon.tech/neondb?sslmode=require
+postgresql://<role>:<password>@<host>/<database>?sslmode=require  # REDACTED: never commit a connection string; read DATABASE_URL from .env
 ```
 
 ## Run tests

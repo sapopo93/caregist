@@ -2,6 +2,7 @@ import { headers } from "next/headers";
 import { getProviderHref } from "@/lib/provider-path";
 import { getSiteUrl } from "@/lib/site";
 import { normalizeExternalHttpUrl } from "@/lib/external-url";
+import { serialiseJsonLd } from "@/lib/json-ld";
 
 export default async function ProviderJsonLd({
   name,
@@ -61,7 +62,7 @@ export default async function ProviderJsonLd({
     <script
       type="application/ld+json"
       nonce={nonce}
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      dangerouslySetInnerHTML={{ __html: serialiseJsonLd(jsonLd) }}
     />
   );
 }
