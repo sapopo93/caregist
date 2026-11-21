@@ -10,6 +10,7 @@ import RegionSwitcher from "@/components/RegionSwitcher";
 import RegionBriefing from "@/components/RegionBriefing";
 import { regionServiceLinks } from "@/lib/region-navigation";
 import { getDirectoryRegionSnapshot } from "@/lib/directory-db";
+import { serialiseJsonLd } from "@/lib/json-ld";
 import { searchProviders, getRegionStats } from "@/lib/api";
 import { getProviderHref, getProviderPathKey } from "@/lib/provider-path";
 import Link from "next/link";
@@ -117,7 +118,7 @@ export default async function RegionPage({
 
   return (
     <div className="max-w-6xl mx-auto px-6 py-8">
-      {!error && <script type="application/ld+json" nonce={nonce} dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />}
+      {!error && <script type="application/ld+json" nonce={nonce} dangerouslySetInnerHTML={{ __html: serialiseJsonLd(jsonLd) }} />}
       {/* AEO Block */}
       {!error && <section className="bg-parchment border-b border-stone rounded-t-lg px-6 py-4 text-sm text-charcoal leading-relaxed mb-6">
         <p>
